@@ -169,12 +169,14 @@ class RestZenStoreConfiguration(StoreConfiguration):
         Returns:
             The values dictionary.
         """
-        # Check if the values dictionary contains either an api_token or a username
-        if "api_token" not in values and "username" not in values:
+        # Check if the values dictionary contains either an api_token or a
+        # username as non-empty strings.
+        if values.get("api_token") or values.get("username"):
+            return values
+        else:
             raise ValueError(
                 "Neither api_token nor username is set in the store config."
             )
-        return values
 
     @validator("url")
     def validate_url(cls, url: str) -> str:
@@ -290,6 +292,7 @@ class RestZenStoreConfiguration(StoreConfiguration):
             path.
         """
         assert isinstance(config, RestZenStoreConfiguration)
+        assert config.api_token is not None
         config = config.copy(exclude={"username", "password"}, deep=True)
         # Load the certificate values back into the configuration
         config.expand_certificates()
@@ -1460,8 +1463,8 @@ class RestZenStore(BaseZenStore):
             # Check if the API token is already stored in the config
             if self.config.api_token:
                 self._api_token = self.config.api_token
-            # Otherwise, try to get the token from the server
-            else:
+            # Check if the username and password are provided in the config
+            elif self.config.username and self.config.password:
                 response = self._handle_response(
                     requests.post(
                         self.url + API + VERSION_1 + LOGIN,
@@ -1483,6 +1486,12 @@ class RestZenStore(BaseZenStore):
                     )
                 self._api_token = response["access_token"]
                 self.config.api_token = self._api_token
+            else:
+                raise ValueError(
+                    "No API token or username/password provided. Please "
+                    "provide either a token or a username and password in "
+                    "the ZenStore config."
+                )
         return self._api_token
 
     @property
