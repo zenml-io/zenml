@@ -17,7 +17,7 @@ from typing import Any, Type
 
 from deepchecks.tabular import Dataset
 
-from zenml.artifacts import DataArtifact
+from zenml.enums import ArtifactType
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.pandas_materializer import PandasMaterializer
 
@@ -28,7 +28,7 @@ class DeepchecksDatasetMaterializer(BaseMaterializer):
     """Materializer to read data to and from Deepchecks dataset."""
 
     ASSOCIATED_TYPES = (Dataset,)
-    ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
 
     def load(self, data_type: Type[Any]) -> Dataset:
         """Reads pandas dataframes and creates deepchecks.Dataset from it.
@@ -42,7 +42,7 @@ class DeepchecksDatasetMaterializer(BaseMaterializer):
         super().load(data_type)
 
         # Outsource to pandas
-        pandas_materializer = PandasMaterializer(self.artifact)
+        pandas_materializer = PandasMaterializer(self.uri)
         df = pandas_materializer.load(data_type)
 
         # Recreate from pandas dataframe
@@ -57,5 +57,5 @@ class DeepchecksDatasetMaterializer(BaseMaterializer):
         super().save(df)
 
         # Outsource to pandas
-        pandas_materializer = PandasMaterializer(self.artifact)
+        pandas_materializer = PandasMaterializer(self.uri)
         pandas_materializer.save(df.data)

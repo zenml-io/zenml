@@ -22,7 +22,7 @@ from transformers.tokenization_utils_base import (  # type: ignore [import]
     PreTrainedTokenizerBase,
 )
 
-from zenml.artifacts import ModelArtifact
+from zenml.enums import ArtifactType
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import io_utils
 
@@ -33,7 +33,7 @@ class HFTokenizerMaterializer(BaseMaterializer):
     """Materializer to read tokenizer to and from huggingface tokenizer."""
 
     ASSOCIATED_TYPES = (PreTrainedTokenizerBase,)
-    ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
 
     def load(self, data_type: Type[Any]) -> PreTrainedTokenizerBase:
         """Reads Tokenizer.
@@ -47,7 +47,7 @@ class HFTokenizerMaterializer(BaseMaterializer):
         super().load(data_type)
 
         return AutoTokenizer.from_pretrained(
-            os.path.join(self.artifact.uri, DEFAULT_TOKENIZER_DIR)
+            os.path.join(self.uri, DEFAULT_TOKENIZER_DIR)
         )
 
     def save(self, tokenizer: Type[Any]) -> None:
@@ -61,5 +61,5 @@ class HFTokenizerMaterializer(BaseMaterializer):
         tokenizer.save_pretrained(temp_dir.name)
         io_utils.copy_dir(
             temp_dir.name,
-            os.path.join(self.artifact.uri, DEFAULT_TOKENIZER_DIR),
+            os.path.join(self.uri, DEFAULT_TOKENIZER_DIR),
         )

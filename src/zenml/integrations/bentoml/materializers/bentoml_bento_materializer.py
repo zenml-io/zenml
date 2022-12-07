@@ -21,7 +21,7 @@ import bentoml
 from bentoml._internal.bento import Bento, bento
 from bentoml.exceptions import BentoMLException
 
-from zenml.artifacts import DataArtifact
+from zenml.enums import ArtifactType
 from zenml.integrations.bentoml.constants import DEFAULT_BENTO_FILENAME
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -35,7 +35,7 @@ class BentoMaterializer(BaseMaterializer):
     """Materializer for Bentoml Bento objects."""
 
     ASSOCIATED_TYPES = (bento.Bento,)
-    ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
 
     def load(self, data_type: Type[bento.Bento]) -> bento.Bento:
         """Read from artifact store and return a Bento object.
@@ -52,7 +52,7 @@ class BentoMaterializer(BaseMaterializer):
         temp_dir = tempfile.TemporaryDirectory()
 
         # Copy from artifact store to temporary directory
-        io_utils.copy_dir(self.artifact.uri, temp_dir.name)
+        io_utils.copy_dir(self.uri, temp_dir.name)
 
         # Load the Bento from the temporary directory
         imported_bento = Bento.import_from(
@@ -82,7 +82,7 @@ class BentoMaterializer(BaseMaterializer):
         bentoml.export_bento(bento.tag, temp_bento_path)
 
         # copy the saved image to the artifact store
-        io_utils.copy_dir(temp_dir.name, self.artifact.uri)
+        io_utils.copy_dir(temp_dir.name, self.uri)
 
         # Remove the temporary directory
         fileio.rmtree(temp_dir.name)

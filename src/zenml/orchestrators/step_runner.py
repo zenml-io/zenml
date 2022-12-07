@@ -18,11 +18,16 @@ import inspect
 from typing import TYPE_CHECKING, Any, Callable, Dict, Type
 
 from zenml.artifacts.base_artifact import BaseArtifact
+from zenml.client import Client
 from zenml.config.step_configurations import StepConfiguration
 from zenml.config.step_run_info import StepRunInfo
 from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.models.artifact_models import (
+    ArtifactRequestModel,
+    ArtifactResponseModel,
+)
 from zenml.orchestrators.publish_utils import (
     publish_output_artifacts,
     publish_successful_step_run,
@@ -66,15 +71,15 @@ class StepRunner:
 
     def run(
         self,
-        input_artifacts: Dict[str, BaseArtifact],
-        output_artifacts: Dict[str, BaseArtifact],
+        input_artifacts: Dict[str, "ArtifactResponseModel"],
+        output_artifact_uris: Dict[str, str],
         step_run_info: StepRunInfo,
     ) -> None:
         """Runs the step.
 
         Args:
             input_artifacts: The input artifacts of the step.
-            output_artifacts: The output artifacts of the step.
+            output_artifact_uris: The URIs of the output artifacts of the step.
             step_run_info: The step run info.
 
         Raises:
@@ -108,7 +113,7 @@ class StepRunner:
                 context = arg_type(
                     step_name=step_name,
                     output_materializers=output_materializers,
-                    output_artifacts=output_artifacts,
+                    output_artifacts=output_artifact_uris,
                 )
                 function_params[arg] = context
             else:
@@ -136,6 +141,7 @@ class StepRunner:
                     info=step_run_info, step_failed=step_failed
                 )
 
+        output_artifacts: Dict[str, ArtifactRequestModel] = {}
         output_annotations = parse_return_type_annotations(spec.annotations)
         if len(output_annotations) > 0:
             # if there is only one output annotation (either directly specified
@@ -162,6 +168,10 @@ class StepRunner:
                     f"(return values: {return_values})."
                 )
 
+            client = Client()
+            active_user_id = client.active_user.id
+            active_project_id = client.active_project.id
+
             for return_value, (output_name, output_type) in zip(
                 return_values, output_annotations.items()
             ):
@@ -177,12 +187,19 @@ class StepRunner:
                     output_name
                 ].materializer_source
 
-                self._store_output_artifact(
-                    materializer_class=materializer_class,
-                    materializer_source=materializer_source,
-                    artifact=output_artifacts[output_name],
-                    data=return_value,
+                uri = output_artifact_uris[output_name]
+                output_artifact = ArtifactRequestModel(
+                    name=output_name,
+                    type=materializer_class.ASSOCIATED_ARTIFACT_TYPE,
+                    uri=uri,
+                    materializer=materializer_source,
+                    data_type=source_utils.resolve_class(type(return_value)),
+                    user=active_user_id,
+                    project=active_project_id,
                 )
+                output_artifacts[output_name] = output_artifact
+
+                materializer_class(uri).save(return_value)
 
         output_artifact_ids = publish_output_artifacts(
             output_artifacts=output_artifacts
@@ -225,7 +242,7 @@ class StepRunner:
         return materializers
 
     def _load_input_artifact(
-        self, artifact: BaseArtifact, data_type: Type[Any]
+        self, artifact: "ArtifactResponseModel", data_type: Type[Any]
     ) -> Any:
         """Loads an input artifact.
 
@@ -235,49 +252,26 @@ class StepRunner:
 
         Returns:
             The artifact value.
-
-        Raises:
-            RuntimeError: If the artifact has no materializer.
         """
-        # Skip materialization for BaseArtifact and its subtypes.
-        if issubclass(data_type, BaseArtifact):
-            if data_type != type(artifact):
-                logger.warning(
-                    f"You specified the data_type `{data_type}` but the actual "
-                    f"artifact type from the previous step is "
-                    f"`{type(artifact)}`. Ignoring this for now, but please be "
-                    f"aware of this in your step code."
-                )
+        # Skip materialization for `ArtifactResponseModel` and its subtypes.
+        if issubclass(data_type, ArtifactResponseModel):
             return artifact
 
-        if not artifact.materializer:
-            raise RuntimeError(
-                f"Cannot load input artifact {artifact.name} because it has no "
-                "materializer."
+        # Skip materialization for `BaseArtifact` and its subtypes.
+        if issubclass(data_type, BaseArtifact):
+            logger.warning(
+                f"Skipping materialization by specifying a subclass of "
+                f"`BaseArtifact` as output data type is deprecated and will be "
+                f"removed in a future release. Please type your output as "
+                f"`zenml.models.ArtifactResponseModel` instead to skip "
+                f"materialization."
             )
+            return artifact
+
         materializer_class: Type[
             BaseMaterializer
         ] = source_utils.load_and_validate_class(
             artifact.materializer, expected_class=BaseMaterializer
         )
-        materializer = materializer_class(artifact)
+        materializer = materializer_class(artifact.uri)
         return materializer.load(data_type=data_type)
-
-    def _store_output_artifact(
-        self,
-        materializer_class: Type[BaseMaterializer],
-        materializer_source: str,
-        artifact: BaseArtifact,
-        data: Any,
-    ) -> None:
-        """Stores an output artifact.
-
-        Args:
-            materializer_class: The materializer class to store the artifact.
-            materializer_source: The source of the materializer class.
-            artifact: The artifact to store.
-            data: The data to store in the artifact.
-        """
-        artifact.materializer = materializer_source
-        artifact.data_type = source_utils.resolve_class(type(data))
-        materializer_class(artifact).save(data)

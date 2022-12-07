@@ -14,15 +14,12 @@
 """Metaclass implementation for registering ZenML BaseMaterializer subclasses."""
 
 import inspect
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type, cast
+from typing import Any, ClassVar, Dict, Optional, Tuple, Type, cast
 
-from zenml.logger import get_logger
-
-if TYPE_CHECKING:
-    from zenml.artifacts.base_artifact import BaseArtifact
-
-from zenml.artifacts.type_registry import type_registry
+from zenml.artifacts.base_artifact import BaseArtifact
+from zenml.enums import ArtifactType
 from zenml.exceptions import MaterializerInterfaceError
+from zenml.logger import get_logger
 from zenml.materializers.default_materializer_registry import (
     default_materializer_registry,
 )
@@ -55,61 +52,113 @@ class BaseMaterializerMeta(type):
         cls = cast(
             Type["BaseMaterializer"], super().__new__(mcs, name, bases, dct)
         )
-        if name != "BaseMaterializer":
-            from zenml.artifacts.base_artifact import BaseArtifact
 
-            if not cls.ASSOCIATED_TYPES:
+        # Skip the following validation and registration for the base class.
+        if name == "BaseMaterializer":
+            return cls
+
+        # Validate that the class is properly defined.
+        if not cls.ASSOCIATED_TYPES:
+            raise MaterializerInterfaceError(
+                f"Invalid materializer class '{name}'. When creating a "
+                f"custom materializer, make sure to specify at least one "
+                f"type in its ASSOCIATED_TYPES class variable.",
+                url="https://docs.zenml.io/advanced-guide/pipelines/materializers",
+            )
+
+        # Check if the deprecated ASSOCIATED_ARTIFACT_TYPES is used.
+        artifact_type: str = cls.ASSOCIATED_ARTIFACT_TYPE
+        if cls.ASSOCIATED_ARTIFACT_TYPES:
+            logger.warning(
+                "The ASSOCIATED_ARTIFACT_TYPES class variable is deprecated "
+                "and will be removed in a future release. Please use "
+                "ASSOCIATED_ARTIFACT_TYPE instead."
+            )
+            artifact_class = cls.ASSOCIATED_ARTIFACT_TYPES[0]
+            if not (
+                inspect.isclass(artifact_class)
+                and issubclass(artifact_class, BaseArtifact)
+            ):
                 raise MaterializerInterfaceError(
-                    f"Invalid materializer class '{name}'. When creating a "
-                    f"custom materializer, make sure to specify at least one "
-                    f"type in its ASSOCIATED_TYPES class variable.",
+                    f"ASSOCIATED_ARTIFACT_TYPES value '{artifact_class}' for "
+                    f"materializer '{name}' is not a `BaseArtifact` "
+                    f"subclass.",
+                    url="https://docs.zenml.io/advanced-guide/pipelines/materializers",
+                )
+            artifact_type = artifact_class.TYPE_NAME
+
+        # Validate associated artifact type.
+        is_invalid_artifact_type = True
+        if artifact_type:
+            try:
+                cls.ASSOCIATED_ARTIFACT_TYPE = ArtifactType(artifact_type)
+                is_invalid_artifact_type = False
+            except ValueError:
+                pass
+        if is_invalid_artifact_type:
+            raise MaterializerInterfaceError(
+                f"Invalid materializer class '{name}'. When creating a "
+                f"custom materializer, make sure to specify a valid "
+                f"artifact type in its ASSOCIATED_ARTIFACT_TYPE class "
+                f"variable.",
+                url="https://docs.zenml.io/advanced-guide/pipelines/materializers",
+            )
+
+        # Validate associated data types.
+        for associated_type in cls.ASSOCIATED_TYPES:
+            if not inspect.isclass(associated_type):
+                raise MaterializerInterfaceError(
+                    f"Associated type {associated_type} for materializer "
+                    f"{name} is not a class.",
                     url="https://docs.zenml.io/advanced-guide/pipelines/materializers",
                 )
 
-            for artifact_type in cls.ASSOCIATED_ARTIFACT_TYPES:
-                if not (
-                    inspect.isclass(artifact_type)
-                    and issubclass(artifact_type, BaseArtifact)
-                ):
-                    raise MaterializerInterfaceError(
-                        f"Associated artifact type {artifact_type} for "
-                        f"materializer {name} is not a `BaseArtifact` "
-                        f"subclass.",
-                        url="https://docs.zenml.io/advanced-guide/pipelines/materializers",
-                    )
+        # Register the materializer.
+        for associated_type in cls.ASSOCIATED_TYPES:
+            default_materializer_registry.register_materializer_type(
+                associated_type, cls
+            )
 
-            artifact_types = cls.ASSOCIATED_ARTIFACT_TYPES or (BaseArtifact,)
-            for associated_type in cls.ASSOCIATED_TYPES:
-                if not inspect.isclass(associated_type):
-                    raise MaterializerInterfaceError(
-                        f"Associated type {associated_type} for materializer "
-                        f"{name} is not a class.",
-                        url="https://docs.zenml.io/advanced-guide/pipelines/materializers",
-                    )
-
-                default_materializer_registry.register_materializer_type(
-                    associated_type, cls
-                )
-
-                type_registry.register_integration(
-                    associated_type, artifact_types
-                )
         return cls
 
 
 class BaseMaterializer(metaclass=BaseMaterializerMeta):
     """Base Materializer to realize artifact data."""
 
-    ASSOCIATED_ARTIFACT_TYPES: ClassVar[Tuple[Type["BaseArtifact"], ...]] = ()
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.BASE
     ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = ()
 
-    def __init__(self, artifact: "BaseArtifact"):
-        """Initializes a materializer with the given artifact.
+    # Deprecated; will be removed in a future release.
+    ASSOCIATED_ARTIFACT_TYPES: ClassVar[Tuple[Type["BaseArtifact"], ...]] = ()
+
+    def __init__(
+        self,
+        uri: Optional[str] = None,
+        artifact: Optional["BaseArtifact"] = None,
+    ):
+        """Initializes a materializer with the given URI.
 
         Args:
-            artifact: The artifact to materialize.
+            uri: The URI where the artifact data is stored.
+            artifact: Deprecated; will be removed in a future release.
         """
-        self.artifact = artifact
+        if isinstance(uri, BaseArtifact):
+            artifact = uri
+        if artifact:
+            logger.warning(
+                "Initializing a materializer with an artifact is deprecated "
+                "and will be removed in a future release. Please initialize "
+                "the materializer with the artifact's URI instead via "
+                "`materializer = MyMaterializer(uri=artifact.uri)`."
+            )
+            self.uri = artifact.uri
+        elif uri:
+            self.uri = uri
+        else:
+            raise ValueError(
+                "Initializing a materializer requires either a URI or an "
+                "artifact."
+            )
 
     def _can_handle_type(self, data_type: Type[Any]) -> bool:
         """Whether the materializer can read/write a certain type.

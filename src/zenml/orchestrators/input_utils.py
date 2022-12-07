@@ -16,7 +16,6 @@
 from typing import TYPE_CHECKING, Dict, List, Tuple
 from uuid import UUID
 
-from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.client import Client
 from zenml.config.step_configurations import Step
 from zenml.exceptions import InputResolutionError
@@ -72,27 +71,3 @@ def resolve_step_inputs(
     ]
 
     return input_artifacts, parent_step_ids
-
-
-def prepare_input_artifacts(
-    input_artifact_models: Dict[str, "ArtifactResponseModel"]
-) -> Dict[str, BaseArtifact]:
-    """Prepares the input artifacts to run the current step.
-
-    Args:
-        input_artifact_models: models of the input artifacts for the step.
-
-    Returns:
-        The input artifacts.
-    """
-    input_artifacts: Dict[str, BaseArtifact] = {}
-    for name, artifact_model in input_artifact_models.items():
-        artifact_ = BaseArtifact(
-            uri=artifact_model.uri,
-            materializer=artifact_model.materializer,
-            data_type=artifact_model.data_type,
-            name=name,
-        )
-        input_artifacts[name] = artifact_
-
-    return input_artifacts

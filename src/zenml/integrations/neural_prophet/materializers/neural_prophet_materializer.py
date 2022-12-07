@@ -19,7 +19,7 @@ from typing import Any, Type
 import torch
 from neuralprophet import NeuralProphet
 
-from zenml.artifacts import ModelArtifact
+from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 
@@ -35,7 +35,7 @@ class NeuralProphetMaterializer(BaseMaterializer):
     """Materializer to read/write NeuralProphet models."""
 
     ASSOCIATED_TYPES = (NeuralProphet,)
-    ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
 
     def load(self, data_type: Type[Any]) -> NeuralProphet:
         """Reads and returns a NeuralProphet model.
@@ -47,9 +47,7 @@ class NeuralProphetMaterializer(BaseMaterializer):
             A loaded NeuralProphet model.
         """
         super().load(data_type)
-        with fileio.open(
-            os.path.join(self.artifact.uri, DEFAULT_FILENAME), "rb"
-        ) as f:
+        with fileio.open(os.path.join(self.uri, DEFAULT_FILENAME), "rb") as f:
             return torch.load(f)
 
     def save(self, model: NeuralProphet) -> None:
@@ -59,7 +57,5 @@ class NeuralProphetMaterializer(BaseMaterializer):
             model: A NeuralProphet model object.
         """
         super().save(model)
-        with fileio.open(
-            os.path.join(self.artifact.uri, DEFAULT_FILENAME), "wb"
-        ) as f:
+        with fileio.open(os.path.join(self.uri, DEFAULT_FILENAME), "wb") as f:
             torch.save(model, f)

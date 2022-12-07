@@ -19,7 +19,7 @@ from typing import Any, Type, cast
 import torch
 from torch.nn import Module
 
-from zenml.artifacts import ModelArtifact
+from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 
@@ -35,7 +35,7 @@ class PyTorchModuleMaterializer(BaseMaterializer):
     """
 
     ASSOCIATED_TYPES = (Module,)
-    ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
 
     def load(self, data_type: Type[Any]) -> Module:
         """Reads and returns a PyTorch model.
@@ -49,9 +49,7 @@ class PyTorchModuleMaterializer(BaseMaterializer):
             A loaded pytorch model.
         """
         super().load(data_type)
-        with fileio.open(
-            os.path.join(self.artifact.uri, DEFAULT_FILENAME), "rb"
-        ) as f:
+        with fileio.open(os.path.join(self.uri, DEFAULT_FILENAME), "rb") as f:
             return cast(Module, torch.load(f))
 
     def save(self, model: Module) -> None:
@@ -64,15 +62,13 @@ class PyTorchModuleMaterializer(BaseMaterializer):
 
         # Save entire model to artifact directory, This is the default behavior
         # for loading model in development phase (training, evaluation)
-        with fileio.open(
-            os.path.join(self.artifact.uri, DEFAULT_FILENAME), "wb"
-        ) as f:
+        with fileio.open(os.path.join(self.uri, DEFAULT_FILENAME), "wb") as f:
             torch.save(model, f)
 
         # Also save model checkpoint to artifact directory,
         # This is the default behavior for loading model in production phase (inference)
         if isinstance(model, Module):
             with fileio.open(
-                os.path.join(self.artifact.uri, CHECKPOINT_FILENAME), "wb"
+                os.path.join(self.uri, CHECKPOINT_FILENAME), "wb"
             ) as f:
                 torch.save(model.state_dict(), f)

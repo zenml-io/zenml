@@ -17,7 +17,6 @@ from typing import List, Optional, cast
 
 from pydantic import BaseModel, validator
 
-from zenml.artifacts.model_artifact import ModelArtifact
 from zenml.client import Client
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.environment import Environment
@@ -36,6 +35,7 @@ from zenml.integrations.kserve.services.kserve_deployment import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.steps import (
     STEP_ENVIRONMENT_NAME,
     BaseParameters,
@@ -226,7 +226,7 @@ def kserve_model_deployer_step(
     deploy_decision: bool,
     params: KServeDeployerStepParameters,
     context: StepContext,
-    model: ModelArtifact,
+    model: ArtifactResponseModel,
 ) -> KServeDeploymentService:
     """KServe model deployer pipeline step.
 
@@ -331,7 +331,7 @@ def kserve_custom_model_deployer_step(
     deploy_decision: bool,
     params: KServeDeployerStepParameters,
     context: StepContext,
-    model: ModelArtifact,
+    model: ArtifactResponseModel,
 ) -> KServeDeploymentService:
     """KServe custom model deployer pipeline step.
 

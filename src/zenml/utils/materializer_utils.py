@@ -17,7 +17,6 @@ import os
 import tempfile
 from typing import TYPE_CHECKING, Any
 
-from zenml.artifacts.model_artifact import ModelArtifact
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -81,15 +80,9 @@ def load_model_from_metadata(model_uri: str) -> Any:
 
     data_type = metadata[METADATA_DATATYPE]
     materializer = metadata[METADATA_MATERIALIZER]
-
-    model_artifact = ModelArtifact(
-        uri=model_uri,
-        data_type=data_type,
-        materializer=materializer,
-    )
     materializer_class = source_utils.load_source_path_class(materializer)
     model_class = source_utils.load_source_path_class(data_type)
-    materializer_object: BaseMaterializer = materializer_class(model_artifact)
+    materializer_object: BaseMaterializer = materializer_class(model_uri)
     model = materializer_object.load(model_class)
     try:
         import torch.nn as nn
@@ -102,7 +95,7 @@ def load_model_from_metadata(model_uri: str) -> Any:
     return model
 
 
-def model_from_model_artifact(model_artifact: ModelArtifact) -> Any:
+def model_from_model_artifact(model_artifact: ArtifactResponseModel) -> Any:
     """Load model to memory from a model artifact.
 
     Args:

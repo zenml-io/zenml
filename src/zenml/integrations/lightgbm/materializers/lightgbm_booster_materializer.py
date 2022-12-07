@@ -19,7 +19,7 @@ from typing import Any, Type
 
 import lightgbm as lgb
 
-from zenml.artifacts import ModelArtifact
+from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 
@@ -30,7 +30,7 @@ class LightGBMBoosterMaterializer(BaseMaterializer):
     """Materializer to read data to and from lightgbm.Booster."""
 
     ASSOCIATED_TYPES = (lgb.Booster,)
-    ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
 
     def load(self, data_type: Type[Any]) -> lgb.Booster:
         """Reads a lightgbm Booster model from a serialized JSON file.
@@ -42,7 +42,7 @@ class LightGBMBoosterMaterializer(BaseMaterializer):
             A lightgbm Booster object.
         """
         super().load(data_type)
-        filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
+        filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
         # Create a temporary folder
         temp_dir = tempfile.mkdtemp(prefix="zenml-temp-")
@@ -64,7 +64,7 @@ class LightGBMBoosterMaterializer(BaseMaterializer):
         """
         super().save(booster)
 
-        filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
+        filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
         # Make a temporary phantom artifact
         with tempfile.NamedTemporaryFile(

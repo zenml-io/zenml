@@ -18,7 +18,7 @@ from typing import Any, Type
 
 from scipy.sparse import load_npz, save_npz, spmatrix
 
-from zenml.artifacts import DataArtifact
+from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 
@@ -29,7 +29,7 @@ class SparseMaterializer(BaseMaterializer):
     """Materializer to read and write scipy sparse matrices."""
 
     ASSOCIATED_TYPES = (spmatrix,)
-    ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
 
     def load(self, data_type: Type[Any]) -> spmatrix:
         """Reads spmatrix from npz file.
@@ -41,9 +41,7 @@ class SparseMaterializer(BaseMaterializer):
             A spmatrix object.
         """
         super().load(data_type)
-        with fileio.open(
-            os.path.join(self.artifact.uri, DATA_FILENAME), "rb"
-        ) as f:
+        with fileio.open(os.path.join(self.uri, DATA_FILENAME), "rb") as f:
             mat = load_npz(f)
         return mat
 
@@ -54,7 +52,5 @@ class SparseMaterializer(BaseMaterializer):
             mat: The spmatrix to write.
         """
         super().save(mat)
-        with fileio.open(
-            os.path.join(self.artifact.uri, DATA_FILENAME), "wb"
-        ) as f:
+        with fileio.open(os.path.join(self.uri, DATA_FILENAME), "wb") as f:
             save_npz(f, mat)

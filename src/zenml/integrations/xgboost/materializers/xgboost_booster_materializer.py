@@ -19,7 +19,7 @@ from typing import Any, Type
 
 import xgboost as xgb
 
-from zenml.artifacts import ModelArtifact
+from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 
@@ -30,7 +30,7 @@ class XgboostBoosterMaterializer(BaseMaterializer):
     """Materializer to read data to and from xgboost.Booster."""
 
     ASSOCIATED_TYPES = (xgb.Booster,)
-    ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
 
     def load(self, data_type: Type[Any]) -> xgb.Booster:
         """Reads a xgboost Booster model from a serialized JSON file.
@@ -42,7 +42,7 @@ class XgboostBoosterMaterializer(BaseMaterializer):
             A xgboost Booster object.
         """
         super().load(data_type)
-        filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
+        filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
         # Create a temporary folder
         temp_dir = tempfile.mkdtemp(prefix="zenml-temp-")
@@ -65,7 +65,7 @@ class XgboostBoosterMaterializer(BaseMaterializer):
         """
         super().save(booster)
 
-        filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
+        filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
         # Make a temporary phantom artifact
         with tempfile.NamedTemporaryFile(

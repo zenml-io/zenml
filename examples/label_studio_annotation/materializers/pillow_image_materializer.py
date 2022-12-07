@@ -27,7 +27,7 @@ class PillowImageMaterializer(BaseMaterializer):
         """Read from artifact store"""
         super().load(data_type)
         temp_dir = tempfile.TemporaryDirectory()
-        io_utils.copy_dir(self.artifact.uri, temp_dir.name)
+        io_utils.copy_dir(self.uri, temp_dir.name)
 
         files = [
             f"{temp_dir.name}/{filename}"
@@ -49,5 +49,5 @@ class PillowImageMaterializer(BaseMaterializer):
         temp_dir = tempfile.TemporaryDirectory()
         for image_name, img in images.items():
             img.save(os.path.join(temp_dir.name, image_name))
-        io_utils.copy_dir(temp_dir.name, self.artifact.uri)
+        io_utils.copy_dir(temp_dir.name, self.uri)
         fileio.rmtree(temp_dir.name)

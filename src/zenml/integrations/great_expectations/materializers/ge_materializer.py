@@ -31,7 +31,7 @@ from great_expectations.data_context.types.resource_identifiers import (  # type
 )
 from great_expectations.types import SerializableDictDot  # type: ignore[import]
 
-from zenml.artifacts import DataAnalysisArtifact
+from zenml.enums import ArtifactType
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import yaml_utils
 from zenml.utils.source_utils import import_class_by_path
@@ -46,7 +46,7 @@ class GreatExpectationsMaterializer(BaseMaterializer):
         ExpectationSuite,
         CheckpointResult,
     )
-    ASSOCIATED_ARTIFACT_TYPES = (DataAnalysisArtifact,)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATAANALYSIS
 
     @staticmethod
     def preprocess_checkpoint_result_dict(
@@ -95,7 +95,7 @@ class GreatExpectationsMaterializer(BaseMaterializer):
             A loaded Great Expectations object.
         """
         super().load(data_type)
-        filepath = os.path.join(self.artifact.uri, ARTIFACT_FILENAME)
+        filepath = os.path.join(self.uri, ARTIFACT_FILENAME)
         artifact_dict = yaml_utils.read_json(filepath)
         data_type = import_class_by_path(artifact_dict.pop("data_type"))
 
@@ -111,7 +111,7 @@ class GreatExpectationsMaterializer(BaseMaterializer):
             obj: A Great Expectations object.
         """
         super().save(obj)
-        filepath = os.path.join(self.artifact.uri, ARTIFACT_FILENAME)
+        filepath = os.path.join(self.uri, ARTIFACT_FILENAME)
         artifact_dict = obj.to_json_dict()
         artifact_type = type(obj)
         artifact_dict[

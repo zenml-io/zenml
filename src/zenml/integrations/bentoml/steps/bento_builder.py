@@ -20,9 +20,9 @@ import bentoml
 from bentoml import bentos
 from bentoml._internal.bento import bento
 
-from zenml.artifacts.model_artifact import ModelArtifact
 from zenml.integrations.bentoml.constants import DEFAULT_BENTO_FILENAME
 from zenml.logger import get_logger
+from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.steps import BaseParameters, step
 from zenml.steps.step_context import StepContext
 from zenml.utils import source_utils
@@ -62,7 +62,7 @@ class BentoMLBuilderParameters(BaseParameters):
 
 @step
 def bento_builder_step(
-    model: ModelArtifact,
+    model: ArtifactResponseModel,
     params: BentoMLBuilderParameters,
     context: StepContext,
 ) -> bento.Bento:

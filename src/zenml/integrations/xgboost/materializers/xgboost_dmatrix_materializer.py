@@ -19,7 +19,7 @@ from typing import Any, Type
 
 import xgboost as xgb
 
-from zenml.artifacts import DataArtifact
+from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 
@@ -30,7 +30,7 @@ class XgboostDMatrixMaterializer(BaseMaterializer):
     """Materializer to read data to and from xgboost.DMatrix."""
 
     ASSOCIATED_TYPES = (xgb.DMatrix,)
-    ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
 
     def load(self, data_type: Type[Any]) -> xgb.DMatrix:
         """Reads a xgboost.DMatrix binary file and loads it.
@@ -42,7 +42,7 @@ class XgboostDMatrixMaterializer(BaseMaterializer):
             Materialized xgboost matrix.
         """
         super().load(data_type)
-        filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
+        filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
         # Create a temporary folder
         temp_dir = tempfile.mkdtemp(prefix="zenml-temp-")
@@ -63,7 +63,7 @@ class XgboostDMatrixMaterializer(BaseMaterializer):
             matrix: A xgboost.DMatrix object.
         """
         super().save(matrix)
-        filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
+        filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
         # Make a temporary phantom artifact
         with tempfile.NamedTemporaryFile(mode="wb", delete=False) as f:

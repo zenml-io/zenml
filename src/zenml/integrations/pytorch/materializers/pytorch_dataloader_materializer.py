@@ -19,7 +19,7 @@ from typing import Any, Type, cast
 import torch
 from torch.utils.data.dataloader import DataLoader
 
-from zenml.artifacts import DataArtifact
+from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 
@@ -31,7 +31,7 @@ class PyTorchDataLoaderMaterializer(BaseMaterializer):
     """Materializer to read/write PyTorch dataloaders."""
 
     ASSOCIATED_TYPES = (DataLoader,)
-    ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
 
     def load(self, data_type: Type[Any]) -> DataLoader[Any]:
         """Reads and returns a PyTorch dataloader.
@@ -43,9 +43,7 @@ class PyTorchDataLoaderMaterializer(BaseMaterializer):
             A loaded PyTorch dataloader.
         """
         super().load(data_type)
-        with fileio.open(
-            os.path.join(self.artifact.uri, DEFAULT_FILENAME), "rb"
-        ) as f:
+        with fileio.open(os.path.join(self.uri, DEFAULT_FILENAME), "rb") as f:
             return cast(DataLoader[Any], torch.load(f))
 
     def save(self, dataloader: DataLoader[Any]) -> None:
@@ -57,7 +55,5 @@ class PyTorchDataLoaderMaterializer(BaseMaterializer):
         super().save(dataloader)
 
         # Save entire dataloader to artifact directory
-        with fileio.open(
-            os.path.join(self.artifact.uri, DEFAULT_FILENAME), "wb"
-        ) as f:
+        with fileio.open(os.path.join(self.uri, DEFAULT_FILENAME), "wb") as f:
             torch.save(dataloader, f)

@@ -26,14 +26,12 @@ if TYPE_CHECKING:
 class PartialArtifactConfiguration(StrictBaseModel):
     """Class representing a partial input/output artifact configuration."""
 
-    artifact_source: Optional[str] = None
     materializer_source: Optional[str] = None
 
 
 class ArtifactConfiguration(PartialArtifactConfiguration):
     """Class representing a complete input/output artifact configuration."""
 
-    artifact_source: str
     materializer_source: str
 
 

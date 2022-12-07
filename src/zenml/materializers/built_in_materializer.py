@@ -16,8 +16,7 @@
 import os
 from typing import Any, Iterable, Type
 
-from zenml.artifacts import DataAnalysisArtifact, DataArtifact
-from zenml.artifacts.base_artifact import BaseArtifact
+from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -36,20 +35,17 @@ BASIC_TYPES = (bool, float, int, str)  # complex/bytes are not JSON serializable
 class BuiltInMaterializer(BaseMaterializer):
     """Handle JSON-serializable basic types (`bool`, `float`, `int`, `str`)."""
 
-    ASSOCIATED_ARTIFACT_TYPES = (
-        DataArtifact,
-        DataAnalysisArtifact,
-    )
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
     ASSOCIATED_TYPES = BASIC_TYPES
 
-    def __init__(self, artifact: "BaseArtifact"):
+    def __init__(self, uri: str):
         """Define `self.data_path`.
 
         Args:
-            artifact: Artifact required by `BaseMaterializer.__init__()`.
+            uri: The URI where the artifact data is stored.
         """
-        super().__init__(artifact)
-        self.data_path = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
+        super().__init__(uri)
+        self.data_path = os.path.join(self.uri, DEFAULT_FILENAME)
 
     def load(self, data_type: Type[Any]) -> Any:
         """Reads basic primitive types from JSON.
@@ -83,17 +79,17 @@ class BuiltInMaterializer(BaseMaterializer):
 class BytesMaterializer(BaseMaterializer):
     """Handle `bytes` data type, which is not JSON serializable."""
 
-    ASSOCIATED_ARTIFACT_TYPES = (DataArtifact, DataAnalysisArtifact)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
     ASSOCIATED_TYPES = (bytes,)
 
-    def __init__(self, artifact: "BaseArtifact"):
+    def __init__(self, uri: str):
         """Define `self.data_path`.
 
         Args:
-            artifact: Artifact required by `BaseMaterializer.__init__()`.
+            uri: The URI where the artifact data is stored.
         """
-        super().__init__(artifact)
-        self.data_path = os.path.join(self.artifact.uri, DEFAULT_BYTES_FILENAME)
+        super().__init__(uri)
+        self.data_path = os.path.join(self.uri, DEFAULT_BYTES_FILENAME)
 
     def load(self, data_type: Type[Any]) -> Any:
         """Reads a bytes object from file.
@@ -216,17 +212,15 @@ class BuiltInContainerMaterializer(BaseMaterializer):
 
     ASSOCIATED_TYPES = (dict, list, set, tuple)
 
-    def __init__(self, artifact: "BaseArtifact"):
+    def __init__(self, uri: str):
         """Define `self.data_path` and `self.metadata_path`.
 
         Args:
-            artifact: Artifact required by `BaseMaterializer.__init__()`.
+            uri: The URI where the artifact data is stored.
         """
-        super().__init__(artifact)
-        self.data_path = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
-        self.metadata_path = os.path.join(
-            self.artifact.uri, DEFAULT_METADATA_FILENAME
-        )
+        super().__init__(uri)
+        self.data_path = os.path.join(self.uri, DEFAULT_FILENAME)
+        self.metadata_path = os.path.join(self.uri, DEFAULT_METADATA_FILENAME)
 
     def load(self, data_type: Type[Any]) -> Any:
         """Reads a materialized built-in container object.
@@ -236,8 +230,7 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         Otherwise, reconstruct all elements according to the metadata file:
             1. Resolve the data type using `find_type_by_str()`,
             2. Get the materializer via the `default_materializer_registry`,
-            3. Initialize the materializer with a mock `DataArtifact`, whose
-                `uri` attribute is overwritten to point to the desired path,
+            3. Initialize the materializer with the desired path,
             4. Use `load()` of that materializer to load the element.
 
         Args:
@@ -271,8 +264,7 @@ class BuiltInContainerMaterializer(BaseMaterializer):
             for path_, type_str in zip(metadata["paths"], metadata["types"]):
                 type_ = find_type_by_str(type_str)
                 materializer_class = default_materializer_registry[type_]
-                mock_artifact = DataArtifact(uri=path_)
-                materializer = materializer_class(mock_artifact)
+                materializer = materializer_class(uri=path_)
                 element = materializer.load(type_)
                 outputs.append(element)
 
@@ -324,15 +316,13 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         # Get path, type, and corresponding materializer for each element.
         paths, types, materializers = [], [], []
         for i, element in enumerate(data):
-            element_path = os.path.join(self.artifact.uri, str(i))
+            element_path = os.path.join(self.uri, str(i))
             fileio.mkdir(element_path)
             type_ = find_materializer_registry_type(type(element))
             paths.append(element_path)
             types.append(str(type_))
             materializer_class = default_materializer_registry[type_]
-            mock_artifact = DataArtifact(uri=element_path)
-            mock_artifact.uri = element_path
-            materializer = materializer_class(mock_artifact)
+            materializer = materializer_class(uri=element_path)
             materializers.append(materializer)
         try:
             # Write metadata as JSON.

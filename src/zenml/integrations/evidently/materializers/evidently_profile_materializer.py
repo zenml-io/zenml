@@ -19,7 +19,7 @@ from typing import Any, Type
 from evidently.model_profile import Profile  # type: ignore
 from evidently.utils import NumpyEncoder  # type: ignore
 
-from zenml.artifacts import DataAnalysisArtifact
+from zenml.enums import ArtifactType
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import yaml_utils
@@ -34,7 +34,7 @@ class EvidentlyProfileMaterializer(BaseMaterializer):
     """Materializer to read data to and from an Evidently Profile."""
 
     ASSOCIATED_TYPES = (Profile,)
-    ASSOCIATED_ARTIFACT_TYPES = (DataAnalysisArtifact,)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATAANALYSIS
 
     def load(self, data_type: Type[Any]) -> Profile:
         """Reads an Evidently Profile object from a json file.
@@ -49,7 +49,7 @@ class EvidentlyProfileMaterializer(BaseMaterializer):
             TypeError: if the json file contains an invalid data type.
         """
         super().load(data_type)
-        filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
+        filepath = os.path.join(self.uri, DEFAULT_FILENAME)
         contents = yaml_utils.read_json(filepath)
         if type(contents) != dict:
             raise TypeError(
@@ -82,5 +82,5 @@ class EvidentlyProfileMaterializer(BaseMaterializer):
             resolve_class(stage.__class__) for stage in data.stages
         ]
 
-        filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
+        filepath = os.path.join(self.uri, DEFAULT_FILENAME)
         yaml_utils.write_json(filepath, contents, encoder=NumpyEncoder)

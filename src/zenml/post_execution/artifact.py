@@ -163,10 +163,7 @@ class ArtifactView:
             self.uri,
         )
 
-        # TODO [ENG-162]: passing in `self` to initialize the materializer only
-        #  works because materializers only require a `.uri` property at the
-        #  moment.
-        materializer = materializer_class(self)  # type: ignore[arg-type]
+        materializer = materializer_class(self.uri)
         return materializer.load(output_data_type)
 
     def __repr__(self) -> str:

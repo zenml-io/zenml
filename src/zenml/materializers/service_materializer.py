@@ -16,7 +16,7 @@
 import os
 from typing import Any, Type
 
-from zenml.artifacts import ServiceArtifact
+from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.services.service import BaseService
@@ -29,7 +29,7 @@ class ServiceMaterializer(BaseMaterializer):
     """Materializer to read/write service instances."""
 
     ASSOCIATED_TYPES = (BaseService,)
-    ASSOCIATED_ARTIFACT_TYPES = (ServiceArtifact,)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.SERVICE
 
     def load(self, data_type: Type[Any]) -> BaseService:
         """Creates and returns a service.
@@ -44,7 +44,7 @@ class ServiceMaterializer(BaseMaterializer):
             A ZenML service instance.
         """
         super().load(data_type)
-        filepath = os.path.join(self.artifact.uri, SERVICE_CONFIG_FILENAME)
+        filepath = os.path.join(self.uri, SERVICE_CONFIG_FILENAME)
         with fileio.open(filepath, "r") as f:
             service = ServiceRegistry().load_service_from_json(f.read())
         return service
@@ -59,6 +59,6 @@ class ServiceMaterializer(BaseMaterializer):
             service: A ZenML service instance.
         """
         super().save(service)
-        filepath = os.path.join(self.artifact.uri, SERVICE_CONFIG_FILENAME)
+        filepath = os.path.join(self.uri, SERVICE_CONFIG_FILENAME)
         with fileio.open(filepath, "w") as f:
             f.write(service.json(indent=4))

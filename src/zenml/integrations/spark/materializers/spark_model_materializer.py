@@ -18,7 +18,7 @@ from typing import Any, Type, Union
 
 from pyspark.ml import Estimator, Model, Transformer
 
-from zenml.artifacts.model_artifact import ModelArtifact
+from zenml.enums import ArtifactType
 from zenml.materializers.base_materializer import BaseMaterializer
 
 DEFAULT_FILEPATH = "model"
@@ -28,7 +28,7 @@ class SparkModelMaterializer(BaseMaterializer):
     """Materializer to read/write Spark models."""
 
     ASSOCIATED_TYPES = (Transformer, Estimator, Model)
-    ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
 
     def load(
         self, model_type: Type[Any]
@@ -42,7 +42,7 @@ class SparkModelMaterializer(BaseMaterializer):
             A loaded spark model.
         """
         super().load(model_type)
-        path = os.path.join(self.artifact.uri, DEFAULT_FILEPATH)
+        path = os.path.join(self.uri, DEFAULT_FILEPATH)
         return model_type.load(path)  # type: ignore[no-any-return]
 
     def save(
@@ -56,5 +56,5 @@ class SparkModelMaterializer(BaseMaterializer):
         super().save(model)
 
         # Write the dataframe to the artifact store
-        path = os.path.join(self.artifact.uri, DEFAULT_FILEPATH)
+        path = os.path.join(self.uri, DEFAULT_FILEPATH)
         model.save(path)  # type: ignore[union-attr]

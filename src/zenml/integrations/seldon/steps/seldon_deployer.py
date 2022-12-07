@@ -18,7 +18,6 @@ from typing import Optional, cast
 
 from pydantic import BaseModel, validator
 
-from zenml.artifacts.model_artifact import ModelArtifact
 from zenml.client import Client
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.environment import Environment
@@ -40,6 +39,7 @@ from zenml.integrations.seldon.services.seldon_deployment import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.steps import (
     STEP_ENVIRONMENT_NAME,
     BaseParameters,
@@ -115,7 +115,7 @@ def seldon_model_deployer_step(
     deploy_decision: bool,
     params: SeldonDeployerStepParameters,
     context: StepContext,
-    model: ModelArtifact,
+    model: ArtifactResponseModel,
 ) -> SeldonDeploymentService:
     """Seldon Core model deployer pipeline step.
 
@@ -255,7 +255,7 @@ def seldon_custom_model_deployer_step(
     deploy_decision: bool,
     params: SeldonDeployerStepParameters,
     context: StepContext,
-    model: ModelArtifact,
+    model: ArtifactResponseModel,
 ) -> SeldonDeploymentService:
     """Seldon Core custom model deployer pipeline step.
 

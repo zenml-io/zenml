@@ -18,8 +18,7 @@ from typing import Any, Type, Union
 
 import pandas as pd
 
-from zenml.artifacts import DataArtifact, SchemaArtifact, StatisticsArtifact
-from zenml.artifacts.base_artifact import BaseArtifact
+from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -36,19 +35,15 @@ class PandasMaterializer(BaseMaterializer):
     """Materializer to read data to and from pandas."""
 
     ASSOCIATED_TYPES = (pd.DataFrame, pd.Series)
-    ASSOCIATED_ARTIFACT_TYPES = (
-        DataArtifact,
-        StatisticsArtifact,
-        SchemaArtifact,
-    )
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
 
-    def __init__(self, artifact: "BaseArtifact"):
+    def __init__(self, uri: str):
         """Define `self.data_path`.
 
         Args:
-            artifact: Artifact required by `BaseMaterializer.__init__()`.
+            uri: The URI where the artifact data is stored.
         """
-        super().__init__(artifact)
+        super().__init__(uri)
         try:
             import pyarrow  # type: ignore
 
@@ -63,10 +58,8 @@ class PandasMaterializer(BaseMaterializer):
                 "to automatically store the data as a `.parquet` file instead."
             )
         finally:
-            self.parquet_path = os.path.join(
-                self.artifact.uri, PARQUET_FILENAME
-            )
-            self.csv_path = os.path.join(self.artifact.uri, CSV_FILENAME)
+            self.parquet_path = os.path.join(self.uri, PARQUET_FILENAME)
+            self.csv_path = os.path.join(self.uri, CSV_FILENAME)
 
     def load(self, data_type: Type[Any]) -> Union[pd.DataFrame, pd.Series]:
         """Reads `pd.DataFrame` or `pd.Series` from a `.parquet` or `.csv` file.

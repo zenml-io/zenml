@@ -19,7 +19,7 @@ from typing import Type
 
 from PIL import Image
 
-from zenml.artifacts import DataArtifact
+from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -40,7 +40,7 @@ class PillowImageMaterializer(BaseMaterializer):
     """
 
     ASSOCIATED_TYPES = (Image.Image,)
-    ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
 
     def load(self, data_type: Type[Image.Image]) -> Image.Image:
         """Read from artifact store.
@@ -52,9 +52,7 @@ class PillowImageMaterializer(BaseMaterializer):
             An Image.Image object.
         """
         super().load(data_type)
-        files = io_utils.find_files(
-            self.artifact.uri, f"{DEFAULT_IMAGE_FILENAME}.*"
-        )
+        files = io_utils.find_files(self.uri, f"{DEFAULT_IMAGE_FILENAME}.*")
         filepath = [file for file in files if not fileio.isdir(file)][0]
 
         # # FAILING OPTION 1: temporary directory
@@ -86,6 +84,6 @@ class PillowImageMaterializer(BaseMaterializer):
         image.save(temp_image_path)
 
         # copy the saved image to the artifact store
-        artifact_store_path = os.path.join(self.artifact.uri, full_filename)
+        artifact_store_path = os.path.join(self.uri, full_filename)
         io_utils.copy(temp_image_path, artifact_store_path, overwrite=True)  # type: ignore[attr-defined]
         temp_dir.cleanup()

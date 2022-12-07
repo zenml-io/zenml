@@ -18,7 +18,7 @@ from typing import Any, Type
 
 from tensorflow import keras
 
-from zenml.artifacts import ModelArtifact
+from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import io_utils
@@ -28,7 +28,7 @@ class KerasMaterializer(BaseMaterializer):
     """Materializer to read/write Keras models."""
 
     ASSOCIATED_TYPES = (keras.Model,)
-    ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
 
     def load(self, data_type: Type[Any]) -> keras.Model:
         """Reads and returns a Keras model after copying it to temporary path.
@@ -45,7 +45,7 @@ class KerasMaterializer(BaseMaterializer):
         temp_dir = tempfile.TemporaryDirectory()
 
         # Copy from artifact store to temporary directory
-        io_utils.copy_dir(self.artifact.uri, temp_dir.name)
+        io_utils.copy_dir(self.uri, temp_dir.name)
 
         # Load the model from the temporary directory
         model = keras.models.load_model(temp_dir.name)
@@ -66,7 +66,7 @@ class KerasMaterializer(BaseMaterializer):
         # Create a temporary directory to store the model
         temp_dir = tempfile.TemporaryDirectory()
         model.save(temp_dir.name)
-        io_utils.copy_dir(temp_dir.name, self.artifact.uri)
+        io_utils.copy_dir(temp_dir.name, self.uri)
 
         # Remove the temporary directory
         fileio.rmtree(temp_dir.name)

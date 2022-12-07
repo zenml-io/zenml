@@ -20,7 +20,7 @@ from typing import Any, Type, Union
 from deepchecks.core.check_result import CheckResult
 from deepchecks.core.suite import SuiteResult
 
-from zenml.artifacts import DataAnalysisArtifact
+from zenml.enums import ArtifactType
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import io_utils
 
@@ -34,7 +34,7 @@ class DeepchecksResultMaterializer(BaseMaterializer):
         CheckResult,
         SuiteResult,
     )
-    ASSOCIATED_ARTIFACT_TYPES = (DataAnalysisArtifact,)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATAANALYSIS
 
     def load(self, data_type: Type[Any]) -> Union[CheckResult, SuiteResult]:
         """Reads a Deepchecks check or suite result from a serialized JSON file.
@@ -49,7 +49,7 @@ class DeepchecksResultMaterializer(BaseMaterializer):
             RuntimeError: if the input data type is not supported.
         """
         super().load(data_type)
-        filepath = os.path.join(self.artifact.uri, RESULTS_FILENAME)
+        filepath = os.path.join(self.uri, RESULTS_FILENAME)
 
         json_res = io_utils.read_file_contents_as_string(filepath)
         if data_type == SuiteResult:
@@ -68,7 +68,7 @@ class DeepchecksResultMaterializer(BaseMaterializer):
         """
         super().save(result)
 
-        filepath = os.path.join(self.artifact.uri, RESULTS_FILENAME)
+        filepath = os.path.join(self.uri, RESULTS_FILENAME)
 
         serialized_json = result.to_json(True)
         io_utils.write_file_contents_as_string(filepath, serialized_json)

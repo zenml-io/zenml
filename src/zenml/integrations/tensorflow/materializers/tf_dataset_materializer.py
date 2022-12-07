@@ -19,7 +19,7 @@ from typing import Any, Type
 
 import tensorflow as tf
 
-from zenml.artifacts import DataArtifact
+from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import io_utils
@@ -31,7 +31,7 @@ class TensorflowDatasetMaterializer(BaseMaterializer):
     """Materializer to read data to and from tf.data.Dataset."""
 
     ASSOCIATED_TYPES = (tf.data.Dataset,)
-    ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
 
     def load(self, data_type: Type[Any]) -> Any:
         """Reads data into tf.data.Dataset.
@@ -44,7 +44,7 @@ class TensorflowDatasetMaterializer(BaseMaterializer):
         """
         super().load(data_type)
         temp_dir = tempfile.mkdtemp()
-        io_utils.copy_dir(self.artifact.uri, temp_dir)
+        io_utils.copy_dir(self.uri, temp_dir)
         path = os.path.join(temp_dir, DEFAULT_FILENAME)
         dataset = tf.data.experimental.load(path)
         # Don't delete the temporary directory here as the dataset is lazily
@@ -64,6 +64,6 @@ class TensorflowDatasetMaterializer(BaseMaterializer):
             tf.data.experimental.save(
                 dataset, path, compression=None, shard_func=None
             )
-            io_utils.copy_dir(temp_dir.name, self.artifact.uri)
+            io_utils.copy_dir(temp_dir.name, self.uri)
         finally:
             fileio.rmtree(temp_dir.name)
