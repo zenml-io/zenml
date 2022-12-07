@@ -14,7 +14,7 @@
 import os
 from typing import Type
 
-from zenml.artifacts import DataArtifact
+from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.pipelines import pipeline
@@ -28,7 +28,7 @@ class SomeObj:
 
 class SomeMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (SomeObj,)
-    ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
 
     def load(self, data_type: Type[SomeObj]) -> SomeObj:
         super().load(data_type)

@@ -16,7 +16,6 @@ import os
 from tempfile import TemporaryDirectory
 from typing import Any, Callable, Optional, Type
 
-from zenml.artifacts.data_artifact import DataArtifact
 from zenml.constants import ENV_ZENML_DEBUG
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.default_materializer_registry import (
@@ -62,8 +61,7 @@ def _test_materializer(
         materializer_class = default_materializer_registry[step_output_type]
 
     with TemporaryDirectory() as artifact_uri:
-        mock_artifact = DataArtifact(uri=artifact_uri)
-        materializer = materializer_class(mock_artifact)
+        materializer = materializer_class(uri=artifact_uri)
         existing_files = os.listdir(artifact_uri)
         materializer.save(step_output)
         new_files = os.listdir(artifact_uri)

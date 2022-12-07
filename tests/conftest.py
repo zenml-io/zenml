@@ -30,7 +30,6 @@ from zenml.artifact_stores.local_artifact_store import (
     LocalArtifactStore,
     LocalArtifactStoreConfig,
 )
-from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.step_configurations import Step
@@ -621,19 +620,19 @@ def step_with_two_int_inputs():
 @pytest.fixture
 def step_context_with_no_output():
     return StepContext(
-        step_name="", output_materializers={}, output_artifacts={}
+        step_name="", output_materializers={}, output_artifact_uris={}
     )
 
 
 @pytest.fixture
 def step_context_with_single_output():
     materializers = {"output_1": BaseMaterializer}
-    artifacts = {"output_1": BaseArtifact(uri="")}
+    artifact_uris = {"output_1": ""}
 
     return StepContext(
         step_name="",
         output_materializers=materializers,
-        output_artifacts=artifacts,
+        output_artifact_uris=artifact_uris,
     )
 
 
@@ -643,15 +642,15 @@ def step_context_with_two_outputs():
         "output_1": BaseMaterializer,
         "output_2": BaseMaterializer,
     }
-    artifacts = {
-        "output_1": BaseArtifact(uri=""),
-        "output_2": BaseArtifact(uri=""),
+    artifact_uris = {
+        "output_1": "",
+        "output_2": "",
     }
 
     return StepContext(
         step_name="",
         output_materializers=materializers,
-        output_artifacts=artifacts,
+        output_artifact_uris=artifact_uris,
     )
 
 
