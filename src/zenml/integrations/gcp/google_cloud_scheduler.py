@@ -49,7 +49,7 @@ def create_scheduler_job(
         http_uri: HTTP URI of the cloud function to call.
         body: The body of values to send to the cloud function in the POST call.
         schedule: Cron expression of the schedule. Defaults to "* * * * *".
-        time_zone: Time zone of the schedule. Defaults to "America/Los_Angeles".
+        time_zone: Time zone of the schedule. Defaults to "Etc/UTC".
         credentials: Credentials to use for GCP services.
     """
     # Create a client.
