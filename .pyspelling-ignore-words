@@ -360,6 +360,7 @@ Keras
 KeyError
 Knative
 Kubeflow
+Kubeflow's
 KubeflowMetadataStore
 KubeflowOrchestrator
 Kubernetes
@@ -476,6 +477,7 @@ OpFunc
 OpenAPI
 OpenApi
 OpenML
+OperationalError
 Orchestrators
 PID
 PIL
@@ -1561,4 +1563,3 @@ zenmlexample
 zenmlregistry
 zenmlserver
 zenserver
-Kubeflow's
