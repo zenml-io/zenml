@@ -150,19 +150,6 @@ def up(
             `--docker` flag is set.
     """
     # flake8: noqa: C901
-
-    import importlib
-    required_modules = ['fastapi', 'uvicorn', 'python-multipart', 'python-jose', 'fastapi-utils']
-    for module in required_modules:
-        try:
-            importlib.import_module(module)
-        except ModuleNotFoundError as e:
-            cli_utils.error(f"{e}. "
-                            "Dependencies for ZenML Server not installed correctly. "
-                            "Please install by running `pip install zenml[server]` "
-                            "and rerun `zenml up`")
-
-
     from zenml.zen_server.deploy.deployer import ServerDeployer
     from zenml.zen_stores.sql_zen_store import SQLDatabaseDriver
 
