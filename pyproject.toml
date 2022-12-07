@@ -234,6 +234,7 @@ module = [
     "dash_cytoscape",
     "dash.dependencies",
     "docker.*",
+    "flask.*",
     "kfp.*",
     "kubernetes.*",
     "kserve.*",
