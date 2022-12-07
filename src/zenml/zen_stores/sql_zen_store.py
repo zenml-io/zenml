@@ -20,7 +20,6 @@ import math
 import os
 import re
 from contextvars import ContextVar
-from datetime import datetime, timedelta
 from pathlib import Path, PurePath
 from typing import (
     Any,
@@ -42,7 +41,6 @@ from sqlalchemy import text, func
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import ArgumentError, NoResultFound, OperationalError
 from sqlalchemy.orm import noload
-from sqlalchemy.sql.operators import is_, isnot
 from sqlmodel import Session, create_engine, or_, select
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
@@ -68,25 +66,30 @@ from zenml.exceptions import (
 from zenml.io import fileio
 from zenml.logger import get_console_handler, get_logger, get_logging_level
 from zenml.models import (
+    ArtifactFilterModel,
     ArtifactRequestModel,
     ArtifactResponseModel,
+    ComponentFilterModel,
     ComponentRequestModel,
     ComponentResponseModel,
     ComponentUpdateModel,
     FilterBaseModel,
+    FlavorFilterModel,
     FlavorRequestModel,
     FlavorResponseModel,
+    PipelineFilterModel,
     PipelineRequestModel,
     PipelineResponseModel,
+    PipelineRunFilterModel,
     PipelineRunRequestModel,
     PipelineRunResponseModel,
     PipelineRunUpdateModel,
     PipelineUpdateModel,
+    ProjectFilterModel,
     ProjectRequestModel,
     ProjectResponseModel,
     ProjectUpdateModel,
-    UserRoleAssignmentRequestModel,
-    UserRoleAssignmentResponseModel,
+    RoleFilterModel,
     RoleRequestModel,
     RoleResponseModel,
     RoleUpdateModel,
@@ -94,6 +97,7 @@ from zenml.models import (
     StackRequestModel,
     StackResponseModel,
     StackUpdateModel,
+    StepRunFilterModel,
     StepRunRequestModel,
     StepRunResponseModel,
     StepRunUpdateModel,
@@ -104,9 +108,10 @@ from zenml.models import (
     UserFilterModel,
     UserRequestModel,
     UserResponseModel,
-    UserUpdateModel, ComponentFilterModel, FlavorFilterModel, RoleFilterModel,
-    UserRoleAssignmentFilterModel, ProjectFilterModel, PipelineFilterModel,
-    PipelineRunFilterModel, StepRunFilterModel, ArtifactFilterModel,
+    UserRoleAssignmentFilterModel,
+    UserRoleAssignmentRequestModel,
+    UserRoleAssignmentResponseModel,
+    UserUpdateModel,
 )
 from zenml.models.base_models import BaseResponseModel
 from zenml.models.page_model import Page
@@ -139,7 +144,6 @@ from zenml.zen_stores.schemas import (
     RolePermissionSchema,
     RoleSchema,
     StackComponentSchema,
-    StackCompositionSchema,
     StackSchema,
     StepRunInputArtifactSchema,
     StepRunOutputArtifactSchema,
@@ -150,6 +154,7 @@ from zenml.zen_stores.schemas import (
     UserRoleAssignmentSchema,
     UserSchema, BaseSchema,
 )
+from zenml.zen_stores.schemas.base_schemas import BaseSchema
 
 AnyNamedSchema = TypeVar("AnyNamedSchema", bound=NamedSchema)
 AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -604,11 +609,11 @@ class SqlZenStore(BaseZenStore):
 
     @classmethod
     def filter_and_paginate(
-            cls,
-            session: Session,
-            query: Union[Select[AnySchema], SelectOfScalar[AnySchema]],
-            table: Type[AnySchema],
-            filter_model: FilterBaseModel,
+        cls,
+        session: Session,
+        query: Union[Select[AnySchema], SelectOfScalar[AnySchema]],
+        table: Type[AnySchema],
+        filter_model: FilterBaseModel,
     ) -> Page[B]:
         """Given a query, select the range defined in params and return a
         Page instance with a list of Domain Models.
@@ -2324,7 +2329,9 @@ class SqlZenStore(BaseZenStore):
                 f"RoleAssignment with ID {user_role_assignment_id} not found."
             )
 
-    def delete_user_role_assignment(self, user_role_assignment_id: UUID) -> None:
+    def delete_user_role_assignment(
+        self, user_role_assignment_id: UUID
+    ) -> None:
         """Delete a specific role assignment.
 
         Args:

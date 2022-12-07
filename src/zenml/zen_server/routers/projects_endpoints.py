@@ -20,36 +20,39 @@ from fastapi import APIRouter, Depends, Security
 from zenml.constants import (
     API,
     FLAVORS,
-    PAGE_SIZE_DEFAULT,
     PIPELINES,
     PROJECTS,
-    ROLES,
+    ROLE_ASSIGNMENTS,
     RUNS,
     STACK_COMPONENTS,
     STACKS,
     STATISTICS,
-    VERSION_1, ROLE_ASSIGNMENTS,
+    VERSION_1,
 )
-from zenml.enums import PermissionType, StackComponentType
+from zenml.enums import PermissionType
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
+    ComponentFilterModel,
     ComponentRequestModel,
     ComponentResponseModel,
+    FlavorFilterModel,
     FlavorRequestModel,
     FlavorResponseModel,
+    PipelineFilterModel,
     PipelineRequestModel,
     PipelineResponseModel,
+    PipelineRunFilterModel,
     PipelineRunRequestModel,
     PipelineRunResponseModel,
-    PipelineRunFilterModel,
+    ProjectFilterModel,
     ProjectRequestModel,
     ProjectResponseModel,
     ProjectUpdateModel,
-    UserRoleAssignmentResponseModel,
+    StackFilterModel,
     StackRequestModel,
-    StackResponseModel, ProjectFilterModel, UserRoleAssignmentFilterModel,
-    StackFilterModel, ComponentFilterModel, FlavorFilterModel,
-    PipelineFilterModel,
+    StackResponseModel,
+    UserRoleAssignmentFilterModel,
+    UserRoleAssignmentResponseModel,
 )
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
@@ -197,9 +200,10 @@ def list_user_role_assignments_for_project(
         A list of all roles that are assigned to a team.
     """
     project = zen_store().get_project(project_name_or_id)
-    user_role_assignment_filter_model.project_id=project.id
+    user_role_assignment_filter_model.project_id = project.id
     return zen_store().list_user_role_assignments(
-        user_role_assignment_filter_model=user_role_assignment_filter_model)
+        user_role_assignment_filter_model=user_role_assignment_filter_model
+    )
 
 
 @router.get(
@@ -228,7 +232,7 @@ def list_project_stacks(
         All stacks part of the specified project.
     """
     project = zen_store().get_project(project_name_or_id)
-    stack_filter_model.project_id=project.id
+    stack_filter_model.project_id = project.id
 
     stack_filter_model.set_scope_user(user_id=auth_context.user.id)
 
@@ -306,11 +310,12 @@ def list_project_stack_components(
         All stack components part of the specified project.
     """
     project = zen_store().get_project(project_name_or_id)
-    component_filter_model.project_id=project.id
+    component_filter_model.project_id = project.id
 
     component_filter_model.set_scope_user(user_id=auth_context.user.id)
     return zen_store().list_stack_components(
-        component_filter_model=component_filter_model)
+        component_filter_model=component_filter_model
+    )
 
 
 @router.post(
@@ -385,7 +390,7 @@ def list_project_flavors(
         All stack components of a certain type that are part of a project.
     """
     project = zen_store().get_project(project_name_or_id)
-    flavor_filter_model.project_id=project.id
+    flavor_filter_model.project_id = project.id
     return zen_store().list_flavors(flavor_filter_model=flavor_filter_model)
 
 
@@ -461,9 +466,10 @@ def list_project_pipelines(
         All pipelines within the project.
     """
     project = zen_store().get_project(project_name_or_id)
-    pipeline_filter_model.project_id=project.id
+    pipeline_filter_model.project_id = project.id
     return zen_store().list_pipelines(
-        pipeline_filter_model=pipeline_filter_model)
+        pipeline_filter_model=pipeline_filter_model
+    )
 
 
 @router.post(
@@ -533,7 +539,7 @@ def list_runs(
         The pipeline runs according to query filters.
     """
     project = zen_store().get_project(project_name_or_id)
-    runs_filter_model.project_id=project.id
+    runs_filter_model.project_id = project.id
 
     return zen_store().list_runs(runs_filter_model=runs_filter_model)
 

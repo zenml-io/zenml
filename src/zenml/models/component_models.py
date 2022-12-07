@@ -13,22 +13,26 @@
 #  permissions and limitations under the License.
 """Models representing stack components."""
 
-from typing import Any, ClassVar, Dict, List, Union, Type
+from typing import Any, ClassVar, Dict, List, Type, Union, TYPE_CHECKING
 from uuid import UUID
 
 from fastapi import Query
-from pydantic import BaseModel, Field, validator, PrivateAttr
+from pydantic import BaseModel, Field, PrivateAttr, validator
 
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
-from zenml.models.filter_models import FilterBaseModel
 from zenml.models.base_models import (
     ShareableRequestModel,
     ShareableResponseModel,
     update_model,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
+from zenml.models.filter_models import FilterBaseModel
+
 from zenml.utils import secret_utils
+
+if TYPE_CHECKING:
+    from sqlmodel import SQLModel
 
 logger = get_logger(__name__)
 
@@ -81,11 +85,18 @@ class ComponentFilterModel(FilterBaseModel):
     `generate_filter()` method of the baseclass is overwritten to include the
     scoping.
     """
+
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        "sort_by", "list_of_filters", "_scope_user", "page", "size"
+        "sort_by",
+        "list_of_filters",
+        "_scope_user",
+        "page",
+        "size",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        "list_of_filters", "_scope_user", "type"
+        "list_of_filters",
+        "_scope_user",
+        "type",
     ]
 
     _scope_user: UUID = PrivateAttr(None)

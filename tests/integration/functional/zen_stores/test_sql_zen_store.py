@@ -41,7 +41,6 @@ from zenml.models import (
     PipelineUpdateModel,
     ProjectRequestModel,
     ProjectUpdateModel,
-    UserRoleAssignmentRequestModel,
     RoleRequestModel,
     RoleUpdateModel,
     StackRequestModel,
@@ -50,6 +49,7 @@ from zenml.models import (
     TeamRequestModel,
     TeamUpdateModel,
     UserRequestModel,
+    UserRoleAssignmentRequestModel,
     UserUpdateModel,
 )
 from zenml.models.base_models import BaseResponseModel

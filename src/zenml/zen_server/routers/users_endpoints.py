@@ -32,10 +32,10 @@ from zenml.exceptions import IllegalOperationError, NotAuthorizedError
 from zenml.logger import get_logger
 from zenml.models import (
     FilterBaseModel,
-    UserRoleAssignmentRequestModel,
-    UserRoleAssignmentResponseModel,
     UserRequestModel,
     UserResponseModel,
+    UserRoleAssignmentRequestModel,
+    UserRoleAssignmentResponseModel,
     UserUpdateModel,
 )
 from zenml.models.page_model import Page

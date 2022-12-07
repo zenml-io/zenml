@@ -200,8 +200,12 @@ class FilterBaseModel(BaseModel):
     )
     ```
     """
+
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        "sort_by", "list_of_filters", "page", "size"
+        "sort_by",
+        "list_of_filters",
+        "page",
+        "size",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         "list_of_filters",

@@ -19,8 +19,10 @@ import click
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.client import Client
+from zenml.console import console
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
+from zenml.models import PipelineFilterModel, PipelineRunFilterModel
 
 logger = get_logger(__name__)
 
@@ -52,19 +54,23 @@ def cli_pipeline_run(python_file: str, config_path: str) -> None:
 
 
 @pipeline.command("list", help="List all registered pipelines.")
-def list_pipelines() -> None:
+@PipelineFilterModel.click_list_options()
+def list_pipelines(**kwargs) -> None:
     """List all registered pipelines."""
     cli_utils.print_active_config()
-    pipelines = Client().list_pipelines()
+    client = Client()
+    with console.status("Listing roles...\n"):
 
-    if not pipelines:
-        cli_utils.declare("No piplines registered.")
-        return
+        pipelines = client.list_pipelines(**kwargs)
 
-    cli_utils.print_pydantic_models(
-        pipelines,
-        exclude_columns=["id", "created", "updated", "user", "project"],
-    )
+        if not pipelines.items:
+            cli_utils.declare("No pipelines found for this filter.")
+            return
+
+        cli_utils.print_pydantic_models(
+            pipelines,
+            exclude_columns=["id", "created", "updated", "user", "project"],
+        )
 
 
 @pipeline.command("delete")
@@ -107,47 +113,25 @@ def runs() -> None:
     """Commands for pipeline runs."""
 
 
-@click.option("--pipeline", "-p", type=str, required=False)
-@click.option("--stack", "-s", type=str, required=False)
-@click.option("--user", "-u", type=str, required=False)
-@click.option("--unlisted", is_flag=True)
 @runs.command("list", help="List all registered pipeline runs.")
-def list_pipeline_runs(
-    pipeline: str, stack: str, user: str, unlisted: bool = False
-) -> None:
-    """List all registered pipeline runs.
-
-    Args:
-        pipeline: If provided, only return runs for this pipeline.
-        stack: If provided, only return runs for this stack.
-        user: If provided, only return runs for this user.
-        unlisted: If True, only return unlisted runs that are not
-            associated with any pipeline.
-    """
+@PipelineRunFilterModel.click_list_options()
+def list_pipeline_runs(**kwargs) -> None:
+    """List all registered pipeline runs for the filter."""
     cli_utils.print_active_config()
+
+    client = Client()
     try:
-        stack_id, pipeline_id, user_id = None, None, None
-        client = Client()
-        if stack:
-            stack_id = client.get_stack(stack).id
-        if pipeline:
-            pipeline_id = client.get_pipeline(pipeline).id
-        if user:
-            user_id = client.get_user(user).id
-        pipeline_runs = client.list_runs(
-            pipeline_id=pipeline_id,
-            stack_id=stack_id,
-            user_name_or_id=user_id,
-            unlisted=unlisted,
-        )
+        with console.status("Listing roles...\n"):
+            pipeline_runs = client.list_runs(**kwargs)
     except KeyError as err:
         cli_utils.error(str(err))
     else:
-        if not pipeline_runs:
+        if not pipeline_runs.items:
             cli_utils.declare("No pipeline runs registered.")
             return
 
-        cli_utils.print_pipeline_runs_table(pipeline_runs=pipeline_runs)
+        cli_utils.print_pipeline_runs_table(pipeline_runs=pipeline_runs.items)
+        cli_utils.print_page_info(pipeline_runs)
 
 
 @runs.command("delete")

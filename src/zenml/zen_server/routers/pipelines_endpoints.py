@@ -21,10 +21,10 @@ from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.constants import API, PIPELINE_SPEC, PIPELINES, RUNS, VERSION_1
 from zenml.enums import PermissionType
 from zenml.models import (
-    FilterBaseModel,
+    PipelineFilterModel,
     PipelineResponseModel,
     PipelineRunResponseModel,
-    PipelineUpdateModel, PipelineFilterModel,
+    PipelineUpdateModel,
 )
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
@@ -57,7 +57,8 @@ def list_pipelines(
         List of pipeline objects.
     """
     return zen_store().list_pipelines(
-        pipeline_filter_model=pipeline_filter_model)
+        pipeline_filter_model=pipeline_filter_model
+    )
 
 
 @router.get(

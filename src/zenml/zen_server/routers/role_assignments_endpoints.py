@@ -19,7 +19,10 @@ from fastapi import APIRouter, Security
 
 from zenml.constants import API, ROLE_ASSIGNMENTS, VERSION_1
 from zenml.enums import PermissionType
-from zenml.models import UserRoleAssignmentRequestModel, UserRoleAssignmentResponseModel
+from zenml.models import (
+    UserRoleAssignmentRequestModel,
+    UserRoleAssignmentResponseModel,
+)
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
@@ -87,7 +90,8 @@ def create_role_assignment(
         The created role assignment.
     """
     return zen_store().create_user_role_assignment(
-        user_role_assignment=role_assignment)
+        user_role_assignment=role_assignment
+    )
 
 
 @router.get(
@@ -128,4 +132,5 @@ def delete_role_assignment(
         role_assignment_id: The ID of the role assignment.
     """
     zen_store().delete_user_role_assignment(
-        user_role_assignment_id=role_assignment_id)
+        user_role_assignment_id=role_assignment_id
+    )

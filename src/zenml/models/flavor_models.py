@@ -20,12 +20,12 @@ from fastapi import Query
 from pydantic import BaseModel, Field
 
 from zenml.enums import StackComponentType
-from zenml.models.filter_models import FilterBaseModel
 from zenml.models.base_models import (
     ProjectScopedRequestModel,
     ProjectScopedResponseModel,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
+from zenml.models.filter_models import FilterBaseModel
 
 # ---- #
 # BASE #

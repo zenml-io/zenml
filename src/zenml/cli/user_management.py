@@ -24,7 +24,7 @@ from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories, StoreType
 from zenml.exceptions import EntityExistsError, IllegalOperationError
-from zenml.models import UserFilterModel
+from zenml.models import UserFilterModel, TeamFilterModel
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
@@ -95,7 +95,6 @@ def list_users(**kwargs) -> None:
             ],
             is_active=lambda u: u.name == Client().active_user.name,
         )
-        print_page_info(users)
 
 
 @user.command(
@@ -250,18 +249,24 @@ def team() -> None:
 
 
 @team.command("list")
-def list_teams() -> None:
-    """List all teams."""
+@TeamFilterModel.click_list_options()
+def list_teams(**kwargs) -> None:
+    """List all teams that fulfill the filter requirements."""
     cli_utils.print_active_config()
-    teams = Client().list_teams()
-    if not teams:
-        cli_utils.declare("No teams registered.")
-        return
+    client = Client()
 
-    cli_utils.print_pydantic_models(
-        teams,
-        exclude_columns=["id", "created", "updated"],
-    )
+    with console.status("Listing teams...\n"):
+
+        teams = client.list_teams(**kwargs)
+
+        if not teams:
+            cli_utils.declare("No teams found with the given filter.")
+            return
+
+        cli_utils.print_pydantic_models(
+            teams,
+            exclude_columns=["id", "created", "updated"],
+        )
 
 
 @team.command("describe", help="List all users in a team.")

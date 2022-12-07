@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for roles and role assignment."""
-from typing import Optional, Union
+from typing import Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -20,10 +20,10 @@ from fastapi import APIRouter, Depends, Security
 from zenml.constants import API, ROLES, VERSION_1
 from zenml.enums import PermissionType
 from zenml.models import (
+    RoleFilterModel,
     RoleRequestModel,
     RoleResponseModel,
     RoleUpdateModel,
-    RoleFilterModel
 )
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize

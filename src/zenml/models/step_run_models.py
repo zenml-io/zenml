@@ -100,9 +100,11 @@ class StepRunFilterModel(FilterBaseModel):
         description="Status of the Step Run",
     )
     start_time: Union[datetime, str] = Query(
-        None, description="Start time for this run")
+        None, description="Start time for this run"
+    )
     end_time: Union[datetime, str] = Query(
-        None, description="End time for this run")
+        None, description="End time for this run"
+    )
     pipeline_run_id: Union[UUID, str] = Query(
         None, description="Pipeline run of this step run"
     )
@@ -110,7 +112,8 @@ class StepRunFilterModel(FilterBaseModel):
         None, description="Original id for this step run"
     )
     user_id: Union[UUID, str] = Query(
-        None, description="User that produced this step run")
+        None, description="User that produced this step run"
+    )
     project_id: Union[UUID, str] = Query(
         None, description="Project of this step run"
     )

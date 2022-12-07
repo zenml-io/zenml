@@ -15,7 +15,6 @@
 import os
 from abc import ABCMeta
 from datetime import datetime
-from functools import partial
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -55,20 +54,25 @@ from zenml.exceptions import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import (
+    ComponentFilterModel,
     ComponentRequestModel,
     ComponentResponseModel,
     ComponentUpdateModel,
     FilterBaseModel,
+    FlavorFilterModel,
     FlavorRequestModel,
     FlavorResponseModel,
+    PipelineFilterModel,
     PipelineRequestModel,
     PipelineResponseModel,
+    PipelineRunFilterModel,
+    PipelineRunRequestModel,
     PipelineRunResponseModel,
     ProjectRequestModel,
     ProjectResponseModel,
     ProjectUpdateModel,
-    UserRoleAssignmentRequestModel,
-    UserRoleAssignmentResponseModel,
+    ProjectFilterModel,
+    RoleFilterModel,
     RoleRequestModel,
     RoleResponseModel,
     RoleUpdateModel,
@@ -76,14 +80,20 @@ from zenml.models import (
     StackRequestModel,
     StackResponseModel,
     StackUpdateModel,
+    StepRunFilterModel,
+    StepRunRequestModel,
     StepRunResponseModel,
+    TeamFilterModel,
     TeamRequestModel,
     TeamResponseModel,
     UserFilterModel,
     TeamUpdateModel,
     UserRequestModel,
     UserResponseModel,
-    UserUpdateModel, ComponentFilterModel, FlavorFilterModel,
+    UserRoleAssignmentFilterModel,
+    UserRoleAssignmentRequestModel,
+    UserRoleAssignmentResponseModel,
+    UserUpdateModel,
 )
 from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.models.base_models import BaseResponseModel
@@ -741,17 +751,39 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix=name_id_or_prefix,
         )
 
-    def list_teams(self, name: Optional[str] = None) -> List[TeamResponseModel]:
+    def list_teams(
+        self,
+        sort_by: str,
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        name: Optional[str] = None,
+    ) -> Page[TeamResponseModel]:
         """List all teams.
 
         Args:
-            name: The name to filter by
-
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            id: Use the id of teams to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            name: Use the team name for filtering
         Returns:
             The Team
         """
-        return self.depaginate(
-            list_command=partial(self.zen_store.list_teams, name=name)
+        return self.zen_store.list_teams(
+            TeamFilterModel(
+                sort_by=sort_by,
+                page=page,
+                size=size,
+                id=id,
+                created=created,
+                updated=updated,
+                name=name,
+            )
         )
 
     def create_team(
@@ -875,17 +907,39 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix=name_id_or_prefix,
         )
 
-    def list_roles(self, name: Optional[str] = None) -> List[RoleResponseModel]:
-        """Fetches roles.
+    def list_roles(
+        self,
+        sort_by: str,
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        name: Optional[str] = None,
+    ) -> Page[RoleResponseModel]:
+        """List all roles.
 
         Args:
-            name: The name of the roles.
-
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            id: Use the id of roles to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            name: Use the role name for filtering
         Returns:
-            The list of roles.
+            The Role
         """
-        return self.depaginate(
-            list_command=partial(self.zen_store.list_roles, name=name)
+        return self.zen_store.list_roles(
+            RoleFilterModel(
+                sort_by=sort_by,
+                page=page,
+                size=size,
+                id=id,
+                created=created,
+                updated=updated,
+                name=name,
+            )
         )
 
     def create_role(
@@ -1100,31 +1154,44 @@ class Client(metaclass=ClientMetaClass):
         )
         self.zen_store.delete_user_role_assignment(role_assignment.id)
 
-    def list_role_assignment(
+    def list_user_role_assignment(
         self,
-        role_name_or_id: Optional[str] = None,
-        user_name_or_id: Optional[str] = None,
-        team_name_or_id: Optional[str] = None,
-        project_name_or_id: Optional[str] = None,
-    ) -> List[UserRoleAssignmentResponseModel]:
-        """List role assignments.
+        sort_by: str,
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        project_id: Optional[Union[str, UUID]] = None,
+        user_id: Optional[Union[str, UUID]] = None,
+        role_id: Optional[Union[str, UUID]] = None,
+    ) -> Page[UserRoleAssignmentResponseModel]:
+        """List all user role assignments.
 
         Args:
-            role_name_or_id: Only list assignments for this role
-            user_name_or_id: Only list assignments for this user
-            team_name_or_id: Only list assignments for this team
-            project_name_or_id: Only list assignments in this project
-
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            id: Use the id of the user role assignment to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            project_id: The id of the project to filter by.
+            user_id: The id of the user to filter by.
+            role_id: The id of the role to filter by.
         Returns:
-            List of role assignments
+            The Team
         """
-        return self.depaginate(
-            list_command=partial(
-                self.zen_store.list_user_role_assignments,
-                role_name_or_id=role_name_or_id,
-                user_name_or_id=user_name_or_id,
-                team_name_or_id=team_name_or_id,
-                project_name_or_id=project_name_or_id,
+        return self.zen_store.list_user_role_assignments(
+            UserRoleAssignmentFilterModel(
+                sort_by=sort_by,
+                page=page,
+                size=size,
+                id=id,
+                created=created,
+                updated=updated,
+                project_id=project_id,
+                user_id=user_id,
+                role_id=role_id
             )
         )
 
@@ -1190,6 +1257,41 @@ class Client(metaclass=ClientMetaClass):
             get_method=self.zen_store.get_project,
             list_method=self.zen_store.list_projects,
             name_id_or_prefix=name_id_or_prefix,
+        )
+
+    def list_projects(
+        self,
+        sort_by: str,
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        name: Optional[str] = None,
+    ) -> Page[ProjectResponseModel]:
+        """List all projects.
+
+        Args:
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            id: Use the id of teams to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            name: Use the team name for filtering
+        Returns:
+            The Team
+        """
+        return self.zen_store.list_projects(
+            ProjectFilterModel(
+                sort_by=sort_by,
+                page=page,
+                size=size,
+                id=id,
+                created=created,
+                updated=updated,
+                name=name,
+            )
         )
 
     def create_project(
@@ -1530,7 +1632,7 @@ class Client(metaclass=ClientMetaClass):
         project_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
         component_id: Optional[Union[str, UUID]] = None,
-    ) -> Page["StackResponseModel"]:
+    ) -> Page[StackResponseModel]:
         """Lists all stacks.
 
         Args:
@@ -1541,14 +1643,14 @@ class Client(metaclass=ClientMetaClass):
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
             description: Use the stack description for filtering
-            project_id: The name or id of the project to filter by.
-            user_id: The name or id of the user to filter by.
+            project_id: The id of the project to filter by.
+            user_id: The  id of the user to filter by.
             component_id: The id of the component to filter by.
             name: The name of the stack to filter by.
             is_shared: The shared status of the stack to filter by.
 
         Returns:
-            A list of stacks.
+            A page of stacks.
         """
         return self.zen_store.list_stacks(
             StackFilterModel(
@@ -1716,7 +1818,7 @@ class Client(metaclass=ClientMetaClass):
         type: Optional[str] = None,
         project_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
-    ) -> Page["ComponentResponseModel"]:
+    ) -> Page[ComponentResponseModel]:
         """Lists all registered stack components.
 
         Args:
@@ -1728,13 +1830,13 @@ class Client(metaclass=ClientMetaClass):
             updated: Use the last updated date for filtering
             flavor: Use the component flavor for filtering
             type: Use the component type for filtering
-            project_id: The name or id of the project to filter by.
-            user_id: The name or id of the user to filter by.
+            project_id: The id of the project to filter by.
+            user_id: The id of the user to filter by.
             name: The name of the component to filter by.
             is_shared: The shared status of the component to filter by.
 
         Returns:
-            A list of stack components.
+            A page of stack components.
         """
         return self.zen_store.list_stack_components(
             ComponentFilterModel(
@@ -2026,7 +2128,7 @@ class Client(metaclass=ClientMetaClass):
         integration: Optional[str] = None,
         project_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
-    ) -> Page["FlavorResponseModel"]:
+    ) -> Page[FlavorResponseModel]:
         """Fetches all the flavor models.
 
         Args:
@@ -2036,8 +2138,8 @@ class Client(metaclass=ClientMetaClass):
             id: Use the id of flavors to filter by.
             created: Use to flavors by time of creation
             updated: Use the last updated date for filtering
-            project_id: The name or id of the project to filter by.
-            user_id: The name or id of the user to filter by.
+            project_id: The id of the project to filter by.
+            user_id: The  id of the user to filter by.
             name: The name of the flavor to filter by.
             type: The type of the flavor to filter by.
             integration: The integration of the flavor to filter by.
@@ -2176,13 +2278,13 @@ class Client(metaclass=ClientMetaClass):
             AlreadyExistsException: If there is an existing pipeline in the
                 project with the same name but a different configuration.
         """
-        existing_pipelines = self.zen_store.list_pipelines(
+        existing_pipelines = self.list_pipelines(
             name=pipeline_name,
-            project_name_or_id=self.active_project.id,
+            project_id=self.active_project.id,
         )
 
         # A) If there is no pipeline with this name, register a new pipeline.
-        if len(existing_pipelines) == 0:
+        if len(existing_pipelines.items) == 0:
             create_pipeline_request = PipelineRequestModel(
                 project=self.active_project.id,
                 user=self.active_user.id,
@@ -2197,7 +2299,7 @@ class Client(metaclass=ClientMetaClass):
             return pipeline.id
 
         else:
-            if len(existing_pipelines) == 1:
+            if len(existing_pipelines.items) == 1:
                 existing_pipeline = existing_pipelines[0]
                 # B) If a pipeline exists that has the same config, use that
                 # pipeline.
@@ -2227,27 +2329,45 @@ class Client(metaclass=ClientMetaClass):
 
     def list_pipelines(
         self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
+        sort_by: str,
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
-    ) -> List[PipelineResponseModel]:
-        """List pipelines.
+        docstring: Optional[str] = None,
+        project_id: Optional[Union[str, UUID]] = None,
+        user_id: Optional[Union[str, UUID]] = None,
+    ) -> Page[PipelineResponseModel]:
+        """List all pipelines.
 
         Args:
-            project_name_or_id: If provided, only list pipelines in this
-                project.
-            user_name_or_id: If provided, only list pipelines from this user.
-            name: If provided, only list pipelines with this name.
-
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            id: Use the id of stacks to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            docstring: Use the stack description for filtering
+            project_id: The id of the project to filter by.
+            user_id: The  id of the user to filter by.
+            name: The name of the stack to filter by.
         Returns:
-            A list of pipelines.
+            A page with Pipeline fitting the filter description
         """
-        return self.depaginate(
-            list_command=partial(
-                self.zen_store.list_pipelines,
-                project_name_or_id=project_name_or_id or self.active_project.id,
-                user_name_or_id=user_name_or_id,
+        return self.zen_store.list_pipelines(
+            PipelineFilterModel(
+                sort_by=sort_by,
+                page=page,
+                size=size,
+                id=id,
+                created=created,
+                updated=updated,
                 name=name,
+                docstring=docstring,
+                project_id=project_id,
+                user_id=user_id,
             )
         )
 
@@ -2285,40 +2405,57 @@ class Client(metaclass=ClientMetaClass):
 
     def list_runs(
         self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        stack_id: Optional[UUID] = None,
-        component_id: Optional[UUID] = None,
-        run_name: Optional[str] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
-        pipeline_id: Optional[UUID] = None,
-        unlisted: bool = False,
-    ) -> List[PipelineRunResponseModel]:
-        """Gets all pipeline runs.
+        sort_by: str,
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        name: Optional[str] = None,
+        project_id: Optional[Union[str, UUID]] = None,
+        user_id: Optional[Union[str, UUID]] = None,
+        stack_id: Optional[Union[str, UUID]] = None,
+        status: Optional[str] = None,
+        start_time: Optional[Union[datetime, str]] = None,
+        end_time: Optional[Union[datetime, str]] = None,
+        num_steps: Optional[Union[int, str]] = None,
+    ) -> Page[PipelineRunResponseModel]:
+        """List all pipeline runs.
 
         Args:
-            project_name_or_id: If provided, only return runs for this project.
-            stack_id: If provided, only return runs for this stack.
-            component_id: Optionally filter for runs that used the
-                          component
-            run_name: Run name if provided
-            user_name_or_id: If provided, only return runs for this user.
-            pipeline_id: If provided, only return runs for this pipeline.
-            unlisted: If True, only return unlisted runs that are not
-                associated with any pipeline (filter by `pipeline_id==None`).
-
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            id: Use the id of stacks to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            project_id: The id of the project to filter by.
+            user_id: The  id of the user to filter by.
+            stack_id: The  id of the user to filter by.
+            name: The name of the stack to filter by.
+            status: The status of the pipeline run
+            start_time: The start_time for the pipeline run
+            end_time: The end_time for the pipeline run
+            num_steps: The number of steps for the pipeline run
         Returns:
-            A list of all pipeline runs.
+            A page with Pipeline Runs fitting the filter description
         """
-        return self.depaginate(
-            list_command=partial(
-                self.zen_store.list_runs,
-                project_name_or_id=project_name_or_id or self.active_project.id,
+        return self.zen_store.list_runs(
+            PipelineRunFilterModel(
+                sort_by=sort_by,
+                page=page,
+                size=size,
+                id=id,
+                created=created,
+                updated=updated,
+                name=name,
+                project_id=project_id,
+                user_id=user_id,
                 stack_id=stack_id,
-                component_id=component_id,
-                run_name=run_name,
-                user_name_or_id=user_name_or_id,
-                pipeline_id=pipeline_id,
-                unlisted=unlisted,
+                status=status,
+                start_time=start_time,
+                end_time=end_time,
+                num_steps=num_steps,
             )
         )
 
@@ -2355,20 +2492,70 @@ class Client(metaclass=ClientMetaClass):
 
     def list_run_steps(
         self,
-        pipeline_run_id: Optional[UUID] = None,
-        project_id: Optional[UUID] = None,
-    ) -> List[StepRunResponseModel]:
-        """Get all step runs.
+        sort_by: str,
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        name: Optional[str] = None,
+        entrypoint_name: Optional[str] = None,
+        code_hash: Optional[str] = None,
+        cache_key: Optional[str] = None,
+        status: Optional[str] = None,
+        start_time: Optional[Union[datetime, str]] = None,
+        end_time: Optional[Union[datetime, str]] = None,
+        pipeline_run_id: Optional[Union[str, UUID]] = None,
+        original_step_run_id: Optional[Union[str, UUID]] = None,
+        project_id: Optional[Union[str, UUID]] = None,
+        user_id: Optional[Union[str, UUID]] = None,
+        num_outputs: Optional[Union[int, str]] = None,
+    ) -> Page[StepRunResponseModel]:
+        """List all pipelines.
 
         Args:
-            pipeline_run_id: If provided, only return steps for this pipeline run.
-            project_id: If provided, only return step runs in this project.
-
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            id: Use the id of runs to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            start_time: Use to filter by the time when the step started running
+            end_time: Use to filter by the time when the step finished running
+            project_id: The id of the project to filter by.
+            user_id: The  id of the user to filter by.
+            pipeline_run_id: The  id of the pipeline run to filter by.
+            original_step_run_id: The  id of the pipeline run to filter by.
+            name: The name of the run to filter by.
+            entrypoint_name: The entrypoint_name of the run to filter by.
+            code_hash: The code_hash of the run to filter by.
+            cache_key: The cache_key of the run to filter by.
+            status: The name of the run to filter by.
+            num_outputs: The number of outputs for the step run
         Returns:
-            A list of step runs.
+            A page with Pipeline fitting the filter description
         """
         return self.zen_store.list_run_steps(
-            run_id=pipeline_run_id, project_id=project_id
+            StepRunFilterModel(
+                sort_by=sort_by,
+                page=page,
+                size=size,
+                id=id,
+                entrypoint_name=entrypoint_name,
+                code_hash=code_hash,
+                cache_key=cache_key,
+                pipeline_run_id=pipeline_run_id,
+                original_step_run_id=original_step_run_id,
+                status=status,
+                created=created,
+                updated=updated,
+                start_time=start_time,
+                end_time=end_time,
+                name=name,
+                project_id=project_id,
+                user_id=user_id,
+                num_outputs=num_outputs,
+            )
         )
 
     def get_run_step(self, step_run_id: UUID) -> StepRunResponseModel:
@@ -2708,17 +2895,3 @@ class Client(metaclass=ClientMetaClass):
                     f"No {entity_label} with name or id prefix "
                     f"'{name_id_or_prefix}' exists."
                 )
-
-    def depaginate(
-        self,
-        list_command: Callable,
-    ) -> List[AnyResponseModel]:
-        params = FilterBaseModel(page=1)
-        first_page: Page[BaseResponseModel] = list_command(params=params)
-        list_of_entities = list(first_page.items)
-        if first_page.total_pages < 1:
-            for page in [1, first_page.total_pages]:
-                params = FilterBaseModel(page=page)
-                list_of_entities.append(list_command(params))
-
-        return list_of_entities

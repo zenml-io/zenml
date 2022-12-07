@@ -125,12 +125,15 @@ class StackFilterModel(FilterBaseModel):
     `generate_filter()` method of the baseclass is overwritten to include the
     scoping.
     """
+
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        "sort_by", "list_of_filters", "_scope_user", "page", "size"
+        "sort_by",
+        "list_of_filters",
+        "_scope_user",
+        "page",
+        "size",
     ]
-    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        "list_of_filters", "_scope_user"
-    ]
+    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = ["list_of_filters", "_scope_user"]
 
     _scope_user: UUID = PrivateAttr(None)
 

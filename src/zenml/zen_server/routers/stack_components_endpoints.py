@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for stack components."""
-from typing import Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -20,9 +19,9 @@ from fastapi import APIRouter, Depends, Security
 from zenml.constants import API, COMPONENT_TYPES, STACK_COMPONENTS, VERSION_1
 from zenml.enums import PermissionType, StackComponentType
 from zenml.models import (
+    ComponentFilterModel,
     ComponentResponseModel,
     ComponentUpdateModel,
-    ComponentFilterModel,
 )
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
@@ -65,7 +64,8 @@ def list_stack_components(
     """
     component_filter_model.set_scope_user(user_id=auth_context.user.id)
     return zen_store().list_stack_components(
-        component_filter_model=component_filter_model)
+        component_filter_model=component_filter_model
+    )
 
 
 @router.get(

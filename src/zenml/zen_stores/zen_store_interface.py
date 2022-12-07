@@ -13,31 +13,33 @@
 #  permissions and limitations under the License.
 """ZenML Store interface."""
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Dict, List, Optional, Union
+from typing import Union
 from uuid import UUID
 
-from zenml.constants import PAGE_SIZE_DEFAULT
-from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.models import (
+    ArtifactFilterModel,
     ArtifactRequestModel,
     ArtifactResponseModel,
+    ComponentFilterModel,
     ComponentRequestModel,
     ComponentResponseModel,
     ComponentUpdateModel,
-    FilterBaseModel,
+    FlavorFilterModel,
     FlavorRequestModel,
     FlavorResponseModel,
+    PipelineFilterModel,
     PipelineRequestModel,
     PipelineResponseModel,
+    PipelineRunFilterModel,
     PipelineRunRequestModel,
     PipelineRunResponseModel,
     PipelineRunUpdateModel,
     PipelineUpdateModel,
+    ProjectFilterModel,
     ProjectRequestModel,
     ProjectResponseModel,
     ProjectUpdateModel,
-    UserRoleAssignmentRequestModel,
-    UserRoleAssignmentResponseModel,
+    RoleFilterModel,
     RoleRequestModel,
     RoleResponseModel,
     RoleUpdateModel,
@@ -45,9 +47,11 @@ from zenml.models import (
     StackRequestModel,
     StackResponseModel,
     StackUpdateModel,
+    StepRunFilterModel,
     StepRunRequestModel,
     StepRunResponseModel,
     StepRunUpdateModel,
+    TeamFilterModel,
     TeamRequestModel,
     TeamResponseModel,
     TeamUpdateModel,
@@ -55,9 +59,10 @@ from zenml.models import (
     UserFilterModel,
     UserRequestModel,
     UserResponseModel,
-    UserUpdateModel, ComponentFilterModel, FlavorFilterModel, RoleFilterModel,
-    UserRoleAssignmentFilterModel, ProjectFilterModel, PipelineFilterModel,
-    PipelineRunFilterModel, StepRunFilterModel, ArtifactFilterModel,
+    UserRoleAssignmentFilterModel,
+    UserRoleAssignmentRequestModel,
+    UserRoleAssignmentResponseModel,
+    UserUpdateModel,
 )
 from zenml.models.page_model import Page
 from zenml.models.server_models import ServerModel
@@ -485,7 +490,7 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_teams(
-        self, team_filter_model: StackFilterModel
+        self, team_filter_model: TeamFilterModel
     ) -> Page[TeamResponseModel]:
         """List all teams matching the given filter criteria.
 
@@ -630,7 +635,9 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def delete_user_role_assignment(self, user_role_assignment_id: UUID) -> None:
+    def delete_user_role_assignment(
+        self, user_role_assignment_id: UUID
+    ) -> None:
 
         """Delete a specific role assignment.
 

@@ -20,13 +20,13 @@ from fastapi import Query
 from pydantic import BaseModel, Field
 
 from zenml.enums import ArtifactType
-from zenml.models.filter_models import FilterBaseModel
 from zenml.models.base_models import (
     ProjectScopedRequestModel,
     ProjectScopedResponseModel,
     update_model,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
+from zenml.models.filter_models import FilterBaseModel
 
 # ---- #
 # BASE #
@@ -102,7 +102,9 @@ class ArtifactFilterModel(FilterBaseModel):
         None, description="Project for this artifact"
     )
     user_id: Union[UUID, str] = Query(
-        None, description="User that produced this artifact")
+        None, description="User that produced this artifact"
+    )
+
 
 # ------- #
 # REQUEST #

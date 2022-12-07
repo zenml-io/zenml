@@ -21,10 +21,10 @@ from zenml.constants import API, ROLES, TEAMS, VERSION_1
 from zenml.enums import PermissionType
 from zenml.models import (
     FilterBaseModel,
-    UserRoleAssignmentResponseModel,
     TeamRequestModel,
     TeamResponseModel,
     TeamUpdateModel,
+    UserRoleAssignmentResponseModel,
 )
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize

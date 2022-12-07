@@ -257,6 +257,7 @@ def print_pydantic_models(
         )
 
     print_table([__dictify(model) for model in models.items])
+    print_page_info(models)
 
 
 def format_integration_list(
@@ -995,7 +996,7 @@ def get_execution_status_emoji(status: "ExecutionStatus") -> str:
 
 
 def print_pipeline_runs_table(
-    pipeline_runs: List["PipelineRunResponseModel"],
+    pipeline_runs: Sequence["PipelineRunResponseModel"],
 ) -> None:
     """Print a prettified list of all pipeline runs supplied to this method.
 

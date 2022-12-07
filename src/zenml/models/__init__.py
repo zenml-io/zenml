@@ -14,51 +14,51 @@
 """Pydantic models for the various concepts in ZenML."""
 
 from zenml.models.artifact_models import (
+    ArtifactFilterModel,
     ArtifactRequestModel,
     ArtifactResponseModel,
     ArtifactUpdateModel,
-    ArtifactFilterModel,
 )
 from zenml.models.component_models import (
+    ComponentFilterModel,
     ComponentRequestModel,
     ComponentResponseModel,
-    ComponentFilterModel,
     ComponentUpdateModel,
 )
 from zenml.models.filter_models import Filter, FilterBaseModel
 from zenml.models.flavor_models import (
+    FlavorFilterModel,
     FlavorRequestModel,
     FlavorResponseModel,
-    FlavorFilterModel
 )
 from zenml.models.pipeline_models import (
+    PipelineFilterModel,
     PipelineRequestModel,
     PipelineResponseModel,
     PipelineUpdateModel,
-    PipelineFilterModel,
 )
 from zenml.models.pipeline_run_models import (
+    PipelineRunFilterModel,
     PipelineRunRequestModel,
     PipelineRunResponseModel,
     PipelineRunUpdateModel,
-    PipelineRunFilterModel
 )
 from zenml.models.project_models import (
+    ProjectFilterModel,
     ProjectRequestModel,
     ProjectResponseModel,
     ProjectUpdateModel,
-    ProjectFilterModel,
 )
 from zenml.models.role_assignment_models import (
+    UserRoleAssignmentFilterModel,
     UserRoleAssignmentRequestModel,
     UserRoleAssignmentResponseModel,
-    UserRoleAssignmentFilterModel,
 )
 from zenml.models.role_models import (
+    RoleFilterModel,
     RoleRequestModel,
     RoleResponseModel,
     RoleUpdateModel,
-    RoleFilterModel,
 )
 from zenml.models.stack_models import (
     StackFilterModel,
@@ -67,16 +67,16 @@ from zenml.models.stack_models import (
     StackUpdateModel,
 )
 from zenml.models.step_run_models import (
+    StepRunFilterModel,
     StepRunRequestModel,
     StepRunResponseModel,
     StepRunUpdateModel,
-    StepRunFilterModel,
 )
 from zenml.models.team_models import (
+    TeamFilterModel,
     TeamRequestModel,
     TeamResponseModel,
     TeamUpdateModel,
-    TeamFilterModel,
 )
 from zenml.models.user_models import (
     UserAuthModel,

@@ -17,12 +17,15 @@ from asyncio.log import logger
 from typing import List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Security, Depends
+from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, ARTIFACTS, VERSION_1
 from zenml.enums import PermissionType
-from zenml.models import ArtifactRequestModel, ArtifactResponseModel, \
-    ArtifactFilterModel
+from zenml.models import (
+    ArtifactFilterModel,
+    ArtifactRequestModel,
+    ArtifactResponseModel,
+)
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
@@ -54,7 +57,8 @@ def list_artifacts(
         The artifacts according to query filters.
     """
     return zen_store().list_artifacts(
-        artifact_filter_model=artifact_filter_model)
+        artifact_filter_model=artifact_filter_model
+    )
 
 
 @router.post(

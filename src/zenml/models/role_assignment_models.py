@@ -13,11 +13,11 @@
 #  permissions and limitations under the License.
 """Models representing role assignments."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
 from uuid import UUID
 
 from fastapi import Query
-from pydantic import BaseModel, Field, root_validator
+from pydantic import BaseModel, Field
 
 from zenml.models import FilterBaseModel
 from zenml.models.base_models import BaseRequestModel, BaseResponseModel
@@ -41,7 +41,9 @@ class UserRoleAssignmentBaseModel(BaseModel):
 # -------- #
 
 
-class UserRoleAssignmentResponseModel(UserRoleAssignmentBaseModel, BaseResponseModel):
+class UserRoleAssignmentResponseModel(
+    UserRoleAssignmentBaseModel, BaseResponseModel
+):
     """Response model for role assignments with all entities hydrated."""
 
     project: Optional["ProjectResponseModel"] = Field(
@@ -67,8 +69,7 @@ class UserRoleAssignmentFilterModel(FilterBaseModel):
         None, description="Project of the RoleAssignment"
     )
     user_id: Union[UUID, str] = Query(
-        None,
-        description="User in the RoleAssignment"
+        None, description="User in the RoleAssignment"
     )
     role_id: Union[UUID, str] = Query(
         None, description="Role in the RoleAssignment"
@@ -80,7 +81,9 @@ class UserRoleAssignmentFilterModel(FilterBaseModel):
 # ------- #
 
 
-class UserRoleAssignmentRequestModel(UserRoleAssignmentBaseModel, BaseRequestModel):
+class UserRoleAssignmentRequestModel(
+    UserRoleAssignmentBaseModel, BaseRequestModel
+):
     """Request model for role assignments using UUIDs for all entities."""
 
     project: Optional[UUID] = Field(

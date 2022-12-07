@@ -34,8 +34,6 @@ from zenml.models import (
     ComponentRequestModel,
     ProjectRequestModel,
     ProjectResponseModel,
-    UserRoleAssignmentRequestModel,
-    UserRoleAssignmentResponseModel,
     RoleRequestModel,
     RoleResponseModel,
     StackFilterModel,
@@ -43,6 +41,8 @@ from zenml.models import (
     StackResponseModel,
     UserRequestModel,
     UserResponseModel,
+    UserRoleAssignmentRequestModel,
+    UserRoleAssignmentResponseModel,
 )
 from zenml.models.server_models import (
     ServerDatabaseType,

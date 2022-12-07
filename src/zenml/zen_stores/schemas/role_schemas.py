@@ -21,10 +21,10 @@ from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.enums import PermissionType
 from zenml.models import (
-    UserRoleAssignmentRequestModel,
     RoleRequestModel,
     RoleResponseModel,
     RoleUpdateModel,
+    UserRoleAssignmentRequestModel,
 )
 from zenml.models.role_assignment_models import UserRoleAssignmentResponseModel
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema

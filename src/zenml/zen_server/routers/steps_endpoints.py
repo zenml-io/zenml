@@ -13,18 +13,18 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for steps (and artifacts) of pipeline runs."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 from uuid import UUID
 
-from fastapi import APIRouter, Security, Depends
+from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, STATUS, STEP_CONFIGURATION, STEPS, VERSION_1
 from zenml.enums import ExecutionStatus, PermissionType
 from zenml.models import (
+    StepRunFilterModel,
     StepRunRequestModel,
     StepRunResponseModel,
     StepRunUpdateModel,
-    StepRunFilterModel
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store

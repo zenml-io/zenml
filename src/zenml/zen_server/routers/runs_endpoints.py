@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for pipeline runs."""
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -29,10 +29,10 @@ from zenml.constants import (
 )
 from zenml.enums import ExecutionStatus, PermissionType
 from zenml.models import (
+    PipelineRunFilterModel,
     PipelineRunResponseModel,
     PipelineRunUpdateModel,
     StepRunResponseModel,
-    PipelineRunFilterModel
 )
 from zenml.models.page_model import Page
 from zenml.post_execution.lineage.lineage_graph import LineageGraph
@@ -98,9 +98,7 @@ def get_run(
 def update_run(
     run_id: UUID,
     run_model: PipelineRunUpdateModel,
-    _: AuthContext = Security(
-        authorize, scopes=[PermissionType.WRITE]
-    ),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> PipelineRunResponseModel:
     """Updates a run.
 

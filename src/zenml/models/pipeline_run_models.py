@@ -14,7 +14,7 @@
 """Models representing pipeline runs."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, Optional, cast
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union, cast
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -26,6 +26,7 @@ from zenml.models.base_models import (
     ProjectScopedResponseModel,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
+from zenml.models.filter_models import FilterBaseModel
 
 if TYPE_CHECKING:
     from zenml.models.pipeline_models import PipelineResponseModel
@@ -139,21 +140,25 @@ class PipelineRunFilterModel(FilterBaseModel):
     user_id: Union[UUID, str] = Query(None, description="User of the Pipeline")
 
     stack_id: Union[UUID, str] = Query(
-        None, description="Stack used for the Pipeline Run")
+        None, description="Stack used for the Pipeline Run"
+    )
 
     status: str = Query(
         None,
         description="Name of the Pipeline Run",
     )
     start_time: Union[datetime, str] = Query(
-        None, description="Start time for this run")
+        None, description="Start time for this run"
+    )
     end_time: Union[datetime, str] = Query(
-        None, description="End time for this run")
+        None, description="End time for this run"
+    )
 
     num_steps: int = Query(
         None,
         description="Amount of steps in the Pipeline Run",
     )
+
 
 # ------- #
 # REQUEST #

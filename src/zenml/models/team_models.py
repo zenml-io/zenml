@@ -19,13 +19,13 @@ from uuid import UUID
 from fastapi import Query
 from pydantic import BaseModel, Field
 
-from zenml.models.filter_models import FilterBaseModel
 from zenml.models.base_models import (
     BaseRequestModel,
     BaseResponseModel,
     update_model,
 )
 from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
+from zenml.models.filter_models import FilterBaseModel
 
 if TYPE_CHECKING:
     from zenml.models.user_models import UserResponseModel
@@ -94,6 +94,7 @@ class TeamFilterModel(FilterBaseModel):
         None,
         description="Name of the team",
     )
+
 
 # ------- #
 # REQUEST #

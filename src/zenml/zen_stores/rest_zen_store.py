@@ -58,7 +58,7 @@ from zenml.constants import (
     USERS,
     VERSION_1,
 )
-from zenml.enums import ExecutionStatus, StackComponentType, StoreType
+from zenml.enums import StoreType
 from zenml.exceptions import (
     AuthorizationException,
     DoesNotExistException,
@@ -70,25 +70,30 @@ from zenml.exceptions import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import (
+    ArtifactFilterModel,
     ArtifactRequestModel,
     ArtifactResponseModel,
+    ComponentFilterModel,
     ComponentRequestModel,
     ComponentResponseModel,
     ComponentUpdateModel,
     FilterBaseModel,
+    FlavorFilterModel,
     FlavorRequestModel,
     FlavorResponseModel,
+    PipelineFilterModel,
     PipelineRequestModel,
     PipelineResponseModel,
+    PipelineRunFilterModel,
     PipelineRunRequestModel,
     PipelineRunResponseModel,
     PipelineRunUpdateModel,
     PipelineUpdateModel,
+    ProjectFilterModel,
     ProjectRequestModel,
     ProjectResponseModel,
     ProjectUpdateModel,
-    UserRoleAssignmentRequestModel,
-    UserRoleAssignmentResponseModel,
+    RoleFilterModel,
     RoleRequestModel,
     RoleResponseModel,
     RoleUpdateModel,
@@ -96,6 +101,7 @@ from zenml.models import (
     StackRequestModel,
     StackResponseModel,
     StackUpdateModel,
+    StepRunFilterModel,
     StepRunRequestModel,
     StepRunResponseModel,
     StepRunUpdateModel,
@@ -104,9 +110,10 @@ from zenml.models import (
     UserFilterModel,
     UserRequestModel,
     UserResponseModel,
-    UserUpdateModel, ComponentFilterModel, FlavorFilterModel, RoleFilterModel,
-    UserRoleAssignmentFilterModel, ProjectFilterModel, PipelineFilterModel,
-    PipelineRunFilterModel, StepRunFilterModel, ArtifactFilterModel,
+    UserRoleAssignmentFilterModel,
+    UserRoleAssignmentRequestModel,
+    UserRoleAssignmentResponseModel,
+    UserUpdateModel,
 )
 from zenml.models.base_models import (
     BaseRequestModel,
@@ -859,7 +866,6 @@ class RestZenStore(BaseZenStore):
             list_model=role_filter_model,
         )
 
-
     @track(AnalyticsEvent.UPDATED_ROLE)
     def update_role(
         self, role_id: UUID, role_update: RoleUpdateModel
@@ -931,7 +937,9 @@ class RestZenStore(BaseZenStore):
             response_model=UserRoleAssignmentResponseModel,
         )
 
-    def delete_user_role_assignment(self, user_role_assignment_id: UUID) -> None:
+    def delete_user_role_assignment(
+        self, user_role_assignment_id: UUID
+    ) -> None:
         """Delete a specific role assignment.
 
         Args:

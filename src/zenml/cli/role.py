@@ -20,8 +20,10 @@ import click
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.client import Client
+from zenml.console import console
 from zenml.enums import CliCategories, PermissionType
 from zenml.exceptions import EntityExistsError, IllegalOperationError
+from zenml.models import RoleFilterModel, UserRoleAssignmentFilterModel
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
@@ -30,17 +32,22 @@ def role() -> None:
 
 
 @role.command("list")
-def list_roles() -> None:
-    """List all roles."""
+@RoleFilterModel.click_list_options()
+def list_roles(**kwargs) -> None:
+    """List all roles that fulfill the filter requirements."""
     cli_utils.print_active_config()
-    roles = Client().list_roles()
-    if not roles:
-        cli_utils.declare("No roles registered.")
-        return
-    cli_utils.print_pydantic_models(
-        roles,
-        exclude_columns=["created", "updated"],
-    )
+    client = Client()
+    with console.status("Listing roles...\n"):
+
+        roles = client.list_roles(**kwargs)
+        if not roles.items:
+            cli_utils.declare("No roles found for the given filters.")
+            return
+
+        cli_utils.print_pydantic_models(
+            roles,
+            exclude_columns=["created", "updated"],
+        )
 
 
 @role.command("create", help="Create a new role.")
@@ -267,40 +274,21 @@ def assignment() -> None:
 
 
 @assignment.command("list")
-@click.option("--role", "role_name_or_id", type=str, required=False)
-@click.option("--project", "project_name_or_id", type=str, required=False)
-@click.option(
-    "--user",
-    "user_name_or_id",
-    type=str,
-    required=False,
-)
-def list_role_assignments(
-    role_name_or_id: Optional[str] = None,
-    user_name_or_id: Optional[str] = None,
-    project_name_or_id: Optional[str] = None,
-) -> None:
-    """List all role assignments.
+@UserRoleAssignmentFilterModel.click_list_options()
+def list_user_role_assignments(**kwargs) -> None:
+    """List all user role assignments that fulfill the filter requirements."""
 
-    Args:
-        role_name_or_id: Name or ID of a role to list role assignments for.
-        user_name_or_id: Name or ID of a user to list role assignments for.
-        project_name_or_id: Name or ID of a project to list role assignments
-            for.
-    """
     cli_utils.print_active_config()
-    # Hacky workaround while role assignments are scoped to the user endpoint
-    role_assignments = Client().list_role_assignment(
-        role_name_or_id=role_name_or_id,
-        user_name_or_id=user_name_or_id,
-        project_name_or_id=project_name_or_id,
-    )
-    if not role_assignments:
-        cli_utils.declare("No roles assigned.")
-        return
-    cli_utils.print_pydantic_models(
-        role_assignments, exclude_columns=["id", "created", "updated"]
-    )
+    client = Client()
+    with console.status("Listing roles...\n"):
+
+        role_assignments = client.list_user_role_assignment(**kwargs)
+        if not role_assignments.items:
+            cli_utils.declare("No roles assignments found for the given filters.")
+            return
+        cli_utils.print_pydantic_models(
+            role_assignments, exclude_columns=["id", "created", "updated"]
+        )
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
