@@ -48,6 +48,7 @@ def list_environment(detailed: bool = False) -> None:
         values = dict(
             name=environment_cfg.name,
             deployment=deployment.name,
+            description=environment_cfg.description,
         )
 
         disabled = environment.is_disabled
@@ -65,7 +66,6 @@ def list_environment(detailed: bool = False) -> None:
                     if r.name
                 ]
             )
-            values["description"] = environment_cfg.description
             values["requirements"] = requirements
             capabilities = environment.config.capabilities
             values["capabilities"] = ", ".join(
