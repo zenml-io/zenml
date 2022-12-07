@@ -18,8 +18,10 @@ from typing import Any, Type
 from deepchecks.tabular import Dataset
 
 from zenml.artifacts import DataArtifact
+from zenml.integrations.pandas.materializers.pandas_materializer import (
+    PandasMaterializer,
+)
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.materializers.pandas_materializer import PandasMaterializer
 
 DEFAULT_FILENAME = "data.binary"
 
