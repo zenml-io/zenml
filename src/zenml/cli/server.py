@@ -156,9 +156,9 @@ def up(
     for module in required_modules:
         try:
             importlib.import_module(module)
-        except ImportError as e:
-            cli_utils.error("Dependencies for ZenML Server not installed correctly. "
-                            f"`{module}` is not installed. "
+        except ModuleNotFoundError as e:
+            cli_utils.error(f"{e}. "
+                            "Dependencies for ZenML Server not installed correctly. "
                             "Please install by running `pip install zenml[server]` "
                             "and rerun `zenml up`")
 
