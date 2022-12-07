@@ -259,6 +259,10 @@ class SettingsResolvingError(ZenMLBaseException):
     """Raised when resolving settings failed."""
 
 
+class InputResolutionError(ZenMLBaseException):
+    """Raised when step input resolving failed."""
+
+
 class ZenKeyError(KeyError):
     """Specialized key error which allows error messages with line breaks."""
 

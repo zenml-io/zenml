@@ -12,10 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Abstract base class for entrypoint configurations that run a pipeline."""
-
-
 from zenml.client import Client
-from zenml.entrypoints import utils as entrypoint_utils
 from zenml.entrypoints.base_entrypoint_configuration import (
     BaseEntrypointConfiguration,
 )
@@ -37,5 +34,4 @@ class PipelineEntrypointConfiguration(BaseEntrypointConfiguration):
         orchestrator._prepare_run(deployment=deployment_config)
 
         for step in deployment_config.steps.values():
-            entrypoint_utils.load_and_configure_step(step)
             orchestrator.run_step(step)

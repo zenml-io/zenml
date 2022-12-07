@@ -27,7 +27,7 @@ class BaseDatasourceStep(BaseStep):
     """Base step implementation for any datasource step implementation."""
 
     @abstractmethod
-    def entrypoint(  # type: ignore[override]
+    def entrypoint(
         self,
         params: BaseDatasourceParameters,
         context: StepContext,

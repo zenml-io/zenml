@@ -56,6 +56,8 @@ class PartialStepConfiguration(StepConfigurationUpdate):
 
     name: str
     enable_cache: bool
+    docstring: Optional[str] = None
+    caching_parameters: Mapping[str, Any] = {}
     inputs: Mapping[str, PartialArtifactConfiguration] = {}
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
 
@@ -63,7 +65,6 @@ class PartialStepConfiguration(StepConfigurationUpdate):
 class StepConfiguration(PartialStepConfiguration):
     """Step configuration class."""
 
-    docstring: Optional[str]
     inputs: Mapping[str, ArtifactConfiguration] = {}
     outputs: Mapping[str, ArtifactConfiguration] = {}
 
@@ -82,11 +83,19 @@ class StepConfiguration(PartialStepConfiguration):
         return ResourceSettings.parse_obj(model_or_dict)
 
 
+class InputSpec(StrictBaseModel):
+    """Step input specification."""
+
+    step_name: str
+    output_name: str
+
+
 class StepSpec(StrictBaseModel):
     """Specification of a pipeline."""
 
     source: str
     upstream_steps: List[str]
+    inputs: Dict[str, InputSpec]
 
     @property
     def module_name(self) -> str:
@@ -124,9 +133,15 @@ class StepSpec(StrictBaseModel):
             True if the other object is referring to the same step.
         """
         if isinstance(other, StepSpec):
-
             if self.upstream_steps != other.upstream_steps:
                 return False
+
+            # TODO: rethink this once we have pipeline versioning
+            # for now we don't compare the inputs because that would force
+            # users to re-register their pipeline if they change an output or
+            # input name
+            # if self.inputs != other.inputs:
+            #     return False
 
             # Remove internal version pin from older sources for backwards
             # compatibility

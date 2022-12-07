@@ -5,7 +5,6 @@
 * [Introduction](./getting-started/introduction.md)
 * [Core Concepts](./getting-started/core-concepts.md)
 * [Installation](./getting-started/installation/installation.md)
-  * [Installation on M1 Macs](./getting-started/installation/m1-mac-installation.md)
 * [Quickstart](https://github.com/zenml-io/zenml/tree/main/examples/quickstart)
 * [Deploying ZenML](./getting-started/deploying-zenml/deploying-zenml.md)
   * [One Click Deployment using CLI](./getting-started/deploying-zenml/cli.md)
@@ -53,7 +52,6 @@
 ## Component Gallery
 
 * [Categories of MLOps Tools](./component-gallery/categories.md)
-* [Architecture Diagrams](getting-started/architecture-diagrams.md)
 * [Integration Overview](./component-gallery/integrations.md)
 * [Orchestrators](./component-gallery/orchestrators/orchestrators.md)
   * [Local Orchestrator](./component-gallery/orchestrators/local.md)

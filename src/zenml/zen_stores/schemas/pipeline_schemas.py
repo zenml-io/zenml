@@ -35,10 +35,10 @@ if TYPE_CHECKING:
 class PipelineSchema(NamedSchema, table=True):
     """SQL Model for pipelines."""
 
+    __tablename__ = "pipeline"
+
     docstring: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     spec: str = Field(sa_column=Column(TEXT, nullable=False))
-
-    __tablename__ = "pipeline"
 
     project_id: UUID = build_foreign_key_field(
         source=__tablename__,

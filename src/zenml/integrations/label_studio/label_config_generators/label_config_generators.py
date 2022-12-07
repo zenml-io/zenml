@@ -31,7 +31,7 @@ TASK_TO_FILENAME_REFERENCE_MAPPING = {
 def _generate_label_config() -> str:
     # TODO [HIGH] Implement label config generator
     # refactoring out duplicated code from the various functions below
-    pass
+    raise NotImplementedError()
 
 
 def generate_image_classification_label_config(

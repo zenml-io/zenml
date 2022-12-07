@@ -24,11 +24,13 @@ from zenml.zen_stores.schemas.team_schemas import TeamAssignmentSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
+        ArtifactSchema,
         FlavorSchema,
         PipelineRunSchema,
         PipelineSchema,
         StackComponentSchema,
         StackSchema,
+        StepRunSchema,
         TeamSchema,
         UserRoleAssignmentSchema,
     )
@@ -53,21 +55,15 @@ class UserSchema(NamedSchema, table=True):
     assigned_roles: List["UserRoleAssignmentSchema"] = Relationship(
         back_populates="user", sa_relationship_kwargs={"cascade": "delete"}
     )
-    stacks: List["StackSchema"] = Relationship(
-        back_populates="user",
-    )
+    stacks: List["StackSchema"] = Relationship(back_populates="user")
     components: List["StackComponentSchema"] = Relationship(
         back_populates="user",
     )
-    flavors: List["FlavorSchema"] = Relationship(
-        back_populates="user",
-    )
-    pipelines: List["PipelineSchema"] = Relationship(
-        back_populates="user",
-    )
-    runs: List["PipelineRunSchema"] = Relationship(
-        back_populates="user",
-    )
+    flavors: List["FlavorSchema"] = Relationship(back_populates="user")
+    pipelines: List["PipelineSchema"] = Relationship(back_populates="user")
+    runs: List["PipelineRunSchema"] = Relationship(back_populates="user")
+    step_runs: List["StepRunSchema"] = Relationship(back_populates="user")
+    artifacts: List["ArtifactSchema"] = Relationship(back_populates="user")
 
     @classmethod
     def from_request(cls, model: UserRequestModel) -> "UserSchema":
