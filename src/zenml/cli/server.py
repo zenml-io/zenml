@@ -151,12 +151,17 @@ def up(
     """
     # flake8: noqa: C901
 
-    try:
-        import fastapi_utils
-    except ModuleNotFoundError:
-        cli_utils.error("Local ZenML Server not installed correctly. "
-        "Please install by running `pip install zenml[server]` "
-        "and rerun `zenml up`")
+    import importlib
+    required_modules = ['fastapi', 'uvicorn', 'python-multipart', 'python-jose', 'fastapi-utils']
+    for module in required_modules:
+        try:
+            importlib.import_module(module)
+        except ImportError as e:
+            cli_utils.error("Dependencies for ZenML Server not installed correctly. "
+                            f"`{module}` is not installed. "
+                            "Please install by running `pip install zenml[server]` "
+                            "and rerun `zenml up`")
+
 
     from zenml.zen_server.deploy.deployer import ServerDeployer
     from zenml.zen_stores.sql_zen_store import SQLDatabaseDriver
