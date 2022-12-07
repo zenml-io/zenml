@@ -124,11 +124,21 @@ jobs:
           # This is required for the Docker Python SDK to work
           sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
 
-      - name: Install K3D and kubectl
+      - name: Install kubectl on Linux
         run: |
-          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
           sudo install -o root -g 0 -m 0755 kubectl /usr/local/bin/kubectl
+        if: runner.os=='Linux'
+
+      - name: Install kubectl on MacOS
+        run: |
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/darwin/amd64/kubectl"
+          sudo install -o root -g 0 -m 0755 kubectl /usr/local/bin/kubectl
+        if: runner.os=='macOS'
+
+      - name: Install K3D
+        run: |
+          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
         if: runner.os!='Windows'
 
       - name: Install Prerequisites
@@ -145,6 +155,11 @@ jobs:
           source $VENV
           zenml integration list
           pip list
+
+      - name: Setup tmate session
+        if: ${{ failure() }}
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 30
 
       - name: Test
         run: |
