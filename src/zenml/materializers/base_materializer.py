@@ -147,7 +147,7 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         """
         if isinstance(uri, BaseArtifact):
             artifact = uri
-        if artifact:
+        if artifact is not None:
             logger.warning(
                 "Initializing a materializer with an artifact is deprecated "
                 "and will be removed in a future release. Please initialize "
@@ -155,7 +155,7 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
                 "`materializer = MyMaterializer(uri=artifact.uri)`."
             )
             self.uri = artifact.uri
-        elif uri:
+        elif uri is not None:
             self.uri = uri
         else:
             raise ValueError(
