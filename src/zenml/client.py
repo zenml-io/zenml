@@ -51,9 +51,12 @@ from zenml.exceptions import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import (
+    ArtifactRequestModel,
     ComponentRequestModel,
+    ComponentResponseModel,
     ComponentUpdateModel,
     FlavorRequestModel,
+    FlavorResponseModel,
     PipelineRequestModel,
     PipelineResponseModel,
     PipelineRunRequestModel,
@@ -73,20 +76,18 @@ from zenml.models import (
     StepRunResponseModel,
     TeamRequestModel,
     TeamResponseModel,
+    TeamUpdateModel,
     UserRequestModel,
     UserResponseModel,
     UserUpdateModel,
 )
-from zenml.models.artifact_models import ArtifactRequestModel
 from zenml.models.base_models import BaseResponseModel
-from zenml.models.team_models import TeamUpdateModel
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.filesync_model import FileSyncModel
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_configurations import PipelineSpec
-    from zenml.models import ComponentResponseModel, FlavorResponseModel
     from zenml.stack import Stack, StackComponentConfig
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
