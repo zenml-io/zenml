@@ -651,6 +651,7 @@ class SqlZenStore(BaseZenStore):
         """Creates a mysql database.
 
         Args:
+            url: The URL of the database to create.
             connect_args: Connect arguments for the SQLAlchemy engine.
             engine_args: Additional initialization arguments for the SQLAlchemy
                 engine
