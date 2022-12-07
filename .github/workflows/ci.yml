@@ -45,10 +45,10 @@ jobs:
           - os: windows-latest
             test_environment: default-kubeflow-orchestrator
           # docker (hence also k3d/kubeflow) is not supported on macos
-          - os: macos-latest
-            test_environment: default-kubeflow-orchestrator
-          - os: macos-latest
-            test_environment: docker-server-docker-orchestrator
+          # - os: macos-latest
+          #   test_environment: default-kubeflow-orchestrator
+          # - os: macos-latest
+          #   test_environment: docker-server-docker-orchestrator
           # kubeflow is time-consuming to run, so we only run it on 3.8
           - test_environment: default-kubeflow-orchestrator
             python-version: '3.7'

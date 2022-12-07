@@ -86,7 +86,7 @@ jobs:
       # as the TF images are too large for the GH action runner disk
       - name: Free disk space
         shell: bash
-        if: ${{ matrix.os == 'ubuntu-latest' }}
+        if: ${{ inputs.os == 'ubuntu-latest' }}
         run: |
           echo "Available storage:"
           df -h
@@ -116,6 +116,12 @@ jobs:
         if: runner.os=='Windows'
         run: choco install graphviz
 
+      - name: Install Docker and Colima on MacOS
+        if: runner.os=='macOS'
+        run: |
+          brew install docker colima
+          colima start
+
       - name: Install K3D and kubectl
         run: |
           curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
@@ -126,7 +132,11 @@ jobs:
       - name: Install Prerequisites
         run: |
           source $VENV
-          zenml integration install kubeflow s3 gcp azure gcp_secrets_manager vertex vault pillow evidently deepchecks great_expectations huggingface lightgbm neural_prophet pytorch tensorflow whylogs xgboost mlflow -f
+          zenml integration export-requirements --output-file requirements.txt kubeflow s3 gcp azure vault pillow evidently deepchecks great_expectations huggingface lightgbm neural_prophet pytorch tensorflow whylogs xgboost mlflow neptune
+          pip install -r requirements.txt
+          rm requirements.txt
+          # re-install zenml to be sure
+          poetry install --extras server
 
       - name: Check Python Env ahead of tests
         run: |

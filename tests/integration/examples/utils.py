@@ -20,7 +20,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Generator, List, Optional, Tuple
 
-from tests.harness.utils import cleanup_folder
 from zenml.cli import EXAMPLES_RUN_SCRIPT, SHELL_EXECUTABLE, LocalExample
 from zenml.enums import ExecutionStatus
 from zenml.post_execution.pipeline import get_pipeline
@@ -39,7 +38,7 @@ def copy_example_files(example_dir: str, dst_dir: str) -> None:
         s = os.path.join(example_dir, item)
         d = os.path.join(dst_dir, item)
         if os.path.isdir(s):
-            shutil.copytree(s, d)
+            shutil.copytree(s, d, dirs_exist_ok=True)
         else:
             shutil.copy2(s, d)
 
