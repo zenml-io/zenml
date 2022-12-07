@@ -113,7 +113,7 @@ class StepRunner:
                 context = arg_type(
                     step_name=step_name,
                     output_materializers=output_materializers,
-                    output_artifacts=output_artifact_uris,
+                    output_artifact_uris=output_artifact_uris,
                 )
                 function_params[arg] = context
             else:
