@@ -51,7 +51,7 @@ class BuiltInMaterializer(BaseMaterializer):
         super().__init__(artifact)
         self.data_path = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
 
-    def handle_input(self, data_type: Type[Any]) -> Any:
+    def load(self, data_type: Type[Any]) -> Any:
         """Reads basic primitive types from JSON.
 
         Args:
@@ -60,7 +60,7 @@ class BuiltInMaterializer(BaseMaterializer):
         Returns:
             The data read.
         """
-        super().handle_input(data_type)
+        super().load(data_type)
         contents = yaml_utils.read_json(self.data_path)
         if type(contents) != data_type:
             # TODO [ENG-142]: Raise error or try to coerce
@@ -70,13 +70,13 @@ class BuiltInMaterializer(BaseMaterializer):
             )
         return contents
 
-    def handle_return(self, data: Any) -> None:
+    def save(self, data: Any) -> None:
         """Serialize a basic type to JSON.
 
         Args:
             data: The data to store.
         """
-        super().handle_return(data)
+        super().save(data)
         yaml_utils.write_json(self.data_path, data)
 
 
@@ -95,7 +95,7 @@ class BytesMaterializer(BaseMaterializer):
         super().__init__(artifact)
         self.data_path = os.path.join(self.artifact.uri, DEFAULT_BYTES_FILENAME)
 
-    def handle_input(self, data_type: Type[Any]) -> Any:
+    def load(self, data_type: Type[Any]) -> Any:
         """Reads a bytes object from file.
 
         Args:
@@ -104,17 +104,17 @@ class BytesMaterializer(BaseMaterializer):
         Returns:
             The data read.
         """
-        super().handle_input(data_type)
+        super().load(data_type)
         with fileio.open(self.data_path, "rb") as file_:
             return file_.read()
 
-    def handle_return(self, data: Any) -> None:
+    def save(self, data: Any) -> None:
         """Save a bytes object to file.
 
         Args:
             data: The data to store.
         """
-        super().handle_return(data)
+        super().save(data)
         with fileio.open(self.data_path, "wb") as file_:
             file_.write(data)
 
@@ -228,7 +228,7 @@ class BuiltInContainerMaterializer(BaseMaterializer):
             self.artifact.uri, DEFAULT_METADATA_FILENAME
         )
 
-    def handle_input(self, data_type: Type[Any]) -> Any:
+    def load(self, data_type: Type[Any]) -> Any:
         """Reads a materialized built-in container object.
 
         If the data was serialized to JSON, deserialize it.
@@ -238,7 +238,7 @@ class BuiltInContainerMaterializer(BaseMaterializer):
             2. Get the materializer via the `default_materializer_registry`,
             3. Initialize the materializer with a mock `DataArtifact`, whose
                 `uri` attribute is overwritten to point to the desired path,
-            4. Use `handle_input()` of that materializer to load the element.
+            4. Use `load()` of that materializer to load the element.
 
         Args:
             data_type: The type of the data to read.
@@ -249,7 +249,7 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         Raises:
             RuntimeError: If the data was not found.
         """
-        super().handle_input(data_type)
+        super().load(data_type)
 
         # If the data was not serialized, there must be metadata present.
         if not fileio.exists(self.data_path) and not fileio.exists(
@@ -273,7 +273,7 @@ class BuiltInContainerMaterializer(BaseMaterializer):
                 materializer_class = default_materializer_registry[type_]
                 mock_artifact = DataArtifact(uri=path_)
                 materializer = materializer_class(mock_artifact)
-                element = materializer.handle_input(type_)
+                element = materializer.load(type_)
                 outputs.append(element)
 
         # Cast the data to the correct type.
@@ -286,7 +286,7 @@ class BuiltInContainerMaterializer(BaseMaterializer):
             return set(outputs)
         return outputs
 
-    def handle_return(self, data: Any) -> None:
+    def save(self, data: Any) -> None:
         """Materialize a built-in container object.
 
         If the object can be serialized to JSON, serialize it.
@@ -305,7 +305,7 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         Raises:
             Exception: If any exception occurs, it is raised after cleanup.
         """
-        super().handle_return(data)
+        super().save(data)
 
         # tuple and set: handle as list.
         if isinstance(data, tuple) or isinstance(data, set):
@@ -340,7 +340,7 @@ class BuiltInContainerMaterializer(BaseMaterializer):
             yaml_utils.write_json(self.metadata_path, metadata)
             # Materialize each element.
             for element, materializer in zip(data, materializers):
-                materializer.handle_return(element)
+                materializer.save(element)
         # If an error occurs, delete all created files.
         except Exception as e:
             # Delete metadata

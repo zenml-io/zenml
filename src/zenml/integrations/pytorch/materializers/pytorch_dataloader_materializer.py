@@ -33,7 +33,7 @@ class PyTorchDataLoaderMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (DataLoader,)
     ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
 
-    def handle_input(self, data_type: Type[Any]) -> DataLoader[Any]:
+    def load(self, data_type: Type[Any]) -> DataLoader[Any]:
         """Reads and returns a PyTorch dataloader.
 
         Args:
@@ -42,19 +42,19 @@ class PyTorchDataLoaderMaterializer(BaseMaterializer):
         Returns:
             A loaded PyTorch dataloader.
         """
-        super().handle_input(data_type)
+        super().load(data_type)
         with fileio.open(
             os.path.join(self.artifact.uri, DEFAULT_FILENAME), "rb"
         ) as f:
             return cast(DataLoader[Any], torch.load(f))
 
-    def handle_return(self, dataloader: DataLoader[Any]) -> None:
+    def save(self, dataloader: DataLoader[Any]) -> None:
         """Writes a PyTorch dataloader.
 
         Args:
             dataloader: A torch.utils.DataLoader or a dict to pass into dataloader.save
         """
-        super().handle_return(dataloader)
+        super().save(dataloader)
 
         # Save entire dataloader to artifact directory
         with fileio.open(

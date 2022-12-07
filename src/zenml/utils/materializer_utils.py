@@ -90,7 +90,7 @@ def load_model_from_metadata(model_uri: str) -> Any:
     materializer_class = source_utils.load_source_path_class(materializer)
     model_class = source_utils.load_source_path_class(data_type)
     materializer_object: BaseMaterializer = materializer_class(model_artifact)
-    model = materializer_object.handle_input(model_class)
+    model = materializer_object.load(model_class)
     try:
         import torch.nn as nn
 
@@ -127,6 +127,6 @@ def model_from_model_artifact(model_artifact: ModelArtifact) -> Any:
     )
     model_class = source_utils.load_source_path_class(model_artifact.data_type)
     materializer_object: BaseMaterializer = materializer_class(model_artifact)
-    model = materializer_object.handle_input(model_class)
+    model = materializer_object.load(model_class)
     logger.debug(f"Model loaded successfully :\n{model}")
     return model

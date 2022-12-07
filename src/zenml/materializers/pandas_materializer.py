@@ -68,9 +68,7 @@ class PandasMaterializer(BaseMaterializer):
             )
             self.csv_path = os.path.join(self.artifact.uri, CSV_FILENAME)
 
-    def handle_input(
-        self, data_type: Type[Any]
-    ) -> Union[pd.DataFrame, pd.Series]:
+    def load(self, data_type: Type[Any]) -> Union[pd.DataFrame, pd.Series]:
         """Reads `pd.DataFrame` or `pd.Series` from a `.parquet` or `.csv` file.
 
         Args:
@@ -82,7 +80,7 @@ class PandasMaterializer(BaseMaterializer):
         Returns:
             The pandas dataframe or series.
         """
-        super().handle_input(data_type)
+        super().load(data_type)
         if fileio.exists(self.parquet_path):
             if self.pyarrow_exists:
                 with fileio.open(self.parquet_path, mode="rb") as f:
@@ -122,13 +120,13 @@ class PandasMaterializer(BaseMaterializer):
 
         return is_dataframe_or_series(df)
 
-    def handle_return(self, df: Union[pd.DataFrame, pd.Series]) -> None:
+    def save(self, df: Union[pd.DataFrame, pd.Series]) -> None:
         """Writes a pandas dataframe or series to the specified filename.
 
         Args:
             df: The pandas dataframe or series to write.
         """
-        super().handle_return(df)
+        super().save(df)
         if self.pyarrow_exists:
             with fileio.open(self.parquet_path, mode="wb") as f:
                 df.to_parquet(f, compression=COMPRESSION_TYPE)

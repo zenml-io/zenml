@@ -16,6 +16,8 @@
 import inspect
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type, cast
 
+from zenml.logger import get_logger
+
 if TYPE_CHECKING:
     from zenml.artifacts.base_artifact import BaseArtifact
 
@@ -24,6 +26,8 @@ from zenml.exceptions import MaterializerInterfaceError
 from zenml.materializers.default_materializer_registry import (
     default_materializer_registry,
 )
+
+logger = get_logger(__name__)
 
 
 class BaseMaterializerMeta(type):
@@ -121,14 +125,17 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
             for associated_type in self.ASSOCIATED_TYPES
         )
 
-    def handle_input(self, data_type: Type[Any]) -> Any:
-        """Write logic here to handle input of the step function.
+    def load(self, data_type: Type[Any]) -> Any:
+        """Write logic here to load the data of an artifact.
 
         Args:
-            data_type: What type the input should be materialized as.
+            data_type: What type the artifact data should be loaded as.
+
+        Returns:
+            The data of the artifact.
 
         Raises:
-            TypeError: If the data is not of the correct type.
+            TypeError: If the artifact data is not of the correct type.
         """
         if not self._can_handle_type(data_type):
             raise TypeError(
@@ -136,15 +143,16 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
                 f"can only read artifacts to the following types: "
                 f"{self.ASSOCIATED_TYPES}."
             )
+        return None
 
-    def handle_return(self, data: Any) -> None:
-        """Write logic here to handle return of the step function.
+    def save(self, data: Any) -> None:
+        """Write logic here to save the data of an artifact.
 
         Args:
-            data: Any object that is specified as an input artifact of the step.
+            data: The data of the artifact to save.
 
         Raises:
-            TypeError: If the data is not of the correct type.
+            TypeError: If the artifact data is not of the correct type.
         """
         data_type = type(data)
         if not self._can_handle_type(data_type):
@@ -152,3 +160,32 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
                 f"Unable to write {data_type}. {self.__class__.__name__} "
                 f"can only write the following types: {self.ASSOCIATED_TYPES}."
             )
+
+    def handle_input(self, data_type: Type[Any]) -> Any:
+        """Deprecated method to load the data of an artifact.
+
+        Args:
+            data_type: What type the artifact data should be loaded as.
+
+        Returns:
+            The data of the artifact.
+        """
+        logger.warning(
+            "The `materializer.handle_input` method is deprecated and will "
+            "be removed in a future release. Please use `materializer.load` "
+            "instead."
+        )
+        return self.load(data_type)
+
+    def handle_return(self, data: Any) -> None:
+        """Deprecated method to save the data of an artifact.
+
+        Args:
+            data: The data of the artifact to save.
+        """
+        logger.warning(
+            "The `materializer.handle_return` method is deprecated and will "
+            "be removed in a future release. Please use `materializer.save` "
+            "instead."
+        )
+        self.save(data)

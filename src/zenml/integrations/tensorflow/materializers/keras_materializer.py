@@ -30,7 +30,7 @@ class KerasMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (keras.Model,)
     ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
 
-    def handle_input(self, data_type: Type[Any]) -> keras.Model:
+    def load(self, data_type: Type[Any]) -> keras.Model:
         """Reads and returns a Keras model after copying it to temporary path.
 
         Args:
@@ -39,7 +39,7 @@ class KerasMaterializer(BaseMaterializer):
         Returns:
             A tf.keras.Model model.
         """
-        super().handle_input(data_type)
+        super().load(data_type)
 
         # Create a temporary directory to store the model
         temp_dir = tempfile.TemporaryDirectory()
@@ -55,13 +55,13 @@ class KerasMaterializer(BaseMaterializer):
 
         return model
 
-    def handle_return(self, model: keras.Model) -> None:
+    def save(self, model: keras.Model) -> None:
         """Writes a keras model to the artifact store.
 
         Args:
             model: A tf.keras.Model model.
         """
-        super().handle_return(model)
+        super().save(model)
 
         # Create a temporary directory to store the model
         temp_dir = tempfile.TemporaryDirectory()

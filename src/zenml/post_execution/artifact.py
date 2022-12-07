@@ -117,7 +117,7 @@ class ArtifactView:
 
         Args:
             output_data_type: The datatype to which the materializer should
-                read, will be passed to the materializers `handle_input` method.
+                read, will be passed to the materializers `load` method.
             materializer_class: The class of the materializer that should be
                 used to read the artifact data. If no materializer class is
                 given, we use the materializer that was used to write the
@@ -167,7 +167,7 @@ class ArtifactView:
         #  works because materializers only require a `.uri` property at the
         #  moment.
         materializer = materializer_class(self)  # type: ignore[arg-type]
-        return materializer.handle_input(output_data_type)
+        return materializer.load(output_data_type)
 
     def __repr__(self) -> str:
         """Returns a string representation of this artifact.

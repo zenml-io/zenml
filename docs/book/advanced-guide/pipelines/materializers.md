@@ -53,7 +53,7 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         """Initializes a materializer with the given artifact."""
         self.artifact = artifact
 
-    def handle_input(self, data_type: Type[Any]) -> Any:
+    def load(self, data_type: Type[Any]) -> Any:
         """Write logic here to handle input of the step function.
 
         Args:
@@ -65,7 +65,7 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         # read from self.artifact.uri
         ...
 
-    def handle_return(self, data: Any) -> None:
+    def save(self, data: Any) -> None:
         """Write logic here to handle return of the step function.
 
         Args:
@@ -108,11 +108,11 @@ modified.
 
 ### How to Store and Retrieve the Artifact
 
-The `handle_input()` and `handle_return()` methods define the serialization and
-deserialization of artifacts.
+The `load()` and `save()` methods define the serialization and deserialization 
+of artifacts.
 
-- `handle_input()` defines how data is read from the artifact store and deserialized,
-- `handle_return()` defines how data is serialized and saved to the artifact store.
+- `load()` defines how data is read from the artifact store and deserialized,
+- `save()` defines how data is serialized and saved to the artifact store.
 
 These methods you will need to overwrite according to how you plan to serialize
 your objects. E.g., if you have custom PyTorch classes as `ASSOCIATED_TYPES`,
@@ -240,7 +240,7 @@ The error message basically says that ZenML does not know how to persist the
 object of type `MyObj` (how could it? We just created this!). Therefore, we
 have to create our own materializer. To do this, you can extend the
 `BaseMaterializer` by sub-classing it, listing `MyObj` in `ASSOCIATED_TYPES`,
-and overwriting `handle_input()` and `handle_return()`:
+and overwriting `load()` and `save()`:
 
 ```python
 import os
@@ -255,16 +255,16 @@ class MyMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (MyObj,)
     ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
 
-    def handle_input(self, data_type: Type[MyObj]) -> MyObj:
+    def load(self, data_type: Type[MyObj]) -> MyObj:
         """Read from artifact store"""
-        super().handle_input(data_type)
+        super().load(data_type)
         with fileio.open(os.path.join(self.artifact.uri, 'data.txt'), 'r') as f:
             name = f.read()
         return MyObj(name=name)
 
-    def handle_return(self, my_obj: MyObj) -> None:
+    def save(self, my_obj: MyObj) -> None:
         """Write to artifact store"""
-        super().handle_return(my_obj)
+        super().save(my_obj)
         with fileio.open(os.path.join(self.artifact.uri, 'data.txt'), 'w') as f:
             f.write(my_obj.name)
 ```
@@ -332,16 +332,16 @@ class MyMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (MyObj,)
     ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
 
-    def handle_input(self, data_type: Type[MyObj]) -> MyObj:
+    def load(self, data_type: Type[MyObj]) -> MyObj:
         """Read from artifact store"""
-        super().handle_input(data_type)
+        super().load(data_type)
         with fileio.open(os.path.join(self.artifact.uri, 'data.txt'), 'r') as f:
             name = f.read()
         return MyObj(name=name)
 
-    def handle_return(self, my_obj: MyObj) -> None:
+    def save(self, my_obj: MyObj) -> None:
         """Write to artifact store"""
-        super().handle_return(my_obj)
+        super().save(my_obj)
         with fileio.open(os.path.join(self.artifact.uri, 'data.txt'), 'w') as f:
             f.write(my_obj.name)
 

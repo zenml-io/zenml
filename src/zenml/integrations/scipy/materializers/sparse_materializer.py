@@ -31,7 +31,7 @@ class SparseMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (spmatrix,)
     ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
 
-    def handle_input(self, data_type: Type[Any]) -> spmatrix:
+    def load(self, data_type: Type[Any]) -> spmatrix:
         """Reads spmatrix from npz file.
 
         Args:
@@ -40,20 +40,20 @@ class SparseMaterializer(BaseMaterializer):
         Returns:
             A spmatrix object.
         """
-        super().handle_input(data_type)
+        super().load(data_type)
         with fileio.open(
             os.path.join(self.artifact.uri, DATA_FILENAME), "rb"
         ) as f:
             mat = load_npz(f)
         return mat
 
-    def handle_return(self, mat: spmatrix) -> None:
+    def save(self, mat: spmatrix) -> None:
         """Writes a spmatrix to the artifact store as a npz file.
 
         Args:
             mat: The spmatrix to write.
         """
-        super().handle_return(mat)
+        super().save(mat)
         with fileio.open(
             os.path.join(self.artifact.uri, DATA_FILENAME), "wb"
         ) as f:

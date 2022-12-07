@@ -30,7 +30,7 @@ class SparkDataFrameMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (DataFrame,)
     ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
 
-    def handle_input(self, data_type: Type[Any]) -> DataFrame:
+    def load(self, data_type: Type[Any]) -> DataFrame:
         """Reads and returns a spark dataframe.
 
         Args:
@@ -39,7 +39,7 @@ class SparkDataFrameMaterializer(BaseMaterializer):
         Returns:
             A loaded spark dataframe.
         """
-        super().handle_input(data_type)
+        super().load(data_type)
         # Create the Spark session
         spark = SparkSession.builder.getOrCreate()
 
@@ -47,13 +47,13 @@ class SparkDataFrameMaterializer(BaseMaterializer):
         path = os.path.join(self.artifact.uri, DEFAULT_FILEPATH)
         return spark.read.parquet(path)
 
-    def handle_return(self, df: DataFrame) -> None:
+    def save(self, df: DataFrame) -> None:
         """Writes a spark dataframe.
 
         Args:
             df: A spark dataframe object.
         """
-        super().handle_return(df)
+        super().save(df)
 
         # Write the dataframe to the artifact store
         path = os.path.join(self.artifact.uri, DEFAULT_FILEPATH)

@@ -261,7 +261,7 @@ class StepRunner:
             artifact.materializer, expected_class=BaseMaterializer
         )
         materializer = materializer_class(artifact)
-        return materializer.handle_input(data_type=data_type)
+        return materializer.load(data_type=data_type)
 
     def _store_output_artifact(
         self,
@@ -280,4 +280,4 @@ class StepRunner:
         """
         artifact.materializer = materializer_source
         artifact.data_type = source_utils.resolve_class(type(data))
-        materializer_class(artifact).handle_return(data)
+        materializer_class(artifact).save(data)

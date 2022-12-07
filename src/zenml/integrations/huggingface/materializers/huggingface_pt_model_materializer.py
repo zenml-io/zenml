@@ -33,7 +33,7 @@ class HFPTModelMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (PreTrainedModel,)
     ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
 
-    def handle_input(self, data_type: Type[Any]) -> PreTrainedModel:
+    def load(self, data_type: Type[Any]) -> PreTrainedModel:
         """Reads HFModel.
 
         Args:
@@ -42,7 +42,7 @@ class HFPTModelMaterializer(BaseMaterializer):
         Returns:
             The model read from the specified dir.
         """
-        super().handle_input(data_type)
+        super().load(data_type)
 
         config = AutoConfig.from_pretrained(
             os.path.join(self.artifact.uri, DEFAULT_PT_MODEL_DIR)
@@ -55,13 +55,13 @@ class HFPTModelMaterializer(BaseMaterializer):
             os.path.join(self.artifact.uri, DEFAULT_PT_MODEL_DIR)
         )
 
-    def handle_return(self, model: Type[Any]) -> None:
+    def save(self, model: Type[Any]) -> None:
         """Writes a Model to the specified dir.
 
         Args:
             model: The Torch Model to write.
         """
-        super().handle_return(model)
+        super().save(model)
         temp_dir = TemporaryDirectory()
         model.save_pretrained(temp_dir.name)
         io_utils.copy_dir(

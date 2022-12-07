@@ -37,7 +37,7 @@ class WhylogsMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (DatasetProfileView,)
     ASSOCIATED_ARTIFACT_TYPES = (StatisticsArtifact,)
 
-    def handle_input(self, data_type: Type[Any]) -> DatasetProfileView:
+    def load(self, data_type: Type[Any]) -> DatasetProfileView:
         """Reads and returns a whylogs dataset profile view.
 
         Args:
@@ -46,7 +46,7 @@ class WhylogsMaterializer(BaseMaterializer):
         Returns:
             A loaded whylogs dataset profile view object.
         """
-        super().handle_input(data_type)
+        super().load(data_type)
         filepath = os.path.join(self.artifact.uri, PROFILE_FILENAME)
 
         # Create a temporary folder
@@ -62,13 +62,13 @@ class WhylogsMaterializer(BaseMaterializer):
 
         return profile_view
 
-    def handle_return(self, profile_view: DatasetProfileView) -> None:
+    def save(self, profile_view: DatasetProfileView) -> None:
         """Writes a whylogs dataset profile view.
 
         Args:
             profile_view: A whylogs dataset profile view object.
         """
-        super().handle_return(profile_view)
+        super().save(profile_view)
         filepath = os.path.join(self.artifact.uri, PROFILE_FILENAME)
 
         # Create a temporary folder

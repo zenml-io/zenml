@@ -42,7 +42,7 @@ class PillowImageMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (Image.Image,)
     ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
 
-    def handle_input(self, data_type: Type[Image.Image]) -> Image.Image:
+    def load(self, data_type: Type[Image.Image]) -> Image.Image:
         """Read from artifact store.
 
         Args:
@@ -51,7 +51,7 @@ class PillowImageMaterializer(BaseMaterializer):
         Returns:
             An Image.Image object.
         """
-        super().handle_input(data_type)
+        super().load(data_type)
         files = io_utils.find_files(
             self.artifact.uri, f"{DEFAULT_IMAGE_FILENAME}.*"
         )
@@ -69,14 +69,14 @@ class PillowImageMaterializer(BaseMaterializer):
         fileio.copy(filepath, temp_file)
         return Image.open(temp_file)
 
-    def handle_return(self, image: Image.Image) -> None:
+    def save(self, image: Image.Image) -> None:
         """Write to artifact store.
 
         Args:
             image: An Image.Image object.
         """
         # # FAILING OPTION 1: temporary directory
-        super().handle_return(image)
+        super().save(image)
         temp_dir = tempfile.TemporaryDirectory(prefix="zenml-temp-")
         file_extension = image.format or DEFAULT_IMAGE_EXTENSION
         full_filename = f"{DEFAULT_IMAGE_FILENAME}.{file_extension}"

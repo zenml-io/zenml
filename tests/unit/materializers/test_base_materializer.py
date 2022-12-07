@@ -48,7 +48,7 @@ def test_materializer_raises_an_exception_when_asked_to_read_unfamiliar_type():
     materializer = TestMaterializer(artifact=DataArtifact(uri=""))
 
     with pytest.raises(TypeError):
-        materializer.handle_input(data_type=str)
+        materializer.load(data_type=str)
 
 
 def test_materializer_raises_an_exception_when_asked_to_write_unfamiliar_type():
@@ -57,4 +57,4 @@ def test_materializer_raises_an_exception_when_asked_to_write_unfamiliar_type():
     materializer = TestMaterializer(artifact=DataArtifact(uri=""))
 
     with pytest.raises(TypeError):
-        materializer.handle_return(data="some_string")
+        materializer.save(data="some_string")

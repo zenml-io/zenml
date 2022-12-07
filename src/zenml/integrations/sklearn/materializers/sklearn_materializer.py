@@ -54,7 +54,7 @@ class SklearnMaterializer(BaseMaterializer):
     )
     ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
 
-    def handle_input(
+    def load(
         self, data_type: Type[Any]
     ) -> Union[
         BaseEstimator,
@@ -76,13 +76,13 @@ class SklearnMaterializer(BaseMaterializer):
         Returns:
             The model.
         """
-        super().handle_input(data_type)
+        super().load(data_type)
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
         with fileio.open(filepath, "rb") as fid:
             clf = pickle.load(fid)
         return clf
 
-    def handle_return(
+    def save(
         self,
         clf: Union[
             BaseEstimator,
@@ -102,7 +102,7 @@ class SklearnMaterializer(BaseMaterializer):
         Args:
             clf: A sklearn model.
         """
-        super().handle_return(clf)
+        super().save(clf)
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
         with fileio.open(filepath, "wb") as fid:
             pickle.dump(clf, fid)

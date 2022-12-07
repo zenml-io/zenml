@@ -37,7 +37,7 @@ class BentoMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (bento.Bento,)
     ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
 
-    def handle_input(self, data_type: Type[bento.Bento]) -> bento.Bento:
+    def load(self, data_type: Type[bento.Bento]) -> bento.Bento:
         """Read from artifact store and return a Bento object.
 
         Args:
@@ -46,7 +46,7 @@ class BentoMaterializer(BaseMaterializer):
         Returns:
             An bento.Bento object.
         """
-        super().handle_input(data_type)
+        super().load(data_type)
 
         # Create a temporary directory to store the model
         temp_dir = tempfile.TemporaryDirectory()
@@ -66,13 +66,13 @@ class BentoMaterializer(BaseMaterializer):
             imported_bento.save()
         return imported_bento
 
-    def handle_return(self, bento: bento.Bento) -> None:
+    def save(self, bento: bento.Bento) -> None:
         """Write to artifact store.
 
         Args:
             bento: An bento.Bento object.
         """
-        super().handle_return(bento)
+        super().save(bento)
 
         # Create a temporary directory to store the model
         temp_dir = tempfile.TemporaryDirectory(prefix="zenml-temp-")

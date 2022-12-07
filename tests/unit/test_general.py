@@ -39,8 +39,8 @@ def _test_materializer(
 
     To do so, we first materialize the output to disk, then read it again with
     the same materializer and ensure that:
-    - `materializer.handle_return()` did write something to disk
-    - `materializer.handle_input()` did load the original data type again
+    - `materializer.save()` did write something to disk
+    - `materializer.load()` did load the original data type again
 
     Args:
         step_output: The output artifact we want to materialize.
@@ -65,10 +65,10 @@ def _test_materializer(
         mock_artifact = DataArtifact(uri=artifact_uri)
         materializer = materializer_class(mock_artifact)
         existing_files = os.listdir(artifact_uri)
-        materializer.handle_return(step_output)
+        materializer.save(step_output)
         new_files = os.listdir(artifact_uri)
         assert len(new_files) > len(existing_files)  # something was written
-        loaded_data = materializer.handle_input(step_output_type)
+        loaded_data = materializer.load(step_output_type)
         assert isinstance(loaded_data, step_output_type)  # correct type
         if validation_function:
             validation_function(artifact_uri)

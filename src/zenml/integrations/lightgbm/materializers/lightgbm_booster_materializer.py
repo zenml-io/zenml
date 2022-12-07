@@ -32,7 +32,7 @@ class LightGBMBoosterMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (lgb.Booster,)
     ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
 
-    def handle_input(self, data_type: Type[Any]) -> lgb.Booster:
+    def load(self, data_type: Type[Any]) -> lgb.Booster:
         """Reads a lightgbm Booster model from a serialized JSON file.
 
         Args:
@@ -41,7 +41,7 @@ class LightGBMBoosterMaterializer(BaseMaterializer):
         Returns:
             A lightgbm Booster object.
         """
-        super().handle_input(data_type)
+        super().load(data_type)
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
 
         # Create a temporary folder
@@ -56,13 +56,13 @@ class LightGBMBoosterMaterializer(BaseMaterializer):
         fileio.rmtree(temp_dir)
         return booster
 
-    def handle_return(self, booster: lgb.Booster) -> None:
+    def save(self, booster: lgb.Booster) -> None:
         """Creates a JSON serialization for a lightgbm Booster model.
 
         Args:
             booster: A lightgbm Booster model.
         """
-        super().handle_return(booster)
+        super().save(booster)
 
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
 

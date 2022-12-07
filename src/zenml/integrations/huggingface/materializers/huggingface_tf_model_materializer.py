@@ -33,7 +33,7 @@ class HFTFModelMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (TFPreTrainedModel,)
     ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
 
-    def handle_input(self, data_type: Type[Any]) -> TFPreTrainedModel:
+    def load(self, data_type: Type[Any]) -> TFPreTrainedModel:
         """Reads HFModel.
 
         Args:
@@ -42,7 +42,7 @@ class HFTFModelMaterializer(BaseMaterializer):
         Returns:
             The model read from the specified dir.
         """
-        super().handle_input(data_type)
+        super().load(data_type)
 
         config = AutoConfig.from_pretrained(
             os.path.join(self.artifact.uri, DEFAULT_TF_MODEL_DIR)
@@ -55,13 +55,13 @@ class HFTFModelMaterializer(BaseMaterializer):
             os.path.join(self.artifact.uri, DEFAULT_TF_MODEL_DIR)
         )
 
-    def handle_return(self, model: Type[Any]) -> None:
+    def save(self, model: Type[Any]) -> None:
         """Writes a Model to the specified dir.
 
         Args:
             model: The TF Model to write.
         """
-        super().handle_return(model)
+        super().save(model)
         temp_dir = TemporaryDirectory()
         model.save_pretrained(temp_dir.name)
         io_utils.copy_dir(

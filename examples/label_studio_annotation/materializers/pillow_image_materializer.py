@@ -23,9 +23,9 @@ class PillowImageMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (dict,)
     ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
 
-    def handle_input(self, data_type: Type[Dict]) -> Dict:
+    def load(self, data_type: Type[Dict]) -> Dict:
         """Read from artifact store"""
-        super().handle_input(data_type)
+        super().load(data_type)
         temp_dir = tempfile.TemporaryDirectory()
         io_utils.copy_dir(self.artifact.uri, temp_dir.name)
 
@@ -43,9 +43,9 @@ class PillowImageMaterializer(BaseMaterializer):
         fileio.rmtree(temp_dir.name)
         return images_dict
 
-    def handle_return(self, images: Dict) -> None:
+    def save(self, images: Dict) -> None:
         """Write to artifact store"""
-        super().handle_return(images)
+        super().save(images)
         temp_dir = tempfile.TemporaryDirectory()
         for image_name, img in images.items():
             img.save(os.path.join(temp_dir.name, image_name))

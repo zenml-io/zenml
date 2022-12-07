@@ -30,7 +30,7 @@ class DeepchecksDatasetMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (Dataset,)
     ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
 
-    def handle_input(self, data_type: Type[Any]) -> Dataset:
+    def load(self, data_type: Type[Any]) -> Dataset:
         """Reads pandas dataframes and creates deepchecks.Dataset from it.
 
         Args:
@@ -39,23 +39,23 @@ class DeepchecksDatasetMaterializer(BaseMaterializer):
         Returns:
             A Deepchecks Dataset.
         """
-        super().handle_input(data_type)
+        super().load(data_type)
 
         # Outsource to pandas
         pandas_materializer = PandasMaterializer(self.artifact)
-        df = pandas_materializer.handle_input(data_type)
+        df = pandas_materializer.load(data_type)
 
         # Recreate from pandas dataframe
         return Dataset(df)
 
-    def handle_return(self, df: Dataset) -> None:
+    def save(self, df: Dataset) -> None:
         """Serializes pandas dataframe within a Dataset object.
 
         Args:
             df: A deepchecks.Dataset object.
         """
-        super().handle_return(df)
+        super().save(df)
 
         # Outsource to pandas
         pandas_materializer = PandasMaterializer(self.artifact)
-        pandas_materializer.handle_return(df.data)
+        pandas_materializer.save(df.data)

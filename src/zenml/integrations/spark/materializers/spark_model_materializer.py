@@ -30,7 +30,7 @@ class SparkModelMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (Transformer, Estimator, Model)
     ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
 
-    def handle_input(
+    def load(
         self, model_type: Type[Any]
     ) -> Union[Transformer, Estimator, Model]:  # type: ignore[type-arg]
         """Reads and returns a Spark ML model.
@@ -41,11 +41,11 @@ class SparkModelMaterializer(BaseMaterializer):
         Returns:
             A loaded spark model.
         """
-        super().handle_input(model_type)
+        super().load(model_type)
         path = os.path.join(self.artifact.uri, DEFAULT_FILEPATH)
         return model_type.load(path)  # type: ignore[no-any-return]
 
-    def handle_return(
+    def save(
         self, model: Union[Transformer, Estimator, Model]  # type: ignore[type-arg]
     ) -> None:
         """Writes a spark model.
@@ -53,7 +53,7 @@ class SparkModelMaterializer(BaseMaterializer):
         Args:
             model: A spark model.
         """
-        super().handle_return(model)
+        super().save(model)
 
         # Write the dataframe to the artifact store
         path = os.path.join(self.artifact.uri, DEFAULT_FILEPATH)

@@ -37,7 +37,7 @@ class PyTorchModuleMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (Module,)
     ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
 
-    def handle_input(self, data_type: Type[Any]) -> Module:
+    def load(self, data_type: Type[Any]) -> Module:
         """Reads and returns a PyTorch model.
 
         Only loads the model, not the checkpoint.
@@ -48,19 +48,19 @@ class PyTorchModuleMaterializer(BaseMaterializer):
         Returns:
             A loaded pytorch model.
         """
-        super().handle_input(data_type)
+        super().load(data_type)
         with fileio.open(
             os.path.join(self.artifact.uri, DEFAULT_FILENAME), "rb"
         ) as f:
             return cast(Module, torch.load(f))
 
-    def handle_return(self, model: Module) -> None:
+    def save(self, model: Module) -> None:
         """Writes a PyTorch model, as a model and a checkpoint.
 
         Args:
             model: A torch.nn.Module or a dict to pass into model.save
         """
-        super().handle_return(model)
+        super().save(model)
 
         # Save entire model to artifact directory, This is the default behavior
         # for loading model in development phase (training, evaluation)
