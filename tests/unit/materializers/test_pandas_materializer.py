@@ -19,15 +19,18 @@ from zenml.materializers.pandas_materializer import PandasMaterializer
 
 
 def test_pandas_materializer():
+    """Test the pandas materializer."""
 
-    dataframe = pandas.DataFrame(
-        [0, 1, 2, 3], columns=['column_test']
-    )
+    dataframe = pandas.DataFrame([0, 1, 2, 3], columns=["column_test"])
     series = pandas.Series([0, 1, 2, 3])
 
     for type_, example in [
         (pandas.DataFrame, dataframe),
         (pandas.Series, series),
     ]:
-        result = _test_materializer(step_output_type=type_, materializer_class=PandasMaterializer, step_output=example)
+        result = _test_materializer(
+            step_output_type=type_,
+            materializer_class=PandasMaterializer,
+            step_output=example,
+        )
         assert example.equals(result)
