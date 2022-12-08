@@ -1464,7 +1464,10 @@ class RestZenStore(BaseZenStore):
             if self.config.api_token:
                 self._api_token = self.config.api_token
             # Check if the username and password are provided in the config
-            elif self.config.username and self.config.password:
+            elif (
+                self.config.username is not None
+                and self.config.password is not None
+            ):
                 response = self._handle_response(
                     requests.post(
                         self.url + API + VERSION_1 + LOGIN,
