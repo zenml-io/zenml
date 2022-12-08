@@ -414,6 +414,8 @@ def track_event(
     Returns:
         True if event is sent successfully, False is not.
     """
+    metadata.setdefault("event_success", True)
+
     with AnalyticsContext() as analytics:
         return analytics.track(event, metadata)
 
@@ -602,15 +604,13 @@ class event_handler(object):
         event.
         """
 
-        if traceback is not None and type_ is not None:
-            self.metadata.update(
-                {
-                    "event_success": False,
-                    "event_error_type": type_.__name__,
-                }
-            )
+        if traceback is not None:
+            self.metadata.update({"event_success": False})
         else:
             self.metadata.update({"event_success": True})
+
+        if type_ is not None:
+            self.metadata.update({"event_error_type": type_.__name__})
 
         try:
             if self.tracker:
