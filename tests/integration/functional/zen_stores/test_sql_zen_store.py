@@ -361,21 +361,21 @@ def test_users_property(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
 ):
     """Tests the users property."""
-    assert len(sql_store["store"].users) == 1
-    assert sql_store["store"].users[0].name == DEFAULT_NAME
+    assert len(sql_store["store"].list_users()) == 1
+    assert sql_store["store"].list_users()[0].name == DEFAULT_NAME
     assert sql_store["active_user"].name == DEFAULT_NAME
-    assert sql_store["store"].users[0] == sql_store["store"].active_user
-    assert sql_store["store"].users[0] == sql_store["active_user"]
+    assert sql_store["store"].list_users()[0] == sql_store["store"].active_user
+    assert sql_store["store"].list_users()[0] == sql_store["active_user"]
 
 
 def test_creating_user_succeeds(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
 ):
     """Tests creating a user."""
-    assert len(sql_store["store"].users) == 1
+    assert len(sql_store["store"].list_users()) == 1
     new_user = UserRequestModel(name="aria")
     sql_store["store"].create_user(new_user)
-    assert len(sql_store["store"].users) == 2
+    assert len(sql_store["store"].list_users()) == 2
     assert sql_store["store"].get_user("aria") is not None
 
 
@@ -407,7 +407,7 @@ def test_getting_user_by_name_and_id_succeeds(
     user_by_name = sql_store["store"].get_user("aria")
     user_by_id = sql_store["store"].get_user(new_user_id)
     assert user_by_id == user_by_name
-    assert len(sql_store["store"].users) == 2
+    assert len(sql_store["store"].list_users()) == 2
 
 
 def test_updating_user_succeeds(
@@ -460,9 +460,9 @@ def test_deleting_user_succeeds(
     new_user = UserRequestModel(name="aria")
     sql_store["store"].create_user(new_user)
     new_user_id = sql_store["store"].get_user("aria").id
-    assert len(sql_store["store"].users) == 2
+    assert len(sql_store["store"].list_users()) == 2
     sql_store["store"].delete_user(new_user_id)
-    assert len(sql_store["store"].users) == 1
+    assert len(sql_store["store"].list_users()) == 1
 
 
 def test_deleting_default_user_fails(
