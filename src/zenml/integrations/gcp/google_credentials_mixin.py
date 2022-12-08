@@ -15,8 +15,6 @@
 
 from typing import TYPE_CHECKING, Optional, Tuple, cast
 
-from google.auth import default, load_credentials_from_file
-
 from zenml.stack.stack_component import StackComponent, StackComponentConfig
 
 if TYPE_CHECKING:
@@ -58,6 +56,8 @@ class GoogleCredentialsMixin(StackComponent):
             A tuple containing the credentials and the project ID associated to
             the credentials.
         """
+        from google.auth import default, load_credentials_from_file
+
         if self.config.service_account_path:
             credentials, project_id = load_credentials_from_file(
                 self.config.service_account_path

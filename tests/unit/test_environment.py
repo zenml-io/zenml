@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import platform
+from uuid import uuid4
 
 import pytest
 
@@ -50,12 +51,10 @@ def test_step_is_running():
         config=StepConfiguration(enable_cache=True, name="step"),
         pipeline=PipelineConfiguration(enable_cache=True, name="pipeline"),
         run_name="run_name",
+        run_id=uuid4(),
+        step_run_id=uuid4(),
     )
     with StepEnvironment(
-        pipeline_name="pipeline",
-        pipeline_run_id="run_id",
-        step_name="step",
-        cache_enabled=True,
         step_run_info=step_run_info,
     ):
         assert Environment().step_is_running is True

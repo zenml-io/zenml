@@ -31,7 +31,7 @@ from uuid import UUID
 
 import requests
 import urllib3
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, root_validator, validator
 
 import zenml
 from zenml.config.global_config import GlobalConfiguration
@@ -39,14 +39,12 @@ from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     API,
     ARTIFACTS,
+    CURRENT_USER,
     DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     FLAVORS,
     INFO,
-    INPUTS,
     LOGIN,
-    METADATA_CONFIG,
-    METADATA_SYNC,
     PIPELINES,
     PROJECTS,
     ROLE_ASSIGNMENTS,
@@ -59,7 +57,7 @@ from zenml.constants import (
     USERS,
     VERSION_1,
 )
-from zenml.enums import StackComponentType, StoreType
+from zenml.enums import ExecutionStatus, StackComponentType, StoreType
 from zenml.exceptions import (
     AuthorizationException,
     DoesNotExistException,
@@ -114,7 +112,6 @@ from zenml.models.server_models import ServerModel
 from zenml.models.team_models import TeamUpdateModel
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.networking_utils import (
-    replace_internal_hostname_with_localhost,
     replace_localhost_with_internal_hostname,
 )
 from zenml.zen_stores.base_zen_store import BaseZenStore
@@ -122,11 +119,6 @@ from zenml.zen_stores.base_zen_store import BaseZenStore
 logger = get_logger(__name__)
 
 if TYPE_CHECKING:
-    from ml_metadata.proto.metadata_store_pb2 import (
-        ConnectionConfig,
-        MetadataStoreClientConfig,
-    )
-
     from zenml.models import UserAuthModel
 
 # type alias for possible json payloads (the Anys are recursive Json instances)
@@ -158,10 +150,33 @@ class RestZenStoreConfiguration(StoreConfiguration):
     """
 
     type: StoreType = StoreType.REST
-    username: str
-    password: str = ""
+    username: Optional[str] = None
+    password: Optional[str] = None
+    api_token: Optional[str] = None
     verify_ssl: Union[bool, str] = True
     http_timeout: int = DEFAULT_HTTP_TIMEOUT
+
+    @root_validator
+    def validate_credentials(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Validates the credentials provided in the values dictionary.
+
+        Args:
+            values: A dictionary containing the values to be validated.
+
+        Raises:
+            ValueError: If neither api_token nor username is set.
+
+        Returns:
+            The values dictionary.
+        """
+        # Check if the values dictionary contains either an api_token or a
+        # username as non-empty strings.
+        if values.get("api_token") or values.get("username"):
+            return values
+        else:
+            raise ValueError(
+                "Neither api_token nor username is set in the store config."
+            )
 
     @validator("url")
     def validate_url(cls, url: str) -> str:
@@ -277,8 +292,8 @@ class RestZenStoreConfiguration(StoreConfiguration):
             path.
         """
         assert isinstance(config, RestZenStoreConfiguration)
-        config = config.copy(deep=True)
-
+        assert config.api_token is not None
+        config = config.copy(exclude={"username", "password"}, deep=True)
         # Load the certificate values back into the configuration
         config.expand_certificates()
         return config
@@ -341,109 +356,6 @@ class RestZenStore(BaseZenStore):
         """
         body = self.get(INFO)
         return ServerModel.parse_obj(body)
-
-    # ------------
-    # TFX Metadata
-    # ------------
-
-    def get_metadata_config(
-        self, expand_certs: bool = False
-    ) -> Union["ConnectionConfig", "MetadataStoreClientConfig"]:
-        """Get the TFX metadata config of this ZenStore.
-
-        Args:
-            expand_certs: Whether to expand the certificate paths in the
-                connection config to their value.
-
-        Raises:
-            ValueError: if the server response is invalid.
-
-        Returns:
-            The TFX metadata config of this ZenStore.
-        """
-        from google.protobuf.json_format import Parse, ParseError
-        from ml_metadata.proto.metadata_store_pb2 import (
-            ConnectionConfig,
-            MetadataStoreClientConfig,
-        )
-
-        from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
-
-        body = self.get(f"{METADATA_CONFIG}")
-        if not isinstance(body, str):
-            raise ValueError(
-                f"Invalid response from server: {body}. Expected string."
-            )
-
-        # First try to parse the response as a ConnectionConfig, then as a
-        # MetadataStoreClientConfig.
-        try:
-            metadata_config_pb = Parse(body, ConnectionConfig())
-        except ParseError:
-            return Parse(body, MetadataStoreClientConfig())
-
-        # if the server returns a SQLite connection config, but the file is not
-        # available locally, we need to replace the path with the local path of
-        # the default local SQLite database
-        if metadata_config_pb.HasField("sqlite") and not os.path.isfile(
-            metadata_config_pb.sqlite.filename_uri
-        ):
-            message = (
-                f"The ZenML server is using a SQLite database at "
-                f"{metadata_config_pb.sqlite.filename_uri} that is not "
-                f"available locally. Using the default local SQLite "
-                f"database instead."
-            )
-            if not self.is_local_store():
-                logger.warning(message)
-            else:
-                logger.debug(message)
-            default_store_cfg = GlobalConfiguration().get_default_store()
-            assert isinstance(default_store_cfg, SqlZenStoreConfiguration)
-            return default_store_cfg.get_metadata_config()
-
-        if metadata_config_pb.HasField("mysql"):
-            # If the server returns a MySQL connection config with a hostname
-            # that is a Docker or K3D internal hostname that cannot be resolved
-            # locally, we need to replace it with localhost. We're assuming
-            # that we're running on the host machine and the MySQL server can
-            # be accessed via localhost.
-            metadata_config_pb.mysql.host = (
-                replace_internal_hostname_with_localhost(
-                    metadata_config_pb.mysql.host
-                )
-            )
-
-            if not expand_certs and metadata_config_pb.mysql.HasField(
-                "ssl_options"
-            ):
-                # Save the certificates in a secure location on disk
-                secret_folder = Path(
-                    GlobalConfiguration().local_stores_path,
-                    "certificates",
-                )
-                for key in ["ssl_key", "ssl_ca", "ssl_cert"]:
-                    if not metadata_config_pb.mysql.ssl_options.HasField(
-                        key.lstrip("ssl_")
-                    ):
-                        continue
-                    content = getattr(
-                        metadata_config_pb.mysql.ssl_options,
-                        key.lstrip("ssl_"),
-                    )
-                    if content and not os.path.isfile(content):
-                        fileio.makedirs(str(secret_folder))
-                        file_path = Path(secret_folder, f"{key}.pem")
-                        with open(file_path, "w") as f:
-                            f.write(content)
-                        file_path.chmod(0o600)
-                        setattr(
-                            metadata_config_pb.mysql.ssl_options,
-                            key.lstrip("ssl_"),
-                            str(file_path),
-                        )
-
-        return metadata_config_pb
 
     # ------
     # Stacks
@@ -731,10 +643,13 @@ class RestZenStore(BaseZenStore):
     def active_user_name(self) -> str:
         """Gets the active username.
 
+        Either the username specified in the config, or the username of the
+        currently authenticated user.
+
         Returns:
             The active username.
         """
-        return self.config.username
+        return self.config.username or self._get_active_user().name
 
     @track(AnalyticsEvent.CREATED_USER)
     def create_user(self, user: UserRequestModel) -> UserResponseModel:
@@ -751,6 +666,15 @@ class RestZenStore(BaseZenStore):
             route=USERS + "?assign_default_role=False",
             response_model=UserResponseModel,
         )
+
+    def _get_active_user(self) -> UserResponseModel:
+        """Gets a specific user.
+
+        Returns:
+            The requested user, if it was found.
+        """
+        body = self.get(f"{CURRENT_USER}")
+        return UserResponseModel.parse_obj(body)
 
     def get_user(self, user_name_or_id: Union[str, UUID]) -> UserResponseModel:
         """Gets a specific user.
@@ -1298,7 +1222,6 @@ class RestZenStore(BaseZenStore):
         Returns:
             The pipeline run.
         """
-        self._sync_runs()
         return self._get_resource(
             resource_id=run_name_or_id,
             route=RUNS,
@@ -1352,7 +1275,6 @@ class RestZenStore(BaseZenStore):
         Returns:
             A list of all pipeline runs.
         """
-        self._sync_runs()
         filters = locals()
         filters.pop("self")
         return self._list_resources(
@@ -1386,50 +1308,55 @@ class RestZenStore(BaseZenStore):
     # ------------------
 
     def create_run_step(
-        self, step: StepRunRequestModel
+        self, step_run: StepRunRequestModel
     ) -> StepRunResponseModel:
-        """Creates a step.
+        """Creates a step run.
 
         Args:
-            step: The step to create.
+            step_run: The step run to create.
 
         Returns:
-            The created step.
+            The created step run.
         """
         return self._create_resource(
-            resource=step,
+            resource=step_run,
             response_model=StepRunResponseModel,
             route=STEPS,
         )
 
-    def get_run_step(self, step_id: UUID) -> StepRunResponseModel:
-        """Get a step by ID.
+    def get_run_step(self, step_run_id: UUID) -> StepRunResponseModel:
+        """Get a step run by ID.
 
         Args:
-            step_id: The ID of the step to get.
+            step_run_id: The ID of the step run to get.
 
         Returns:
-            The step.
+            The step run.
         """
-        self._sync_runs()
         return self._get_resource(
-            resource_id=step_id,
+            resource_id=step_run_id,
             route=STEPS,
             response_model=StepRunResponseModel,
         )
 
     def list_run_steps(
-        self, run_id: Optional[UUID] = None
+        self,
+        run_id: Optional[UUID] = None,
+        project_id: Optional[UUID] = None,
+        cache_key: Optional[str] = None,
+        status: Optional[ExecutionStatus] = None,
     ) -> List[StepRunResponseModel]:
-        """Get all run steps.
+        """Get all step runs.
 
         Args:
             run_id: If provided, only return steps for this pipeline run.
+            project_id: If provided, only return step runs in this project.
+            cache_key: If provided, only return steps with this cache key.
+            status: If provided, only return steps with this status.
 
         Returns:
-            A list of all run steps.
+            A list of step runs.
         """
-        self._sync_runs()
         filters = locals()
         filters.pop("self")
         return self._list_resources(
@@ -1441,48 +1368,24 @@ class RestZenStore(BaseZenStore):
 
     def update_run_step(
         self,
-        step_id: UUID,
-        step_update: StepRunUpdateModel,
+        step_run_id: UUID,
+        step_run_update: StepRunUpdateModel,
     ) -> StepRunResponseModel:
-        """Updates a step.
+        """Updates a step run.
 
         Args:
-            step_id: The ID of the step to update.
-            step_update: The update to be applied to the step.
+            step_run_id: The ID of the step to update.
+            step_run_update: The update to be applied to the step.
 
         Returns:
-            The updated step.
+            The updated step run.
         """
         return self._update_resource(
-            resource_id=step_id,
-            resource_update=step_update,
+            resource_id=step_run_id,
+            resource_update=step_run_update,
             response_model=StepRunResponseModel,
             route=STEPS,
         )
-
-    def get_run_step_inputs(
-        self, step_id: UUID
-    ) -> Dict[str, ArtifactResponseModel]:
-        """Get a list of inputs for a specific step.
-
-        Args:
-            step_id: The id of the step to get inputs for.
-
-        Returns:
-            A dict mapping artifact names to the input artifacts for the step.
-
-        Raises:
-            ValueError: if the response from the API is not a dict.
-        """
-        body = self.get(f"{STEPS}/{str(step_id)}{INPUTS}")
-        if not isinstance(body, dict):
-            raise ValueError(
-                f"Bad API Response. Expected dict, got {type(body)}"
-            )
-        return {
-            name: ArtifactResponseModel.parse_obj(entry)
-            for name, entry in body.items()
-        }
 
     # ---------
     # Artifacts
@@ -1505,23 +1408,34 @@ class RestZenStore(BaseZenStore):
             route=ARTIFACTS,
         )
 
+    def get_artifact(self, artifact_id: UUID) -> ArtifactResponseModel:
+        """Gets an artifact.
+
+        Args:
+            artifact_id: The ID of the artifact to get.
+
+        Returns:
+            The artifact.
+        """
+        return self._get_resource(
+            resource_id=artifact_id,
+            route=ARTIFACTS,
+            response_model=ArtifactResponseModel,
+        )
+
     def list_artifacts(
         self,
         artifact_uri: Optional[str] = None,
-        parent_step_id: Optional[UUID] = None,
     ) -> List[ArtifactResponseModel]:
         """Lists all artifacts.
 
         Args:
             artifact_uri: If specified, only artifacts with the given URI will
                 be returned.
-            parent_step_id: If specified, only artifacts for the given step run
-                will be returned.
 
         Returns:
             A list of all artifacts.
         """
-        self._sync_runs()
         filters = locals()
         filters.pop("self")
         return self._list_resources(
@@ -1546,23 +1460,38 @@ class RestZenStore(BaseZenStore):
                 format.
         """
         if self._api_token is None:
-            response = self._handle_response(
-                requests.post(
-                    self.url + API + VERSION_1 + LOGIN,
-                    data={
-                        "username": self.config.username,
-                        "password": self.config.password,
-                    },
-                    verify=self.config.verify_ssl,
-                    timeout=self.config.http_timeout,
+            # Check if the API token is already stored in the config
+            if self.config.api_token:
+                self._api_token = self.config.api_token
+            # Check if the username and password are provided in the config
+            elif self.config.username and self.config.password:
+                response = self._handle_response(
+                    requests.post(
+                        self.url + API + VERSION_1 + LOGIN,
+                        data={
+                            "username": self.config.username,
+                            "password": self.config.password,
+                        },
+                        verify=self.config.verify_ssl,
+                        timeout=self.config.http_timeout,
+                    )
                 )
-            )
-            if not isinstance(response, dict) or "access_token" not in response:
+                if (
+                    not isinstance(response, dict)
+                    or "access_token" not in response
+                ):
+                    raise ValueError(
+                        f"Bad API Response. Expected access token dict, got "
+                        f"{type(response)}"
+                    )
+                self._api_token = response["access_token"]
+                self.config.api_token = self._api_token
+            else:
                 raise ValueError(
-                    f"Bad API Response. Expected access token dict, got "
-                    f"{type(response)}"
+                    "No API token or username/password provided. Please "
+                    "provide either a token or a username and password in "
+                    "the ZenStore config."
                 )
-            self._api_token = response["access_token"]
         return self._api_token
 
     @property
@@ -1669,9 +1598,10 @@ class RestZenStore(BaseZenStore):
                     ": ".join(response.json().get("detail", (response.text,)))
                 )
         elif response.status_code == 422:
-            raise RuntimeError(
-                ": ".join(response.json().get("detail", (response.text,)))
-            )
+            msg = response.json().get("detail", response.text)
+            if isinstance(msg, list):
+                msg = msg[-1]
+            raise RuntimeError(msg)
         elif response.status_code == 500:
             raise RuntimeError(response.text)
         else:
@@ -1913,7 +1843,7 @@ class RestZenStore(BaseZenStore):
     def _update_resource(
         self,
         resource_id: UUID,
-        resource_update: BaseRequestModel,
+        resource_update: BaseModel,
         response_model: Type[AnyResponseModel],
         route: str,
     ) -> AnyResponseModel:
@@ -1945,7 +1875,3 @@ class RestZenStore(BaseZenStore):
             route: The resource REST API route to use.
         """
         self.delete(f"{route}/{str(resource_id)}")
-
-    def _sync_runs(self) -> None:
-        """Syncs runs from MLMD."""
-        self.get(METADATA_SYNC)

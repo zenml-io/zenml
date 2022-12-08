@@ -21,7 +21,6 @@ from tests.unit.test_general import _test_materializer
 from zenml.integrations.neural_prophet.materializers.neural_prophet_materializer import (
     NeuralProphetMaterializer,
 )
-from zenml.post_execution.pipeline import PipelineRunView
 
 
 def test_neural_prophet_booster_materializer(clean_client):
@@ -37,13 +36,10 @@ def test_neural_prophet_booster_materializer(clean_client):
     model.fit(sample_df)
 
     with does_not_raise():
-        _test_materializer(
+        forecaster = _test_materializer(
             step_output=model,
-            materializer=NeuralProphetMaterializer,
+            materializer_class=NeuralProphetMaterializer,
         )
 
-    last_run = PipelineRunView(clean_client.zen_store.list_runs()[-1])
-    forecaster = last_run.steps[-1].output.read()
-    assert isinstance(forecaster, NeuralProphet)
     assert forecaster.config_train.epochs == 2
     assert forecaster.config_train.batch_size == 37

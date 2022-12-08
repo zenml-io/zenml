@@ -188,7 +188,6 @@ Here is a schematic view of what the `StepEntrypointConfiguration` looks like:
 
 ```python
 from typing import Optional, Set, Any, List
-from tfx.orchestration.portable import data_types
 
 from zenml.entrypoints.base_entrypoint_configuration import (
     BaseEntrypointConfiguration,
@@ -204,7 +203,6 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
         self,
         pipeline_name: str,
         step_name: str,
-        execution_info: Optional[data_types.ExecutionInfo] = None,
     ) -> None:
         """Does cleanup or post-processing after the step finished running."""
 

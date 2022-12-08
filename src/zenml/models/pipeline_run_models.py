@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing pipeline runs."""
 
+from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, Optional, cast
 from uuid import UUID
 
@@ -23,7 +24,6 @@ from zenml.enums import ExecutionStatus
 from zenml.models.base_models import (
     ProjectScopedRequestModel,
     ProjectScopedResponseModel,
-    update_model,
 )
 from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
 
@@ -76,15 +76,14 @@ class PipelineRunBaseModel(BaseModel):
     )
 
     orchestrator_run_id: Optional[str] = None
+    enable_cache: Optional[bool]
+    start_time: Optional[datetime]
+    end_time: Optional[datetime]
     status: ExecutionStatus
-
     pipeline_configuration: Dict[str, Any]
     num_steps: Optional[int]
     zenml_version: Optional[str] = current_zenml_version
     git_sha: Optional[str] = Field(default_factory=get_git_sha)
-
-    # ID in MLMD - needed for some metadata store methods.
-    mlmd_id: Optional[int]  # Modeled as Optional, so we can remove it later.
 
 
 # -------- #
@@ -123,6 +122,8 @@ class PipelineRunRequestModel(PipelineRunBaseModel, ProjectScopedRequestModel):
 # ------ #
 
 
-@update_model
-class PipelineRunUpdateModel(PipelineRunRequestModel):
+class PipelineRunUpdateModel(BaseModel):
     """Pipeline run update model."""
+
+    status: Optional[ExecutionStatus] = None
+    end_time: Optional[datetime] = None
