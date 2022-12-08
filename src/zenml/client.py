@@ -1012,7 +1012,6 @@ class Client(metaclass=ClientMetaClass):
                 role=role.id,
                 user=user.id,
                 project=project,
-                is_user=True,
             )
         else:
             team = self.get_team(name_id_or_prefix=user_or_team_name_or_id)
@@ -1020,7 +1019,6 @@ class Client(metaclass=ClientMetaClass):
                 role=role.id,
                 team=team.id,
                 project=project,
-                is_user=False,
             )
 
         return self.zen_store.create_role_assignment(
