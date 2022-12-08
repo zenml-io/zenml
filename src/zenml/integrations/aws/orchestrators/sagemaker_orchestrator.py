@@ -16,6 +16,8 @@
 from typing import TYPE_CHECKING, Any, cast
 
 import sagemaker
+from sagemaker.workflow.pipeline import Pipeline
+from sagemaker.workflow.steps import ProcessingStep
 
 from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
 from zenml.entrypoints import StepEntrypointConfiguration
@@ -85,27 +87,39 @@ class SagemakerOrchestrator(BaseOrchestrator):
         #     self.run_step(
         #         step=step,
         #     )
+        session = sagemaker.Session(default_bucket=self.config.bucket)
+        image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
         sagemaker_steps = []
         for step_name, step in deployment.steps.items():
             command = StepEntrypointConfiguration.get_entrypoint_command()
-            arguments = {
-                StepEntrypointConfiguration.get_entrypoint_arguments(
-                    step_name=step_name
-                )
-            }
-            breakpoint()
-            sagemaker_step = sagemaker.processing.ProcessingStep(
+            arguments = StepEntrypointConfiguration.get_entrypoint_arguments(
+                step_name=step_name
+            )
+            entrypoint = command + arguments
+
+            processor = sagemaker.processing.Processor(
+                role=self.config.role,
+                image_uri=image_name,
+                instance_count=1,
+                instance_type="ml.m5.large",
+                entrypoint=entrypoint,
+                sagemaker_session=session,
+                base_job_name=deployment.run_name,
+            )
+
+            sagemaker_step = ProcessingStep(
                 name=step_name,
-                processor=sagemaker.processing.Processor(
-                    image_uri=deployment.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY],
-                    role=self.config.role,
-                    instance_count=1,
-                    instance_type="ml.m5.xlarge",
-                ),
-                job_arguments=arguments,
-                command=command,
+                processor=processor,
             )
             sagemaker_steps.append(sagemaker_step)
 
-        pipeline = sagemaker.Pipeline()
+        # construct the pipeline from the sagemaker_steps
+
+        pipeline = Pipeline(
+            name=deployment.run_name,
+            steps=sagemaker_steps,
+            sagemaker_session=session,
+        )
+        breakpoint()
+        pipeline.create(role_arn=sagemaker.get_execution_role())
         pipeline.start()

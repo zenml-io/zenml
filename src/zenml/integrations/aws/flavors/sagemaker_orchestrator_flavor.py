@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Amazon SageMaker orchestrator flavor."""
 
-from typing import TYPE_CHECKING, Type
+from typing import TYPE_CHECKING, Optional, Type
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.aws import AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR
@@ -31,7 +31,18 @@ class SagemakerOrchestratorSettings(BaseSettings):
 class SagemakerOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
     BaseStepOperatorConfig, SagemakerOrchestratorSettings
 ):
-    """Config for the Sagemaker orchestrator."""
+    """Config for the Sagemaker orchestrator.
+    Attributes:
+        role: The role that has to be assigned to the jobs which are
+            running in Sagemaker.
+        bucket: Name of the S3 bucket to use for storing artifacts
+            from the job run. If not provided, a default bucket will be created
+            based on the following format: "sagemaker-{region}-{aws-account-id}".
+    """
+
+    role: str
+    arn: str
+    bucket: Optional[str] = None
 
     @property
     def is_remote(self) -> bool:
@@ -48,7 +59,7 @@ class SagemakerOrchestratorConfig(  # type: ignore[misc] # https://github.com/py
 
 
 class SagemakerOrchestratorFlavor(BaseOrchestratorFlavor):
-    """Flavor for the Sagemaker step operator."""
+    """Flavor for the Sagemaker orchestrator."""
 
     @property
     def name(self) -> str:
