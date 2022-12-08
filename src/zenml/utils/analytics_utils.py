@@ -578,9 +578,7 @@ class event_handler(object):
     """Context handler to enable tracking the success status of an event."""
 
     def __init__(
-        self,
-        event: AnalyticsEvent,
-        metadata: Optional[Dict[str, Any]]=None
+        self, event: AnalyticsEvent, metadata: Optional[Dict[str, Any]] = None
     ):
         """Initialization of the context manager."""
         self.event: AnalyticsEvent = event

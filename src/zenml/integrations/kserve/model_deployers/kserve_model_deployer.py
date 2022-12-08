@@ -227,7 +227,7 @@ class KServeModelDeployer(BaseModelDeployer):
         Raises:
             RuntimeError: if the KServe deployment server could not be stopped.
         """
-        with event_handler(AnalyticsEvent.MODEL_DEPLOYED) as handler:
+        with event_handler(AnalyticsEvent.MODEL_DEPLOYED) as analytics_handler:
             config = cast(KServeDeploymentConfig, config)
             service = None
 
@@ -286,7 +286,7 @@ class KServeModelDeployer(BaseModelDeployer):
                 component_type.value: component.flavor
                 for component_type, component in stack.components.items()
             }
-            handler.metadata = {
+            analytics_handler.metadata = {
                 "store_type": Client().zen_store.type.value,
                 **stack_metadata,
                 "is_custom_code_deployment": config.container is not None,

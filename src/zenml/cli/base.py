@@ -219,9 +219,7 @@ def go() -> None:
         gave_email = _prompt_email()
         metadata = {"gave_email": gave_email}
 
-    with event_handler(AnalyticsEvent.RUN_ZENML_GO) as handler:
-        # Add telemetry
-        handler.metadata = metadata
+    with event_handler(event=AnalyticsEvent.RUN_ZENML_GO, metadata=metadata):
 
         console.print(zenml_go_privacy_message, width=80)
 

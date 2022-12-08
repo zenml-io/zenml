@@ -640,7 +640,10 @@ def pull(
 
     else:
         for stack_recipe_instance in stack_recipes:
-            with event_handler(AnalyticsEvent.PULL_STACK_RECIPE) as handler:
+            with event_handler(
+                event=AnalyticsEvent.PULL_STACK_RECIPE,
+                metadata={"stack_recipe_name": stack_recipe_instance.name},
+            ):
                 destination_dir = os.path.join(
                     os.getcwd(), path, stack_recipe_instance.name
                 )
@@ -679,9 +682,6 @@ def pull(
                     f"in the file: {os.path.join(destination_dir, 'locals.tf')} "
                     "before you run the deploy command."
                 )
-                handler.metadata = {
-                    "stack_recipe_name": stack_recipe_instance.name
-                }
 
 
 @stack_recipe.command(
@@ -777,8 +777,10 @@ def deploy(
         no_server: Don't deploy ZenML even if there's no active cloud
             deployment.
     """
-    with event_handler(AnalyticsEvent.RUN_STACK_RECIPE) as handler:
-        handler.metadata = {"stack_recipe_name": stack_recipe_name}
+    with event_handler(
+        event=AnalyticsEvent.RUN_STACK_RECIPE,
+        metadata={"stack_recipe_name": stack_recipe_name},
+    ):
 
         import python_terraform
 
@@ -1050,9 +1052,10 @@ def destroy(
     Raises:
         ModuleNotFoundError: If the recipe is found at the given path.
     """
-    with event_handler(AnalyticsEvent.DESTROY_STACK_RECIPE) as handler:
-        handler.metadata = {"stack_recipe_name": stack_recipe_name}
-
+    with event_handler(
+        event=AnalyticsEvent.DESTROY_STACK_RECIPE,
+        metadata={"stack_recipe_name": stack_recipe_name},
+    ):
         import python_terraform
 
         cli_utils.warning(ALPHA_MESSAGE)

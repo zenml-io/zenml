@@ -267,7 +267,7 @@ class SeldonModelDeployer(BaseModelDeployer):
                 to start, or if an operational failure is encountered before
                 it reaches a ready state.
         """
-        with event_handler(AnalyticsEvent.MODEL_DEPLOYED) as handler:
+        with event_handler(AnalyticsEvent.MODEL_DEPLOYED) as analytics_handler:
             config = cast(SeldonDeploymentConfig, config)
             service = None
 
@@ -325,7 +325,7 @@ class SeldonModelDeployer(BaseModelDeployer):
                 component_type.value: component.flavor
                 for component_type, component in stack.components.items()
             }
-            handler.metadata = {
+            analytics_handler.metadata = {
                 "store_type": Client().zen_store.type.value,
                 **stack_metadata,
                 "is_custom_code_deployment": config.is_custom_deployment,

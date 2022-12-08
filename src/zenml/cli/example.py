@@ -184,8 +184,11 @@ class LocalExample:
             FileNotFoundError: If the example runner script is not found.
             subprocess.CalledProcessError: If the example runner script fails.
         """
-        with event_handler(AnalyticsEvent.RUN_EXAMPLE) as handler:
-            handler.metadata = {"example_name": self.name}
+        with event_handler(
+            event=AnalyticsEvent.RUN_EXAMPLE,
+            metadata={"example_name": self.name},
+        ):
+
             if all(map(fileio.exists, example_runner)):
                 call = (
                     example_runner
@@ -778,8 +781,10 @@ def pull(
 
     else:
         for example_ in examples:
-            with event_handler(AnalyticsEvent.PULL_EXAMPLE) as handler:
-                handler.metadata = {"example_name": example_.name}
+            with event_handler(
+                event=AnalyticsEvent.PULL_EXAMPLE,
+                metadata={"example_name": example_.name},
+            ):
                 destination_dir = os.path.join(os.getcwd(), path, example_.name)
                 if LocalExample(
                     name=example_.name, path=Path(destination_dir)

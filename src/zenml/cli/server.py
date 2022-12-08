@@ -150,7 +150,9 @@ def up(
             `--docker` flag is set.
     """
     # flake8: noqa: C901
-    with event_handler(AnalyticsEvent.ZENML_SERVER_STARTED) as handler:
+    with event_handler(
+        AnalyticsEvent.ZENML_SERVER_STARTED
+    ) as analytics_handler:
         from zenml.zen_server.deploy.deployer import ServerDeployer
         from zenml.zen_stores.sql_zen_store import SQLDatabaseDriver
 
@@ -205,7 +207,7 @@ def up(
 
         assert gc.store is not None
 
-        handler.metadata = {
+        analytics_handler.metadata = {
             "server_id": str(gc.user_id),
             "server_deployment": str(provider),
             "database_type": SQLDatabaseDriver.SQLITE.value,
@@ -280,7 +282,9 @@ def up(
 @cli.command("down", help="Shut down the local ZenML dashboard.")
 def down() -> None:
     """Shut down the local ZenML dashboard."""
-    with event_handler(AnalyticsEvent.ZENML_SERVER_STOPPED) as handler:
+    with event_handler(
+        AnalyticsEvent.ZENML_SERVER_STOPPED
+    ) as analytics_handler:
         server = get_active_deployment(local=True)
 
         if not server:
@@ -292,7 +296,7 @@ def down() -> None:
         deployer.remove_server(server.config.name)
 
         gc = GlobalConfiguration()
-        handler.metadata = {
+        analytics_handler.metadata = {
             "server_id": str(gc.user_id),
             "server_deployment": str(server.config.provider),
             "database_type": str(gc.store.type) if gc.store else "",
@@ -384,7 +388,9 @@ def deploy(
         config: A YAML or JSON configuration or configuration file to use.
         gcp_project_id: The project in GCP to deploy the server to.
     """
-    with event_handler(AnalyticsEvent.ZENML_SERVER_DEPLOYED) as handler:
+    with event_handler(
+        AnalyticsEvent.ZENML_SERVER_DEPLOYED
+    ) as analytics_handler:
         config_dict: Dict[str, Any] = {}
 
         if config:
@@ -487,7 +493,7 @@ def deploy(
             #   class
             metadata["server_id"] = str(server.config.server_id)
 
-        handler.metadata = metadata
+        analytics_handler.metadata = metadata
 
         if server.status and server.status.url:
             cli_utils.declare(
@@ -510,7 +516,9 @@ def deploy(
 )
 def destroy() -> None:
     """Tear down and clean up a cloud ZenML deployment."""
-    with event_handler(AnalyticsEvent.ZENML_SERVER_DESTROYED) as handler:
+    with event_handler(
+        AnalyticsEvent.ZENML_SERVER_DESTROYED
+    ) as analytics_handler:
         server = get_active_deployment(local=False)
         if not server:
             cli_utils.declare("No cloud ZenML server has been deployed.")
@@ -532,7 +540,7 @@ def destroy() -> None:
         if isinstance(server.config, TerraformServerDeploymentConfig):
             metadata["server_id"] = str(server.config.server_id)
 
-        handler.metadata = metadata
+        analytics_handler.metadata = metadata
 
         cli_utils.declare(
             "The ZenML server has been torn down and all resources removed."

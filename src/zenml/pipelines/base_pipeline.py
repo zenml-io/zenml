@@ -446,7 +446,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             )
             return
 
-        with event_handler(AnalyticsEvent.RUN_PIPELINE) as handler:
+        with event_handler(AnalyticsEvent.RUN_PIPELINE) as analytics_handler:
             stack = Client().active_stack
 
             # Activating the built-in integrations through lazy loading
@@ -503,7 +503,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     update={"pipeline_id": pipeline_id}
                 )
 
-            handler.metadata = self._get_pipeline_analytics_metadata(
+            analytics_handler.metadata = self._get_pipeline_analytics_metadata(
                 deployment=pipeline_deployment, stack=stack
             )
             caching_status = (

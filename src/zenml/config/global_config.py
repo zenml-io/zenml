@@ -574,11 +574,15 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         Call this method to initialize or revert the store configuration to the
         default store.
         """
-        with event_handler(AnalyticsEvent.INITIALIZED_STORE) as handler:
+        with event_handler(
+            AnalyticsEvent.INITIALIZED_STORE
+        ) as analytics_handler:
             default_store_cfg = self.get_default_store()
             self._configure_store(default_store_cfg)
             logger.info("Using the default store for the global config.")
-            handler.metadata = {"store_type": default_store_cfg.type.value}
+            analytics_handler.metadata = {
+                "store_type": default_store_cfg.type.value
+            }
 
     def uses_default_store(self) -> bool:
         """Check if the global configuration uses the default store.
@@ -608,8 +612,10 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             **kwargs: Additional keyword arguments to pass to the store
                 constructor.
         """
-        with event_handler(AnalyticsEvent.INITIALIZED_STORE) as handler:
-            handler.metadata = {"store_type": config.type.value}
+        with event_handler(
+            event=AnalyticsEvent.INITIALIZED_STORE,
+            metadata={"store_type": config.type.value},
+        ):
             self._configure_store(config, skip_default_registrations, **kwargs)
             logger.info("Updated the global store configuration.")
 
@@ -620,7 +626,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                 # particular server at least once, but no information about the
                 # user account is recorded here.
 
-                with event_handler(AnalyticsEvent.ZENML_SERVER_CONNECTED):
+                with event_handler(event=AnalyticsEvent.ZENML_SERVER_CONNECTED):
                     server_info = self.zen_store.get_store_info()
 
                     identify_group(
