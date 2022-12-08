@@ -414,6 +414,9 @@ def track_event(
     Returns:
         True if event is sent successfully, False is not.
     """
+    if metadata is None:
+        metadata = {}
+
     metadata.setdefault("event_success", True)
 
     with AnalyticsContext() as analytics:
@@ -580,7 +583,12 @@ class event_handler(object):
     def __init__(
         self, event: AnalyticsEvent, metadata: Optional[Dict[str, Any]] = None
     ):
-        """Initialization of the context manager."""
+        """Initialization of the context manager.
+
+        Args:
+            event: The type of the analytics event
+            metadata: The metadata of the event.
+        """
         self.event: AnalyticsEvent = event
         self.metadata: Dict[str, Any] = metadata or {}
         self.tracker: Optional[AnalyticsTrackerMixin] = None
@@ -604,6 +612,12 @@ class event_handler(object):
         Checks whether there was a traceback and updates the metadata
         accordingly. Following the check, it calls the function to track the
         event.
+
+        Args:
+            type_: The class of the exception
+            value: The instance of the exception
+            traceback: The traceback of the exception
+
         """
         if traceback is not None:
             self.metadata.update({"event_success": False})
