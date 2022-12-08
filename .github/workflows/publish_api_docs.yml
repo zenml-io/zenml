@@ -44,6 +44,8 @@ jobs:
         uses: ./.github/actions/setup_environment
         with:
           cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
+          python-version: 3.8
+          os: ubuntu-latest
 
       # IMPORTANT: there's a strategy to installing integrations here in a way
       # that avoids conflicts while at the same time making it possible for all

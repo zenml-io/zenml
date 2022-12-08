@@ -57,11 +57,6 @@ on:
 
 jobs:
 
-  poetry-install:
-    if: github.event_name == 'workflow_dispatch'
-    uses: ./.github/workflows/poetry-install.yml
-    secrets: inherit
-
   integrationtest:
     name: integrationtest
     runs-on: ${{ inputs.os }}
@@ -103,6 +98,8 @@ jobs:
         uses: ./.github/actions/setup_environment
         with:
           cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
+          python-version: ${{ inputs.python-version }}
+          os: ${{ inputs.os }}
 
       - name: Install Linux System Dependencies
         if: runner.os=='Linux'
@@ -120,7 +117,12 @@ jobs:
         if: runner.os=='macOS'
         run: |
           brew install docker colima
-          colima start
+
+          # We need to mount the /private/tmp/zenml-test/ folder because
+          # this folder is also mounted in the Docker containers that are
+          # started by local ZenML orchestrators.
+          colima start --mount /private/tmp/zenml-test/:w
+          
           # This is required for the Docker Python SDK to work
           sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
 
@@ -161,10 +163,10 @@ jobs:
           source $VENV
           bash scripts/test-coverage-xml.sh integration ${{ inputs.test_environment }}
 
-      - name: Setup tmate session
-        if: ${{ failure() }}
-        uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 60
+      # - name: Setup tmate session
+      #   if: ${{ failure() }}
+      #   uses: mxschmitt/action-tmate@v3
+      #   timeout-minutes: 60
 
       - name: Verify Python Env unaffected
         run: |

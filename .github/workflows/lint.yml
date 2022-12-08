@@ -31,6 +31,8 @@ jobs:
         uses: ./.github/actions/setup_environment
         with:
           cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
+          python-version: ${{ matrix.python-version }}
+          os: ${{ matrix.os }}
 
       - name: Install Dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
