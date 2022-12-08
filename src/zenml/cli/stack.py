@@ -795,7 +795,6 @@ def export_stack(
         stack_name_or_id: The name of the stack to export.
         filename: The filename to export the stack to.
     """
-
     # Get configuration of given stack
     client = Client()
 
@@ -885,7 +884,6 @@ def import_stack(
             the installed version of ZenML is different from the
             one specified in the stack YAML file.
     """
-
     # handle 'zenml stack import file.yaml' calls
     if stack_name.endswith(".yaml") and filename is None:
         filename = stack_name
@@ -967,7 +965,6 @@ def copy_stack(
         target_stack: Name of the copied stack.
         share: Share the stack with other users.
     """
-
     client = Client()
 
     with console.status(f"Copying stack `{source_stack_name_or_id}`...\n"):

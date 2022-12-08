@@ -605,7 +605,6 @@ class event_handler(object):
         accordingly. Following the check, it calls the function to track the
         event.
         """
-
         if traceback is not None:
             self.metadata.update({"event_success": False})
         else:

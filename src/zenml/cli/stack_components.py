@@ -493,7 +493,6 @@ def generate_stack_component_copy_command(
                                          component to copy.
             target_component: Name of the copied component.
         """
-
         client = Client()
 
         with console.status(
