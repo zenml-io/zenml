@@ -21,15 +21,15 @@ jobs:
     uses: ./.github/workflows/poetry-install.yml
     secrets: inherit
 
-  lint-code:
-    needs: poetry-install
-    uses: ./.github/workflows/lint.yml
-    secrets: inherit
+  # lint-code:
+  #   needs: poetry-install
+  #   uses: ./.github/workflows/lint.yml
+  #   secrets: inherit
 
-  unit-test:
-    needs: poetry-install
-    uses: ./.github/workflows/unit-test.yml
-    secrets: inherit
+  # unit-test:
+  #   needs: poetry-install
+  #   uses: ./.github/workflows/unit-test.yml
+  #   secrets: inherit
 
   integration-test:
     needs: poetry-install
@@ -37,18 +37,15 @@ jobs:
     if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
     strategy:
       matrix:
-        os: [ ubuntu-latest, windows-latest, macos-latest ]
-        python-version: [ '3.7', '3.8', '3.9', '3.10' ]
+        # os: [ ubuntu-latest, windows-latest, macos-latest ]
+        os: [ windows-latest, macos-latest ]
+        # python-version: [ '3.7', '3.8', '3.9', '3.10' ]
+        python-version: [ '3.8' ]
         test_environment: [ "default", "docker-server-docker-orchestrator", "default-kubeflow-orchestrator"]
         exclude:
           # kubeflow is not supported on windows
           - os: windows-latest
             test_environment: default-kubeflow-orchestrator
-          # docker (hence also k3d/kubeflow) is not supported on macos
-          # - os: macos-latest
-          #   test_environment: default-kubeflow-orchestrator
-          # - os: macos-latest
-          #   test_environment: docker-server-docker-orchestrator
           # kubeflow is time-consuming to run, so we only run it on 3.8
           - test_environment: default-kubeflow-orchestrator
             python-version: '3.7'
@@ -95,11 +92,11 @@ jobs:
   #   uses: ./.github/workflows/kubeflow.yml
   #   secrets: inherit
 
-  spell-check:
-    uses: ./.github/workflows/spellcheck.yml
+  # spell-check:
+  #   uses: ./.github/workflows/spellcheck.yml
 
-  docstring-check:
-    uses: ./.github/workflows/docstring.yml
+  # docstring-check:
+  #   uses: ./.github/workflows/docstring.yml
 
-  markdown-link-check:
-    uses: ./.github/workflows/markdown-link-check.yml
+  # markdown-link-check:
+  #   uses: ./.github/workflows/markdown-link-check.yml
