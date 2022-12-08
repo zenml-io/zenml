@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2020. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -138,3 +138,27 @@ def list_pipeline_runs(
             return
 
         cli_utils.print_pipeline_runs_table(pipeline_runs=pipeline_runs)
+
+
+@runs.command("delete")
+@click.argument("run_name_or_id", type=str, required=True)
+def delete_pipeline_run(run_name_or_id: str) -> None:
+    """Delete a pipeline run.
+
+    Args:
+        run_name_or_id: The name or ID of the pipeline run to delete.
+    """
+    cli_utils.print_active_config()
+    confirmation = cli_utils.confirmation(
+        f"Are you sure you want to delete pipeline run " f"`{run_name_or_id}`?"
+    )
+    if not confirmation:
+        cli_utils.declare("Pipeline run deletion canceled.")
+        return
+    else:
+        try:
+            Client().delete_pipeline_run(name_id_or_prefix=run_name_or_id)
+        except KeyError as e:
+            cli_utils.error(str(e))
+        else:
+            cli_utils.declare(f"Deleted pipeline run '{run_name_or_id}'.")

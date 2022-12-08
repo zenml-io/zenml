@@ -1303,6 +1303,20 @@ class RestZenStore(BaseZenStore):
             route=RUNS,
         )
 
+    def delete_run(self, run_id: UUID) -> None:
+        """Deletes a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to delete.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+        self._delete_resource(
+            resource_id=run_id,
+            route=RUNS,
+        )
+
     # ------------------
     # Pipeline run steps
     # ------------------
@@ -1444,6 +1458,17 @@ class RestZenStore(BaseZenStore):
             response_model=ArtifactResponseModel,
             **filters,
         )
+
+    def delete_artifact(self, artifact_id: UUID) -> None:
+        """Deletes an artifact.
+
+        Args:
+            artifact_id: The ID of the artifact to delete.
+
+        Raises:
+            KeyError: if the artifact doesn't exist.
+        """
+        self._delete_resource(resource_id=artifact_id, route=ARTIFACTS)
 
     # =======================
     # Internal helper methods

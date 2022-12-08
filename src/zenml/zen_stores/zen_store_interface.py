@@ -954,6 +954,17 @@ class ZenStoreInterface(ABC):
             KeyError: if the pipeline run doesn't exist.
         """
 
+    @abstractmethod
+    def delete_run(self, run_id: UUID) -> None:
+        """Deletes a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to delete.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+
     # ------------------
     # Pipeline run steps
     # ------------------
@@ -1072,4 +1083,15 @@ class ZenStoreInterface(ABC):
 
         Returns:
             A list of all artifacts.
+        """
+
+    @abstractmethod
+    def delete_artifact(self, artifact_id: UUID) -> None:
+        """Deletes an artifact.
+
+        Args:
+            artifact_id: The ID of the artifact to delete.
+
+        Raises:
+            KeyError: if the artifact doesn't exist.
         """

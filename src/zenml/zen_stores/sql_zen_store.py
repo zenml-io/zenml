@@ -2770,6 +2770,30 @@ class SqlZenStore(BaseZenStore):
             session.refresh(existing_run)
             return existing_run.to_model()
 
+    def delete_run(self, run_id: UUID) -> None:
+        """Deletes a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to delete.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+        with Session(self.engine) as session:
+            # Check if pipeline run with the given ID exists
+            existing_run = session.exec(
+                select(PipelineRunSchema).where(PipelineRunSchema.id == run_id)
+            ).first()
+            if existing_run is None:
+                raise KeyError(
+                    f"Unable to delete pipeline run with ID {run_id}: "
+                    f"No pipeline run with this ID found."
+                )
+
+            # Delete the pipeline run
+            session.delete(existing_run)
+            session.commit()
+
     # ------------------
     # Pipeline run steps
     # ------------------
@@ -3266,6 +3290,27 @@ class SqlZenStore(BaseZenStore):
                 self._artifact_schema_to_model(artifact)
                 for artifact in artifacts
             ]
+
+    def delete_artifact(self, artifact_id: UUID) -> None:
+        """Deletes an artifact.
+
+        Args:
+            artifact_id: The ID of the artifact to delete.
+
+        Raises:
+            KeyError: if the artifact doesn't exist.
+        """
+        with Session(self.engine) as session:
+            artifact = session.exec(
+                select(ArtifactSchema).where(ArtifactSchema.id == artifact_id)
+            ).first()
+            if artifact is None:
+                raise KeyError(
+                    f"Unable to delete artifact with ID {artifact_id}: "
+                    f"No artifact with this ID found."
+                )
+            session.delete(artifact)
+            session.commit()
 
     # =======================
     # Internal helper methods

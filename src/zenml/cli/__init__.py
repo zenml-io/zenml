@@ -738,21 +738,23 @@ To list all pipeline runs that you have executed, use:
 zenml pipeline runs list
 ```
 
-These are currently read-only and cannot be modified or deleted.
-
-If you would like to switch to a different ZenML deployment 
-(e.g., when switching from a local deployment to a cloud deployment), you can
-migrate your existing pipeline runs by exporting them to a YAML file via:
+To delete a pipeline run, use:
 
 ```bash
-zenml pipeline runs export FILENAME.yaml
+zenml pipeline runs delete PIPELINE_RUN_NAME_OR_ID
 ```
 
-This will create a FILENAME.yaml containing all your pipeline runs, which, after
-connecting to the new ZenML deployment, you can then import again like this:
+Each pipeline run automatically saves its artifacts in the artifact store. To
+list all artifacts that have been saved, use:
 
 ```bash
-zenml pipeline runs import FILENAME.yaml
+zenml artifact list
+```
+
+To delete an artifact, use:
+
+```bash
+zenml artifact delete ARTIFACT_NAME_OR_ID
 ```
 
 Managing the local ZenML Dashboard
@@ -1161,6 +1163,7 @@ This deletes all the recipes from the default path where they were downloaded.
 """
 
 from zenml.cli.annotator import *  # noqa
+from zenml.cli.artifact import *  # noqa
 from zenml.cli.base import *  # noqa
 from zenml.cli.config import *  # noqa
 from zenml.cli.example import *  # noqa

@@ -102,3 +102,20 @@ def get_artifact(
         The artifact with the given ID.
     """
     return zen_store().get_artifact(artifact_id)
+
+
+@router.delete(
+    "/{artifact_id}",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def delete_artifact(
+    artifact_id: UUID,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+) -> None:
+    """Delete an artifact by ID.
+
+    Args:
+        artifact_id: The ID of the artifact to delete.
+    """
+    zen_store().delete_artifact(artifact_id)

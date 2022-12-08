@@ -51,7 +51,6 @@ from zenml.exceptions import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import (
-    ArtifactRequestModel,
     ComponentRequestModel,
     ComponentResponseModel,
     ComponentUpdateModel,
@@ -79,6 +78,7 @@ from zenml.models import (
     UserResponseModel,
     UserUpdateModel,
 )
+from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.models.base_models import BaseResponseModel
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
@@ -2149,9 +2149,9 @@ class Client(metaclass=ClientMetaClass):
         pipeline = self.get_pipeline(name_id_or_prefix=name_id_or_prefix)
         self.zen_store.delete_pipeline(pipeline_id=pipeline.id)
 
-    # -----------------
+    # ----------------------
     # - PIPELINE/STEP RUNS -
-    # -----------------
+    # ----------------------
 
     def list_runs(
         self,
@@ -2208,6 +2208,18 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix=name_id_or_prefix,
         )
 
+    def delete_pipeline_run(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+    ) -> None:
+        """Deletes a pipeline run.
+
+        Args:
+            name_id_or_prefix: Name, ID, or prefix of the pipeline run.
+        """
+        run = self.get_pipeline_run(name_id_or_prefix=name_id_or_prefix)
+        self.zen_store.delete_run(run_id=run.id)
+
     def list_run_steps(
         self,
         pipeline_run_id: Optional[UUID] = None,
@@ -2236,6 +2248,43 @@ class Client(metaclass=ClientMetaClass):
             The step run.
         """
         return self.zen_store.get_run_step(step_run_id)
+
+    # -------------
+    # - Artifacts -
+    # -------------
+
+    def list_artifacts(
+        self,
+        artifact_uri: Optional[str] = None,
+    ) -> List[ArtifactResponseModel]:
+        """Get all artifacts.
+
+        Args:
+            artifact_uri: If provided, only return artifacts with this URI.
+
+        Returns:
+            A list of artifacts.
+        """
+        return self.zen_store.list_artifacts(artifact_uri=artifact_uri)
+
+    def get_artifact(self, artifact_id: UUID) -> ArtifactResponseModel:
+        """Get an artifact by ID.
+
+        Args:
+            artifact_id: The ID of the artifact to get.
+
+        Returns:
+            The artifact.
+        """
+        return self.zen_store.get_artifact(artifact_id)
+
+    def delete_artifact(self, artifact_id: UUID) -> None:
+        """Delete an artifact.
+
+        Args:
+            artifact_id: The ID of the artifact to delete.
+        """
+        self.zen_store.delete_artifact(artifact_id)
 
     # ---- utility prefix matching get functions -----
 
