@@ -28,6 +28,9 @@ MODEL_DOCSTRING_FIELD_MAX_LENGTH = 15000
 # The maximum length of a TEXT field in models.
 MODEL_TEXT_FIELD_MAX_LENGTH = 650000
 
+TEXT_FIELD_MAX_LENGTH = 65536
+STR_FIELD_MAX_LENGTH = 255
+
 # The maximum length of a password
 # NOTE: this should be kept under 50 characters to avoid problems with
 # the hashing algorithm

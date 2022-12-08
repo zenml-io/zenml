@@ -24,10 +24,7 @@ from zenml.models.base_models import (
     ProjectScopedResponseModel,
     update_model,
 )
-from zenml.models.constants import (
-    MODEL_NAME_FIELD_MAX_LENGTH,
-    MODEL_TEXT_FIELD_MAX_LENGTH,
-)
+from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.models.pipeline_run_models import PipelineRunResponseModel
 
 # ---- #
@@ -40,12 +37,12 @@ class PipelineBaseModel(BaseModel):
 
     name: str = Field(
         title="The name of the pipeline.",
-        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+        max_length=STR_FIELD_MAX_LENGTH,
     )
 
     docstring: Optional[str] = Field(
         title="The docstring of the pipeline.",
-        max_length=MODEL_TEXT_FIELD_MAX_LENGTH,
+        max_length=TEXT_FIELD_MAX_LENGTH,
     )
     spec: PipelineSpec
 

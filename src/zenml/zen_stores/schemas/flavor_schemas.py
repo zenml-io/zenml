@@ -26,6 +26,8 @@ from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 
+MODEL_CONFIG_SCHEMA_MAX_LENGTH = 4096
+
 
 class FlavorSchema(NamedSchema, table=True):
     """SQL Model for flavors.

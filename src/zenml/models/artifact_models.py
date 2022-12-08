@@ -24,11 +24,7 @@ from zenml.models.base_models import (
     ProjectScopedResponseModel,
     update_model,
 )
-from zenml.models.constants import (
-    MODEL_METADATA_FIELD_MAX_LENGTH,
-    MODEL_NAME_FIELD_MAX_LENGTH,
-    MODEL_URI_FIELD_MAX_LENGTH,
-)
+from zenml.models.constants import STR_FIELD_MAX_LENGTH
 
 # ---- #
 # BASE #
@@ -40,21 +36,21 @@ class ArtifactBaseModel(BaseModel):
 
     name: str = Field(
         title="Name of the output in the parent step.",
-        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+        max_length=STR_FIELD_MAX_LENGTH,
     )
 
     artifact_store_id: Optional[UUID]
     type: ArtifactType
     uri: str = Field(
-        title="URI of the artifact.", max_length=MODEL_URI_FIELD_MAX_LENGTH
+        title="URI of the artifact.", max_length=STR_FIELD_MAX_LENGTH
     )
     materializer: str = Field(
         title="Materializer class to use for this artifact.",
-        max_length=MODEL_METADATA_FIELD_MAX_LENGTH,
+        max_length=STR_FIELD_MAX_LENGTH,
     )
     data_type: str = Field(
         title="Data type of the artifact.",
-        max_length=MODEL_METADATA_FIELD_MAX_LENGTH,
+        max_length=STR_FIELD_MAX_LENGTH,
     )
 
 
