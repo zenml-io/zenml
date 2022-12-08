@@ -577,10 +577,14 @@ def track(
 class event_handler(object):
     """Context handler to enable tracking the success status of an event."""
 
-    def __init__(self, event: AnalyticsEvent):
+    def __init__(
+        self,
+        event: AnalyticsEvent,
+        metadata: Optional[Dict[str, Any]]=None
+    ):
         """Initialization of the context manager."""
         self.event: AnalyticsEvent = event
-        self.metadata: Dict[str, Any] = {}
+        self.metadata: Dict[str, Any] = metadata or {}
         self.tracker: Optional[AnalyticsTrackerMixin] = None
 
     def __enter__(self) -> "event_handler":
