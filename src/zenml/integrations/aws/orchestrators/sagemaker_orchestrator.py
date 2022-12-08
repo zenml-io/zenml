@@ -25,7 +25,9 @@ from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
     SagemakerOrchestratorConfig,
 )
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
-from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
+from zenml.utils.pipeline_docker_image_builder import (
+    PipelineDockerImageBuilder,
+)
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
@@ -120,6 +122,6 @@ class SagemakerOrchestrator(BaseOrchestrator):
             steps=sagemaker_steps,
             sagemaker_session=session,
         )
-        breakpoint()
+
         pipeline.create(role_arn=sagemaker.get_execution_role())
         pipeline.start()
