@@ -44,6 +44,7 @@
 * [Practical MLOps](./advanced-guide/practical/practical-mlops.md)
   * [Stack Recipes](./advanced-guide/practical/stack-recipes.md)
   * [Switching Orchestration](./advanced-guide/practical/switching-orchestration.md)
+  * [Scheduling Pipeline Runs](./advanced-guide/practical/scheduling-runs.md)
   * [Secrets Management](./advanced-guide/practical/secrets-management.md)
   * [Tracking Experiments](./advanced-guide/practical/tracking-experiments.md)
   * [Validating Data](./advanced-guide/practical/validating-data.md)
