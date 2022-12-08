@@ -235,7 +235,6 @@ and overwriting `load()` and `save()`:
 import os
 from typing import Type
 
-from zenml.artifacts import DataArtifact
 from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -308,7 +307,6 @@ from typing import Type
 from zenml.steps import step
 from zenml.pipelines import pipeline
 
-from zenml.artifacts import DataArtifact
 from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer

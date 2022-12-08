@@ -23,11 +23,10 @@ to materialize, we have a minimal pipeline that shows a step that produces this
 object and a step that consumes the
 object.
 
-  ```python
+```python
 from typing import Type
 import os
 
-from zenml.artifacts import DataArtifact
 from zenml.enums import ArtifactType
 from zenml.steps import step
 from zenml.pipelines import pipeline
@@ -77,7 +76,7 @@ if __name__ == "__main__":
     pipe(
         step1=step1().with_return_materializers(MyMaterializer), step2=step2()
     ).run()
-  ```
+```
 
 ## 📰 Write the Readme
 

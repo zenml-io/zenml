@@ -33,6 +33,7 @@ Args
 ArtifactModel
 ArtifactStore
 ArtifactStoreInterfaceError
+ArtifactType
 ArtifactView
 AssertionError
 AssumeRole
