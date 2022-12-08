@@ -16,6 +16,8 @@
 import inspect
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type, cast
 
+from zenml.io import fileio
+
 if TYPE_CHECKING:
     from zenml.artifacts.base_artifact import BaseArtifact
 
@@ -174,4 +176,21 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
                 f"{self.__class__.__name__} can only write the following "
                 f"types: {self.ASSOCIATED_TYPES}."
             )
-        return {}
+
+        def human_readable_size(num_bytes: int) -> str:
+            """Converts a number of bytes to a human-readable string.
+
+            Args:
+                num_bytes: The number of bytes.
+
+            Returns:
+                A human-readable string representation of the data size.
+            """
+            for unit in ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB"]:
+                if abs(num_bytes) < 1000:
+                    return f"{num_bytes}{unit}"
+                num_bytes = num_bytes // 1000
+            return f"{num_bytes}YB"
+
+        artifact_storage_size = fileio.size(self.artifact.uri)
+        return {"storage_size": human_readable_size(artifact_storage_size)}

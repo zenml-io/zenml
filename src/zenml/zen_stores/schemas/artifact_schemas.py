@@ -71,7 +71,9 @@ class ArtifactSchema(NamedSchema, table=True):
     uri: str
     materializer: str
     data_type: str
-    artifact_metadata: str = Field(sa_column=Column(TEXT, nullable=False))
+    artifact_metadata: Optional[str] = Field(
+        sa_column=Column(TEXT, nullable=True)
+    )
 
     @classmethod
     def from_request(
@@ -109,6 +111,10 @@ class ArtifactSchema(NamedSchema, table=True):
         Returns:
             The created `ArtifactModel`.
         """
+        if self.artifact_metadata:
+            metadata = json.loads(self.artifact_metadata)
+        else:
+            metadata = {}
         return ArtifactResponseModel(
             id=self.id,
             name=self.name,
@@ -122,5 +128,5 @@ class ArtifactSchema(NamedSchema, table=True):
             created=self.created,
             updated=self.updated,
             producer_step_run_id=producer_step_run_id,
-            metadata=json.loads(self.artifact_metadata),
+            metadata=metadata,
         )

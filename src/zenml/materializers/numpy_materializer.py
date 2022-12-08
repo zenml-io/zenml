@@ -127,8 +127,8 @@ class NumpyMaterializer(BaseMaterializer):
         Returns:
             The extracted metadata as a dictionary.
         """
-        super().extract_metadata(arr)
-        return {
+        base_metadata = super().extract_metadata(arr)
+        numpy_metadata = {
             "shape": str(arr.shape),
             "dtype": str(arr.dtype),
             "mean": str(np.mean(arr)),
@@ -136,3 +136,4 @@ class NumpyMaterializer(BaseMaterializer):
             "min": str(np.min(arr)),
             "max": str(np.max(arr)),
         }
+        return {**base_metadata, **numpy_metadata}

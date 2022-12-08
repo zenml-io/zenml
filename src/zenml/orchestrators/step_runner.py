@@ -281,5 +281,5 @@ class StepRunner:
         artifact.materializer = materializer_source
         artifact.data_type = source_utils.resolve_class(type(data))
         materializer = materializer_class(artifact)
-        artifact.metadata = materializer.extract_metadata(data)
         materializer.handle_return(data)
+        artifact.metadata = materializer.extract_metadata(data)

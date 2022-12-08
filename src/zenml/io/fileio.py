@@ -242,6 +242,26 @@ def stat(path: "PathType") -> Any:
     return _get_filesystem(path).stat(path)
 
 
+def size(path: "PathType") -> int:
+    """Get the size of a file or directory in bytes.
+
+    Args:
+        path: The path to the file.
+
+    Returns:
+        The size of the file in bytes.
+    """
+    file_system = _get_filesystem(path)
+
+    # If the path is a file, return its size.
+    if not file_system.isdir(path):
+        return file_system.size(path)
+
+    # If the path is a directory, recursively sum the sizes of everything in it.
+    files = file_system.listdir(path)
+    return sum([size(os.path.join(str(path), str(file))) for file in files])
+
+
 def walk(
     top: "PathType",
     topdown: bool = True,
