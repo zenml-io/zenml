@@ -61,10 +61,10 @@ class LocalServerProvider(BaseServerProvider):
         try:
             # Make sure the ZenML Server dependencies are installed
             import fastapi  # noqa
-            import uvicorn  # type: ignore[import] # noqa
-            import multipart # noqa
-            import jose  # noqa
             import fastapi_utils  # noqa
+            import jose  # noqa
+            import multipart  # noqa
+            import uvicorn  # type: ignore[import] # noqa
         except ImportError:
             # Unable to import the ZenML Server dependencies.
             raise RuntimeError(
