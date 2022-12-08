@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Step context class."""
 
-from typing import TYPE_CHECKING, Dict, NamedTuple, Optional, Type, cast
+from typing import TYPE_CHECKING, Dict, NamedTuple, Optional, Type
 
 from zenml.client import Client
 from zenml.exceptions import StepContextError
@@ -184,4 +184,4 @@ class StepContext:
         Returns:
             Artifact URI for the given output.
         """
-        return cast(str, self._get_output(output_name).artifact.uri)
+        return self._get_output(output_name).artifact.uri

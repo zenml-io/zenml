@@ -33,7 +33,10 @@ class AWSIntegration(Integration):
     """Definition of AWS integration for ZenML."""
 
     NAME = AWS
-    REQUIREMENTS = ["boto3==1.21.0", "sagemaker==2.82.2"]
+    # We need to pin protobuf to a version <=4 here, as this sagemaker release
+    # does not pin it. They fixed this in a later version, so we can probably
+    # remove this once we update the sagemaker version.
+    REQUIREMENTS = ["boto3==1.21.0", "sagemaker==2.82.2", "protobuf~=3.20.0"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:

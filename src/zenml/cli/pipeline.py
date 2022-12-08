@@ -20,7 +20,6 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.client import Client
 from zenml.enums import CliCategories
-from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -139,81 +138,3 @@ def list_pipeline_runs(
             return
 
         cli_utils.print_pipeline_runs_table(pipeline_runs=pipeline_runs)
-
-
-@runs.command("export", help="Export all pipeline runs to a YAML file.")
-@click.argument("filename", type=str, required=True)
-def export_pipeline_runs(filename: str) -> None:
-    """Export all pipeline runs to a YAML file.
-
-    Args:
-        filename: The filename to export the pipeline runs to.
-    """
-    cli_utils.print_active_config()
-    client = Client()
-    client.export_pipeline_runs(filename=filename)
-
-
-@runs.command("import", help="Import pipeline runs from a YAML file.")
-@click.argument("filename", type=str, required=True)
-def import_pipeline_runs(filename: str) -> None:
-    """Import pipeline runs from a YAML file.
-
-    Args:
-        filename: The filename from which to import the pipeline runs.
-    """
-    cli_utils.print_active_config()
-    client = Client()
-    try:
-        client.import_pipeline_runs(filename=filename)
-    except EntityExistsError as err:
-        cli_utils.error(str(err))
-
-
-@runs.command(
-    "migrate",
-    help="Migrate pipeline runs from an existing metadata store database.",
-)
-@click.argument("database", type=str, required=True)
-@click.option("--database_type", type=str, default="sqlite", required=False)
-@click.option("--mysql_host", type=str, required=False)
-@click.option("--mysql_port", type=int, default=3306, required=False)
-@click.option("--mysql_username", type=str, required=False)
-@click.option("--mysql_password", type=str, required=False)
-def migrate_pipeline_runs(
-    database: str,
-    database_type: str,
-    mysql_host: str,
-    mysql_port: int,
-    mysql_username: str,
-    mysql_password: str,
-) -> None:
-    """Migrate pipeline runs from a metadata store of ZenML < 0.20.0.
-
-    Args:
-        database: The metadata store database from which to migrate the pipeline
-            runs.
-        database_type: The type of the metadata store database (sqlite | mysql).
-        mysql_host: The host of the MySQL database.
-        mysql_port: The port of the MySQL database.
-        mysql_username: The username of the MySQL database.
-        mysql_password: The password of the MySQL database.
-    """
-    cli_utils.print_active_config()
-    client = Client()
-    try:
-        client.migrate_pipeline_runs(
-            database=database,
-            database_type=database_type,
-            mysql_host=mysql_host,
-            mysql_port=mysql_port,
-            mysql_username=mysql_username,
-            mysql_password=mysql_password,
-        )
-    except (
-        EntityExistsError,
-        NotImplementedError,
-        RuntimeError,
-        ValueError,
-    ) as err:
-        cli_utils.error(str(err))

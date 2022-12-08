@@ -56,7 +56,7 @@ class DeepchecksModelValidationCheckStepParameters(BaseParameters):
 class DeepchecksModelValidationCheckStep(BaseStep):
     """Deepchecks model validation step."""
 
-    def entrypoint(  # type: ignore[override]
+    def entrypoint(
         self,
         dataset: pd.DataFrame,
         model: ClassifierMixin,
