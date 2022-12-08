@@ -31,7 +31,7 @@ from uuid import UUID
 
 import requests
 import urllib3
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, root_validator, validator
 
 import zenml
 from zenml.config.global_config import GlobalConfiguration
@@ -39,6 +39,7 @@ from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     API,
     ARTIFACTS,
+    CURRENT_USER,
     DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     FLAVORS,
@@ -149,10 +150,33 @@ class RestZenStoreConfiguration(StoreConfiguration):
     """
 
     type: StoreType = StoreType.REST
-    username: str
-    password: str = ""
+    username: Optional[str] = None
+    password: Optional[str] = None
+    api_token: Optional[str] = None
     verify_ssl: Union[bool, str] = True
     http_timeout: int = DEFAULT_HTTP_TIMEOUT
+
+    @root_validator
+    def validate_credentials(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Validates the credentials provided in the values dictionary.
+
+        Args:
+            values: A dictionary containing the values to be validated.
+
+        Raises:
+            ValueError: If neither api_token nor username is set.
+
+        Returns:
+            The values dictionary.
+        """
+        # Check if the values dictionary contains either an api_token or a
+        # username as non-empty strings.
+        if values.get("api_token") or values.get("username"):
+            return values
+        else:
+            raise ValueError(
+                "Neither api_token nor username is set in the store config."
+            )
 
     @validator("url")
     def validate_url(cls, url: str) -> str:
@@ -268,8 +292,8 @@ class RestZenStoreConfiguration(StoreConfiguration):
             path.
         """
         assert isinstance(config, RestZenStoreConfiguration)
-        config = config.copy(deep=True)
-
+        assert config.api_token is not None
+        config = config.copy(exclude={"username", "password"}, deep=True)
         # Load the certificate values back into the configuration
         config.expand_certificates()
         return config
@@ -619,10 +643,13 @@ class RestZenStore(BaseZenStore):
     def active_user_name(self) -> str:
         """Gets the active username.
 
+        Either the username specified in the config, or the username of the
+        currently authenticated user.
+
         Returns:
             The active username.
         """
-        return self.config.username
+        return self.config.username or self._get_active_user().name
 
     @track(AnalyticsEvent.CREATED_USER)
     def create_user(self, user: UserRequestModel) -> UserResponseModel:
@@ -639,6 +666,15 @@ class RestZenStore(BaseZenStore):
             route=USERS + "?assign_default_role=False",
             response_model=UserResponseModel,
         )
+
+    def _get_active_user(self) -> UserResponseModel:
+        """Gets a specific user.
+
+        Returns:
+            The requested user, if it was found.
+        """
+        body = self.get(f"{CURRENT_USER}")
+        return UserResponseModel.parse_obj(body)
 
     def get_user(self, user_name_or_id: Union[str, UUID]) -> UserResponseModel:
         """Gets a specific user.
@@ -1424,23 +1460,38 @@ class RestZenStore(BaseZenStore):
                 format.
         """
         if self._api_token is None:
-            response = self._handle_response(
-                requests.post(
-                    self.url + API + VERSION_1 + LOGIN,
-                    data={
-                        "username": self.config.username,
-                        "password": self.config.password,
-                    },
-                    verify=self.config.verify_ssl,
-                    timeout=self.config.http_timeout,
+            # Check if the API token is already stored in the config
+            if self.config.api_token:
+                self._api_token = self.config.api_token
+            # Check if the username and password are provided in the config
+            elif self.config.username and self.config.password:
+                response = self._handle_response(
+                    requests.post(
+                        self.url + API + VERSION_1 + LOGIN,
+                        data={
+                            "username": self.config.username,
+                            "password": self.config.password,
+                        },
+                        verify=self.config.verify_ssl,
+                        timeout=self.config.http_timeout,
+                    )
                 )
-            )
-            if not isinstance(response, dict) or "access_token" not in response:
+                if (
+                    not isinstance(response, dict)
+                    or "access_token" not in response
+                ):
+                    raise ValueError(
+                        f"Bad API Response. Expected access token dict, got "
+                        f"{type(response)}"
+                    )
+                self._api_token = response["access_token"]
+                self.config.api_token = self._api_token
+            else:
                 raise ValueError(
-                    f"Bad API Response. Expected access token dict, got "
-                    f"{type(response)}"
+                    "No API token or username/password provided. Please "
+                    "provide either a token or a username and password in "
+                    "the ZenStore config."
                 )
-            self._api_token = response["access_token"]
         return self._api_token
 
     @property
