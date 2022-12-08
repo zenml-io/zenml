@@ -69,21 +69,21 @@ jobs:
       test_environment: ${{ matrix.test_environment }}
     secrets: inherit
 
-  check_comments:
-    runs-on: ubuntu-latest
-    if: github.event.issue.pull_request
-    outputs:
-      kf_trigger: ${{ steps.check.outputs.triggered }}
-    steps:
-      - uses: khan/pull-request-comment-trigger@master
-        id: check
-        with:
-          trigger: "LTKF!"
-          reaction: rocket
-        env:
-          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-      - run: "echo Found LTKF! in the comments!"
-        if: steps.check.outputs.triggered == 'true'
+  # check_comments:
+  #   runs-on: ubuntu-latest
+  #   if: github.event.issue.pull_request
+  #   outputs:
+  #     kf_trigger: ${{ steps.check.outputs.triggered }}
+  #   steps:
+  #     - uses: khan/pull-request-comment-trigger@master
+  #       id: check
+  #       with:
+  #         trigger: "LTKF!"
+  #         reaction: rocket
+  #       env:
+  #         GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+  #     - run: "echo Found LTKF! in the comments!"
+  #       if: steps.check.outputs.triggered == 'true'
 
   # kubeflow-tests:
   #   needs: [poetry-install, check_comments]
