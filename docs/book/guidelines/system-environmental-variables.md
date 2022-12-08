@@ -27,7 +27,8 @@ Setting to `true` switches to developer mode:
 ZENML_DEBUG=false
 ```
 
-Setting to a specific UUID will make the corresponding stack the active stack:
+Setting the `ZENML_ACTIVE_STACK_ID` to a specific UUID will make the 
+corresponding stack the active stack:
 ```bash
 ZENML_ACTIVE_STACK_ID=<UUID-OF-YOUR-STACK>
 ```
