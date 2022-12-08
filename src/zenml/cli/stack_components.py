@@ -822,7 +822,7 @@ def generate_stack_component_flavor_list_command(
         client = Client()
 
         with console.status(f"Listing {display_name} flavors`...\n"):
-            flavors = client.get_flavorsF_by_type(component_type=component_type)
+            flavors = client.get_flavors_by_type(component_type=component_type)
 
             cli_utils.print_flavor_list(flavors=flavors)
 
