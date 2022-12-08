@@ -214,6 +214,7 @@ class StepLauncher:
             stack=self._deployment.stack_id,
             pipeline=self._deployment.pipeline_id,
             enable_cache=self._deployment.pipeline.enable_cache,
+            enable_artifact_metadata=self._deployment.pipeline.enable_artifact_metadata,
             status=ExecutionStatus.RUNNING,
             pipeline_configuration=self._deployment.pipeline.dict(),
             num_steps=len(self._deployment.steps),

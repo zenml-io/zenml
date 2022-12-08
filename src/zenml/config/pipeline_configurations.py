@@ -33,6 +33,7 @@ class PipelineConfigurationUpdate(StrictBaseModel):
     """Class for pipeline configuration updates."""
 
     enable_cache: Optional[bool] = None
+    enable_artifact_metadata: Optional[bool] = None
     settings: Dict[str, BaseSettings] = {}
     extra: Dict[str, Any] = {}
 
@@ -42,6 +43,7 @@ class PipelineConfiguration(PipelineConfigurationUpdate):
 
     name: str
     enable_cache: bool
+    enable_artifact_metadata: bool
 
     @validator("name")
     def ensure_pipeline_name_allowed(cls, name: str) -> str:
@@ -83,6 +85,7 @@ class PipelineRunConfiguration(StrictBaseModel):
 
     run_name: Optional[str] = None
     enable_cache: Optional[bool] = None
+    enable_artifact_metadata: Optional[bool] = None
     schedule: Optional[Schedule] = None
     steps: Dict[str, StepConfigurationUpdate] = {}
     settings: Dict[str, BaseSettings] = {}

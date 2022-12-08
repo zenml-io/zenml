@@ -282,4 +282,5 @@ class StepRunner:
         artifact.data_type = source_utils.resolve_class(type(data))
         materializer = materializer_class(artifact)
         materializer.handle_return(data)
-        artifact.metadata = materializer.extract_metadata(data)
+        if self._step.config.enable_artifact_metadata:  # or self._pipeline...
+            artifact.metadata = materializer.extract_metadata(data)

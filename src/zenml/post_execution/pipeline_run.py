@@ -156,6 +156,18 @@ class PipelineRunView:
         return cast(bool, enable_cache)
 
     @property
+    def enable_artifact_metadata(self) -> bool:
+        """Returns whether artifact metadata is enabled for this pipeline run.
+
+        Returns:
+            True if artifact metadata is enabled for this pipeline run.
+        """
+        enable_artifact_metadata = self.pipeline_configuration[
+            "enable_artifact_metadata"
+        ]
+        return cast(bool, enable_artifact_metadata)
+
+    @property
     def zenml_version(self) -> Optional[str]:
         """Version of ZenML that this pipeline run was performed with.
 

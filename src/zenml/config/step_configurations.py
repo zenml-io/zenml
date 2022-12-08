@@ -42,6 +42,7 @@ class StepConfigurationUpdate(StrictBaseModel):
 
     name: Optional[str] = None
     enable_cache: Optional[bool] = None
+    enable_artifact_metadata: Optional[bool] = None
     step_operator: Optional[str] = None
     experiment_tracker: Optional[str] = None
     parameters: Dict[str, Any] = {}
@@ -56,6 +57,7 @@ class PartialStepConfiguration(StepConfigurationUpdate):
 
     name: str
     enable_cache: bool
+    enable_artifact_metadata: bool
     docstring: Optional[str] = None
     caching_parameters: Mapping[str, Any] = {}
     inputs: Mapping[str, PartialArtifactConfiguration] = {}

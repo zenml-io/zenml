@@ -77,6 +77,7 @@ class PipelineRunBaseModel(BaseModel):
 
     orchestrator_run_id: Optional[str] = None
     enable_cache: Optional[bool]
+    enable_artifact_metadata: Optional[bool]
     start_time: Optional[datetime]
     end_time: Optional[datetime]
     status: ExecutionStatus

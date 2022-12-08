@@ -82,6 +82,7 @@ class PipelineRunSchema(NamedSchema, table=True):
     orchestrator_run_id: Optional[str] = Field(nullable=True)
 
     enable_cache: Optional[bool] = Field(nullable=True)
+    enable_artifact_metadata: Optional[bool] = Field(nullable=True)
     start_time: Optional[datetime] = Field(nullable=True)
     end_time: Optional[datetime] = Field(nullable=True)
     status: ExecutionStatus
@@ -107,6 +108,7 @@ class PipelineRunSchema(NamedSchema, table=True):
                 user=self.user.to_model(),
                 orchestrator_run_id=self.orchestrator_run_id,
                 enable_cache=self.enable_cache,
+                enable_artifact_metadata=self.enable_artifact_metadata,
                 start_time=self.start_time,
                 end_time=self.end_time,
                 status=self.status,
@@ -126,6 +128,7 @@ class PipelineRunSchema(NamedSchema, table=True):
                 user=self.user.to_model(),
                 orchestrator_run_id=self.orchestrator_run_id,
                 enable_cache=self.enable_cache,
+                enable_artifact_metadata=self.enable_artifact_metadata,
                 start_time=self.start_time,
                 end_time=self.end_time,
                 status=self.status,

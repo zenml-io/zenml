@@ -123,6 +123,7 @@ class Compiler:
         """
         pipeline.configure(
             enable_cache=config.enable_cache,
+            enable_artifact_metadata=config.enable_artifact_metadata,
             settings=config.settings,
             extra=config.extra,
         )

@@ -84,6 +84,7 @@ class StepRunSchema(NamedSchema, table=True):
     project: "ProjectSchema" = Relationship(back_populates="step_runs")
 
     enable_cache: Optional[bool] = Field(nullable=True)
+    enable_artifact_metadata: Optional[bool] = Field(nullable=True)
     code_hash: Optional[str] = Field(nullable=True)
     cache_key: Optional[str] = Field(nullable=True)
     start_time: Optional[datetime] = Field(nullable=True)
@@ -117,6 +118,7 @@ class StepRunSchema(NamedSchema, table=True):
             project_id=request.project,
             user_id=request.user,
             enable_cache=step_config.enable_cache,
+            enable_artifact_metadata=step_config.enable_artifact_metadata,
             code_hash=step_config.caching_parameters.get(
                 STEP_SOURCE_PARAMETER_NAME
             ),
@@ -162,6 +164,8 @@ class StepRunSchema(NamedSchema, table=True):
             project=self.project.to_model(),
             user=self.user.to_model(),
             parent_step_ids=parent_step_ids,
+            enable_cache=self.enable_cache,
+            enable_artifact_metadata=self.enable_artifact_metadata,
             cache_key=self.cache_key,
             start_time=self.start_time,
             end_time=self.end_time,
