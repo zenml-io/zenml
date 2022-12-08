@@ -51,7 +51,6 @@ from zenml.exceptions import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import (
-    ArtifactRequestModel,
     ComponentRequestModel,
     ComponentResponseModel,
     ComponentUpdateModel,
