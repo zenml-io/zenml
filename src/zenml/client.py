@@ -204,6 +204,8 @@ class Client(metaclass=ClientMetaClass):
     as their components.
     """
 
+    _active_user: Optional[UserResponseModel] = None
+
     def __init__(
         self,
         root: Optional[Path] = None,
@@ -555,7 +557,9 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The active user.
         """
-        return self.zen_store.active_user
+        if self._active_user is None:
+            self._active_user = self.zen_store.get_myself()
+        return self._active_user
 
     def create_user(
         self,

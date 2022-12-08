@@ -1524,15 +1524,6 @@ class SqlZenStore(BaseZenStore):
     # Users
     # -----
 
-    @property
-    def active_user_name(self) -> str:
-        """Gets the active username.
-
-        Returns:
-            The active username.
-        """
-        return self._default_user_name
-
     @track(AnalyticsEvent.CREATED_USER)
     def create_user(self, user: UserRequestModel) -> UserResponseModel:
         """Creates a new user.
@@ -1577,6 +1568,25 @@ class SqlZenStore(BaseZenStore):
             user = self._get_user_schema(user_name_or_id, session=session)
 
             return user.to_model()
+
+    def get_myself(
+        self, user_name_or_id: Optional[Union[str, UUID]] = None
+    ) -> UserResponseModel:
+        """Gets the user model of the active user including some private fields.
+
+        Args:
+            user_name_or_id: The name or ID of the user to get.
+
+        Returns:
+            The requested user, if it was found.
+        """
+        if not user_name_or_id:
+            user_name_or_id = self._default_user_name
+
+        with Session(self.engine) as session:
+            user = self._get_user_schema(user_name_or_id, session=session)
+
+            return user.to_model(include_private=True)
 
     def get_auth_user(self, user_name_or_id: Union[str, UUID]) -> UserAuthModel:
         """Gets the auth model to a specific user.

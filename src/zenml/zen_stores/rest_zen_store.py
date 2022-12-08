@@ -45,6 +45,7 @@ from zenml.constants import (
     FLAVORS,
     INFO,
     LOGIN,
+    MYSELF,
     PIPELINES,
     PROJECTS,
     ROLE_ASSIGNMENTS,
@@ -690,6 +691,20 @@ class RestZenStore(BaseZenStore):
             route=USERS,
             response_model=UserResponseModel,
         )
+
+    def get_myself(
+        self, user_name_or_id: Optional[Union[str, UUID]] = None
+    ) -> UserResponseModel:
+        """Gets the authenticated user model including some private fields.
+
+        Args:
+            user_name_or_id: The name or ID of the user to get.
+
+        Returns:
+            The requested user, if it was found.
+        """
+        body = self.get(MYSELF)
+        return UserResponseModel.parse_obj(body)
 
     def get_auth_user(
         self, user_name_or_id: Union[str, UUID]
