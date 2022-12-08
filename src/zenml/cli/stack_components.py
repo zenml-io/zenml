@@ -262,15 +262,16 @@ def generate_stack_component_update_command(
             name_mandatory=False,
         )
 
-        with console.status(f"Updating {display_name} '{name_or_id}'...\n"):
-            client.update_stack_component(
+        with console.status(f"Updating {display_name}...\n"):
+            updated_component = client.update_stack_component(
                 name_id_or_prefix=name_or_id,
                 component_type=component_type,
                 configuration=parsed_args,
             )
 
             cli_utils.declare(
-                f"Successfully updated {display_name} `{name_or_id}`."
+                f"Successfully updated {display_name} "
+                f"`{updated_component.name}`."
             )
 
     return update_stack_component_command
