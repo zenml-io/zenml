@@ -401,7 +401,6 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                     email=active_user.email,
                     source=AnalyticsEventSource.ZENML_SERVER,
                 )
-
             self._zen_store = store
 
             # Sanitize the global configuration to reflect the new store
@@ -507,7 +506,6 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                 self.store, config_path, load_config_path
             )
             store = store_config_copy
-
         config_copy.store = store
 
         return config_copy

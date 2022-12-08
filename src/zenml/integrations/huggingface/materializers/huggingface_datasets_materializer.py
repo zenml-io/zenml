@@ -14,13 +14,14 @@
 """Implementation of the Huggingface datasets materializer."""
 
 import os
-from tempfile import TemporaryDirectory
+from tempfile import TemporaryDirectory, mkdtemp
 from typing import Any, Type
 
 from datasets import Dataset, load_from_disk  # type: ignore[attr-defined]
 from datasets.dataset_dict import DatasetDict
 
 from zenml.artifacts import DataArtifact
+from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import io_utils
 
@@ -43,12 +44,12 @@ class HFDatasetMaterializer(BaseMaterializer):
             The dataset read from the specified dir.
         """
         super().handle_input(data_type)
-        temp_dir = TemporaryDirectory()
+        temp_dir = mkdtemp()
         io_utils.copy_dir(
             os.path.join(self.artifact.uri, DEFAULT_DATASET_DIR),
-            temp_dir.name,
+            temp_dir,
         )
-        return load_from_disk(temp_dir.name)
+        return load_from_disk(temp_dir)
 
     def handle_return(self, ds: Type[Any]) -> None:
         """Writes a Dataset to the specified dir.
@@ -57,9 +58,13 @@ class HFDatasetMaterializer(BaseMaterializer):
             ds: The Dataset to write.
         """
         super().handle_return(ds)
-        with TemporaryDirectory() as temp_dir:
-            ds.save_to_disk(temp_dir)
+        temp_dir = TemporaryDirectory()
+        path = os.path.join(temp_dir.name, DEFAULT_DATASET_DIR)
+        try:
+            ds.save_to_disk(path)
             io_utils.copy_dir(
-                temp_dir,
+                path,
                 os.path.join(self.artifact.uri, DEFAULT_DATASET_DIR),
             )
+        finally:
+            fileio.rmtree(temp_dir.name)
