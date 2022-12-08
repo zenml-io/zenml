@@ -17,16 +17,13 @@ import pytest
 from pydantic import ValidationError
 
 from zenml.config.pipeline_configurations import PipelineSpec
-from zenml.models.constants import (
-    MODEL_NAME_FIELD_MAX_LENGTH,
-    MODEL_TEXT_FIELD_MAX_LENGTH,
-)
+from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.models.pipeline_models import PipelineBaseModel
 
 
 def test_pipeline_base_model_fails_with_long_name():
     """Test that the pipeline base model fails with long names."""
-    long_name = "a" * (MODEL_NAME_FIELD_MAX_LENGTH + 1)
+    long_name = "a" * (STR_FIELD_MAX_LENGTH + 1)
     with pytest.raises(ValidationError):
         PipelineBaseModel(
             name=long_name,
@@ -37,7 +34,7 @@ def test_pipeline_base_model_fails_with_long_name():
 
 def test_pipeline_base_model_fails_with_long_docstring():
     """Test that the pipeline base model fails with long docstrings."""
-    long_docstring = "a" * (MODEL_TEXT_FIELD_MAX_LENGTH + 1)
+    long_docstring = "a" * (TEXT_FIELD_MAX_LENGTH + 1)
     with pytest.raises(ValidationError):
         PipelineBaseModel(
             name="abc",

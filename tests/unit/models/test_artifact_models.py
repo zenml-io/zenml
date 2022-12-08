@@ -19,11 +19,7 @@ from pydantic import ValidationError
 
 from zenml.enums import ArtifactType
 from zenml.models.artifact_models import ArtifactBaseModel
-from zenml.models.constants import (
-    MODEL_METADATA_FIELD_MAX_LENGTH,
-    MODEL_NAME_FIELD_MAX_LENGTH,
-    MODEL_URI_FIELD_MAX_LENGTH,
-)
+from zenml.models.constants import STR_FIELD_MAX_LENGTH
 
 UUID_BASE_STRING = "00000000-0000-0000-0000-000000000000"
 
@@ -31,7 +27,7 @@ UUID_BASE_STRING = "00000000-0000-0000-0000-000000000000"
 def test_artifact_base_model_fails_with_long_name():
     """Test that the artifact base model fails with long strings."""
     with pytest.raises(ValidationError):
-        long_name = "a" * (MODEL_NAME_FIELD_MAX_LENGTH + 1)
+        long_name = "a" * (STR_FIELD_MAX_LENGTH + 1)
         ArtifactBaseModel(
             name=long_name,
             parent_step_id=UUID(UUID_BASE_STRING),
@@ -46,7 +42,7 @@ def test_artifact_base_model_fails_with_long_name():
 
 def test_artifact_base_model_fails_with_long_uri():
     """Test that the artifact base model fails with long URIs."""
-    long_uri = "a" * (MODEL_URI_FIELD_MAX_LENGTH + 1)
+    long_uri = "a" * (STR_FIELD_MAX_LENGTH + 1)
     with pytest.raises(ValidationError):
         ArtifactBaseModel(
             name="abc",
@@ -63,7 +59,7 @@ def test_artifact_base_model_fails_with_long_uri():
 def test_artifact_base_model_fails_with_long_materializer():
     """Test that the artifact base model fails with long materializer strings."""
     with pytest.raises(ValidationError):
-        long_materializer = "a" * (MODEL_METADATA_FIELD_MAX_LENGTH + 1)
+        long_materializer = "a" * (STR_FIELD_MAX_LENGTH + 1)
         ArtifactBaseModel(
             name="abc",
             parent_step_id=UUID(UUID_BASE_STRING),
@@ -79,7 +75,7 @@ def test_artifact_base_model_fails_with_long_materializer():
 def test_artifact_base_model_fails_with_long_data_type():
     """Test that the artifact base model fails with long data type strings."""
     with pytest.raises(ValidationError):
-        long_data_type = "a" * (MODEL_METADATA_FIELD_MAX_LENGTH + 1)
+        long_data_type = "a" * (STR_FIELD_MAX_LENGTH + 1)
         ArtifactBaseModel(
             name="abc",
             parent_step_id=UUID(UUID_BASE_STRING),

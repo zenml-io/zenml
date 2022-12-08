@@ -19,10 +19,7 @@ import pytest
 from pydantic import ValidationError
 
 from zenml.enums import ExecutionStatus
-from zenml.models.constants import (
-    MODEL_NAME_FIELD_MAX_LENGTH,
-    MODEL_TEXT_FIELD_MAX_LENGTH,
-)
+from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.models.step_run_models import StepRunBaseModel
 
 UUID_BASE_STRING = "00000000-0000-0000-0000-000000000000"
@@ -30,7 +27,7 @@ UUID_BASE_STRING = "00000000-0000-0000-0000-000000000000"
 
 def test_step_run_base_model_fails_with_long_entrypoint_name():
     """Test that the step run base model fails with long entrypoint names."""
-    long_entrypoint_name = "a" * (MODEL_NAME_FIELD_MAX_LENGTH + 1)
+    long_entrypoint_name = "a" * (STR_FIELD_MAX_LENGTH + 1)
     with pytest.raises(ValidationError):
         StepRunBaseModel(
             name="abc",
@@ -48,7 +45,7 @@ def test_step_run_base_model_fails_with_long_entrypoint_name():
 
 def test_step_run_base_model_fails_with_long_docstring():
     """Test that the step run base model fails with long docstrings."""
-    long_docstring_name = "a" * (MODEL_TEXT_FIELD_MAX_LENGTH + 1)
+    long_docstring_name = "a" * (TEXT_FIELD_MAX_LENGTH + 1)
     with pytest.raises(ValidationError):
         StepRunBaseModel(
             name="abc",
