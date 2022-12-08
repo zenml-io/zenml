@@ -756,14 +756,14 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             or opted_in
             and not self.user_email_opt_in
         ):
-            # # When the user opts out giving the email for the first time, or
-            # # when the user opts in after opting out (e.g. when connecting to
-            # # a new server where the account has opt-in enabled), we want to
-            # # record the information as an analytics event.
-            # track_event(
-            #     AnalyticsEvent.OPT_IN_OUT_EMAIL,
-            #     {"opted_in": opted_in, "source": source},
-            # )
+            # When the user opts out giving the email for the first time, or
+            # when the user opts in after opting out (e.g. when connecting to
+            # a new server where the account has opt-in enabled), we want to
+            # record the information as an analytics event.
+            track_event(
+                AnalyticsEvent.OPT_IN_OUT_EMAIL,
+                {"opted_in": opted_in, "source": source},
+            )
 
             self.user_email_opt_in = opted_in
 
