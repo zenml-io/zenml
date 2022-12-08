@@ -362,7 +362,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         """
         raise NotImplementedError
 
-    def _track_pipeline_metadata(
+    def _get_pipeline_analytics_metadata(
         self,
         deployment: "PipelineDeployment",
         stack: "Stack",
@@ -432,21 +432,21 @@ class BasePipeline(metaclass=BasePipelineMeta):
         Returns:
             The result of the pipeline.
         """
-        with event_handler(AnalyticsEvent.RUN_PIPELINE) as handler:
-            if constants.SHOULD_PREVENT_PIPELINE_EXECUTION:
-                # An environment variable was set to stop the execution of
-                # pipelines. This is done to prevent execution of module-level
-                # pipeline.run() calls inside docker containers which should only
-                # run a single step.
-                logger.info(
-                    "Preventing execution of pipeline '%s'. If this is not "
-                    "intended behavior, make sure to unset the environment "
-                    "variable '%s'.",
-                    self.name,
-                    constants.ENV_ZENML_PREVENT_PIPELINE_EXECUTION,
-                )
-                return
+        if constants.SHOULD_PREVENT_PIPELINE_EXECUTION:
+            # An environment variable was set to stop the execution of
+            # pipelines. This is done to prevent execution of module-level
+            # pipeline.run() calls inside docker containers which should only
+            # run a single step.
+            logger.info(
+                "Preventing execution of pipeline '%s'. If this is not "
+                "intended behavior, make sure to unset the environment "
+                "variable '%s'.",
+                self.name,
+                constants.ENV_ZENML_PREVENT_PIPELINE_EXECUTION,
+            )
+            return
 
+        with event_handler(AnalyticsEvent.RUN_PIPELINE) as handler:
             stack = Client().active_stack
 
             # Activating the built-in integrations through lazy loading
@@ -503,7 +503,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     update={"pipeline_id": pipeline_id}
                 )
 
-            handler.metadata = self._track_pipeline_metadata(
+            handler.metadata = self._get_pipeline_analytics_metadata(
                 deployment=pipeline_deployment, stack=stack
             )
             caching_status = (
@@ -522,8 +522,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
             )
             stack.prepare_pipeline_deployment(deployment=pipeline_deployment)
 
-            # Prevent execution of nested pipelines which might lead to unexpected
-            # behavior
+            # Prevent execution of nested pipelines which might lead to
+            # unexpected behavior
             constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True
             try:
                 return_value = stack.deploy_pipeline(pipeline_deployment)
