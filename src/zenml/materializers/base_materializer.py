@@ -193,4 +193,8 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
             return f"{num_bytes}YB"
 
         artifact_storage_size = fileio.size(self.artifact.uri)
-        return {"storage_size": human_readable_size(artifact_storage_size)}
+        return {
+            "String Represenation": str(data),
+            "Data Type at Runtime": str(type(data)),
+            "Storage Size": human_readable_size(artifact_storage_size),
+        }

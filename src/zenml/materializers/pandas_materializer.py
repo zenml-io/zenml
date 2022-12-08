@@ -14,7 +14,7 @@
 """Materializer for Pandas."""
 
 import os
-from typing import Any, Type, Union
+from typing import Any, Dict, Type, Union
 
 import pandas as pd
 
@@ -135,3 +135,40 @@ class PandasMaterializer(BaseMaterializer):
         else:
             with fileio.open(self.csv_path, mode="wb") as f:
                 df.to_csv(f, index=False)
+
+    def extract_metadata(
+        self, df: Union[pd.DataFrame, pd.Series]
+    ) -> Dict[str, str]:
+        """Extract metadata from the given pandas dataframe or series.
+
+        Args:
+            df: The pandas dataframe or series to extract metadata from.
+
+        Returns:
+            The extracted metadata as a dictionary.
+        """
+        base_metadata = super().extract_metadata(df)
+
+        def _stat_to_str(stat: Any) -> str:
+            """Converts a statistic to a string.
+
+            Args:
+                stat: The statistic to convert.
+
+            Returns:
+                The string representation of the statistic.
+            """
+            if isinstance(stat, pd.Series):
+                return str(stat.to_dict())
+            return str(stat)
+
+        dtype = df.dtypes if isinstance(df, pd.DataFrame) else df.dtype
+        pandas_metadata = {
+            "shape": str(df.shape),
+            "dtype": _stat_to_str(dtype),
+            "mean": _stat_to_str(df.mean()),
+            "std": _stat_to_str(df.std()),
+            "min": _stat_to_str(df.min()),
+            "max": _stat_to_str(df.max()),
+        }
+        return {**base_metadata, **pandas_metadata}

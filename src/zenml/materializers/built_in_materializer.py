@@ -14,7 +14,7 @@
 """Implementation of ZenML's builtin materializer."""
 
 import os
-from typing import Any, Iterable, Type
+from typing import Any, Dict, Iterable, Type
 
 from zenml.artifacts import DataAnalysisArtifact, DataArtifact
 from zenml.artifacts.base_artifact import BaseArtifact
@@ -350,3 +350,18 @@ class BuiltInContainerMaterializer(BaseMaterializer):
             for element_path in paths:
                 fileio.rmtree(element_path)
             raise e
+
+    def extract_metadata(self, data: Any) -> Dict[str, str]:
+        """Extract metadata from the given built-in container object.
+
+        Args:
+            data: The built-in container object to extract metadata from.
+
+        Returns:
+            The extracted metadata as a dictionary.
+        """
+        base_metadata = super().extract_metadata(data)
+        container_metadata = {
+            "length": str(len(data)),
+        }
+        return {**base_metadata, **container_metadata}
