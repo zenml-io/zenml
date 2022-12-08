@@ -16,12 +16,10 @@
 import pytest
 from pydantic import ValidationError
 
+from zenml.constants import MODEL_CONFIG_SCHEMA_MAX_LENGTH
 from zenml.enums import StackComponentType
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.flavor_models import FlavorBaseModel
-from zenml.zen_stores.schemas.flavor_schemas import (
-    MODEL_CONFIG_SCHEMA_MAX_LENGTH,
-)
 
 
 def test_flavor_base_model_fails_with_long_name():

@@ -17,15 +17,13 @@ from typing import ClassVar, List, Optional
 
 from pydantic import BaseModel, Field
 
+from zenml.constants import MODEL_CONFIG_SCHEMA_MAX_LENGTH
 from zenml.enums import StackComponentType
 from zenml.models.base_models import (
     ProjectScopedRequestModel,
     ProjectScopedResponseModel,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
-from zenml.zen_stores.schemas.flavor_schemas import (
-    MODEL_CONFIG_SCHEMA_MAX_LENGTH,
-)
 
 # ---- #
 # BASE #
