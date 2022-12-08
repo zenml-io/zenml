@@ -49,7 +49,7 @@ from zenml.model_deployers import BaseModelDeployer, BaseModelDeployerFlavor
 from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
 from zenml.services.service import BaseService, ServiceConfig
 from zenml.stack.stack import Stack
-from zenml.utils.analytics_utils import AnalyticsEvent, track_event
+from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
@@ -227,67 +227,70 @@ class KServeModelDeployer(BaseModelDeployer):
         Raises:
             RuntimeError: if the KServe deployment server could not be stopped.
         """
-        config = cast(KServeDeploymentConfig, config)
-        service = None
+        with event_handler(AnalyticsEvent.MODEL_DEPLOYED) as analytics_handler:
+            config = cast(KServeDeploymentConfig, config)
+            service = None
 
-        # if the secret is passed in the config, use it to set the credentials
-        if config.secret_name:
-            self.config.secret = config.secret_name or self.config.secret
-        self._set_credentials()
+            # if the secret is passed in the config, use it to set the
+            # credentials
+            if config.secret_name:
+                self.config.secret = config.secret_name or self.config.secret
+            self._set_credentials()
 
-        # if replace is True, find equivalent KServe deployments
-        if replace is True:
-            equivalent_services = self.find_model_server(
-                running=False,
-                pipeline_name=config.pipeline_name,
-                pipeline_step_name=config.pipeline_step_name,
-                model_name=config.model_name,
-            )
+            # if replace is True, find equivalent KServe deployments
+            if replace is True:
+                equivalent_services = self.find_model_server(
+                    running=False,
+                    pipeline_name=config.pipeline_name,
+                    pipeline_step_name=config.pipeline_step_name,
+                    model_name=config.model_name,
+                )
 
-            for equivalent_service in equivalent_services:
-                if service is None:
-                    # keep the most recently created service
-                    service = equivalent_service
-                else:
-                    try:
-                        # delete the older services and don't wait for them to
-                        # be deprovisioned
-                        service.stop()
-                    except RuntimeError as e:
-                        raise RuntimeError(
-                            "Failed to stop the KServe deployment server:\n",
-                            f"{e}\n",
-                            "Please stop it manually and try again.",
-                        )
-        if service:
-            # update an equivalent service in place
-            service.update(config)
-            logger.info(
-                f"Updating an existing KServe deployment service: {service}"
-            )
-        else:
-            # create a new service
-            service = KServeDeploymentService(config=config)
-            logger.info(f"Creating a new KServe deployment service: {service}")
+                for equivalent_service in equivalent_services:
+                    if service is None:
+                        # keep the most recently created service
+                        service = equivalent_service
+                    else:
+                        try:
+                            # delete the older services and don't wait for
+                            # them to be deprovisioned
+                            service.stop()
+                        except RuntimeError as e:
+                            raise RuntimeError(
+                                "Failed to stop the KServe deployment "
+                                "server:\n",
+                                f"{e}\n",
+                                "Please stop it manually and try again.",
+                            )
+            if service:
+                # update an equivalent service in place
+                service.update(config)
+                logger.info(
+                    f"Updating an existing KServe deployment service: {service}"
+                )
+            else:
+                # create a new service
+                service = KServeDeploymentService(config=config)
+                logger.info(
+                    f"Creating a new KServe deployment service: {service}"
+                )
 
-        # start the service which in turn provisions the KServe
-        # deployment server and waits for it to reach a ready state
-        service.start(timeout=timeout)
+            # start the service which in turn provisions the KServe
+            # deployment server and waits for it to reach a ready state
+            service.start(timeout=timeout)
 
-        # Add telemetry with metadata that gets the stack metadata and
-        # differentiates between pure model and custom code deployments
-        stack = Client().active_stack
-        stack_metadata = {
-            component_type.value: component.flavor
-            for component_type, component in stack.components.items()
-        }
-        metadata = {
-            "store_type": Client().zen_store.type.value,
-            **stack_metadata,
-            "is_custom_code_deployment": config.container is not None,
-        }
-        track_event(AnalyticsEvent.MODEL_DEPLOYED, metadata=metadata)
-
+            # Add telemetry with metadata that gets the stack metadata and
+            # differentiates between pure model and custom code deployments
+            stack = Client().active_stack
+            stack_metadata = {
+                component_type.value: component.flavor
+                for component_type, component in stack.components.items()
+            }
+            analytics_handler.metadata = {
+                "store_type": Client().zen_store.type.value,
+                **stack_metadata,
+                "is_custom_code_deployment": config.container is not None,
+            }
         return service
 
     def get_kserve_deployments(
