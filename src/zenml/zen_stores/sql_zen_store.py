@@ -594,7 +594,7 @@ class SqlZenStore(BaseZenStore):
 
     def _initialize(self) -> None:
         """Initialize the SQL store.
-        
+
         Raises:
             OperationalError: If connecting to the database failed.
         """
