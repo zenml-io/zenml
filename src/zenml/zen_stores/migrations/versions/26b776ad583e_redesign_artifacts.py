@@ -201,94 +201,9 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    """Downgrade database schema and/or data back to the previous revision."""
-    with op.batch_alter_table("artifacts", schema=None) as batch_op:
+    """Downgrade database schema and/or data back to the previous revision.
 
-        # Create old parent and producer step columns
-        batch_op.add_column(
-            sa.Column(
-                "producer_step_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
-            )
-        )
-        batch_op.add_column(
-            sa.Column(
-                "parent_step_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
-            )
-        )
-        batch_op.add_column(
-            sa.Column("is_cached", sa.Boolean(), nullable=False)
-        )
-        batch_op.add_column(
-            sa.Column("mlmd_producer_step_id", sa.Integer(), nullable=True)
-        )
-        batch_op.add_column(
-            sa.Column("mlmd_parent_step_id", sa.Integer(), nullable=True)
-        )
-
-        # Drop new artifact store link column
-        batch_op.drop_constraint(
-            "fk_artifacts_artifact_store_id_stack_component", type_="foreignkey"
-        )
-        batch_op.drop_column("artifact_store_id")
-
-    # Migrate data
-    # TODO
-
-    with op.batch_alter_table("artifacts", schema=None) as batch_op:
-
-        # Change producer step and parent step to not nullable
-        batch_op.alter_column(
-            "producer_step_id",
-            existing_type=sa.CHAR(length=32),
-            nullable=False,
-        )
-        batch_op.alter_column(
-            "parent_step_id",
-            existing_type=sa.CHAR(length=32),
-            nullable=False,
-        )
-
-        # Add foreign key constraints back
-        batch_op.create_foreign_key(
-            "fk_artifacts_parent_step_id_step_run",
-            "step_run",
-            ["parent_step_id"],
-            ["id"],
-            ondelete="CASCADE",
-        )
-        batch_op.create_foreign_key(
-            "fk_artifacts_producer_step_id_step_run",
-            "step_run",
-            ["producer_step_id"],
-            ["id"],
-            ondelete="CASCADE",
-        )
-
-    # Rename `step_run_id` back to `step_id` in `step_run_input_artifact`
-    with op.batch_alter_table(
-        "step_run_input_artifact", schema=None
-    ) as batch_op:
-        batch_op.drop_constraint(
-            "fk_step_run_input_artifact_step_run_id_step_run",
-            type_="foreignkey",
-        )
-    op.alter_column(
-        "step_run_input_artifact",
-        "step_run_id",
-        new_column_name="step_id",
-        existing_type=sqlmodel.sql.sqltypes.GUID(),
-        existing_nullable=False,
-    )
-    with op.batch_alter_table(
-        "step_run_input_artifact", schema=None
-    ) as batch_op:
-        batch_op.create_foreign_key(
-            "fk_step_run_input_artifact_step_id_step_run",
-            "step_run",
-            ["step_id"],
-            ["id"],
-            ondelete="CASCADE",
-        )
-
-    # Drop new table
-    op.drop_table("step_run_output_artifact")
+    Raises:
+        NotImplementedError: Downgrade is not supported for this migration.
+    """
+    raise NotImplementedError("Downgrade not supported.")
