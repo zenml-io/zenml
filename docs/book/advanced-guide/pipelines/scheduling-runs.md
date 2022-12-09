@@ -6,7 +6,7 @@ In the world of MLOps, scheduling orchestration jobs is an important aspect of a
 
 ZenML pipelines can also be used for scheduling orchestration jobs, but there are some limitations to consider. ZenML-powered orchestrators only support scheduling in certain orchestrators and setup (see below for details on what works and what doesn't), as they require something running in the background to trigger the pipeline runs. Despite these limitations, using scheduling with ZenML can be a useful way to automate your MLOps workflow and save time and effort.
 
-# How to schedule a pipeline run
+## How to schedule a pipeline run
 
 ZenML's scheduling functionality rests on the use of a `Schedule` object that
 you pass in when calling `pipeline.run()`. There are two ways to create a
@@ -40,7 +40,9 @@ pipeline_instance.run(schedule=schedule)
 ```
 
 You can specify an optional `end_time` for the schedule to prevent it from running after a certain time. The `catchup` parameter, which is a boolean, can be used to specify whether a recurring run should catch up (i.e. backfill pipeline
-runs) on missed runs if it has fallen behind schedule. This can happen, for example, if you paused the schedule.
+runs) on missed runs if it has fallen behind schedule. This can happen, for
+example, if you paused the schedule.
+
 In the context of scheduled cron or pipeline jobs, backfilling refers to running
 a missed job for a specific period in the past. For example, if a pipeline
 misses a scheduled run at 12:00 PM, backfilling can be used to run the pipeline
@@ -50,16 +52,30 @@ necessary data to run correctly. Backfilling is a useful technique for catching
 up on missed runs and filling in gaps in scheduled jobs, and can help ensure
 that pipelines and cron schedules are running smoothly. Usually, if your
 pipeline handles backfill internally, you should turn catchup off to avoid
-duplicate backfill. (Here's [a handy
-guide](https://medium.com/nerd-for-tech/airflow-catchup-backfill-demystified-355def1b6f92)
-in the context of Airflow.) Note that the `catchup` parameter enabling
+duplicate backfill. Note that the `catchup` parameter enabling
 backfilling is not supported in all orchestrators.
 
-# How to stop or pause a scheduled run
+{% hint style="warning" %}
+Here's [a handy guide](https://medium.com/nerd-for-tech/airflow-catchup-backfill-demystified-355def1b6f92) in the context of Airflow.
+{% endhint %}
 
-The way pipelines are scheduled depends on the orchestrator you are using. For example, if you are using Kubeflow, you can use the Kubeflow UI to stop or pause a scheduled run. If you are using Airflow, you can use the Airflow UI to do the same. However, the exact steps for stopping or pausing a scheduled run may vary depending on the orchestrator you are using. We recommend consulting the documentation for your orchestrator to learn the current method for stopping or pausing a scheduled run.
+## How to stop or pause a scheduled run
 
-# Supported Orchestrators
+The way pipelines are scheduled depends on the orchestrator you are using. For
+example, if you are using Kubeflow, you can use the Kubeflow UI to stop or pause
+a scheduled run. If you are using Airflow, you can use the Airflow UI to do the
+same. However, the exact steps for stopping or pausing a scheduled run may vary
+depending on the orchestrator you are using. We recommend consulting the
+documentation for your orchestrator to learn the current method for stopping or
+pausing a scheduled run.
+
+Note that ZenML only gets involved to schedule a run, but maintaining the
+lifecycle of the schedule (as explained above) is the responsibility of the
+user. If you run a pipeline containing a schedule two times, two scheduled
+pipelines (with different/unique names) will be created in whatever orchestrator you're using, so in that
+sense it's on you to stop or pause the schedule as is appropriate.
+
+## Supported Orchestrators
 
 | Orchestrator | Scheduling Support |
 | ------------ | ------------------ |
@@ -77,7 +93,7 @@ We maintain a public roadmap for ZenML, which you can find
 [here](https://github.com/zenml-io/zenml/blob/main/CONTRIBUTING.md)) so if you want to enable scheduling for an unsupported orchestrator,
 please [do let us know](https://zenml.io/slack-invite)!
 
-# Tips for using Schedules
+## Tips for using Schedules
 
 Generally one of the steps in your pipeline will be loading dynamic data if you
 are going to schedule it. For example, if you are training a model on a daily
