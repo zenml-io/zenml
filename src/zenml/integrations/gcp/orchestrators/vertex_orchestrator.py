@@ -83,6 +83,7 @@ if TYPE_CHECKING:
 
     from zenml.config.base_settings import BaseSettings
     from zenml.config.pipeline_deployment import PipelineDeployment
+    from zenml.config.schedule import Schedule
     from zenml.stack import Stack
     from zenml.steps import ResourceSettings
 
@@ -259,11 +260,17 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
             ValueError: If `cron_expression` is not in passed Schedule.
         """
         if deployment.schedule:
-            logger.warning(
-                "Vertex orchestrator only uses schedules with the "
-                "`cron_expression` property. All other properties "
-                "are ignored."
-            )
+            if (
+                deployment.schedule.catchup
+                or deployment.schedule.start_time
+                or deployment.schedule.end_time
+                or deployment.schedule.interval_second
+            ):
+                logger.warning(
+                    "Vertex orchestrator only uses schedules with the "
+                    "`cron_expression` property. All other properties "
+                    "are ignored."
+                )
             if deployment.schedule.cron_expression is None:
                 raise ValueError(
                     "Property `cron_expression` must be set when passing "
@@ -485,64 +492,13 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
             logger.info(
                 "Scheduling job using Google Cloud Scheduler and Google Cloud Functions..."
             )
-
-            # First, do some validation
-            artifact_store = stack.artifact_store
-            if artifact_store.flavor != GCP_ARTIFACT_STORE_FLAVOR:
-                raise ValueError(
-                    "Currently, the Vertex AI orchestrator only supports scheduled runs "
-                    f"in combination with an artifact store of flavor: {GCP_ARTIFACT_STORE_FLAVOR}. "
-                    f"The current stacks artifact store is of flavor: {artifact_store.flavor}. "
-                    "Please update your stack accordingly."
-                )
-
-            # Copy over the scheduled pipeline to the artifact store
-            artifact_store_base_uri = f"{artifact_store.path.rstrip('/')}/vertex_scheduled_pipelines/{deployment.pipeline.name}/{orchestrator_run_name}"
-            artifact_store_pipeline_uri = (
-                f"{artifact_store_base_uri}/vertex_pipeline.json"
-            )
-            fileio.copy(pipeline_file_path, artifact_store_pipeline_uri)
-            logger.info(
-                "The scheduled pipeline representation has been "
-                "automatically copied to this path of the `GCPArtifactStore`: "
-                f"{artifact_store_pipeline_uri}",
-            )
-
-            # Get the credentials that would be used to create resources.
-            credentials, project_id = self._get_authentication()
-
-            # Create cloud function
-            function_uri = create_cloud_function(
-                directory_path=vertex_scheduler.__path__[0],  # fixed path
-                upload_path=f"{artifact_store_base_uri}/code.zip",
-                project=project_id,
-                location=self.config.location,
-                function_name=orchestrator_run_name,
-                credentials=credentials,
-            )
-
-            # Create the scheduler job
-            body = {
-                TEMPLATE_PATH: artifact_store_pipeline_uri,
-                JOB_ID: _clean_pipeline_name(deployment.pipeline.name),
-                PIPELINE_ROOT: self._pipeline_root,
-                PARAMETER_VALUES: None,
-                ENABLE_CACHING: False,
-                ENCRYPTION_SPEC_KEY_NAME: self.config.encryption_spec_key_name,
-                LABELS: settings.labels,
-                PROJECT: project_id,
-                LOCATION: self.config.location,
-                WORKLOAD_SERVICE_ACCOUNT: self.config.workload_service_account,
-                NETWORK: self.config.network,
-            }
-
-            create_scheduler_job(
-                project=project_id,
-                region=self.config.location,
-                http_uri=function_uri,
-                body=body,
-                schedule=str(deployment.schedule.cron_expression),
-                credentials=credentials,
+            self._upload_and_schedule_pipeline(
+                pipeline_name=deployment.pipeline.name,
+                run_name=orchestrator_run_name,
+                stack=stack,
+                schedule=deployment.schedule,
+                pipeline_file_path=pipeline_file_path,
+                settings=settings,
             )
 
         else:
@@ -556,6 +512,74 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
                 run_name=orchestrator_run_name,
                 settings=settings,
             )
+
+    def _upload_and_schedule_pipeline(
+        self,
+        pipeline_name: str,
+        run_name: str,
+        stack: "Stack",
+        schedule: "Schedule",
+        pipeline_file_path: str,
+        settings: VertexOrchestratorSettings,
+    ):
+        # First, do some validation
+        artifact_store = stack.artifact_store
+        if artifact_store.flavor != GCP_ARTIFACT_STORE_FLAVOR:
+            raise ValueError(
+                "Currently, the Vertex AI orchestrator only supports scheduled runs "
+                f"in combination with an artifact store of flavor: {GCP_ARTIFACT_STORE_FLAVOR}. "
+                f"The current stacks artifact store is of flavor: {artifact_store.flavor}. "
+                "Please update your stack accordingly."
+            )
+
+            # Copy over the scheduled pipeline to the artifact store
+        artifact_store_base_uri = f"{artifact_store.path.rstrip('/')}/vertex_scheduled_pipelines/{pipeline_name}/{run_name}"
+        artifact_store_pipeline_uri = (
+            f"{artifact_store_base_uri}/vertex_pipeline.json"
+        )
+        fileio.copy(pipeline_file_path, artifact_store_pipeline_uri)
+        logger.info(
+            "The scheduled pipeline representation has been "
+            "automatically copied to this path of the `GCPArtifactStore`: "
+            f"{artifact_store_pipeline_uri}",
+        )
+
+        # Get the credentials that would be used to create resources.
+        credentials, project_id = self._get_authentication()
+
+        # Create cloud function
+        function_uri = create_cloud_function(
+            directory_path=vertex_scheduler.__path__[0],  # fixed path
+            upload_path=f"{artifact_store_base_uri}/code.zip",
+            project=project_id,
+            location=self.config.location,
+            function_name=run_name,
+            credentials=credentials,
+        )
+
+        # Create the scheduler job
+        body = {
+            TEMPLATE_PATH: artifact_store_pipeline_uri,
+            JOB_ID: _clean_pipeline_name(pipeline_name),
+            PIPELINE_ROOT: self._pipeline_root,
+            PARAMETER_VALUES: None,
+            ENABLE_CACHING: False,
+            ENCRYPTION_SPEC_KEY_NAME: self.config.encryption_spec_key_name,
+            LABELS: settings.labels,
+            PROJECT: project_id,
+            LOCATION: self.config.location,
+            WORKLOAD_SERVICE_ACCOUNT: self.config.workload_service_account,
+            NETWORK: self.config.network,
+        }
+
+        create_scheduler_job(
+            project=project_id,
+            region=self.config.location,
+            http_uri=function_uri,
+            body=body,
+            schedule=str(schedule.cron_expression),
+            credentials=credentials,
+        )
 
     def _upload_and_run_pipeline(
         self,

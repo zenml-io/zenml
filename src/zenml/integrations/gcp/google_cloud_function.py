@@ -89,11 +89,9 @@ def upload_directory(
     fileio.remove(f.name)
 
     # Split the path by "/" character
-    parts = upload_path.replace("gs://", "").split("/")
-
-    # The first part will be the bucket, and the rest will be the object path
-    bucket = parts[0]
-    object_path = "/".join(parts[1:])
+    bucket, object_path = upload_path.replace("gs://", "").split(
+        "/", maxsplit=1
+    )
 
     return StorageSource(
         bucket=bucket,
@@ -128,23 +126,19 @@ def create_cloud_function(
         TimeoutError: If function times out.
     """
     sanitized_function_name = function_name.replace("_", "-")
-
-    parent = "projects/{}/locations/{}".format(project, location)
-    logger.info(
-        f"Creating Google Cloud Function: {parent}/functions/{function_name}"
-    )
+    parent = f"projects/{project}/locations/{location}"
+    function_full_name = "{parent}/functions/{sanitized_function_name}"
+    logger.info(f"Creating Google Cloud Function: {function_full_name}")
 
     storage_source = upload_directory(directory_path, upload_path)
 
     # Make the request
     get_cloud_functions_api(credentials=credentials).create_function(
-        #  parent=parent + "/functions/" + function_name,
         request=CreateFunctionRequest(
             parent=parent,
             function_id=sanitized_function_name,
             function=Function(
-                name=parent + "/functions/" + sanitized_function_name,
-                # environment=Environment(value=2),
+                name=function_full_name,
                 build_config=BuildConfig(
                     entry_point="trigger_vertex_job",
                     runtime="python38",
@@ -164,11 +158,7 @@ def create_cloud_function(
     while state == Function.State.DEPLOYING:
         response = get_cloud_functions_api(
             credentials=credentials
-        ).get_function(
-            request=GetFunctionRequest(
-                name=parent + "/functions/" + sanitized_function_name
-            )
-        )
+        ).get_function(request=GetFunctionRequest(name=sanitized_function_name))
         state = response.state
         logger.info("Still creating... sleeping for 5 seconds...")
         time.sleep(5)
