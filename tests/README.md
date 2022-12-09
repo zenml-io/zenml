@@ -84,7 +84,7 @@ with the test framework CLI, e.g.:
 2. Provision the test environment. This will configure and start a local ZenML
 deployment and will register and provision the stack components that are
 configured for the environment. The test framework will also take care of
-rebuilding and ZenML container images that are required for the server to run
+rebuilding the ZenML container images that are required for the server to run
 or for the pipelines to be executed. E.g.:
 
 ```

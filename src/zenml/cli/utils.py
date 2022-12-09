@@ -1040,7 +1040,7 @@ def warn_unsupported_non_default_project() -> None:
     disable_warnings = handle_bool_env_var(
         ENV_ZENML_DISABLE_PROJECT_WARNINGS, False
     )
-    if disable_warnings:
+    if not disable_warnings:
         warning(
             "Currently the concept of `project` is not supported "
             "within the Dashboard. The Project functionality will be "
