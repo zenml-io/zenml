@@ -43,9 +43,8 @@ user_update_command = cli.commands["user"].commands["update"]
 user_delete_command = cli.commands["user"].commands["delete"]
 
 
-def sample_user_name(prefix: Optional[str] = None) -> str:
+def sample_user_name(prefix: str = "aria") -> str:
     """Function to get random username."""
-    prefix = prefix or "aria"
     return f"{prefix}_{random_str(4)}"
 
 
