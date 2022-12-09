@@ -274,7 +274,7 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
             if deployment.schedule.cron_expression is None:
                 raise ValueError(
                     "Property `cron_expression` must be set when passing "
-                    "schedule to a vertex orchestrator."
+                    "schedule to a Vertex orchestrator."
                 )
 
         docker_image_builder = PipelineDockerImageBuilder()
