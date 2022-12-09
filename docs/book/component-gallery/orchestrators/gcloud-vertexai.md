@@ -46,9 +46,11 @@ AI pipelines.
 * The pipeline runner environment needs permissions to create a job in Vertex Pipelines,
 e.g. the `Vertex AI User` role: https://cloud.google.com/vertex-ai/docs/general/access-control#aiplatform.user
 * To run on a schedule, the runner environment also needs permissions to create a Google Cloud
-Function (e.g. with the [cloudfunctions.serviceAgent Role](https://cloud.google.com/functions/docs/concepts/iam))
+Function (e.g. with the [`cloudfunctions.serviceAgent Role`](https://cloud.google.com/functions/docs/concepts/iam))
 and to create a Google Cloud Scheduler (e.g. with the
-[Cloud Scheduler Job Runner Role](https://cloud.google.com/iam/docs/understanding-roles)).
+[Cloud Scheduler Job Runner Role](https://cloud.google.com/iam/docs/understanding-roles)). Additionally, it needs
+the [Storage Object Creator Role](https://cloud.google.com/storage/docs/access-control/iam-roles)
+to be able to write the pipeline JSON file to the artifact store directly.
 
 We can then register the orchestrator and use it in our active stack:
 ```shell
@@ -85,21 +87,25 @@ on Vertex Pipelines. The following is the sequence of events that happen when ru
 a pipeline on Vertex with a schedule:
 
 * Docker image is created and pushed (see above [containerization](../../advanced-guide/pipelines/containerization.md)).
+* The Vertex AI pipeline JSON file is copied to the [Artifact Store](../../component-gallery/artifact-stores/artifact-stores.md) specified in your [Stack](../../starter-guide/stacks/stacks.md)
 * Cloud Function is created that creates the Vertex Pipeline job when triggered.
 * Cloud Scheduler job is created that triggers the Cloud Function on the defined schedule.
 
 Therefore, to run on a schedule, the runner environment needs permissions to create a Google Cloud
-Function (e.g. with the [cloudfunctions.serviceAgent Role](https://cloud.google.com/functions/docs/concepts/iam))
+Function (e.g. with the [`cloudfunctions.serviceAgent` Role](https://cloud.google.com/functions/docs/concepts/iam))
 and to create a Google Cloud Scheduler (e.g. with the
 [Cloud Scheduler Job Runner Role](https://cloud.google.com/iam/docs/understanding-roles)).
+Additionally, it needs
+the [Storage Object Creator Role](https://cloud.google.com/storage/docs/access-control/iam-roles)
+to be able to write the pipeline JSON file to the artifact store directly.
 
-Here is how to create a scheduled pipeline in ZenML:
+Once your have these permissions set in your local GCP CLI, here is how to create a scheduled
+Vertex pipeline in ZenML:
 
 ```python
 from zenml.config.schedule import Schedule
 
 # Run a pipeline every 5th minute
-# Cron expression generated on `https://crontab.guru`
 pipeline_instance.run(
     schedule=Schedule(
         cron_expression="*/5 * * * *"
