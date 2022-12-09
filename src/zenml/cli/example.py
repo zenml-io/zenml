@@ -33,11 +33,7 @@ from zenml.exceptions import GitNotFoundError
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils import io_utils
-from zenml.utils.analytics_utils import (
-    AnalyticsEvent,
-    event_handler,
-    track_event,
-)
+from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
 
 logger = get_logger(__name__)
 
@@ -177,19 +173,21 @@ class LocalExample:
         Raises:
             RuntimeError: If running the example fails.
         """
-        call = [sys.executable, self.executable_python_example, *args]
-        try:
-            subprocess.check_call(
-                call,
-                cwd=str(self.path),
-                shell=click._compat.WIN,
-                env=os.environ.copy(),
-            )
-        except Exception as e:
-            raise RuntimeError(f"Failed to run example {self.name}.") from e
+        with event_handler(
+            event=AnalyticsEvent.RUN_EXAMPLE,
+            metadata={"example_name": self.name},
+        ):
 
-        # Telemetry
-        track_event(AnalyticsEvent.RUN_EXAMPLE, {"example_name": self.name})
+            call = [sys.executable, self.executable_python_example, *args]
+            try:
+                subprocess.check_call(
+                    call,
+                    cwd=str(self.path),
+                    shell=click._compat.WIN,
+                    env=os.environ.copy(),
+                )
+            except Exception as e:
+                raise RuntimeError(f"Failed to run example {self.name}.") from e
 
     def run_example(
         self,

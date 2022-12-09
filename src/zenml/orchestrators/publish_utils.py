@@ -91,7 +91,7 @@ def publish_successful_step_run(
         step_run_id=step_run_id,
         step_run_update=StepRunUpdateModel(
             status=ExecutionStatus.COMPLETED,
-            end_time=datetime.now(),
+            end_time=datetime.utcnow(),
             output_artifacts=output_artifact_ids,
         ),
     )
@@ -110,7 +110,7 @@ def publish_failed_step_run(step_run_id: "UUID") -> "StepRunResponseModel":
         step_run_id=step_run_id,
         step_run_update=StepRunUpdateModel(
             status=ExecutionStatus.FAILED,
-            end_time=datetime.now(),
+            end_time=datetime.utcnow(),
         ),
     )
 
@@ -130,7 +130,7 @@ def publish_failed_pipeline_run(
         run_id=pipeline_run_id,
         run_update=PipelineRunUpdateModel(
             status=ExecutionStatus.FAILED,
-            end_time=datetime.now(),
+            end_time=datetime.utcnow(),
         ),
     )
 
@@ -176,7 +176,7 @@ def update_pipeline_run_status(pipeline_run: PipelineRunResponseModel) -> None:
     if new_status != pipeline_run.status:
         run_update = PipelineRunUpdateModel(status=new_status)
         if new_status in {ExecutionStatus.COMPLETED, ExecutionStatus.FAILED}:
-            run_update.end_time = datetime.now()
+            run_update.end_time = datetime.utcnow()
 
         Client().zen_store.update_run(
             run_id=pipeline_run.id, run_update=run_update

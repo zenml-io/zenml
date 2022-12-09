@@ -29,13 +29,6 @@ def test_example(request: pytest.FixtureRequest) -> None:
         pipeline_name="mnist_pipeline",
         step_count=4,
         run_count=1,
-    ):
-        pass
-
-    # Cleanup the tensorboard daemon
-    with run_example(
-        request,
-        "kubeflow_pipelines_orchestration",
-        "--stop-tensorboard",
-    ):
-        pass
+    ) as (example, _):
+        # Cleanup the tensorboard daemon
+        example.run_example_directly("--stop-tensorboard")

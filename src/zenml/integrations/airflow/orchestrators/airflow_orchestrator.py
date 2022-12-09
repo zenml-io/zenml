@@ -386,7 +386,7 @@ class AirflowOrchestrator(BaseOrchestrator):
         if schedule:
             if schedule.cron_expression:
                 start_time = schedule.start_time or (
-                    datetime.datetime.now() - datetime.timedelta(7)
+                    datetime.datetime.utcnow() - datetime.timedelta(7)
                 )
                 return {
                     "schedule": schedule.cron_expression,
@@ -406,7 +406,7 @@ class AirflowOrchestrator(BaseOrchestrator):
             "schedule": "@once",
             # set the a start time in the past and disable catchup so airflow
             # runs the dag immediately
-            "start_date": datetime.datetime.now() - datetime.timedelta(7),
+            "start_date": datetime.datetime.utcnow() - datetime.timedelta(7),
             "catchup": False,
         }
 

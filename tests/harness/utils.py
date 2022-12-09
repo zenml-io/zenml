@@ -21,6 +21,7 @@ that are used in the tests.
 
 import logging
 import os
+from pathlib import Path
 import shutil
 import sys
 from contextlib import contextmanager
@@ -130,11 +131,16 @@ def environment_session(
 @contextmanager
 def clean_repo_session(
     tmp_path_factory: pytest.TempPathFactory,
+    repo_path: Optional[str] = None,
+    cleanup: bool = True,
 ) -> Generator[Client, None, None]:
     """Context manager to initialize and use a separate ZenML repository.
 
     Args:
         tmp_path_factory: A pytest fixture that provides a temporary directory.
+        repo_path: The path where to initialize the repository. If one is not
+            provided, a repository will be initialized in a temporary directory.
+        cleanup: Whether to clean up the repository on exit.
 
     Yields:
         A ZenML client connected to the repository.
@@ -143,24 +149,30 @@ def clean_repo_session(
     # original working directory
     orig_cwd = os.getcwd()
 
-    # change the working directory to a fresh temp path
-    tmp_path = tmp_path_factory.mktemp("pytest-zenml-repo")
-    os.chdir(tmp_path)
+    if repo_path is None:
+        # change the working directory to a fresh temp path
+        dst_path = tmp_path_factory.mktemp("pytest-zenml-repo")
+        cleanup = False
+    else:
+        dst_path = Path(repo_path)
+
+    os.chdir(str(dst_path))
 
     client = Client()
     orig_root = client.root
 
-    client.initialize(tmp_path)
-    client.activate_root(tmp_path)
+    client.initialize(dst_path)
+    client.activate_root(dst_path)
 
-    logging.info(f"Tests are running in clean repository: '{tmp_path}'")
+    logging.info(f"Tests are running in clean repository: '{dst_path}'")
 
     yield client
 
     # remove all traces, and change working directory back to base path
     os.chdir(orig_cwd)
     client.activate_root(orig_root)
-    cleanup_folder(str(tmp_path))
+    if cleanup:
+        cleanup_folder(str(dst_path))
 
 
 @contextmanager
@@ -295,7 +307,7 @@ def check_test_requirements(
 @contextmanager
 def setup_test_stack_session(
     request: pytest.FixtureRequest,
-    tmp_path_factory: pytest.TempPathFactory,
+    tmp_path_factory: Optional[pytest.TempPathFactory] = None,
     environment: Optional[TestEnvironment] = None,
     client: Optional["Client"] = None,
     clean_repo: bool = False,
@@ -308,6 +320,7 @@ def setup_test_stack_session(
     Args:
         request: A pytest fixture request.
         tmp_path_factory: A pytest fixture that provides a temporary directory.
+            This is required if `clean_repo` is True.
         environment: An optional environment to be used to setup the stack.
             If not supplied, the active environment will be used.
         client: An optional ZenML client already connected to the
@@ -328,6 +341,10 @@ def setup_test_stack_session(
         check_test_requirements(request, environment=environment, client=client)
 
     if clean_repo:
+        if not tmp_path_factory:
+            raise ValueError(
+                "tmp_path_factory is required if clean_repo is True."
+            )
         with clean_repo_session(tmp_path_factory) as repo_client:
             with harness.setup_test_stack(
                 module=request.module,
@@ -344,6 +361,3 @@ def setup_test_stack_session(
             cleanup=not no_cleanup,
         ) as stack:
             yield stack
-
-
-# TODO: auto-cleaning-client
