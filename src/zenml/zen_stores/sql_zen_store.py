@@ -1555,30 +1555,22 @@ class SqlZenStore(BaseZenStore):
 
             return new_user.to_model()
 
-    def get_user(self, user_name_or_id: Union[str, UUID]) -> UserResponseModel:
-        """Gets a specific user.
-
-        Args:
-            user_name_or_id: The name or ID of the user to get.
-
-        Returns:
-            The requested user, if it was found.
-        """
-        with Session(self.engine) as session:
-            user = self._get_user_schema(user_name_or_id, session=session)
-
-            return user.to_model()
-
-    def get_myself(
-        self, user_name_or_id: Optional[Union[str, UUID]] = None
+    def get_user(
+        self,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
+        include_private: bool = False
     ) -> UserResponseModel:
-        """Gets the user model of the active user including some private fields.
+        """Gets a specific user, when no id is specified the active user is returned.
 
         Args:
             user_name_or_id: The name or ID of the user to get.
+            include_private: Whether to include private user information
 
         Returns:
             The requested user, if it was found.
+
+        Raises:
+            KeyError: If no user with the given name or ID exists.
         """
         if not user_name_or_id:
             user_name_or_id = self._default_user_name
@@ -1586,7 +1578,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             user = self._get_user_schema(user_name_or_id, session=session)
 
-            return user.to_model(include_private=True)
+            return user.to_model(include_private=include_private)
 
     def get_auth_user(self, user_name_or_id: Union[str, UUID]) -> UserAuthModel:
         """Gets the auth model to a specific user.

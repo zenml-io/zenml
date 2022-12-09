@@ -558,7 +558,7 @@ class Client(metaclass=ClientMetaClass):
             The active user.
         """
         if self._active_user is None:
-            self._active_user = self.zen_store.get_myself()
+            self._active_user = self.zen_store.get_user()
         return self._active_user
 
     def create_user(
