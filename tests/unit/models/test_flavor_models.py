@@ -16,9 +16,8 @@
 import pytest
 from pydantic import ValidationError
 
-from zenml.constants import MODEL_CONFIG_SCHEMA_MAX_LENGTH
 from zenml.enums import StackComponentType
-from zenml.models.constants import STR_FIELD_MAX_LENGTH
+from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.models.flavor_models import FlavorBaseModel
 
 
@@ -38,7 +37,7 @@ def test_flavor_base_model_fails_with_long_name():
 def test_flavor_base_model_fails_with_long_config_schema():
     """Test that the flavor base model fails with long types."""
     with pytest.raises(ValidationError):
-        long_schema = "a" * (MODEL_CONFIG_SCHEMA_MAX_LENGTH + 1)
+        long_schema = "a" * (TEXT_FIELD_MAX_LENGTH + 1)
         FlavorBaseModel(
             name="abc",
             type=StackComponentType.ANNOTATOR,
