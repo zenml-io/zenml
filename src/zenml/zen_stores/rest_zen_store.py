@@ -671,7 +671,7 @@ class RestZenStore(BaseZenStore):
     def get_user(
         self,
         user_name_or_id: Optional[Union[str, UUID]] = None,
-        include_private: bool = False
+        include_private: bool = False,
     ) -> UserResponseModel:
         """Gets a specific user, when no id is specified the active user is returned.
 
@@ -698,7 +698,6 @@ class RestZenStore(BaseZenStore):
         else:
             body = self.get(MYSELF)
             return UserResponseModel.parse_obj(body)
-
 
     def get_auth_user(
         self, user_name_or_id: Union[str, UUID]
