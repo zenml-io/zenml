@@ -54,7 +54,10 @@ from `1.42` to `1.48`
 * Scheduling documentation by @strickvl in https://github.com/zenml-io/zenml/pull/1158
 * Adding scheduling for Vertex Pipelines by @htahir1 in https://github.com/zenml-io/zenml/pull/1148
 * Fix alembic migration for sqlite<3.25 by @fa9r in https://github.com/zenml-io/zenml/pull/1165
+* Fix pandas Series materializer by @jordandelbar in https://github.com/zenml-io/zenml/pull/1146
 
+## New Contributors
+* @jordandelbar made their first contribution in https://github.com/zenml-io/zenml/pull/1146
 
 **Full Changelog**: https://github.com/zenml-io/zenml/compare/0.23.0...0.30.0
 
