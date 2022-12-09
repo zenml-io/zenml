@@ -18,9 +18,20 @@ from sklearn.base import ClassifierMixin
 from sklearn.svm import SVC
 
 from zenml.client import Client
+from zenml.integrations.mlflow.experiment_trackers import (
+    MLFlowExperimentTracker,
+)
 from zenml.steps import step
 
 experiment_tracker = Client().active_stack.experiment_tracker
+
+if not experiment_tracker or not isinstance(
+    experiment_tracker, MLFlowExperimentTracker
+):
+    raise RuntimeError(
+        "Your active stack needs to contain a MLFlow experiment tracker for "
+        "this example to work."
+    )
 
 
 @step(enable_cache=False, experiment_tracker=experiment_tracker.name)

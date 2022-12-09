@@ -37,11 +37,10 @@ class AWSIntegration(Integration):
     # We need to pin protobuf to a version <=4 here, as this sagemaker release
     # does not pin it. They fixed this in a later version, so we can probably
     # remove this once we update the sagemaker version.
-    # REQUIREMENTS = ["boto3==1.21.0", "sagemaker==2.82.2", "protobuf~=3.20.0"]
     REQUIREMENTS = [
         "boto3~=1.24.59",
         "sagemaker~=2.110.0",
-        "protobuf~=3.20.0",
+        "protobuf>=3.1,<4.0.0",
     ]
 
     @classmethod
