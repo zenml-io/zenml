@@ -16,9 +16,18 @@ import tensorflow as tf
 from wandb.integration.keras import WandbCallback
 
 from zenml.client import Client
+from zenml.integrations.wandb.experiment_trackers import WandbExperimentTracker
 from zenml.steps import BaseParameters, step
 
 experiment_tracker = Client().active_stack.experiment_tracker
+
+if not experiment_tracker or not isinstance(
+    experiment_tracker, WandbExperimentTracker
+):
+    raise RuntimeError(
+        "Your active stack needs to contain a WandB experiment tracker for "
+        "this example to work."
+    )
 
 
 class TrainerParameters(BaseParameters):
