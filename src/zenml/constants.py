@@ -203,6 +203,3 @@ DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE = ".zenml_deployment_config.yaml"
 
 # Secret constants
 ARBITRARY_SECRET_SCHEMA_TYPE = "arbitrary"
-
-# Model max_length constants
-MODEL_CONFIG_SCHEMA_MAX_LENGTH = 4096

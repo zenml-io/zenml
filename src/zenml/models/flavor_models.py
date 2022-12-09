@@ -17,13 +17,15 @@ from typing import ClassVar, List, Optional
 
 from pydantic import BaseModel, Field
 
-from zenml.constants import MODEL_CONFIG_SCHEMA_MAX_LENGTH
 from zenml.enums import StackComponentType
 from zenml.models.base_models import (
     ProjectScopedRequestModel,
     ProjectScopedResponseModel,
 )
-from zenml.models.constants import STR_FIELD_MAX_LENGTH
+from zenml.models.constants import (
+    MODEL_TEXT_FIELD_MAX_LENGTH,
+    STR_FIELD_MAX_LENGTH,
+)
 
 # ---- #
 # BASE #
@@ -40,7 +42,7 @@ class FlavorBaseModel(BaseModel):
     type: StackComponentType = Field(title="The type of the Flavor.")
     config_schema: str = Field(
         title="The JSON schema of this flavor's corresponding configuration.",
-        max_length=MODEL_CONFIG_SCHEMA_MAX_LENGTH,
+        max_length=MODEL_TEXT_FIELD_MAX_LENGTH,
     )
     source: str = Field(
         title="The path to the module which contains this Flavor.",
