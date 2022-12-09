@@ -421,7 +421,7 @@ class ZenStoreInterface(ABC):
     def get_user(
         self,
         user_name_or_id: Optional[Union[str, UUID]] = None,
-        include_private: bool = False
+        include_private: bool = False,
     ) -> UserResponseModel:
         """Gets a specific user, when no id is specified the active user is returned.
 

@@ -551,7 +551,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             if v == "":
                 continue
             if k.startswith(ENV_ZENML_STORE_PREFIX):
-                env_config[k[len(ENV_ZENML_STORE_PREFIX):].lower()] = v
+                env_config[k[len(ENV_ZENML_STORE_PREFIX) :].lower()] = v
         if len(env_config):
             if "type" not in env_config and "url" in env_config:
                 env_config["type"] = BaseZenStore.get_store_type(
