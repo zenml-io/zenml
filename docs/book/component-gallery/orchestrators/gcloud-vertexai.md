@@ -85,7 +85,7 @@ on Vertex Pipelines. The following is the sequence of events that happen when ru
 a pipeline on Vertex with a schedule:
 
 * Docker image is created and pushed (see above [containerization](../../advanced-guide/pipelines/containerization.md)).
-* Cloud Function created that creates the Vertex Pipeline job when triggered.
+* Cloud Function is created that creates the Vertex Pipeline job when triggered.
 * Cloud Scheduler job is created that triggers the Cloud Function on the defined schedule.
 
 Therefore, to run on a schedule, the runner environment needs permissions to create a Google Cloud
