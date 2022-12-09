@@ -33,7 +33,11 @@ from zenml.exceptions import GitNotFoundError
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils import io_utils
-from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
+from zenml.utils.analytics_utils import (
+    AnalyticsEvent,
+    event_handler,
+    track_event,
+)
 
 logger = get_logger(__name__)
 

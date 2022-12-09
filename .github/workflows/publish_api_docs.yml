@@ -32,7 +32,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.8
+          python-version: '3.8'
 
       - uses: actions/setup-node@v2
         with:
@@ -44,7 +44,7 @@ jobs:
         uses: ./.github/actions/setup_environment
         with:
           cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
-          python-version: 3.8
+          python-version: '3.8'
           os: ubuntu-latest
 
       # IMPORTANT: there's a strategy to installing integrations here in a way

@@ -93,7 +93,6 @@ jobs:
           echo "Available storage:"
           df -h
 
-
       - name: Setup environment with Poetry
         uses: ./.github/actions/setup_environment
         with:
