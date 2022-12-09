@@ -16,13 +16,26 @@ import numpy as np
 import tensorflow as tf
 
 from zenml.client import Client
+from zenml.integrations.neptune.experiment_trackers import (
+    NeptuneExperimentTracker,
+)
 from zenml.integrations.neptune.experiment_trackers.run_state import (
     get_neptune_run,
 )
 from zenml.steps import step
 
+experiment_tracker = Client().active_stack.experiment_tracker
 
-@step(experiment_tracker=Client().active_stack.experiment_tracker.name)
+if not experiment_tracker or not isinstance(
+    experiment_tracker, NeptuneExperimentTracker
+):
+    raise RuntimeError(
+        "Your active stack needs to contain a Neptune experiment tracker for "
+        "this example to work."
+    )
+
+
+@step(experiment_tracker=experiment_tracker.name)
 def tf_evaluator(
     x_test: np.ndarray,
     y_test: np.ndarray,
