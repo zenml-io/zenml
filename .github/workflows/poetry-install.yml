@@ -21,13 +21,6 @@ jobs:
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]
         python-version: [ '3.7', '3.8', '3.9', '3.10' ]
-        # TODO: take these out once the black python package works on macos 3.9
-        # and 3.10
-        exclude:
-          - os: macos-latest
-            python-version: '3.9'
-          - os: macos-latest
-            python-version: '3.10'
       fail-fast: false
 
     steps:
