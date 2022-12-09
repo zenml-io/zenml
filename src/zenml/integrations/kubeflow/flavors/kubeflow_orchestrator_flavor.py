@@ -182,6 +182,15 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
     skip_local_validations: bool = False
     skip_cluster_provisioning: bool = False
     skip_ui_daemon_provisioning: bool = False
+
+    # IMPORTANT: This is a temporary solution to allow the Kubeflow orchestrator
+    # to be provisioned as an individual component (i.e. same as running
+    # `zenml orchestrator kubeflow up`) rather than needing it to be part of the
+    # active stack (i.e. instead of running `zenml stack up`). This is required
+    # by the test framework because the way it works is that it first provisions
+    # the stack components individually, then each test gets a different stack
+    # with the components it requires.
+    # Do not use for anything else! This will be removed in the near future.
     container_registry_name: Optional[str] = None
 
     @property

@@ -162,11 +162,6 @@ jobs:
           source $VENV
           bash scripts/test-coverage-xml.sh integration ${{ inputs.test_environment }}
 
-      # - name: Setup tmate session
-      #   if: ${{ failure() }}
-      #   uses: mxschmitt/action-tmate@v3
-      #   timeout-minutes: 60
-
       - name: Verify Python Env unaffected
         run: |
           source $VENV
