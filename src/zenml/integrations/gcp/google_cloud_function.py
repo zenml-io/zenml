@@ -158,7 +158,7 @@ def create_cloud_function(
     while state == Function.State.DEPLOYING:
         response = get_cloud_functions_api(
             credentials=credentials
-        ).get_function(request=GetFunctionRequest(name=sanitized_function_name))
+        ).get_function(request=GetFunctionRequest(name=function_full_name))
         state = response.state
         logger.info("Still creating... sleeping for 5 seconds...")
         time.sleep(5)
