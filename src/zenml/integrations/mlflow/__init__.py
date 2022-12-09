@@ -37,7 +37,7 @@ class MlflowIntegration(Integration):
         "mlflow>=1.2.0,<1.26.0",
         "mlserver>=0.5.3",
         "mlserver-mlflow>=0.5.3",
-        "protobuf~=3.20.0",
+        "protobuf>=3.7.0,<4.0.0",
     ]
 
     @classmethod

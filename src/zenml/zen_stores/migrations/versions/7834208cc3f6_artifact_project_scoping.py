@@ -89,7 +89,7 @@ def upgrade() -> None:
         producer_step_run = conn.execute(
             select([step_runs])
             .where(step_runs.c.status == "completed")
-            .where(step_runs.c.id == step_run_output_artifacts.c.step_run_id)
+            .where(step_runs.c.id == step_run_output_artifacts.c.step_id)
             .where(step_run_output_artifacts.c.artifact_id == artifact.id)
         ).first()
         if producer_step_run is not None:

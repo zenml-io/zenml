@@ -1,4 +1,63 @@
 <!-- markdown-link-check-disable -->
+# 0.30.0
+
+In this release, ZenML finally adds Mac M1 support, Python 3.10 support and much
+greater flexibility and configurability under the hood by deprecating some 
+large dependencies like `ml-pipelines-sdk`.
+
+## Scheduling
+
+Based on some community feedback around scheduling, this release comes with
+improved docs concerning scheduling in general. Additionally, the Vertex AI
+orchestrator now also supports scheduling.
+
+## Slimmer Dependencies
+
+By removing dependencies on some of the packages that ZenML was built on, this 
+version of ZenML is slimmer, faster and more configurable than ever. This also
+finally makes ZenML run natively on Macs with M1 processors without the need for
+Rosetta. This also finally enables ZenML to run on Python 3.10.
+
+## Breaking Changes
+
+* The removal of `ml-pipelines-sdk` and `tfx` leads to some larger changes in 
+the database that is tracking your pipeline runs and artifacts. **Note**: There
+is an automatic migration to upgrade this automatically, However, please note
+that downgrading back down to 0.23.0 is not supported.
+* The CLI commands to export and import pipeline runs have been deprecated. 
+Namely: `zenml pipeline runs export` and `zenml pipeline runs import`
+These commands were meant for migrating from `zenml<0.20.0` to 
+`0.20.0<=zenml<0.30.0`. 
+* The `azure-ml` integration dependency on `azureml-core` has been upgraded 
+from `1.42` to `1.48`
+
+
+## What's Changed
+* Remove stack extra from installation, enable re-running the quickstart by @schustmi in https://github.com/zenml-io/zenml/pull/1133
+* Secrets manager support to experiment trackers docs  by @safoinme in https://github.com/zenml-io/zenml/pull/1137
+* Updating the README files of our examples by @bcdurak in https://github.com/zenml-io/zenml/pull/1128
+* Prevent running with local ZenStore and remote code execution by @schustmi in https://github.com/zenml-io/zenml/pull/1134
+* Remove `ml-pipelines-sdk` dependency by @schustmi in https://github.com/zenml-io/zenml/pull/1103
+* Fix Huggingface dataset materializer by @safoinme in https://github.com/zenml-io/zenml/pull/1142
+* Disallow alembic downgrades for 0.30.0 release by @fa9r in https://github.com/zenml-io/zenml/pull/1140
+* Fix Client flavor-related methods by @schustmi in https://github.com/zenml-io/zenml/pull/1153
+* Replace User Password with Token in docker images by @safoinme in https://github.com/zenml-io/zenml/pull/1147
+* Remove zenml pipeline runs export / import CLI commands by @fa9r in https://github.com/zenml-io/zenml/pull/1150
+* Context manager to track events by @bcdurak in https://github.com/zenml-io/zenml/pull/1149
+* Made explicit `is not None` calls to allow for empty pwd again by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1159
+* Add Neptune exp tracker into flavors table by @dnth in https://github.com/zenml-io/zenml/pull/1156
+* Fix step operators by @schustmi in https://github.com/zenml-io/zenml/pull/1155
+* Display correct name when updating a stack component by @schustmi in https://github.com/zenml-io/zenml/pull/1160
+* Update mysql database creation by @schustmi in https://github.com/zenml-io/zenml/pull/1152
+* Adding component conditions to experiment tracker examples and adding to the environmental variable docs by @bcdurak in https://github.com/zenml-io/zenml/pull/1162
+* Increase dependency range for protobuf by @schustmi in https://github.com/zenml-io/zenml/pull/1163
+* Scheduling documentation by @strickvl in https://github.com/zenml-io/zenml/pull/1158
+* Adding scheduling for Vertex Pipelines by @htahir1 in https://github.com/zenml-io/zenml/pull/1148
+* Fix alembic migration for sqlite<3.25 by @fa9r in https://github.com/zenml-io/zenml/pull/1165
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.23.0...0.30.0
+
 # 0.23.0
 
 This release comes with a brand-new Neptune integration to track your ML experiments
@@ -13,7 +72,7 @@ using Neptune.
 ## Performance Optimization
 
 The 0.20.0 release introduced our new server but brought with it a few performance and scalability issues.
-Since then we've made many improvements to it, and this release is the final and biggest boost in performance. We reduced the amount of server calls needed for almost all CLI commands and greatly improved the speed of the dashboard as well.
+Since then, we've made many improvements to it, and this release is the final and biggest boost in performance. We reduced the amount of server calls needed for almost all CLI commands and greatly improved the speed of the dashboard as well.
 
 ## PyArrow dependency removal
 
