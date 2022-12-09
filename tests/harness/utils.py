@@ -21,10 +21,10 @@ that are used in the tests.
 
 import logging
 import os
-from pathlib import Path
 import shutil
 import sys
 from contextlib import contextmanager
+from pathlib import Path
 from typing import Generator, List, Optional, Tuple
 
 import pytest
@@ -33,7 +33,7 @@ from tests.harness.environment import TestEnvironment
 from tests.harness.harness import TestHarness
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
-from zenml.constants import ENV_ZENML_DEBUG
+from zenml.constants import ENV_ZENML_CONFIG_PATH, ENV_ZENML_DEBUG
 from zenml.stack.stack import Stack
 
 
@@ -243,7 +243,7 @@ def clean_default_client_session(
     tmp_path = tmp_path_factory.mktemp("pytest-clean-client")
     os.chdir(tmp_path)
 
-    os.environ["ZENML_CONFIG_PATH"] = str(tmp_path / "zenml")
+    os.environ[ENV_ZENML_CONFIG_PATH] = str(tmp_path / "zenml")
     os.environ["ZENML_ANALYTICS_OPT_IN"] = "false"
 
     # initialize the global config client and store at the new path
@@ -258,9 +258,9 @@ def clean_default_client_session(
 
     # restore the global configuration path
     if orig_config_path:
-        os.environ["ZENML_CONFIG_PATH"] = orig_config_path
+        os.environ[ENV_ZENML_CONFIG_PATH] = orig_config_path
     else:
-        del os.environ["ZENML_CONFIG_PATH"]
+        del os.environ[ENV_ZENML_CONFIG_PATH]
 
     # restore the global configuration and the client
     GlobalConfiguration._reset_instance(original_config)

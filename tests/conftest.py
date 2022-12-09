@@ -35,19 +35,14 @@ DEFAULT_ENVIRONMENT_NAME = "default"
 
 
 def pytest_addoption(parser):
-    """Fixture that gets called by pytest ahead of tests. Adds the following cli
-    options:
+    """Fixture that gets called by pytest ahead of tests. Adds CLI options that
+    can be used to configure the test deployment, environment, requirements and
+    a few other options that can be used to control the teardown and cleanup
+    process.
 
-        --environment <environment_name>: Use a test environment with the
-            given name to run tests against. If no environment is specified,
-            each tests module will run in its own temporary local default
-            environment.
-        --no-teardown: Do not tear down the test environment after tests
-            have run.
+    Example of how to use these options:
 
-    How to use this option:
-
-        ```pytest tests/integration --environment <environment_name>```
+        ```pytest tests/integration --environment <environment_name> --docker-cleanup```
     """
     parser.addoption(
         "--environment",
@@ -161,8 +156,8 @@ def check_module_requirements(
 def clean_project(
     tmp_path_factory: pytest.TempPathFactory,
 ) -> Generator[Client, None, None]:
-    """Fixture to create, activate and use a separate ZenML project for an
-    individual test.
+    """Fixture to create, activate and use a separate ZenML repository and
+    project for an individual test.
 
     Yields:
         A ZenML client configured to use the project.
@@ -178,7 +173,7 @@ def clean_project(
 def module_clean_project(
     tmp_path_factory: pytest.TempPathFactory,
 ) -> Generator[Client, None, None]:
-    """Fixture to create, activate and use a separate ZenML
+    """Fixture to create, activate and use a separate ZenML repository and
     project for an entire test module.
 
     Yields:
@@ -195,8 +190,8 @@ def module_clean_project(
 def clean_client(
     tmp_path_factory: pytest.TempPathFactory,
 ) -> Generator[Client, None, None]:
-    """Fixture to get a clean local client with its own global configuration
-    for an individual test.
+    """Fixture to get and use a clean local client with its own global
+    configuration and isolated SQLite database for an individual test.
 
     Args:
         request: Pytest FixtureRequest object
@@ -216,8 +211,8 @@ def clean_client(
 def module_clean_client(
     tmp_path_factory: pytest.TempPathFactory,
 ) -> Generator[Client, None, None]:
-    """Fixture to get and use a clean local client with its own
-    global configuration for a test module.
+    """Fixture to get and use a clean local client with its own global
+    configuration and isolated SQLite database for a test module.
 
     Args:
         request: Pytest FixtureRequest object

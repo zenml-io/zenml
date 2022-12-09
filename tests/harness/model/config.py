@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import TYPE_CHECKING, Any, List, Sequence
+from typing import TYPE_CHECKING, Any, List, Sequence, Tuple
 
 from pydantic import BaseModel, Field
 
@@ -70,41 +70,23 @@ class Configuration(BaseTestConfigModel):
         self.requirements += config.requirements
         self.environments += config.environments
 
-        duplicates = check_duplicate_keys(self.deployments, "name")
-        if duplicates:
-            raise ValueError(
-                f"Configuration error: deployments with duplicate "
-                f"names loaded from configuration file `{self._config_file}`: "
-                f"{', '.join(duplicates)}"
-            )
-        duplicates = check_duplicate_keys(self.secrets, "name")
-        if duplicates:
-            raise ValueError(
-                f"Configuration error: secrets with duplicate "
-                f"names loaded from configuration file `{self._config_file}`: "
-                f"{', '.join(duplicates)}"
-            )
-        duplicates = check_duplicate_keys(self.tests, "module")
-        if duplicates:
-            raise ValueError(
-                f"Configuration error: test requirements entries with "
-                f"duplicate module names loaded from configuration file "
-                f"`{self._config_file}`: {', '.join(duplicates)}"
-            )
-        duplicates = check_duplicate_keys(self.requirements, "name")
-        if duplicates:
-            raise ValueError(
-                f"Configuration error: global requirements entries with "
-                f"duplicate names loaded from configuration file "
-                f"`{self._config_file}`: {', '.join(duplicates)}"
-            )
-        duplicates = check_duplicate_keys(self.environments, "name")
-        if duplicates:
-            raise ValueError(
-                f"Configuration error: environments with duplicate "
-                f"names loaded from configuration file "
-                f"`{self._config_file}`: {', '.join(duplicates)}"
-            )
+        # Check each list for duplicate keys after merging
+        lists_to_check: Sequence[Tuple[List[Any], str, str]] = [
+            (self.deployments, "name", "deployment"),
+            (self.secrets, "name", "secret"),
+            (self.tests, "module", "test requirement"),
+            (self.requirements, "name", "global requirement"),
+            (self.environments, "name", "environment"),
+        ]
+
+        for item_list, key_attr, item_name in lists_to_check:
+            duplicates = check_duplicate_keys(item_list, key_attr)
+            if duplicates:
+                raise ValueError(
+                    f"Configuration error: {item_name}s with duplicate "
+                    f"names loaded from configuration file "
+                    f"`{self._config_file}`: {', '.join(duplicates)}"
+                )
 
     def compile(self, harness: "TestHarness") -> None:
         """Validates and compiles the configuration.
@@ -112,18 +94,14 @@ class Configuration(BaseTestConfigModel):
         Args:
             harness: The test harness to validate against.
         """
-        list(map(lambda s: s.compile(harness), self.secrets))
-        list(map(lambda d: d.compile(harness), self.deployments))
-        list(
-            map(
-                lambda r: r.compile(harness),
-                self.requirements,
-            )
-        )
-        list(
-            map(
-                lambda e: e.compile(harness),
-                self.environments,
-            )
-        )
-        list(map(lambda t: t.compile(harness), self.tests))
+        lists_to_compile: Sequence[List[Any]] = [
+            self.secrets,
+            self.deployments,
+            self.requirements,
+            self.environments,
+            self.tests,
+        ]
+
+        for item_list in lists_to_compile:
+            for item in item_list:
+                item.compile(harness)

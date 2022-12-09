@@ -199,8 +199,9 @@ else:
             pid = os.fork()
             if pid > 0:
                 # this is the process that called `run_as_daemon` so we
-                # wait for the child process to finish and simply return
-                # so it can keep running
+                # wait for the child process to finish to avoid creating
+                # zombie processes. Then we simply return so the current process
+                # can continue what it was doing.
                 os.wait()
                 return
         except OSError as e:

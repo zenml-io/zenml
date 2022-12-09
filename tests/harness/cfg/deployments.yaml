@@ -31,7 +31,10 @@
 #      framework also takes care of building and using a `zenml-server` Docker
 #      image with the latest code available in the local zenml code repository
 #      clone.
-#   -  docker-compose: 
+#   -  docker-compose: A ZenML server and MySQL database are both provisioned
+#      locally using Docker Compose. The test framework also takes care of
+#      building and using a `zenml-server` Docker image with the latest code
+#      available in the local zenml code repository clone.
 #   -  external: A 3rd party ZenML server that is installed and maintained
 #      externally. The test framework will not provision or manage this server.
 #      The test framework will only connect to the server and run tests against

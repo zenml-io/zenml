@@ -40,7 +40,7 @@ def copy_example_files(example_dir: str, dst_dir: str) -> None:
         s = os.path.join(example_dir, item)
         d = os.path.join(dst_dir, item)
         if os.path.isdir(s):
-            shutil.copytree(s, d, dirs_exist_ok=True)
+            shutil.copytree(s, d)
         else:
             shutil.copy2(s, d)
 
