@@ -75,23 +75,18 @@ jobs:
         shell: bash
 
     steps:
-      - uses: actions/checkout@v2
+      - name: Maximize build space
+        uses: easimon/maximize-build-space@master
+        with:
+          root-reserve-mb: 10240
+          swap-size-mb: 1024
+          remove-dotnet: 'true'
+          remove-android: 'true'
+          remove-haskell: 'true'
+          build-mount-path: /var/lib/docker
+        if: runner.os=='Linux' && (contains(inputs.test_environment, 'docker') || contains(inputs.test_environment, 'kubeflow'))
 
-      # Workaround from FuseML (https://github.com/fuseml/fuseml/blob/main/.github/workflows/ci.yml)
-      # as the TF images are too large for the GH action runner disk
-      - name: Free disk space
-        shell: bash
-        if: ${{ inputs.os == 'ubuntu-latest' }}
-        run: |
-          echo "Available storage:"
-          df -h
-          echo
-          echo -n "  Removing: .NET (frees ~22GB)"
-          sudo rm -rf /usr/share/dotnet
-          echo "... done"
-          echo
-          echo "Available storage:"
-          df -h
+      - uses: actions/checkout@v2
 
       - name: Setup environment with Poetry
         uses: ./.github/actions/setup_environment
