@@ -77,16 +77,16 @@ sense it's on you to stop or pause the schedule as is appropriate.
 
 ## Supported Orchestrators
 
-| Orchestrator | Scheduling Support |
-| ------------ | ------------------ |
-| LocalOrchestrator | ⛔️ |
-| LocalDockerOrchestrator | ⛔️ |
-| KubernetesOrchestrator | ✅ |
-| KubeflowOrchestrator | ✅ |
-| VertexOrchestrator | ✅ |
-| TektonOrchestrator | ⛔️ |
-| AirflowOrchestrator | ✅ |
-| GiHubActionsOrchestrator | ✅ |
+| Orchestrator              | Scheduling Support |
+|---------------------------| ------------------ |
+| LocalOrchestrator         | ⛔️ |
+| LocalDockerOrchestrator   | ⛔️ |
+| KubernetesOrchestrator    | ✅ |
+| KubeflowOrchestrator      | ✅ |
+| VertexOrchestrator        | ✅ |
+| TektonOrchestrator        | ⛔️ |
+| AirflowOrchestrator       | ✅ |
+| GitHubActionsOrchestrator | ✅ |
 
 We maintain a public roadmap for ZenML, which you can find
 [here](https://zenml.io/roadmap). We welcome community contributions (see more
