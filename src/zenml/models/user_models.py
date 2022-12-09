@@ -24,6 +24,7 @@ from pydantic import BaseModel, Field, SecretStr, root_validator
 from zenml.config.global_config import GlobalConfiguration
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
+from zenml.models import RoleResponseModel
 from zenml.models.base_models import (
     BaseRequestModel,
     BaseResponseModel,
@@ -207,6 +208,9 @@ class UserResponseModel(UserBaseModel, BaseResponseModel):
         default=None, max_length=STR_FIELD_MAX_LENGTH
     )
     teams: Optional[List["TeamResponseModel"]] = Field(
+        title="The list of teams for this user."
+    )
+    roles: Optional[List["RoleResponseModel"]] = Field(
         title="The list of teams for this user."
     )
     email: Optional[str] = Field(

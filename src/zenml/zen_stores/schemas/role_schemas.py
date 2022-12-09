@@ -78,19 +78,32 @@ class RoleSchema(NamedSchema, table=True):
         self.updated = datetime.utcnow()
         return self
 
-    def to_model(self) -> RoleResponseModel:
+    def to_model(self, _block_recursion: bool = False) -> RoleResponseModel:
         """Convert a `RoleSchema` to a `RoleResponseModel`.
+
+        Args:
+            _block_recursion: Don't recursively fill attributes
 
         Returns:
             The converted `RoleResponseModel`.
         """
-        return RoleResponseModel(
-            id=self.id,
-            name=self.name,
-            created=self.created,
-            updated=self.updated,
-            permissions=[PermissionType(p.name) for p in self.permissions],
-        )
+        if _block_recursion:
+            return RoleResponseModel(
+                id=self.id,
+                name=self.name,
+                created=self.created,
+                updated=self.updated,
+                permissions={PermissionType(p.name) for p in self.permissions},
+            )
+        else:
+            return RoleResponseModel(
+                id=self.id,
+                name=self.name,
+                created=self.created,
+                updated=self.updated,
+                permissions={PermissionType(p.name) for p in self.permissions},
+
+            )
 
 
 class UserRoleAssignmentSchema(BaseSchema, table=True):
@@ -231,7 +244,7 @@ class TeamRoleAssignmentSchema(BaseSchema, table=True):
         return RoleAssignmentResponseModel(
             id=self.id,
             project=self.project.to_model() if self.project else None,
-            user=self.team.to_model(_block_recursion=True),
+            team=self.team.to_model(_block_recursion=True),
             role=self.role.to_model(),
             created=self.created,
             updated=self.updated,
