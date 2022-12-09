@@ -1,9 +1,9 @@
 <!-- markdown-link-check-disable -->
 # 0.30.0
 
-In this release, zenml finally adds Mac M1 support, Python 3.10 support and much
+In this release, ZenML finally adds Mac M1 support, Python 3.10 support and much
 greater flexibility and configurability under the hood by deprecating some 
-dependencies.
+large dependencies like `ml-pipelines-sdk`.
 
 ## Scheduling
 
@@ -14,7 +14,7 @@ orchestrator now also supports scheduling.
 ## Slimmer Dependencies
 
 By removing dependencies on some of the packages that ZenML was built on, this 
-version of zenml is slimmer, faster and more configurable than ever. This also
+version of ZenML is slimmer, faster and more configurable than ever. This also
 finally makes ZenML run natively on Macs with M1 processors without the need for
 Rosetta. This also finally enables ZenML to run on Python 3.10.
 
