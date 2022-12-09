@@ -346,7 +346,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
                     )
                 elif not active_stack.is_shared and (
                     not active_stack.user
-                    or (active_stack.user.id != self.get_myself().id)
+                    or (active_stack.user.id != self.get_user().id)
                 ):
                     logger.warning(
                         "The current %s active stack is not shared and not "
@@ -395,12 +395,12 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         try:
             return self._get_default_stack(
                 project_name_or_id=project.id,
-                user_name_or_id=self.get_myself().id,
+                user_name_or_id=self.get_user().id,
             )
         except KeyError:
             return self._create_default_stack(  # type: ignore[no-any-return]
                 project_name_or_id=project.id,
-                user_name_or_id=self.get_myself().id,
+                user_name_or_id=self.get_user().id,
             )
 
     def _get_or_create_default_project(self) -> "ProjectResponseModel":

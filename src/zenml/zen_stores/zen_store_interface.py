@@ -418,30 +418,22 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_user(self, user_name_or_id: Union[str, UUID]) -> UserResponseModel:
-        """Gets a specific user.
+    def get_user(
+        self,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
+        include_private: bool = False
+    ) -> UserResponseModel:
+        """Gets a specific user, when no id is specified the active user is returned.
 
         Args:
             user_name_or_id: The name or ID of the user to get.
+            include_private: Whether to include private user information
 
         Returns:
             The requested user, if it was found.
 
         Raises:
             KeyError: If no user with the given name or ID exists.
-        """
-
-    @abstractmethod
-    def get_myself(
-        self, user_name_or_id: Optional[Union[str, UUID]] = None
-    ) -> UserResponseModel:
-        """Gets the authenticated user model including some private fields.
-
-        Args:
-            user_name_or_id: The name or ID of the user to get.
-
-        Returns:
-            The requested user, if it was found.
         """
 
     @abstractmethod
