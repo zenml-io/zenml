@@ -521,7 +521,26 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         schedule: "Schedule",
         pipeline_file_path: str,
         settings: VertexOrchestratorSettings,
-    ):
+    ) -> None:
+        """Uploads and schedules pipeline on GCP.
+
+        Args:
+            pipeline_name: Name of the pipeline.
+            run_name: Orchestrator run name.
+            stack: The stack the pipeline will run on.
+            schedule: The schedule the pipeline will run on.
+            pipeline_file_path: Path of the JSON file containing the compiled
+                Kubeflow pipeline (compiled with Kubeflow SDK v2).
+            settings: Pipeline level settings for this orchestrator.
+
+        Raises:
+            ValueError: If the attribute `pipeline_root` is not set and it
+                can be not generated using the path of the artifact store in the
+                stack because it is not a
+                `zenml.integrations.gcp.artifact_store.GCPArtifactStore`. Also gets
+                raised if attempting to schedule pipeline run without using the
+                `zenml.integrations.gcp.artifact_store.GCPArtifactStore`.
+        """
         # First, do some validation
         artifact_store = stack.artifact_store
         if artifact_store.flavor != GCP_ARTIFACT_STORE_FLAVOR:
@@ -633,14 +652,14 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
             if self.config.workload_service_account:
                 logger.info(
                     "The Vertex AI Pipelines job workload will be executed "
-                    "using `%s` "
+                    "using the `%s` "
                     "service account.",
                     self.config.workload_service_account,
                 )
 
             if self.config.network:
                 logger.info(
-                    "The Vertex AI Pipelines job will be peered with `%s` "
+                    "The Vertex AI Pipelines job will be peered with the `%s` "
                     "network.",
                     self.config.network,
                 )

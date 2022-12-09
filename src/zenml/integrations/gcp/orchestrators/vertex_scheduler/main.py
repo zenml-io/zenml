@@ -72,14 +72,15 @@ def trigger_vertex_job(request: "Request") -> "Response":
     if workload_service_account:
         logging.info(
             "The Vertex AI Pipelines job workload will be executed "
-            "using `%s` "
+            "using the `%s` "
             "service account.",
             workload_service_account,
         )
 
     if network:
         logging.info(
-            "The Vertex AI Pipelines job will be peered with `%s` " "network.",
+            "The Vertex AI Pipelines job will be peered with the `%s` "
+            "network.",
             network,
         )
 
