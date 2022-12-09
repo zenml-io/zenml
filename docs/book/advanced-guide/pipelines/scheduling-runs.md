@@ -39,11 +39,8 @@ schedule = Schedule(start_time=datetime.now(), interval_second=1800)
 pipeline_instance.run(schedule=schedule)
 ```
 
-You can also optionally specify an `end_time` for the schedule if you want it not
-to run after a certain moment. Similarly, the boolean `catchup` parameter can be
-used to specify whether a recurring run should catch up (i.e. backfill pipeline
-runs) if it is behind schedule, if you paused the schedule, for example.
-
+You can specify an optional `end_time` for the schedule to prevent it from running after a certain time. The `catchup` parameter, which is a boolean, can be used to specify whether a recurring run should catch up (i.e. backfill pipeline
+runs) on missed runs if it has fallen behind schedule. This can happen, for example, if you paused the schedule.
 In the context of scheduled cron or pipeline jobs, backfilling refers to running
 a missed job for a specific period in the past. For example, if a pipeline
 misses a scheduled run at 12:00 PM, backfilling can be used to run the pipeline
