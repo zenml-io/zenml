@@ -32,7 +32,7 @@ from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
 from zenml.exceptions import IllegalOperationError
 from zenml.io import fileio
-from zenml.utils.analytics_utils import AnalyticsEvent, track_event
+from zenml.utils.analytics_utils import AnalyticsEvent, track
 
 
 def generate_stack_component_get_command(
@@ -262,15 +262,16 @@ def generate_stack_component_update_command(
             name_mandatory=False,
         )
 
-        with console.status(f"Updating {display_name} '{name_or_id}'...\n"):
-            client.update_stack_component(
+        with console.status(f"Updating {display_name}...\n"):
+            updated_component = client.update_stack_component(
                 name_id_or_prefix=name_or_id,
                 component_type=component_type,
                 configuration=parsed_args,
             )
 
             cli_utils.declare(
-                f"Successfully updated {display_name} `{name_or_id}`."
+                f"Successfully updated {display_name} "
+                f"`{updated_component.name}`."
             )
 
     return update_stack_component_command
@@ -481,6 +482,7 @@ def generate_stack_component_copy_command(
         "source_component_name_id_or_prefix", type=str, required=True
     )
     @click.argument("target_component", type=str, required=True)
+    @track(AnalyticsEvent.COPIED_STACK_COMPONENT)
     def copy_stack_component_command(
         source_component_name_id_or_prefix: str,
         target_component: str,
@@ -492,8 +494,6 @@ def generate_stack_component_copy_command(
                                          component to copy.
             target_component: Name of the copied component.
         """
-        track_event(AnalyticsEvent.COPIED_STACK_COMPONENT)
-
         client = Client()
 
         with console.status(
