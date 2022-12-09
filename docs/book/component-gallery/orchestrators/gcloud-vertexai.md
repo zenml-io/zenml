@@ -118,6 +118,16 @@ The Vertex orchestrator only supports the `cron_expression` parameter in the `Sc
 and will ignore all other parameters supplied to define the schedule.
 {% endhint %}
 
+#### How to delete a scheduled pipeline
+
+Note that ZenML only gets involved to schedule a run, but maintaining the
+lifecycle of the schedule is the responsibility of the
+user.
+
+In order to cancel a scheduled Vertex pipeline, you need to manually delete the
+generated Google Cloud Function, along with the Cloud Scheduler job that schedules
+it (via the UI or the CLI).
+
 ### Additional configuration
 
 For additional configuration of the Vertex orchestrator, you can pass
