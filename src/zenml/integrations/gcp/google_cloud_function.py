@@ -127,7 +127,7 @@ def create_cloud_function(
     """
     sanitized_function_name = function_name.replace("_", "-")
     parent = f"projects/{project}/locations/{location}"
-    function_full_name = "{parent}/functions/{sanitized_function_name}"
+    function_full_name = f"{parent}/functions/{sanitized_function_name}"
     logger.info(f"Creating Google Cloud Function: {function_full_name}")
 
     storage_source = upload_directory(directory_path, upload_path)
