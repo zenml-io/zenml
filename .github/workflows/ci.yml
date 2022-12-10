@@ -39,7 +39,7 @@ jobs:
       matrix:
         os: [ ubuntu-latest ]
         python-version: [ '3.8' ]
-        test_environment: [ "docker-server-docker-orchestrator" ]
+        test_environment: [ "default-kubeflow-orchestrator" ]
 
       fail-fast: false
 
