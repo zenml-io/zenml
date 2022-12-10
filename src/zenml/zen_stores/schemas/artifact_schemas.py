@@ -14,7 +14,7 @@
 """SQLModel implementation of artifact tables."""
 
 
-from typing import Optional
+from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
 from sqlmodel import Relationship
@@ -26,6 +26,12 @@ from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
+
+if TYPE_CHECKING:
+    from zenml.zen_stores.schemas.step_run_schemas import (
+        StepRunInputArtifactSchema,
+        StepRunOutputArtifactSchema,
+    )
 
 
 class ArtifactSchema(NamedSchema, table=True):
@@ -69,6 +75,15 @@ class ArtifactSchema(NamedSchema, table=True):
     uri: str
     materializer: str
     data_type: str
+
+    input_artifacts: List["StepRunInputArtifactSchema"] = Relationship(
+        back_populates="artifact",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
+    output_artifacts: List["StepRunOutputArtifactSchema"] = Relationship(
+        back_populates="artifact",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
 
     @classmethod
     def from_request(
