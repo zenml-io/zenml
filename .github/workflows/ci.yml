@@ -16,55 +16,30 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  poetry-install:
-    if: github.event.pull_request.draft == false
-    uses: ./.github/workflows/poetry-install.yml
-    secrets: inherit
+  # poetry-install:
+  #   if: github.event.pull_request.draft == false
+  #   uses: ./.github/workflows/poetry-install.yml
+  #   secrets: inherit
 
-  lint-code:
-    needs: poetry-install
-    uses: ./.github/workflows/lint.yml
-    secrets: inherit
+  # lint-code:
+  #   needs: poetry-install
+  #   uses: ./.github/workflows/lint.yml
+  #   secrets: inherit
 
-  unit-test:
-    needs: poetry-install
-    uses: ./.github/workflows/unit-test.yml
-    secrets: inherit
+  # unit-test:
+  #   needs: poetry-install
+  #   uses: ./.github/workflows/unit-test.yml
+  #   secrets: inherit
 
   integration-test:
-    needs: poetry-install
+    # needs: poetry-install
     # Exit if its a commit from Gitbook
     if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
     strategy:
       matrix:
-        os: [ ubuntu-latest, windows-latest, macos-latest ]
-        python-version: [ '3.7', '3.8', '3.9', '3.10' ]
-        test_environment: [ "default", "docker-server-docker-orchestrator", "default-kubeflow-orchestrator"]
-        exclude:
-          # kubeflow is not supported on windows
-          - os: windows-latest
-            test_environment: default-kubeflow-orchestrator
-          # kubeflow is time-consuming to run, so we only run it on 3.8
-          - test_environment: default-kubeflow-orchestrator
-            python-version: '3.7'
-          - test_environment: default-kubeflow-orchestrator
-            python-version: '3.9'
-          - test_environment: default-kubeflow-orchestrator
-            python-version: '3.10'
-          # docker is time-consuming to run, so we only run it on 3.8
-          - test_environment: docker-server-docker-orchestrator
-            python-version: '3.7'
-          - test_environment: docker-server-docker-orchestrator
-            python-version: '3.9'
-          - test_environment: docker-server-docker-orchestrator
-            python-version: '3.10'
-          # disable windows integration tests for now
-          - os: windows-latest
-          # disable docker macos tests for now
-          - test_environment: docker-server-docker-orchestrator
-            os: macos-latest
-          - test_environment: default-kubeflow-orchestrator
-            os: macos-latest
+        os: [ ubuntu-latest ]
+        python-version: [ '3.8' ]
+        test_environment: [ "docker-server-docker-orchestrator" ]
 
       fail-fast: false
 
@@ -73,13 +48,16 @@ jobs:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
       test_environment: ${{ matrix.test_environment }}
+      enable_tmate: "always"
+      tmate_timeout: 120
     secrets: inherit
 
-  spell-check:
-    uses: ./.github/workflows/spellcheck.yml
 
-  docstring-check:
-    uses: ./.github/workflows/docstring.yml
+  # spell-check:
+  #   uses: ./.github/workflows/spellcheck.yml
 
-  markdown-link-check:
-    uses: ./.github/workflows/markdown-link-check.yml
+  # docstring-check:
+  #   uses: ./.github/workflows/docstring.yml
+
+  # markdown-link-check:
+  #   uses: ./.github/workflows/markdown-link-check.yml
