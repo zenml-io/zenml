@@ -35,7 +35,6 @@ class PipelineDeployment(StrictBaseModel):
     stack_id: UUID
     pipeline: PipelineConfiguration
     pipeline_id: Optional[UUID] = None
-    proto_pipeline: str
     steps: Dict[str, Step] = {}
 
     def add_extra(self, key: str, value: Any) -> None:

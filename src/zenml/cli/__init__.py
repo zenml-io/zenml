@@ -697,7 +697,7 @@ If you wish to remove an attribute (or multiple attributes) from a stack
 component, use the following command:
 
 ```shell
-zenml STACK_COMPONENT remove-attribute STACK_COMPONENT_NAME --ATTRIBUTE_NAME [--OTHER_ATTRIBUTE_NAME]
+zenml STACK_COMPONENT remove-attribute STACK_COMPONENT_NAME ATTRIBUTE_NAME [OTHER_ATTRIBUTE_NAME]
 ```
 
 Note that you can only remove optional attributes.
@@ -755,13 +755,6 @@ connecting to the new ZenML deployment, you can then import again like this:
 zenml pipeline runs import FILENAME.yaml
 ```
 
-If you would like to migrate old pipeline runs from a legacy metadata store from
-ZenML versions < 0.20.0, you can do so by running the following command:
-
-```bash
-zenml pipeline runs migrate METADATA_STORE_PATH
-```
-
 Managing the local ZenML Dashboard
 ----------------------------------
 
@@ -806,8 +799,7 @@ The TCP port and the host address that the dashboard uses to listen for
 connections can also be customized. Using an IP address that is not the default
 `localhost` or 127.0.0.1 is especially useful if you're running some type of
 local ZenML orchestrator, such as the k3d Kubeflow orchestrator or Docker
-orchestrator, that can't directly access you loopback interface and therefore
-cannot connect to the local ZenML server.
+orchestrator, that cannot directly connect to the local ZenML server.
 
 For example, to start the dashboard on port 9000 and have it listen
 on all locally available interfaces on your machine, run:
@@ -1036,8 +1028,8 @@ A role groups permissions to resources. Currently, there are the following
 globally scoped roles to choose from: 'write', 'read' and 'me'. To create
 a role, run one of the following commands:
 ```bash
-zenml role create ROLE_NAME --write --read --me
-zenml role create ROLE_NAME --read
+zenml role create ROLE_NAME -p write -p read -p me
+zenml role create ROLE_NAME -p read
 ```
 
 To delete a role run:
@@ -1120,11 +1112,13 @@ stack recipe(s). Use the `-p` or `--path` flag.
 ```bash
 zenml stack recipe pull <stack-recipe-name> --path=<PATH>
 ```
-By default, all recipes get downloaded under a directory called `zenml_stack_recipes`.
+By default, all recipes get downloaded under a directory called
+`zenml_stack_recipes`.
 
 To deploy a recipe, use the `deploy` command. Before running deploy, review the 
 `zenml_stack_recipes/<stack-recipe-name>/locals.tf` file for configuring
-non-sensitive variables and the `zenml_stack_recipes/<stack-recipe-name>/values.tfvars`
+non-sensitive variables and the
+`zenml_stack_recipes/<stack-recipe-name>/values.tfvars`
 file to add sensitive information like access keys and passwords.
 
 ```bash
@@ -1174,7 +1168,8 @@ from zenml.cli.feature import *  # noqa
 from zenml.cli.integration import *  # noqa
 from zenml.cli.model import *  # noqa
 from zenml.cli.pipeline import *  # noqa
-from zenml.cli.profile import *  # noqa
+from zenml.cli.project import *  # noqa
+from zenml.cli.role import *  # noqa
 from zenml.cli.secret import *  # noqa
 from zenml.cli.server import *  # noqa
 from zenml.cli.stack import *  # noqa

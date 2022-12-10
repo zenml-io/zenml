@@ -50,8 +50,24 @@ from zenml.integrations.gcp.flavors.vertex_orchestrator_flavor import (
     VertexOrchestratorConfig,
     VertexOrchestratorSettings,
 )
+from zenml.integrations.gcp.google_cloud_function import create_cloud_function
+from zenml.integrations.gcp.google_cloud_scheduler import create_scheduler_job
 from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsMixin,
+)
+from zenml.integrations.gcp.orchestrators import vertex_scheduler
+from zenml.integrations.gcp.orchestrators.vertex_scheduler.main import (
+    ENABLE_CACHING,
+    ENCRYPTION_SPEC_KEY_NAME,
+    JOB_ID,
+    LABELS,
+    LOCATION,
+    NETWORK,
+    PARAMETER_VALUES,
+    PIPELINE_ROOT,
+    PROJECT,
+    TEMPLATE_PATH,
+    WORKLOAD_SERVICE_ACCOUNT,
 )
 from zenml.integrations.kubeflow.utils import apply_pod_settings
 from zenml.io import fileio
@@ -63,8 +79,11 @@ from zenml.utils.io_utils import get_global_config_directory
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
+    from google.auth.credentials import Credentials
+
     from zenml.config.base_settings import BaseSettings
     from zenml.config.pipeline_deployment import PipelineDeployment
+    from zenml.config.schedule import Schedule
     from zenml.stack import Stack
     from zenml.steps import ResourceSettings
 
@@ -202,6 +221,30 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         """
         return os.path.join(self.root_directory, "pipelines")
 
+    def _get_authentication(self) -> Tuple["Credentials", str]:
+        """Get GCP credentials and the project ID associated with the credentials.
+
+        This function is the same as the super function except that it also checks
+        against the value of the `config` class of this orchestrator.
+
+        Returns:
+            A tuple containing the credentials and the project ID associated to
+            the credentials.
+        """
+        credentials, project_id = super()._get_authentication()
+        if self.config.project and self.config.project != project_id:
+            logger.warning(
+                "Authenticated with project `%s`, but this orchestrator is "
+                "configured to use the project `%s`.",
+                project_id,
+                self.config.project,
+            )
+
+        # If the project was set in the configuration, use it. Otherwise, use
+        # the project that was used to authenticate.
+        project_id = self.config.project if self.config.project else project_id
+        return credentials, project_id
+
     def prepare_pipeline_deployment(
         self,
         deployment: "PipelineDeployment",
@@ -212,7 +255,28 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         Args:
             deployment: The pipeline deployment configuration.
             stack: The stack on which the pipeline will be deployed.
+
+        Raises:
+            ValueError: If `cron_expression` is not in passed Schedule.
         """
+        if deployment.schedule:
+            if (
+                deployment.schedule.catchup
+                or deployment.schedule.start_time
+                or deployment.schedule.end_time
+                or deployment.schedule.interval_second
+            ):
+                logger.warning(
+                    "Vertex orchestrator only uses schedules with the "
+                    "`cron_expression` property. All other properties "
+                    "are ignored."
+                )
+            if deployment.schedule.cron_expression is None:
+                raise ValueError(
+                    "Property `cron_expression` must be set when passing "
+                    "schedule to a Vertex orchestrator."
+                )
+
         docker_image_builder = PipelineDockerImageBuilder()
         repo_digest = docker_image_builder.build_and_push_docker_image(
             deployment=deployment, stack=stack
@@ -308,6 +372,8 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
             ValueError: If the attribute `pipeline_root` is not set and it
                 can be not generated using the path of the artifact store in the
                 stack because it is not a
+                `zenml.integrations.gcp.artifact_store.GCPArtifactStore`. Also gets
+                raised if attempting to schedule pipeline run without using the
                 `zenml.integrations.gcp.artifact_store.GCPArtifactStore`.
         """
         orchestrator_run_name = get_orchestrator_run_name(
@@ -331,14 +397,6 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         else:
             self._pipeline_root = self.config.pipeline_root
 
-        if deployment.schedule:
-            logger.warning(
-                "Pipeline scheduling configuration was provided, but Vertex "
-                "AI Pipelines does not support scheduling yet. Creating "
-                "a one-time run instead."
-            )
-        # Build the Docker image that will be used to run the steps of the
-        # pipeline.
         image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
 
         def _construct_kfp_pipeline() -> None:
@@ -403,6 +461,7 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
                     resource_settings=step.config.resource_settings,
                     node_selector_constraint=settings.node_selector_constraint,
                 )
+                container_op.set_caching_options(enable_caching=False)
 
                 step_name_to_container_op[step.config.name] = container_op
 
@@ -416,36 +475,136 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         # Compile the pipeline using the Kubeflow SDK V2 compiler that allows
         # to generate a JSON representation of the pipeline that can be later
         # upload to Vertex AI Pipelines service.
-        logger.debug(
-            "Compiling pipeline using Kubeflow SDK V2 compiler and saving it "
-            "to `%s`",
-            pipeline_file_path,
-        )
         KFPV2Compiler().compile(
             pipeline_func=_construct_kfp_pipeline,
             package_path=pipeline_file_path,
             pipeline_name=_clean_pipeline_name(deployment.pipeline.name),
+        )
+        logger.info(
+            "Writing Vertex workflow definition to `%s`.", pipeline_file_path
         )
 
         settings = cast(
             VertexOrchestratorSettings, self.get_settings(deployment)
         )
 
-        # Using the Google Cloud AIPlatform client, upload and execute the
-        # pipeline
-        # on the Vertex AI Pipelines service.
-        self._upload_and_run_pipeline(
-            pipeline_name=deployment.pipeline.name,
-            pipeline_file_path=pipeline_file_path,
-            enable_cache=deployment.pipeline.enable_cache,
-            settings=settings,
+        if deployment.schedule:
+            logger.info(
+                "Scheduling job using Google Cloud Scheduler and Google Cloud Functions..."
+            )
+            self._upload_and_schedule_pipeline(
+                pipeline_name=deployment.pipeline.name,
+                run_name=orchestrator_run_name,
+                stack=stack,
+                schedule=deployment.schedule,
+                pipeline_file_path=pipeline_file_path,
+                settings=settings,
+            )
+
+        else:
+            logger.info("No schedule detected. Creating one-off vertex job...")
+            # Using the Google Cloud AIPlatform client, upload and execute the
+            # pipeline
+            # on the Vertex AI Pipelines service.
+            self._upload_and_run_pipeline(
+                pipeline_name=deployment.pipeline.name,
+                pipeline_file_path=pipeline_file_path,
+                run_name=orchestrator_run_name,
+                settings=settings,
+            )
+
+    def _upload_and_schedule_pipeline(
+        self,
+        pipeline_name: str,
+        run_name: str,
+        stack: "Stack",
+        schedule: "Schedule",
+        pipeline_file_path: str,
+        settings: VertexOrchestratorSettings,
+    ) -> None:
+        """Uploads and schedules pipeline on GCP.
+
+        Args:
+            pipeline_name: Name of the pipeline.
+            run_name: Orchestrator run name.
+            stack: The stack the pipeline will run on.
+            schedule: The schedule the pipeline will run on.
+            pipeline_file_path: Path of the JSON file containing the compiled
+                Kubeflow pipeline (compiled with Kubeflow SDK v2).
+            settings: Pipeline level settings for this orchestrator.
+
+        Raises:
+            ValueError: If the attribute `pipeline_root` is not set and it
+                can be not generated using the path of the artifact store in the
+                stack because it is not a
+                `zenml.integrations.gcp.artifact_store.GCPArtifactStore`. Also gets
+                raised if attempting to schedule pipeline run without using the
+                `zenml.integrations.gcp.artifact_store.GCPArtifactStore`.
+        """
+        # First, do some validation
+        artifact_store = stack.artifact_store
+        if artifact_store.flavor != GCP_ARTIFACT_STORE_FLAVOR:
+            raise ValueError(
+                "Currently, the Vertex AI orchestrator only supports scheduled runs "
+                f"in combination with an artifact store of flavor: {GCP_ARTIFACT_STORE_FLAVOR}. "
+                f"The current stacks artifact store is of flavor: {artifact_store.flavor}. "
+                "Please update your stack accordingly."
+            )
+
+            # Copy over the scheduled pipeline to the artifact store
+        artifact_store_base_uri = f"{artifact_store.path.rstrip('/')}/vertex_scheduled_pipelines/{pipeline_name}/{run_name}"
+        artifact_store_pipeline_uri = (
+            f"{artifact_store_base_uri}/vertex_pipeline.json"
+        )
+        fileio.copy(pipeline_file_path, artifact_store_pipeline_uri)
+        logger.info(
+            "The scheduled pipeline representation has been "
+            "automatically copied to this path of the `GCPArtifactStore`: "
+            f"{artifact_store_pipeline_uri}",
+        )
+
+        # Get the credentials that would be used to create resources.
+        credentials, project_id = self._get_authentication()
+
+        # Create cloud function
+        function_uri = create_cloud_function(
+            directory_path=vertex_scheduler.__path__[0],  # fixed path
+            upload_path=f"{artifact_store_base_uri}/code.zip",
+            project=project_id,
+            location=self.config.location,
+            function_name=run_name,
+            credentials=credentials,
+        )
+
+        # Create the scheduler job
+        body = {
+            TEMPLATE_PATH: artifact_store_pipeline_uri,
+            JOB_ID: _clean_pipeline_name(pipeline_name),
+            PIPELINE_ROOT: self._pipeline_root,
+            PARAMETER_VALUES: None,
+            ENABLE_CACHING: False,
+            ENCRYPTION_SPEC_KEY_NAME: self.config.encryption_spec_key_name,
+            LABELS: settings.labels,
+            PROJECT: project_id,
+            LOCATION: self.config.location,
+            WORKLOAD_SERVICE_ACCOUNT: self.config.workload_service_account,
+            NETWORK: self.config.network,
+        }
+
+        create_scheduler_job(
+            project=project_id,
+            region=self.config.location,
+            http_uri=function_uri,
+            body=body,
+            schedule=str(schedule.cron_expression),
+            credentials=credentials,
         )
 
     def _upload_and_run_pipeline(
         self,
         pipeline_name: str,
         pipeline_file_path: str,
-        enable_cache: bool,
+        run_name: str,
         settings: VertexOrchestratorSettings,
     ) -> None:
         """Uploads and run the pipeline on the Vertex AI Pipelines service.
@@ -454,31 +613,18 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
             pipeline_name: Name of the pipeline.
             pipeline_file_path: Path of the JSON file containing the compiled
                 Kubeflow pipeline (compiled with Kubeflow SDK v2).
-            enable_cache: Whether caching is enabled for this pipeline run.
+            run_name: Orchestrator run name.
             settings: Pipeline level settings for this orchestrator.
         """
-        # We have to replace the hyphens in the pipeline name with underscores
+        # We have to replace the hyphens in the run name with underscores
         # and lower case the string, because the Vertex AI Pipelines service
         # requires this format.
-        job_id = _clean_pipeline_name(
-            get_orchestrator_run_name(pipeline_name=pipeline_name)
-        )
+        job_id = _clean_pipeline_name(run_name)
 
         # Get the credentials that would be used to create the Vertex AI
         # Pipelines
         # job.
         credentials, project_id = self._get_authentication()
-        if self.config.project and self.config.project != project_id:
-            logger.warning(
-                "Authenticated with project `%s`, but this orchestrator is "
-                "configured to use the project `%s`.",
-                project_id,
-                self.config.project,
-            )
-
-        # If the project was set in the configuration, use it. Otherwise, use
-        # the project that was used to authenticate.
-        project_id = self.config.project if self.config.project else project_id
 
         # Instantiate the Vertex AI Pipelines job
         run = aiplatform.PipelineJob(
@@ -487,11 +633,11 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
             job_id=job_id,
             pipeline_root=self._pipeline_root,
             parameter_values=None,
-            enable_caching=enable_cache,
+            enable_caching=False,
             encryption_spec_key_name=self.config.encryption_spec_key_name,
             labels=settings.labels,
             credentials=credentials,
-            project=self.config.project,
+            project=project_id,
             location=self.config.location,
         )
 
@@ -506,14 +652,14 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
             if self.config.workload_service_account:
                 logger.info(
                     "The Vertex AI Pipelines job workload will be executed "
-                    "using `%s` "
+                    "using the `%s` "
                     "service account.",
                     self.config.workload_service_account,
                 )
 
             if self.config.network:
                 logger.info(
-                    "The Vertex AI Pipelines job will be peered with `%s` "
+                    "The Vertex AI Pipelines job will be peered with the `%s` "
                     "network.",
                     self.config.network,
                 )

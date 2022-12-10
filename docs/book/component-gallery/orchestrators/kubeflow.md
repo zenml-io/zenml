@@ -268,8 +268,8 @@ CUDA for the GPU to give its full acceleration.
 ## Important Note for Multi-Tenancy Deployments
 
 Kubeflow has a notion of [multi-tenancy](https://www.kubeflow.org/docs/components/multi-tenancy/overview/) 
-built into its deployment. Kubeflow’s multi-user isolation simplifies user 
-operations because each user only views and edited\s the Kubeflow components 
+built into its deployment. Kubeflow's multi-user isolation simplifies user
+operations because each user only views and edited\s the Kubeflow components
 and model artifacts defined in their configuration.
 
 Using the ZenML Kubeflow orchestrator on a multi-tenant deployment without any settings will result in the following error:
@@ -291,7 +291,7 @@ zenml orchestrator register <NAME> \
     --kubeflow_hostname=<KUBEFLOW_HOSTNAME> # e.g. https://mykubeflow.example.com/pipeline
 ```
 
-Then, ensure that you use the pass the right settings before triggerling a pipeline run. The following snipper will prove useful:
+Then, ensure that you use the pass the right settings before triggering a pipeline run. The following snippet will prove useful:
 
 ```python
 import requests
@@ -302,50 +302,21 @@ from zenml.integrations.kubeflow.flavors.kubeflow_orchestrator_flavor import (
 )
 
 NAMESPACE = "namespace_name"  # This is the user namespace for the profile you want to use
-USERNAME = "username"  # This is the username for the profile you want to use
-PASSWORD = "password"  # This is the password for the profile you want to use
+USERNAME = "admin"  # This is the username for the profile you want to use
+PASSWORD = "abc123"  # This is the password for the profile you want to use
 
 
-def get_kfp_token(username: str, password: str) -> str:
-    """Get token for kubeflow authentication."""
-    # Resolve host from active stack
-    orchestrator = Client().active_stack.orchestrator
-
-    if orchestrator.flavor != "kubeflow":
-        raise AssertionError(
-            "You can only use this function with an "
-            "orchestrator of flavor `kubeflow` in the "
-            "active stack!"
-        )
-
-    try:
-        kubeflow_host = orchestrator.config.kubeflow_hostname
-    except AttributeError:
-        raise AssertionError(
-            "You must configure the Kubeflow orchestrator "
-            "with the `kubeflow_hostname` parameter which ends "
-            "with `/pipeline` (e.g. `https://mykubeflow.com/pipeline`). "
-            "Please update the current kubeflow orchestrator with: "
-            f"`zenml orchestrator update {orchestrator.name} "
-            "--kubeflow_hostname=<MY_KUBEFLOW_HOST>`"
-        )
-
-    session = requests.Session()
-    response = session.get(kubeflow_host)
-    headers = {
-        "Content-Type": "application/x-www-form-urlencoded",
-    }
-    data = {"login": username, "password": password}
-    session.post(response.url, headers=headers, data=data)
-    session_cookie = session.cookies.get_dict()["authservice_session"]
-    return session_cookie
-
-
-token = get_kfp_token(USERNAME, PASSWORD)
-session_cookie = "authservice_session=" + token
+# Use client_username and client_password and ZenML will automatically fetch a session cookie
 kubeflow_settings = KubeflowOrchestratorSettings(
-    client_args={"cookies": session_cookie}, user_namespace=NAMESPACE
+    client_username=USERNAME,
+    client_password=PASSWORD,
+    user_namespace=NAMESPACE
 )
+
+# You can also pass the cookie in `client_args` directly
+# kubeflow_settings = KubeflowOrchestratorSettings(
+#     client_args={"cookies": session_cookie}, user_namespace=NAMESPACE
+# )
 
 @pipeline(
     settings={
@@ -360,6 +331,29 @@ if "__name__" == "__main__":
 
 Note that the above is also currently not tested on all Kubeflow 
 versions, so there might be further bugs with older Kubeflow versions. In this case, please reach out to us on [Slack](https://zenml.io/slack-invite).
+
+### Using secrets in settings
+
+The above example encoded the username and password in plain-text as settings. You can also set them as secrets.
+
+```shell
+zenml secrets-manager secret register kubeflow_secret \
+    --username=admin \
+    --password=abc123
+```
+
+And then you can use them in code:
+
+```python
+# Use client_username and client_password and ZenML will automatically fetch a session cookie
+kubeflow_settings = KubeflowOrchestratorSettings(
+    client_username="{{kubeflow_secret.username}}",  # secret reference
+    client_password="{{kubeflow_secret.password}}",  # secret reference
+    user_namespace="namespace_name"
+)
+```
+
+See full documentation of using secrets within ZenML [here](../../advanced-guide/practical/secrets-management.md).
 
 A concrete example of using the Kubeflow orchestrator can be found
 [here](https://github.com/zenml-io/zenml/tree/main/examples/kubeflow_pipelines_orchestration).

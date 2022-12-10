@@ -101,7 +101,7 @@ class ZenMLArtifactStoreBackend(TupleStoreBackend):  # type: ignore[misc]
             The file path pointing to where the object is stored.
         """
         if not isinstance(key, tuple):
-            key = key.to_tuple()  # type: ignore[attr-defined]
+            key = key.to_tuple()
         if not is_prefix:
             object_relative_path = self._convert_key_to_filepath(key)
         elif key:

@@ -17,16 +17,17 @@ from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Relationship, SQLModel
 
-from zenml.models import HydratedStackModel, StackModel
+from zenml.models import StackResponseModel
+from zenml.zen_stores.schemas.base_schemas import ShareableSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
-from zenml.zen_stores.schemas.user_management_schemas import UserSchema
+from zenml.zen_stores.schemas.user_schemas import UserSchema
 
 if TYPE_CHECKING:
-    from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
-    from zenml.zen_stores.schemas.pipeline_schemas import PipelineRunSchema
+    from zenml.models.stack_models import StackUpdateModel
+    from zenml.zen_stores.schemas import PipelineRunSchema, StackComponentSchema
 
 
 class StackCompositionSchema(SQLModel, table=True):
@@ -57,17 +58,10 @@ class StackCompositionSchema(SQLModel, table=True):
     )
 
 
-class StackSchema(SQLModel, table=True):
+class StackSchema(ShareableSchema, table=True):
     """SQL Model for stacks."""
 
     __tablename__ = "stack"
-
-    id: UUID = Field(primary_key=True)
-    created: datetime = Field(default_factory=datetime.now)
-    updated: datetime = Field(default_factory=datetime.now)
-
-    name: str
-    is_shared: bool
 
     project_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -90,82 +84,48 @@ class StackSchema(SQLModel, table=True):
     user: "UserSchema" = Relationship(back_populates="stacks")
 
     components: List["StackComponentSchema"] = Relationship(
-        back_populates="stacks", link_model=StackCompositionSchema
+        back_populates="stacks",
+        link_model=StackCompositionSchema,
     )
-    runs: List["PipelineRunSchema"] = Relationship(
-        back_populates="stack",
-    )
+    runs: List["PipelineRunSchema"] = Relationship(back_populates="stack")
 
-    @classmethod
-    def from_create_model(
-        cls,
-        defined_components: List["StackComponentSchema"],
-        stack: StackModel,
-    ) -> "StackSchema":
-        """Create a StackSchema.
-
-        Args:
-            defined_components: The components that are part of the stack.
-            stack: The stack model to create the schema from.
-
-        Returns:
-            A StackSchema
-        """
-        return cls(
-            id=stack.id,
-            name=stack.name,
-            project_id=stack.project,
-            user_id=stack.user,
-            is_shared=stack.is_shared,
-            components=defined_components,
-        )
-
-    def from_update_model(
+    def update(
         self,
-        defined_components: List["StackComponentSchema"],
-        stack: StackModel,
+        stack_update: "StackUpdateModel",
+        components: List["StackComponentSchema"],
     ) -> "StackSchema":
-        """Update the updatable fields on an existing `StackSchema`.
+        """Updates a stack schema with a stack update model.
 
         Args:
-            defined_components: The components that are part of the stack.
-            stack: The stack model to create the schema from.
+            stack_update: `StackUpdateModel` to update the stack with.
+            components: List of `StackComponentSchema` to update the stack with.
 
         Returns:
-            A `StackSchema`
+            The updated StackSchema.
         """
-        self.name = stack.name
-        self.is_shared = stack.is_shared
-        self.components = defined_components
+        for field, value in stack_update.dict(exclude_unset=True).items():
+            if field == "components":
+                self.components = components
+
+            elif field == "user":
+                assert self.user_id == value
+
+            elif field == "project":
+                assert self.project_id == value
+
+            else:
+                setattr(self, field, value)
+
         self.updated = datetime.now()
         return self
 
-    def to_model(self) -> "StackModel":
-        """Creates a `StackModel` from an instance of a `StackSchema`.
+    def to_model(self) -> "StackResponseModel":
+        """Converts the schema to a model.
 
         Returns:
-            a `StackModel`.
+            The converted model.
         """
-        # This needs to be updated once multiple stack components per type are
-        #  supported
-        return StackModel(
-            id=self.id,
-            name=self.name,
-            user=self.user_id,
-            project=self.project_id,
-            is_shared=self.is_shared,
-            components={c.type: [c.id] for c in self.components},
-            created=self.created,
-            updated=self.updated,
-        )
-
-    def to_hydrated_model(self) -> "HydratedStackModel":
-        """Creates a `HydratedStackModel` from an instance of a 'StackSchema'.
-
-        Returns:
-            a 'HydratedStackModel'.
-        """
-        return HydratedStackModel(
+        return StackResponseModel(
             id=self.id,
             name=self.name,
             user=self.user.to_model(),

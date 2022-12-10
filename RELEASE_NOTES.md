@@ -1,4 +1,225 @@
 <!-- markdown-link-check-disable -->
+# 0.30.0
+
+In this release, ZenML finally adds Mac M1 support, Python 3.10 support and much
+greater flexibility and configurability under the hood by deprecating some 
+large dependencies like `ml-pipelines-sdk`.
+
+## Scheduling
+
+Based on some community feedback around scheduling, this release comes with
+improved docs concerning scheduling in general. Additionally, the Vertex AI
+orchestrator now also supports scheduling.
+
+## Slimmer Dependencies
+
+By removing dependencies on some of the packages that ZenML was built on, this 
+version of ZenML is slimmer, faster and more configurable than ever. This also
+finally makes ZenML run natively on Macs with M1 processors without the need for
+Rosetta. This also finally enables ZenML to run on Python 3.10.
+
+## Breaking Changes
+
+* The removal of `ml-pipelines-sdk` and `tfx` leads to some larger changes in 
+the database that is tracking your pipeline runs and artifacts. **Note**: There
+is an automatic migration to upgrade this automatically, However, please note
+that downgrading back down to 0.23.0 is not supported.
+* The CLI commands to export and import pipeline runs have been deprecated. 
+Namely: `zenml pipeline runs export` and `zenml pipeline runs import`
+These commands were meant for migrating from `zenml<0.20.0` to 
+`0.20.0<=zenml<0.30.0`. 
+* The `azure-ml` integration dependency on `azureml-core` has been upgraded 
+from `1.42` to `1.48`
+
+
+## What's Changed
+* Remove stack extra from installation, enable re-running the quickstart by @schustmi in https://github.com/zenml-io/zenml/pull/1133
+* Secrets manager support to experiment trackers docs  by @safoinme in https://github.com/zenml-io/zenml/pull/1137
+* Updating the README files of our examples by @bcdurak in https://github.com/zenml-io/zenml/pull/1128
+* Prevent running with local ZenStore and remote code execution by @schustmi in https://github.com/zenml-io/zenml/pull/1134
+* Remove `ml-pipelines-sdk` dependency by @schustmi in https://github.com/zenml-io/zenml/pull/1103
+* Fix Huggingface dataset materializer by @safoinme in https://github.com/zenml-io/zenml/pull/1142
+* Disallow alembic downgrades for 0.30.0 release by @fa9r in https://github.com/zenml-io/zenml/pull/1140
+* Fix Client flavor-related methods by @schustmi in https://github.com/zenml-io/zenml/pull/1153
+* Replace User Password with Token in docker images by @safoinme in https://github.com/zenml-io/zenml/pull/1147
+* Remove zenml pipeline runs export / import CLI commands by @fa9r in https://github.com/zenml-io/zenml/pull/1150
+* Context manager to track events by @bcdurak in https://github.com/zenml-io/zenml/pull/1149
+* Made explicit `is not None` calls to allow for empty pwd again by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1159
+* Add Neptune exp tracker into flavors table by @dnth in https://github.com/zenml-io/zenml/pull/1156
+* Fix step operators by @schustmi in https://github.com/zenml-io/zenml/pull/1155
+* Display correct name when updating a stack component by @schustmi in https://github.com/zenml-io/zenml/pull/1160
+* Update mysql database creation by @schustmi in https://github.com/zenml-io/zenml/pull/1152
+* Adding component conditions to experiment tracker examples and adding to the environmental variable docs by @bcdurak in https://github.com/zenml-io/zenml/pull/1162
+* Increase dependency range for protobuf by @schustmi in https://github.com/zenml-io/zenml/pull/1163
+* Scheduling documentation by @strickvl in https://github.com/zenml-io/zenml/pull/1158
+* Adding scheduling for Vertex Pipelines by @htahir1 in https://github.com/zenml-io/zenml/pull/1148
+* Fix alembic migration for sqlite<3.25 by @fa9r in https://github.com/zenml-io/zenml/pull/1165
+* Fix pandas Series materializer by @jordandelbar in https://github.com/zenml-io/zenml/pull/1146
+
+## New Contributors
+* @jordandelbar made their first contribution in https://github.com/zenml-io/zenml/pull/1146
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.23.0...0.30.0
+
+# 0.23.0
+
+This release comes with a brand-new Neptune integration to track your ML experiments
+as well as lots of performance improvements!
+
+## Neptune integration
+
+The new [Neptune integration](https://github.com/zenml-io/zenml/tree/main/examples/neptune_tracking)
+includes a Neptune experiment tracker component that allows you to track your machine learning experiments
+using Neptune.
+
+## Performance Optimization
+
+The 0.20.0 release introduced our new server but brought with it a few performance and scalability issues.
+Since then, we've made many improvements to it, and this release is the final and biggest boost in performance. We reduced the amount of server calls needed for almost all CLI commands and greatly improved the speed of the dashboard as well.
+
+## PyArrow dependency removal
+
+We've removed PyArrow as a dependency of the `zenml` python package.
+As a consequence of that, our NumPy and Pandas materializer no
+longer read and write their artifacts using PyArrow but instead use
+native formats instead. If you still want to use PyArrow to serialize
+your NumPy arrays and Pandas dataframes, you'll need to install it manually
+like this: `pip install pyarrow`
+
+In future releases we'll get rid of other unnecessary dependencies to
+further slim down the `zenml` package.
+
+## Breaking Changes
+
+The following changes introduces with this release mey require some manual
+intervention to update your current installations:
+
+- If your code calls some methods of our `Client` class, it might need to be
+updated to the new model classes introduced by the performance optimization changes
+explained above
+- The CLI command to remove an attribute from a stack component now takes no more dashes
+in front of the attribute names:
+`zenml stack-component remove-attribute <COMPONENT_NAME> <ATTRIBUTE_NAME>`
+- If you're using a custom stack component and have overridden the `cleanup_step_run` method,
+you'll need to update the method signature to include a `step_failed` parameter.
+
+## What's Changed
+* Docs regarding roles and permissions by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1081
+* Add global config dir to `zenml status` by @schustmi in https://github.com/zenml-io/zenml/pull/1084
+* Remove  source pins and ignore source pins during step spec comparisons by @schustmi in https://github.com/zenml-io/zenml/pull/1083
+* Docs/links for roles permissions by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1091
+* Bugfix/eng 1485 fix api docs build by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1089
+* fix bento builder step parameters to match bentoml by @safoinme in https://github.com/zenml-io/zenml/pull/1096
+* Add bentoctl to BentoML docs and example by @safoinme in https://github.com/zenml-io/zenml/pull/1094
+* Fix BaseParameters sample code in docs by @jcarlosgarcia in https://github.com/zenml-io/zenml/pull/1098
+* zenml <stack-component> logs defaults to active stack without name_or_id by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1101
+* Fixed evidently docs by @htahir1 in https://github.com/zenml-io/zenml/pull/1111
+* Update sagemaker default instance type by @schustmi in https://github.com/zenml-io/zenml/pull/1112
+* The ultimate optimization for performance by @bcdurak in https://github.com/zenml-io/zenml/pull/1077
+* Update stack exporting and importing by @schustmi in https://github.com/zenml-io/zenml/pull/1114
+* Fix readme by @schustmi in https://github.com/zenml-io/zenml/pull/1116
+* Remove Pyarrow dependency by @safoinme in https://github.com/zenml-io/zenml/pull/1109
+* Bugfix for listing the runs filtered by a name by @bcdurak in https://github.com/zenml-io/zenml/pull/1118
+* Neptune.ai integration by @AleksanderWWW in https://github.com/zenml-io/zenml/pull/1082
+* Add YouTube video explaining Stack Components Settings vs Config by @dnth in https://github.com/zenml-io/zenml/pull/1120
+* Add failed Status to component when step fails by @safoinme in https://github.com/zenml-io/zenml/pull/1115
+* Add architecture diagrams to docs by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1119
+* Remove local orchestrator restriction from step operator docs by @schustmi in https://github.com/zenml-io/zenml/pull/1122
+* Validate Stack Before Provision by @safoinme in https://github.com/zenml-io/zenml/pull/1110
+* Bugfix/fix endpoints for dashboard development by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1125
+* Skip kubeflow UI daemon provisioning if a hostname is configured by @schustmi in https://github.com/zenml-io/zenml/pull/1126
+* Update Neptune Example by @safoinme in https://github.com/zenml-io/zenml/pull/1124
+* Add debugging guide to docs by @dnth in https://github.com/zenml-io/zenml/pull/1097
+* Fix stack component attribute removal CLI command by @schustmi in https://github.com/zenml-io/zenml/pull/1127
+* Improving error messages when fetching entitites by @bcdurak in https://github.com/zenml-io/zenml/pull/1117
+* Introduce username and password to kubeflow for more native multi-tenant support by @htahir1 in https://github.com/zenml-io/zenml/pull/1123
+* Add support for Label Studio OCR config generation by @shivalikasingh95 in https://github.com/zenml-io/zenml/pull/1062
+* Misc doc updates by @schustmi in https://github.com/zenml-io/zenml/pull/1131
+* Fix Neptune run cleanup by @safoinme in https://github.com/zenml-io/zenml/pull/1130
+
+## New Contributors
+* @jcarlosgarcia made their first contribution in https://github.com/zenml-io/zenml/pull/1098
+* @AleksanderWWW made their first contribution in https://github.com/zenml-io/zenml/pull/1082
+* @shivalikasingh95 made their first contribution in https://github.com/zenml-io/zenml/pull/1062
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.22.0...0.23.0
+
+# 0.22.0
+
+The 0.22.0 release comes with a new BentoML integration as well as a reworked
+Airflow orchestrator. Additionally, it greatly improves the server performance
+as well as other small fixes and updates to our docs!
+
+## BentoML integration
+
+The new [BentoML integration](https://github.com/zenml-io/zenml/tree/main/examples/bentoml_deployment)
+includes a BentoML model deployer component that allows you to deploy
+your models from any of the major machine learning frameworks on your local machine.
+## Airflow orchestrator v2
+
+The previous Airflow orchestrator was limited to running locally and had many
+additional unpleasant constraints that made it hard to work with. This 
+release includes a completely rewritten, new version of the Airflow orchestrator
+that now relies on Docker images to run your pipelines and works both locally
+and with remote Airflow deployments.
+
+## Notable bugfixes
+
+- Further improvements to the synchronization that transfers pipeline run information from
+the MLMD database to the ZenML Server.
+- The ZenML Label Studio integration can now be used with non-local (i.e.
+deployed) instances. For more information see [the Label Studiodocs](https://docs.zenml.io/component-gallery/annotators/label-studio).
+- The Spark example is fixed and now works again end-to-end.
+
+## Breaking Changes
+
+The following changes introduces with this release mey require some manual
+intervention to update your current installations:
+
+* the Airflow orchestrator now requires a newer version of Airflow
+(run `zenml integration install airflow` to upgrade) and Docker installed
+to work.
+
+## What's Changed
+* Fix bug when running non-local annotator instance. by @sheikhomar in https://github.com/zenml-io/zenml/pull/1045
+* Introduce Permissions, Link Permissions to Roles, Restrict Access to endpoints based on Permission by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1007
+* Fix copy-pasted log message for annotator by @strickvl in https://github.com/zenml-io/zenml/pull/1049
+* Add warning message for client server version mismatch by @schustmi in https://github.com/zenml-io/zenml/pull/1047
+* Fix path to ingress values in ZenServer recipes by @wjayesh in https://github.com/zenml-io/zenml/pull/1053
+* Prevent deletion/update of default entities by @stefannica in https://github.com/zenml-io/zenml/pull/1046
+* Fix Publish API docs workflow by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1054
+* Fix multiple alembic heads warning by @fa9r in https://github.com/zenml-io/zenml/pull/1051
+* Fix Null Step Configuration/Parameters Error by @fa9r in https://github.com/zenml-io/zenml/pull/1050
+* Fix role permission migration by @schustmi in https://github.com/zenml-io/zenml/pull/1056
+* Made role assignment/revokation possible through zen_server by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1059
+* Bugfix/make role assignment work with enum by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1063
+* Manually set scoped for each endpoint by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1064
+* Add run args to local docker orchestrator settings by @schustmi in https://github.com/zenml-io/zenml/pull/1060
+* Docker ZenML deployment improvements and docs by @stefannica in https://github.com/zenml-io/zenml/pull/1061
+* Bugfix Mlflow service cleanup configuration by @safoinme in https://github.com/zenml-io/zenml/pull/1067
+* Rename DB Tables and Fix Foreign Keys by @fa9r in https://github.com/zenml-io/zenml/pull/1058
+* Paginate secrets in `AWSSecretsManager` by @chiragjn in https://github.com/zenml-io/zenml/pull/1057
+* Add explicit dashboard docs by @strickvl in https://github.com/zenml-io/zenml/pull/1052
+* Added GA and Gitlab to envs by @htahir1 in https://github.com/zenml-io/zenml/pull/1068
+* Add Inference Server Predictor to KServe and Seldon Docs by @safoinme in https://github.com/zenml-io/zenml/pull/1048
+* Rename project table to workspace by @fa9r in https://github.com/zenml-io/zenml/pull/1073
+* Airflow orchestrator v2 by @schustmi in https://github.com/zenml-io/zenml/pull/1042
+* Add get_or_create_run() ZenStore method by @fa9r in https://github.com/zenml-io/zenml/pull/1070
+* Fix the flaky fileio tests by @schustmi in https://github.com/zenml-io/zenml/pull/1072
+* BentoML Deployer Integration by @safoinme in https://github.com/zenml-io/zenml/pull/1044
+* Sync Speedup by @fa9r in https://github.com/zenml-io/zenml/pull/1055
+* Fixed broken links in docs and examples. by @dnth in https://github.com/zenml-io/zenml/pull/1076
+* Make additional stack component config options available as a setting by @schustmi in https://github.com/zenml-io/zenml/pull/1069
+* Rename `step_run_artifact` table to `step_run_input_artifact` by @fa9r in https://github.com/zenml-io/zenml/pull/1075
+* Update Spark Example to ZenML post 0.20.0 by @safoinme in https://github.com/zenml-io/zenml/pull/1071
+* Always set caching to false for all Kubeflow based orchestrators by @schustmi in https://github.com/zenml-io/zenml/pull/1079
+* Feature/eng 1402 consolidate stack sharing by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1036
+
+## New Contributors
+* @sheikhomar made their first contribution in https://github.com/zenml-io/zenml/pull/1045
+* @chiragjn made their first contribution in https://github.com/zenml-io/zenml/pull/1057
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.21.1...0.22.0
 
 # 0.21.1
 

@@ -16,14 +16,21 @@
 from typing import ClassVar, List, Optional
 from uuid import UUID
 
+from pydantic import BaseModel
+
 from zenml.config.schedule import Schedule
-from zenml.models.base_models import ProjectScopedDomainModel
-from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
+from zenml.models.base_models import (
+    ProjectScopedRequestModel,
+    ProjectScopedResponseModel,
+    update_model,
+)
+
+# ---- #
+# BASE #
+# ---- #
 
 
-class ScheduleModel(
-    Schedule, ProjectScopedDomainModel, AnalyticsTrackedModelMixin
-):
+class ScheduleBaseModel(Schedule, BaseModel):
     """Domain model for schedules."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = ["id"]
@@ -32,3 +39,31 @@ class ScheduleModel(
     active: bool
     orchestrator_id: Optional[UUID]
     pipeline_id: Optional[UUID]
+
+
+# -------- #
+# RESPONSE #
+# -------- #
+
+
+class ScheduleResponseModel(ScheduleBaseModel, ProjectScopedResponseModel):
+    """Schedule response model with project and user hydrated."""
+
+
+# ------- #
+# REQUEST #
+# ------- #
+
+
+class ScheduleRequestModel(ScheduleBaseModel, ProjectScopedRequestModel):
+    """Schedule request model."""
+
+
+# ------ #
+# UPDATE #
+# ------ #
+
+
+@update_model
+class ScheduleUpdateModel(ScheduleRequestModel):
+    """Schedule update model."""

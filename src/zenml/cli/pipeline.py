@@ -14,17 +14,13 @@
 """CLI functionality to interact with pipelines."""
 
 
-from uuid import UUID
-
 import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.client import Client
 from zenml.enums import CliCategories
-from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
-from zenml.utils.uuid_utils import is_valid_uuid
 
 logger = get_logger(__name__)
 
@@ -59,9 +55,8 @@ def cli_pipeline_run(python_file: str, config_path: str) -> None:
 def list_pipelines() -> None:
     """List all registered pipelines."""
     cli_utils.print_active_config()
-    pipelines = Client().zen_store.list_pipelines(
-        project_name_or_id=Client().active_project.id
-    )
+    pipelines = Client().list_pipelines()
+
     if not pipelines:
         cli_utils.declare("No piplines registered.")
         return
@@ -81,19 +76,6 @@ def delete_pipeline(pipeline_name_or_id: str) -> None:
         pipeline_name_or_id: The name or ID of the pipeline to delete.
     """
     cli_utils.print_active_config()
-    active_project_id = Client().active_project.id
-    assert active_project_id is not None
-    try:
-        client = Client()
-        if is_valid_uuid(pipeline_name_or_id):
-            pipeline = client.zen_store.get_pipeline(UUID(pipeline_name_or_id))
-        else:
-            pipeline = client.zen_store.get_pipeline_in_project(
-                pipeline_name=pipeline_name_or_id,
-                project_name_or_id=active_project_id,
-            )
-    except KeyError as err:
-        cli_utils.error(str(err))
     confirmation = cli_utils.confirmation(
         f"Are you sure you want to delete pipeline `{pipeline_name_or_id}`? "
         "This will change all existing runs of this pipeline to become "
@@ -102,9 +84,12 @@ def delete_pipeline(pipeline_name_or_id: str) -> None:
     if not confirmation:
         cli_utils.declare("Pipeline deletion canceled.")
         return
-    assert pipeline.id is not None
-    Client().zen_store.delete_pipeline(pipeline_id=pipeline.id)
-    cli_utils.declare(f"Deleted pipeline '{pipeline_name_or_id}'.")
+    else:
+        try:
+            Client().delete_pipeline(name_id_or_prefix=pipeline_name_or_id)
+            cli_utils.declare(f"Deleted pipeline '{pipeline_name_or_id}'.")
+        except KeyError as e:
+            cli_utils.error(str(e))
 
 
 @pipeline.group()
@@ -128,7 +113,7 @@ def list_schedules(pipeline: str, user: str, name: str) -> None:
     pipeline_id, user_id = None, None
     client = Client()
     if pipeline:
-        pipeline_id = client.get_pipeline_by_name(pipeline).id
+        pipeline_id = client.get_pipeline(name_id_or_prefix=pipeline).id
     if user:
         user_id = client.zen_store.get_user(user).id
     schedules = client.zen_store.list_schedules(
@@ -173,104 +158,22 @@ def list_pipeline_runs(
         stack_id, pipeline_id, user_id = None, None, None
         client = Client()
         if stack:
-            stack_id = cli_utils.get_stack_by_id_or_name_or_prefix(
-                client=client, id_or_name_or_prefix=stack
-            ).id
+            stack_id = client.get_stack(stack).id
         if pipeline:
-            pipeline_id = client.get_pipeline_by_name(pipeline).id
+            pipeline_id = client.get_pipeline(pipeline).id
         if user:
-            user_id = client.zen_store.get_user(user).id
-        pipeline_runs = Client().zen_store.list_runs(
-            project_name_or_id=Client().active_project.id,
-            user_name_or_id=user_id,
+            user_id = client.get_user(user).id
+        pipeline_runs = client.list_runs(
             pipeline_id=pipeline_id,
             stack_id=stack_id,
+            user_name_or_id=user_id,
             unlisted=unlisted,
         )
     except KeyError as err:
         cli_utils.error(str(err))
-    if not pipeline_runs:
-        cli_utils.declare("No pipeline runs registered.")
-        return
+    else:
+        if not pipeline_runs:
+            cli_utils.declare("No pipeline runs registered.")
+            return
 
-    cli_utils.print_pipeline_runs_table(
-        client=client, pipeline_runs=pipeline_runs
-    )
-
-
-@runs.command("export", help="Export all pipeline runs to a YAML file.")
-@click.argument("filename", type=str, required=True)
-def export_pipeline_runs(filename: str) -> None:
-    """Export all pipeline runs to a YAML file.
-
-    Args:
-        filename: The filename to export the pipeline runs to.
-    """
-    cli_utils.print_active_config()
-    client = Client()
-    client.export_pipeline_runs(filename=filename)
-
-
-@runs.command("import", help="Import pipeline runs from a YAML file.")
-@click.argument("filename", type=str, required=True)
-def import_pipeline_runs(filename: str) -> None:
-    """Import pipeline runs from a YAML file.
-
-    Args:
-        filename: The filename from which to import the pipeline runs.
-    """
-    cli_utils.print_active_config()
-    client = Client()
-    try:
-        client.import_pipeline_runs(filename=filename)
-    except EntityExistsError as err:
-        cli_utils.error(str(err))
-
-
-@runs.command(
-    "migrate",
-    help="Migrate pipeline runs from an existing metadata store database.",
-)
-@click.argument("database", type=str, required=True)
-@click.option("--database_type", type=str, default="sqlite", required=False)
-@click.option("--mysql_host", type=str, required=False)
-@click.option("--mysql_port", type=int, default=3306, required=False)
-@click.option("--mysql_username", type=str, required=False)
-@click.option("--mysql_password", type=str, required=False)
-def migrate_pipeline_runs(
-    database: str,
-    database_type: str,
-    mysql_host: str,
-    mysql_port: int,
-    mysql_username: str,
-    mysql_password: str,
-) -> None:
-    """Migrate pipeline runs from a metadata store of ZenML < 0.20.0.
-
-    Args:
-        database: The metadata store database from which to migrate the pipeline
-            runs.
-        database_type: The type of the metadata store database (sqlite | mysql).
-        mysql_host: The host of the MySQL database.
-        mysql_port: The port of the MySQL database.
-        mysql_username: The username of the MySQL database.
-        mysql_password: The password of the MySQL database.
-    """
-    cli_utils.print_active_config()
-    client = Client()
-    try:
-        client.migrate_pipeline_runs(
-            database=database,
-            database_type=database_type,
-            mysql_host=mysql_host,
-            mysql_port=mysql_port,
-            mysql_username=mysql_username,
-            mysql_password=mysql_password,
-        )
-    except (
-        EntityExistsError,
-        NotImplementedError,
-        RuntimeError,
-        ValueError,
-    ) as err:
-        cli_utils.error(str(err))
+        cli_utils.print_pipeline_runs_table(pipeline_runs=pipeline_runs)

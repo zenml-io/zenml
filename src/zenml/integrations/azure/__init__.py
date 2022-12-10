@@ -21,10 +21,8 @@ in AzureML.
 """
 from typing import List, Type
 
-from zenml.enums import StackComponentType
 from zenml.integrations.constants import AZURE
 from zenml.integrations.integration import Integration
-from zenml.models import FlavorModel
 from zenml.stack import Flavor
 
 AZURE_ARTIFACT_STORE_FLAVOR = "azure"
@@ -41,7 +39,7 @@ class AzureIntegration(Integration):
         "azure-keyvault-keys",
         "azure-keyvault-secrets",
         "azure-identity==1.10.0",
-        "azureml-core==1.42.0.post1",
+        "azureml-core==1.48.0",
     ]
 
     @classmethod

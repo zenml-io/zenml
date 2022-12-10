@@ -18,10 +18,8 @@ to implement continuous model deployment.
 """
 from typing import List, Type
 
-from zenml.enums import StackComponentType
 from zenml.integrations.constants import BENTOML
 from zenml.integrations.integration import Integration
-from zenml.models import FlavorModel
 from zenml.stack import Flavor
 
 BENTOML_MODEL_DEPLOYER_FLAVOR = "bentoml"

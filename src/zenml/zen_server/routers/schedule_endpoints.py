@@ -19,7 +19,10 @@ from fastapi import APIRouter, Security
 
 from zenml.constants import API, SCHEDULES, VERSION_1
 from zenml.enums import PermissionType
-from zenml.models.schedule_model import ScheduleModel
+from zenml.models.schedule_model import (
+    ScheduleResponseModel,
+    ScheduleUpdateModel,
+)
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
@@ -32,7 +35,7 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=ScheduleModel,
+    response_model=ScheduleResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -42,7 +45,7 @@ def list_schedules(
     pipeline_id: Optional[UUID] = None,
     name: Optional[str] = None,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> List[ScheduleModel]:
+) -> List[ScheduleResponseModel]:
     """Gets a list of schedules.
 
     Args:
@@ -64,14 +67,14 @@ def list_schedules(
 
 @router.get(
     "/{schedule_id}",
-    response_model=ScheduleModel,
+    response_model=ScheduleResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_schedule(
     schedule_id: UUID,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> ScheduleModel:
+) -> ScheduleResponseModel:
     """Gets a specific schedule using its unique id.
 
     Args:
@@ -85,15 +88,15 @@ def get_schedule(
 
 @router.put(
     "/{schedule_id}",
-    response_model=ScheduleModel,
+    response_model=ScheduleResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def update_schedule(
     schedule_id: UUID,
-    schedule_update: ScheduleModel,
+    schedule_update: ScheduleUpdateModel,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> ScheduleModel:
+) -> ScheduleResponseModel:
     """Updates the attribute on a specific schedule using its unique id.
 
     Args:
@@ -103,5 +106,6 @@ def update_schedule(
     Returns:
         The updated schedule object.
     """
-    schedule_update.id = schedule_id
-    return zen_store().update_schedule(schedule_update)
+    return zen_store().update_schedule(
+        schedule_id=schedule_id, schedule_update=schedule_update
+    )

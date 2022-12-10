@@ -14,19 +14,22 @@
 """Implementation of the ZenML NumPy materializer."""
 
 import os
-from typing import TYPE_CHECKING, Any, Type
+from typing import TYPE_CHECKING, Any, Type, cast
 
 import numpy as np
-import pyarrow as pa
-import pyarrow.parquet as pq
 
 from zenml.artifacts import DataArtifact
 from zenml.io import fileio
+from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.utils import yaml_utils
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
+
+logger = get_logger(__name__)
+
+
+NUMPY_FILENAME = "data.npy"
 
 DATA_FILENAME = "data.parquet"
 SHAPE_FILENAME = "shape.json"
@@ -39,42 +42,78 @@ class NumpyMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (np.ndarray,)
     ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
 
-    def handle_input(self, data_type: Type[Any]) -> "NDArray[Any]":
-        """Reads numpy array from parquet file.
+    def handle_input(self, data_type: Type[Any]) -> "Any":
+        """Reads a numpy array from a `.npy` file.
 
         Args:
             data_type: The type of the data to read.
+
+
+        Raises:
+            ImportError: If pyarrow is not installed.
 
         Returns:
             The numpy array.
         """
         super().handle_input(data_type)
-        shape_dict = yaml_utils.read_json(
-            os.path.join(self.artifact.uri, SHAPE_FILENAME)
-        )
-        shape_tuple = tuple(shape_dict.values())
-        with fileio.open(
-            os.path.join(self.artifact.uri, DATA_FILENAME), "rb"
-        ) as f:
-            input_stream = pa.input_stream(f)
-            data = pq.read_table(input_stream)
-        vals = getattr(data.to_pandas(), DATA_VAR).values
-        return np.reshape(vals, shape_tuple)
+
+        numpy_file = os.path.join(self.artifact.uri, NUMPY_FILENAME)
+
+        if fileio.exists(numpy_file):
+            with fileio.open(numpy_file, "rb") as f:
+                # This function is untyped for numpy versions supporting python
+                # 3.7, but typed for numpy versions installed on python 3.8+.
+                # We need to cast it to any here so that numpy doesn't complain
+                # about either an untyped function call or an unused ignore
+                # statement
+                return cast(Any, np.load)(f, allow_pickle=True)
+        elif fileio.exists(os.path.join(self.artifact.uri, DATA_FILENAME)):
+            logger.warning(
+                "A legacy artifact was found. "
+                "This artifact was created with an older version of "
+                "ZenML. You can still use it, but it will be "
+                "converted to the new format on the next materialization."
+            )
+            try:
+                # Import old materializer dependencies
+                import pyarrow as pa  # type: ignore
+                import pyarrow.parquet as pq  # type: ignore
+
+                from zenml.utils import yaml_utils
+
+                # Read numpy array from parquet file
+                shape_dict = yaml_utils.read_json(
+                    os.path.join(self.artifact.uri, SHAPE_FILENAME)
+                )
+                shape_tuple = tuple(shape_dict.values())
+                with fileio.open(
+                    os.path.join(self.artifact.uri, DATA_FILENAME), "rb"
+                ) as f:
+                    input_stream = pa.input_stream(f)
+                    data = pq.read_table(input_stream)
+                vals = getattr(data.to_pandas(), DATA_VAR).values
+                return np.reshape(vals, shape_tuple)
+            except ImportError:
+                raise ImportError(
+                    "You have an old version of a `NumpyMaterializer` ",
+                    "data artifact stored in the artifact store ",
+                    "as a `.parquet` file, which requires `pyarrow` for reading. ",
+                    "You can install `pyarrow` by running `pip install pyarrow`.",
+                )
 
     def handle_return(self, arr: "NDArray[Any]") -> None:
-        """Writes a np.ndarray to the artifact store as a parquet file.
+        """Writes a np.ndarray to the artifact store as a `.npy` file.
 
         Args:
             arr: The numpy array to write.
         """
         super().handle_return(arr)
-        yaml_utils.write_json(
-            os.path.join(self.artifact.uri, SHAPE_FILENAME),
-            {str(i): x for i, x in enumerate(arr.shape)},
-        )
-        pa_table = pa.table({DATA_VAR: arr.flatten()})
         with fileio.open(
-            os.path.join(self.artifact.uri, DATA_FILENAME), "wb"
+            os.path.join(self.artifact.uri, NUMPY_FILENAME), "wb"
         ) as f:
-            stream = pa.output_stream(f)
-            pq.write_table(pa_table, stream)
+            # This function is untyped for numpy versions supporting python
+            # 3.7, but typed for numpy versions installed on python 3.8+.
+            # We need to cast it to any here so that numpy doesn't complain
+            # about either an untyped function call or an unused ignore
+            # statement
+            cast(Any, np.save)(f, arr)

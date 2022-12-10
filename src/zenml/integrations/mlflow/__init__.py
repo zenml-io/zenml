@@ -18,10 +18,8 @@ convenient way to visualize your experiment runs within the MLflow UI.
 """
 from typing import List, Type
 
-from zenml.enums import StackComponentType
 from zenml.integrations.constants import MLFLOW
 from zenml.integrations.integration import Integration
-from zenml.models import FlavorModel
 from zenml.stack import Flavor
 
 MLFLOW_MODEL_DEPLOYER_FLAVOR = "mlflow"
@@ -32,10 +30,14 @@ class MlflowIntegration(Integration):
     """Definition of MLflow integration for ZenML."""
 
     NAME = MLFLOW
+    # We need to pin protobuf to a version <=4 here, as this mlflow release
+    # does not pin it. They fixed this in a later version, so we can probably
+    # remove this once we update the mlflow version.
     REQUIREMENTS = [
         "mlflow>=1.2.0,<1.26.0",
         "mlserver>=0.5.3",
         "mlserver-mlflow>=0.5.3",
+        "protobuf>=3.7.0,<4.0.0",
     ]
 
     @classmethod

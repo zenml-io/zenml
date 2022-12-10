@@ -27,7 +27,7 @@ class BaseAnalyzerStep(BaseStep):
     """Base step implementation for any analyzer step implementation."""
 
     @abstractmethod
-    def entrypoint(  # type: ignore[override]
+    def entrypoint(
         self,
         dataset: DataArtifact,
         params: BaseAnalyzerParameters,

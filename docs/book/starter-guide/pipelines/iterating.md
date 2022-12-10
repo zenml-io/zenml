@@ -38,12 +38,12 @@ class SVCTrainerParams(BaseParameters):
 
 @step
 def svc_trainer(
-    params SVCTrainerParams,
+    params: SVCTrainerParams,
     X_train: np.ndarray,
     y_train: np.ndarray,
 ) -> ClassifierMixin:
     """Train a sklearn SVC classifier."""
-    model = SVC(gamma=config.gamma)
+    model = SVC(gamma=params.gamma)
     model.fit(X_train, y_train)
     return model
 ```

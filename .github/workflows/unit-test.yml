@@ -27,7 +27,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]
-        python-version: [3.7, 3.8, 3.9]
+        python-version: [3.7, 3.8, 3.9, '3.10']
       fail-fast: false
 
     steps:
@@ -41,7 +41,10 @@ jobs:
       - name: Install Prerequisites
         run: |
           source $VENV
-          zenml integration install kubeflow s3 gcp azure gcp_secrets_manager vertex vault pillow evidently deepchecks great_expectations huggingface lightgbm neural_prophet pytorch tensorflow whylogs xgboost mlflow -f
+          zenml integration export-requirements --output-file requirements.txt kubeflow s3 gcp azure vault pillow evidently deepchecks great_expectations huggingface lightgbm neural_prophet pytorch tensorflow whylogs xgboost mlflow neptune
+          pip install -r requirements.txt
+          rm requirements.txt
+          pip install click~=8.0.3
 
       - name: Setup tmate session
         if: ${{ github.event.inputs.tags }}

@@ -27,7 +27,7 @@ def test_initialize_step_context_with_mismatched_keys():
     materializers and artifacts raises an Exception."""
 
     materializers = {"some_output_name": BaseMaterializer}
-    artifacts = {"some_different_output_name": BaseArtifact()}
+    artifacts = {"some_different_output_name": BaseArtifact(uri="")}
 
     with pytest.raises(StepContextError):
         StepContext(
@@ -42,7 +42,7 @@ def test_initialize_step_context_with_matching_keys():
     materializers and artifacts works."""
 
     materializers = {"some_output_name": BaseMaterializer}
-    artifacts = {"some_output_name": BaseArtifact()}
+    artifacts = {"some_output_name": BaseArtifact(uri="")}
 
     with does_not_raise():
         StepContext(

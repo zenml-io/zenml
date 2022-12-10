@@ -27,11 +27,12 @@ from typing import (
 )
 from uuid import UUID
 
+from zenml.client import Client
 from zenml.constants import ENV_ZENML_SECRET_VALIDATION_LEVEL
 from zenml.enums import SecretValidationLevel, StackComponentType
 from zenml.exceptions import ProvisioningError, StackValidationError
 from zenml.logger import get_logger
-from zenml.models.stack_models import HydratedStackModel, StackModel
+from zenml.models import StackResponseModel
 from zenml.utils import settings_utils
 
 if TYPE_CHECKING:
@@ -122,29 +123,8 @@ class Stack:
         self._annotator = annotator
         self._data_validator = data_validator
 
-    def to_model(self, user: UUID, project: UUID) -> "StackModel":
-        """Creates a StackModel from an actual Stack instance.
-
-        Args:
-            user: The user ID of the user who created the stack.
-            project: The project ID of the project the stack belongs to.
-
-        Returns:
-            A StackModel
-        """
-        return StackModel(
-            id=self.id,
-            name=self.name,
-            user=user,
-            project=project,
-            components={
-                type_: [component.to_model().id]
-                for type_, component in self.components.items()
-            },
-        )
-
     @classmethod
-    def from_model(cls, stack_model: HydratedStackModel) -> "Stack":
+    def from_model(cls, stack_model: StackResponseModel) -> "Stack":
         """Creates a Stack instance from a StackModel.
 
         Args:
@@ -551,6 +531,21 @@ class Stack:
                 setting_classes[key] = component.settings_class
         return setting_classes
 
+    @property
+    def requires_remote_server(self) -> bool:
+        """If the stack requires a remote ZenServer to run.
+
+        This is the case if any code is getting executed remotely. This is the
+        case for both remote orchestrators as well as remote step operators.
+
+        Returns:
+            If the stack requires a remote ZenServer to run.
+        """
+        return self.orchestrator.config.is_remote or (
+            self.step_operator is not None
+            and self.step_operator.config.is_remote
+        )
+
     def _validate_secrets(self, raise_exception: bool) -> None:
         """Validates that all secrets of the stack exists.
 
@@ -669,6 +664,8 @@ class Stack:
 
         Raises:
             StackValidationError: If the stack component is not running.
+            RuntimeError: If trying to deploy a pipeline that requires a remote
+                ZenML server with a local one.
         """
         self.validate(fail_if_secrets_missing=True)
 
@@ -680,6 +677,16 @@ class Stack:
                     f"command to provision and start the component:\n\n"
                     f"    `zenml stack up`\n"
                 )
+
+        if self.requires_remote_server and Client().zen_store.is_local_store():
+            raise RuntimeError(
+                "Stacks with remote components such as remote orchestrators "
+                "and step operators require a remote "
+                "ZenML server. To run a pipeline with this stack you need to "
+                "connect to a remote ZenML server first. Check out "
+                "https://docs.zenml.io/getting-started/deploying-zenml for "
+                "more information on how to deploy ZenML."
+            )
 
         for component in self.components.values():
             component.prepare_pipeline_deployment(
@@ -744,16 +751,17 @@ class Stack:
         ).values():
             component.prepare_step_run(info=info)
 
-    def cleanup_step_run(self, info: "StepRunInfo") -> None:
+    def cleanup_step_run(self, info: "StepRunInfo", step_failed: bool) -> None:
         """Cleans up resources after the step run is finished.
 
         Args:
             info: Info about the step that was executed.
+            step_failed: Whether the step failed.
         """
         for component in self._get_active_components_for_step(
             info.config
         ).values():
-            component.cleanup_step_run(info=info)
+            component.cleanup_step_run(info=info, step_failed=step_failed)
 
     @property
     def is_provisioned(self) -> bool:
@@ -779,6 +787,7 @@ class Stack:
 
     def provision(self) -> None:
         """Provisions resources to run the stack locally."""
+        self.validate(fail_if_secrets_missing=True)
         logger.info("Provisioning resources for stack '%s'.", self.name)
         for component in self.components.values():
             if not component.is_provisioned:

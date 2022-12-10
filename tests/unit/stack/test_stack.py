@@ -50,7 +50,7 @@ def test_initializing_a_stack_from_components(
 def test_initializing_a_stack_with_missing_components():
     """Tests that initializing a stack with missing components fails."""
     with pytest.raises(TypeError):
-        Stack.from_components(name="", components={}).validate()
+        Stack.from_components(id=uuid4(), name="", components={}).validate()
 
 
 def test_initializing_a_stack_with_wrong_components(local_orchestrator):
@@ -63,7 +63,9 @@ def test_initializing_a_stack_with_wrong_components(local_orchestrator):
     }
 
     with pytest.raises(TypeError):
-        Stack.from_components(name="", components=components).validate()
+        Stack.from_components(
+            id=uuid4(), name="", components=components
+        ).validate()
 
 
 def test_stack_returns_all_its_components(
@@ -150,7 +152,6 @@ def test_stack_prepare_pipeline_run(
         run_name=run_name,
         stack_id=uuid4(),
         pipeline=pipeline.configuration,
-        proto_pipeline="",
     )
     stack_with_mock_components.prepare_pipeline_deployment(deployment)
     for component in stack_with_mock_components.components.values():
@@ -379,3 +380,97 @@ def test_stack_suspending_does_not_fail_if_not_implemented_in_any_component(
 
     with does_not_raise():
         stack_with_mock_components.suspend()
+
+
+def test_stack_provisioning_fails_if_stack_component_validation_fails(
+    stack_with_mock_components, failing_stack_validator
+):
+    """Tests that stack provisioning fails if the `validate()` method of a
+    stack component is failing."""
+    stack_with_mock_components.orchestrator.validator = failing_stack_validator
+    stack_with_mock_components.artifact_store.validator = None
+
+    for component in stack_with_mock_components.components.values():
+        component.is_provisioned = False
+
+    with pytest.raises(StackValidationError):
+        stack_with_mock_components.provision()
+
+
+def test_requires_remote_server(stack_with_mock_components, mocker):
+    """Tests that the stack requires a remote server if either the orchestrator
+    or the step operator are remote."""
+    from zenml.step_operators import BaseStepOperator
+
+    step_operator = mocker.Mock(
+        spec=BaseStepOperator,
+        type=StackComponentType.STEP_OPERATOR,
+        flavor="mock",
+        name="mock_step_operator",
+    )
+    stack_with_mock_components._step_operator = step_operator
+
+    stack_with_mock_components.orchestrator.config.is_remote = False
+    stack_with_mock_components.step_operator.config.is_remote = False
+    assert stack_with_mock_components.requires_remote_server is False
+
+    stack_with_mock_components.orchestrator.config.is_remote = True
+    stack_with_mock_components.step_operator.config.is_remote = False
+    assert stack_with_mock_components.requires_remote_server is True
+
+    stack_with_mock_components.orchestrator.config.is_remote = False
+    stack_with_mock_components.step_operator.config.is_remote = True
+    assert stack_with_mock_components.requires_remote_server is True
+
+
+def test_deployment_server_validation(mocker, stack_with_mock_components):
+    """Tests that the deployment validation fails when the stack requires a
+    remote server but the store is local."""
+    deployment = PipelineDeployment(
+        run_name="",
+        stack_id=uuid4(),
+        pipeline={"name": "", "enable_cache": True},
+    )
+
+    ######### Remote server #########
+    mocker.patch(
+        "zenml.zen_stores.base_zen_store.BaseZenStore.is_local_store",
+        return_value=False,
+    )
+    mocker.patch(
+        "zenml.stack.Stack.requires_remote_server",
+        return_value=False,
+        new_callable=mocker.PropertyMock,
+    )
+    with does_not_raise():
+        stack_with_mock_components.prepare_pipeline_deployment(deployment)
+
+    mocker.patch(
+        "zenml.stack.Stack.requires_remote_server",
+        return_value=True,
+        new_callable=mocker.PropertyMock,
+    )
+    with does_not_raise():
+        stack_with_mock_components.prepare_pipeline_deployment(deployment)
+
+    ######### Local server #########
+    mocker.patch(
+        "zenml.zen_stores.base_zen_store.BaseZenStore.is_local_store",
+        return_value=True,
+    )
+
+    mocker.patch(
+        "zenml.stack.Stack.requires_remote_server",
+        return_value=False,
+        new_callable=mocker.PropertyMock,
+    )
+    with does_not_raise():
+        stack_with_mock_components.prepare_pipeline_deployment(deployment)
+
+    mocker.patch(
+        "zenml.stack.Stack.requires_remote_server",
+        return_value=True,
+        new_callable=mocker.PropertyMock,
+    )
+    with pytest.raises(RuntimeError):
+        stack_with_mock_components.prepare_pipeline_deployment(deployment)

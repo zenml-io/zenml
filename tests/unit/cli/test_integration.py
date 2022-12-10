@@ -203,3 +203,36 @@ def test_integration_uninstall_all(mocker: MockFixture) -> None:
     result = runner.invoke(integration, ["uninstall", "-y"])
     assert result.exit_code == 0
     mock_uninstall_package.assert_called()
+
+
+def test_integration_requirements_exporting(tmp_path) -> None:
+    """Tests requirements exporting to stdout and to a file."""
+    from zenml.integrations.airflow import AirflowIntegration
+    from zenml.integrations.kubeflow import KubeflowIntegration
+    from zenml.integrations.mlflow import MlflowIntegration
+
+    flow_integration_requirements = (
+        AirflowIntegration.REQUIREMENTS
+        + KubeflowIntegration.REQUIREMENTS
+        + MlflowIntegration.REQUIREMENTS
+    )
+
+    command = [
+        "export-requirements",
+        AirflowIntegration.NAME,
+        KubeflowIntegration.NAME,
+        MlflowIntegration.NAME,
+    ]
+    runner = CliRunner()
+    result = runner.invoke(integration, command)
+    assert result.exit_code == 0
+    assert result.output == " ".join(flow_integration_requirements)
+
+    output_file = str(tmp_path / "requirements.txt")
+    command += ["--output-file", output_file]
+
+    result = runner.invoke(integration, command)
+    assert result.exit_code == 0
+
+    with open(output_file, "r") as f:
+        assert f.read() == "\n".join(flow_integration_requirements)

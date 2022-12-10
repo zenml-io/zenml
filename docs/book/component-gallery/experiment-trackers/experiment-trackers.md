@@ -44,6 +44,13 @@ You should add an Experiment Tracker to your ZenML stack and use it when you
 want to augment ZenML with the visual features provided by experiment tracking
 tools.
 
+## How they experiment trackers slot into the stack
+
+Here is an architecture diagram that shows how experiment trackers fit into the 
+overall story of a remote stack.
+
+![Experiment Tracker](../../assets/diagrams/Remote_with_exp_tracker.png)
+
 ### Experiment Tracker Flavors
 
 Experiment Trackers are optional stack components provided by integrations:
@@ -52,6 +59,7 @@ Experiment Trackers are optional stack components provided by integrations:
 |--------------------------------------|----------|---------------|-------------------------------------------------------------------------------------------------|
 | [MLflow](./mlflow.md)                | `mlflow` | `mlflow`      | Add MLflow experiment tracking and visualization capabilities to your ZenML pipelines           |
 | [Weights & Biases](./wandb.md)       | `wandb`  | `wandb`       | Add Weights & Biases experiment tracking and visualization capabilities to your ZenML pipelines |
+| [Neptune](./neptune.md)              | `neptune`| `neptune`     | Add Neptune experiment tracking and visualization capabilities to your ZenML pipelines          |
 | [Custom Implementation](./custom.md) | _custom_ |               | _custom_                                                                                        | Extend the Experiment Tracker abstraction and provide your own implementation |
 
 If you would like to see the available flavors of Experiment Tracker, you can 
@@ -74,6 +82,9 @@ data) to the Experiment Tracker same as you would if you were using the tool
 independently of ZenML
 * finally, you can access the Experiment Tracker UI to browse and visualize the
 information logged during your pipeline runs
+
+Note: the Expirement Tracker will declare run as failed if the pipeline step
+fails.
 
 Consult the documentation for the particular [Experiment Tracker flavor](#experiment-tracker-flavors)
 that you plan on using or are using in your stack for detailed information about
