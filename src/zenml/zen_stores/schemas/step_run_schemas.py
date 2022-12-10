@@ -105,6 +105,20 @@ class StepRunSchema(NamedSchema, table=True):
     output_artifacts: List["StepRunOutputArtifactSchema"] = Relationship(
         back_populates="step_run", sa_relationship_kwargs={"cascade": "delete"}
     )
+    parents: List["StepRunParentsSchema"] = Relationship(
+        back_populates="child",
+        sa_relationship_kwargs={
+            "cascade": "delete",
+            "primaryjoin": "StepRunParentsSchema.child_id == StepRunSchema.id",
+        },
+    )
+    children: List["StepRunParentsSchema"] = Relationship(
+        back_populates="parent",
+        sa_relationship_kwargs={
+            "cascade": "delete",
+            "primaryjoin": "StepRunParentsSchema.parent_id == StepRunSchema.id",
+        },
+    )
 
     @classmethod
     def from_request(cls, request: StepRunRequestModel) -> "StepRunSchema":
@@ -217,6 +231,12 @@ class StepRunParentsSchema(SQLModel, table=True):
         nullable=False,
         primary_key=True,
     )
+    parent: StepRunSchema = Relationship(
+        back_populates="children",
+        sa_relationship_kwargs={
+            "primaryjoin": "StepRunParentsSchema.parent_id == StepRunSchema.id"
+        },
+    )
     child_id: UUID = build_foreign_key_field(
         source=__tablename__,
         target=StepRunSchema.__tablename__,
@@ -225,6 +245,12 @@ class StepRunParentsSchema(SQLModel, table=True):
         ondelete="CASCADE",
         nullable=False,
         primary_key=True,
+    )
+    child: StepRunSchema = Relationship(
+        back_populates="parents",
+        sa_relationship_kwargs={
+            "primaryjoin": "StepRunParentsSchema.child_id == StepRunSchema.id"
+        },
     )
 
 
