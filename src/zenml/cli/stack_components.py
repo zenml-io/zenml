@@ -450,6 +450,15 @@ def generate_stack_component_delete_command(
         """
         client = Client()
 
+        if component_type == StackComponentType.ARTIFACT_STORE:
+            confirmation = cli_utils.confirmation(
+                "Are you sure you want to delete artifact store "
+                f"'{name_id_or_prefix}'? This will delete all artifacts in "
+                "the store, which cannot be undone.",
+            )
+            if not confirmation:
+                cli_utils.error("Aborting deletion.")
+
         with console.status(
             f"Deleting {display_name} '{name_id_or_prefix}'...\n"
         ):

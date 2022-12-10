@@ -68,6 +68,7 @@ class StackComponentSchema(ShareableSchema, table=True):
 
     artifacts: List["ArtifactSchema"] = Relationship(
         back_populates="artifact_store",
+        sa_relationship_kwargs={"cascade": "delete"},
     )
 
     stacks: List["StackSchema"] = Relationship(
