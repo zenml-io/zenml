@@ -15,6 +15,17 @@ on:
         description: 'The test environment'
         type: string
         required: true
+      enable_tmate:
+        description: 'Enable tmate session for debugging'
+        type: string
+        required: false
+        default: "never"
+      tmate_timeout:
+        description: 'Timeout for tmate session (minutes)'
+        type: number
+        required: false
+        default: 30
+
   workflow_dispatch:
     inputs:
       os:
@@ -54,6 +65,21 @@ on:
           - docker-server-airflow-orchestrator
         required: false
         default: 'default'
+      enable_tmate:
+        description: 'Enable tmate session for debugging'
+        type: choice
+        options:
+          - 'no'
+          - 'on-failure'
+          - 'always'
+          - 'before-tests'
+        required: false
+        default: 'no'
+      tmate_timeout:
+        description: 'Timeout for tmate session'
+        type: number
+        required: false
+        default: 30
 
 jobs:
 
@@ -78,12 +104,17 @@ jobs:
       - name: Maximize build space
         uses: easimon/maximize-build-space@master
         with:
-          root-reserve-mb: 20240
+          root-reserve-mb: 20000
           swap-size-mb: 1024
           remove-dotnet: 'true'
           remove-android: 'true'
           remove-haskell: 'true'
           build-mount-path: /var/lib/docker
+        if: runner.os=='Linux' && (contains(inputs.test_environment, 'docker') || contains(inputs.test_environment, 'kubeflow'))
+
+      - name: Reload Docker
+        run:
+          sudo systemctl restart docker
         if: runner.os=='Linux' && (contains(inputs.test_environment, 'docker') || contains(inputs.test_environment, 'kubeflow'))
 
       - uses: actions/checkout@v2
@@ -152,10 +183,22 @@ jobs:
           zenml integration list
           pip list
 
+      - name: Setup tmate session before tests
+        if: ${{ inputs.enable_tmate == 'before-tests' }}
+        uses: mxschmitt/action-tmate@v3
+        with:
+          timeout-minutes: ${{ inputs.tmate_timeout }}
+
       - name: Test
         run: |
           source $VENV
           bash scripts/test-coverage-xml.sh integration ${{ inputs.test_environment }}
+
+      - name: Setup tmate session after tests
+        if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
+        uses: mxschmitt/action-tmate@v3
+        with:
+          timeout-minutes: ${{ inputs.tmate_timeout }}
 
       - name: Verify Python Env unaffected
         run: |
