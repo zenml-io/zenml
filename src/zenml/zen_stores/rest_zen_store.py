@@ -1437,12 +1437,15 @@ class RestZenStore(BaseZenStore):
     def list_artifacts(
         self,
         artifact_uri: Optional[str] = None,
+        artifact_store_id: Optional[UUID] = None,
     ) -> List[ArtifactResponseModel]:
         """Lists all artifacts.
 
         Args:
             artifact_uri: If specified, only artifacts with the given URI will
                 be returned.
+            artifact_store_id: If specified, only artifacts from the given
+                artifact store will be returned.
 
         Returns:
             A list of all artifacts.

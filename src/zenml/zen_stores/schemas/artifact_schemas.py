@@ -47,9 +47,6 @@ class ArtifactSchema(NamedSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    artifact_store: "StackComponentSchema" = Relationship(
-        back_populates="artifacts"
-    )
 
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,

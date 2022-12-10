@@ -40,6 +40,7 @@ router = APIRouter(
 @handle_exceptions
 def list_artifacts(
     artifact_uri: Optional[str] = None,
+    artifact_store_id: Optional[UUID] = None,
     parent_step_id: Optional[UUID] = None,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> List[ArtifactResponseModel]:
@@ -48,6 +49,8 @@ def list_artifacts(
     Args:
         artifact_uri: If specified, only artifacts with the given URI will
             be returned.
+        artifact_store_id: If specified, only artifacts from the given
+            artifact store will be returned.
         parent_step_id: Deprecated filter, will be ignored.
 
     Returns:
@@ -59,7 +62,10 @@ def list_artifacts(
             "outdated filter argument. If you see this message, please "
             "update your ZenML client to match the server version."
         )
-    return zen_store().list_artifacts(artifact_uri=artifact_uri)
+    return zen_store().list_artifacts(
+        artifact_uri=artifact_uri,
+        artifact_store_id=artifact_store_id,
+    )
 
 
 @router.post(

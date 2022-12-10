@@ -3353,12 +3353,15 @@ class SqlZenStore(BaseZenStore):
     def list_artifacts(
         self,
         artifact_uri: Optional[str] = None,
+        artifact_store_id: Optional[UUID] = None,
     ) -> List[ArtifactResponseModel]:
         """Lists all artifacts.
 
         Args:
             artifact_uri: If specified, only artifacts with the given URI will
                 be returned.
+            artifact_store_id: If specified, only artifacts from the given
+                artifact store will be returned.
 
         Returns:
             A list of all artifacts.
@@ -3367,6 +3370,10 @@ class SqlZenStore(BaseZenStore):
             query = select(ArtifactSchema)
             if artifact_uri is not None:
                 query = query.where(ArtifactSchema.uri == artifact_uri)
+            if artifact_store_id is not None:
+                query = query.where(
+                    ArtifactSchema.artifact_store_id == artifact_store_id
+                )
             artifacts = session.exec(query).all()
             return [
                 self._artifact_schema_to_model(artifact)

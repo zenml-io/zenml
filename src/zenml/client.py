@@ -2273,16 +2273,22 @@ class Client(metaclass=ClientMetaClass):
     def list_artifacts(
         self,
         artifact_uri: Optional[str] = None,
+        artifact_store_id: Optional[UUID] = None,
     ) -> List[ArtifactResponseModel]:
         """Get all artifacts.
 
         Args:
             artifact_uri: If provided, only return artifacts with this URI.
+            artifact_store_id: If provided, only return artifacts from this
+                artifact store.
 
         Returns:
             A list of artifacts.
         """
-        return self.zen_store.list_artifacts(artifact_uri=artifact_uri)
+        return self.zen_store.list_artifacts(
+            artifact_uri=artifact_uri,
+            artifact_store_id=artifact_store_id,
+        )
 
     def get_artifact(self, artifact_id: UUID) -> ArtifactResponseModel:
         """Get an artifact by ID.
