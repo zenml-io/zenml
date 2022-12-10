@@ -29,14 +29,15 @@ from typing import (
     Type,
     TypeVar,
     Union,
+    cast,
 )
 from uuid import UUID
 
+import pymysql
 from pydantic import root_validator
 from sqlalchemy import text
-from sqlalchemy.engine import Engine
-from sqlalchemy.engine.url import make_url
-from sqlalchemy.exc import ArgumentError, NoResultFound
+from sqlalchemy.engine import URL, Engine, make_url
+from sqlalchemy.exc import ArgumentError, NoResultFound, OperationalError
 from sqlalchemy.sql.operators import is_
 from sqlmodel import Session, create_engine, or_, select
 from sqlmodel.sql.expression import Select, SelectOfScalar
@@ -149,6 +150,24 @@ logger = get_logger(__name__)
 ZENML_SQLITE_DB_FILENAME = "zenml.db"
 
 
+def _is_mysql_missing_database_error(error: OperationalError) -> bool:
+    """Checks if the given error is due to a missing database.
+
+    Args:
+        error: The error to check.
+
+    Returns:
+        If the error if because the MySQL database doesn't exist.
+    """
+    from pymysql.constants.ER import BAD_DB_ERROR
+
+    if not isinstance(error.orig, pymysql.err.OperationalError):
+        return False
+
+    error_code = cast(int, error.orig.args[0])
+    return error_code == BAD_DB_ERROR
+
+
 class SQLDatabaseDriver(StrEnum):
     """SQL database drivers supported by the SQL ZenML store."""
 
@@ -193,6 +212,33 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     ssl_verify_server_cert: bool = False
     pool_size: int = 20
     max_overflow: int = 20
+
+    @root_validator(pre=True)
+    def _remove_grpc_attributes(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Removes old GRPC attributes.
+
+        Args:
+            values: All model attribute values.
+
+        Returns:
+            The model attribute values
+        """
+        grpc_attribute_keys = [
+            "grpc_metadata_host",
+            "grpc_metadata_port",
+            "grpc_metadata_ssl_ca",
+            "grpc_metadata_ssl_key",
+            "grpc_metadata_ssl_cert",
+        ]
+        grpc_values = [values.pop(key, None) for key in grpc_attribute_keys]
+        if any(grpc_values):
+            logger.warning(
+                "The GRPC attributes %s are unused and will be removed soon. "
+                "Please remove them from SQLZenStore configuration. This will "
+                "become an error in future versions of ZenML."
+            )
+
+        return values
 
     @root_validator
     def _validate_url(cls, values: Dict[str, Any]) -> Dict[str, Any]:
@@ -547,7 +593,11 @@ class SqlZenStore(BaseZenStore):
     # --------------------------------
 
     def _initialize(self) -> None:
-        """Initialize the SQL store."""
+        """Initialize the SQL store.
+
+        Raises:
+            OperationalError: If connecting to the database failed.
+        """
         logger.debug("Initializing SqlZenStore at %s", self.config.url)
 
         url, connect_args, engine_args = self.config.get_sqlmodel_config()
@@ -572,14 +622,22 @@ class SqlZenStore(BaseZenStore):
             self.config.driver == SQLDatabaseDriver.MYSQL
             and self.config.database
         ):
-            master_url = self._engine.url._replace(database="mysql")
-            master_engine = create_engine(
-                url=master_url, connect_args=connect_args, **engine_args
-            )
-            query = f"CREATE DATABASE IF NOT EXISTS {self.config.database}"
-            conn = master_engine.connect()
-            conn.execute(text(query))
-            conn.close()
+            try:
+                self._engine.connect()
+            except OperationalError as e:
+                logger.debug(
+                    "Failed to connect to mysql database `%s`.",
+                    self._engine.url.database,
+                )
+
+                if _is_mysql_missing_database_error(e):
+                    self._create_mysql_database(
+                        url=self._engine.url,
+                        connect_args=connect_args,
+                        engine_args=engine_args,
+                    )
+                else:
+                    raise
 
         self._alembic = Alembic(self.engine)
         if (
@@ -587,6 +645,32 @@ class SqlZenStore(BaseZenStore):
             and ENV_ZENML_DISABLE_DATABASE_MIGRATION not in os.environ
         ):
             self.migrate_database()
+
+    def _create_mysql_database(
+        self,
+        url: URL,
+        connect_args: Dict[str, Any],
+        engine_args: Dict[str, Any],
+    ) -> None:
+        """Creates a mysql database.
+
+        Args:
+            url: The URL of the database to create.
+            connect_args: Connect arguments for the SQLAlchemy engine.
+            engine_args: Additional initialization arguments for the SQLAlchemy
+                engine
+        """
+        logger.info("Trying to create database %s.", url.database)
+        master_url = url._replace(database=None)
+        master_engine = create_engine(
+            url=master_url, connect_args=connect_args, **engine_args
+        )
+        query = f"CREATE DATABASE IF NOT EXISTS {self.config.database}"
+        try:
+            connection = master_engine.connect()
+            connection.execute(text(query))
+        finally:
+            connection.close()
 
     def migrate_database(self) -> None:
         """Migrate the database to the head as defined by the python package."""
@@ -2962,7 +3046,7 @@ class SqlZenStore(BaseZenStore):
         # Check if the input is already set.
         assignment = session.exec(
             select(StepRunInputArtifactSchema)
-            .where(StepRunInputArtifactSchema.step_run_id == run_step_id)
+            .where(StepRunInputArtifactSchema.step_id == run_step_id)
             .where(StepRunInputArtifactSchema.artifact_id == artifact_id)
         ).first()
         if assignment is not None:
@@ -2970,7 +3054,7 @@ class SqlZenStore(BaseZenStore):
 
         # Save the input assignment in the database.
         assignment = StepRunInputArtifactSchema(
-            step_run_id=run_step_id, artifact_id=artifact_id, name=name
+            step_id=run_step_id, artifact_id=artifact_id, name=name
         )
         session.add(assignment)
 
@@ -3015,7 +3099,7 @@ class SqlZenStore(BaseZenStore):
         # Check if the output is already set.
         assignment = session.exec(
             select(StepRunOutputArtifactSchema)
-            .where(StepRunOutputArtifactSchema.step_run_id == step_run_id)
+            .where(StepRunOutputArtifactSchema.step_id == step_run_id)
             .where(StepRunOutputArtifactSchema.artifact_id == artifact_id)
         ).first()
         if assignment is not None:
@@ -3023,7 +3107,7 @@ class SqlZenStore(BaseZenStore):
 
         # Save the output assignment in the database.
         assignment = StepRunOutputArtifactSchema(
-            step_run_id=step_run_id,
+            step_id=step_run_id,
             artifact_id=artifact_id,
             name=name,
         )
@@ -3081,7 +3165,7 @@ class SqlZenStore(BaseZenStore):
                 .where(
                     ArtifactSchema.id == StepRunInputArtifactSchema.artifact_id
                 )
-                .where(StepRunInputArtifactSchema.step_run_id == step_run.id)
+                .where(StepRunInputArtifactSchema.step_id == step_run.id)
             ).all()
             input_artifacts = {
                 input_name: self._artifact_schema_to_model(artifact)
@@ -3097,7 +3181,7 @@ class SqlZenStore(BaseZenStore):
                 .where(
                     ArtifactSchema.id == StepRunOutputArtifactSchema.artifact_id
                 )
-                .where(StepRunOutputArtifactSchema.step_run_id == step_run.id)
+                .where(StepRunOutputArtifactSchema.step_id == step_run.id)
             ).all()
             output_artifacts = {
                 output_name: self._artifact_schema_to_model(artifact)
@@ -3229,14 +3313,12 @@ class SqlZenStore(BaseZenStore):
         # Find the producer step run ID.
         with Session(self.engine) as session:
             producer_step_run_id = session.exec(
-                select(StepRunOutputArtifactSchema.step_run_id)
+                select(StepRunOutputArtifactSchema.step_id)
                 .where(
                     StepRunOutputArtifactSchema.artifact_id
                     == artifact_schema.id
                 )
-                .where(
-                    StepRunOutputArtifactSchema.step_run_id == StepRunSchema.id
-                )
+                .where(StepRunOutputArtifactSchema.step_id == StepRunSchema.id)
                 .where(StepRunSchema.status != ExecutionStatus.CACHED)
             ).first()
 
