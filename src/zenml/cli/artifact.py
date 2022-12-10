@@ -44,7 +44,13 @@ def list_artifacts() -> None:
 
     cli_utils.print_pydantic_models(
         artifacts,
-        exclude_columns=["id", "created", "updated", "user", "project"],
+        exclude_columns=[
+            "created",
+            "updated",
+            "user",
+            "project",
+            "producer_step_run_id",
+        ],
     )
 
 
