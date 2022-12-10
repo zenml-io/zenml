@@ -84,12 +84,12 @@ def delete_pipeline(pipeline_name_or_id: str) -> None:
     if not confirmation:
         cli_utils.declare("Pipeline deletion canceled.")
         return
+    try:
+        Client().delete_pipeline(name_id_or_prefix=pipeline_name_or_id)
+    except KeyError as e:
+        cli_utils.error(str(e))
     else:
-        try:
-            Client().delete_pipeline(name_id_or_prefix=pipeline_name_or_id)
-            cli_utils.declare(f"Deleted pipeline '{pipeline_name_or_id}'.")
-        except KeyError as e:
-            cli_utils.error(str(e))
+        cli_utils.declare(f"Deleted pipeline '{pipeline_name_or_id}'.")
 
 
 @pipeline.group()
@@ -155,10 +155,17 @@ def delete_pipeline_run(run_name_or_id: str) -> None:
     if not confirmation:
         cli_utils.declare("Pipeline run deletion canceled.")
         return
+
+    delete_artifacts = cli_utils.confirmation(
+        "Do you also want to delete all artifacts that were created by this "
+        "pipeline run from the artifact store?"
+    )
+    try:
+        Client().delete_pipeline_run(
+            name_id_or_prefix=run_name_or_id,
+            delete_artifacts=delete_artifacts,
+        )
+    except KeyError as e:
+        cli_utils.error(str(e))
     else:
-        try:
-            Client().delete_pipeline_run(name_id_or_prefix=run_name_or_id)
-        except KeyError as e:
-            cli_utils.error(str(e))
-        else:
-            cli_utils.declare(f"Deleted pipeline run '{run_name_or_id}'.")
+        cli_utils.declare(f"Deleted pipeline run '{run_name_or_id}'.")
