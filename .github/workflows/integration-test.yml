@@ -21,7 +21,7 @@ on:
         required: false
         default: "never"
       tmate_timeout:
-        description: 'Timeout for tmate session'
+        description: 'Timeout for tmate session (minutes)'
         type: number
         required: false
         default: 30
@@ -104,12 +104,17 @@ jobs:
       - name: Maximize build space
         uses: easimon/maximize-build-space@master
         with:
-          root-reserve-mb: 20240
+          root-reserve-mb: 15000
           swap-size-mb: 1024
           remove-dotnet: 'true'
           remove-android: 'true'
           remove-haskell: 'true'
           build-mount-path: /var/lib/docker
+        if: runner.os=='Linux' && (contains(inputs.test_environment, 'docker') || contains(inputs.test_environment, 'kubeflow'))
+
+      - name: Reload Docker
+        run:
+          sudo systemctl restart docker
         if: runner.os=='Linux' && (contains(inputs.test_environment, 'docker') || contains(inputs.test_environment, 'kubeflow'))
 
       - uses: actions/checkout@v2
@@ -182,7 +187,7 @@ jobs:
         if: ${{ inputs.enable_tmate == 'before-tests' }}
         uses: mxschmitt/action-tmate@v3
         with:
-          timeout_minutes: ${{ inputs.tmate_timeout }}
+          timeout-minutes: ${{ inputs.tmate_timeout }}
 
       - name: Test
         run: |
@@ -193,7 +198,7 @@ jobs:
         if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
         uses: mxschmitt/action-tmate@v3
         with:
-          timeout_minutes: ${{ inputs.tmate_timeout }}
+          timeout-minutes: ${{ inputs.tmate_timeout }}
 
       - name: Verify Python Env unaffected
         run: |
