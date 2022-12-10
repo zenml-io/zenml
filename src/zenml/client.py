@@ -39,12 +39,7 @@ from zenml.constants import (
     REPOSITORY_DIRECTORY_NAME,
     handle_bool_env_var,
 )
-from zenml.enums import (
-    ExecutionStatus,
-    PermissionType,
-    StackComponentType,
-    StoreType,
-)
+from zenml.enums import PermissionType, StackComponentType, StoreType
 from zenml.exceptions import (
     AlreadyExistsException,
     EntityExistsError,
@@ -2216,26 +2211,14 @@ class Client(metaclass=ClientMetaClass):
     def delete_pipeline_run(
         self,
         name_id_or_prefix: Union[str, UUID],
-        delete_artifacts: bool = False,
     ) -> None:
         """Deletes a pipeline run.
 
         Args:
             name_id_or_prefix: Name, ID, or prefix of the pipeline run.
-            delete_artifacts: If True, delete all artifacts associated with
-                this run.
         """
         run = self.get_pipeline_run(name_id_or_prefix=name_id_or_prefix)
-        if delete_artifacts:
-            run_artifacts: List[ArtifactResponseModel] = []
-            for step_run in self.list_run_steps(pipeline_run_id=run.id):
-                if step_run.status == ExecutionStatus.COMPLETED:
-                    run_artifacts.extend(step_run.output_artifacts.values())
-            for artifact in run_artifacts:
-                self.delete_artifact(artifact_id=artifact.id)
-            logger.info(f"Deleted {len(run_artifacts)} artifacts.")
         self.zen_store.delete_run(run_id=run.id)
-        logger.info(f"Deleted pipeline run '{run.id}'.")
 
     def list_run_steps(
         self,

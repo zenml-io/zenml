@@ -14,13 +14,19 @@
 """CLI functionality to interact with pipelines."""
 
 
+from typing import TYPE_CHECKING, List
+
 import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.client import Client
-from zenml.enums import CliCategories
+from zenml.enums import CliCategories, ExecutionStatus
 from zenml.logger import get_logger
+
+if TYPE_CHECKING:
+    from zenml.models.artifact_models import ArtifactResponseModel
+
 
 logger = get_logger(__name__)
 
@@ -156,14 +162,26 @@ def delete_pipeline_run(run_name_or_id: str) -> None:
         cli_utils.declare("Pipeline run deletion canceled.")
         return
 
-    delete_artifacts = cli_utils.confirmation(
-        "Do you also want to delete all artifacts that were created by this "
-        "pipeline run from the artifact store?"
-    )
+    client = Client()
+    run = client.get_pipeline_run(name_id_or_prefix=run_name_or_id)
+    run_artifacts: List["ArtifactResponseModel"] = []
+    for step_run in client.list_run_steps(pipeline_run_id=run.id):
+        if step_run.status == ExecutionStatus.COMPLETED:
+            run_artifacts.extend(step_run.output_artifacts.values())
+    if run_artifacts:
+        confirmation = cli_utils.confirmation(
+            f"Pipeline run '{run_name_or_id}' has produced "
+            f"{len(run_artifacts)} artifacts. Do you want to delete these "
+            "artifacts as well?"
+        )
+        if confirmation:
+            for artifact in run_artifacts:
+                client.delete_artifact(artifact_id=artifact.id)
+            logger.info(f"Deleted {len(run_artifacts)} artifacts.")
+
     try:
         Client().delete_pipeline_run(
             name_id_or_prefix=run_name_or_id,
-            delete_artifacts=delete_artifacts,
         )
     except KeyError as e:
         cli_utils.error(str(e))
