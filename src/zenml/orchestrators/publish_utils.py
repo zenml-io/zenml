@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Dict, List
 
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.client import Client
-from zenml.enums import ExecutionStatus
+from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.models.artifact_models import ArtifactRequestModel
 from zenml.models.pipeline_run_models import (
     PipelineRunResponseModel,
@@ -61,14 +61,22 @@ def publish_output_artifacts(
                 "Please set one before registering."
             )
         client = Client()
+        user = client.active_user.id
+        project = client.active_project.id
+        artifact_store = client.active_stack_model.components.get(
+            StackComponentType.ARTIFACT_STORE
+        )
+        assert artifact_store is not None  # Every stack has an artifact store.
+        artifact_store_id = artifact_store[0].id
         artifact_model = ArtifactRequestModel(
             name=name,
             type=artifact_.TYPE_NAME,
             uri=artifact_.uri,
             materializer=artifact_.materializer,
             data_type=artifact_.data_type,
-            user=client.active_user.id,
-            project=client.active_project.id,
+            user=user,
+            project=project,
+            artifact_store_id=artifact_store_id,
         )
         artifact_response = client.zen_store.create_artifact(artifact_model)
         output_artifact_ids[name] = artifact_response.id

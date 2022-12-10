@@ -2281,10 +2281,28 @@ class Client(metaclass=ClientMetaClass):
     def delete_artifact(self, artifact_id: UUID) -> None:
         """Delete an artifact.
 
+        This will delete both the metadata of the artifact from the database
+        and the actual artifact from the artifact store.
+
         Args:
             artifact_id: The ID of the artifact to delete.
         """
+        from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
+        from zenml.stack.stack_component import StackComponent
+
+        artifact = self.get_artifact(artifact_id=artifact_id)
+        if artifact.artifact_store_id:
+            artifact_store_model = self.get_stack_component(
+                component_type=StackComponentType.ARTIFACT_STORE,
+                name_id_or_prefix=artifact.artifact_store_id,
+            )
+            artifact_store = StackComponent.from_model(artifact_store_model)
+            assert isinstance(artifact_store, BaseArtifactStore)
+            artifact_store.rmtree(artifact.uri)
+            logger.info(f"Deleted artifact {artifact.uri} from artifact store.")
+
         self.zen_store.delete_artifact(artifact_id)
+        logger.info(f"Deleted metadata of artifact {artifact.uri}.")
 
     # ---- utility prefix matching get functions -----
 
