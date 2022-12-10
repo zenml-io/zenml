@@ -60,7 +60,7 @@ def delete_artifact(artifact_id: str) -> None:
     """Delete an artifact.
 
     Args:
-        artifact_name: Name of the artifact to delete.
+        artifact_id: ID of the artifact to delete.
     """
     cli_utils.print_active_config()
     confirmation = cli_utils.confirmation(

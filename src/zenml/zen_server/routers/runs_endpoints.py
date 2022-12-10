@@ -149,9 +149,6 @@ def delete_run(
     Args:
         run_id: ID of the run.
         auth_context: Authorization Context
-
-    Returns:
-        The deleted run model.
     """
     zen_store().delete_run(run_id=run_id)
 

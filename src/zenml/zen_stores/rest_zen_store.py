@@ -1308,9 +1308,6 @@ class RestZenStore(BaseZenStore):
 
         Args:
             run_id: The ID of the pipeline run to delete.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
         """
         self._delete_resource(
             resource_id=run_id,
@@ -1464,9 +1461,6 @@ class RestZenStore(BaseZenStore):
 
         Args:
             artifact_id: The ID of the artifact to delete.
-
-        Raises:
-            KeyError: if the artifact doesn't exist.
         """
         self._delete_resource(resource_id=artifact_id, route=ARTIFACTS)
 
