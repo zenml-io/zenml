@@ -45,7 +45,7 @@ def copy_example_files(example_dir: str, dst_dir: str) -> None:
             shutil.copy2(s, d)
 
 
-def example_runner(examples_dir):
+def example_runner(examples_dir: Path) -> List[str]:
     """Get the executable that runs examples.
 
     By default, returns the path to an executable .sh file in the
@@ -81,6 +81,9 @@ def run_example(
     Yields:
         The example and the pipeline runs that were executed and validated.
     """
+    from zenml.client import Client
+    from zenml.container_registries import BaseContainerRegistry
+    from zenml.enums import StackComponentType
 
     # Root directory of all checked out examples
     examples_directory = Path(__file__).parents[3] / "examples"
@@ -113,6 +116,30 @@ def run_example(
         # Clean up more expensive resources like docker containers, volumes and
         # images, if any were created.
 
+        breakpoint()
+        active_stack = Client().active_stack_model
+        if StackComponentType.CONTAINER_REGISTRY in active_stack.components:
+            container_registry = active_stack.components[
+                StackComponentType.CONTAINER_REGISTRY
+            ][0]
+            assert isinstance(container_registry, BaseContainerRegistry)
+            image_name = f"{container_registry.config.uri}:{pipeline_name}"
+        elif (
+            active_stack.components[StackComponentType.ORCHESTRATOR][0].flavor
+            == "local_docker"
+        ):
+            image_name = f"zenml:{pipeline_name}"
+        else:
+            # TODO: add support for other orchestrators or step operators that
+            #  don't use a container registry (Airflow ?)
+
+            # We only need to clean up Docker resources if we're using a
+            # container registry or the local_docker orchestrator (which
+            # is the only component that doesn't use a container registry but
+            # still builds Docker images locally that we can clean up to
+            # save space).
+            return
+
         try:
             from docker.client import DockerClient
             from docker.errors import ImageNotFound
@@ -124,18 +151,15 @@ def run_example(
             # Docker is not installed or running
             pass
         else:
-            docker_client.containers.prune()
-            docker_client.volumes.prune()
             try:
-                pipeline_image = docker_client.images.get(
-                    f"zenml:{pipeline_name}"
-                )
+                pipeline_image = docker_client.images.get(image_name)
+                docker_client.containers.prune()
+                docker_client.volumes.prune()
                 logging.debug(f"Removing Docker image {pipeline_name}")
                 docker_client.images.remove(pipeline_image.id)
+                docker_client.images.prune()
             except ImageNotFound:
                 pass
-
-            docker_client.images.prune()
 
 
 def wait_and_validate_pipeline_run(
