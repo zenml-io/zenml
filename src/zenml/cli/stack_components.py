@@ -26,7 +26,8 @@ from zenml.cli.cli import TagGroup, cli
 from zenml.cli.feature import register_feature_store_subcommands
 from zenml.cli.model import register_model_deployer_subcommands
 from zenml.cli.secret import register_secrets_manager_subcommands
-from zenml.cli.utils import _component_display_name, print_page_info
+from zenml.cli.utils import _component_display_name, print_page_info, \
+    list_options
 from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
@@ -130,7 +131,7 @@ def generate_stack_component_list_command(
         A function that can be used as a `click` command.
     """
 
-    @ComponentFilterModel.click_list_options()
+    @list_options(ComponentFilterModel)
     def list_stack_components_command(**kwargs) -> None:
         """Prints a table of stack components."""
         client = Client()

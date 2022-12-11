@@ -17,7 +17,7 @@ from typing import List, Optional, Tuple
 
 import click
 
-from zenml.cli import utils as cli_utils
+from zenml.cli import utils as cli_utils, list_options
 from zenml.cli.cli import TagGroup, cli
 from zenml.client import Client
 from zenml.console import console
@@ -32,7 +32,7 @@ def role() -> None:
 
 
 @role.command("list")
-@RoleFilterModel.click_list_options()
+@list_options(RoleFilterModel)
 def list_roles(**kwargs) -> None:
     """List all roles that fulfill the filter requirements."""
     cli_utils.print_active_config()
@@ -274,7 +274,7 @@ def assignment() -> None:
 
 
 @assignment.command("list")
-@UserRoleAssignmentFilterModel.click_list_options()
+@list_options(UserRoleAssignmentFilterModel)
 def list_user_role_assignments(**kwargs) -> None:
     """List all user role assignments that fulfill the filter requirements."""
 

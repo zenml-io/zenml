@@ -17,7 +17,7 @@ from typing import List, Optional
 
 import click
 
-from zenml.cli import utils as cli_utils
+from zenml.cli import utils as cli_utils, list_options
 from zenml.cli.cli import TagGroup, cli
 from zenml.client import Client
 from zenml.console import console
@@ -72,7 +72,7 @@ def describe_user(user_name_or_id: Optional[str] = None) -> None:
 
 
 @user.command("list")
-@UserFilterModel.click_list_options()
+@list_options(UserFilterModel)
 def list_users(**kwargs) -> None:
     """List all users."""
     cli_utils.print_active_config()
@@ -248,7 +248,7 @@ def team() -> None:
 
 
 @team.command("list")
-@TeamFilterModel.click_list_options()
+@list_options(TeamFilterModel)
 def list_teams(**kwargs) -> None:
     """List all teams that fulfill the filter requirements."""
     cli_utils.print_active_config()

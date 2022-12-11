@@ -19,7 +19,7 @@ import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
-from zenml.cli.utils import warn_unsupported_non_default_project
+from zenml.cli.utils import warn_unsupported_non_default_project, list_options
 from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories
@@ -33,7 +33,7 @@ def project() -> None:
 
 
 @project.command("list", hidden=True)
-@ProjectFilterModel.click_list_options()
+@list_options(ProjectFilterModel)
 def list_projects(**kwargs) -> None:
     """List all projects."""
     warn_unsupported_non_default_project()

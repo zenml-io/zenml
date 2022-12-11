@@ -24,7 +24,7 @@ from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
     _component_display_name,
     print_page_info,
-    print_stacks_table,
+    print_stacks_table, list_options,
 )
 from zenml.client import Client
 from zenml.console import console
@@ -642,7 +642,7 @@ def rename_stack(
 
 
 @stack.command("list")
-@StackFilterModel.click_list_options()
+@list_options(StackFilterModel)
 def list_stacks(**kwargs) -> None:
     """List all stacks that fulfill the filter requirements."""
     client = Client()

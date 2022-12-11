@@ -346,11 +346,9 @@ class FilterBaseModel(BaseModel):
         values["list_of_filters"] = list_of_filters
         return values
 
-    def get_pagination_params(self) -> RawParams:
-        return RawParams(
-            limit=self.size,
-            offset=self.size * (self.page - 1),
-        )
+    @property
+    def offset(self):
+        return self.size * (self.page - 1)
 
     def generate_filter(self, table: Type[SQLModel]):
         ands = []

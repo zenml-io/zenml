@@ -47,6 +47,7 @@ from zenml.enums import StackComponentType, StoreType
 from zenml.logger import get_logger
 from zenml.models.base_models import BaseResponseModel
 from zenml.models.page_model import Page
+from zenml.models import FilterBaseModel
 
 logger = get_logger(__name__)
 
@@ -62,7 +63,7 @@ if TYPE_CHECKING:
         FlavorResponseModel,
         PipelineRunResponseModel,
         StackResponseModel,
-    )
+)
     from zenml.secret import BaseSecretSchema
     from zenml.services import BaseService, ServiceState
     from zenml.zen_server.deploy import ServerDeployment
@@ -1058,3 +1059,31 @@ def print_page_info(page: Page):
         f"Page `({page.page}/{page.total_pages})`, `{page.total}` items "
         f"found for the applied filters."
     )
+
+
+F = TypeVar("F", bound=Callable[..., None])
+
+
+def list_options(filter_model: Type[FilterBaseModel]) -> F:
+    def inner_decorator(func: F) -> F:
+
+        options = list()
+        for k, v in filter_model.__fields__.items():
+            if k not in filter_model.CLI_EXCLUDE_FIELDS:
+                options.append(
+                    click.option(
+                        f"--{k}",
+                        type=str,
+                        default=v.default,
+                        required=False,
+                    )
+                )
+
+        def wrapper(function):
+            for option in reversed(options):
+                function = option(function)
+            return function
+
+        return wrapper(func)
+
+    return inner_decorator

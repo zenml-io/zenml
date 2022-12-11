@@ -61,36 +61,6 @@ T = TypeVar("T", bound=BaseSchema)
 B = TypeVar("B", bound=BaseResponseModel)
 
 
-@dataclass
-class RawParams:
-    limit: int
-    offset: int
-
-
-class Params(BaseModel):
-    page: int = Query(1, ge=1, description="Page number")
-    size: int = Query(50, ge=1, le=100, description="Page size")
-
-    def to_raw_params(self) -> RawParams:
-        return RawParams(
-            limit=self.size,
-            offset=self.size * (self.page - 1),
-        )
-
-
-params_value: ContextVar[Params] = ContextVar("params_value")
-
-
-def resolve_params(params: Optional[Params] = None) -> Params:
-    if params is None:
-        try:
-            return params_value.get()
-        except LookupError:
-            raise RuntimeError("Use params or add_pagination")
-
-    return params
-
-
 class Page(GenericModel, Generic[B]):
     page: conint(ge=1)  # type: ignore
     size: conint(ge=1)  # type: ignore
@@ -109,58 +79,16 @@ class Page(GenericModel, Generic[B]):
         items: Sequence[B],
         total: int,
         total_pages: int,
-        params: FilterBaseModel,
+        filter_model: FilterBaseModel,
     ) -> Page[B]:
 
-        if not isinstance(params, FilterBaseModel):
-            raise ValueError("Page should be used with Params")
+        if not isinstance(filter_model, FilterBaseModel):
+            raise ValueError("Page should be used with filter models")
 
         return cls(
             total=total,
             total_pages=total_pages,
             items=items,
-            page=params.page,
-            size=params.size,
+            page=filter_model.page,
+            size=filter_model.size,
         )
-
-    @classmethod
-    def paginate(
-        cls,
-        session: Session,
-        query: Union[T, Select[T], SelectOfScalar[T]],
-        params: Optional[FilterBaseModel] = None,
-    ) -> Page[B]:
-        """Given a query, select the range defined in params and return a Page instance with a list of Domain Models.
-
-        Args:
-            session: The SQLModel Session
-            query: The query to execute
-            params: The params to use for pagination
-
-        Returns:
-            The Domain Model representation of the DB resource
-        """
-        raw_params = params.get_pagination_params()
-
-        if not isinstance(query, (Select, SelectOfScalar)):
-            query = select(query)
-
-        total = session.scalar(
-            select(func.count("*")).select_from(
-                query.order_by(None).options(noload("*")).subquery()
-            )
-        )
-
-        total_pages = math.ceil(total / raw_params.limit)
-
-        items: List[T] = (
-            session.exec(
-                query.limit(raw_params.limit).offset(raw_params.offset)
-            )
-            .unique()
-            .all()
-        )
-
-        items: List[B] = [i.to_model() for i in items]
-
-        return cls.create(items, total, total_pages, params)

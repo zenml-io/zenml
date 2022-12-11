@@ -638,9 +638,6 @@ class SqlZenStore(BaseZenStore):
         # Sorting
         query = query.order_by(getattr(table, filter_model.sort_by))
 
-        # Pagination
-        raw_pagination_params = filter_model.get_pagination_params()
-
         # Get the total amount of items in the database for a given query
         total = session.scalar(
             select(func.count("*")).select_from(
@@ -649,13 +646,13 @@ class SqlZenStore(BaseZenStore):
         )
 
         # Get the total amount of pages in the database for a given query
-        total_pages = math.ceil(total / raw_pagination_params.limit)
+        total_pages = math.ceil(total / filter_model.size)
 
         # Get a page of the actual data
         items: List[AnySchema] = (
             session.exec(
-                query.limit(raw_pagination_params.limit).offset(
-                    raw_pagination_params.offset
+                query.limit(filter_model.size).offset(
+                    filter_model.offset
                 )
             )
             .unique()
@@ -2046,88 +2043,6 @@ class SqlZenStore(BaseZenStore):
     # ----------------
     # Role assignments
     # ----------------
-
-    def _list_user_role_assignments(
-        self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        role_name_or_id: Optional[Union[str, UUID]] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
-        params: FilterBaseModel = FilterBaseModel(
-            page=1, size=PAGE_SIZE_DEFAULT
-        ),
-    ) -> Page[UserRoleAssignmentResponseModel]:
-        """List all user role assignments.
-
-        Args:
-            project_name_or_id: If provided, only return role assignments for
-                this project.
-            user_name_or_id: If provided, only list assignments for this user.
-            role_name_or_id: If provided, only list assignments of the given
-                role
-            params: Parameters for pagination (page and size)
-
-        Returns:
-            A list of user role assignments.
-        """
-        with Session(self.engine) as session:
-            query = select(UserRoleAssignmentSchema)
-            if project_name_or_id is not None:
-                project = self._get_project_schema(
-                    project_name_or_id, session=session
-                )
-                query = query.where(
-                    UserRoleAssignmentSchema.project_id == project.id
-                )
-            if role_name_or_id is not None:
-                role = self._get_role_schema(role_name_or_id, session=session)
-                query = query.where(UserRoleAssignmentSchema.role_id == role.id)
-            if user_name_or_id is not None:
-                user = self._get_user_schema(user_name_or_id, session=session)
-                query = query.where(UserRoleAssignmentSchema.user_id == user.id)
-            query.order_by(UserRoleAssignmentSchema.created)
-            assignments = Page.paginate(session, query, params)
-            return assignments
-
-    def _list_team_role_assignments(
-        self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        team_name_or_id: Optional[Union[str, UUID]] = None,
-        role_name_or_id: Optional[Union[str, UUID]] = None,
-        params: FilterBaseModel = FilterBaseModel(
-            page=1, size=PAGE_SIZE_DEFAULT
-        ),
-    ) -> Page[UserRoleAssignmentResponseModel]:
-        """List all team role assignments.
-
-        Args:
-            project_name_or_id: If provided, only return role assignments for
-                this project.
-            team_name_or_id: If provided, only list assignments for this team.
-            role_name_or_id: If provided, only list assignments of the given
-                role
-            params: Parameters for pagination (page and size)
-
-        Returns:
-            A list of team role assignments.
-        """
-        with Session(self.engine) as session:
-            query = select(TeamRoleAssignmentSchema)
-            if project_name_or_id is not None:
-                project = self._get_project_schema(
-                    project_name_or_id, session=session
-                )
-                query = query.where(
-                    TeamRoleAssignmentSchema.project_id == project.id
-                )
-            if role_name_or_id is not None:
-                role = self._get_role_schema(role_name_or_id, session=session)
-                query = query.where(TeamRoleAssignmentSchema.role_id == role.id)
-            if team_name_or_id is not None:
-                team = self._get_team_schema(team_name_or_id, session=session)
-                query = query.where(TeamRoleAssignmentSchema.team_id == team.id)
-            query.order_by(TeamRoleAssignmentSchema.created)
-            assignments = Page.paginate(session, query, params)
-            return assignments
 
     def list_user_role_assignments(
         self, user_role_assignment_filter_model: UserRoleAssignmentFilterModel

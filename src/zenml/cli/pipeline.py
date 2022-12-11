@@ -18,6 +18,7 @@ import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
+from zenml.cli.utils import list_options
 from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories
@@ -54,7 +55,7 @@ def cli_pipeline_run(python_file: str, config_path: str) -> None:
 
 
 @pipeline.command("list", help="List all registered pipelines.")
-@PipelineFilterModel.click_list_options()
+@list_options(PipelineFilterModel)
 def list_pipelines(**kwargs) -> None:
     """List all registered pipelines."""
     cli_utils.print_active_config()
@@ -114,7 +115,7 @@ def runs() -> None:
 
 
 @runs.command("list", help="List all registered pipeline runs.")
-@PipelineRunFilterModel.click_list_options()
+@list_options(PipelineRunFilterModel)
 def list_pipeline_runs(**kwargs) -> None:
     """List all registered pipeline runs for the filter."""
     cli_utils.print_active_config()
