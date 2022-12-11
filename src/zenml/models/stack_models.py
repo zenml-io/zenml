@@ -132,6 +132,7 @@ class StackFilterModel(FilterBaseModel):
         "_scope_user",
         "page",
         "size",
+        "logical_operator",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = ["list_of_filters", "_scope_user"]
 
@@ -171,20 +172,17 @@ class StackFilterModel(FilterBaseModel):
         """
         from sqlmodel import or_
 
-        ands = []
-        for column_filter in self.list_of_filters:
-            ands.append(column_filter.generate_query_conditions(table=table))
+        filters = self._base_filter(table=table)
 
         if self._scope_user:
-            ands.append(
+            filters.append(
                 or_(
                     getattr(table, "user_id") == self._scope_user,
                     getattr(table, "is_shared") is True,
                 )
             )
-            return ands
-        else:
-            return ands
+
+        return filters
 
 
 # ------- #

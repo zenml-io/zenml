@@ -23,8 +23,9 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
     _component_display_name,
+    list_options,
     print_page_info,
-    print_stacks_table, list_options,
+    print_stacks_table,
 )
 from zenml.client import Client
 from zenml.console import console

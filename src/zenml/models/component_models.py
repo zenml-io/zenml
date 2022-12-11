@@ -139,20 +139,17 @@ class ComponentFilterModel(FilterBaseModel):
         """
         from sqlmodel import or_
 
-        ands = []
-        for column_filter in self.list_of_filters:
-            ands.append(column_filter.generate_query_conditions(table=table))
+        filters = self._base_filter(table=table)
 
         if self._scope_user:
-            ands.append(
+            filters.append(
                 or_(
                     getattr(table, "user_id") == self._scope_user,
                     getattr(table, "is_shared") is True,
                 )
             )
-            return ands
-        else:
-            return ands
+
+        return filters
 
 
 # ------- #

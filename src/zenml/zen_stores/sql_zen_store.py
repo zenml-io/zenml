@@ -49,7 +49,6 @@ from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
     ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
-    PAGE_SIZE_DEFAULT,
 )
 from zenml.enums import (
     ExecutionStatus,
@@ -632,8 +631,8 @@ class SqlZenStore(BaseZenStore):
         # Filtering
         filters = filter_model.generate_filter(table=table)
 
-        if filters:
-            query = query.where(*filters)
+        if filters is not None:
+            query = query.where(filters)
 
         # Sorting
         query = query.order_by(getattr(table, filter_model.sort_by))
@@ -651,9 +650,7 @@ class SqlZenStore(BaseZenStore):
         # Get a page of the actual data
         items: List[AnySchema] = (
             session.exec(
-                query.limit(filter_model.size).offset(
-                    filter_model.offset
-                )
+                query.limit(filter_model.size).offset(filter_model.offset)
             )
             .unique()
             .all()
@@ -2067,35 +2064,32 @@ class SqlZenStore(BaseZenStore):
                 filter_model=user_role_assignment_filter_model,
             )
 
-    def _assign_role_to_user(
-        self,
-        role_name_or_id: Union[str, UUID],
-        user_name_or_id: Union[str, UUID],
-        project_name_or_id: Optional[Union[str, UUID]] = None,
+    def create_user_role_assignment(
+        self, user_role_assignment: UserRoleAssignmentRequestModel
     ) -> UserRoleAssignmentResponseModel:
-        """Assigns a role to a user, potentially scoped to a specific project.
+        """Assigns a role to a user or team, scoped to a specific project.
 
         Args:
-            project_name_or_id: Optional ID of a project in which to assign the
-                role. If this is not provided, the role will be assigned
-                globally.
-            role_name_or_id: Name or ID of the role to assign.
-            user_name_or_id: Name or ID of the user to which to assign the role.
+            user_role_assignment: The role assignment to create.
 
         Returns:
-            A model of the role assignment.
+            The created role assignment.
 
         Raises:
-            EntityExistsError: If the role assignment already exists.
+            ValueError: If neither a user nor a team is specified.
         """
         with Session(self.engine) as session:
-            role = self._get_role_schema(role_name_or_id, session=session)
+            role = self._get_role_schema(
+                user_role_assignment.role, session=session
+            )
             project: Optional[ProjectSchema] = None
-            if project_name_or_id:
+            if user_role_assignment.project:
                 project = self._get_project_schema(
-                    project_name_or_id, session=session
+                    user_role_assignment.project, session=session
                 )
-            user = self._get_user_schema(user_name_or_id, session=session)
+            user = self._get_user_schema(
+                user_role_assignment.user, session=session
+            )
             query = select(UserRoleAssignmentSchema).where(
                 UserRoleAssignmentSchema.user_id == user.id,
                 UserRoleAssignmentSchema.role_id == role.id,
@@ -2122,92 +2116,6 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             return role_assignment.to_model()
 
-    def _assign_role_to_team(
-        self,
-        role_name_or_id: Union[str, UUID],
-        team_name_or_id: Union[str, UUID],
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-    ) -> UserRoleAssignmentResponseModel:
-        """Assigns a role to a team, potentially scoped to a specific project.
-
-        Args:
-            role_name_or_id: Name or ID of the role to assign.
-            team_name_or_id: Name or ID of the team to which to assign the role.
-            project_name_or_id: Optional ID of a project in which to assign the
-                role. If this is not provided, the role will be assigned
-                globally.
-
-        Returns:
-            A model of the role assignment.
-
-        Raises:
-            EntityExistsError: If the role assignment already exists.
-        """
-        with Session(self.engine) as session:
-            role = self._get_role_schema(role_name_or_id, session=session)
-            project: Optional[ProjectSchema] = None
-            if project_name_or_id:
-                project = self._get_project_schema(
-                    project_name_or_id, session=session
-                )
-            team = self._get_team_schema(team_name_or_id, session=session)
-            query = select(TeamRoleAssignmentSchema).where(
-                TeamRoleAssignmentSchema.team_id == team.id,
-                TeamRoleAssignmentSchema.role_id == role.id,
-            )
-            if project is not None:
-                query = query.where(
-                    TeamRoleAssignmentSchema.project_id == project.id
-                )
-            existing_role_assignment = session.exec(query).first()
-            if existing_role_assignment is not None:
-                raise EntityExistsError(
-                    f"Unable to assign role '{role.name}' to team "
-                    f"'{team.name}': Role already assigned in this project."
-                )
-            role_assignment = TeamRoleAssignmentSchema(
-                role_id=role.id,
-                team_id=team.id,
-                project_id=project.id if project else None,
-                role=role,
-                team=team,
-                project=project,
-            )
-            session.add(role_assignment)
-            session.commit()
-
-            return role_assignment.to_model()
-
-    def create_user_role_assignment(
-        self, user_role_assignment: UserRoleAssignmentRequestModel
-    ) -> UserRoleAssignmentResponseModel:
-        """Assigns a role to a user or team, scoped to a specific project.
-
-        Args:
-            user_role_assignment: The role assignment to create.
-
-        Returns:
-            The created role assignment.
-
-        Raises:
-            ValueError: If neither a user nor a team is specified.
-        """
-        if user_role_assignment.user:
-            return self._assign_role_to_user(
-                role_name_or_id=user_role_assignment.role,
-                user_name_or_id=user_role_assignment.user,
-                project_name_or_id=user_role_assignment.project,
-            )
-        if user_role_assignment.team:
-            return self._assign_role_to_team(
-                role_name_or_id=user_role_assignment.role,
-                team_name_or_id=user_role_assignment.team,
-                project_name_or_id=user_role_assignment.project,
-            )
-        raise ValueError(
-            "Role assignment must be assigned to either a user or a team."
-        )
-
     def get_user_role_assignment(
         self, user_role_assignment_id: UUID
     ) -> UserRoleAssignmentResponseModel:
@@ -2232,19 +2140,6 @@ class SqlZenStore(BaseZenStore):
             if user_role:
                 return user_role.to_model()
 
-            team_role = session.exec(
-                select(TeamRoleAssignmentSchema).where(
-                    TeamRoleAssignmentSchema.id == user_role_assignment_id
-                )
-            ).one_or_none()
-
-            if team_role:
-                return team_role.to_model()
-
-            raise KeyError(
-                f"RoleAssignment with ID {user_role_assignment_id} not found."
-            )
-
     def delete_user_role_assignment(
         self, user_role_assignment_id: UUID
     ) -> None:
@@ -2262,24 +2157,10 @@ class SqlZenStore(BaseZenStore):
                     UserRoleAssignmentSchema.id == user_role_assignment_id
                 )
             ).one_or_none()
-            if user_role:
-                session.delete(user_role)
 
-            team_role = session.exec(
-                select(TeamRoleAssignmentSchema).where(
-                    TeamRoleAssignmentSchema.id == user_role_assignment_id
-                )
-            ).one_or_none()
+            session.delete(user_role)
 
-            if team_role:
-                session.delete(team_role)
-
-            if user_role is None and team_role is None:
-                raise KeyError(
-                    f"RoleAssignment with ID {user_role_assignment_id} not found."
-                )
-            else:
-                session.commit()
+            session.commit()
 
     # --------
     # Projects

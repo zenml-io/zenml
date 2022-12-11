@@ -19,7 +19,7 @@ import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
-from zenml.cli.utils import warn_unsupported_non_default_project, list_options
+from zenml.cli.utils import list_options, warn_unsupported_non_default_project
 from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories

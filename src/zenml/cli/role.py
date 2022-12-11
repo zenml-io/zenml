@@ -17,7 +17,8 @@ from typing import List, Optional, Tuple
 
 import click
 
-from zenml.cli import utils as cli_utils, list_options
+from zenml.cli import list_options
+from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.client import Client
 from zenml.console import console

@@ -165,3 +165,10 @@ class GenericFilterOps(StrEnum):
     GT = "gt"
     LTE = "lte"
     LT = "lt"
+
+
+class LogicalOperators(StrEnum):
+    """Logical Ops to use to combine filters on list methods"""
+
+    OR = "or"
+    AND = "and"

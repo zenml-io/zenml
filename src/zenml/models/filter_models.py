@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, ClassVar, List, Type, Union, get_args
 from uuid import UUID
@@ -15,7 +14,7 @@ from zenml.constants import (
     PAGE_SIZE_MAXIMUM,
     PAGINATION_STARTING_PAGE,
 )
-from zenml.enums import GenericFilterOps
+from zenml.enums import GenericFilterOps, LogicalOperators
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -174,14 +173,6 @@ class NumericFilter(Filter):
 # -----------------#
 
 
-@dataclass
-class RawParams:
-    """Raw pagination params used for generating the pagination query."""
-
-    limit: int
-    offset: int
-
-
 class FilterBaseModel(BaseModel):
     """Class to unify all filter, paginate and sort request parameters in one place.
 
@@ -206,6 +197,7 @@ class FilterBaseModel(BaseModel):
         "list_of_filters",
         "page",
         "size",
+        "logical_operator",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         "list_of_filters",
@@ -214,6 +206,7 @@ class FilterBaseModel(BaseModel):
     list_of_filters: List["Filter"] = Field(None, exclude=True)
 
     sort_by: str = Query("created")
+    logical_operator: LogicalOperators = "and"
 
     page: int = Query(PAGINATION_STARTING_PAGE, ge=1, description="Page number")
     size: int = Query(
@@ -230,6 +223,7 @@ class FilterBaseModel(BaseModel):
 
     @validator("sort_by", pre=True)
     def sort_column(cls, v):
+        """Validate that the sort_column is a valid filter field."""
         if v in cls.FILTER_EXCLUDE_FIELDS:
             raise ValueError(
                 f"This resource can not be sorted by this field: '{v}'"
@@ -348,34 +342,27 @@ class FilterBaseModel(BaseModel):
 
     @property
     def offset(self):
+        """Returns the offset needed for the query on the data persistence layer."""
         return self.size * (self.page - 1)
 
-    def generate_filter(self, table: Type[SQLModel]):
-        ands = []
+    def _base_filter(self, table: Type[SQLModel]):
+        from sqlalchemy import and_
+        from sqlmodel import or_
+
+        filters = []
         for column_filter in self.list_of_filters:
-            ands.append(column_filter.generate_query_conditions(table=table))
+            filters.append(column_filter.generate_query_conditions(table=table))
+        if self.logical_operator == LogicalOperators.OR:
+            return or_(*filters)
+        elif self.logical_operator == LogicalOperators.AND:
+            return and_(*filters)
+        else:
+            logger.debug(
+                "No valid logical operator was supplied. Defaulting to"
+                "use conjunction."
+            )
+            return filters
 
-        return ands
-
-    @classmethod
-    def click_list_options(cls):
-        import click
-
-        options = list()
-        for k, v in cls.__fields__.items():
-            if k not in cls.CLI_EXCLUDE_FIELDS:
-                options.append(
-                    click.option(
-                        f"--{k}",
-                        type=str,
-                        default=v.default,
-                        required=False,
-                    )
-                )
-
-        def wrapper(function):
-            for option in reversed(options):
-                function = option(function)
-            return function
-
-        return wrapper
+    def generate_filter(self, table: Type[SQLModel]):
+        """Concatinate all filters together with the chosen operator"""
+        return self._base_filter(table=table)

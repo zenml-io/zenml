@@ -45,9 +45,9 @@ from zenml.console import console, zenml_style_defaults
 from zenml.constants import IS_DEBUG_ENV
 from zenml.enums import StackComponentType, StoreType
 from zenml.logger import get_logger
+from zenml.models import FilterBaseModel
 from zenml.models.base_models import BaseResponseModel
 from zenml.models.page_model import Page
-from zenml.models import FilterBaseModel
 
 logger = get_logger(__name__)
 
@@ -59,14 +59,15 @@ if TYPE_CHECKING:
     from zenml.integrations.integration import Integration
     from zenml.model_deployers import BaseModelDeployer
     from zenml.models import (
+        BaseSecretSchema,
+        BaseService,
         ComponentResponseModel,
         FlavorResponseModel,
         PipelineRunResponseModel,
+        ServerDeployment,
+        ServiceState,
         StackResponseModel,
-)
-    from zenml.secret import BaseSecretSchema
-    from zenml.services import BaseService, ServiceState
-    from zenml.zen_server.deploy import ServerDeployment
+    )
 
 MAX_ARGUMENT_VALUE_SIZE = 10240
 
@@ -257,8 +258,11 @@ def print_pydantic_models(
             else items
         )
 
-    print_table([__dictify(model) for model in models.items])
-    print_page_info(models)
+    if isinstance(models, Page):
+        print_table([__dictify(model) for model in models.items])
+        print_page_info(models)
+    else:
+        print_table([__dictify(model) for model in models])
 
 
 def format_integration_list(
