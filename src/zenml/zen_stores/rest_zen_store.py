@@ -44,7 +44,6 @@ from zenml.constants import (
     ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     FLAVORS,
     INFO,
-    INPUTS,
     LOGIN,
     PIPELINES,
     PROJECTS,

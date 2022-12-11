@@ -17,6 +17,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union, cast
 from uuid import UUID
 
+from fastapi import Query
 from pydantic import BaseModel, Field
 
 from zenml import __version__ as current_zenml_version

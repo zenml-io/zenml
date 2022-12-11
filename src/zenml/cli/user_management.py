@@ -17,14 +17,13 @@ from typing import List, Optional
 
 import click
 
-from zenml.cli import print_page_info
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories, StoreType
 from zenml.exceptions import EntityExistsError, IllegalOperationError
-from zenml.models import UserFilterModel, TeamFilterModel
+from zenml.models import TeamFilterModel, UserFilterModel
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)

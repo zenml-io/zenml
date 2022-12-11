@@ -37,7 +37,7 @@ from uuid import UUID
 
 import pymysql
 from pydantic import root_validator
-from sqlalchemy import text, func
+from sqlalchemy import func, text
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import ArgumentError, NoResultFound, OperationalError
 from sqlalchemy.orm import noload
@@ -135,6 +135,7 @@ from zenml.zen_stores.migrations.alembic import (
 )
 from zenml.zen_stores.schemas import (
     ArtifactSchema,
+    BaseSchema,
     FlavorSchema,
     IdentitySchema,
     NamedSchema,
@@ -152,7 +153,7 @@ from zenml.zen_stores.schemas import (
     TeamRoleAssignmentSchema,
     TeamSchema,
     UserRoleAssignmentSchema,
-    UserSchema, BaseSchema,
+    UserSchema,
 )
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 

@@ -35,7 +35,7 @@ from zenml.exceptions import (
     StackExistsError,
 )
 from zenml.models import StackFilterModel
-from zenml.utils.analytics_utils import AnalyticsEvent, track_event
+from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
 if TYPE_CHECKING:

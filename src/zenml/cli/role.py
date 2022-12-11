@@ -284,7 +284,9 @@ def list_user_role_assignments(**kwargs) -> None:
 
         role_assignments = client.list_user_role_assignment(**kwargs)
         if not role_assignments.items:
-            cli_utils.declare("No roles assignments found for the given filters.")
+            cli_utils.declare(
+                "No roles assignments found for the given filters."
+            )
             return
         cli_utils.print_pydantic_models(
             role_assignments, exclude_columns=["id", "created", "updated"]
