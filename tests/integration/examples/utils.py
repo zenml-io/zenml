@@ -116,7 +116,6 @@ def run_example(
         # Clean up more expensive resources like docker containers, volumes and
         # images, if any were created.
 
-        breakpoint()
         active_stack = Client().active_stack_model
         if StackComponentType.CONTAINER_REGISTRY in active_stack.components:
             container_registry = active_stack.components[

@@ -37,9 +37,9 @@ jobs:
     if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
     strategy:
       matrix:
-        os: [ ubuntu-latest ]
+        os: [ windows-latest ]
         python-version: [ '3.8' ]
-        test_environment: [ "default-kubeflow-orchestrator" ]
+        test_environment: [ "default" ]
 
       fail-fast: false
 
@@ -48,7 +48,7 @@ jobs:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
       test_environment: ${{ matrix.test_environment }}
-      enable_tmate: "on-failure"
+      enable_tmate: "before-tests"
       tmate_timeout: 120
     secrets: inherit
 
