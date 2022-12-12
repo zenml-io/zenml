@@ -39,13 +39,12 @@ from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     API,
     ARTIFACTS,
-    CURRENT_USER,
     DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     FLAVORS,
     INFO,
     LOGIN,
-    MYSELF,
+    CURRENT_USER,
     PIPELINES,
     PROJECTS,
     ROLE_ASSIGNMENTS,
@@ -696,7 +695,7 @@ class RestZenStore(BaseZenStore):
                 response_model=UserResponseModel,
             )
         else:
-            body = self.get(MYSELF)
+            body = self.get(CURRENT_USER)
             return UserResponseModel.parse_obj(body)
 
     def get_auth_user(
