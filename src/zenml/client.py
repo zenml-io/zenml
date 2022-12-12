@@ -2385,8 +2385,7 @@ class Client(metaclass=ClientMetaClass):
             raise ZenKeyError(
                 f"Multiple {entity_label} have been found for name "
                 f"'{name_id_or_prefix}': \n{entity_list}.\n"
-                f"The {entity_label} listed above all share this name. Please "
-                f"specify by full or partial id."
+                f"Please specify by full or partial id."
             )
 
         elif len(entities) == 1:
