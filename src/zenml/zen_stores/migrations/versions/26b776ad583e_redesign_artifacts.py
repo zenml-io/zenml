@@ -30,7 +30,7 @@ def upgrade() -> None:
     # ----------------
     op.create_table(
         "step_run_output_artifact",
-        sa.Column("step_run_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
+        sa.Column("step_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
         sa.Column("artifact_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
         sa.Column("name", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
         sa.ForeignKeyConstraint(
@@ -40,12 +40,12 @@ def upgrade() -> None:
             ondelete="CASCADE",
         ),
         sa.ForeignKeyConstraint(
-            ["step_run_id"],
+            ["step_id"],
             ["step_run.id"],
-            name="fk_step_run_output_artifact_step_run_id_step_run",
+            name="fk_step_run_output_artifact_step_id_step_run",
             ondelete="CASCADE",
         ),
-        sa.PrimaryKeyConstraint("step_run_id", "artifact_id"),
+        sa.PrimaryKeyConstraint("step_id", "artifact_id"),
     )
 
     # ------------
@@ -123,7 +123,7 @@ def upgrade() -> None:
     # Insert all produced and cached artifacts into the output artifact table
     produced_output_artifacts = [
         {
-            "step_run_id": produced_artifact.parent_step_id,
+            "step_id": produced_artifact.parent_step_id,
             "artifact_id": produced_artifact.id,
             "name": produced_artifact.name,
         }
@@ -131,7 +131,7 @@ def upgrade() -> None:
     ]
     cached_output_artifacts = [
         {
-            "step_run_id": cached_artifact.parent_step_id,
+            "step_id": cached_artifact.parent_step_id,
             "artifact_id": cached_to_produced_mapping[cached_artifact.id],
             "name": cached_artifact.name,
         }
@@ -173,31 +173,6 @@ def upgrade() -> None:
         batch_op.drop_column("is_cached")
         batch_op.drop_column("mlmd_parent_step_id")
         batch_op.drop_column("mlmd_producer_step_id")
-
-    # Rename `step_id` to `step_run_id` in `step_run_input_artifact`
-    with op.batch_alter_table(
-        "step_run_input_artifact", schema=None
-    ) as batch_op:
-        batch_op.drop_constraint(
-            "fk_step_run_input_artifact_step_id_step_run", type_="foreignkey"
-        )
-    op.alter_column(
-        "step_run_input_artifact",
-        "step_id",
-        new_column_name="step_run_id",
-        existing_type=sqlmodel.sql.sqltypes.GUID(),
-        existing_nullable=False,
-    )
-    with op.batch_alter_table(
-        "step_run_input_artifact", schema=None
-    ) as batch_op:
-        batch_op.create_foreign_key(
-            "fk_step_run_input_artifact_step_run_id_step_run",
-            "step_run",
-            ["step_run_id"],
-            ["id"],
-            ondelete="CASCADE",
-        )
 
 
 def downgrade() -> None:

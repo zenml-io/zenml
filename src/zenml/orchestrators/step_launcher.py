@@ -351,7 +351,7 @@ class StepLauncher:
             StepOperatorEntrypointConfiguration.get_entrypoint_command()
             + StepOperatorEntrypointConfiguration.get_entrypoint_arguments(
                 step_name=self._step_name,
-                step_run_id=step_run_info.step_run_id,
+                step_run_id=str(step_run_info.step_run_id),
             )
         )
         logger.info(

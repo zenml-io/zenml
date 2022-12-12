@@ -225,10 +225,10 @@ class StepRunInputArtifactSchema(SQLModel, table=True):
 
     __tablename__ = "step_run_input_artifact"
 
-    step_run_id: UUID = build_foreign_key_field(
+    step_id: UUID = build_foreign_key_field(
         source=__tablename__,
         target=StepRunSchema.__tablename__,
-        source_column="step_run_id",
+        source_column="step_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=False,
@@ -251,10 +251,10 @@ class StepRunOutputArtifactSchema(SQLModel, table=True):
 
     __tablename__ = "step_run_output_artifact"
 
-    step_run_id: UUID = build_foreign_key_field(
+    step_id: UUID = build_foreign_key_field(
         source=__tablename__,
         target=StepRunSchema.__tablename__,
-        source_column="step_run_id",
+        source_column="step_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=False,

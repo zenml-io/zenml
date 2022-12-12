@@ -53,6 +53,7 @@ AzureSecretsManagerConfig
 BAQsFADAT
 BENTO
 Backend
+Backfilling
 Backpropagation
 Baris
 BaseAlerter
@@ -361,6 +362,7 @@ Keras
 KeyError
 Knative
 Kubeflow
+Kubeflow's
 KubeflowMetadataStore
 KubeflowOrchestrator
 Kubernetes
@@ -477,6 +479,7 @@ OpFunc
 OpenAPI
 OpenApi
 OpenML
+OperationalError
 Orchestrators
 PID
 PIL
@@ -856,6 +859,7 @@ ba
 backend
 backends
 backfill
+backfilling
 backoff
 baseclass
 basename
@@ -1564,3 +1568,6 @@ zenmlregistry
 zenmlserver
 zenserver
 Kubeflow's
+Zipfile
+ziph
+TimeoutError
