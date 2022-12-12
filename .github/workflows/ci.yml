@@ -40,7 +40,7 @@ jobs:
         os: [ macos-latest ]
         python-version: [ '3.7' ]
         test_environment: [ "default" ]
-
+        
       fail-fast: false
 
     uses: ./.github/workflows/integration-test.yml
@@ -48,7 +48,7 @@ jobs:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
       test_environment: ${{ matrix.test_environment }}
-      enable_tmate: "before-tests"
+      enable_tmate: "on-failure"
       tmate_timeout: 120
     secrets: inherit
 
