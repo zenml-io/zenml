@@ -20,6 +20,7 @@ from sqlalchemy import Column, String
 from sqlmodel import Field, Relationship
 
 from zenml.enums import StackComponentType
+from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.models.flavor_models import FlavorResponseModel
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
@@ -41,7 +42,10 @@ class FlavorSchema(NamedSchema, table=True):
 
     type: StackComponentType
     source: str
-    config_schema: str = Field(sa_column=Column(String(4096)), nullable=False)
+    config_schema: str = Field(
+        sa_column=Column(String(TEXT_FIELD_MAX_LENGTH)),
+        nullable=False,
+    )
     integration: Optional[str] = Field(default="")
 
     project_id: UUID = build_foreign_key_field(
