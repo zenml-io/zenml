@@ -206,7 +206,7 @@ class BaseTestDeployment(ABC):
         if ENV_DEPLOYMENT_ROOT_PATH in os.environ:
             return Path(os.environ[ENV_DEPLOYMENT_ROOT_PATH])
 
-        return Path(DEFAULT_DEPLOYMENT_ROOT_PATH)
+        return Path(DEFAULT_DEPLOYMENT_ROOT_PATH).absolute()
 
     def get_runtime_path(self) -> Path:
         """Returns the runtime path used for the deployment."""
