@@ -129,6 +129,10 @@ class PandasMaterializer(BaseMaterializer):
             df: The pandas dataframe or series to write.
         """
         super().handle_return(df)
+
+        if isinstance(df, pd.Series):
+            df = df.to_frame(name="series")
+
         if self.pyarrow_exists:
             with fileio.open(self.parquet_path, mode="wb") as f:
                 df.to_parquet(f, compression=COMPRESSION_TYPE)

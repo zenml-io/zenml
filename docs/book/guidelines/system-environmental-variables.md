@@ -27,6 +27,12 @@ Setting to `true` switches to developer mode:
 ZENML_DEBUG=false
 ```
 
+Setting the `ZENML_ACTIVE_STACK_ID` to a specific UUID will make the 
+corresponding stack the active stack:
+```bash
+ZENML_ACTIVE_STACK_ID=<UUID-OF-YOUR-STACK>
+```
+
 When `true`, this prevents a pipeline from executing:
 ```bash
 ZENML_PREVENT_PIPELINE_EXECUTION=false

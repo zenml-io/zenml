@@ -97,7 +97,7 @@ class StepSpec(StrictBaseModel):
 
     source: str
     upstream_steps: List[str]
-    inputs: Dict[str, InputSpec]
+    inputs: Dict[str, InputSpec] = {}
 
     @property
     def module_name(self) -> str:

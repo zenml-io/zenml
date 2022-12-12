@@ -17,6 +17,9 @@ import tensorflow as tf
 from neptune.new.integrations.tensorflow_keras import NeptuneCallback
 
 from zenml.client import Client
+from zenml.integrations.neptune.experiment_trackers import (
+    NeptuneExperimentTracker,
+)
 from zenml.integrations.neptune.experiment_trackers.run_state import (
     get_neptune_run,
 )
@@ -25,6 +28,16 @@ from zenml.integrations.tensorflow.materializers.keras_materializer import (
     KerasMaterializer,
 )
 from zenml.steps import BaseParameters, step
+
+experiment_tracker = Client().active_stack.experiment_tracker
+
+if not experiment_tracker or not isinstance(
+    experiment_tracker, NeptuneExperimentTracker
+):
+    raise RuntimeError(
+        "Your active stack needs to contain a Neptune experiment tracker for "
+        "this example to work."
+    )
 
 
 class TrainerParameters(BaseParameters):
@@ -39,7 +52,7 @@ settings = NeptuneExperimentTrackerSettings(tags={"keras", "mnist"})
 
 @step(
     enable_cache=False,
-    experiment_tracker=Client().active_stack.experiment_tracker.name,
+    experiment_tracker=experiment_tracker.name,
     output_materializers=KerasMaterializer,
     settings={"experiment_tracker.neptune": settings},
 )
