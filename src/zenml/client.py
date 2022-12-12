@@ -2393,7 +2393,7 @@ class Client(metaclass=ClientMetaClass):
             return entities[0]
         else:
             logger.debug(
-                f"No {response_model} with name '{name_id_or_prefix}' "
+                f"No {entity_label} with name '{name_id_or_prefix}' "
                 f"exists. Trying to resolve as partial_id"
             )
 
