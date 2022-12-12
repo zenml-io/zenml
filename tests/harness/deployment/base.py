@@ -43,7 +43,7 @@ ZENML_IMAGE_NAME = (
     f"zenmldocker/zenml:{zenml.__version__}-"
     f"py{sys.version_info.major}.{sys.version_info.minor}"
 )
-DEFAULT_DEPLOYMENT_ROOT_PATH = "/tmp/zenml-test"
+DEFAULT_DEPLOYMENT_ROOT_DIR = "zenml-test"
 ENV_DEPLOYMENT_ROOT_PATH = "ZENML_TEST_DEPLOYMENT_ROOT_PATH"
 DEPLOYMENT_START_TIMEOUT = 30
 
@@ -203,10 +203,12 @@ class BaseTestDeployment(ABC):
         Returns:
             The root path for test deployments.
         """
-        if ENV_DEPLOYMENT_ROOT_PATH in os.environ:
-            return Path(os.environ[ENV_DEPLOYMENT_ROOT_PATH])
+        import click
 
-        return Path(DEFAULT_DEPLOYMENT_ROOT_PATH).absolute()
+        if ENV_DEPLOYMENT_ROOT_PATH in os.environ:
+            return Path(os.environ[ENV_DEPLOYMENT_ROOT_PATH]).resolve()
+
+        return Path(click.get_app_dir(DEFAULT_DEPLOYMENT_ROOT_DIR)).resolve()
 
     def get_runtime_path(self) -> Path:
         """Returns the runtime path used for the deployment."""
