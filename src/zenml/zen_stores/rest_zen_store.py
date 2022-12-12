@@ -1601,10 +1601,14 @@ class RestZenStore(BaseZenStore):
                     ": ".join(response.json().get("detail", (response.text,)))
                 )
         elif response.status_code == 422:
-            msg = response.json().get("detail", response.text)
-            if isinstance(msg, list):
-                msg = msg[-1]
-            raise RuntimeError(msg)
+            response_details = response.json().get("detail", (response.text,))
+            if isinstance(response_details[0], str):
+                response_msg = ": ".join(response_details)
+            else:
+                # This is an "Unprocessable Entity" error, which has a special
+                # structure in the response.
+                response_msg = response.text
+            raise RuntimeError(response_msg)
         elif response.status_code == 500:
             raise RuntimeError(response.text)
         else:

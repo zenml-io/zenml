@@ -4,6 +4,14 @@ inputs:
   cache_version:
     description: 'Value gets appended to the cache key and will therefore invalidate the cache if it changes'
     required: true
+  python-version:
+    description: 'Python version'
+    type: string
+    required: true
+  os:
+    description: 'OS'
+    type: string
+    required: true
 
 runs:
   using: "composite"
@@ -11,16 +19,16 @@ runs:
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
-        python-version: ${{ matrix.python-version }}
+        python-version: ${{ inputs.python-version }}
 
     - name: Delete error-causing bash
       shell: bash
-      if: ${{ matrix.os == 'windows-latest' }}
+      if: ${{ inputs.os == 'windows-latest' }}
       run: rm.exe "C:/WINDOWS/system32/bash.EXE"
 
     - name: Set path to bash for example runner
       shell: bash
-      if: ${{ matrix.os == 'windows-latest' }}
+      if: ${{ inputs.os == 'windows-latest' }}
       run: |
         echo "SHELL_EXECUTABLE=C:\Program Files\Git\bin\bash.exe" >> $GITHUB_ENV
 
@@ -52,7 +60,7 @@ runs:
         # pyproject.toml, the current calendar week and the cache version.
         # Providing a different value for the cache version enables manual
         # invalidation of the cache in case it is in some erroneous state.
-        key: venv-${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}-${{ steps.date.outputs.date }}-${{ hashFiles('cache_version') }}
+        key: venv-${{ runner.os }}-python-${{ inputs.python-version }}-${{ hashFiles('pyproject.toml') }}-${{ steps.date.outputs.date }}-${{ hashFiles('cache_version') }}
 
     - name: Install Project
       shell: bash
