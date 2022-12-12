@@ -25,9 +25,8 @@ from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
     SagemakerOrchestratorConfig,
 )
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
-from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilder,
-)
+from zenml.orchestrators.utils import get_orchestrator_run_name
+from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
@@ -84,11 +83,6 @@ class SagemakerOrchestrator(BaseOrchestrator):
         Returns:
             The result of the pipeline run.
         """
-        # session = sagemaker.Session(default_bucket=self.config.bucket)
-        # for step in deployment.steps.values():
-        #     self.run_step(
-        #         step=step,
-        #     )
         session = sagemaker.Session(default_bucket=self.config.bucket)
         image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
         sagemaker_steps = []
@@ -100,7 +94,7 @@ class SagemakerOrchestrator(BaseOrchestrator):
             entrypoint = command + arguments
 
             processor = sagemaker.processing.Processor(
-                role=self.config.role,
+                role=sagemaker.get_execution_role(),
                 image_uri=image_name,
                 instance_count=1,
                 instance_type="ml.m5.large",
@@ -110,15 +104,19 @@ class SagemakerOrchestrator(BaseOrchestrator):
             )
 
             sagemaker_step = ProcessingStep(
-                name=step_name,
+                name=step.config.name,
                 processor=processor,
+                depends_on=step.spec.upstream_steps,
             )
             sagemaker_steps.append(sagemaker_step)
 
-        # construct the pipeline from the sagemaker_steps
+        orchestrator_run_name = get_orchestrator_run_name(
+            pipeline_name=deployment.pipeline.name
+        ).replace("_", "-")
 
+        # construct the pipeline from the sagemaker_steps
         pipeline = Pipeline(
-            name=deployment.run_name,
+            name=orchestrator_run_name,
             steps=sagemaker_steps,
             sagemaker_session=session,
         )

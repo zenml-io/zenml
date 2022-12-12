@@ -38,8 +38,9 @@ class AWSIntegration(Integration):
     # does not pin it. They fixed this in a later version, so we can probably
     # remove this once we update the sagemaker version.
     REQUIREMENTS = [
-        "boto3~=1.24.59",
-        "sagemaker~=2.110.0",
+        "boto3==1.26.26",
+        "botocore==1.29.26",
+        "sagemaker==2.121.1",
         "protobuf>=3.1,<4.0.0",
     ]
 
