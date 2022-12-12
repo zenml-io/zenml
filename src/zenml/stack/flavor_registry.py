@@ -52,6 +52,7 @@ class FlavorRegistry:
             GCPContainerRegistryFlavor,
             GitHubContainerRegistryFlavor,
         )
+        from zenml.image_builders import LocalImageBuilderFlavor
         from zenml.orchestrators import (
             LocalDockerOrchestratorFlavor,
             LocalOrchestratorFlavor,
@@ -68,6 +69,7 @@ class FlavorRegistry:
             GCPContainerRegistryFlavor,
             GitHubContainerRegistryFlavor,
             LocalSecretsManagerFlavor,
+            LocalImageBuilderFlavor,
         )
         for flavor in default_flavors:
             flavor_instance = flavor()  # type: ignore[abstract]

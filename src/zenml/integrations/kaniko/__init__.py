@@ -11,39 +11,32 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Kubernetes integration for Kubernetes-native orchestration.
-
-The Kubernetes integration sub-module powers an alternative to the local
-orchestrator. You can enable it by registering the Kubernetes orchestrator with
-the CLI tool.
-"""
+"""Kaniko integration for image building."""
 from typing import List, Type
 
-from zenml.integrations.constants import KUBERNETES
+from zenml.integrations.constants import KANIKO
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
 
-KUBERNETES_ORCHESTRATOR_FLAVOR = "kubernetes"
+KANIKO_IMAGE_BUILDER_FLAVOR = "kaniko"
 
 
-class KubernetesIntegration(Integration):
-    """Definition of Kubernetes integration for ZenML."""
+class KanikoIntegration(Integration):
+    """Definition of the Kaniko integration for ZenML."""
 
-    NAME = KUBERNETES
+    NAME = KANIKO
     REQUIREMENTS = ["kubernetes==18.20.0"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
-        """Declare the stack component flavors for the Kubernetes integration.
+        """Declare the stack component flavors for the Kaniko integration.
 
         Returns:
             List of new stack component flavors.
         """
-        from zenml.integrations.kubernetes.flavors import (
-            KubernetesOrchestratorFlavor,
-        )
+        from zenml.integrations.kaniko.flavors import KanikoImageBuilderFlavor
 
-        return [KubernetesOrchestratorFlavor]
+        return [KanikoImageBuilderFlavor]
 
 
-KubernetesIntegration.check_installation()
+KanikoIntegration.check_installation()

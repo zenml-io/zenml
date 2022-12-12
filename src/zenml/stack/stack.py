@@ -49,6 +49,7 @@ if TYPE_CHECKING:
         BaseExperimentTracker,
     )
     from zenml.feature_stores import BaseFeatureStore
+    from zenml.image_builders import BaseImageBuilder
     from zenml.model_deployers import BaseModelDeployer
     from zenml.orchestrators import BaseOrchestrator
     from zenml.secrets_managers import BaseSecretsManager
@@ -86,6 +87,7 @@ class Stack:
         alerter: Optional["BaseAlerter"] = None,
         annotator: Optional["BaseAnnotator"] = None,
         data_validator: Optional["BaseDataValidator"] = None,
+        image_builder: Optional["BaseImageBuilder"] = None,
     ):
         """Initializes and validates a stack instance.
 
@@ -105,6 +107,7 @@ class Stack:
             alerter: Alerter component of the stack.
             annotator: Annotator component of the stack.
             data_validator: Data validator component of the stack.
+            image_builder: Image builder component of the stack.
 
         Raises:
             StackValidationError: If the stack configuration is not valid.
@@ -122,6 +125,7 @@ class Stack:
         self._alerter = alerter
         self._annotator = annotator
         self._data_validator = data_validator
+        self._image_builder = image_builder
 
     @classmethod
     def from_model(cls, stack_model: StackResponseModel) -> "Stack":
@@ -175,6 +179,7 @@ class Stack:
         from zenml.data_validators import BaseDataValidator
         from zenml.experiment_trackers import BaseExperimentTracker
         from zenml.feature_stores import BaseFeatureStore
+        from zenml.image_builders import BaseImageBuilder
         from zenml.model_deployers import BaseModelDeployer
         from zenml.orchestrators import BaseOrchestrator
         from zenml.secrets_managers import BaseSecretsManager
@@ -260,6 +265,12 @@ class Stack:
         ):
             _raise_type_error(data_validator, BaseDataValidator)
 
+        image_builder = components.get(StackComponentType.IMAGE_BUILDER)
+        if image_builder is not None and not isinstance(
+            image_builder, BaseImageBuilder
+        ):
+            _raise_type_error(image_builder, BaseImageBuilder)
+
         return Stack(
             id=id,
             name=name,
@@ -274,6 +285,7 @@ class Stack:
             alerter=alerter,
             annotator=annotator,
             data_validator=data_validator,
+            image_builder=image_builder,
         )
 
     @property
@@ -297,6 +309,7 @@ class Stack:
                 self.alerter,
                 self.annotator,
                 self.data_validator,
+                self.image_builder,
             ]
             if component is not None
         }
@@ -418,6 +431,15 @@ class Stack:
             The data validator of the stack.
         """
         return self._data_validator
+
+    @property
+    def image_builder(self) -> Optional["BaseImageBuilder"]:
+        """The image builder of the stack.
+
+        Returns:
+            The image builder of the stack.
+        """
+        return self._image_builder
 
     def dict(self) -> Dict[str, str]:
         """Converts the stack into a dictionary.
