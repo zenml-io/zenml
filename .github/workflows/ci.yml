@@ -65,6 +65,8 @@ jobs:
             os: macos-latest
           - test_environment: default-kubeflow-orchestrator
             os: macos-latest
+          # disable kubeflow tests for now
+          - test_environment: default-kubeflow-orchestrator
 
       fail-fast: false
 

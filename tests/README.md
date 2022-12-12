@@ -250,9 +250,11 @@ responsibility of the developer or CI/CD system that runs the tests.
 * the actual execution of tests, collection of test results etc. This is done
 through pytest.
 
-The ZenML test framework uses a few concepts that are important to understand
-in order to be able to write and/or execute tests. These are clarified in the
-next sections.
+![ZenML Test Framework Architecture](test-framework-architecture.jpg)
+
+The ZenML test framework uses a few concepts summarized in the above diagram
+that are important to understand in order to be able to write and/or execute
+tests. These are clarified in the next sections.
 
 ### The ZenML Test Configuration
 
@@ -462,8 +464,8 @@ used to run the ZenML test CLI.
 
 The following commands can be used to manage ZenML test deployments:
 
-* `./zen-test deployment list` - lists all configured ZenML test deployments
-* `./zen-test deployment up <deployment-name>` - sets up a local ZenML test
+* `./zen-test deployment list` - lists all configured ZenML test deployments.
+* `./zen-test deployment up <deployment-name>` - starts up a local ZenML test
 deployment. For example, for a local ZenML server deployment, this will start
 the local ZenML server as a daemon process, same as running `zenml up`.
 * `./zen-test deployment down <deployment-name>` - tears down a local ZenML
@@ -484,4 +486,15 @@ care of configuring and using a ZenML client connected to the deployment.
 The following commands can be used to manage ZenML test environments:
 
 * `./zen-test environment list` - lists all configured ZenML test environments
-* `./zen-test environment up <environment-name>` - sets up a ZenML test
+* `./zen-test environment up <environment-name>` - starts up the ZenML test
+deployment associated with the test environment.
+* `./zen-test environment provision <environment-name>` - starts up the ZenML
+test deployment and provisions all stack components required by a test
+environment.
+* `./zen-test environment deprovision <environment-name>` - deprovisions all
+stack components required by a test environment.
+* `./zen-test environment down <environment-name>` - deprovisions all
+stack components required by a test environment and tears down the ZenML test
+deployment.
+* `./zen-test environment cleanup <environment-name>` - similar as `down`, but
+also cleans up all local files associated with the ZenML test deployment.

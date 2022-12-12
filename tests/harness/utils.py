@@ -38,8 +38,11 @@ from zenml.stack.stack import Stack
 
 
 def cleanup_folder(path: str) -> None:
-    """Deletes a folder and all its contents."""
+    """Deletes a folder and all its contents in a way that works on Windows.
 
+    Args:
+        path: The path to the folder to delete.
+    """
     if sys.platform == "win32":
         try:
             shutil.rmtree(path)
@@ -90,7 +93,6 @@ def environment_session(
     Yields:
         The active environment and a client connected with it.
     """
-
     # set env variables
     os.environ[ENV_ZENML_DEBUG] = "true"
     os.environ["ZENML_ANALYTICS_OPT_IN"] = "false"
