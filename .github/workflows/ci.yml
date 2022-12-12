@@ -41,9 +41,11 @@ jobs:
         python-version: [ '3.7', '3.8', '3.9', '3.10' ]
         test_environment: [ "default", "docker-server-docker-orchestrator", "default-kubeflow-orchestrator"]
         exclude:
-          # kubeflow is not supported on windows
+          # docker and kubeflow are not supported on windows
           - os: windows-latest
             test_environment: default-kubeflow-orchestrator
+          - os: windows-latest
+            test_environment: docker-server-docker-orchestrator
           # kubeflow is time-consuming to run, so we only run it on 3.8
           - test_environment: default-kubeflow-orchestrator
             python-version: '3.7'
@@ -58,8 +60,6 @@ jobs:
             python-version: '3.9'
           - test_environment: docker-server-docker-orchestrator
             python-version: '3.10'
-          # disable windows integration tests for now
-          - os: windows-latest
           # disable docker macos tests for now
           - test_environment: docker-server-docker-orchestrator
             os: macos-latest
