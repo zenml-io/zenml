@@ -14,11 +14,11 @@
 """Models representing steps of pipeline runs."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Dict, List, Optional, Union, ClassVar, Type
 from uuid import UUID
 
 from fastapi import Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, PrivateAttr
 
 from zenml.config.step_configurations import Step
 from zenml.enums import ExecutionStatus
@@ -27,7 +27,7 @@ from zenml.models.base_models import (
     ProjectScopedResponseModel,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
-from zenml.models.filter_models import FilterBaseModel
+from zenml.models.filter_models import ProjectScopedFilterModel
 
 if TYPE_CHECKING:
     from zenml.models import ArtifactResponseModel
@@ -76,7 +76,7 @@ class StepRunResponseModel(StepRunBaseModel, ProjectScopedResponseModel):
 # ------ #
 
 
-class StepRunFilterModel(FilterBaseModel):
+class StepRunFilterModel(ProjectScopedFilterModel):
     """Model to enable advanced filtering of all Artifacts."""
 
     name: str = Query(
@@ -121,7 +121,6 @@ class StepRunFilterModel(FilterBaseModel):
         None,
         description="Amount of outputs for this Step Run",
     )
-
 
 # ------- #
 # REQUEST #

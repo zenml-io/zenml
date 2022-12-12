@@ -6,7 +6,7 @@ from typing import Any, ClassVar, List, Type, Union, get_args
 from uuid import UUID
 
 from fastapi import Query
-from pydantic import BaseModel, Field, root_validator, validator
+from pydantic import BaseModel, Field, root_validator, validator, PrivateAttr
 from sqlmodel import SQLModel
 
 from zenml.constants import (
@@ -195,12 +195,16 @@ class FilterBaseModel(BaseModel):
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         "sort_by",
         "list_of_filters",
+        "_scope_user",
+        "_scope_project",
         "page",
         "size",
         "logical_operator",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         "list_of_filters",
+        "_scope_user",
+        "_scope_project"
     ]
 
     list_of_filters: List["Filter"] = Field(None, exclude=True)
@@ -363,6 +367,83 @@ class FilterBaseModel(BaseModel):
             )
             return filters
 
+    def _scope_filter(self, table: Type[SQLModel]):
+        return None
+
     def generate_filter(self, table: Type[SQLModel]):
         """Concatinate all filters together with the chosen operator"""
-        return self._base_filter(table=table)
+        from sqlalchemy import and_
+        user_created_filter = self._base_filter(table=table)
+        scope_filter = self._scope_filter(table=table)
+        if scope_filter is not None:
+            return and_(user_created_filter, scope_filter)
+        else:
+            return user_created_filter
+
+
+class ProjectScopedFilterModel(FilterBaseModel):
+    """Model to enable advanced scoping with project."""
+
+    _scope_project: UUID = PrivateAttr(None)
+
+    def set_scope_project(self, project_id: UUID):
+        """Set the project to scope this response."""
+        self._scope_project = project_id
+
+    def _scope_filter(self, table: Type["SQLModel"]):
+        """Scope by project.
+
+        Args:
+            table: The Table that is being queried from.
+
+        Returns:
+            A list of all scope filters that will be conjuncted with the other
+                filters
+        """
+        if self._scope_project:
+            return getattr(table, "project_id") == self._scope_project
+        else:
+            return None
+
+
+class ShareableProjectScopedFilterModel(ProjectScopedFilterModel):
+    """Model to enable advanced scoping with project and user scoped shareable things."""
+
+    _scope_user: UUID = PrivateAttr(None)
+
+    def set_scope_user(self, user_id: UUID):
+        """Set the user that is performing the filtering to scope the response."""
+        self._scope_user = user_id
+
+    def _scope_filter(self, table: Type["SQLModel"]):
+        """A User is only allowed to list the stacks that either belong to them or that are shared.
+
+        The resulting filter from this method will be the union of the scoping
+        filter (owned by user OR shared) with the user provided filters.
+
+        Args:
+            table: The Table that is being queried from.
+
+        Returns:
+            A list of all scope filters that will be conjuncted with the user
+                filters
+        """
+        from sqlmodel import or_
+        from sqlalchemy import and_
+
+        scope_filter = []
+        if self._scope_user:
+            scope_filter.append(or_(
+                    getattr(table, "user_id") == self._scope_user,
+                    getattr(table, "is_shared") is True,
+                )
+            )
+        if self._scope_project:
+            scope_filter.append(
+                getattr(table, "project_id") == self._scope_project
+            )
+
+        if scope_filter:
+            return and_(*scope_filter)
+        else:
+            return None

@@ -17,11 +17,11 @@ from typing import ClassVar, List, Optional, Union
 from uuid import UUID
 
 from fastapi import Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, PrivateAttr
 
 from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.enums import ExecutionStatus
-from zenml.models import FilterBaseModel
+from zenml.models.filter_models import ProjectScopedFilterModel
 from zenml.models.base_models import (
     ProjectScopedRequestModel,
     ProjectScopedResponseModel,
@@ -71,7 +71,7 @@ class PipelineResponseModel(PipelineBaseModel, ProjectScopedResponseModel):
 # ------ #
 
 
-class PipelineFilterModel(FilterBaseModel):
+class PipelineFilterModel(ProjectScopedFilterModel):
     """Model to enable advanced filtering of all Projects."""
 
     name: str = Query(

@@ -27,7 +27,7 @@ from zenml.models.base_models import (
     update_model,
 )
 from zenml.models.component_models import ComponentResponseModel
-from zenml.models.filter_models import FilterBaseModel
+from zenml.models.filter_models import ShareableProjectScopedFilterModel
 
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
 if TYPE_CHECKING:
@@ -117,7 +117,7 @@ class StackResponseModel(StackBaseModel, ShareableResponseModel):
 # ------ #
 
 
-class StackFilterModel(FilterBaseModel):
+class StackFilterModel(ShareableProjectScopedFilterModel):
     """Model to enable advanced filtering of all StackModels.
 
     The Stack Model needs additional scoping. As such the `_scope_user` field
@@ -125,18 +125,6 @@ class StackFilterModel(FilterBaseModel):
     `generate_filter()` method of the baseclass is overwritten to include the
     scoping.
     """
-
-    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        "sort_by",
-        "list_of_filters",
-        "_scope_user",
-        "page",
-        "size",
-        "logical_operator",
-    ]
-    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = ["list_of_filters", "_scope_user"]
-
-    _scope_user: UUID = PrivateAttr(None)
 
     is_shared: Union[bool, str] = Query(
         None, description="If the stack is shared or private"
@@ -153,36 +141,6 @@ class StackFilterModel(FilterBaseModel):
     component_id: Union[UUID, str] = Query(
         None, description="Component in the stack"
     )
-
-    def set_scope_user(self, user_id: UUID):
-        """Set the user that is performing the filtering to scope the response."""
-        self._scope_user = user_id
-
-    def generate_filter(self, table: Type["SQLModel"]):
-        """A User is only allowed to list the stacks that either belong to them or that are shared.
-
-        The resulting filter from this method will be the union of the scoping
-        filter (owned by user OR shared) with the user provided filters.
-
-        Args:
-            table: The Table that is being queried from.
-
-        Returns:
-            A list of all filters to use for the query
-        """
-        from sqlmodel import or_
-
-        filters = self._base_filter(table=table)
-
-        if self._scope_user:
-            filters.append(
-                or_(
-                    getattr(table, "user_id") == self._scope_user,
-                    getattr(table, "is_shared") is True,
-                )
-            )
-
-        return filters
 
 
 # ------- #

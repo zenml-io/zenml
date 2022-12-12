@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing stack component flavors."""
 
-from typing import ClassVar, List, Optional, Union
+from typing import ClassVar, List, Optional, Union, Type
 from uuid import UUID
 
 from fastapi import Query
@@ -25,7 +25,7 @@ from zenml.models.base_models import (
     ProjectScopedResponseModel,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
-from zenml.models.filter_models import FilterBaseModel
+from zenml.models.filter_models import ProjectScopedFilterModel
 
 # ---- #
 # BASE #
@@ -74,7 +74,7 @@ class FlavorResponseModel(FlavorBaseModel, ProjectScopedResponseModel):
 # ------ #
 
 
-class FlavorFilterModel(FilterBaseModel):
+class FlavorFilterModel(ProjectScopedFilterModel):
     """Model to enable advanced filtering of all Flavors."""
 
     name: str = Query(

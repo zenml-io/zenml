@@ -14,7 +14,7 @@
 """Models representing pipeline runs."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union, cast, Type
 from uuid import UUID
 
 from fastapi import Query
@@ -27,7 +27,7 @@ from zenml.models.base_models import (
     ProjectScopedResponseModel,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
-from zenml.models.filter_models import FilterBaseModel
+from zenml.models.filter_models import ProjectScopedFilterModel
 
 if TYPE_CHECKING:
     from zenml.models.pipeline_models import PipelineResponseModel
@@ -120,7 +120,7 @@ class PipelineRunResponseModel(
 # ------ #
 
 
-class PipelineRunFilterModel(FilterBaseModel):
+class PipelineRunFilterModel(ProjectScopedFilterModel):
     """Model to enable advanced filtering of all Projects."""
 
     name: str = Query(

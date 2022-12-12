@@ -629,26 +629,11 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The User
         """
-        # First interpret as full UUID
-        if isinstance(name_id_or_prefix, UUID):
-            return self.zen_store.get_user(name_id_or_prefix)
-        else:
-            user = self.list_users(
-                logical_operator=LogicalOperators.OR,
-                name=name_id_or_prefix,
-                id=f"startswith:{name_id_or_prefix}",
-            )
-            if user.total == 1:
-                return user.items[0]
-            else:
-                raise ZenKeyError(
-                    f"{user.total} users have been found that have either a "
-                    f"name or an id prefix that match the provided string "
-                    f"'{name_id_or_prefix}':\n"
-                    f"{user.items}.\n"
-                    f"Please provide more characters to uniquely identify "
-                    f"only one of the users."
-                )
+        return self._get_entity_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_user,
+            list_method=self.list_users,
+            name_id_or_prefix=name_id_or_prefix,
+        )
 
     def list_users(
         self,
@@ -763,26 +748,11 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The Team
         """
-        # First interpret as full UUID
-        if isinstance(name_id_or_prefix, UUID):
-            return self.zen_store.get_team(name_id_or_prefix)
-        else:
-            team = self.list_teams(
-                logical_operator=LogicalOperators.OR,
-                name=name_id_or_prefix,
-                id=f"startswith:{name_id_or_prefix}",
-            )
-            if team.total == 1:
-                return team.items[0]
-            else:
-                raise ZenKeyError(
-                    f"{team.total} teams have been found that have either a "
-                    f"name or an id prefix that match the provided string "
-                    f"'{name_id_or_prefix}':\n"
-                    f"{team.items}.\n"
-                    f"Please provide more characters to uniquely identify "
-                    f"only one of the teams."
-                )
+        return self._get_entity_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_team,
+            list_method=self.list_teams,
+            name_id_or_prefix=name_id_or_prefix,
+        )
 
     def list_teams(
         self,
@@ -936,26 +906,11 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The fetched role.
         """
-        # First interpret as full UUID
-        if isinstance(name_id_or_prefix, UUID):
-            return self.zen_store.get_role(name_id_or_prefix)
-        else:
-            role = self.list_roles(
-                logical_operator=LogicalOperators.OR,
-                name=name_id_or_prefix,
-                id=f"startswith:{name_id_or_prefix}",
-            )
-            if role.total == 1:
-                return role.items[0]
-            else:
-                raise ZenKeyError(
-                    f"{role.total} roles have been found that have either a "
-                    f"name or an id prefix that match the provided string "
-                    f"'{name_id_or_prefix}':\n"
-                    f"{role.items}.\n"
-                    f"Please provide more characters to uniquely identify "
-                    f"only one of the roles."
-                )
+        return self._get_entity_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_role,
+            list_method=self.list_roles,
+            name_id_or_prefix=name_id_or_prefix,
+        )
 
     def list_roles(
         self,
@@ -1307,26 +1262,11 @@ class Client(metaclass=ClientMetaClass):
         """
         if not name_id_or_prefix:
             return self.active_project
-        # First interpret as full UUID
-        if isinstance(name_id_or_prefix, UUID):
-            return self.zen_store.get_project(name_id_or_prefix)
-        else:
-            project = self.list_projects(
-                logical_operator=LogicalOperators.OR,
-                name=name_id_or_prefix,
-                id=f"startswith:{name_id_or_prefix}",
-            )
-            if project.total == 1:
-                return project.items[0]
-            else:
-                raise ZenKeyError(
-                    f"{project.total} projects have been found that have either a "
-                    f"name or an id prefix that match the provided string "
-                    f"'{name_id_or_prefix}':\n"
-                    f"{project.items}.\n"
-                    f"Please provide more characters to uniquely identify "
-                    f"only one of the projects."
-                )
+        return self._get_entity_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_project,
+            list_method=self.zen_store.list_projects,
+            name_id_or_prefix=name_id_or_prefix,
+        )
 
     def list_projects(
         self,
@@ -1488,27 +1428,11 @@ class Client(metaclass=ClientMetaClass):
             The stack.
         """
         if name_id_or_prefix is not None:
-            # First interpret as full UUID
-            if isinstance(name_id_or_prefix, UUID):
-                return self.zen_store.get_stack(name_id_or_prefix)
-            else:
-                stack = self.list_stacks(
-                    logical_operator=LogicalOperators.OR,
-                    name=name_id_or_prefix,
-                    id=f"startswith:{name_id_or_prefix}",
-                )
-                if stack.total == 1:
-                    return stack.items[0]
-                else:
-                    raise ZenKeyError(
-                        f"{stack.total} stacks have been found that have either "
-                        f"a "
-                        f"name or an id prefix that match the provided string "
-                        f"'{name_id_or_prefix}':\n"
-                        f"{stack.items}.\n"
-                        f"Please provide more characters to uniquely identify "
-                        f"only one of the stacks."
-                    )
+            return self._get_entity_by_id_or_name_or_prefix(
+                get_method=self.zen_store.get_stack,
+                list_method=self.list_stacks,
+                name_id_or_prefix=name_id_or_prefix,
+            )
         else:
             return self.active_stack_model
 
@@ -1741,13 +1665,12 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A page of stacks.
         """
-        return self.zen_store.list_stacks(
-            StackFilterModel(
+        stack_filter_model = StackFilterModel(
                 page=page,
                 size=size,
                 sort_by=sort_by,
                 logical_operator=logical_operator,
-                project_id=project_id or self.active_project.id,
+                project_id=project_id,
                 user_id=user_id,
                 component_id=component_id,
                 name=name,
@@ -1757,7 +1680,8 @@ class Client(metaclass=ClientMetaClass):
                 created=created,
                 updated=updated,
             )
-        )
+        stack_filter_model.set_scope_project(self.active_project.id)
+        return self.zen_store.list_stacks(stack_filter_model)
 
     @track(event=AnalyticsEvent.SET_STACK)
     def activate_stack(self, stack_name_id_or_prefix: Union[str, UUID]) -> None:
@@ -2189,26 +2113,11 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The stack component flavor.
         """
-        # First interpret as full UUID
-        if isinstance(name_id_or_prefix, UUID):
-            return self.zen_store.get_flavor(name_id_or_prefix)
-        else:
-            flavor = self.list_custom_flavors(
-                logical_operator=LogicalOperators.OR,
-                name=name_id_or_prefix,
-                id=f"startswith:{name_id_or_prefix}",
-            )
-            if flavor.total == 1:
-                return flavor.items[0]
-            else:
-                raise ZenKeyError(
-                    f"{flavor.total} flavors have been found that have either a "
-                    f"name or an id prefix that match the provided string "
-                    f"'{name_id_or_prefix}':\n"
-                    f"{flavor.items}.\n"
-                    f"Please provide more characters to uniquely identify "
-                    f"only one of the flavors."
-                )
+        return self._get_entity_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_flavor,
+            list_method=self.zen_store.list_flavors,
+            name_id_or_prefix=name_id_or_prefix,
+        )
 
     def delete_flavor(self, name_id_or_prefix: str) -> None:
         """Deletes a flavor.
@@ -2495,26 +2404,11 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The pipeline.
         """
-        # First interpret as full UUID
-        if isinstance(name_id_or_prefix, UUID):
-            return self.zen_store.get_pipeline(name_id_or_prefix)
-        else:
-            pipeline = self.list_pipelines(
-                logical_operator=LogicalOperators.OR,
-                name=name_id_or_prefix,
-                id=f"startswith:{name_id_or_prefix}",
-            )
-            if pipeline.total == 1:
-                return pipeline.items[0]
-            else:
-                raise ZenKeyError(
-                    f"{pipeline.total} pipelines have been found that have either a "
-                    f"name or an id prefix that match the provided string "
-                    f"'{name_id_or_prefix}':\n"
-                    f"{pipeline.items}.\n"
-                    f"Please provide more characters to uniquely identify "
-                    f"only one of the pipelines."
-                )
+        return self._get_entity_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_pipeline,
+            list_method=self.list_pipelines,
+            name_id_or_prefix=name_id_or_prefix,
+        )
 
     def delete_pipeline(self, name_id_or_prefix: Union[str, UUID]) -> None:
         """Delete a pipeline.
@@ -2601,26 +2495,11 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The pipeline run.
         """
-        # First interpret as full UUID
-        if isinstance(name_id_or_prefix, UUID):
-            return self.zen_store.get_run(name_id_or_prefix)
-        else:
-            run = self.list_runs(
-                logical_operator=LogicalOperators.OR,
-                name=name_id_or_prefix,
-                id=f"startswith:{name_id_or_prefix}",
-            )
-            if run.total == 1:
-                return run.items[0]
-            else:
-                raise ZenKeyError(
-                    f"{run.total} pipeline runs have been found that have either a "
-                    f"name or an id prefix that match the provided string "
-                    f"'{name_id_or_prefix}':\n"
-                    f"{run.items}.\n"
-                    f"Please provide more characters to uniquely identify "
-                    f"only one of the pipeline runs."
-                )
+        return self._get_entity_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_run,
+            list_method=self.list_runs,
+            name_id_or_prefix=name_id_or_prefix,
+        )
 
     def delete_pipeline_run(
         self,
@@ -2936,3 +2815,49 @@ class Client(metaclass=ClientMetaClass):
             f"No {display_name} with name or id prefix '{name_id_or_prefix}' "
             f"exists."
         )
+
+    def _get_entity_by_id_or_name_or_prefix(
+        self,
+        get_method: Callable[..., AnyResponseModel],
+        list_method: Callable[..., Page[AnyResponseModel]],
+        name_id_or_prefix: Union[str, UUID],
+    ) -> "AnyResponseModel":
+        """Fetches an entity using the name, id or partial id.
+
+        Args:
+            response_model: The response model to use for the entity.
+            get_method: The method to use to fetch the entity by id.
+            list_method: The method to use to fetch all entities.
+            name_id_or_prefix: The id, name or partial id of the entity to
+                fetch.
+
+        Returns:
+            The entity with the given name, id or partial id.
+
+        Raises:
+            KeyError: If no entity with the given name exists.
+            ZenKeyError: If there is more than one entity with that name
+                or id prefix.
+        """
+        # First interpret as full UUID
+        if isinstance(name_id_or_prefix, UUID):
+            return get_method(name_id_or_prefix)
+        else:
+            entity_label = list_method.__name__.replace("list_", "")
+
+            entity = list_method(
+                logical_operator=LogicalOperators.OR,
+                name=f"contains:{name_id_or_prefix}",
+                id=f"startswith:{name_id_or_prefix}",
+            )
+            if entity.total == 1:
+                return entity.items[0]
+            else:
+                raise ZenKeyError(
+                    f"{entity.total} {entity_label} have been found that have "
+                    f"either a name or an id prefix that matches the provided "
+                    f"string '{name_id_or_prefix}':\n"
+                    f"{[f'{m.name}: {m.id}' for m in entity.items]}.\n"
+                    f"Please provide more characters to uniquely identify "
+                    f"only one of the pipeline runs."
+                )
