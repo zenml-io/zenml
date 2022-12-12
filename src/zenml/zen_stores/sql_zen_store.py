@@ -3022,7 +3022,7 @@ class SqlZenStore(BaseZenStore):
         # Check if the input is already set.
         assignment = session.exec(
             select(StepRunInputArtifactSchema)
-            .where(StepRunInputArtifactSchema.step_run_id == run_step_id)
+            .where(StepRunInputArtifactSchema.step_id == run_step_id)
             .where(StepRunInputArtifactSchema.artifact_id == artifact_id)
         ).first()
         if assignment is not None:
@@ -3030,7 +3030,7 @@ class SqlZenStore(BaseZenStore):
 
         # Save the input assignment in the database.
         assignment = StepRunInputArtifactSchema(
-            step_run_id=run_step_id, artifact_id=artifact_id, name=name
+            step_id=run_step_id, artifact_id=artifact_id, name=name
         )
         session.add(assignment)
 
@@ -3075,7 +3075,7 @@ class SqlZenStore(BaseZenStore):
         # Check if the output is already set.
         assignment = session.exec(
             select(StepRunOutputArtifactSchema)
-            .where(StepRunOutputArtifactSchema.step_run_id == step_run_id)
+            .where(StepRunOutputArtifactSchema.step_id == step_run_id)
             .where(StepRunOutputArtifactSchema.artifact_id == artifact_id)
         ).first()
         if assignment is not None:
@@ -3083,7 +3083,7 @@ class SqlZenStore(BaseZenStore):
 
         # Save the output assignment in the database.
         assignment = StepRunOutputArtifactSchema(
-            step_run_id=step_run_id,
+            step_id=step_run_id,
             artifact_id=artifact_id,
             name=name,
         )
@@ -3141,7 +3141,7 @@ class SqlZenStore(BaseZenStore):
                 .where(
                     ArtifactSchema.id == StepRunInputArtifactSchema.artifact_id
                 )
-                .where(StepRunInputArtifactSchema.step_run_id == step_run.id)
+                .where(StepRunInputArtifactSchema.step_id == step_run.id)
             ).all()
             input_artifacts = {
                 input_name: self._artifact_schema_to_model(artifact)
@@ -3157,7 +3157,7 @@ class SqlZenStore(BaseZenStore):
                 .where(
                     ArtifactSchema.id == StepRunOutputArtifactSchema.artifact_id
                 )
-                .where(StepRunOutputArtifactSchema.step_run_id == step_run.id)
+                .where(StepRunOutputArtifactSchema.step_id == step_run.id)
             ).all()
             output_artifacts = {
                 output_name: self._artifact_schema_to_model(artifact)
@@ -3289,14 +3289,12 @@ class SqlZenStore(BaseZenStore):
         # Find the producer step run ID.
         with Session(self.engine) as session:
             producer_step_run_id = session.exec(
-                select(StepRunOutputArtifactSchema.step_run_id)
+                select(StepRunOutputArtifactSchema.step_id)
                 .where(
                     StepRunOutputArtifactSchema.artifact_id
                     == artifact_schema.id
                 )
-                .where(
-                    StepRunOutputArtifactSchema.step_run_id == StepRunSchema.id
-                )
+                .where(StepRunOutputArtifactSchema.step_id == StepRunSchema.id)
                 .where(StepRunSchema.status != ExecutionStatus.CACHED)
             ).first()
 

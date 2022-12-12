@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.23.0"
+version = "0.30.0"
 packages = [
     { include = "zenml", from = "src" },
 ]
@@ -234,6 +234,7 @@ module = [
     "dash_cytoscape",
     "dash.dependencies",
     "docker.*",
+    "flask.*",
     "kfp.*",
     "kubernetes.*",
     "kserve.*",
