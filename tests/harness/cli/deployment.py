@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""ZenML test deployment CLI."""
 
 import sys
 from typing import List
@@ -26,7 +27,7 @@ def deployment() -> None:
     """View and manage test deployments."""
 
 
-@deployment.command("list")
+@deployment.command("list", help="List all configured deployments.")
 def list_deployments() -> None:
     """List configured deployments."""
     from zenml.cli.utils import print_table
@@ -56,10 +57,14 @@ def list_deployments() -> None:
     print_table(deployments)
 
 
-@deployment.command("up")
+@deployment.command("up", help="Start a configured deployment.")
 @click.argument("name", type=str, required=True)
 def start_deployment(name: str) -> None:
-    """Start a configured deployment."""
+    """Start a configured deployment.
+
+    Args:
+        name: The name of the deployment to start.
+    """
     harness = TestHarness()
     deployment = harness.get_deployment(name)
     deployment.up()
@@ -68,30 +73,42 @@ def start_deployment(name: str) -> None:
     print(f"Deployment '{name}' running{url}.")
 
 
-@deployment.command("down")
+@deployment.command(
+    "down",
+    help="Stop a configured deployment.",
+)
 @click.argument("name", type=str, required=True)
 def stop_deployment(name: str) -> None:
-    """Stop a configured deployment."""
+    """Stop a configured deployment.
+
+    Args:
+        name: The name of the deployment to stop.
+    """
     harness = TestHarness()
     deployment = harness.get_deployment(name)
     deployment.down()
 
 
-@deployment.command("cleanup")
+@deployment.command(
+    "cleanup",
+    help="Stop a configured deployment and clean up all the local files.",
+)
 @click.argument("name", type=str, required=True)
 def cleanup_deployment(name: str) -> None:
-    """Stop a configured deployment and clean up all the local files."""
+    """Stop a configured deployment and clean up all the local files.
+
+    Args:
+        name: The name of the deployment to cleanup.
+    """
     harness = TestHarness()
     deployment = harness.get_deployment(name)
     deployment.cleanup()
 
 
-@deployment.command("exec", context_settings={"ignore_unknown_options": True})
-@click.argument("args", nargs=-1, type=click.UNPROCESSED)
-def exec_in_deployment(
-    args: List[str],
-) -> None:
-    """Run a ZenML CLI command while connected to a deployment.
+@deployment.command(
+    "exec",
+    context_settings={"ignore_unknown_options": True},
+    help="""Run a ZenML CLI command while connected to a deployment.
 
     Usage:
 
@@ -102,6 +119,16 @@ def exec_in_deployment(
         zen-test deployment run local-docker status
 
         zen-test deployment run mysql stack list
+""",
+)
+@click.argument("args", nargs=-1, type=click.UNPROCESSED)
+def exec_in_deployment(
+    args: List[str],
+) -> None:
+    """Run a ZenML CLI command while connected to a deployment.
+
+    Args:
+        args: The ZenML CLI command arguments to run.
     """
     from zenml.cli.cli import cli as zenml_cli
 

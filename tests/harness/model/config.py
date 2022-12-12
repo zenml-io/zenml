@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Test framework configuration."""
 
 from typing import TYPE_CHECKING, Any, List, Sequence, Tuple
 
@@ -39,6 +40,13 @@ class Configuration(BaseTestConfigModel):
     _config_file: str
 
     def __init__(self, config_file: str, **data: Any) -> None:
+        """Initializes the ZenML test configuration.
+
+        Args:
+            config_file: The path to the configuration file from which this
+                configuration was loaded.
+            **data: configuration data keyword arguments.
+        """
         self._config_file = config_file
         super().__init__(**data)
 
@@ -47,6 +55,10 @@ class Configuration(BaseTestConfigModel):
 
         Args:
             config: The configuration to merge into this one.
+
+        Raises:
+            ValueError: If there are duplicate keys in the lists of
+                deployments, secrets, tests, requirements or environments.
         """
 
         def check_duplicate_keys(

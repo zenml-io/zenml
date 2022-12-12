@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Docker-compose ZenML server deployment."""
 
 import logging
 import time
@@ -44,6 +45,10 @@ class ServerDockerComposeTestDeployment(BaseTestDeployment):
 
         Returns:
             The docker-compose manifest as a string.
+
+        Raises:
+            RuntimeError: If no available port could be found for the MySQL
+                container or the ZenML server.
         """
         from zenml.utils.networking_utils import scan_for_available_port
 
@@ -143,8 +148,11 @@ services:
         return True
 
     def up(self) -> None:
-        """Starts the deployment."""
+        """Starts the deployment.
 
+        Raises:
+            RuntimeError: If the deployment could not be started.
+        """
         from compose.cli.main import (  # type: ignore[import]
             TopLevelCommand,
             project_from_options,
@@ -215,7 +223,6 @@ services:
 
     def down(self) -> None:
         """Stops the deployment."""
-
         from compose.cli.main import TopLevelCommand, project_from_options
 
         zenml_container = self.zenml_container
@@ -244,7 +251,15 @@ services:
         )
 
     def get_store_config(self) -> Optional[DeploymentStoreConfig]:
+        """Returns the store config for the deployment.
 
+        Returns:
+            The store config for the deployment if it is running, None
+            otherwise.
+
+        Raises:
+            RuntimeError: If the deployment is not running.
+        """
         from zenml.zen_stores.base_zen_store import (
             DEFAULT_PASSWORD,
             DEFAULT_USERNAME,

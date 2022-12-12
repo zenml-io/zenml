@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Local ZenML server deployment."""
 
 import logging
 import sys
@@ -36,6 +37,11 @@ class ServerLocalTestDeployment(BaseTestDeployment):
     """A deployment that runs a ZenML server as a background process."""
 
     def __init__(self, config: DeploymentConfig) -> None:
+        """Initializes a local ZenML server deployment.
+
+        Args:
+            config: The configuration for the deployment.
+        """
         super().__init__(config)
 
         # The server local deployment is built on top of a local default
@@ -67,7 +73,11 @@ class ServerLocalTestDeployment(BaseTestDeployment):
 
     @property
     def is_running(self) -> bool:
+        """Returns whether the ZenML server is running.
 
+        Returns:
+            True if the server is running, False otherwise.
+        """
         server = self.server
         if server is not None and server.is_running:
             return True
@@ -75,6 +85,11 @@ class ServerLocalTestDeployment(BaseTestDeployment):
         return False
 
     def up(self) -> None:
+        """Starts the ZenML deployment.
+
+        Raises:
+            RuntimeError: If the deployment is not supported on the host OS.
+        """
         from zenml.enums import ServerProviderType
         from zenml.utils.networking_utils import scan_for_available_port
         from zenml.zen_server.deploy.deployer import ServerDeployer
@@ -122,6 +137,7 @@ class ServerLocalTestDeployment(BaseTestDeployment):
         )
 
     def down(self) -> None:
+        """Stops the ZenML deployment."""
         from zenml.zen_server.deploy.deployer import ServerDeployer
 
         server = self.server
@@ -141,7 +157,15 @@ class ServerLocalTestDeployment(BaseTestDeployment):
         self.default_deployment.down()
 
     def get_store_config(self) -> Optional[DeploymentStoreConfig]:
+        """Returns the store config for the deployment.
 
+        Returns:
+            The store config for the deployment if it is running, None
+            otherwise.
+
+        Raises:
+            RuntimeError: If the deployment is not running.
+        """
         from zenml.zen_stores.base_zen_store import (
             DEFAULT_PASSWORD,
             DEFAULT_USERNAME,

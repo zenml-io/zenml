@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""ZenML test environment management."""
+
 
 import logging
 from contextlib import contextmanager
@@ -52,12 +54,20 @@ class TestEnvironment:
 
     @property
     def is_running(self) -> bool:
-        """Returns whether the environment is running."""
+        """Returns whether the environment is running.
+
+        Returns:
+            Whether the environment is running.
+        """
         return self.deployment.is_running
 
     @property
     def is_provisioned(self) -> bool:
-        """Returns whether the environment is provisioned."""
+        """Returns whether the environment is provisioned.
+
+        Returns:
+            Whether the environment is provisioned.
+        """
         if self.is_disabled or not self.deployment.is_running:
             return False
 
@@ -88,14 +98,17 @@ class TestEnvironment:
 
     @property
     def is_disabled(self) -> bool:
-        """Returns whether the environment is administratively disabled."""
+        """Returns whether the environment is administratively disabled.
+
+        Returns:
+            Whether the environment is administratively disabled.
+        """
         return self.config.disabled or self.deployment.config.disabled
 
     def _collect_components(
         self,
     ) -> None:
         """Collect the components managed or tracked by this environment."""
-
         with self.deployment.connect() as client:
 
             self._optional_components = {}
@@ -157,11 +170,15 @@ class TestEnvironment:
         Returns:
             A dictionary mapping component types to a list of mandatory
             components.
+
+        Raises:
+            AssertionError: If the components have not been collected yet.
         """
         if self._mandatory_components is not None:
             return self._mandatory_components
 
         self._collect_components()
+
         assert self._mandatory_components is not None
         return self._mandatory_components
 
@@ -180,7 +197,11 @@ class TestEnvironment:
         }
 
     def up(self) -> None:
-        """Start the deployment for this environment."""
+        """Start the deployment for this environment.
+
+        Raises:
+            RuntimeError: If the environment is disabled.
+        """
         if self.is_disabled:
             raise RuntimeError(
                 "Cannot start a disabled environment. Please enable "
@@ -190,7 +211,12 @@ class TestEnvironment:
         self.deployment.up()
 
     def provision(self) -> None:
-        """Start the deployment for this environment and provision the stack components."""
+        """Start the deployment for this environment and provision the stack components.
+
+        Raises:
+            RuntimeError: If the environment is disabled or if a mandatory
+                component cannot be provisioned.
+        """
         from zenml.models.component_models import ComponentResponseModel
         from zenml.stack.stack_component import StackComponent
 
@@ -292,7 +318,11 @@ class TestEnvironment:
                             pass
 
     def deprovision(self) -> None:
-        """Deprovision all stack components for this environment."""
+        """Deprovision all stack components for this environment.
+
+        Raises:
+            RuntimeError: If the environment is disabled.
+        """
         from zenml.models.component_models import ComponentResponseModel
         from zenml.stack.stack_component import StackComponent
 
@@ -379,7 +409,11 @@ class TestEnvironment:
                     )
 
     def down(self) -> None:
-        """Deprovision stacks and stop the deployment for this environment."""
+        """Deprovision stacks and stop the deployment for this environment.
+
+        Raises:
+            RuntimeError: If the environment is disabled.
+        """
         if self.is_disabled:
             raise RuntimeError(
                 "Cannot stop a disabled environment. Please enable "
@@ -412,6 +446,10 @@ class TestEnvironment:
 
         Yields:
             A ZenML client connected to the environment.
+
+        Raises:
+            RuntimeError: If the environment is disabled.
+            Exception: The exception caught during provisioning.
         """
         if self.is_disabled:
             raise RuntimeError(

@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Local deployments connected to a docker MySQL server."""
 
 import logging
 import time
@@ -40,6 +41,11 @@ class LocalDockerTestDeployment(BaseTestDeployment):
     """A deployment that uses a MySQL Docker container to host the ZenML database."""
 
     def __init__(self, config: DeploymentConfig) -> None:
+        """Initializes the deployment.
+
+        Args:
+            config: The deployment configuration.
+        """
         super().__init__(config)
 
     @property
@@ -65,7 +71,11 @@ class LocalDockerTestDeployment(BaseTestDeployment):
 
     @property
     def is_running(self) -> bool:
+        """Returns whether the deployment is running.
 
+        Returns:
+            Whether the deployment is running.
+        """
         # Check if container exists and is running
         container = self.container
         if container and container.status == "running":
@@ -74,6 +84,11 @@ class LocalDockerTestDeployment(BaseTestDeployment):
         return False
 
     def up(self) -> None:
+        """Starts up the deployment.
+
+        Raises:
+            RuntimeError: If the deployment could not be started.
+        """
         from zenml.utils.networking_utils import scan_for_available_port
 
         if self.is_running:
@@ -129,7 +144,7 @@ class LocalDockerTestDeployment(BaseTestDeployment):
         )
 
     def down(self) -> None:
-
+        """Tears down the deployment."""
         container = self.container
         if container is None:
             logging.info(
@@ -157,7 +172,15 @@ class LocalDockerTestDeployment(BaseTestDeployment):
         logging.info(f"Container '{self.container_name}' has been removed.")
 
     def get_store_config(self) -> Optional[DeploymentStoreConfig]:
+        """Returns the store config for the deployment.
 
+        Returns:
+            The store config for the deployment if it is running, None
+            otherwise.
+
+        Raises:
+            RuntimeError: If the deployment is not running.
+        """
         if not self.is_running:
             raise RuntimeError(
                 f"The {self.config.name} deployment is not running."

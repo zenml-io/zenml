@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""ZenML test secrets models."""
 
 import logging
 import os
@@ -64,6 +65,9 @@ class BaseTestSecretConfigModel(BaseTestConfigModel):
 
         Returns:
             The resolved secret value.
+
+        Raises:
+            ValueError: If the secret could not be resolved.
         """
         from tests.harness.harness import TestHarness
 
@@ -132,8 +136,14 @@ class BaseTestSecretConfigModel(BaseTestConfigModel):
                     )
 
     def dict(self, **kwargs: Any) -> Dict[str, Any]:
-        """Resolve secrets in the dictionary representation."""
+        """Resolve secrets in the dictionary representation.
 
+        Args:
+            **kwargs: Additional keyword arguments to include in the dictionary.
+
+        Returns:
+            The dictionary representation of the model.
+        """
         d = super().dict(**kwargs)
         for key, value in d.items():
             secret_name = self._get_secret_name(value)

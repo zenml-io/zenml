@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""ZenML test harness."""
 
 import logging
 from abc import ABCMeta
@@ -112,6 +113,9 @@ class TestHarness(metaclass=TestHarnessMetaClass):
 
         Returns:
             The active environment.
+
+        Raises:
+            ValueError: If the specified environment does not exist.
         """
         if environment_name is not None:
             environment_cfg = self.get_environment_config(environment_name)
@@ -138,7 +142,11 @@ class TestHarness(metaclass=TestHarnessMetaClass):
 
     @property
     def active_environment(self) -> TestEnvironment:
-        """Returns the active environment."""
+        """Returns the active environment.
+
+        Returns:
+            The active environment.
+        """
         if self._active_environment is None:
             # If no environment is set, use an ad-hoc environment consisting
             # of the default deployment and no requirements.
@@ -148,7 +156,11 @@ class TestHarness(metaclass=TestHarnessMetaClass):
 
     @property
     def active_deployment(self) -> BaseTestDeployment:
-        """Returns the active deployment."""
+        """Returns the active deployment.
+
+        Returns:
+            The active deployment.
+        """
         return self.active_environment.deployment
 
     def load_config(
@@ -158,6 +170,12 @@ class TestHarness(metaclass=TestHarnessMetaClass):
 
         Args:
             config_path: Path to directory with configuration files.
+
+        Returns:
+            The loaded configuration.
+
+        Raises:
+            ValueError: If a configuration file is invalid.
         """
         config = Configuration(config_path)
         for config_file in Path(config_path).glob("**/*.yaml"):
@@ -179,8 +197,11 @@ class TestHarness(metaclass=TestHarnessMetaClass):
         return config
 
     def compile(self) -> None:
-        """Compiles the configuration."""
+        """Compiles the configuration.
 
+        Raises:
+            ValueError: If the configuration is invalid.
+        """
         self.deployment_configs = {d.name: d for d in self.config.deployments}
         self.secrets = {s.name: s for s in self.config.secrets}
         self.tests = {t.module: t for t in self.config.tests}
@@ -219,6 +240,9 @@ class TestHarness(metaclass=TestHarnessMetaClass):
 
         Returns:
             The deployment.
+
+        Raises:
+            KeyError: If no deployment with the given name exists.
         """
         if name not in self.deployments:
             raise KeyError(f"Deployment with name '{name}' does not exist.")
@@ -255,6 +279,9 @@ class TestHarness(metaclass=TestHarnessMetaClass):
 
         Returns:
             An environment instance.
+
+        Raises:
+            KeyError: If no environment with the given name exists.
         """
         if name not in self.environments:
             raise KeyError(f"Environment with name '{name}' does not exist.")

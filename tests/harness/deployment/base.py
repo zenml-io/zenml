@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Base ZenML deployment."""
 
 import logging
 import os
@@ -49,12 +50,18 @@ DEPLOYMENT_START_TIMEOUT = 30
 
 
 class BaseTestDeployment(ABC):
+    """Base class for ZenML test deployments."""
 
     DEPLOYMENTS: Dict[
         Tuple[DeploymentType, DeploymentSetup], Type["BaseTestDeployment"]
     ] = {}
 
     def __init__(self, config: DeploymentConfig) -> None:
+        """Initializes the deployment.
+
+        Args:
+            config: The configuration for the deployment.
+        """
         self.config = config
         self._docker_client: Optional[DockerClient] = None
 
@@ -62,8 +69,12 @@ class BaseTestDeployment(ABC):
     def register_deployment_class(
         cls, type: DeploymentType, setup: DeploymentSetup
     ) -> None:
-        """Registers the deployment in the global registry."""
+        """Registers the deployment in the global registry.
 
+        Args:
+            type: The deployment type.
+            setup: The deployment setup method.
+        """
         BaseTestDeployment.DEPLOYMENTS[(type, setup)] = cls
 
     @classmethod
@@ -144,7 +155,14 @@ class BaseTestDeployment(ABC):
 
     @property
     def docker_client(self) -> DockerClient:
-        """Returns the docker client."""
+        """Returns the docker client.
+
+        Returns:
+            The docker client.
+
+        Raises:
+            RuntimeError: If Docker is not installed or running on the machine.
+        """
         if self._docker_client is None:
             try:
                 # Try to ping Docker, to see if it's installed and running
@@ -161,7 +179,6 @@ class BaseTestDeployment(ABC):
     @staticmethod
     def build_server_image() -> None:
         """Builds the server image locally."""
-
         from zenml.utils.docker_utils import build_image
 
         logging.info(
@@ -182,7 +199,6 @@ class BaseTestDeployment(ABC):
     @staticmethod
     def build_base_image() -> None:
         """Builds the base image locally."""
-
         from zenml.utils.docker_utils import build_image
 
         logging.info(f"Building ZenML base image '{ZENML_IMAGE_NAME}' locally")
@@ -211,13 +227,19 @@ class BaseTestDeployment(ABC):
         return Path(click.get_app_dir(DEFAULT_DEPLOYMENT_ROOT_DIR)).resolve()
 
     def get_runtime_path(self) -> Path:
-        """Returns the runtime path used for the deployment."""
+        """Returns the runtime path used for the deployment.
 
+        Returns:
+            The runtime path for the deployment.
+        """
         return self.get_root_path() / self.config.name
 
     def global_config_path(self) -> Path:
-        """Returns the global config path used for the deployment."""
+        """Returns the global config path used for the deployment.
 
+        Returns:
+            The global config path for the deployment.
+        """
         return self.get_runtime_path() / ".zenconfig"
 
     @contextmanager
@@ -242,6 +264,9 @@ class BaseTestDeployment(ABC):
 
         Yields:
             A ZenML Client configured to connect to this deployment.
+
+        Raises:
+            RuntimeError: If the deployment is disabled.
         """
         from zenml.client import Client
         from zenml.config.global_config import GlobalConfiguration

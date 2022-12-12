@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""ZenML test requirements models."""
 
 import logging
 import platform
@@ -217,6 +218,10 @@ class StackRequirement(BaseTestConfigModel):
 
         Returns:
             The integration name, if one is implied by this stack requirement.
+
+        Raises:
+            RuntimeError: If the configured component flavor is not found in
+                ZenML.
         """
         from zenml.stack.flavor_registry import flavor_registry
 
@@ -242,6 +247,12 @@ class StackRequirement(BaseTestConfigModel):
 
         Args:
             client: The ZenML client to be used to provision components.
+
+        Returns:
+            The registered stack component.
+
+        Raises:
+            ValueError: If the requirements do not specify a flavor.
         """
         from zenml.utils.string_utils import random_str
 

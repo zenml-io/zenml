@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""ZenML test environment CLI."""
 
 import importlib
 
@@ -26,7 +27,7 @@ def environment() -> None:
     """View and manage test environments."""
 
 
-@environment.command("list")
+@environment.command("list", help="List all configured environments.")
 @click.option(
     "--detailed",
     type=str,
@@ -34,7 +35,11 @@ def environment() -> None:
     help="Show detailed output.",
 )
 def list_environment(detailed: bool = False) -> None:
-    """List configured environment."""
+    """List configured environment.
+
+    Args:
+        detailed: Whether to show detailed output.
+    """
     from zenml.cli.utils import print_table
 
     harness = TestHarness()
@@ -82,10 +87,17 @@ def list_environment(detailed: bool = False) -> None:
     print_table(environments)
 
 
-@environment.command("up")
+@environment.command(
+    "up",
+    help="Start a configured environment.",
+)
 @click.argument("name", type=str, required=True)
 def start_environment(name: str) -> None:
-    """Start a configured environment."""
+    """Start a configured environment.
+
+    Args:
+        name: Name of the environment to start.
+    """
     harness = TestHarness()
     environment = harness.get_environment(name)
     environment.up()
@@ -94,19 +106,33 @@ def start_environment(name: str) -> None:
     print(f"Environment '{name}' is running{url}.")
 
 
-@environment.command("down")
+@environment.command(
+    "down",
+    help="Deprovision and stop a configured environment.",
+)
 @click.argument("name", type=str, required=True)
 def stop_environment(name: str) -> None:
-    """Deprovision and stop a configured environment."""
+    """Deprovision and stop a configured environment.
+
+    Args:
+        name: Name of the environment to stop.
+    """
     harness = TestHarness()
     environment = harness.get_environment(name)
     environment.down()
 
 
-@environment.command("provision")
+@environment.command(
+    "provision",
+    help="Provision a configured environment.",
+)
 @click.argument("name", type=str, required=True)
 def provision_environment(name: str) -> None:
-    """Provision a configured environment."""
+    """Provision a configured environment.
+
+    Args:
+        name: Name of the environment to provision.
+    """
     harness = TestHarness()
     environment = harness.get_environment(name)
     environment.provision()
@@ -115,25 +141,44 @@ def provision_environment(name: str) -> None:
     print(f"Environment '{name}' is provisioned and running{url}.")
 
 
-@environment.command("deprovision")
+@environment.command(
+    "deprovision",
+    help="Deprovision a configured environment.",
+)
 @click.argument("name", type=str, required=True)
 def deprovision_environment(name: str) -> None:
-    """Deprovision a configured environment."""
+    """Deprovision a configured environment.
+
+    Args:
+        name: Name of the environment to deprovision.
+    """
     harness = TestHarness()
     environment = harness.get_environment(name)
     environment.deprovision()
 
 
-@environment.command("cleanup")
+@environment.command(
+    "cleanup",
+    help="Deprovision, stop a configured environment and clean up all the "
+    "local files.",
+)
 @click.argument("name", type=str, required=True)
 def cleanup_environment(name: str) -> None:
-    """Deprovision, stop a configured environment and clean up all the local files."""
+    """Deprovision, stop a configured environment and clean up all the local files.
+
+    Args:
+        name: Name of the environment to cleanup.
+    """
     harness = TestHarness()
     environment = harness.get_environment(name)
     environment.cleanup()
 
 
-@environment.command("check")
+@environment.command(
+    "check",
+    help="Check if the requirements for a given pytest test module are "
+    "satisfied.",
+)
 @click.option(
     "--module-name",
     type=str,
@@ -142,7 +187,12 @@ def cleanup_environment(name: str) -> None:
 )
 @click.argument("name", type=str, required=True)
 def check_environment(module_name: str, name: str) -> None:
-    """Check if the requirements for a given pytest test module."""
+    """Check if the requirements for a given pytest test module.
+
+    Args:
+        module_name: Pytest test module name.
+        name: Name of the environment to use.
+    """
     try:
         module = importlib.import_module(module_name)
     except ModuleNotFoundError:

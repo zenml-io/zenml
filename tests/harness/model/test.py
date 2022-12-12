@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""ZenML test configuration models."""
 
 import itertools
 import logging
@@ -49,6 +50,10 @@ class TestConfig(BaseTestConfigModel):
 
         Args:
             harness: The test harness to validate against.
+
+        Raises:
+            ValueError: If one of the requirements does not exist in the test
+                harness configuration.
         """
         for i, config in enumerate(self.requirements):
             if isinstance(config, str):
@@ -120,6 +125,11 @@ class TestConfig(BaseTestConfigModel):
 
         Yields:
             The active stack that the test should use.
+
+        Raises:
+            RuntimeError: If the stack requirements are not met or if multiple
+                stack components of the same type are specified as requirements.
+            Exception: The exception raised while provisioning the stack.
         """
         from zenml.enums import StackComponentType
         from zenml.utils.string_utils import random_str

@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Default ZenML deployment."""
 
 import sys
 from pathlib import Path
@@ -26,19 +27,37 @@ from tests.harness.model import (
 
 
 class LocalDefaultTestDeployment(BaseTestDeployment):
+    """Default ZenML deployment."""
+
     def __init__(self, config: DeploymentConfig) -> None:
+        """Initializes the default deployment.
+
+        Args:
+            config: The deployment config.
+        """
         super().__init__(config)
 
     @property
     def is_running(self) -> bool:
+        """Returns whether the deployment is running.
+
+        Returns:
+            Whether the deployment is running.
+        """
         return True
 
     def up(self) -> None:
+        """Starts up the deployment."""
         with self.connect() as client:
             # Initialize the default store and database
             _ = client.zen_store
 
     def down(self) -> None:
+        """Tears down the deployment.
+
+        Raises:
+            PermissionError: If the database file cannot be deleted.
+        """
         from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
 
         with self.connect() as client:
@@ -55,6 +74,12 @@ class LocalDefaultTestDeployment(BaseTestDeployment):
                         raise
 
     def get_store_config(self) -> Optional[DeploymentStoreConfig]:
+        """Returns the store config for the deployment.
+
+        Returns:
+            The store config for the deployment if it is running, None
+            otherwise.
+        """
         return None
 
 

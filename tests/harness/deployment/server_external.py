@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""External ZenML server deployment."""
 
 from typing import Optional
 
@@ -27,6 +28,14 @@ class ExternalServerTestDeployment(BaseTestDeployment):
     """An external server deployment."""
 
     def __init__(self, config: DeploymentConfig) -> None:
+        """Initializes the deployment.
+
+        Args:
+            config: The deployment config.
+
+        Raises:
+            ValueError: If the config is invalid.
+        """
         super().__init__(config)
 
         if config.config is None:
@@ -36,6 +45,11 @@ class ExternalServerTestDeployment(BaseTestDeployment):
 
     @property
     def is_running(self) -> bool:
+        """Returns whether the deployment is running.
+
+        Returns:
+            Whether the deployment is running.
+        """
         try:
             with self.connect() as client:
                 _ = client.zen_store
@@ -44,13 +58,18 @@ class ExternalServerTestDeployment(BaseTestDeployment):
             return False
 
     def up(self) -> None:
-        pass
+        """Starts up the deployment."""
 
     def down(self) -> None:
-        pass
+        """Tears down the deployment."""
 
     def get_store_config(self) -> Optional[DeploymentStoreConfig]:
+        """Returns the store config for the deployment.
 
+        Returns:
+            The store config for the deployment if it is running, None
+            otherwise.
+        """
         return self.config.config
 
 

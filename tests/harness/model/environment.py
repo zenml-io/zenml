@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""ZenML test environment models."""
 
 from typing import TYPE_CHECKING, Dict, List, Union
 
@@ -49,6 +50,10 @@ class EnvironmentConfig(BaseTestConfigModel):
 
         Args:
             harness: The test harness to validate against.
+
+        Raises:
+            ValueError: If the referenced deployment or one of the requirements
+                does not exist in the test harness configuration.
         """
         if isinstance(self.deployment, str):
             deployment = harness.get_deployment_config(self.deployment)

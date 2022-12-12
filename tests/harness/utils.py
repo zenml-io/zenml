@@ -72,8 +72,10 @@ def environment_session(
     no_teardown: bool = False,
     no_deprovision: bool = False,
 ) -> Generator[Tuple[TestEnvironment, Client], None, None]:
-    """Context manager to provision and use a test environment and optionally
-    deprovision and tear it down afterwards.
+    """Context manager to provision and use a test environment.
+
+    Use this context manager to provision and use a test environment and
+    optionally deprovision and tear it down on exit.
 
     Args:
         environment_name: The name of the environment to use. If one is not
@@ -147,7 +149,6 @@ def clean_repo_session(
     Yields:
         A ZenML client connected to the repository.
     """
-
     # original working directory
     orig_cwd = os.getcwd()
 
@@ -187,7 +188,7 @@ def clean_project_session(
     Args:
         tmp_path_factory: A pytest fixture that provides a temporary directory.
         clean_repo: Whether to create and use a clean repository for the
-        project.
+            project.
 
     Yields:
         A ZenML client configured to use the project.
@@ -221,8 +222,10 @@ def clean_project_session(
 def clean_default_client_session(
     tmp_path_factory: pytest.TempPathFactory,
 ) -> Generator[Client, None, None]:
-    """Context manager to initialize and use a clean local default ZenML client
-    with its own global configuration and local database.
+    """Context manager to initialize and use a clean local default ZenML client.
+
+    This context manager creates a clean ZenML client with its own global
+    configuration and local database.
 
     Args:
         tmp_path_factory: A pytest fixture that provides a temporary directory.
@@ -230,7 +233,6 @@ def clean_default_client_session(
     Yields:
         A clean ZenML client.
     """
-
     # save the current global configuration and client singleton instances
     # to restore them later, then reset them
     orig_cwd = os.getcwd()
@@ -278,8 +280,7 @@ def check_test_requirements(
     environment: Optional[TestEnvironment] = None,
     client: Optional["Client"] = None,
 ) -> bool:
-    """Utility function to check test-level requirements for the current test
-    module.
+    """Utility function to check test-level requirements for the current test module.
 
     If the test requirements are not met, the test is skipped.
 
@@ -316,8 +317,7 @@ def setup_test_stack_session(
     check_requirements: bool = True,
     no_cleanup: bool = False,
 ) -> Generator[Stack, None, None]:
-    """Context manager to configure a stack adapted to the requirements of the
-    current test module.
+    """Context manager to configure a stack adapted to the requirements of the current test module.
 
     Args:
         request: A pytest fixture request.
@@ -336,6 +336,10 @@ def setup_test_stack_session(
 
     Yields:
         An active ZenML stack matching the requirements of the test module.
+
+    Raises:
+        ValueError: If `tmp_path_factory` is not provided when `clean_repo`
+            is True.
     """
     harness = TestHarness()
 
