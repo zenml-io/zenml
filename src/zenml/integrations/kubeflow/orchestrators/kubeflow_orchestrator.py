@@ -51,6 +51,9 @@ from zenml.constants import (
     ENV_ZENML_LOCAL_STORES_PATH,
     ORCHESTRATOR_DOCKER_IMAGE_KEY,
 )
+from zenml.container_registries.base_container_registry import (
+    BaseContainerRegistry,
+)
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
@@ -70,6 +73,7 @@ from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
+from zenml.stack.stack_component import StackComponent
 from zenml.utils import io_utils, networking_utils
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
@@ -184,6 +188,19 @@ class KubeflowOrchestrator(BaseOrchestrator):
             # should not happen, because the stack validation takes care of
             # this, but just in case
             assert container_registry is not None
+
+            if (
+                self.config.container_registry_name is not None
+                and container_registry.name
+                != self.config.container_registry_name
+            ):
+                return (
+                    False,
+                    f"Configured container registry component name "
+                    f"'{self.config.container_registry_name}' does not "
+                    f"match the one in the active stack: "
+                    f"'{self.config.container_registry_name}'",
+                )
 
             contexts, active_context = self.get_kubernetes_contexts()
 
@@ -1072,7 +1089,22 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 "Please install 'k3d' and 'kubectl' and try again."
             )
 
-        container_registry = Client().active_stack.container_registry
+        if self.config.container_registry_name is None:
+            container_registry = Client().active_stack.container_registry
+        else:
+            container_registry_model = Client().get_stack_component(
+                component_type=StackComponentType.CONTAINER_REGISTRY,
+                name_id_or_prefix=self.config.container_registry_name,
+            )
+
+            # should not happen, because the stack validation takes care of
+            # this, but just in case
+            assert container_registry_model is not None
+
+            container_registry = cast(
+                BaseContainerRegistry,
+                StackComponent.from_model(container_registry_model),
+            )
 
         # should not happen, because the stack validation takes care of this,
         # but just in case

@@ -16,7 +16,7 @@
 import json
 import os
 import uuid
-from pathlib import PurePath
+from pathlib import Path, PurePath
 from secrets import token_hex
 from typing import TYPE_CHECKING, Any, Dict, Optional, cast
 from uuid import UUID
@@ -407,6 +407,9 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             self._sanitize_config()
             self._write_config()
 
+            local_stores_path = Path(self.local_stores_path)
+            local_stores_path.mkdir(parents=True, exist_ok=True)
+
     def _sanitize_config(self) -> None:
         """Sanitize and save the global configuration.
 
@@ -418,7 +421,8 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             self.active_stack_id,
             config_name="global",
         )
-        self.set_active_project(active_project)
+        self.active_project_name = active_project.name
+        self._active_project = active_project
         self.set_active_stack(active_stack)
 
     @staticmethod
@@ -669,6 +673,8 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         """
         self.active_project_name = project.name
         self._active_project = project
+        # Sanitize the global configuration to reflect the new project
+        self._sanitize_config()
         return project
 
     def set_active_stack(self, stack: "StackResponseModel") -> None:

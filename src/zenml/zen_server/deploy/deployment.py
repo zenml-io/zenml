@@ -84,3 +84,15 @@ class ServerDeployment(BaseModel):
 
     config: ServerDeploymentConfig
     status: Optional[ServerDeploymentStatus]
+
+    @property
+    def is_running(self) -> bool:
+        """Check if the server is running.
+
+        Returns:
+            Whether the server is running.
+        """
+        return (
+            self.status is not None
+            and self.status.status == ServiceState.ACTIVE
+        )

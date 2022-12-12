@@ -17,6 +17,10 @@ jobs:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: "utf-8"
+      # on MAC OS, we need to set this environment variable
+      # to fix problems with the fork() calls (see this thread
+      # for more information: http://sealiesoftware.com/blog/archive/2017/6/5/Objective-C_and_fork_in_macOS_1013.html)
+      OBJC_DISABLE_INITIALIZE_FORK_SAFETY: 'YES'
     # Exit if it's a commit from Gitbook
     if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
 
@@ -27,7 +31,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]
-        python-version: [3.7, 3.8, 3.9, '3.10']
+        python-version: [ '3.7', '3.8', '3.9', '3.10' ]
       fail-fast: false
 
     steps:
@@ -37,6 +41,8 @@ jobs:
         uses: ./.github/actions/setup_environment
         with:
           cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
+          python-version: ${{ matrix.python-version }}
+          os: ${{ matrix.os }}
 
       - name: Install Prerequisites
         run: |

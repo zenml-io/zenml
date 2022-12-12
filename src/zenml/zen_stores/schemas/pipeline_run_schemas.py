@@ -157,5 +157,5 @@ class PipelineRunSchema(NamedSchema, table=True):
             self.status = run_update.status
             self.end_time = run_update.end_time
 
-        self.updated = datetime.now()
+        self.updated = datetime.utcnow()
         return self
