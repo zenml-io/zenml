@@ -2283,24 +2283,23 @@ class Client(metaclass=ClientMetaClass):
             type=component_type,
             project_name_or_id=self.active_project.id,
         )
+        display_name = component_type.value.replace("_", " ")
 
         if len(components) > 1:
             component_list = "\n ".join(
                 [f"{c.name} ({c.id})" for c in components]
             )
             raise ZenKeyError(
-                f"Multiple {component_type.value} instances have been "
-                f"found for name '{name_id_or_prefix}': \n"
-                f"{component_list}.\n"
-                f"The {component_type.value} instances listed above all share "
-                f"this name. Please specify by full or partial id."
+                f"Multiple {display_name} instances have been found for "
+                f"name '{name_id_or_prefix}': \n {component_list}.\n"
+                f"Please specify by full or partial id."
             )
         elif len(components) == 1:
             return components[0]
 
         logger.debug(
-            f"No component with name '{name_id_or_prefix}' "
-            f"exists. Trying to resolve as partial_id"
+            f"No {display_name} instance with name '{name_id_or_prefix}' "
+            f"exists. Trying to resolve as partial_id..."
         )
 
         filtered_comps = [
@@ -2313,19 +2312,18 @@ class Client(metaclass=ClientMetaClass):
                 [f"{fc.name} ({fc.id})" for fc in filtered_comps]
             )
             raise ZenKeyError(
-                f"The components listed below all share the provided "
-                f"prefix '{name_id_or_prefix}' on their ids:\n"
-                f"{filtered_component_list}.\n"
-                f"Please provide more characters to uniquely identify only one "
-                f"component."
+                f"The {display_name} instances listed below all share the "
+                f"provided prefix '{name_id_or_prefix}' on their ids:\n"
+                f"{filtered_component_list}.\nPlease provide more characters "
+                f"to uniquely identify only one component."
             )
 
         elif len(filtered_comps) == 1:
             return filtered_comps[0]
 
         raise KeyError(
-            f"No component of type `{component_type}` with name or id "
-            f"prefix '{name_id_or_prefix}' exists."
+            f"No {display_name} with name or id prefix '{name_id_or_prefix}' "
+            f"exists."
         )
 
     def _get_entity_by_id_or_name_or_prefix(
@@ -2373,8 +2371,11 @@ class Client(metaclass=ClientMetaClass):
                 name=name_id_or_prefix,
             )
 
+        entity_label = list_method.__name__.replace("list_", "").replace(
+            "_", " "
+        )
+
         if len(entities) > 1:
-            entity_label = list_method.__name__.replace("list_", "")
             entity_list = "\n ".join(
                 [
                     f"{getattr(entity, 'name', '')} ({entity.id})"
@@ -2382,9 +2383,8 @@ class Client(metaclass=ClientMetaClass):
                 ]
             )
             raise ZenKeyError(
-                f"Multiple {entity_label} have been "
-                f"found for name '{name_id_or_prefix}': \n"
-                f"{entity_list}.\n"
+                f"Multiple {entity_label} have been found for name "
+                f"'{name_id_or_prefix}': \n{entity_list}.\n"
                 f"The {entity_label} listed above all share this name. Please "
                 f"specify by full or partial id."
             )
@@ -2403,7 +2403,6 @@ class Client(metaclass=ClientMetaClass):
                 if str(entity.id).startswith(name_id_or_prefix)
             ]
             if len(filtered_entities) > 1:
-                entity_label = list_method.__name__.replace("list_", "")
                 entity_list = "\n ".join(
                     [
                         f"{getattr(f_entity, 'name', '')} ({f_entity.id})"
@@ -2423,6 +2422,6 @@ class Client(metaclass=ClientMetaClass):
                 return filtered_entities[0]
             else:
                 raise KeyError(
-                    f"No {response_model} with name or id "
-                    f"prefix '{name_id_or_prefix}' exists."
+                    f"No {entity_label} with name or id prefix "
+                    f"'{name_id_or_prefix}' exists."
                 )
