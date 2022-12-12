@@ -6,7 +6,7 @@ from typing import Any, ClassVar, List, Type, Union, get_args
 from uuid import UUID
 
 from fastapi import Query
-from pydantic import BaseModel, Field, root_validator, validator, PrivateAttr
+from pydantic import BaseModel, Field, PrivateAttr, root_validator, validator
 from sqlmodel import SQLModel
 
 from zenml.constants import (
@@ -204,7 +204,7 @@ class FilterBaseModel(BaseModel):
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         "list_of_filters",
         "_scope_user",
-        "_scope_project"
+        "_scope_project",
     ]
 
     list_of_filters: List["Filter"] = Field(None, exclude=True)
@@ -373,6 +373,7 @@ class FilterBaseModel(BaseModel):
     def generate_filter(self, table: Type[SQLModel]):
         """Concatinate all filters together with the chosen operator"""
         from sqlalchemy import and_
+
         user_created_filter = self._base_filter(table=table)
         scope_filter = self._scope_filter(table=table)
         if scope_filter is not None:
@@ -425,15 +426,16 @@ class ShareableProjectScopedFilterModel(ProjectScopedFilterModel):
             table: The Table that is being queried from.
 
         Returns:
-            A list of all scope filters that will be conjuncted with the user
+            A list of all scope filters that will be conjuncted with the other
                 filters
         """
-        from sqlmodel import or_
         from sqlalchemy import and_
+        from sqlmodel import or_
 
         scope_filter = []
         if self._scope_user:
-            scope_filter.append(or_(
+            scope_filter.append(
+                or_(
                     getattr(table, "user_id") == self._scope_user,
                     getattr(table, "is_shared") is True,
                 )

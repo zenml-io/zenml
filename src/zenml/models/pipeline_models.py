@@ -17,11 +17,10 @@ from typing import ClassVar, List, Optional, Union
 from uuid import UUID
 
 from fastapi import Query
-from pydantic import BaseModel, Field, PrivateAttr
+from pydantic import BaseModel, Field
 
 from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.enums import ExecutionStatus
-from zenml.models.filter_models import ProjectScopedFilterModel
 from zenml.models.base_models import (
     ProjectScopedRequestModel,
     ProjectScopedResponseModel,
@@ -29,6 +28,7 @@ from zenml.models.base_models import (
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.models.pipeline_run_models import PipelineRunResponseModel
+from zenml.models.filter_models import ProjectScopedFilterModel
 
 # ---- #
 # BASE #

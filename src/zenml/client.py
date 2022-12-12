@@ -25,7 +25,6 @@ from typing import (
     Mapping,
     Optional,
     Set,
-    Type,
     TypeVar,
     Union,
     cast,
@@ -1666,20 +1665,20 @@ class Client(metaclass=ClientMetaClass):
             A page of stacks.
         """
         stack_filter_model = StackFilterModel(
-                page=page,
-                size=size,
-                sort_by=sort_by,
-                logical_operator=logical_operator,
-                project_id=project_id,
-                user_id=user_id,
-                component_id=component_id,
-                name=name,
-                is_shared=is_shared,
-                description=description,
-                id=id,
-                created=created,
-                updated=updated,
-            )
+            page=page,
+            size=size,
+            sort_by=sort_by,
+            logical_operator=logical_operator,
+            project_id=project_id,
+            user_id=user_id,
+            component_id=component_id,
+            name=name,
+            is_shared=is_shared,
+            description=description,
+            id=id,
+            created=created,
+            updated=updated,
+        )
         stack_filter_model.set_scope_project(self.active_project.id)
         return self.zen_store.list_stacks(stack_filter_model)
 
@@ -1801,11 +1800,33 @@ class Client(metaclass=ClientMetaClass):
             KeyError: If no name_id_or_prefix is provided and no such component
                 is part of the active stack.
         """
-        if name_id_or_prefix is not None:
-            return self._get_component_by_id_or_name_or_prefix(
-                name_id_or_prefix=name_id_or_prefix,
-                component_type=component_type,
-            )
+        if name_id_or_prefix:
+            # First interpret as full UUID
+            if isinstance(name_id_or_prefix, UUID):
+                return self.zen_store.get_stack_component(name_id_or_prefix)
+            else:
+                component_filter_model = ComponentFilterModel(
+                    logical_operator=LogicalOperators.OR,
+                    name=f"contains:{name_id_or_prefix}",
+                    id=f"startswith:{name_id_or_prefix}",
+                )
+                component_filter_model.set_scope_type(
+                    component_type=component_type
+                )
+                entity = self.zen_store.list_stack_components(
+                    component_filter_model=component_filter_model
+                )
+                if entity.total == 1:
+                    return entity.items[0]
+                else:
+                    raise ZenKeyError(
+                        f"{entity.total} stack components have been found that have "
+                        f"either a name or an id prefix that matches the provided "
+                        f"string '{name_id_or_prefix}':\n"
+                        f"{[f'{m.name}: {m.id}' for m in entity.items]}.\n"
+                        f"Please provide more characters to uniquely identify "
+                        f"only one of the pipeline runs."
+                    )
         else:
             components = self.active_stack_model.components.get(
                 component_type, None
@@ -1815,8 +1836,7 @@ class Client(metaclass=ClientMetaClass):
                     "No name_id_or_prefix provided and there is no active "
                     f"{component_type} in the current active stack."
                 )
-
-            return components[0]
+            return components
 
     def list_stack_components(
         self,
@@ -1964,7 +1984,7 @@ class Client(metaclass=ClientMetaClass):
             existing_components = self.list_stack_components(
                 name=name,
                 is_shared=shared_status,
-                component_type=component_type,
+                type=component_type,
             )
             if existing_components:
                 raise EntityExistsError(
@@ -1977,7 +1997,7 @@ class Client(metaclass=ClientMetaClass):
         if is_shared is not None:
             current_name = update_model.name or component.name
             existing_components = self.list_stack_components(
-                name=current_name, is_shared=True, component_type=component_type
+                name=current_name, is_shared=True, type=component_type
             )
             if any([e.id != component.id for e in existing_components]):
                 raise EntityExistsError(
@@ -2726,98 +2746,8 @@ class Client(metaclass=ClientMetaClass):
 
     # ---- utility prefix matching get functions -----
 
-    # TODO: This prefix matching functionality should be moved to the
-    #   corresponding SQL ZenStore list methods
-
-    def _get_component_by_id_or_name_or_prefix(
-        self,
-        name_id_or_prefix: Union[str, UUID],
-        component_type: StackComponentType,
-    ) -> "ComponentResponseModel":
-        """Fetches a component of given type using the name, id or partial id.
-
-        Args:
-            name_id_or_prefix: The id, name or partial id of the component to
-                fetch.
-            component_type: The type of the component to fetch.
-
-        Returns:
-            The component with the given name.
-
-        Raises:
-            KeyError: If no component with the given name exists.
-            ZenKeyError: If there is more than one component with that name
-                or id prefix.
-        """
-        # First interpret as full UUID
-        if isinstance(name_id_or_prefix, UUID):
-            return self.zen_store.get_stack_component(name_id_or_prefix)
-        else:
-            try:
-                entity_id = UUID(name_id_or_prefix)
-            except ValueError:
-                pass
-            else:
-                return self.zen_store.get_stack_component(entity_id)
-
-        name_id_or_prefix = str(name_id_or_prefix)
-
-        components = self.zen_store.list_stack_components(
-            name=name_id_or_prefix,
-            type=component_type,
-            project_name_or_id=self.active_project.id,
-        )
-        display_name = component_type.value.replace("_", " ")
-
-        if len(components.items) > 1:
-            component_list = "\n".join(
-                [f"{c.name} ({c.id})" for c in components]
-            )
-            raise ZenKeyError(
-                f"Multiple {display_name} instances have been found for "
-                f"name '{name_id_or_prefix}':\n{component_list}.\n"
-                f"Please specify by full or partial id."
-            )
-        elif len(components.items) == 1:
-            return components.items[0]
-
-        logger.debug(
-            f"No {display_name} instance with name '{name_id_or_prefix}' "
-            f"exists. Trying to resolve as partial_id..."
-        )
-
-        components = self.zen_store.list_stack_components(
-            type=component_type,
-            project_name_or_id=self.active_project.id,
-        )
-
-        filtered_comps = [
-            component
-            for component in components
-            if str(component.id).startswith(name_id_or_prefix)
-        ]
-        if len(filtered_comps) > 1:
-            filtered_component_list = "\n ".join(
-                [f"{fc.name} ({fc.id})" for fc in filtered_comps]
-            )
-            raise ZenKeyError(
-                f"The {display_name} instances listed below all share the "
-                f"provided prefix '{name_id_or_prefix}' on their ids:\n"
-                f"{filtered_component_list}.\n"
-                f"Please provide more characters to uniquely identify only "
-                f"one component."
-            )
-
-        elif len(filtered_comps) == 1:
-            return filtered_comps[0]
-
-        raise KeyError(
-            f"No {display_name} with name or id prefix '{name_id_or_prefix}' "
-            f"exists."
-        )
-
+    @staticmethod
     def _get_entity_by_id_or_name_or_prefix(
-        self,
         get_method: Callable[..., AnyResponseModel],
         list_method: Callable[..., Page[AnyResponseModel]],
         name_id_or_prefix: Union[str, UUID],
@@ -2825,7 +2755,6 @@ class Client(metaclass=ClientMetaClass):
         """Fetches an entity using the name, id or partial id.
 
         Args:
-            response_model: The response model to use for the entity.
             get_method: The method to use to fetch the entity by id.
             list_method: The method to use to fetch all entities.
             name_id_or_prefix: The id, name or partial id of the entity to
@@ -2843,7 +2772,7 @@ class Client(metaclass=ClientMetaClass):
         if isinstance(name_id_or_prefix, UUID):
             return get_method(name_id_or_prefix)
         else:
-            entity_label = list_method.__name__.replace("list_", "")
+            entity_label = get_method.__name__.replace("get_", "") + "s"
 
             entity = list_method(
                 logical_operator=LogicalOperators.OR,

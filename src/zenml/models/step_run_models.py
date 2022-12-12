@@ -14,11 +14,11 @@
 """Models representing steps of pipeline runs."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict, List, Optional, Union, ClassVar, Type
+from typing import TYPE_CHECKING, Dict, List, Optional, Union
 from uuid import UUID
 
 from fastapi import Query
-from pydantic import BaseModel, Field, PrivateAttr
+from pydantic import BaseModel, Field
 
 from zenml.config.step_configurations import Step
 from zenml.enums import ExecutionStatus
@@ -121,6 +121,7 @@ class StepRunFilterModel(ProjectScopedFilterModel):
         None,
         description="Amount of outputs for this Step Run",
     )
+
 
 # ------- #
 # REQUEST #

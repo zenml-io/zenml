@@ -14,11 +14,11 @@
 """Models representing stacks."""
 
 import json
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Type, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Union
 from uuid import UUID
 
 from fastapi import Query
-from pydantic import BaseModel, Field, PrivateAttr
+from pydantic import BaseModel, Field
 
 from zenml.enums import StackComponentType
 from zenml.models.base_models import (
@@ -31,7 +31,7 @@ from zenml.models.filter_models import ShareableProjectScopedFilterModel
 
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
 if TYPE_CHECKING:
-    from sqlmodel import SQLModel
+    pass
 
 
 # ---- #

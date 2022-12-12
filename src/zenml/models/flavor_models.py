@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing stack component flavors."""
 
-from typing import ClassVar, List, Optional, Union, Type
+from typing import ClassVar, List, Optional, Union
 from uuid import UUID
 
 from fastapi import Query
