@@ -5,10 +5,9 @@ Revises: 7834208cc3f6
 Create Date: 2022-12-08 16:27:48.909015
 
 """
+import sqlalchemy as sa
 import sqlmodel
 from alembic import op
-import sqlalchemy as sa
-
 
 # revision identifiers, used by Alembic.
 revision = "7e4a481d17f7"
@@ -49,4 +48,4 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """Downgrade database schema and/or data back to the previous revision."""
-    op.drop_table("server_info")
+    op.drop_table("identity")
