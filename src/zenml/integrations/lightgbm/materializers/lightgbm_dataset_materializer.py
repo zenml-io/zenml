@@ -32,7 +32,7 @@ class LightGBMDatasetMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (lgb.Dataset,)
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
 
-    def load(self, data_type: Type[Any]) -> lgb.Dataset:
+    def _load(self, data_type: Type[Any]) -> lgb.Dataset:
         """Reads a lightgbm.Dataset binary file and loads it.
 
         Args:
@@ -41,7 +41,6 @@ class LightGBMDatasetMaterializer(BaseMaterializer):
         Returns:
             A lightgbm.Dataset object.
         """
-        super().load(data_type)
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
         # Create a temporary folder
@@ -55,13 +54,12 @@ class LightGBMDatasetMaterializer(BaseMaterializer):
         # No clean up this time because matrix is lazy loaded
         return matrix
 
-    def save(self, matrix: lgb.Dataset) -> None:
+    def _save(self, matrix: lgb.Dataset) -> None:
         """Creates a binary serialization for a lightgbm.Dataset object.
 
         Args:
             matrix: A lightgbm.Dataset object.
         """
-        super().save(matrix)
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
         # Make a temporary phantom artifact

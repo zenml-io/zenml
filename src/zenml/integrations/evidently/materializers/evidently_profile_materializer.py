@@ -36,7 +36,7 @@ class EvidentlyProfileMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (Profile,)
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA_ANALYSIS
 
-    def load(self, data_type: Type[Any]) -> Profile:
+    def _load(self, data_type: Type[Any]) -> Profile:
         """Reads an Evidently Profile object from a json file.
 
         Args:
@@ -48,7 +48,6 @@ class EvidentlyProfileMaterializer(BaseMaterializer):
         Raises:
             TypeError: if the json file contains an invalid data type.
         """
-        super().load(data_type)
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
         contents = yaml_utils.read_json(filepath)
         if type(contents) != dict:
@@ -67,14 +66,12 @@ class EvidentlyProfileMaterializer(BaseMaterializer):
 
         return Profile(sections=sections)
 
-    def save(self, data: Profile) -> None:
+    def _save(self, data: Profile) -> None:
         """Serialize an Evidently Profile to a json file.
 
         Args:
             data: The Evidently Profile to be serialized.
         """
-        super().save(data)
-
         contents = data.object()
         # include the list of profile sections in the serialized dictionary,
         # so we'll be able to re-create them during de-serialization

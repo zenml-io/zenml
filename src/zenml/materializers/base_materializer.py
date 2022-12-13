@@ -14,6 +14,7 @@
 """Metaclass implementation for registering ZenML BaseMaterializer subclasses."""
 
 import inspect
+from abc import ABC, ABCMeta, abstractmethod
 from typing import Any, ClassVar, Dict, Optional, Tuple, Type, cast
 
 from zenml.artifacts.base_artifact import BaseArtifact
@@ -27,7 +28,7 @@ from zenml.materializers.default_materializer_registry import (
 logger = get_logger(__name__)
 
 
-class BaseMaterializerMeta(type):
+class BaseMaterializerMeta(ABCMeta):
     """Metaclass responsible for registering different BaseMaterializer subclasses.
 
     Materializers are used for reading/writing artifacts.
@@ -118,7 +119,7 @@ class BaseMaterializerMeta(type):
         return cls
 
 
-class BaseMaterializer(metaclass=BaseMaterializerMeta):
+class BaseMaterializer(ABC, metaclass=BaseMaterializerMeta):
     """Base Materializer to realize artifact data."""
 
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.BASE
@@ -174,7 +175,7 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         )
 
     def load(self, data_type: Type[Any]) -> Any:
-        """Write logic here to load the data of an artifact.
+        """Load the data of an artifact.
 
         Args:
             data_type: What type the artifact data should be loaded as.
@@ -191,10 +192,21 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
                 f"can only read artifacts to the following types: "
                 f"{self.ASSOCIATED_TYPES}."
             )
-        return None
+        return self._load(data_type)
+
+    @abstractmethod
+    def _load(self, data_type: Type[Any]) -> Any:
+        """Write logic here to load the data of an artifact.
+
+        Args:
+            data_type: What type the artifact data should be loaded as.
+
+        Returns:
+            The data of the artifact.
+        """
 
     def save(self, data: Any) -> None:
-        """Write logic here to save the data of an artifact.
+        """Save the data of an artifact.
 
         Args:
             data: The data of the artifact to save.
@@ -208,6 +220,15 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
                 f"Unable to write {data_type}. {self.__class__.__name__} "
                 f"can only write the following types: {self.ASSOCIATED_TYPES}."
             )
+        self._save(data)
+
+    @abstractmethod
+    def _save(self, data: Any) -> None:
+        """Write logic here to save the data of an artifact.
+
+        Args:
+            data: The data of the artifact to save.
+        """
 
     def handle_input(self, data_type: Type[Any]) -> Any:
         """Deprecated method to load the data of an artifact.

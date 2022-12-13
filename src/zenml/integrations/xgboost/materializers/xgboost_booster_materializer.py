@@ -32,7 +32,7 @@ class XgboostBoosterMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (xgb.Booster,)
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
 
-    def load(self, data_type: Type[Any]) -> xgb.Booster:
+    def _load(self, data_type: Type[Any]) -> xgb.Booster:
         """Reads a xgboost Booster model from a serialized JSON file.
 
         Args:
@@ -41,7 +41,6 @@ class XgboostBoosterMaterializer(BaseMaterializer):
         Returns:
             A xgboost Booster object.
         """
-        super().load(data_type)
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
         # Create a temporary folder
@@ -57,14 +56,12 @@ class XgboostBoosterMaterializer(BaseMaterializer):
         fileio.rmtree(temp_dir)
         return booster
 
-    def save(self, booster: xgb.Booster) -> None:
+    def _save(self, booster: xgb.Booster) -> None:
         """Creates a JSON serialization for a xgboost Booster model.
 
         Args:
             booster: A xgboost Booster model.
         """
-        super().save(booster)
-
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
         # Make a temporary phantom artifact

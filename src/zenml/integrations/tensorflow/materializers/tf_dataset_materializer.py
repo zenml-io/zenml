@@ -33,7 +33,7 @@ class TensorflowDatasetMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (tf.data.Dataset,)
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
 
-    def load(self, data_type: Type[Any]) -> Any:
+    def _load(self, data_type: Type[Any]) -> Any:
         """Reads data into tf.data.Dataset.
 
         Args:
@@ -42,7 +42,6 @@ class TensorflowDatasetMaterializer(BaseMaterializer):
         Returns:
             A tf.data.Dataset object.
         """
-        super().load(data_type)
         temp_dir = tempfile.mkdtemp()
         io_utils.copy_dir(self.uri, temp_dir)
         path = os.path.join(temp_dir, DEFAULT_FILENAME)
@@ -51,13 +50,12 @@ class TensorflowDatasetMaterializer(BaseMaterializer):
         # loaded and needs to read it when the object gets used
         return dataset
 
-    def save(self, dataset: tf.data.Dataset) -> None:
+    def _save(self, dataset: tf.data.Dataset) -> None:
         """Persists a tf.data.Dataset object.
 
         Args:
             dataset: The dataset to persist.
         """
-        super().save(dataset)
         temp_dir = tempfile.TemporaryDirectory()
         path = os.path.join(temp_dir.name, DEFAULT_FILENAME)
         try:

@@ -85,7 +85,7 @@ class GreatExpectationsMaterializer(BaseMaterializer):
             validation_dict[validation_ident] = validation_results
         artifact_dict["run_results"] = validation_dict
 
-    def load(self, data_type: Type[Any]) -> SerializableDictDot:
+    def _load(self, data_type: Type[Any]) -> SerializableDictDot:
         """Reads and returns a Great Expectations object.
 
         Args:
@@ -94,7 +94,6 @@ class GreatExpectationsMaterializer(BaseMaterializer):
         Returns:
             A loaded Great Expectations object.
         """
-        super().load(data_type)
         filepath = os.path.join(self.uri, ARTIFACT_FILENAME)
         artifact_dict = yaml_utils.read_json(filepath)
         data_type = import_class_by_path(artifact_dict.pop("data_type"))
@@ -104,13 +103,12 @@ class GreatExpectationsMaterializer(BaseMaterializer):
 
         return data_type(**artifact_dict)
 
-    def save(self, obj: SerializableDictDot) -> None:
+    def _save(self, obj: SerializableDictDot) -> None:
         """Writes a Great Expectations object.
 
         Args:
             obj: A Great Expectations object.
         """
-        super().save(obj)
         filepath = os.path.join(self.uri, ARTIFACT_FILENAME)
         artifact_dict = obj.to_json_dict()
         artifact_type = type(obj)

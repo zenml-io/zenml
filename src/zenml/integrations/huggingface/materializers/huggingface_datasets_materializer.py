@@ -34,7 +34,7 @@ class HFDatasetMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (Dataset, DatasetDict)
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA_ANALYSIS
 
-    def load(self, data_type: Type[Any]) -> Dataset:
+    def _load(self, data_type: Type[Any]) -> Dataset:
         """Reads Dataset.
 
         Args:
@@ -43,7 +43,6 @@ class HFDatasetMaterializer(BaseMaterializer):
         Returns:
             The dataset read from the specified dir.
         """
-        super().load(data_type)
         temp_dir = mkdtemp()
         io_utils.copy_dir(
             os.path.join(self.uri, DEFAULT_DATASET_DIR),
@@ -51,13 +50,12 @@ class HFDatasetMaterializer(BaseMaterializer):
         )
         return load_from_disk(temp_dir)
 
-    def save(self, ds: Type[Any]) -> None:
+    def _save(self, ds: Type[Any]) -> None:
         """Writes a Dataset to the specified dir.
 
         Args:
             ds: The Dataset to write.
         """
-        super().save(ds)
         temp_dir = TemporaryDirectory()
         path = os.path.join(temp_dir.name, DEFAULT_DATASET_DIR)
         try:

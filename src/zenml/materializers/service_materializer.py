@@ -31,7 +31,7 @@ class ServiceMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (BaseService,)
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.SERVICE
 
-    def load(self, data_type: Type[Any]) -> BaseService:
+    def _load(self, data_type: Type[Any]) -> BaseService:
         """Creates and returns a service.
 
         This service is instantiated from the serialized service configuration
@@ -43,13 +43,12 @@ class ServiceMaterializer(BaseMaterializer):
         Returns:
             A ZenML service instance.
         """
-        super().load(data_type)
         filepath = os.path.join(self.uri, SERVICE_CONFIG_FILENAME)
         with fileio.open(filepath, "r") as f:
             service = ServiceRegistry().load_service_from_json(f.read())
         return service
 
-    def save(self, service: BaseService) -> None:
+    def _save(self, service: BaseService) -> None:
         """Writes a ZenML service.
 
         The configuration and last known status of the input service instance
@@ -58,7 +57,6 @@ class ServiceMaterializer(BaseMaterializer):
         Args:
             service: A ZenML service instance.
         """
-        super().save(service)
         filepath = os.path.join(self.uri, SERVICE_CONFIG_FILENAME)
         with fileio.open(filepath, "w") as f:
             f.write(service.json(indent=4))

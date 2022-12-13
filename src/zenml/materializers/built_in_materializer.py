@@ -47,7 +47,7 @@ class BuiltInMaterializer(BaseMaterializer):
         super().__init__(uri)
         self.data_path = os.path.join(self.uri, DEFAULT_FILENAME)
 
-    def load(self, data_type: Type[Any]) -> Any:
+    def _load(self, data_type: Type[Any]) -> Any:
         """Reads basic primitive types from JSON.
 
         Args:
@@ -56,7 +56,6 @@ class BuiltInMaterializer(BaseMaterializer):
         Returns:
             The data read.
         """
-        super().load(data_type)
         contents = yaml_utils.read_json(self.data_path)
         if type(contents) != data_type:
             # TODO [ENG-142]: Raise error or try to coerce
@@ -66,13 +65,12 @@ class BuiltInMaterializer(BaseMaterializer):
             )
         return contents
 
-    def save(self, data: Any) -> None:
+    def _save(self, data: Any) -> None:
         """Serialize a basic type to JSON.
 
         Args:
             data: The data to store.
         """
-        super().save(data)
         yaml_utils.write_json(self.data_path, data)
 
 
@@ -91,7 +89,7 @@ class BytesMaterializer(BaseMaterializer):
         super().__init__(uri)
         self.data_path = os.path.join(self.uri, DEFAULT_BYTES_FILENAME)
 
-    def load(self, data_type: Type[Any]) -> Any:
+    def _load(self, data_type: Type[Any]) -> Any:
         """Reads a bytes object from file.
 
         Args:
@@ -100,17 +98,15 @@ class BytesMaterializer(BaseMaterializer):
         Returns:
             The data read.
         """
-        super().load(data_type)
         with fileio.open(self.data_path, "rb") as file_:
             return file_.read()
 
-    def save(self, data: Any) -> None:
+    def _save(self, data: Any) -> None:
         """Save a bytes object to file.
 
         Args:
             data: The data to store.
         """
-        super().save(data)
         with fileio.open(self.data_path, "wb") as file_:
             file_.write(data)
 
@@ -222,7 +218,7 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         self.data_path = os.path.join(self.uri, DEFAULT_FILENAME)
         self.metadata_path = os.path.join(self.uri, DEFAULT_METADATA_FILENAME)
 
-    def load(self, data_type: Type[Any]) -> Any:
+    def _load(self, data_type: Type[Any]) -> Any:
         """Reads a materialized built-in container object.
 
         If the data was serialized to JSON, deserialize it.
@@ -242,8 +238,6 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         Raises:
             RuntimeError: If the data was not found.
         """
-        super().load(data_type)
-
         # If the data was not serialized, there must be metadata present.
         if not fileio.exists(self.data_path) and not fileio.exists(
             self.metadata_path
@@ -278,7 +272,7 @@ class BuiltInContainerMaterializer(BaseMaterializer):
             return set(outputs)
         return outputs
 
-    def save(self, data: Any) -> None:
+    def _save(self, data: Any) -> None:
         """Materialize a built-in container object.
 
         If the object can be serialized to JSON, serialize it.
@@ -297,8 +291,6 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         Raises:
             Exception: If any exception occurs, it is raised after cleanup.
         """
-        super().save(data)
-
         # tuple and set: handle as list.
         if isinstance(data, tuple) or isinstance(data, set):
             data = list(data)

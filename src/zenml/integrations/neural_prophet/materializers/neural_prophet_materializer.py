@@ -37,7 +37,7 @@ class NeuralProphetMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (NeuralProphet,)
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
 
-    def load(self, data_type: Type[Any]) -> NeuralProphet:
+    def _load(self, data_type: Type[Any]) -> NeuralProphet:
         """Reads and returns a NeuralProphet model.
 
         Args:
@@ -46,16 +46,14 @@ class NeuralProphetMaterializer(BaseMaterializer):
         Returns:
             A loaded NeuralProphet model.
         """
-        super().load(data_type)
         with fileio.open(os.path.join(self.uri, DEFAULT_FILENAME), "rb") as f:
             return torch.load(f)
 
-    def save(self, model: NeuralProphet) -> None:
+    def _save(self, model: NeuralProphet) -> None:
         """Writes a NeuralProphet model.
 
         Args:
             model: A NeuralProphet model object.
         """
-        super().save(model)
         with fileio.open(os.path.join(self.uri, DEFAULT_FILENAME), "wb") as f:
             torch.save(model, f)

@@ -42,7 +42,7 @@ class NumpyMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (np.ndarray,)
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
 
-    def load(self, data_type: Type[Any]) -> "Any":
+    def _load(self, data_type: Type[Any]) -> "Any":
         """Reads a numpy array from a `.npy` file.
 
         Args:
@@ -55,8 +55,6 @@ class NumpyMaterializer(BaseMaterializer):
         Returns:
             The numpy array.
         """
-        super().load(data_type)
-
         numpy_file = os.path.join(self.uri, NUMPY_FILENAME)
 
         if fileio.exists(numpy_file):
@@ -101,13 +99,12 @@ class NumpyMaterializer(BaseMaterializer):
                     "You can install `pyarrow` by running `pip install pyarrow`.",
                 )
 
-    def save(self, arr: "NDArray[Any]") -> None:
+    def _save(self, arr: "NDArray[Any]") -> None:
         """Writes a np.ndarray to the artifact store as a `.npy` file.
 
         Args:
             arr: The numpy array to write.
         """
-        super().save(arr)
         with fileio.open(os.path.join(self.uri, NUMPY_FILENAME), "wb") as f:
             # This function is untyped for numpy versions supporting python
             # 3.7, but typed for numpy versions installed on python 3.8+.

@@ -32,7 +32,7 @@ class XgboostDMatrixMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (xgb.DMatrix,)
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
 
-    def load(self, data_type: Type[Any]) -> xgb.DMatrix:
+    def _load(self, data_type: Type[Any]) -> xgb.DMatrix:
         """Reads a xgboost.DMatrix binary file and loads it.
 
         Args:
@@ -41,7 +41,6 @@ class XgboostDMatrixMaterializer(BaseMaterializer):
         Returns:
             Materialized xgboost matrix.
         """
-        super().load(data_type)
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
         # Create a temporary folder
@@ -56,13 +55,12 @@ class XgboostDMatrixMaterializer(BaseMaterializer):
         fileio.rmtree(temp_dir)
         return matrix
 
-    def save(self, matrix: xgb.DMatrix) -> None:
+    def _save(self, matrix: xgb.DMatrix) -> None:
         """Creates a binary serialization for a xgboost.DMatrix object.
 
         Args:
             matrix: A xgboost.DMatrix object.
         """
-        super().save(matrix)
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
         # Make a temporary phantom artifact

@@ -18,19 +18,18 @@ from typing import Any, Type
 from deepchecks.tabular import Dataset
 
 from zenml.enums import ArtifactType
-from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.pandas_materializer import PandasMaterializer
 
 DEFAULT_FILENAME = "data.binary"
 
 
-class DeepchecksDatasetMaterializer(BaseMaterializer):
+class DeepchecksDatasetMaterializer(PandasMaterializer):
     """Materializer to read data to and from Deepchecks dataset."""
 
-    ASSOCIATED_TYPES = (Dataset,)
+    ASSOCIATED_TYPES = (Dataset,)  # type: ignore[assignment]
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
 
-    def load(self, data_type: Type[Any]) -> Dataset:
+    def _load(self, data_type: Type[Any]) -> Dataset:
         """Reads pandas dataframes and creates deepchecks.Dataset from it.
 
         Args:
@@ -39,23 +38,12 @@ class DeepchecksDatasetMaterializer(BaseMaterializer):
         Returns:
             A Deepchecks Dataset.
         """
-        super().load(data_type)
+        return Dataset(super()._load(data_type))
 
-        # Outsource to pandas
-        pandas_materializer = PandasMaterializer(self.uri)
-        df = pandas_materializer.load(data_type)
-
-        # Recreate from pandas dataframe
-        return Dataset(df)
-
-    def save(self, df: Dataset) -> None:
+    def _save(self, df: Dataset) -> None:
         """Serializes pandas dataframe within a Dataset object.
 
         Args:
             df: A deepchecks.Dataset object.
         """
-        super().save(df)
-
-        # Outsource to pandas
-        pandas_materializer = PandasMaterializer(self.uri)
-        pandas_materializer.save(df.data)
+        super()._save(df.data)

@@ -25,13 +25,11 @@ class SomeMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (SomeObj,)
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
 
-    def load(self, data_type: Type[SomeObj]) -> SomeObj:
-        super().load(data_type)
+    def _load(self, data_type: Type[SomeObj]) -> SomeObj:
         with fileio.open(os.path.join(self.uri, "data.txt"), "r") as f:
             name = f.read()
         return SomeObj(name=name)
 
-    def save(self, my_obj: SomeObj) -> None:
-        super().save(my_obj)
+    def _save(self, my_obj: SomeObj) -> None:
         with fileio.open(os.path.join(self.uri, "data.txt"), "w") as f:
             f.write(my_obj.name)

@@ -30,7 +30,7 @@ class PyTorchLightningMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (Trainer,)
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
 
-    def load(self, data_type: Type[Any]) -> Trainer:
+    def _load(self, data_type: Type[Any]) -> Trainer:
         """Reads and returns a PyTorch Lightning trainer.
 
         Args:
@@ -39,16 +39,14 @@ class PyTorchLightningMaterializer(BaseMaterializer):
         Returns:
             A PyTorch Lightning trainer object.
         """
-        super().load(data_type)
         return Trainer(
             resume_from_checkpoint=os.path.join(self.uri, CHECKPOINT_NAME)
         )
 
-    def save(self, trainer: Trainer) -> None:
+    def _save(self, trainer: Trainer) -> None:
         """Writes a PyTorch Lightning trainer.
 
         Args:
             trainer: A PyTorch Lightning trainer object.
         """
-        super().save(trainer)
         trainer.save_checkpoint(os.path.join(self.uri, CHECKPOINT_NAME))
