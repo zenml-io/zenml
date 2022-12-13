@@ -51,8 +51,6 @@ class TeamBaseModel(BaseModel):
 class TeamResponseModel(TeamBaseModel, BaseResponseModel):
     """Response model for teams."""
 
-    ANALYTICS_FIELDS: ClassVar[List[str]] = ["id"]
-
     users: List["UserResponseModel"] = Field(
         title="The list of users within this team."
     )

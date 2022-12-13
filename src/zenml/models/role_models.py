@@ -48,8 +48,6 @@ class RoleBaseModel(BaseModel):
 class RoleResponseModel(RoleBaseModel, BaseResponseModel):
     """Response model for roles."""
 
-    ANALYTICS_FIELDS: ClassVar[List[str]] = ["id"]
-
 
 # ------- #
 # REQUEST #

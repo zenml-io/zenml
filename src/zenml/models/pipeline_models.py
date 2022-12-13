@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing pipelines."""
 
-from typing import ClassVar, List, Optional
+from typing import ClassVar, List, Optional, Dict, Any
 
 from pydantic import BaseModel, Field
 
@@ -55,7 +55,6 @@ class PipelineBaseModel(BaseModel):
 class PipelineResponseModel(PipelineBaseModel, ProjectScopedResponseModel):
     """Pipeline response model user, project, runs, and status hydrated."""
 
-    ANALYTICS_FIELDS: ClassVar[List[str]] = ["id", "project", "user"]
 
     runs: Optional[List["PipelineRunResponseModel"]] = Field(
         title="A list of the last x Pipeline Runs."
@@ -64,7 +63,6 @@ class PipelineResponseModel(PipelineBaseModel, ProjectScopedResponseModel):
         title="The status of the last x Pipeline Runs."
     )
 
-
 # ------- #
 # REQUEST #
 # ------- #
@@ -72,8 +70,6 @@ class PipelineResponseModel(PipelineBaseModel, ProjectScopedResponseModel):
 
 class PipelineRequestModel(PipelineBaseModel, ProjectScopedRequestModel):
     """Pipeline request model."""
-
-    ANALYTICS_FIELDS: ClassVar[List[str]] = ["project", "user"]
 
 
 # ------ #
