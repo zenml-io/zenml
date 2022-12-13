@@ -3,7 +3,7 @@ set -e
 set -x
 
 SRC=${1:-"src/zenml tests examples"}
-SRC_NO_TESTS=${1:-"src/zenml"}
+SRC_NO_TESTS=${1:-"src/zenml tests/harness"}
 
 export ZENML_DEBUG=1
 export ZENML_ANALYTICS_OPT_IN=false
