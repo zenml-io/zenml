@@ -140,15 +140,12 @@ def update_run(
 @handle_exceptions
 def delete_run(
     run_id: UUID,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.WRITE]
-    ),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> None:
     """Deletes a run.
 
     Args:
         run_id: ID of the run.
-        auth_context: Authorization Context
     """
     zen_store().delete_run(run_id=run_id)
 

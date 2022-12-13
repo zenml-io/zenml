@@ -450,25 +450,6 @@ def generate_stack_component_delete_command(
         """
         client = Client()
 
-        if component_type == StackComponentType.ARTIFACT_STORE:
-            artifact_store_model = client.get_stack_component(
-                name_id_or_prefix=name_id_or_prefix,
-                component_type=component_type,
-            )
-            artifacts = client.list_artifacts(
-                artifact_store_id=artifact_store_model.id,
-            )
-            if artifacts:
-                confirmation = cli_utils.confirmation(
-                    "You are about to delete artifact store "
-                    f"'{name_id_or_prefix}' which currently contains "
-                    f"{len(artifacts)} artifacts. Do you want to delete "
-                    "these artifacts as well?",
-                )
-                if confirmation:
-                    for artifact in artifacts:
-                        client.delete_artifact(artifact.id)
-
         with console.status(
             f"Deleting {display_name} '{name_id_or_prefix}'...\n"
         ):
