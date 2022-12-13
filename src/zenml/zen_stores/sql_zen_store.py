@@ -1562,15 +1562,14 @@ class SqlZenStore(BaseZenStore):
     ) -> UserResponseModel:
         """Gets a specific user, when no id is specified the active user is returned.
 
+        Raises a KeyError in case a user with that id does not exist.
+
         Args:
             user_name_or_id: The name or ID of the user to get.
             include_private: Whether to include private user information
 
         Returns:
             The requested user, if it was found.
-
-        Raises:
-            KeyError: If no user with the given name or ID exists.
         """
         if not user_name_or_id:
             user_name_or_id = self._default_user_name
