@@ -57,16 +57,25 @@ def list_artifacts() -> None:
 @artifact.command("delete", help="Delete an artifact.")
 @click.argument("artifact_id")
 @click.option(
+    "--only-metadata",
+    "-m",
+    is_flag=True,
+    help="Only delete metadata and not the actual artifact.",
+)
+@click.option(
     "--yes",
     "-y",
     is_flag=True,
     help="Don't ask for confirmation.",
 )
-def delete_artifact(artifact_id: str, yes: bool = False) -> None:
+def delete_artifact(
+    artifact_id: str, only_metadata: bool = False, yes: bool = False
+) -> None:
     """Delete an artifact.
 
     Args:
         artifact_id: ID of the artifact to delete.
+        only_metadata: If set, only delete metadata and not the actual artifact.
         yes: If set, don't ask for confirmation.
     """
     cli_utils.print_active_config()
@@ -80,7 +89,10 @@ def delete_artifact(artifact_id: str, yes: bool = False) -> None:
             return
 
     try:
-        Client().delete_artifact(artifact_id=UUID(artifact_id))
+        Client().delete_artifact(
+            artifact_id=UUID(artifact_id),
+            only_metadata=only_metadata,
+        )
     except (KeyError, ValueError) as e:
         cli_utils.error(str(e))
     else:
