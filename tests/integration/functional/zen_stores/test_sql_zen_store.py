@@ -341,20 +341,10 @@ def test_getting_team_for_user(
 def test_active_user_property(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
 ):
-    """Tests the active user property."""
-    active_user = sql_store["store"].active_user
+    """Tests the active user can be queried with .get_user()."""
+    active_user = sql_store["store"].get_user()
     assert active_user is not None
     assert active_user == sql_store["active_user"]
-
-
-def test_active_user_name_property(
-    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
-):
-    """Tests the active user name property."""
-    active_user_name = sql_store["store"].active_user_name
-    assert active_user_name is not None
-    assert active_user_name == sql_store["active_user"].name
-    assert active_user_name == DEFAULT_NAME
 
 
 def test_users_property(
@@ -364,7 +354,7 @@ def test_users_property(
     assert len(sql_store["store"].list_users()) == 1
     assert sql_store["store"].list_users()[0].name == DEFAULT_NAME
     assert sql_store["active_user"].name == DEFAULT_NAME
-    assert sql_store["store"].list_users()[0] == sql_store["store"].active_user
+    assert sql_store["store"].list_users()[0] == sql_store["store"].get_user()
     assert sql_store["store"].list_users()[0] == sql_store["active_user"]
 
 
