@@ -2317,14 +2317,13 @@ class Client(metaclass=ClientMetaClass):
                 assert isinstance(artifact_store, BaseArtifactStore)
                 artifact_store.rmtree(artifact.uri)
             except Exception as e:
-                logger.error(
+                logger.warning(
                     f"Failed to delete artifact '{artifact.uri}' from the "
                     "artifact store. This might happen if your local client "
                     "does not have access to the artifact store or does not "
                     "have the required integrations installed. Full error: "
                     f"{e}"
                 )
-                raise e
             else:
                 logger.info(
                     f"Deleted artifact '{artifact.uri}' from the artifact "

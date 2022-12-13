@@ -73,11 +73,11 @@ class ArtifactSchema(NamedSchema, table=True):
     materializer: str
     data_type: str
 
-    input_artifacts: List["StepRunInputArtifactSchema"] = Relationship(
+    input_to_step_runs: List["StepRunInputArtifactSchema"] = Relationship(
         back_populates="artifact",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    output_artifacts: List["StepRunOutputArtifactSchema"] = Relationship(
+    output_of_step_runs: List["StepRunOutputArtifactSchema"] = Relationship(
         back_populates="artifact",
         sa_relationship_kwargs={"cascade": "delete"},
     )
