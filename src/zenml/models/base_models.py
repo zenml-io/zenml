@@ -48,6 +48,8 @@ class BaseResponseModel(AnalyticsTrackedModelMixin):
     updated: datetime = Field(title="Time when this resource was last updated.")
 
     class Config:
+        """Allow extras on Response Models"""
+
         extra = "allow"
 
     def __hash__(self) -> int:

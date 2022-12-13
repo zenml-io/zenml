@@ -42,11 +42,17 @@ from rich.style import Style
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console, zenml_style_defaults
-from zenml.constants import IS_DEBUG_ENV
-from zenml.enums import StackComponentType, StoreType
+from zenml.constants import FILTERING_DATETIME_FORMAT, IS_DEBUG_ENV
+from zenml.enums import GenericFilterOps, StackComponentType, StoreType
 from zenml.logger import get_logger
 from zenml.models import FilterBaseModel
 from zenml.models.base_models import BaseResponseModel
+from zenml.models.filter_models import (
+    BoolFilter,
+    NumericFilter,
+    StrFilter,
+    UUIDFilter,
+)
 from zenml.models.page_model import Page
 
 logger = get_logger(__name__)
@@ -1068,10 +1074,95 @@ def print_page_info(page: Page):
 F = TypeVar("F", bound=Callable[..., None])
 
 
+def create_filter_help_text(filter_model: Type[FilterBaseModel], field: str):
+    """Create the help text used in the click option help text.
+
+    Args:
+        filter_model: The filter model to use
+        field: The field within that filter model
+
+    Returns:
+        The help text.
+    """
+
+    if filter_model.is_datatime_field(field):
+        return (
+            f"[DATETIME] The following datetime format is supported: "
+            f"'{FILTERING_DATETIME_FORMAT}'. Make sure to keep it in "
+            f"quotation marks. "
+            f"Example: --{field}="
+            f"'{GenericFilterOps.GTE}:{FILTERING_DATETIME_FORMAT}' to "
+            f"filter for everything created on or after the given date."
+        )
+    elif filter_model.is_uuid_field(field):
+        return (
+            f"[UUID] Example: --{field}='{GenericFilterOps.STARTSWITH}:ab53ca' to "
+            f"filter for all UUIDs starting with that prefix."
+        )
+    elif filter_model.is_int_field(field):
+        return (
+            f"[INTEGER] Example: --{field}='{GenericFilterOps.STARTSWITH}:ab53ca' to "
+            f"filter for all UUIDs starting with that prefix."
+        )
+    elif filter_model.is_bool_field(field):
+        return (
+            f"[BOOL] Example: --{field}='{GenericFilterOps.STARTSWITH}:ab53ca' to "
+            f"filter for all UUIDs starting with that prefix."
+        )
+    elif filter_model.is_str_field(field):
+        return (
+            f"[STRING] Example: --{field}='{GenericFilterOps.CONTAINS}:example' to "
+            f"filter everything that contains the query somewhere in its "
+            f"{field}."
+        )
+
+
+def create_data_type_help_text(filter_model: Type[FilterBaseModel], field: str):
+    """Create a general help text for a fields datatype.
+
+    Args:
+        filter_model: The filter model to use
+        field: The field within that filter model
+
+    Returns:
+        The help text.
+    """
+    if filter_model.is_datatime_field(field):
+        return (
+            f"[DATETIME] supported filter operators: "
+            f"{[str(op) for op in NumericFilter.ALLOWED_OPS]}"
+        )
+    elif filter_model.is_uuid_field(field):
+        return (
+            f"[UUID] supported filter operators: "
+            f"{[str(op) for op in UUIDFilter.ALLOWED_OPS]}"
+        )
+    elif filter_model.is_int_field(field):
+        return (
+            f"[INTEGER] supported filter operators: "
+            f"{[str(op) for op in NumericFilter.ALLOWED_OPS]}"
+        )
+    elif filter_model.is_bool_field(field):
+        return (
+            f"[BOOL] supported filter operators: "
+            f"{[str(op) for op in BoolFilter.ALLOWED_OPS]}"
+        )
+    elif filter_model.is_str_field(field):
+        return (
+            f"[STRING] supported filter operators: "
+            f"{[str(op) for op in StrFilter.ALLOWED_OPS]}"
+        )
+    else:
+        return f"{field}"
+
+
 def list_options(filter_model: Type[FilterBaseModel]) -> F:
+    """Create a decorator to generate the correct list of parameters to use for filtering."""
+
     def inner_decorator(func: F) -> F:
 
         options = list()
+        data_type_descriptors = set()
         for k, v in filter_model.__fields__.items():
             if k not in filter_model.CLI_EXCLUDE_FIELDS:
                 options.append(
@@ -1080,13 +1171,38 @@ def list_options(filter_model: Type[FilterBaseModel]) -> F:
                         type=str,
                         default=v.default,
                         required=False,
+                        help=create_filter_help_text(filter_model, k),
                     )
+                )
+            if k not in filter_model.FILTER_EXCLUDE_FIELDS:
+                data_type_descriptors.add(
+                    create_data_type_help_text(filter_model, k)
                 )
 
         def wrapper(function):
             for option in reversed(options):
                 function = option(function)
             return function
+
+        func.__doc__ = (
+            f"{func.__doc__} By default all filters are "
+            f"interpreted as a check for equality. However advanced "
+            f"filter operators can be used to tune the filtering by "
+            f"writing the operator and separating it from the "
+            f"query parameter with a colon `:`, e.g. "
+            f"--field='operator:query'."
+        )
+
+        if data_type_descriptors:
+            data_type_descriptors = "\n\n".join(data_type_descriptors)
+
+            func.__doc__ = (
+                f"{func.__doc__} \n\n"
+                f"\b Each datatype supports a specific "
+                f"set of filter operations, here are the relevant "
+                f"ones for the parameters of this command: \n\n"
+                f"{data_type_descriptors}"
+            )
 
         return wrapper(func)
 

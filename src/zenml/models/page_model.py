@@ -47,40 +47,17 @@ from pydantic.types import conint
 
 from zenml.models.base_models import BaseResponseModel
 from zenml.models.filter_models import FilterBaseModel
-from zenml.zen_stores.schemas.base_schemas import BaseSchema
 
-T = TypeVar("T", bound=BaseSchema)
 B = TypeVar("B", bound=BaseResponseModel)
 
 
 class Page(GenericModel, Generic[B]):
+    """Return Model for List Models to accomodate pagination."""
+
     page: conint(ge=1)  # type: ignore
     size: conint(ge=1)  # type: ignore
     total_pages: conint(ge=0)  # type: ignore
     total: conint(ge=0)  # type: ignore
     items: Sequence[B]
 
-    class Config:
-        extra = "allow"
-
     __params_type__ = FilterBaseModel
-
-    @classmethod
-    def create(
-        cls,
-        items: Sequence[B],
-        total: int,
-        total_pages: int,
-        filter_model: FilterBaseModel,
-    ) -> Page[B]:
-
-        if not isinstance(filter_model, FilterBaseModel):
-            raise ValueError("Page should be used with filter models")
-
-        return cls(
-            total=total,
-            total_pages=total_pages,
-            items=items,
-            page=filter_model.page,
-            size=filter_model.size,
-        )

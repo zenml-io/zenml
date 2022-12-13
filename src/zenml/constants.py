@@ -206,7 +206,7 @@ DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE = ".zenml_deployment_config.yaml"
 # Secret constants
 ARBITRARY_SECRET_SCHEMA_TYPE = "arbitrary"
 
-# Pagination defaults
+# Pagination and filtering defaults
 PAGINATION_STARTING_PAGE: int = 1
 PAGE_SIZE_DEFAULT: int = handle_int_env_var(
     ENV_ZENML_PAGINATION_DEFAULT_LIMIT, default=50
@@ -214,3 +214,4 @@ PAGE_SIZE_DEFAULT: int = handle_int_env_var(
 PAGE_SIZE_MAXIMUM: int = handle_int_env_var(
     ENV_ZENML_PAGINATION_DEFAULT_LIMIT, default=10000
 )
+FILTERING_DATETIME_FORMAT: str = "%y-%m-%d %H:%M:%S"

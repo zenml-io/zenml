@@ -27,8 +27,8 @@ from zenml.models.base_models import (
     update_model,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
-from zenml.models.pipeline_run_models import PipelineRunResponseModel
 from zenml.models.filter_models import ProjectScopedFilterModel
+from zenml.models.pipeline_run_models import PipelineRunResponseModel
 
 # ---- #
 # BASE #

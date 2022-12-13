@@ -27,9 +27,9 @@ from zenml.models.base_models import (
     update_model,
 )
 from zenml.models.component_models import ComponentResponseModel
+from zenml.models.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.filter_models import ShareableProjectScopedFilterModel
 
-from zenml.models.constants import STR_FIELD_MAX_LENGTH
 if TYPE_CHECKING:
     pass
 

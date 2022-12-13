@@ -1813,9 +1813,7 @@ class Client(metaclass=ClientMetaClass):
                 component_filter_model.set_scope_type(
                     component_type=component_type
                 )
-                component_filter_model.set_scope_project(
-                    self.active_project.id
-                )
+                component_filter_model.set_scope_project(self.active_project.id)
                 entity = self.zen_store.list_stack_components(
                     component_filter_model=component_filter_model
                 )
@@ -1878,23 +1876,24 @@ class Client(metaclass=ClientMetaClass):
             A page of stack components.
         """
         component_filter_model = ComponentFilterModel(
-                page=page,
-                size=size,
-                sort_by=sort_by,
-                logical_operator=logical_operator,
-                project_id=project_id or self.active_project.id,
-                user_id=user_id,
-                name=name,
-                is_shared=is_shared,
-                flavor=flavor,
-                type=type,
-                id=id,
-                created=created,
-                updated=updated,
-            )
+            page=page,
+            size=size,
+            sort_by=sort_by,
+            logical_operator=logical_operator,
+            project_id=project_id or self.active_project.id,
+            user_id=user_id,
+            name=name,
+            is_shared=is_shared,
+            flavor=flavor,
+            type=type,
+            id=id,
+            created=created,
+            updated=updated,
+        )
         component_filter_model.set_scope_project(self.active_project.id)
         return self.zen_store.list_stack_components(
-            component_filter_model=component_filter_model)
+            component_filter_model=component_filter_model
+        )
 
     def create_stack_component(
         self,
@@ -2190,22 +2189,23 @@ class Client(metaclass=ClientMetaClass):
             A list of all the flavor models.
         """
         flavor_filter_model = FlavorFilterModel(
-                page=page,
-                size=size,
-                sort_by=sort_by,
-                logical_operator=logical_operator,
-                project_id=project_id or self.active_project.id,
-                user_id=user_id,
-                name=name,
-                type=type,
-                integration=integration,
-                id=id,
-                created=created,
-                updated=updated,
-            )
+            page=page,
+            size=size,
+            sort_by=sort_by,
+            logical_operator=logical_operator,
+            project_id=project_id or self.active_project.id,
+            user_id=user_id,
+            name=name,
+            type=type,
+            integration=integration,
+            id=id,
+            created=created,
+            updated=updated,
+        )
         flavor_filter_model.set_scope_project(self.active_project.id)
         return self.zen_store.list_flavors(
-            flavor_filter_model=flavor_filter_model)
+            flavor_filter_model=flavor_filter_model
+        )
 
     def get_flavors_by_type(
         self, component_type: "StackComponentType"
@@ -2417,7 +2417,8 @@ class Client(metaclass=ClientMetaClass):
         )
         pipeline_filter_model.set_scope_project(self.active_project.id)
         return self.zen_store.list_pipelines(
-            pipeline_filter_model=pipeline_filter_model)
+            pipeline_filter_model=pipeline_filter_model
+        )
 
     def get_pipeline(
         self, name_id_or_prefix: Union[str, UUID]
@@ -2588,29 +2589,30 @@ class Client(metaclass=ClientMetaClass):
             A page with Pipeline fitting the filter description
         """
         step_run_filter_model = StepRunFilterModel(
-                sort_by=sort_by,
-                page=page,
-                size=size,
-                logical_operator=logical_operator,
-                id=id,
-                entrypoint_name=entrypoint_name,
-                code_hash=code_hash,
-                cache_key=cache_key,
-                pipeline_run_id=pipeline_run_id,
-                original_step_run_id=original_step_run_id,
-                status=status,
-                created=created,
-                updated=updated,
-                start_time=start_time,
-                end_time=end_time,
-                name=name,
-                project_id=project_id,
-                user_id=user_id,
-                num_outputs=num_outputs,
-            )
+            sort_by=sort_by,
+            page=page,
+            size=size,
+            logical_operator=logical_operator,
+            id=id,
+            entrypoint_name=entrypoint_name,
+            code_hash=code_hash,
+            cache_key=cache_key,
+            pipeline_run_id=pipeline_run_id,
+            original_step_run_id=original_step_run_id,
+            status=status,
+            created=created,
+            updated=updated,
+            start_time=start_time,
+            end_time=end_time,
+            name=name,
+            project_id=project_id,
+            user_id=user_id,
+            num_outputs=num_outputs,
+        )
         step_run_filter_model.set_scope_project(self.active_project.id)
         return self.zen_store.list_run_steps(
-            step_run_filter_model=step_run_filter_model)
+            step_run_filter_model=step_run_filter_model
+        )
 
     def get_run_step(self, step_run_id: UUID) -> StepRunResponseModel:
         """Get a step run by ID.

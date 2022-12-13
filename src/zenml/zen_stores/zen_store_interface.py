@@ -638,7 +638,6 @@ class ZenStoreInterface(ABC):
     def delete_user_role_assignment(
         self, user_role_assignment_id: UUID
     ) -> None:
-
         """Delete a specific role assignment.
 
         Args:

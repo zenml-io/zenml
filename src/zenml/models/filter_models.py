@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field, PrivateAttr, root_validator, validator
 from sqlmodel import SQLModel
 
 from zenml.constants import (
+    FILTERING_DATETIME_FORMAT,
     PAGE_SIZE_DEFAULT,
     PAGE_SIZE_MAXIMUM,
     PAGINATION_STARTING_PAGE,
@@ -26,6 +27,8 @@ logger = get_logger(__name__)
 
 
 class Filter(BaseModel, ABC):
+    """Filter for all fields."""
+
     operation: GenericFilterOps
     column: str
     value: Any
@@ -67,6 +70,8 @@ class BoolFilter(Filter):
 
 
 class StrFilter(Filter):
+    """Filter for all string fields."""
+
     ALLOWED_OPS: ClassVar[List[str]] = [
         GenericFilterOps.EQUALS,
         GenericFilterOps.STARTSWITH,
@@ -97,6 +102,8 @@ class StrFilter(Filter):
 
 
 class UUIDFilter(Filter):
+    """Filter for all uuid fields which are mostly treated like strings."""
+
     ALLOWED_OPS: ClassVar[List[str]] = [
         GenericFilterOps.EQUALS,
         GenericFilterOps.STARTSWITH,
@@ -136,6 +143,8 @@ class UUIDFilter(Filter):
 
 
 class NumericFilter(Filter):
+    """Filter for all numeric fields."""
+
     ALLOWED_OPS: ClassVar[List[str]] = [
         GenericFilterOps.EQUALS,
         GenericFilterOps.GT,
@@ -222,6 +231,8 @@ class FilterBaseModel(BaseModel):
     updated: Union[datetime, str] = Query(None, description="Updated")
 
     class Config:
+        """Configure all Filter Models."""
+
         extras = False
         fields = {"list_of_filters": {"exclude": True}}
 
@@ -259,11 +270,10 @@ class FilterBaseModel(BaseModel):
                         value = split_value[1]
                         operator = GenericFilterOps(split_value[0])
 
-                if issubclass(datetime, get_args(cls.__fields__[key].type_)):
+                if cls.is_datatime_field(key):
                     try:
-                        supported_format = "%y-%m-%d %H:%M:%S"
                         datetime_value = datetime.strptime(
-                            value, supported_format
+                            value, FILTERING_DATETIME_FORMAT
                         )
                     except ValueError as e:
                         raise ValueError(
@@ -279,7 +289,7 @@ class FilterBaseModel(BaseModel):
                             value=datetime_value,
                         )
                     )
-                elif issubclass(UUID, get_args(cls.__fields__[key].type_)):
+                elif cls.is_uuid_field(key):
                     if operator == GenericFilterOps.EQUALS and not isinstance(
                         value, UUID
                     ):
@@ -300,7 +310,7 @@ class FilterBaseModel(BaseModel):
                             value=value,
                         )
                     )
-                elif issubclass(int, get_args(cls.__fields__[key].type_)):
+                elif cls.is_int_field(key):
                     list_of_filters.append(
                         NumericFilter(
                             operation=GenericFilterOps(operator),
@@ -308,18 +318,21 @@ class FilterBaseModel(BaseModel):
                             value=int(value),
                         )
                     )
-                elif issubclass(bool, get_args(cls.__fields__[key].type_)):
+                elif cls.is_bool_field(key):
+                    if GenericFilterOps(operator) != GenericFilterOps.EQUALS:
+                        logger.warning(
+                            "Boolean filters do not support any"
+                            "operation except for equals. Defaulting"
+                            "to an `equals` comparison"
+                        )
                     list_of_filters.append(
                         BoolFilter(
-                            operation=GenericFilterOps(operator),
+                            operation=GenericFilterOps.EQUALS,
                             column=key,
                             value=bool(value),
                         )
                     )
-                elif (
-                    issubclass(str, get_args(cls.__fields__[key].type_))
-                    or cls.__fields__[key].type_ == str
-                ):
+                elif cls.is_str_field(key):
                     list_of_filters.append(
                         StrFilter(
                             operation=GenericFilterOps(operator),
@@ -343,6 +356,29 @@ class FilterBaseModel(BaseModel):
 
         values["list_of_filters"] = list_of_filters
         return values
+
+    @classmethod
+    def is_datatime_field(cls, k: str) -> bool:
+        return issubclass(datetime, get_args(cls.__fields__[k].type_))
+
+    @classmethod
+    def is_uuid_field(cls, k: str) -> bool:
+        return issubclass(UUID, get_args(cls.__fields__[k].type_))
+
+    @classmethod
+    def is_int_field(cls, k: str) -> bool:
+        return issubclass(int, get_args(cls.__fields__[k].type_))
+
+    @classmethod
+    def is_bool_field(cls, k: str) -> bool:
+        return issubclass(bool, get_args(cls.__fields__[k].type_))
+
+    @classmethod
+    def is_str_field(cls, k: str) -> bool:
+        return (
+            issubclass(str, get_args(cls.__fields__[k].type_))
+            or cls.__fields__[k].type_ == str
+        )
 
     @property
     def offset(self):
@@ -371,7 +407,7 @@ class FilterBaseModel(BaseModel):
         return None
 
     def generate_filter(self, table: Type[SQLModel]):
-        """Concatinate all filters together with the chosen operator"""
+        """Concatenate all filters together with the chosen operator."""
         from sqlalchemy import and_
 
         user_created_filter = self._base_filter(table=table)

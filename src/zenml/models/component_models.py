@@ -28,7 +28,6 @@ from zenml.models.base_models import (
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.filter_models import ShareableProjectScopedFilterModel
-
 from zenml.utils import secret_utils
 
 if TYPE_CHECKING:
@@ -113,7 +112,7 @@ class ComponentFilterModel(ShareableProjectScopedFilterModel):
         self._scope_type = component_type
 
     def _scope_filter(self, table: Type["SQLModel"]):
-        """A Stack Components can also be scoped by type to narow by type
+        """A Stack Components can also be scoped by type to narrow by type.
 
         The resulting filter from this method will be the union of the scoping
         filter with the user provided filters.

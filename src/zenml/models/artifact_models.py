@@ -25,8 +25,8 @@ from zenml.models.base_models import (
     ProjectScopedResponseModel,
     update_model,
 )
-from zenml.models.filter_models import ProjectScopedFilterModel
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
+from zenml.models.filter_models import ProjectScopedFilterModel
 
 # ---- #
 # BASE #

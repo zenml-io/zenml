@@ -615,8 +615,7 @@ class SqlZenStore(BaseZenStore):
         table: Type[AnySchema],
         filter_model: FilterBaseModel,
     ) -> Page[B]:
-        """Given a query, select the range defined in params and return a
-        Page instance with a list of Domain Models.
+        """Given a query, return aPage instance with a list of filtered Models.
 
         Args:
             session: The SQLModel Session
@@ -659,7 +658,13 @@ class SqlZenStore(BaseZenStore):
         # Convert this page of items from schemas to models
         items: List[B] = [i.to_model() for i in items]
 
-        return Page.create(items, total, total_pages, filter_model)
+        return Page(
+            total=total,
+            total_pages=total_pages,
+            items=items,
+            page=filter_model.page,
+            size=filter_model.size,
+        )
 
     # ====================================
     # ZenML Store interface implementation
