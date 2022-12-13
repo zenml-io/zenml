@@ -15,7 +15,7 @@
 
 import time
 from datetime import datetime
-from typing import TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING, Dict, Tuple
 
 from zenml.client import Client
 from zenml.config.step_configurations import Step
@@ -43,6 +43,7 @@ from zenml.utils import string_utils
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
+    from zenml.models.artifact_models import ArtifactResponseModel
     from zenml.step_operators import BaseStepOperator
 
 logger = get_logger(__name__)
@@ -310,11 +311,10 @@ class StepLauncher:
                     step_run_info=step_run_info,
                 )
             else:
-                runner = StepRunner(step=self._step, stack=self._stack)
-                runner.run(
+                self._run_step_without_step_operator(
+                    step_run_info=step_run_info,
                     input_artifacts=step_run.input_artifacts,
                     output_artifact_uris=output_artifact_uris,
-                    step_run_info=step_run_info,
                 )
         except:  # noqa: E722
             output_utils.remove_artifact_dirs(
@@ -362,4 +362,24 @@ class StepLauncher:
         step_operator.launch(
             info=step_run_info,
             entrypoint_command=entrypoint_command,
+        )
+
+    def _run_step_without_step_operator(
+        self,
+        step_run_info: StepRunInfo,
+        input_artifacts: Dict[str, "ArtifactResponseModel"],
+        output_artifact_uris: Dict[str, str],
+    ) -> None:
+        """Runs the current step without a step operator.
+
+        Args:
+            step_run_info: Additional information needed to run the step.
+            input_artifacts: The input artifacts of the current step.
+            output_artifact_uris: The output artifact URIs of the current step.
+        """
+        runner = StepRunner(step=self._step, stack=self._stack)
+        runner.run(
+            input_artifacts=input_artifacts,
+            output_artifact_uris=output_artifact_uris,
+            step_run_info=step_run_info,
         )
