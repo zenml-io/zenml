@@ -115,8 +115,8 @@ class FlavorRegistry:
             id=UUID(int=0),
             user=client.active_user,
             project=client.active_project,
-            created=datetime.now(),
-            updated=datetime.now(),
+            created=datetime.utcnow(),
+            updated=datetime.utcnow(),
         )
 
         flavors[flavor.name] = flavor_response_model

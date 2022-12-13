@@ -1,54 +1,130 @@
-name: Integration Test the Examples
+name: Integration Tests
 
-on: workflow_call
+on: 
+  workflow_call:
+    inputs:
+      os:
+        description: 'OS'
+        type: string
+        required: true
+      python-version:
+        description: 'Python version'
+        type: string
+        required: true
+      test_environment:
+        description: 'The test environment'
+        type: string
+        required: true
+      enable_tmate:
+        description: 'Enable tmate session for debugging'
+        type: string
+        required: false
+        default: "never"
+      tmate_timeout:
+        description: 'Timeout for tmate session (minutes)'
+        type: number
+        required: false
+        default: 30
+
+  workflow_dispatch:
+    inputs:
+      os:
+        description: 'OS'
+        type: choice
+        options: 
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+        required: false
+        default: 'ubuntu-latest'
+      python-version:
+        description: 'Python version'
+        type: choice
+        options:
+          - '3.7'
+          - '3.8'
+          - '3.9'
+          - '3.10'
+        required: false
+        default: '3.8'
+      test_environment:
+        description: 'The test environment'
+        type: choice
+        options:
+          - default
+          - default-docker-orchestrator
+          - default-kubeflow-orchestrator
+          - default-airflow-orchestrator
+          - local-server
+          - local-server-docker-orchestrator
+          - local-server-kubeflow-orchestrator
+          - local-server-airflow-orchestrator
+          - docker-server
+          - docker-server-docker-orchestrator
+          - docker-server-kubeflow-orchestrator
+          - docker-server-airflow-orchestrator
+        required: false
+        default: 'default'
+      enable_tmate:
+        description: 'Enable tmate session for debugging'
+        type: choice
+        options:
+          - 'no'
+          - 'on-failure'
+          - 'always'
+          - 'before-tests'
+        required: false
+        default: 'no'
+      tmate_timeout:
+        description: 'Timeout for tmate session'
+        type: number
+        required: false
+        default: 30
 
 jobs:
 
   integrationtest:
     name: integrationtest
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ inputs.os }}
     env:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: 'utf-8'
-    # Exit if its a commit from Gitbook
-    if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
+      # on MAC OS, we need to set this environment variable
+      # to fix problems with the fork() calls (see this thread
+      # for more information: http://sealiesoftware.com/blog/archive/2017/6/5/Objective-C_and_fork_in_macOS_1013.html)
+      OBJC_DISABLE_INITIALIZE_FORK_SAFETY: 'YES'
+
 
     defaults:
       run:
         shell: bash
 
-    strategy:
-      matrix:
-        # TODO: readd macos-latest once we fix the integration tests
-        os: [ ubuntu-latest, windows-latest ]
-        python-version: [3.7, 3.8, 3.9, '3.10']
-      fail-fast: false
-
     steps:
+      - name: Maximize build space
+        uses: easimon/maximize-build-space@master
+        with:
+          root-reserve-mb: 20000
+          swap-size-mb: 1024
+          remove-dotnet: 'true'
+          remove-android: 'true'
+          remove-haskell: 'true'
+          build-mount-path: /var/lib/docker
+        if: runner.os=='Linux' && (contains(inputs.test_environment, 'docker') || contains(inputs.test_environment, 'kubeflow'))
+
+      - name: Reload Docker
+        run:
+          sudo systemctl restart docker
+        if: runner.os=='Linux' && (contains(inputs.test_environment, 'docker') || contains(inputs.test_environment, 'kubeflow'))
+
       - uses: actions/checkout@v2
-
-      # Workaround from FuseML (https://github.com/fuseml/fuseml/blob/main/.github/workflows/ci.yml)
-      # as the TF images are too large for the GH action runner disk
-      - name: Free disk space
-        shell: bash
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: |
-          echo "Available storage:"
-          df -h
-          echo
-          echo -n "  Removing: .NET (frees ~22GB)"
-          sudo rm -rf /usr/share/dotnet
-          echo "... done"
-          echo
-          echo "Available storage:"
-          df -h
-
 
       - name: Setup environment with Poetry
         uses: ./.github/actions/setup_environment
         with:
           cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
+          python-version: ${{ inputs.python-version }}
+          os: ${{ inputs.os }}
 
       - name: Install Linux System Dependencies
         if: runner.os=='Linux'
@@ -62,16 +138,67 @@ jobs:
         if: runner.os=='Windows'
         run: choco install graphviz
 
+      - name: Install Docker and Colima on MacOS
+        if: runner.os=='macOS'
+        run: |
+          brew install docker colima
+
+          # We need to mount the /private/tmp/zenml-test/ folder because
+          # this folder is also mounted in the Docker containers that are
+          # started by local ZenML orchestrators.
+          colima start --mount /private/tmp/zenml-test/:w
+          
+          # This is required for the Docker Python SDK to work
+          sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
+
+      - name: Install kubectl on Linux
+        run: |
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          sudo install -o root -g 0 -m 0755 kubectl /usr/local/bin/kubectl
+        if: runner.os=='Linux'
+
+      - name: Install kubectl on MacOS
+        run: |
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/darwin/amd64/kubectl"
+          sudo install -o root -g 0 -m 0755 kubectl /usr/local/bin/kubectl
+        if: runner.os=='macOS'
+
+      - name: Install K3D
+        run: |
+          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
+        if: runner.os!='Windows'
+
+      - name: Install Prerequisites
+        run: |
+          source $VENV
+          zenml integration export-requirements --output-file requirements.txt kubeflow s3 gcp azure vault pillow evidently deepchecks great_expectations huggingface lightgbm neural_prophet pytorch tensorflow whylogs xgboost mlflow neptune
+          pip install -r requirements.txt
+          rm requirements.txt
+          # re-install zenml to be sure
+          poetry install --extras server
+
       - name: Check Python Env ahead of tests
         run: |
           source $VENV
           zenml integration list
           pip list
 
+      - name: Setup tmate session before tests
+        if: ${{ inputs.enable_tmate == 'before-tests' }}
+        uses: mxschmitt/action-tmate@v3
+        with:
+          timeout-minutes: ${{ inputs.tmate_timeout }}
+
       - name: Test
         run: |
           source $VENV
-          bash scripts/test-coverage-xml.sh integration
+          bash scripts/test-coverage-xml.sh integration ${{ inputs.test_environment }}
+
+      - name: Setup tmate session after tests
+        if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
+        uses: mxschmitt/action-tmate@v3
+        with:
+          timeout-minutes: ${{ inputs.tmate_timeout }}
 
       - name: Verify Python Env unaffected
         run: |

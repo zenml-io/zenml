@@ -194,7 +194,7 @@ class StepRunSchema(NamedSchema, table=True):
             if key == "end_time":
                 self.end_time = value
 
-        self.updated = datetime.now()
+        self.updated = datetime.utcnow()
 
         return self
 

@@ -33,30 +33,48 @@ jobs:
 
   integration-test:
     needs: poetry-install
+    # Exit if its a commit from Gitbook
+    if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
+        python-version: [ '3.7', '3.8', '3.9', '3.10' ]
+        test_environment: [ "default", "docker-server-docker-orchestrator", "default-kubeflow-orchestrator"]
+        exclude:
+          # docker and kubeflow are not supported on windows
+          - os: windows-latest
+            test_environment: default-kubeflow-orchestrator
+          - os: windows-latest
+            test_environment: docker-server-docker-orchestrator
+          # kubeflow is time-consuming to run, so we only run it on 3.8
+          - test_environment: default-kubeflow-orchestrator
+            python-version: '3.7'
+          - test_environment: default-kubeflow-orchestrator
+            python-version: '3.9'
+          - test_environment: default-kubeflow-orchestrator
+            python-version: '3.10'
+          # docker is time-consuming to run, so we only run it on 3.8
+          - test_environment: docker-server-docker-orchestrator
+            python-version: '3.7'
+          - test_environment: docker-server-docker-orchestrator
+            python-version: '3.9'
+          - test_environment: docker-server-docker-orchestrator
+            python-version: '3.10'
+          # disable docker macos tests for now
+          - test_environment: docker-server-docker-orchestrator
+            os: macos-latest
+          - test_environment: default-kubeflow-orchestrator
+            os: macos-latest
+          # disable kubeflow tests for now
+          - test_environment: default-kubeflow-orchestrator
+
+      fail-fast: false
+
     uses: ./.github/workflows/integration-test.yml
-    secrets: inherit
-
-  check_comments:
-    runs-on: ubuntu-latest
-    if: github.event.issue.pull_request
-    outputs:
-      kf_trigger: ${{ steps.check.outputs.triggered }}
-    steps:
-      - uses: khan/pull-request-comment-trigger@master
-        id: check
-        with:
-          trigger: "LTKF!"
-          reaction: rocket
-        env:
-          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-      - run: "echo Found LTKF! in the comments!"
-        if: steps.check.outputs.triggered == 'true'
-
-  kubeflow-tests:
-    needs: [poetry-install, check_comments]
-    # Run this one automatically if 'LTKF! is in the PR comments
-    if: ${{ needs.check_comments.outputs.kf_trigger == 'true' }}
-    uses: ./.github/workflows/kubeflow.yml
+    with:
+      os: ${{ matrix.os }}
+      python-version: ${{ matrix.python-version }}
+      test_environment: ${{ matrix.test_environment }}
     secrets: inherit
 
   spell-check:

@@ -32,7 +32,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.8
+          python-version: '3.8'
 
       - uses: actions/setup-node@v2
         with:
@@ -44,6 +44,8 @@ jobs:
         uses: ./.github/actions/setup_environment
         with:
           cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
+          python-version: '3.8'
+          os: ubuntu-latest
 
       # IMPORTANT: there's a strategy to installing integrations here in a way
       # that avoids conflicts while at the same time making it possible for all
@@ -65,7 +67,8 @@ jobs:
           zenml integration install -y label_studio seldon
           zenml integration install -y bentoml
           zenml integration install -y airflow
-          zenml integration install -y --ignore-integration feast --ignore-integration label_studio --ignore-integration seldon --ignore-integration airflow --ignore-integration bentoml
+          zenml integration install -y kserve
+          zenml integration install -y --ignore-integration feast --ignore-integration label_studio --ignore-integration seldon --ignore-integration kserve --ignore-integration airflow --ignore-integration bentoml
           poetry install --extras server
           pip install jinja2==3.0.3
 

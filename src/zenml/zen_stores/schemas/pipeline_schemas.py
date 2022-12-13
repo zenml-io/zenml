@@ -130,5 +130,5 @@ class PipelineSchema(NamedSchema, table=True):
         if pipeline_update.spec:
             self.spec = pipeline_update.spec.json(sort_keys=True)
 
-        self.updated = datetime.now()
+        self.updated = datetime.utcnow()
         return self
