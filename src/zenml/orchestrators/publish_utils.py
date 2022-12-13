@@ -63,11 +63,11 @@ def publish_output_artifacts(
         client = Client()
         user = client.active_user.id
         project = client.active_project.id
-        artifact_store = client.active_stack_model.components.get(
+        artifact_stores = client.active_stack_model.components.get(
             StackComponentType.ARTIFACT_STORE
         )
-        assert artifact_store is not None  # Every stack has an artifact store.
-        artifact_store_id = artifact_store[0].id
+        assert artifact_stores is not None  # Every stack has an artifact store.
+        artifact_store_id = artifact_stores[0].id
         artifact_model = ArtifactRequestModel(
             name=name,
             type=artifact_.TYPE_NAME,

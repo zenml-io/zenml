@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""CLI functionality to interact with pipelines."""
+"""CLI functionality to interact with artifacts."""
 
 
 from uuid import UUID
@@ -56,23 +56,32 @@ def list_artifacts() -> None:
 
 @artifact.command("delete", help="Delete an artifact.")
 @click.argument("artifact_id")
-def delete_artifact(artifact_id: str) -> None:
+@click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    help="Don't ask for confirmation.",
+)
+def delete_artifact(artifact_id: str, yes: bool = False) -> None:
     """Delete an artifact.
 
     Args:
         artifact_id: ID of the artifact to delete.
+        yes: If set, don't ask for confirmation.
     """
     cli_utils.print_active_config()
-    confirmation = cli_utils.confirmation(
-        f"Are you sure you want to delete artifact '{artifact_id}'?"
-    )
-    if not confirmation:
-        cli_utils.declare("Artifact deletion canceled.")
-        return
+
+    if not yes:
+        confirmation = cli_utils.confirmation(
+            f"Are you sure you want to delete artifact '{artifact_id}'?"
+        )
+        if not confirmation:
+            cli_utils.declare("Artifact deletion canceled.")
+            return
+
+    try:
+        Client().delete_artifact(artifact_id=UUID(artifact_id))
+    except (KeyError, ValueError) as e:
+        cli_utils.error(str(e))
     else:
-        try:
-            Client().delete_artifact(artifact_id=UUID(artifact_id))
-        except (KeyError, ValueError) as e:
-            cli_utils.error(str(e))
-        else:
-            cli_utils.declare(f"Artifact '{artifact_id}' deleted.")
+        cli_utils.declare(f"Artifact '{artifact_id}' deleted.")
