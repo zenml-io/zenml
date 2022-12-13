@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing pipelines."""
 
-from typing import ClassVar, List, Optional, Dict, Any
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -55,13 +55,13 @@ class PipelineBaseModel(BaseModel):
 class PipelineResponseModel(PipelineBaseModel, ProjectScopedResponseModel):
     """Pipeline response model user, project, runs, and status hydrated."""
 
-
     runs: Optional[List["PipelineRunResponseModel"]] = Field(
         title="A list of the last x Pipeline Runs."
     )
     status: Optional[List[ExecutionStatus]] = Field(
         title="The status of the last x Pipeline Runs."
     )
+
 
 # ------- #
 # REQUEST #

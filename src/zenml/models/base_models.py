@@ -146,7 +146,6 @@ class ShareableResponseModel(ProjectScopedResponseModel):
         return metadata
 
 
-
 # -------------- #
 # REQUEST MODELS #
 # -------------- #
@@ -167,7 +166,6 @@ class UserScopedRequestModel(BaseRequestModel):
 
     user: UUID = Field(title="The id of the user that created this resource.")
 
-
     def get_analytics_metadata(self) -> Dict[str, Any]:
         """Fetches the analytics metadata for user scoped models.
 
@@ -177,6 +175,7 @@ class UserScopedRequestModel(BaseRequestModel):
         metadata = super().get_analytics_metadata()
         metadata["user_id"] = self.user
         return metadata
+
 
 class ProjectScopedRequestModel(UserScopedRequestModel):
     """Base project-scoped request domain model.

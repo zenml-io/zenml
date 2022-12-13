@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing roles that can be assigned to users or teams."""
 
-from typing import ClassVar, List, Set
+from typing import Set
 
 from pydantic import BaseModel, Field
 

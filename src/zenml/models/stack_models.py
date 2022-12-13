@@ -14,7 +14,7 @@
 """Models representing stacks."""
 
 import json
-from typing import Any, ClassVar, Dict, List
+from typing import Any, Dict, List
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -53,7 +53,6 @@ class StackBaseModel(BaseModel):
 
 class StackResponseModel(StackBaseModel, ShareableResponseModel):
     """Stack model with Components, User and Project fully hydrated."""
-
 
     components: Dict[StackComponentType, List[ComponentResponseModel]] = Field(
         title="A mapping of stack component types to the actual"
@@ -114,7 +113,6 @@ class StackResponseModel(StackBaseModel, ShareableResponseModel):
 
 class StackRequestModel(StackBaseModel, ShareableRequestModel):
     """Stack model with components, user and project as UUIDs."""
-
 
     components: Dict[StackComponentType, List[UUID]] = Field(
         title="A mapping of stack component types to the actual"

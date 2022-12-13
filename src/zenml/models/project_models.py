@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Models representing projects."""
 
-from typing import ClassVar, List
 
 from pydantic import BaseModel, Field
 

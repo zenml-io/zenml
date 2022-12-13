@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing stack component flavors."""
 
-from typing import ClassVar, List, Optional, Dict, Any
+from typing import ClassVar, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -23,7 +23,6 @@ from zenml.models.base_models import (
     ProjectScopedResponseModel,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
-
 
 # ---- #
 # BASE #

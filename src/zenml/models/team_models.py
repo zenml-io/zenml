@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing teams."""
 
-from typing import TYPE_CHECKING, ClassVar, List, Optional
+from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field
