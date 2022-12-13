@@ -1,0 +1,110 @@
+environments:
+
+  - name: aws-local-orchestrator
+    description: >-
+      AWS ZenML server with local orchestrator and all local
+      components.
+    deployment: aws-us-east-1-server
+    requirements:
+      - data-validators
+      - mlflow-local-tracker
+      - mlflow-local-deployer
+      - local-secrets-manager
+    capabilities:
+      synchronized: true
+
+  - name: aws-docker-orchestrator
+    description: >-
+      AWS ZenML server with local docker orchestrator and all local
+      components.
+    deployment: aws-us-east-1-server
+    requirements:
+      - data-validators
+      - mlflow-local-tracker
+      - mlflow-local-deployer
+      - local-secrets-manager
+    mandatory_requirements:
+      - docker-local
+
+  - name: aws-kubeflow-orchestrator
+    description: >-
+      AWS ZenML server with local kubeflow orchestrator and all
+      local components.
+    deployment: aws-us-east-1-server
+    requirements:
+      - data-validators
+      - mlflow-local-tracker
+      - mlflow-local-deployer
+      - local-secrets-manager
+    mandatory_requirements:
+      - kubeflow-local
+
+  - name: aws-airflow-orchestrator
+    description: >-
+      AWS ZenML server with local airflow orchestrator and all
+      local components.
+    deployment: aws-us-east-1-server
+    requirements:
+      - data-validators
+      - mlflow-local-tracker
+      - mlflow-local-deployer
+      - local-secrets-manager
+    mandatory_requirements:
+      - airflow-local
+
+  - name: aws-cloud-local-orchestrator
+    description: >-
+      AWS ZenML server with AWS cloud components (S3 artifact store, ECR
+      container registry, MLflow, Seldon Core) and local orchestrator.
+    deployment: aws-us-east-1-server
+    requirements:
+      - data-validators
+      - aws-us-east-1-mlflow
+      - aws-us-east-1-seldon
+    mandatory_requirements:
+      - aws-us-east-1-cloud
+    capabilities:
+      synchronized: true
+
+  - name: aws-cloud-docker-orchestrator
+    description: >-
+      AWS ZenML server with AWS cloud components (S3 artifact store, ECR
+      container registry, MLflow, Seldon Core) and local docker orchestrator.
+    deployment: aws-us-east-1-server
+    requirements:
+      - data-validators
+      - aws-us-east-1-mlflow
+      - aws-us-east-1-seldon
+    mandatory_requirements:
+      - aws-us-east-1-cloud
+      - docker-local
+    capabilities:
+      synchronized: true
+
+  - name: aws-cloud-kubeflow-orchestrator
+    description: >-
+      AWS ZenML server with AWS cloud components (S3 artifact store, ECR
+      container registry, MLflow, Seldon Core) and remote AWS kubeflow
+      orchestrator.
+    deployment: aws-us-east-1-server
+    requirements:
+      - data-validators
+      - aws-us-east-1-mlflow
+      - aws-us-east-1-seldon
+    mandatory_requirements:
+      - aws-us-east-1-cloud
+      - aws-us-east-1-kubeflow
+
+  - name: aws-cloud-kubernetes-orchestrator
+    description: >-
+      AWS ZenML server with AWS cloud components (S3 artifact store, ECR
+      container registry, MLflow, Seldon Core) and remote EKS kubernetes
+      orchestrator.
+    deployment: aws-us-east-1-server
+    requirements:
+      - data-validators
+      - aws-us-east-1-mlflow
+      - aws-us-east-1-seldon
+    mandatory_requirements:
+      - aws-us-east-1-cloud
+      - aws-us-east-1-kubernetes
