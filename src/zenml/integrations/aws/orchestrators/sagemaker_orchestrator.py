@@ -69,6 +69,7 @@ class SagemakerOrchestrator(BaseOrchestrator):
         repo_digest = docker_image_builder.build_and_push_docker_image(
             deployment=deployment, stack=stack
         )
+        # repo_digest = "715803424590.dkr.ecr.us-east-1.amazonaws.com/zenml:not_so_basic_pipeline"
         deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
 
     def prepare_or_run_pipeline(
@@ -97,7 +98,7 @@ class SagemakerOrchestrator(BaseOrchestrator):
                 role=sagemaker.get_execution_role(),
                 image_uri=image_name,
                 instance_count=1,
-                instance_type="ml.m5.large",
+                instance_type="ml.t3.medium",
                 entrypoint=entrypoint,
                 sagemaker_session=session,
                 base_job_name=deployment.run_name,
