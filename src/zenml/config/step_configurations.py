@@ -26,6 +26,7 @@ if TYPE_CHECKING:
 class PartialArtifactConfiguration(StrictBaseModel):
     """Class representing a partial input/output artifact configuration."""
 
+    artifact_source: Optional[str] = None  # Deprecated; will be ignored.
     materializer_source: Optional[str] = None
 
 

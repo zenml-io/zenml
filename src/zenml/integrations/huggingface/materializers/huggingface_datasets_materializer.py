@@ -32,7 +32,7 @@ class HFDatasetMaterializer(BaseMaterializer):
     """Materializer to read data to and from huggingface datasets."""
 
     ASSOCIATED_TYPES = (Dataset, DatasetDict)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATAANALYSIS
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA_ANALYSIS
 
     def load(self, data_type: Type[Any]) -> Dataset:
         """Reads Dataset.

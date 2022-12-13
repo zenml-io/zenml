@@ -46,7 +46,7 @@ class GreatExpectationsMaterializer(BaseMaterializer):
         ExpectationSuite,
         CheckpointResult,
     )
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATAANALYSIS
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA_ANALYSIS
 
     @staticmethod
     def preprocess_checkpoint_result_dict(

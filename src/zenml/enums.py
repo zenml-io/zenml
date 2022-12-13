@@ -22,7 +22,7 @@ from zenml.utils.enum_utils import StrEnum
 class ArtifactType(StrEnum):
     """All possible types an artifact can have."""
 
-    DATAANALYSIS = "DataAnalysisArtifact"
+    DATA_ANALYSIS = "DataAnalysisArtifact"
     DATA = "DataArtifact"
     MODEL = "ModelArtifact"
     SCHEMA = "SchemaArtifact"

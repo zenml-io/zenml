@@ -34,7 +34,7 @@ class EvidentlyProfileMaterializer(BaseMaterializer):
     """Materializer to read data to and from an Evidently Profile."""
 
     ASSOCIATED_TYPES = (Profile,)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATAANALYSIS
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA_ANALYSIS
 
     def load(self, data_type: Type[Any]) -> Profile:
         """Reads an Evidently Profile object from a json file.

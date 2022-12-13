@@ -44,7 +44,7 @@ class DeepchecksVisualizer(BaseVisualizer):
         """
         for artifact_view in object.outputs.values():
             # filter out anything but data analysis artifacts
-            if artifact_view.type == ArtifactType.DATAANALYSIS:
+            if artifact_view.type == ArtifactType.DATA_ANALYSIS:
                 artifact = artifact_view.read()
                 self.generate_report(artifact)
 
