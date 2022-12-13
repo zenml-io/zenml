@@ -337,7 +337,7 @@ class AnalyticsContext:
                 zen_store.type == StoreType.REST
                 and "server_id" not in properties
             ):
-                user = zen_store.active_user
+                user = zen_store.get_user()
                 server_info = zen_store.get_store_info()
                 properties.update(
                     {

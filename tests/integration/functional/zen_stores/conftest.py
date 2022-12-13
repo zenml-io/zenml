@@ -46,7 +46,7 @@ def sql_store(
     )
     store = GlobalConfiguration().zen_store
     default_project = store._default_project
-    active_user = store.active_user
+    active_user = store.get_user()
     default_stack = store._get_default_stack(
         project_name_or_id=default_project.id, user_name_or_id=active_user.id
     )

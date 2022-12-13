@@ -39,12 +39,12 @@ from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     API,
     ARTIFACTS,
+    CURRENT_USER,
     DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     FLAVORS,
     INFO,
     LOGIN,
-    CURRENT_USER,
     PIPELINES,
     PROJECTS,
     ROLE_ASSIGNMENTS,
@@ -676,7 +676,8 @@ class RestZenStore(BaseZenStore):
 
         The `include_private` parameter is ignored here as it is handled
         implicitly by the /current-user endpoint that is queried when no
-        user_name_or_id is set
+        user_name_or_id is set. Raises a KeyError in case a user with that id
+        does not exist.
 
         Args:
             user_name_or_id: The name or ID of the user to get.
@@ -684,9 +685,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The requested user, if it was found.
-
-        Raises:
-            KeyError: If no user with the given name or ID exists.
         """
         if user_name_or_id:
             return self._get_resource(
