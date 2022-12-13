@@ -283,6 +283,7 @@ class Client(metaclass=ClientMetaClass):
         self._root = self.find_repository(root, enable_warnings=enable_warnings)
 
         if not self._root:
+            self._config = None
             if enable_warnings:
                 logger.info("Running without an active repository root.")
         else:
@@ -535,6 +536,9 @@ class Client(metaclass=ClientMetaClass):
         )  # raises KeyError
         if self._config:
             self._config.set_active_project(project)
+            # Sanitize the client configuration to reflect the current
+            # settings
+            self._sanitize_config()
         else:
             # set the active project globally only if the client doesn't use
             # a local configuration
@@ -2353,6 +2357,7 @@ class Client(metaclass=ClientMetaClass):
         components = self.zen_store.list_stack_components(
             name=name_id_or_prefix,
             type=component_type,
+            project_name_or_id=self.active_project.id,
         )
 
         if len(components) > 1:

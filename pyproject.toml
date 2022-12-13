@@ -102,6 +102,7 @@ pytest-mock = "^3.6.1"
 codespell = "^2.1.0"
 darglint = "^1.8.1"
 pytest-clarity = "^1.0.1"
+pytest-xdist = "^3.0.2"
 
 # mkdocs including plugins
 mkdocs="^1.2.3"
@@ -129,6 +130,9 @@ types-six = "^1.16.2"
 types-termcolor = "^1.1.2"
 types-psutil = "^5.8.13"
 flake8-docstrings = "^1.6.0"
+
+# test framework dependencies
+docker-compose = "^1.28"
 
 [build-system]
 requires = ["poetry-core"]

@@ -75,7 +75,7 @@ class RoleSchema(NamedSchema, table=True):
         ).items():
             setattr(self, field, value)
 
-        self.updated = datetime.now()
+        self.updated = datetime.utcnow()
         return self
 
     def to_model(self) -> RoleResponseModel:

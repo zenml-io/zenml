@@ -22,10 +22,7 @@ from zenml.models.base_models import (
     BaseResponseModel,
     update_model,
 )
-from zenml.models.constants import (
-    MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH,
-    MODEL_NAME_FIELD_MAX_LENGTH,
-)
+from zenml.models.constants import STR_FIELD_MAX_LENGTH
 
 
 # ---- #
@@ -36,12 +33,12 @@ class ProjectBaseModel(BaseModel):
 
     name: str = Field(
         title="The unique name of the project.",
-        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+        max_length=STR_FIELD_MAX_LENGTH,
     )
     description: str = Field(
         default="",
         title="The description of the project.",
-        max_length=MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH,
+        max_length=STR_FIELD_MAX_LENGTH,
     )
 
 

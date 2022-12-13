@@ -116,7 +116,7 @@ class StackSchema(ShareableSchema, table=True):
             else:
                 setattr(self, field, value)
 
-        self.updated = datetime.now()
+        self.updated = datetime.utcnow()
         return self
 
     def to_model(self) -> "StackResponseModel":
