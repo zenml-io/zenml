@@ -88,21 +88,17 @@ class BaseMaterializerMeta(type):
             artifact_type = artifact_class.TYPE_NAME
 
         # Validate associated artifact type.
-        is_invalid_artifact_type = True
         if artifact_type:
             try:
                 cls.ASSOCIATED_ARTIFACT_TYPE = ArtifactType(artifact_type)
-                is_invalid_artifact_type = False
             except ValueError:
-                pass
-        if is_invalid_artifact_type:
-            raise MaterializerInterfaceError(
-                f"Invalid materializer class '{name}'. When creating a "
-                f"custom materializer, make sure to specify a valid "
-                f"artifact type in its ASSOCIATED_ARTIFACT_TYPE class "
-                f"variable.",
-                url="https://docs.zenml.io/advanced-guide/pipelines/materializers",
-            )
+                raise MaterializerInterfaceError(
+                    f"Invalid materializer class '{name}'. When creating a "
+                    f"custom materializer, make sure to specify a valid "
+                    f"artifact type in its ASSOCIATED_ARTIFACT_TYPE class "
+                    f"variable.",
+                    url="https://docs.zenml.io/advanced-guide/pipelines/materializers",
+                )
 
         # Validate associated data types.
         for associated_type in cls.ASSOCIATED_TYPES:
