@@ -1,7 +1,7 @@
 """Add identity table [7e4a481d17f7].
 
 Revision ID: 7e4a481d17f7
-Revises: 7834208cc3f6
+Revises: 0.30.0
 Create Date: 2022-12-08 16:27:48.909015
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "7e4a481d17f7"
-down_revision = "7834208cc3f6"
+down_revision = "0.30.0"
 branch_labels = None
 depends_on = None
 

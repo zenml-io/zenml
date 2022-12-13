@@ -484,9 +484,6 @@ def deploy(
         metadata = {
             "server_deployment": str(server.config.provider),
         }
-        from zenml.zen_server.deploy.terraform.terraform_zen_server import (
-            TerraformServerDeploymentConfig,
-        )
 
         analytics_handler.metadata = metadata
 
@@ -527,10 +524,6 @@ def destroy() -> None:
         metadata = {
             "server_deployment": str(server.config.provider),
         }
-
-        from zenml.zen_server.deploy.terraform.terraform_zen_server import (
-            TerraformServerDeploymentConfig,
-        )
 
         analytics_handler.metadata = metadata
 
