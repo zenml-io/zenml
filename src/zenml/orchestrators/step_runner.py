@@ -24,6 +24,7 @@ from zenml.config.step_run_info import StepRunInfo
 from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.materializers.unmaterialized_artifact import UnmaterializedArtifact
 from zenml.models.artifact_models import (
     ArtifactRequestModel,
     ArtifactResponseModel,
@@ -253,18 +254,18 @@ class StepRunner:
         Returns:
             The artifact value.
         """
-        # Skip materialization for `ArtifactResponseModel` and its subtypes.
-        if issubclass(data_type, ArtifactResponseModel):
-            return artifact
+        # Skip materialization for `UnmaterializedArtifact`.
+        if data_type == UnmaterializedArtifact:
+            return UnmaterializedArtifact.parse_obj(artifact.dict())
 
         # Skip materialization for `BaseArtifact` and its subtypes.
         if issubclass(data_type, BaseArtifact):
             logger.warning(
                 "Skipping materialization by specifying a subclass of "
-                "`BaseArtifact` as output data type is deprecated and will be "
-                "removed in a future release. Please type your output as "
-                "`zenml.models.ArtifactResponseModel` instead to skip "
-                "materialization."
+                "`zenml.artifacts.BaseArtifact` as input data type is "
+                "deprecated and will be removed in a future release. Please "
+                "type your input as "
+                "`zenml.materializers.UnmaterializedArtifact` instead."
             )
             return artifact
 

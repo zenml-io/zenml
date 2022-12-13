@@ -870,6 +870,7 @@ bento
 bentoctl
 bentoml
 bff
+bigquery
 bigrams
 blogpost
 bool
@@ -1501,6 +1502,7 @@ uninstallation
 unix
 unlinking
 unmanaged
+unmaterialized
 unprovisioned
 unregister
 unregistering

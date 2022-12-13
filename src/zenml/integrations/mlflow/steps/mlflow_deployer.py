@@ -34,7 +34,7 @@ from zenml.integrations.mlflow.services.mlflow_deployment import (
     MLFlowDeploymentService,
 )
 from zenml.logger import get_logger
-from zenml.models.artifact_models import ArtifactResponseModel
+from zenml.materializers import UnmaterializedArtifact
 from zenml.steps import (
     STEP_ENVIRONMENT_NAME,
     BaseParameters,
@@ -73,7 +73,7 @@ class MLFlowDeployerParameters(BaseParameters):
 @step(enable_cache=False)
 def mlflow_model_deployer_step(
     deploy_decision: bool,
-    model: ArtifactResponseModel,
+    model: UnmaterializedArtifact,
     params: MLFlowDeployerParameters,
 ) -> MLFlowDeploymentService:
     """Model deployer pipeline step for MLflow.

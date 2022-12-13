@@ -372,27 +372,27 @@ is no other way to do what you want to do.
 
 While materializers should in most cases be used to control how artifacts are 
 returned and consumed from pipeline steps, you might sometimes need to have a 
-completely non-materialized artifact in a step, e.g., if you need to know the
+completely unmaterialized artifact in a step, e.g., if you need to know the
 exact path to where your artifact is stored.
 
-A non-materialized artifact is a `zenml.model.ArtifactResponseModel`. 
+An unmaterialized artifact is a `zenml.materializers.UnmaterializedArtifact`. 
 Among others, it has a property `uri` that points to the unique path in the 
-artifact store where the artifact is persisted. One can use a non-materialized 
-artifact by specifying `ArtifactResponseModel` as the type in the step:
+artifact store where the artifact is persisted. One can use an unmaterialized 
+artifact by specifying `UnmaterializedArtifact` as the type in the step:
 
 ```python
-from zenml.models.artifact_models import ArtifactResponseModel
+from zenml.materializers import UnmaterializedArtifact
 from zenml.steps import step
 
 
 @step
-def my_step(my_artifact: ArtifactResponseModel):  # rather than pd.DataFrame
+def my_step(my_artifact: UnmaterializedArtifact):  # rather than pd.DataFrame
     pass
 ```
 
 ### Example
 
-The following shows an example how non-materialized artifacts can be used in
+The following shows an example how unmaterialized artifacts can be used in
 the steps of a pipeline. The pipeline we define will look like this:
 
 ```shell
@@ -401,14 +401,14 @@ s2 -> s4
 ```
 
 `s1` and `s2` produce identical artifacts, however `s3` consumes materialized
-artifacts while `s4` consumes non-materialized artifacts. `s4` can now use the
+artifacts while `s4` consumes unmaterialized artifacts. `s4` can now use the
 `dict_.uri` and `list_.uri` paths directly rather than their materialized
 counterparts.
 
 ```python
 from typing import Dict, List
 
-from zenml.models.artifact_models import ArtifactResponseModel
+from zenml.materializers import UnmaterializedArtifact
 from zenml.pipelines import pipeline
 from zenml.steps import Output, step
 
@@ -430,9 +430,12 @@ def step_3(dict_: Dict, list_: List) -> None:
 
 
 @step
-def step_4(dict_: ArtifactResponseModel, list_: ArtifactResponseModel) -> None:
-    assert hasattr(dict_, "uri")
-    assert hasattr(list_, "uri")
+def step_4(
+    dict_: UnmaterializedArtifact,
+    list_: UnmaterializedArtifact,
+) -> None:
+    print(dict_.uri)
+    print(list_.uri)
 
 
 @pipeline
