@@ -150,7 +150,7 @@ class StepLauncher:
                 pipeline_run_id=pipeline_run.id,
                 step=self._step,
                 status=ExecutionStatus.RUNNING,
-                start_time=datetime.now(),
+                start_time=datetime.utcnow(),
                 user=client.active_user.id,
                 project=client.active_project.id,
             )
@@ -163,7 +163,7 @@ class StepLauncher:
                     f"Failed during preparation to run step `{self._step_name}`."
                 )
                 step_run.status = ExecutionStatus.FAILED
-                step_run.end_time = datetime.now()
+                step_run.end_time = datetime.utcnow()
                 Client().zen_store.create_run_step(step_run)
                 raise
 
@@ -195,8 +195,8 @@ class StepLauncher:
             orchestrator_run_id=self._orchestrator_run_id,
         )
 
-        date = datetime.now().strftime("%Y_%m_%d")
-        time = datetime.now().strftime("%H_%M_%S_%f")
+        date = datetime.utcnow().strftime("%Y_%m_%d")
+        time = datetime.utcnow().strftime("%H_%M_%S_%f")
         run_name = self._deployment.run_name.format(date=date, time=time)
 
         logger.debug(

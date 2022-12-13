@@ -26,10 +26,7 @@ from zenml.models.base_models import (
     update_model,
 )
 from zenml.models.component_models import ComponentResponseModel
-from zenml.models.constants import (
-    MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH,
-    MODEL_NAME_FIELD_MAX_LENGTH,
-)
+from zenml.models.constants import STR_FIELD_MAX_LENGTH
 
 # ---- #
 # BASE #
@@ -40,12 +37,12 @@ class StackBaseModel(BaseModel):
     """Base model for stacks."""
 
     name: str = Field(
-        title="The name of the stack.", max_length=MODEL_NAME_FIELD_MAX_LENGTH
+        title="The name of the stack.", max_length=STR_FIELD_MAX_LENGTH
     )
     description: str = Field(
         default="",
         title="The description of the stack",
-        max_length=MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH,
+        max_length=STR_FIELD_MAX_LENGTH,
     )
 
 

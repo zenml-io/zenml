@@ -14,6 +14,7 @@
 """Implementation of the post-execution pipeline run class."""
 
 from collections import OrderedDict
+from datetime import datetime
 from typing import Any, Dict, List, Optional, cast
 from uuid import UUID
 
@@ -186,6 +187,15 @@ class PipelineRunView:
         # Query the run again since the status might have changed since this
         # object was created.
         return Client().get_pipeline_run(self.id).status
+
+    @property
+    def created(self) -> datetime:
+        """Returns the creation time of the pipeline run.
+
+        Returns:
+            The creation time of the pipeline run.
+        """
+        return self._model.created
 
     @property
     def steps(self) -> List[StepView]:

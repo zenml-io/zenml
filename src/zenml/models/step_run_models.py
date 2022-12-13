@@ -25,7 +25,7 @@ from zenml.models.base_models import (
     ProjectScopedRequestModel,
     ProjectScopedResponseModel,
 )
-from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
+from zenml.models.constants import STR_FIELD_MAX_LENGTH
 
 if TYPE_CHECKING:
     from zenml.models import ArtifactResponseModel
@@ -40,14 +40,18 @@ class StepRunBaseModel(BaseModel):
 
     name: str = Field(
         title="The name of the pipeline run step.",
-        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+        max_length=STR_FIELD_MAX_LENGTH,
     )
     step: Step
     pipeline_run_id: UUID
     original_step_run_id: Optional[UUID] = None
     status: ExecutionStatus
     parent_step_ids: List[UUID] = []
-    cache_key: Optional[str] = None
+    cache_key: Optional[str] = Field(
+        title="The cache key of the step run.",
+        default=None,
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
     start_time: Optional[datetime] = None
     end_time: Optional[datetime] = None
 

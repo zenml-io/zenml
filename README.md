@@ -12,7 +12,7 @@
 [![PyPi][downloads-shield]][downloads-url]
 [![Contributors][contributors-shield]][contributors-url]
 [![License][license-shield]][license-url]
-[![Build][build-shield]][build-url]
+<!-- [![Build][build-shield]][build-url] -->
 <!-- [![Interrogate][interrogate-shield]][interrogate-url] -->
 <!-- [![CodeCov][codecov-shield]][codecov-url] -->
 
@@ -163,7 +163,7 @@ Read more on all tools you can readily use in the [integrations](https://zenml.i
 ```bash
 pip install zenml
 ```
-> **Note** - ZenML supports Python 3.7, 3.8, and 3.9.
+> **Note** - ZenML supports Python 3.7, 3.8, 3.9 and 3.10.
 
 In order to get access to the dashboard locally, install the optional dependencies for the ZenML server:
 
@@ -191,17 +191,6 @@ or just run the ZenML server directly with Docker:
 ```shell
 docker run -it -d -p 8080:80 zenmldocker/zenml-server
 ```
-
-> **Warning** 
-> #### Known installation issues for M1 Mac users
->
-> If you have an M1 Mac machine and encounter an installation error, 
-> try setting up `brew` and `pyenv` with Rosetta 2 and then install ZenML. The issue arises because some dependencies 
-> aren’t fully compatible with the vanilla ARM64 Architecture. The following links may be helpful (Thank you @Reid Falconer) :
->
->- [Pyenv with Apple Silicon](http://sixty-north.com/blog/pyenv-apple-silicon.html)
->- [Install Python Under Rosetta 2](https://medium.com/thinknum/how-to-install-python-under-rosetta-2-f98c0865e012)
-
 
 Read full installation instructions in the [docs](https://docs.zenml.io/getting-started/installation).
 
