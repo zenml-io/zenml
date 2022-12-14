@@ -29,9 +29,24 @@ logger = get_logger(__name__)
 class Filter(BaseModel, ABC):
     """Filter for all fields."""
 
+    ALLOWED_OPS: ClassVar[List[str]] = [
+        GenericFilterOps.EQUALS,
+    ]
+
     operation: GenericFilterOps
     column: str
     value: Any
+
+    @validator("operation", pre=True)
+    def sort_column(cls, op):
+        """Validate that the sort_column is a valid filter field."""
+        if op not in cls.ALLOWED_OPS:
+            raise ValueError(
+                f"This datatype can not be filtered using this operation: "
+                f"'{op}'. The allowed operations are: {cls.ALLOWED_OPS}"
+            )
+        else:
+            return op
 
     @abstractmethod
     def generate_query_conditions(
@@ -49,10 +64,6 @@ class Filter(BaseModel, ABC):
 
 
 class BoolFilter(Filter):
-    ALLOWED_OPS: ClassVar[List[str]] = [
-        GenericFilterOps.EQUALS,
-    ]
-
     def generate_query_conditions(
         self,
         table: Type[SQLModel],
@@ -145,6 +156,8 @@ class UUIDFilter(Filter):
 class NumericFilter(Filter):
     """Filter for all numeric fields."""
 
+    value: int
+
     ALLOWED_OPS: ClassVar[List[str]] = [
         GenericFilterOps.EQUALS,
         GenericFilterOps.GT,
@@ -175,6 +188,11 @@ class NumericFilter(Filter):
             return getattr(table, self.column) <= self.value
         elif self.operation == GenericFilterOps.LT:
             return getattr(table, self.column) < self.value
+
+
+class DatetimeFilter(NumericFilter):
+
+    value: datetime
 
 
 # ---------------- #
@@ -283,7 +301,7 @@ class FilterBaseModel(BaseModel):
                         ) from e
 
                     list_of_filters.append(
-                        NumericFilter(
+                        DatetimeFilter(
                             operation=GenericFilterOps(operator),
                             column=key,
                             value=datetime_value,

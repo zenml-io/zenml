@@ -99,7 +99,6 @@ from zenml.models import (
 from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.models.base_models import BaseResponseModel
 from zenml.models.page_model import Page
-from zenml.models.team_models import TeamUpdateModel
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.filesync_model import FileSyncModel
