@@ -29,10 +29,13 @@ from zenml.integrations.kaniko.flavors import (
     KanikoImageBuilderSettings,
 )
 from zenml.stack import StackValidator
+from zenml.logger import get_logger
 
 if TYPE_CHECKING:
     from zenml.container_registries import BaseContainerRegistry
+import shutil
 
+logger = get_logger(__name__)
 
 class KanikoImageBuilder(BaseImageBuilder):
     """Kaniko image builder implementation."""
@@ -82,6 +85,8 @@ class KanikoImageBuilder(BaseImageBuilder):
         Returns:
             The Docker image repo digest.
         """
+        self._check_prerequisites()
+
         pod_name = self._generate_pod_name()
         spec_overrides = self._generate_spec_overrides(
             pod_name=pod_name, image_name=image_name
@@ -190,6 +195,7 @@ class KanikoImageBuilder(BaseImageBuilder):
             "--overrides",
             json.dumps(spec_overrides),
         ]
+        logger.debug("Running Kaniko build with command: %s", command)
         with subprocess.Popen(command, stdin=subprocess.PIPE) as p:
             with p.stdin:
                 while True:
@@ -205,7 +211,10 @@ class KanikoImageBuilder(BaseImageBuilder):
                 raise
 
         if return_code:
-            raise RuntimeError("Failed to build image.")
+            raise RuntimeError(
+                "The process that runs the Kaniko build Pod failed. Check the "
+                "log messages above for more information."
+            )
 
     @staticmethod
     def _generate_pod_name() -> str:
@@ -258,6 +267,19 @@ class KanikoImageBuilder(BaseImageBuilder):
             pod_name,
         ]
         subprocess.check_call(command)
+        logger.debug("Deleted Pod %s.", pod_name)
+
+    @staticmethod
+    def _check_prerequisites() -> None:
+        """Checks that all prerequisites are installed.
+
+        Raises:
+            RuntimeError: If any of the prerequisites are not installed.
+        """
+        if not shutil.which("kubectl"):
+            raise RuntimeError(
+                "`kubectl` is required to run the Kaniko image builder."
+            )
 
     @staticmethod
     def _verify_image_name(
@@ -276,7 +298,7 @@ class KanikoImageBuilder(BaseImageBuilder):
                 repository.
         """
         image_name_without_tag, _ = image_name_with_tag.rsplit(":", 1)
-        if not image_name_with_sha.startswith(image_name_with_tag):
+        if not image_name_with_sha.startswith(image_name_without_tag):
             raise RuntimeError(
                 f"The Kaniko Pod output {image_name_with_sha} is not a valid "
                 f"image name in the repository {image_name_without_tag}."
