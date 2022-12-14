@@ -101,7 +101,6 @@ def generate_stack_component_describe_command(
         except KeyError as err:
             cli_utils.error(str(err))
 
-
         with console.status(f"Describing component '{component_.name}'..."):
             active_component_id = None
             active_components = client.active_stack_model.components.get(
@@ -274,7 +273,6 @@ def generate_stack_component_update_command(
                 )
             except KeyError as err:
                 cli_utils.error(str(err))
-
 
             cli_utils.declare(
                 f"Successfully updated {display_name} "
@@ -515,7 +513,6 @@ def generate_stack_component_copy_command(
             except KeyError as err:
                 cli_utils.error(str(err))
 
-
             client.create_stack_component(
                 name=target_component,
                 flavor=component_to_copy.flavor,
@@ -559,7 +556,6 @@ def generate_stack_component_up_command(
                 )
             except KeyError as err:
                 cli_utils.error(str(err))
-
 
             from zenml.stack import StackComponent
 
@@ -641,7 +637,6 @@ def generate_stack_component_down_command(
                 )
             except KeyError as err:
                 cli_utils.error(str(err))
-
 
             from zenml.stack import StackComponent
 
