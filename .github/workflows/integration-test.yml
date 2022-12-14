@@ -108,8 +108,8 @@ jobs:
       # for more information: http://sealiesoftware.com/blog/archive/2017/6/5/Objective-C_and_fork_in_macOS_1013.html)
       OBJC_DISABLE_INITIALIZE_FORK_SAFETY: 'YES'
 
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_US_EAST_1_ENV_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_US_EAST_1_ENV_SECRET_ACCESS_KEY }}
       AWS_US_EAST_1_SERVER_URL: ${{ secrets.AWS_US_EAST_1_SERVER_URL }}
       AWS_US_EAST_1_SERVER_USERNAME: ${{ secrets.AWS_US_EAST_1_SERVER_USERNAME }}
       AWS_US_EAST_1_SERVER_PASSWORD: ${{ secrets.AWS_US_EAST_1_SERVER_PASSWORD }}
@@ -136,6 +136,13 @@ jobs:
         if: runner.os=='Linux' && (contains(inputs.test_environment, 'docker') || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment, 'airflow'))
 
       - uses: actions/checkout@v2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ secrets.AWS_US_EAST_1_ENV_ROLE_ARN }}
+          aws-region: us-east-1
+        if: contains(inputs.test_environment, 'aws')
 
       - name: Setup environment with Poetry
         uses: ./.github/actions/setup_environment
@@ -200,13 +207,6 @@ jobs:
           source $VENV
           zenml integration list
           pip list
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: us-east-1
-        if: contains(inputs.test_environment, 'aws')
 
       - name: Login to Amazon ECR
         id: login-ecr
