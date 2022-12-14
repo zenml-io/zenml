@@ -2289,17 +2289,17 @@ class Client(metaclass=ClientMetaClass):
         return self.zen_store.get_artifact(artifact_id)
 
     def delete_artifact(
-        self, artifact_id: UUID, only_metadata: bool = False
+        self, artifact_id: UUID, delete_from_artifact_store: bool = False
     ) -> None:
         """Delete an artifact.
 
-        By default, this will delete both the metadata of the artifact from the
-        database and the actual artifact from the artifact store.
+        By default, this will delete only the metadata of the artifact from the
+        database, not the artifact itself.
 
         Args:
             artifact_id: The ID of the artifact to delete.
-            only_metadata: If True, only delete the metadata of the artifact
-                and not the artifact itself.
+            delete_from_artifact_store: If True, also delete the artifact itself
+                from the artifact store.
         """
         from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
         from zenml.stack.stack_component import StackComponent
@@ -2307,7 +2307,7 @@ class Client(metaclass=ClientMetaClass):
         artifact = self.get_artifact(artifact_id=artifact_id)
 
         # Delete the artifact from the artifact store.
-        if not only_metadata and artifact.artifact_store_id:
+        if delete_from_artifact_store and artifact.artifact_store_id:
             try:
                 artifact_store_model = self.get_stack_component(
                     component_type=StackComponentType.ARTIFACT_STORE,

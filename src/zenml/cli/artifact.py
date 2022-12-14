@@ -91,7 +91,7 @@ def delete_artifact(
     try:
         Client().delete_artifact(
             artifact_id=UUID(artifact_id),
-            only_metadata=only_metadata,
+            delete_from_artifact_store=not only_metadata,
         )
     except (KeyError, ValueError) as e:
         cli_utils.error(str(e))
