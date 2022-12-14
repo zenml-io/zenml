@@ -159,6 +159,6 @@ def _load_artifact(
     )
     materializer_object: BaseMaterializer = materializer_class(uri)
     artifact = materializer_object.load(artifact_class)
-    logger.debug(f"Artifact loaded successfully.")
+    logger.debug("Artifact loaded successfully.")
 
     return artifact
