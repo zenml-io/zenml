@@ -27,13 +27,15 @@ if TYPE_CHECKING:
 class SagemakerOrchestratorSettings(BaseSettings):
     """Settings for the Sagemaker orchestrator."""
 
+    step_instance_type: Optional[str] = None
+
 
 class SagemakerOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
     BaseStepOperatorConfig, SagemakerOrchestratorSettings
 ):
     """Config for the Sagemaker orchestrator.
     Attributes:
-        instance_type: The instance type to use for the processing job.
+        default_instance_type: The instance type to use for the processing job.
         bucket: Name of the S3 bucket to use for storing artifacts
             from the job run. If not provided, a default bucket will be created
             based on the following format: "sagemaker-{region}-{aws-account-id}".
@@ -41,6 +43,7 @@ class SagemakerOrchestratorConfig(  # type: ignore[misc] # https://github.com/py
 
     # 'ml.t3.medium' is the default instance for Sagemaker processing jobs
     default_instance_type: str = "ml.t3.medium"
+    processor_role: Optional[str] = None
     bucket: Optional[str] = None
 
     @property

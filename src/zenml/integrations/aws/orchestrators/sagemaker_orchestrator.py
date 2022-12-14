@@ -112,6 +112,10 @@ class SagemakerOrchestrator(BaseOrchestrator):
         """
         session = sagemaker.Session(default_bucket=self.config.bucket)
         image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
+        execution_role = (
+            self.config.processor_role or sagemaker.get_execution_role()
+        )
+
         sagemaker_steps = []
         for step_name, step in deployment.steps.items():
             command = StepEntrypointConfiguration.get_entrypoint_command()
@@ -119,14 +123,15 @@ class SagemakerOrchestrator(BaseOrchestrator):
                 step_name=step_name
             )
             entrypoint = command + arguments
+            breakpoint()
 
             processor = sagemaker.processing.Processor(
-                role=sagemaker.get_execution_role(),
+                role=execution_role,
                 image_uri=image_name,
                 instance_count=1,
+                sagemaker_session=session,
                 instance_type=self.config.default_instance_type,
                 entrypoint=entrypoint,
-                sagemaker_session=session,
                 base_job_name=deployment.run_name,
                 env={
                     ENV_ZENML_SAGEMAKER_RUN_ID: self._get_unique_run_id(
@@ -153,5 +158,5 @@ class SagemakerOrchestrator(BaseOrchestrator):
             sagemaker_session=session,
         )
 
-        pipeline.create(role_arn=sagemaker.get_execution_role())
+        pipeline.create(role_arn=execution_role)
         pipeline.start()
