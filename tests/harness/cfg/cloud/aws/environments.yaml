@@ -6,7 +6,7 @@ environments:
       components.
     deployment: aws-us-east-1-server
     requirements:
-      - data-validators
+      - external-data-validators
       - mlflow-local-tracker
       - mlflow-local-deployer
       - local-secrets-manager
@@ -19,7 +19,7 @@ environments:
       components.
     deployment: aws-us-east-1-server
     requirements:
-      - data-validators
+      - external-data-validators
       - mlflow-local-tracker
       - mlflow-local-deployer
       - local-secrets-manager
@@ -32,7 +32,7 @@ environments:
       local components.
     deployment: aws-us-east-1-server
     requirements:
-      - data-validators
+      - external-data-validators
       - mlflow-local-tracker
       - mlflow-local-deployer
       - local-secrets-manager
@@ -45,7 +45,7 @@ environments:
       local components.
     deployment: aws-us-east-1-server
     requirements:
-      - data-validators
+      - external-data-validators
       - mlflow-local-tracker
       - mlflow-local-deployer
       - local-secrets-manager
@@ -58,7 +58,7 @@ environments:
       container registry, MLflow, Seldon Core) and local orchestrator.
     deployment: aws-us-east-1-server
     requirements:
-      - data-validators
+      - external-data-validators
       - aws-us-east-1-mlflow
       - aws-us-east-1-seldon
     mandatory_requirements:
@@ -72,7 +72,7 @@ environments:
       container registry, MLflow, Seldon Core) and local docker orchestrator.
     deployment: aws-us-east-1-server
     requirements:
-      - data-validators
+      - external-data-validators
       - aws-us-east-1-mlflow
       - aws-us-east-1-seldon
     mandatory_requirements:
@@ -88,7 +88,7 @@ environments:
       orchestrator.
     deployment: aws-us-east-1-server
     requirements:
-      - data-validators
+      - external-data-validators
       - aws-us-east-1-mlflow
       - aws-us-east-1-seldon
     mandatory_requirements:
@@ -102,7 +102,7 @@ environments:
       orchestrator.
     deployment: aws-us-east-1-server
     requirements:
-      - data-validators
+      - external-data-validators
       - aws-us-east-1-mlflow
       - aws-us-east-1-seldon
     mandatory_requirements:

@@ -72,4 +72,3 @@ requirements:
         type: model_deployer
         flavor: seldon
         external: true
-
