@@ -156,6 +156,14 @@ def test_filter_model_uuid_fields_accept_correct_filter_ops():
                 TestFilterModel(uuid_field=f"{filter_op}:{uuid_value}")
 
 
+def test_filter_model_uuid_fields_equality_with_invalid_uuid_fails():
+    """Test filtering for equality with invalid UUID fails."""
+
+    with pytest.raises(ValueError):
+        uuid_value = "a92k34"
+        TestFilterModel(uuid_field=f"{GenericFilterOps.EQUALS}:{uuid_value}")
+
+
 def test_filter_model_string_fields_accept_correct_filter_ops():
     """Test that the flavor base model fails with long names."""
 
