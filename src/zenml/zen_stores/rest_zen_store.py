@@ -1436,6 +1436,7 @@ class RestZenStore(BaseZenStore):
 
     def list_artifacts(
         self,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
         artifact_uri: Optional[str] = None,
         artifact_store_id: Optional[UUID] = None,
         only_unused: bool = False,
@@ -1443,6 +1444,8 @@ class RestZenStore(BaseZenStore):
         """Lists all artifacts.
 
         Args:
+            project_name_or_id: If specified, only artifacts from the given
+                project will be returned.
             artifact_uri: If specified, only artifacts with the given URI will
                 be returned.
             artifact_store_id: If specified, only artifacts from the given

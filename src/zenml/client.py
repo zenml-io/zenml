@@ -2259,6 +2259,7 @@ class Client(metaclass=ClientMetaClass):
 
     def list_artifacts(
         self,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
         artifact_uri: Optional[str] = None,
         artifact_store_id: Optional[UUID] = None,
         only_unused: bool = False,
@@ -2266,6 +2267,8 @@ class Client(metaclass=ClientMetaClass):
         """Get all artifacts.
 
         Args:
+            project_name_or_id: If provided, only return artifacts for this
+                project. Otherwise, filter by the active project.
             artifact_uri: If provided, only return artifacts with this URI.
             artifact_store_id: If provided, only return artifacts from this
                 artifact store.
@@ -2276,6 +2279,7 @@ class Client(metaclass=ClientMetaClass):
             A list of artifacts.
         """
         return self.zen_store.list_artifacts(
+            project_name_or_id=project_name_or_id or self.active_project.id,
             artifact_uri=artifact_uri,
             artifact_store_id=artifact_store_id,
             only_unused=only_unused,

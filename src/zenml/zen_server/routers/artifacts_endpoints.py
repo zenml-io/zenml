@@ -14,7 +14,7 @@
 """Endpoint definitions for steps (and artifacts) of pipeline runs."""
 
 from asyncio.log import logger
-from typing import List, Optional
+from typing import List, Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Security
@@ -39,6 +39,7 @@ router = APIRouter(
 )
 @handle_exceptions
 def list_artifacts(
+    project_name_or_id: Optional[Union[str, UUID]] = None,
     artifact_uri: Optional[str] = None,
     artifact_store_id: Optional[UUID] = None,
     only_unused: bool = False,
@@ -48,6 +49,8 @@ def list_artifacts(
     """Get artifacts according to query filters.
 
     Args:
+        project_name_or_id: If specified, only artifacts from the given
+            project will be returned.
         artifact_uri: If specified, only artifacts with the given URI will
             be returned.
         artifact_store_id: If specified, only artifacts from the given
