@@ -639,18 +639,6 @@ class RestZenStore(BaseZenStore):
     # Users
     # -----
 
-    @property
-    def active_user_name(self) -> str:
-        """Gets the active username.
-
-        Either the username specified in the config, or the username of the
-        currently authenticated user.
-
-        Returns:
-            The active username.
-        """
-        return self.config.username or self._get_active_user().name
-
     @track(AnalyticsEvent.CREATED_USER)
     def create_user(self, user: UserRequestModel) -> UserResponseModel:
         """Creates a new user.

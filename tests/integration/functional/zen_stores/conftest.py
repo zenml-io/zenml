@@ -37,14 +37,26 @@ from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
 def sql_store(
     module_clean_client: Client,
 ) -> Dict[str, Union[BaseZenStore, BaseResponseModel]]:
+
+    original_config = GlobalConfiguration.get_instance()
+    original_client = Client.get_instance()
+
+    GlobalConfiguration._reset_instance()
+    Client._reset_instance()
+
     temp_dir = tempfile.TemporaryDirectory(suffix="_zenml_sql_test")
-    GlobalConfiguration().set_store(
+    gc = GlobalConfiguration()
+    gc.analytics_opt_in = False
+    gc.set_store(
         config=SqlZenStoreConfiguration(
             url=f"sqlite:///{Path(temp_dir.name) / 'store.db'}"
         ),
         track_analytics=False,
     )
-    store = GlobalConfiguration().zen_store
+    client = Client()
+    _ = client.zen_store
+
+    store = gc.zen_store
     default_project = store._default_project
     active_user = store.get_user()
     default_stack = store._get_default_stack(
@@ -56,6 +68,10 @@ def sql_store(
         "default_stack": default_stack,
         "active_user": active_user,
     }
+
+    # restore the global configuration and the client
+    GlobalConfiguration._reset_instance(original_config)
+    Client._reset_instance(original_client)
 
 
 @pytest.fixture
