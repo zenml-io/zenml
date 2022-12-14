@@ -108,3 +108,17 @@ environments:
     mandatory_requirements:
       - aws-us-east-1-cloud
       - aws-us-east-1-kubernetes
+
+  - name: aws-cloud-tekton-orchestrator
+    description: >-
+      AWS ZenML server with AWS cloud components (S3 artifact store, ECR
+      container registry, MLflow, Seldon Core) and remote Tekton
+      orchestrator.
+    deployment: aws-us-east-1-server
+    requirements:
+      - external-data-validators
+      - aws-us-east-1-mlflow
+      - aws-us-east-1-seldon
+    mandatory_requirements:
+      - aws-us-east-1-cloud
+      - aws-us-east-1-tekton

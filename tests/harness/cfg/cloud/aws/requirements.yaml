@@ -53,6 +53,22 @@ requirements:
         containerized: true
         external: true
 
+  - name: aws-us-east-1-tekton
+    description: >-
+      EKS cluster in the us-east-1 region that can be used as a Tekton
+      orchestrator.
+    system_tools:
+      - docker
+      - kubectl
+    capabilities:
+      synchronized: true
+    stacks:
+      - name: aws-tekton-zenhacks
+        type: orchestrator
+        flavor: tekton
+        containerized: true
+        external: true
+
   - name: aws-us-east-1-mlflow
     description: >-
       MLFlow deployed in an EKS cluster in the us-east-1 region.

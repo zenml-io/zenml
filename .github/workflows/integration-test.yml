@@ -76,6 +76,7 @@ on:
           - aws-cloud-docker-orchestrator
           - aws-cloud-kubeflow-orchestrator
           - aws-cloud-kubernetes-orchestrator
+          - aws-cloud-tekton-orchestrator
         required: false
         default: 'default'
       enable_tmate:
@@ -89,7 +90,7 @@ on:
         required: false
         default: 'no'
       tmate_timeout:
-        description: 'Timeout for tmate session'
+        description: 'Timeout for tmate session (minutes)'
         type: number
         required: false
         default: 30
