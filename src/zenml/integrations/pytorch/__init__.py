@@ -22,7 +22,7 @@ class PytorchIntegration(Integration):
     """Definition of PyTorch integration for ZenML."""
 
     NAME = PYTORCH
-    REQUIREMENTS = ["torch"]
+    REQUIREMENTS = ["torch>=1.7"]
 
     @classmethod
     def activate(cls) -> None:
