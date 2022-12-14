@@ -70,9 +70,10 @@ class BaseMaterializerMeta(type):
         artifact_type: str = cls.ASSOCIATED_ARTIFACT_TYPE
         if cls.ASSOCIATED_ARTIFACT_TYPES:
             logger.warning(
-                "The ASSOCIATED_ARTIFACT_TYPES class variable is deprecated "
-                "and will be removed in a future release. Please use "
-                "ASSOCIATED_ARTIFACT_TYPE instead."
+                "The `materializer.ASSOCIATED_ARTIFACT_TYPES` class variable "
+                "is deprecated and will be removed in a future release. Please "
+                f"adjust your '{name}' materializer to use "
+                "`ASSOCIATED_ARTIFACT_TYPE` instead."
             )
             artifact_class = cls.ASSOCIATED_ARTIFACT_TYPES[0]
             if not (
@@ -118,6 +119,32 @@ class BaseMaterializerMeta(type):
         return cls
 
 
+class DeprecatedArtifact:
+    """Mock artifact class to support deprecated `materializer.artifact.uri`."""
+
+    def __init__(self, uri: str) -> None:
+        """Initializes the artifact.
+
+        Args:
+            uri: The URI of the artifact.
+        """
+        self._uri = uri
+
+    @property
+    def uri(self) -> str:
+        """Returns the URI of the artifact.
+
+        Returns:
+            The URI of the artifact.
+        """
+        logger.warning(
+            "Calling `materializer.artifact.uri` is deprecated and will be "
+            "removed in a future release. Please use `materializer.uri` "
+            "instead."
+        )
+        return self._uri
+
+
 class BaseMaterializer(metaclass=BaseMaterializerMeta):
     """Base Materializer to realize artifact data."""
 
@@ -158,6 +185,7 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
                 "Initializing a materializer requires either a URI or an "
                 "artifact."
             )
+        self.artifact = DeprecatedArtifact(self.uri)
 
     def _can_handle_type(self, data_type: Type[Any]) -> bool:
         """Whether the materializer can read/write a certain type.
@@ -191,6 +219,18 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
                 f"can only read artifacts to the following types: "
                 f"{self.ASSOCIATED_TYPES}."
             )
+
+        # If `handle_input` is overridden, call it here to not break custom
+        # materializers.
+        if type(self).handle_input != BaseMaterializer.handle_input:
+            logger.warning(
+                "The `materializer.handle_input` method is deprecated and will "
+                "be removed in a future release. Please adjust your "
+                f"'{type(self).__name__}' materializer to override and use "
+                "`materializer.load` instead."
+            )
+            return self.handle_input(data_type)
+
         return None
 
     def save(self, data: Any) -> None:
@@ -209,6 +249,17 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
                 f"can only write the following types: {self.ASSOCIATED_TYPES}."
             )
 
+        # If `handle_return` is overridden, call it here to not break custom
+        # materializers.
+        if type(self).handle_return != BaseMaterializer.handle_return:
+            logger.warning(
+                "The `materializer.handle_return` method is deprecated and will "
+                "be removed in a future release. Please adjust your "
+                f"'{type(self).__name__}' materializer to override and use "
+                "`materializer.save` instead."
+            )
+            self.handle_return(data)
+
     def handle_input(self, data_type: Type[Any]) -> Any:
         """Deprecated method to load the data of an artifact.
 
@@ -223,7 +274,11 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
             "be removed in a future release. Please use `materializer.load` "
             "instead."
         )
-        return self.load(data_type)
+
+        # If `handle_input` is called on a new materializer that does not
+        # override it, call `load` instead.
+        if type(self).handle_input == BaseMaterializer.handle_input:
+            return self.load(data_type)
 
     def handle_return(self, data: Any) -> None:
         """Deprecated method to save the data of an artifact.
@@ -236,4 +291,8 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
             "be removed in a future release. Please use `materializer.save` "
             "instead."
         )
-        self.save(data)
+
+        # If `handle_return` is called on a new materializer that does not
+        # override it, call `save` instead.
+        if type(self).handle_return == BaseMaterializer.handle_return:
+            self.save(data)
