@@ -13,7 +13,7 @@ parameters for the steps that make up your pipeline.
 
 You can configure your pipelines at runtime in the following ways:
 
-- `BaseParameters`: Runtime configuration passed down as a parameter to steps.
+- `BaseParameters`: Runtime configuration passed down to steps.
 - `BaseSettings`: Runtime settings passed down to stack components and pipelines.
 
 In this section, we will focus on `BaseParameters`, and in the Advanced Guide we will 
