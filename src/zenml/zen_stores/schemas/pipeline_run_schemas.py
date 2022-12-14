@@ -67,7 +67,7 @@ class PipelineRunSchema(NamedSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    user: "UserSchema" = Relationship(back_populates="runs")
+    user: Optional["UserSchema"] = Relationship(back_populates="runs")
 
     project_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -104,7 +104,7 @@ class PipelineRunSchema(NamedSchema, table=True):
                 name=self.name,
                 stack=self.stack.to_model() if self.stack else None,
                 project=self.project.to_model(),
-                user=self.user.to_model(),
+                user=self.user.to_model() if self.user else None,
                 orchestrator_run_id=self.orchestrator_run_id,
                 enable_cache=self.enable_cache,
                 start_time=self.start_time,
@@ -123,7 +123,7 @@ class PipelineRunSchema(NamedSchema, table=True):
                 name=self.name,
                 stack=self.stack.to_model() if self.stack else None,
                 project=self.project.to_model(),
-                user=self.user.to_model(),
+                user=self.user.to_model() if self.user else None,
                 orchestrator_run_id=self.orchestrator_run_id,
                 enable_cache=self.enable_cache,
                 start_time=self.start_time,

@@ -53,7 +53,7 @@ class ArtifactSchema(NamedSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    user: "UserSchema" = Relationship(back_populates="artifacts")
+    user: Optional["UserSchema"] = Relationship(back_populates="artifacts")
 
     project_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -109,7 +109,7 @@ class ArtifactSchema(NamedSchema, table=True):
             id=self.id,
             name=self.name,
             artifact_store_id=self.artifact_store_id,
-            user=self.user.to_model(),
+            user=self.user.to_model() if self.user else None,
             project=self.project.to_model(),
             type=self.type,
             uri=self.uri,
