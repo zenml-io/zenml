@@ -57,6 +57,12 @@ def list_artifacts() -> None:
 @artifact.command("delete", help="Delete an artifact.")
 @click.argument("artifact_id")
 @click.option(
+    "--only-artifact",
+    "-a",
+    is_flag=True,
+    help="Only delete the artifact itself but not its metadata.",
+)
+@click.option(
     "--only-metadata",
     "-m",
     is_flag=True,
@@ -69,12 +75,16 @@ def list_artifacts() -> None:
     help="Don't ask for confirmation.",
 )
 def delete_artifact(
-    artifact_id: str, only_metadata: bool = False, yes: bool = False
+    artifact_id: str,
+    only_artifact: bool = False,
+    only_metadata: bool = False,
+    yes: bool = False,
 ) -> None:
     """Delete an artifact.
 
     Args:
         artifact_id: ID of the artifact to delete.
+        only_artifact: If set, only delete the artifact but not its metadata.
         only_metadata: If set, only delete metadata and not the actual artifact.
         yes: If set, don't ask for confirmation.
     """
@@ -91,6 +101,7 @@ def delete_artifact(
     try:
         Client().delete_artifact(
             artifact_id=UUID(artifact_id),
+            delete_metadata=not only_artifact,
             delete_from_artifact_store=not only_metadata,
         )
     except (KeyError, ValueError) as e:
@@ -100,6 +111,12 @@ def delete_artifact(
 
 
 @artifact.command("prune", help="Delete all unused artifacts.")
+@click.option(
+    "--only-artifact",
+    "-a",
+    is_flag=True,
+    help="Only delete the artifact itself but not its metadata.",
+)
 @click.option(
     "--only-metadata",
     "-m",
@@ -112,10 +129,13 @@ def delete_artifact(
     is_flag=True,
     help="Don't ask for confirmation.",
 )
-def prune_artifacts(only_metadata: bool = False, yes: bool = False) -> None:
+def prune_artifacts(
+    only_artifact: bool = False, only_metadata: bool = False, yes: bool = False
+) -> None:
     """Delete all unused artifacts.
 
     Args:
+        only_artifact: If set, only delete the artifact but not its metadata.
         only_metadata: If set, only delete metadata and not the actual artifact.
         yes: If set, don't ask for confirmation.
     """
@@ -137,8 +157,12 @@ def prune_artifacts(only_metadata: bool = False, yes: bool = False) -> None:
             return
 
     for unused_artifact in unused_artifacts:
-        Client().delete_artifact(
-            artifact_id=unused_artifact.id,
-            delete_from_artifact_store=not only_metadata,
-        )
+        try:
+            Client().delete_artifact(
+                artifact_id=unused_artifact.id,
+                delete_metadata=not only_artifact,
+                delete_from_artifact_store=not only_metadata,
+            )
+        except Exception as e:
+            cli_utils.error(str(e))
     cli_utils.declare("All unused artifacts deleted.")

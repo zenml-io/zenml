@@ -2293,7 +2293,10 @@ class Client(metaclass=ClientMetaClass):
         return self.zen_store.get_artifact(artifact_id)
 
     def delete_artifact(
-        self, artifact_id: UUID, delete_from_artifact_store: bool = False
+        self,
+        artifact_id: UUID,
+        delete_metadata: bool = True,
+        delete_from_artifact_store: bool = False,
     ) -> None:
         """Delete an artifact.
 
@@ -2302,41 +2305,77 @@ class Client(metaclass=ClientMetaClass):
 
         Args:
             artifact_id: The ID of the artifact to delete.
-            delete_from_artifact_store: If True, also delete the artifact itself
-                from the artifact store.
+            delete_metadata: If True, delete the metadata of the artifact from
+                the database.
+            delete_from_artifact_store: If True, delete the artifact itself from
+                the artifact store.
+        """
+        artifact = self.get_artifact(artifact_id=artifact_id)
+        if delete_from_artifact_store:
+            self._delete_artifact_from_artifact_store(artifact=artifact)
+        if delete_metadata:
+            self._delete_artifact_metadata(artifact=artifact)
+
+    def _delete_artifact_from_artifact_store(
+        self, artifact: ArtifactResponseModel
+    ) -> None:
+        """Delete an artifact from the artifact store.
+
+        Args:
+            artifact: The artifact to delete.
+
+        Raises:
+            Exception: If the artifact store is inaccessible.
         """
         from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
         from zenml.stack.stack_component import StackComponent
 
-        artifact = self.get_artifact(artifact_id=artifact_id)
+        if not artifact.artifact_store_id:
+            logger.warning(
+                f"Artifact '{artifact.uri}' does not have an artifact store "
+                "associated with it. Skipping deletion from artifact store."
+            )
+            return
+        try:
+            artifact_store_model = self.get_stack_component(
+                component_type=StackComponentType.ARTIFACT_STORE,
+                name_id_or_prefix=artifact.artifact_store_id,
+            )
+            artifact_store = StackComponent.from_model(artifact_store_model)
+            assert isinstance(artifact_store, BaseArtifactStore)
+            artifact_store.rmtree(artifact.uri)
+        except Exception as e:
+            logger.error(
+                f"Failed to delete artifact '{artifact.uri}' from the "
+                "artifact store. This might happen if your local client "
+                "does not have access to the artifact store or does not "
+                "have the required integrations installed. Full error: "
+                f"{e}"
+            )
+            raise e
+        else:
+            logger.info(
+                f"Deleted artifact '{artifact.uri}' from the artifact store."
+            )
 
-        # Delete the artifact from the artifact store.
-        if delete_from_artifact_store and artifact.artifact_store_id:
-            try:
-                artifact_store_model = self.get_stack_component(
-                    component_type=StackComponentType.ARTIFACT_STORE,
-                    name_id_or_prefix=artifact.artifact_store_id,
-                )
-                artifact_store = StackComponent.from_model(artifact_store_model)
-                assert isinstance(artifact_store, BaseArtifactStore)
-                artifact_store.rmtree(artifact.uri)
-            except Exception as e:
-                logger.error(
-                    f"Failed to delete artifact '{artifact.uri}' from the "
-                    "artifact store. This might happen if your local client "
-                    "does not have access to the artifact store or does not "
-                    "have the required integrations installed. Full error: "
-                    f"{e}"
-                )
-                raise e
-            else:
-                logger.info(
-                    f"Deleted artifact '{artifact.uri}' from the artifact "
-                    "store."
-                )
+    def _delete_artifact_metadata(
+        self, artifact: ArtifactResponseModel
+    ) -> None:
+        """Delete the metadata of an artifact from the database.
 
-        # Delete the artifact metadata from the database.
-        self.zen_store.delete_artifact(artifact_id)
+        Args:
+            artifact: The artifact to delete.
+
+        Raises:
+            ValueError: If the artifact is still used in any runs.
+        """
+        if artifact not in self.list_artifacts(only_unused=True):
+            raise ValueError(
+                "The metadata of artifacts that are used in runs cannot be "
+                "deleted. Please delete all runs that use this artifact "
+                "first."
+            )
+        self.zen_store.delete_artifact(artifact.id)
         logger.info(f"Deleted metadata of artifact '{artifact.uri}'.")
 
     # ---- utility prefix matching get functions -----
