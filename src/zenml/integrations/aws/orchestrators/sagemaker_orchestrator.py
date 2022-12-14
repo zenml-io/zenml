@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the SageMaker orchestrator."""
 
+import os
 from typing import TYPE_CHECKING, Any, cast
 
 import sagemaker
@@ -31,6 +32,8 @@ from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.stack import Stack
+
+ENV_ZENML_SAGEMAKER_RUN_ID = "ZENML_SAGEMAKER_RUN_ID"
 
 
 class SagemakerOrchestrator(BaseOrchestrator):
@@ -54,7 +57,13 @@ class SagemakerOrchestrator(BaseOrchestrator):
         Returns:
             The orchestrator run id.
         """
-        return "sagemaker"
+        try:
+            return os.environ[ENV_ZENML_SAGEMAKER_RUN_ID]
+        except KeyError:
+            raise RuntimeError(
+                "Unable to read run id from environment variable "
+                f"{ENV_ZENML_SAGEMAKER_RUN_ID}."
+            )
 
     def prepare_pipeline_deployment(
         self, deployment: "PipelineDeployment", stack: "Stack"
@@ -69,7 +78,7 @@ class SagemakerOrchestrator(BaseOrchestrator):
         repo_digest = docker_image_builder.build_and_push_docker_image(
             deployment=deployment, stack=stack
         )
-        # repo_digest = "715803424590.dkr.ecr.us-east-1.amazonaws.com/zenml:not_so_basic_pipeline"
+        # repo_digest = "715803424590.dkr.ecr.eu-north-1.amazonaws.com/zenml:not_so_basic_pipeline"
         deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
 
     def prepare_or_run_pipeline(
@@ -102,6 +111,7 @@ class SagemakerOrchestrator(BaseOrchestrator):
                 entrypoint=entrypoint,
                 sagemaker_session=session,
                 base_job_name=deployment.run_name,
+                env={ENV_ZENML_SAGEMAKER_RUN_ID: str(deployment.pipeline_id)},
             )
 
             sagemaker_step = ProcessingStep(
