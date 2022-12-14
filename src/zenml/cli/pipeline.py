@@ -14,19 +14,13 @@
 """CLI functionality to interact with pipelines."""
 
 
-from typing import TYPE_CHECKING, List
-
 import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.client import Client
-from zenml.enums import CliCategories, ExecutionStatus
+from zenml.enums import CliCategories
 from zenml.logger import get_logger
-
-if TYPE_CHECKING:
-    from zenml.models.artifact_models import ArtifactResponseModel
-
 
 logger = get_logger(__name__)
 
@@ -164,25 +158,15 @@ def list_pipeline_runs(
     is_flag=True,
     help="Don't ask for confirmation.",
 )
-@click.option(
-    "--delete-artifacts",
-    "-a",
-    is_flag=True,
-    help="Delete all artifacts produced by this run without confirming.",
-)
 def delete_pipeline_run(
     run_name_or_id: str,
     yes: bool = False,
-    delete_artifacts: bool = False,
 ) -> None:
     """Delete a pipeline run.
 
     Args:
         run_name_or_id: The name or ID of the pipeline run to delete.
         yes: If set, don't ask for confirmation.
-        delete_artifacts: If set, delete all artifacts produced by this run
-            without asking for confirmation. If `yes` is set but
-            `delete_artifacts` is not, the artifacts will not be deleted.
     """
     cli_utils.print_active_config()
 
@@ -194,31 +178,6 @@ def delete_pipeline_run(
         if not confirmation:
             cli_utils.declare("Pipeline run deletion canceled.")
             return
-
-    # Get all artifacts produced by this run.
-    client = Client()
-    run = client.get_pipeline_run(name_id_or_prefix=run_name_or_id)
-    run_artifacts: List["ArtifactResponseModel"] = []
-    for step_run in client.list_run_steps(pipeline_run_id=run.id):
-        if step_run.status == ExecutionStatus.COMPLETED:
-            run_artifacts.extend(step_run.output_artifacts.values())
-
-    # Delete artifacts.
-    # Will be skipped if `yes` is set but `delete_artifacts` is not.
-    if not run_artifacts or (yes and not delete_artifacts):
-        pass
-    else:
-        artifact_confirmation = None
-        if not delete_artifacts:
-            artifact_confirmation = cli_utils.confirmation(
-                f"Pipeline run '{run_name_or_id}' has produced "
-                f"{len(run_artifacts)} artifacts. Do you want to delete these "
-                "artifacts as well?"
-            )
-        if delete_artifacts or artifact_confirmation:
-            for artifact in run_artifacts:
-                client.delete_artifact(artifact_id=artifact.id)
-            logger.info(f"Deleted {len(run_artifacts)} artifacts.")
 
     # Delete run.
     try:
