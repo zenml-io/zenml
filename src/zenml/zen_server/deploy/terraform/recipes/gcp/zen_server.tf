@@ -31,10 +31,6 @@ resource "helm_release" "zen-server" {
     name  = "zenml.deploymentType"
     value = "gcp"
   }
-  set {
-    name  = "zenml.serverId"
-    value = var.server_id
-  }
   
   # set up the right path for ZenML
   set {
