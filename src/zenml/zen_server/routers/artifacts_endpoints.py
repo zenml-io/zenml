@@ -41,6 +41,7 @@ router = APIRouter(
 def list_artifacts(
     artifact_uri: Optional[str] = None,
     artifact_store_id: Optional[UUID] = None,
+    only_unused: bool = False,
     parent_step_id: Optional[UUID] = None,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> List[ArtifactResponseModel]:
@@ -51,6 +52,8 @@ def list_artifacts(
             be returned.
         artifact_store_id: If specified, only artifacts from the given
             artifact store will be returned.
+        only_unused: If True, only return artifacts that are not used in
+            any runs.
         parent_step_id: Deprecated filter, will be ignored.
 
     Returns:
@@ -65,6 +68,7 @@ def list_artifacts(
     return zen_store().list_artifacts(
         artifact_uri=artifact_uri,
         artifact_store_id=artifact_store_id,
+        only_unused=only_unused,
     )
 
 

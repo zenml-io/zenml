@@ -97,3 +97,48 @@ def delete_artifact(
         cli_utils.error(str(e))
     else:
         cli_utils.declare(f"Artifact '{artifact_id}' deleted.")
+
+
+@artifact.command("prune", help="Delete all unused artifacts.")
+@click.option(
+    "--only-metadata",
+    "-m",
+    is_flag=True,
+    help="Only delete metadata and not the actual artifact.",
+)
+@click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    help="Don't ask for confirmation.",
+)
+def prune_artifacts(only_metadata: bool = False, yes: bool = False) -> None:
+    """Delete all unused artifacts.
+
+    Args:
+        only_metadata: If set, only delete metadata and not the actual artifact.
+        yes: If set, don't ask for confirmation.
+    """
+    cli_utils.print_active_config()
+
+    unused_artifacts = Client().list_artifacts(only_unused=True)
+
+    if not unused_artifacts:
+        cli_utils.declare("No unused artifacts found.")
+        return
+
+    if not yes:
+        confirmation = cli_utils.confirmation(
+            f"Found {len(unused_artifacts)} unused artifacts. Do you want to "
+            f"delete them?"
+        )
+        if not confirmation:
+            cli_utils.declare("Artifact deletion canceled.")
+            return
+
+    for unused_artifact in unused_artifacts:
+        Client().delete_artifact(
+            artifact_id=unused_artifact.id,
+            delete_from_artifact_store=not only_metadata,
+        )
+    cli_utils.declare("All unused artifacts deleted.")

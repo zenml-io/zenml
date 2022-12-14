@@ -3354,6 +3354,7 @@ class SqlZenStore(BaseZenStore):
         self,
         artifact_uri: Optional[str] = None,
         artifact_store_id: Optional[UUID] = None,
+        only_unused: bool = False,
     ) -> List[ArtifactResponseModel]:
         """Lists all artifacts.
 
@@ -3362,6 +3363,8 @@ class SqlZenStore(BaseZenStore):
                 be returned.
             artifact_store_id: If specified, only artifacts from the given
                 artifact store will be returned.
+            only_unused: If True, only return artifacts that are not used in
+                any runs.
 
         Returns:
             A list of all artifacts.
@@ -3373,6 +3376,17 @@ class SqlZenStore(BaseZenStore):
             if artifact_store_id is not None:
                 query = query.where(
                     ArtifactSchema.artifact_store_id == artifact_store_id
+                )
+            if only_unused:
+                query = query.where(
+                    ArtifactSchema.id.notin_(  # type: ignore[attr-defined]
+                        select(StepRunOutputArtifactSchema.artifact_id)
+                    )
+                )
+                query = query.where(
+                    ArtifactSchema.id.notin_(  # type: ignore[attr-defined]
+                        select(StepRunInputArtifactSchema.artifact_id)
+                    )
                 )
             artifacts = session.exec(query).all()
             return [

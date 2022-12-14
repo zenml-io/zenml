@@ -2261,6 +2261,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         artifact_uri: Optional[str] = None,
         artifact_store_id: Optional[UUID] = None,
+        only_unused: bool = False,
     ) -> List[ArtifactResponseModel]:
         """Get all artifacts.
 
@@ -2268,6 +2269,8 @@ class Client(metaclass=ClientMetaClass):
             artifact_uri: If provided, only return artifacts with this URI.
             artifact_store_id: If provided, only return artifacts from this
                 artifact store.
+            only_unused: If True, only return artifacts that are not used in
+                any runs.
 
         Returns:
             A list of artifacts.
@@ -2275,6 +2278,7 @@ class Client(metaclass=ClientMetaClass):
         return self.zen_store.list_artifacts(
             artifact_uri=artifact_uri,
             artifact_store_id=artifact_store_id,
+            only_unused=only_unused,
         )
 
     def get_artifact(self, artifact_id: UUID) -> ArtifactResponseModel:

@@ -1438,6 +1438,7 @@ class RestZenStore(BaseZenStore):
         self,
         artifact_uri: Optional[str] = None,
         artifact_store_id: Optional[UUID] = None,
+        only_unused: bool = False,
     ) -> List[ArtifactResponseModel]:
         """Lists all artifacts.
 
@@ -1446,6 +1447,8 @@ class RestZenStore(BaseZenStore):
                 be returned.
             artifact_store_id: If specified, only artifacts from the given
                 artifact store will be returned.
+            only_unused: If True, only return artifacts that are not used in
+                any runs.
 
         Returns:
             A list of all artifacts.
