@@ -2,8 +2,8 @@ requirements:
 
   - name: aws-us-east-1-cloud
     description: >-
-      AWS environment in the us-east-1 region with access to an S3 bucket, ECR
-      registry and an AWS Secrets Manager.
+      AWS environment in the us-east-1 region with access to an S3 bucket and an
+      AWS Secrets Manager.
     capabilities:
       secrets-scoping: true
     stacks:
@@ -12,13 +12,17 @@ requirements:
         flavor: s3
         external: true
 
-      - name: ecr-us-east-1
-        type: container_registry
+      - name: aws-us-east-1
+        type: secrets_manager
         flavor: aws
         external: true
 
-      - name: aws-us-east-1
-        type: secrets_manager
+  - name: aws-us-east-1-ecr
+    description: >-
+      AWS environment in the us-east-1 region with access to an ECR registry.
+    stacks:
+      - name: ecr-us-east-1
+        type: container_registry
         flavor: aws
         external: true
 

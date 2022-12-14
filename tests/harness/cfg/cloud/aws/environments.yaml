@@ -93,6 +93,7 @@ environments:
       - aws-us-east-1-seldon
     mandatory_requirements:
       - aws-us-east-1-cloud
+      - aws-us-east-1-ecr
       - aws-us-east-1-kubeflow
 
   - name: aws-cloud-kubernetes-orchestrator
@@ -107,6 +108,7 @@ environments:
       - aws-us-east-1-seldon
     mandatory_requirements:
       - aws-us-east-1-cloud
+      - aws-us-east-1-ecr
       - aws-us-east-1-kubernetes
 
   - name: aws-cloud-tekton-orchestrator
@@ -121,4 +123,5 @@ environments:
       - aws-us-east-1-seldon
     mandatory_requirements:
       - aws-us-east-1-cloud
+      - aws-us-east-1-ecr
       - aws-us-east-1-tekton
