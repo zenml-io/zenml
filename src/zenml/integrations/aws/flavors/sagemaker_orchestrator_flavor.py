@@ -40,7 +40,7 @@ class SagemakerOrchestratorConfig(  # type: ignore[misc] # https://github.com/py
     """
 
     # 'ml.t3.medium' is the default instance for Sagemaker processing jobs
-    instance_type: str = "ml.t3.medium"
+    default_instance_type: str = "ml.t3.medium"
     bucket: Optional[str] = None
 
     @property

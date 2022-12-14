@@ -124,7 +124,7 @@ class SagemakerOrchestrator(BaseOrchestrator):
                 role=sagemaker.get_execution_role(),
                 image_uri=image_name,
                 instance_count=1,
-                instance_type=self.config.instance_type,
+                instance_type=self.config.default_instance_type,
                 entrypoint=entrypoint,
                 sagemaker_session=session,
                 base_job_name=deployment.run_name,
