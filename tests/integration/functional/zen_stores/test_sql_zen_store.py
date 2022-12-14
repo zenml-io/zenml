@@ -19,7 +19,12 @@ from typing import Dict, Union
 import pytest
 
 from zenml.config.pipeline_configurations import PipelineSpec
-from zenml.enums import ExecutionStatus, PermissionType, StackComponentType
+from zenml.enums import (
+    ArtifactType,
+    ExecutionStatus,
+    PermissionType,
+    StackComponentType,
+)
 from zenml.exceptions import (
     EntityExistsError,
     IllegalOperationError,
@@ -27,10 +32,12 @@ from zenml.exceptions import (
     StackExistsError,
 )
 from zenml.models import (
+    ArtifactRequestModel,
     ComponentRequestModel,
     ComponentUpdateModel,
     FlavorRequestModel,
     PipelineRequestModel,
+    PipelineRunUpdateModel,
     PipelineUpdateModel,
     ProjectRequestModel,
     ProjectUpdateModel,
@@ -39,12 +46,13 @@ from zenml.models import (
     RoleUpdateModel,
     StackRequestModel,
     StackUpdateModel,
+    StepRunUpdateModel,
     TeamRequestModel,
+    TeamUpdateModel,
     UserRequestModel,
     UserUpdateModel,
 )
 from zenml.models.base_models import BaseResponseModel
-from zenml.models.team_models import TeamUpdateModel
 from zenml.zen_stores.base_zen_store import (
     DEFAULT_ADMIN_ROLE,
     DEFAULT_GUEST_ROLE,
@@ -1196,6 +1204,49 @@ def test_list_runs_is_ordered(sql_store_with_runs):
     )
 
 
+def test_update_run_succeeds(sql_store_with_run):
+    """Tests updating run."""
+    run_id = sql_store_with_run["pipeline_run"].id
+    run = sql_store_with_run["store"].get_run(run_id)
+    assert run.status == ExecutionStatus.COMPLETED
+    run_update = PipelineRunUpdateModel(
+        status=ExecutionStatus.FAILED,
+    )
+    sql_store_with_run["store"].update_run(run_id, run_update)
+    run = sql_store_with_run["store"].get_run(run_id)
+    assert run.status == ExecutionStatus.FAILED
+
+
+def test_update_nonexistent_run_fails(sql_store):
+    """Tests updating nonexistent run fails."""
+    with pytest.raises(KeyError):
+        sql_store["store"].update_run(uuid.uuid4(), PipelineRunUpdateModel())
+
+
+def test_deleting_run_succeeds(sql_store_with_run):
+    """Tests deleting run."""
+    assert len(sql_store_with_run["store"].list_runs()) == 1
+    run_id = sql_store_with_run["pipeline_run"].id
+    sql_store_with_run["store"].delete_run(run_id)
+    assert len(sql_store_with_run["store"].list_runs()) == 0
+    with pytest.raises(KeyError):
+        sql_store_with_run["store"].get_run(run_id)
+
+
+def test_deleting_nonexistent_run_fails(sql_store):
+    """Tests deleting nonexistent run fails."""
+    with pytest.raises(KeyError):
+        sql_store["store"].delete_run(uuid.uuid4())
+
+
+def test_deleting_run_deletes_steps(sql_store_with_run):
+    """Tests deleting run deletes its steps."""
+    assert len(sql_store_with_run["store"].list_run_steps()) == 2
+    run_id = sql_store_with_run["pipeline_run"].id
+    sql_store_with_run["store"].delete_run(run_id)
+    assert len(sql_store_with_run["store"].list_run_steps()) == 0
+
+
 # ------------------
 # Pipeline run steps
 # ------------------
@@ -1266,6 +1317,86 @@ def test_list_run_steps_succeeds(
     )
     assert len(run_steps) == 2
     assert run_steps[1] == sql_store_with_run["step"]
+
+
+def test_update_run_step_succeeds(sql_store_with_run):
+    """Tests updating run step."""
+    step_run = sql_store_with_run["step"]
+    store = sql_store_with_run["store"]
+    step_run = store.get_run_step(step_run_id=step_run.id)
+    assert step_run.status == ExecutionStatus.COMPLETED
+    run_update = StepRunUpdateModel(status=ExecutionStatus.FAILED)
+    updated_run = store.update_run_step(step_run.id, run_update)
+    assert updated_run.status == ExecutionStatus.FAILED
+    step_run = store.get_run_step(step_run_id=step_run.id)
+    assert step_run.status == ExecutionStatus.FAILED
+
+
+def test_update_run_step_fails_when_step_does_not_exist(sql_store):
+    """Tests updating run step fails when step does not exist."""
+    run_update = StepRunUpdateModel(status=ExecutionStatus.FAILED)
+    with pytest.raises(KeyError):
+        sql_store["store"].update_run_step(uuid.uuid4(), run_update)
+
+
+# ---------
+# Artifacts
+# ---------
+
+
+def test_create_artifact_succeeds(sql_store):
+    """Tests creating artifact."""
+    artifact_name = "test_artifact"
+    artifact = ArtifactRequestModel(
+        name=artifact_name,
+        type=ArtifactType.DATA,
+        uri="",
+        materializer="",
+        data_type="",
+        user=sql_store["active_user"].id,
+        project=sql_store["default_project"].id,
+    )
+    with does_not_raise():
+        created_artifact = sql_store["store"].create_artifact(artifact=artifact)
+        assert created_artifact.name == artifact_name
+
+
+def get_artifact_succeeds(sql_store_with_run):
+    """Tests getting artifact."""
+    artifact = sql_store_with_run["store"].get_artifact(
+        artifact_id=sql_store_with_run["artifact"].id
+    )
+    assert artifact is not None
+    assert artifact == sql_store_with_run["artifact"]
+
+
+def test_get_artifact_fails_when_artifact_does_not_exist(sql_store):
+    """Tests getting artifact fails when artifact does not exist."""
+    with pytest.raises(KeyError):
+        sql_store["store"].get_artifact(artifact_id=uuid.uuid4())
+
+
+def test_list_artifacts_succeeds(sql_store_with_run):
+    """Tests listing artifacts."""
+    artifacts = sql_store_with_run["store"].list_artifacts()
+    assert len(artifacts) == 2
+    assert artifacts[0] == sql_store_with_run["artifact"]
+
+
+def test_delete_artifact_succeeds(sql_store_with_run):
+    """Tests deleting artifact."""
+    artifact_id = sql_store_with_run["artifact"].id
+    assert len(sql_store_with_run["store"].list_artifacts()) == 2
+    sql_store_with_run["store"].delete_artifact(artifact_id=artifact_id)
+    assert len(sql_store_with_run["store"].list_artifacts()) == 1
+    with pytest.raises(KeyError):
+        sql_store_with_run["store"].get_artifact(artifact_id=artifact_id)
+
+
+def test_delete_artifact_fails_when_artifact_does_not_exist(sql_store):
+    """Tests deleting artifact fails when artifact does not exist."""
+    with pytest.raises(KeyError):
+        sql_store["store"].delete_artifact(artifact_id=uuid.uuid4())
 
 
 # ----------------
