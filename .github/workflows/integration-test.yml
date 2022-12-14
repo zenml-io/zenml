@@ -197,17 +197,29 @@ jobs:
       - name: Install Prerequisites
         run: |
           source $VENV
-          zenml integration export-requirements --output-file requirements.txt kubeflow s3 gcp azure vault pillow evidently deepchecks great_expectations huggingface lightgbm neural_prophet pytorch tensorflow whylogs xgboost mlflow neptune aws
+          # install integrations: round 1
+          zenml integration export-requirements --output-file requirements.txt --ignore-integration feast --ignore-integration label_studio --ignore-integration bentoml --ignore-integration seldon --ignore-integration kserve
           pip install -r requirements.txt
           rm requirements.txt
+
+          # install integrations: round 2, needed because:
+          #  - kserve requires a tritonclient version that is lower that the one needed by mlflow
+          #  - seldon requires a prometheus-client version that is lower that the one needed by bentoml
+          zenml integration export-requirements --output-file requirements.txt seldon kserve
+          pip install -r requirements.txt
+          rm requirements.txt
+
           # re-install zenml to be sure
           poetry install --extras server
+          # install airflow requirements
+          pip install apache-airflow-providers-docker
 
       - name: Check Python Env ahead of tests
         run: |
           source $VENV
           zenml integration list
           pip list
+          pip check || true
 
       - name: Login to Amazon ECR
         id: login-ecr
@@ -242,4 +254,5 @@ jobs:
         run: |
           source $VENV
           zenml integration list
-
+          pip list
+          pip check || true

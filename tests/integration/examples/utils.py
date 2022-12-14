@@ -67,7 +67,7 @@ def run_example(
     run_count: Optional[int] = None,
     step_count: Optional[int] = None,
 ) -> Generator[Tuple[LocalExample, List[PipelineRunView]], None, None]:
-    """Runs the given examples and validates they ran correctly.
+    """Runs the given example and validates it ran correctly.
 
     Args:
         request: The pytest request object.

@@ -160,3 +160,10 @@ tests:
           - xgboost
       - capabilities:
           synchronized: true
+
+  - module: tests.integration.examples.test_airflow_orchestration
+    requirements:
+      - integrations:
+          - pytorch
+        packages:
+          - torchvision
