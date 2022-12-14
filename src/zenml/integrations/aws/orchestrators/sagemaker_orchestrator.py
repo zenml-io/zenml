@@ -14,6 +14,7 @@
 """Implementation of the SageMaker orchestrator."""
 
 import os
+from datetime import datetime
 from typing import TYPE_CHECKING, Any, cast
 
 import sagemaker
@@ -57,6 +58,7 @@ class SagemakerOrchestrator(BaseOrchestrator):
         Returns:
             The orchestrator run id.
         """
+        print(os.environ)
         try:
             return os.environ[ENV_ZENML_SAGEMAKER_RUN_ID]
         except KeyError:
@@ -80,6 +82,10 @@ class SagemakerOrchestrator(BaseOrchestrator):
         )
         # repo_digest = "715803424590.dkr.ecr.eu-north-1.amazonaws.com/zenml:not_so_basic_pipeline"
         deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
+
+    def _get_timestamp(self) -> str:
+        """Returns the current timestamp."""
+        return datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
 
     def prepare_or_run_pipeline(
         self, deployment: "PipelineDeployment", stack: "Stack"
@@ -111,7 +117,10 @@ class SagemakerOrchestrator(BaseOrchestrator):
                 entrypoint=entrypoint,
                 sagemaker_session=session,
                 base_job_name=deployment.run_name,
-                env={ENV_ZENML_SAGEMAKER_RUN_ID: str(deployment.pipeline_id)},
+                env={
+                    ENV_ZENML_SAGEMAKER_RUN_ID: str(deployment.pipeline_id)
+                    + self._get_timestamp()
+                },
             )
 
             sagemaker_step = ProcessingStep(
