@@ -9,11 +9,11 @@ Machine learning pipelines are rerun many times over throughout their developmen
 ## Parameterizing steps
 
 In order to iterate quickly, one must be able to quickly tweak pipeline runs by changing various 
-parameters of steps within a pipeline.
+parameters for the steps that make up your pipeline.
 
 You can configure your pipelines at runtime in the following ways:
 
-- `BaseParameters`: Runtime configuration passed down as a parameter to step functions.
+- `BaseParameters`: Runtime configuration passed down as a parameter to steps.
 - `BaseSettings`: Runtime settings passed down to stack components and pipelines.
 
 In this section, we will focus on `BaseParameters`, and in the Advanced Guide we will 

@@ -8,8 +8,7 @@ description: Configuring pipelines, steps, and stack components in ZenML.
 
 {% embed url="https://www.youtube.com/embed/hI-UNV7uoNI" %} Configuring pipelines, steps, and stack components in ZenML {% endembed %}
 
-This video gives an overview of everything discussed in this chapter,
-especially with a focus on the [post ZenML 0.20.0](../../guidelines/migration-zero-twenty.md) world!
+This video gives an overview of everything discussed in this chapter.
 
 ## Settings in ZenML
 
