@@ -751,7 +751,17 @@ list all artifacts that have been saved, use:
 zenml artifact list
 ```
 
-To delete an artifact, use:
+The metadata of an artifact can only be deleted if it is no longer linked to
+any pipeline runs, i.e., if the run that produced the artifact and all runs that
+cached any of its steps have been deleted.
+
+To delete all artifacts that are no longer linked to any pipeline runs, use:
+
+```bash
+zenml artifact prune
+```
+
+To delete a specific artifact, use:
 
 ```bash
 zenml artifact delete ARTIFACT_NAME_OR_ID
