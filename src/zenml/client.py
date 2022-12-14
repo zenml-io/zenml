@@ -2286,12 +2286,12 @@ class Client(metaclass=ClientMetaClass):
         display_name = component_type.value.replace("_", " ")
 
         if len(components) > 1:
-            component_list = "\n ".join(
+            component_list = "\n".join(
                 [f"{c.name} ({c.id})" for c in components]
             )
             raise ZenKeyError(
                 f"Multiple {display_name} instances have been found for "
-                f"name '{name_id_or_prefix}': \n {component_list}.\n"
+                f"name '{name_id_or_prefix}':\n{component_list}.\n"
                 f"Please specify by full or partial id."
             )
         elif len(components) == 1:
@@ -2300,6 +2300,11 @@ class Client(metaclass=ClientMetaClass):
         logger.debug(
             f"No {display_name} instance with name '{name_id_or_prefix}' "
             f"exists. Trying to resolve as partial_id..."
+        )
+
+        components = self.zen_store.list_stack_components(
+            type=component_type,
+            project_name_or_id=self.active_project.id,
         )
 
         filtered_comps = [
@@ -2314,8 +2319,9 @@ class Client(metaclass=ClientMetaClass):
             raise ZenKeyError(
                 f"The {display_name} instances listed below all share the "
                 f"provided prefix '{name_id_or_prefix}' on their ids:\n"
-                f"{filtered_component_list}.\nPlease provide more characters "
-                f"to uniquely identify only one component."
+                f"{filtered_component_list}.\n"
+                f"Please provide more characters to uniquely identify only "
+                f"one component."
             )
 
         elif len(filtered_comps) == 1:
@@ -2376,7 +2382,7 @@ class Client(metaclass=ClientMetaClass):
         )
 
         if len(entities) > 1:
-            entity_list = "\n ".join(
+            entity_list = "\n".join(
                 [
                     f"{getattr(entity, 'name', '')} ({entity.id})"
                     for entity in entities
@@ -2384,7 +2390,7 @@ class Client(metaclass=ClientMetaClass):
             )
             raise ZenKeyError(
                 f"Multiple {entity_label} have been found for name "
-                f"'{name_id_or_prefix}': \n{entity_list}.\n"
+                f"'{name_id_or_prefix}':\n{entity_list}.\n"
                 f"Please specify by full or partial id."
             )
 
@@ -2396,13 +2402,20 @@ class Client(metaclass=ClientMetaClass):
                 f"exists. Trying to resolve as partial_id"
             )
 
+            if "project" in response_model.__fields__:
+                entities: List[AnyResponseModel] = list_method(
+                    project_name_or_id=self.active_project.id,
+                )
+            else:
+                entities = list_method()
+
             filtered_entities = [
                 entity
                 for entity in entities
                 if str(entity.id).startswith(name_id_or_prefix)
             ]
             if len(filtered_entities) > 1:
-                entity_list = "\n ".join(
+                entity_list = "\n".join(
                     [
                         f"{getattr(f_entity, 'name', '')} ({f_entity.id})"
                         for f_entity in filtered_entities
@@ -2412,7 +2425,7 @@ class Client(metaclass=ClientMetaClass):
                 raise ZenKeyError(
                     f"Multiple {entity_label} have been found that share "
                     f"the provided prefix '{name_id_or_prefix}' on their ids:\n"
-                    f"{entity_list}.\n"
+                    f"{entity_list}\n"
                     f"Please provide more characters to uniquely identify "
                     f"only one of the {entity_label}."
                 )
