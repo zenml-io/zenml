@@ -87,6 +87,17 @@ class SagemakerOrchestrator(BaseOrchestrator):
         """Returns the current timestamp."""
         return datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
 
+    def _get_unique_run_id(self, deployment: "PipelineDeployment") -> str:
+        """Returns a unique run id for the pipeline run.
+
+        Args:
+            deployment: The pipeline deployment configuration.
+
+        Returns:
+            A unique run id.
+        """
+        return str(deployment.pipeline_id) + self._get_timestamp()
+
     def prepare_or_run_pipeline(
         self, deployment: "PipelineDeployment", stack: "Stack"
     ) -> Any:
@@ -113,13 +124,14 @@ class SagemakerOrchestrator(BaseOrchestrator):
                 role=sagemaker.get_execution_role(),
                 image_uri=image_name,
                 instance_count=1,
-                instance_type="ml.t3.medium",
+                instance_type=self.config.instance_type,
                 entrypoint=entrypoint,
                 sagemaker_session=session,
                 base_job_name=deployment.run_name,
                 env={
-                    ENV_ZENML_SAGEMAKER_RUN_ID: str(deployment.pipeline_id)
-                    + self._get_timestamp()
+                    ENV_ZENML_SAGEMAKER_RUN_ID: self._get_unique_run_id(
+                        deployment=deployment
+                    )
                 },
             )
 
