@@ -484,14 +484,6 @@ def deploy(
         metadata = {
             "server_deployment": str(server.config.provider),
         }
-        from zenml.zen_server.deploy.terraform.terraform_zen_server import (
-            TerraformServerDeploymentConfig,
-        )
-
-        if isinstance(server.config, TerraformServerDeploymentConfig):
-            # TODO: maybe move the server ID into the ServerDeploymentConfig
-            #   class
-            metadata["server_id"] = str(server.config.server_id)
 
         analytics_handler.metadata = metadata
 
@@ -532,13 +524,6 @@ def destroy() -> None:
         metadata = {
             "server_deployment": str(server.config.provider),
         }
-
-        from zenml.zen_server.deploy.terraform.terraform_zen_server import (
-            TerraformServerDeploymentConfig,
-        )
-
-        if isinstance(server.config, TerraformServerDeploymentConfig):
-            metadata["server_id"] = str(server.config.server_id)
 
         analytics_handler.metadata = metadata
 
