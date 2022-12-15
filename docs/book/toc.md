@@ -60,6 +60,7 @@
   * [Kubeflow Orchestrator](./component-gallery/orchestrators/kubeflow.md)
   * [Kubernetes Orchestrator](./component-gallery/orchestrators/kubernetes.md)
   * [Google Cloud VertexAI Orchestrator](./component-gallery/orchestrators/gcloud-vertexai.md)
+  * [AWS Sagemaker Orchestrator](./component-gallery/orchestrators/sagemaker.md)
   * [Tekton Orchestrator](./component-gallery/orchestrators/tekton.md)
   * [Airflow Orchestrator](./component-gallery/orchestrators/airflow.md)
   * [GitHub Actions Orchestrator](./component-gallery/orchestrators/github-actions.md)
