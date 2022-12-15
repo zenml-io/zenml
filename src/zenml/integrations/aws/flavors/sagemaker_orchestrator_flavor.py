@@ -25,7 +25,16 @@ if TYPE_CHECKING:
 
 
 class SagemakerOrchestratorSettings(BaseSettings):
-    """Settings for the Sagemaker orchestrator."""
+    """Settings for the Sagemaker orchestrator.
+
+    Attributes:
+        instance_type: The instance type to use for the processing job.
+        execution_role: The IAM role to use for the processing job.
+        volume_size_in_gb: The size of the EBS volume to use for the processing
+            job.
+        max_runtime_in_seconds: The maximum runtime in seconds for the
+            processing job.
+    """
 
     instance_type: str = "ml.t3.medium"
     execution_role: Optional[str] = None
