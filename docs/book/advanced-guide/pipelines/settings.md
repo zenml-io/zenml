@@ -8,17 +8,16 @@ description: Configuring pipelines, steps, and stack components in ZenML.
 
 {% embed url="https://www.youtube.com/embed/hI-UNV7uoNI" %} Configuring pipelines, steps, and stack components in ZenML {% endembed %}
 
-This video gives an overview of everything discussed in this chapter,
-especially with a focus on the [post ZenML 0.20.0](../../guidelines/migration-zero-twenty.md) world!
+This video gives an overview of everything discussed in this chapter.
 
 ## Settings in ZenML
 
-As discussed in a [previous chapter](../../starter-guide/pipelines/iterating.md), there are two ways to configure anything in ZenML:
+As discussed in a [previous chapter](../../starter-guide/pipelines/parameters-and-caching.md), there are two ways to configure anything in ZenML:
 
 - `BaseParameters`: Runtime configuration passed down as a parameter to step functions.
 - `BaseSettings`: Runtime settings passed down to stack components and pipelines.
 
-We have [already discussed `BaseParameters`](../../starter-guide/pipelines/iterating.md) and now is the time to talk about its brother, `BaseSettings`.
+We have [already discussed `BaseParameters`](../../starter-guide/pipelines/parameters-and-caching.md) and now is the time to talk about its brother, `BaseSettings`.
 
 ### What can be configured?
 
