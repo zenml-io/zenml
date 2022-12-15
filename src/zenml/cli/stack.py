@@ -213,7 +213,7 @@ def register_stack(
         if feature_store:
             components[StackComponentType.FEATURE_STORE] = feature_store
         if image_builder:
-            components[StackComponentType.IMAGE_BUILDER] = [image_builder]
+            components[StackComponentType.IMAGE_BUILDER] = image_builder
         if model_deployer:
             components[StackComponentType.MODEL_DEPLOYER] = model_deployer
         if secrets_manager:

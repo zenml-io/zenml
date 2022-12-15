@@ -13,13 +13,20 @@
 #  permissions and limitations under the License.
 """Kaniko image builder implementation."""
 
-import io
 import json
 import random
+import shutil
 import subprocess
-import tarfile
-import tempfile
-from typing import TYPE_CHECKING, Any, BinaryIO, Dict, Optional, Type, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    BinaryIO,
+    Dict,
+    Optional,
+    Tuple,
+    Type,
+    cast,
+)
 
 from zenml.config.base_settings import BaseSettings
 from zenml.enums import StackComponentType
@@ -28,14 +35,16 @@ from zenml.integrations.kaniko.flavors import (
     KanikoImageBuilderConfig,
     KanikoImageBuilderSettings,
 )
-from zenml.stack import StackValidator
 from zenml.logger import get_logger
+from zenml.stack import StackValidator
 
 if TYPE_CHECKING:
     from zenml.container_registries import BaseContainerRegistry
-import shutil
+    from zenml.stack import Stack
+
 
 logger = get_logger(__name__)
+
 
 class KanikoImageBuilder(BaseImageBuilder):
     """Kaniko image builder implementation."""
@@ -65,21 +74,39 @@ class KanikoImageBuilder(BaseImageBuilder):
         Returns:
             Stack validator.
         """
+
+        def _validate_remote_container_registry(
+            stack: "Stack",
+        ) -> Tuple[bool, str]:
+            assert stack.container_registry
+
+            if stack.container_registry.config.is_local:
+                return False, (
+                    "The Kaniko image builder builds Docker images in a "
+                    "Kubernetes cluster and isn't able to push the resulting "
+                    "image to a local container registry running on your "
+                    "machine. Please update your stack to include a remote "
+                    "container registry and try again."
+                )
+
+            return True, ""
+
         return StackValidator(
             required_components={StackComponentType.CONTAINER_REGISTRY},
+            custom_validation_function=_validate_remote_container_registry,
         )
 
     def build_and_push(
         self,
         image_name: str,
-        build_context_root: str,
+        build_context: BinaryIO,
         container_registry: "BaseContainerRegistry",
     ) -> str:
         """Builds and pushes a Docker image.
 
         Args:
             image_name: Name of the image to build and push.
-            build_context_root: The root of the Docker build context.
+            build_context: The build context to use for the image.
             container_registry: The container registry to push to.
 
         Returns:
@@ -92,14 +119,11 @@ class KanikoImageBuilder(BaseImageBuilder):
             pod_name=pod_name, image_name=image_name
         )
 
-        with tempfile.TemporaryFile(mode="w+b") as f:
-            self._prepare_build_context(root=build_context_root, output_file=f)
-            f.seek(0)
-            self._run_kaniko_build(
-                pod_name=pod_name,
-                spec_overrides=spec_overrides,
-                build_context=f,
-            )
+        self._run_kaniko_build(
+            pod_name=pod_name,
+            spec_overrides=spec_overrides,
+            build_context=build_context,
+        )
 
         image_name_with_sha = self._read_pod_output(pod_name=pod_name)
         self._verify_image_name(
@@ -108,23 +132,6 @@ class KanikoImageBuilder(BaseImageBuilder):
         )
         self._delete_pod(pod_name=pod_name)
         return image_name_with_sha
-
-    def _prepare_build_context(self, root: str, output_file: BinaryIO) -> None:
-        """Prepares the build context.
-
-        Args:
-            root: Root directory of the build context.
-            output_file: The output file that should contain the build context
-                archive.
-        """
-        tar = tarfile.open(mode="w:gz", fileobj=output_file)
-
-        info = tarfile.TarInfo("Dockerfile")
-        dockerfile_contents = "FROM alpine\nRUN echo 'Hello world'"
-        contents_encoded = dockerfile_contents.encode("utf-8")
-        info.size = len(contents_encoded)
-        tar.addfile(info, io.BytesIO(contents_encoded))
-        tar.close()
 
     def _generate_spec_overrides(
         self, pod_name: str, image_name: str
