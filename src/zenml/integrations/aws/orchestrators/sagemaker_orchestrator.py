@@ -28,6 +28,7 @@ from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
     SagemakerOrchestratorConfig,
     SagemakerOrchestratorSettings,
 )
+from zenml.logger import get_logger
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
@@ -36,6 +37,7 @@ if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.stack import Stack
 
+logger = get_logger(__name__)
 ENV_ZENML_SAGEMAKER_RUN_ID = "ZENML_SAGEMAKER_RUN_ID"
 
 
@@ -105,6 +107,13 @@ class SagemakerOrchestrator(BaseOrchestrator):
         Returns:
             The result of the pipeline run.
         """
+        if deployment.schedule:
+            logger.warning(
+                "The Sagemaker Orchestrator currently does not support the "
+                "use of schedules. The `schedule` will be ignored "
+                "and the pipeline will be run immediately."
+            )
+
         session = sagemaker.Session(default_bucket=self.config.bucket)
         image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
         execution_role = (
