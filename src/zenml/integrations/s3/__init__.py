@@ -30,7 +30,6 @@ class S3Integration(Integration):
     """Definition of S3 integration for ZenML."""
 
     NAME = S3
-    # REQUIREMENTS = ["s3fs==2022.3.0"]
     REQUIREMENTS = ["s3fs<=2022.11.0"]
 
     @classmethod
