@@ -28,7 +28,6 @@ class SagemakerOrchestratorSettings(BaseSettings):
     """Settings for the Sagemaker orchestrator."""
 
     instance_type: str = "ml.t3.medium"
-    instance_count: Optional[int] = 1
     execution_role: Optional[str] = None
     volume_size_in_gb: Optional[int] = 30
     max_runtime_in_seconds: Optional[int] = 86400

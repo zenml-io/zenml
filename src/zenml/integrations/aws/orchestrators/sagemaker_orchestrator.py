@@ -14,10 +14,10 @@
 """Implementation of the SageMaker orchestrator."""
 
 import os
-from datetime import datetime
 from typing import TYPE_CHECKING, Any, Optional, Type, cast
 
 import sagemaker
+from sagemaker.workflow.execution_variables import ExecutionVariables
 from sagemaker.workflow.pipeline import Pipeline
 from sagemaker.workflow.steps import ProcessingStep
 
@@ -61,6 +61,7 @@ class SagemakerOrchestrator(BaseOrchestrator):
             The orchestrator run id.
         """
         try:
+            print(os.environ[ENV_ZENML_SAGEMAKER_RUN_ID])
             return os.environ[ENV_ZENML_SAGEMAKER_RUN_ID]
         except KeyError:
             raise RuntimeError(
@@ -81,24 +82,7 @@ class SagemakerOrchestrator(BaseOrchestrator):
         repo_digest = docker_image_builder.build_and_push_docker_image(
             deployment=deployment, stack=stack
         )
-        # repo_digest = "715803424590.dkr.ecr.eu-north-1.amazonaws.com/zenml:not_so_basic_pipeline"
         deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
-
-    def _get_timestamp(self) -> str:
-        """Returns the current timestamp."""
-        return datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-
-    def _get_unique_run_id(self, deployment: "PipelineDeployment") -> str:
-        """Returns a unique run id for the pipeline run.
-
-        Args:
-            deployment: The pipeline deployment configuration.
-
-        Returns:
-            A unique run id.
-        """
-        # TODO: get this from sagemaker itself
-        return str(deployment.pipeline_id) + self._get_timestamp()
 
     @property
     def settings_class(self) -> Optional[Type["BaseSettings"]]:
@@ -143,15 +127,13 @@ class SagemakerOrchestrator(BaseOrchestrator):
             processor = sagemaker.processing.Processor(
                 role=execution_role,
                 image_uri=image_name,
-                instance_count=step_settings.instance_count,
+                instance_count=1,
                 sagemaker_session=session,
                 instance_type=step_settings.instance_type,
                 entrypoint=entrypoint,
                 base_job_name=deployment.run_name,
                 env={
-                    ENV_ZENML_SAGEMAKER_RUN_ID: self._get_unique_run_id(
-                        deployment=deployment
-                    )
+                    ENV_ZENML_SAGEMAKER_RUN_ID: ExecutionVariables.PIPELINE_EXECUTION_ARN,
                 },
                 volume_size_in_gb=step_settings.volume_size_in_gb,
                 max_runtime_in_seconds=step_settings.max_runtime_in_seconds,
