@@ -19,7 +19,7 @@ from typing import Any, Type, cast
 
 from whylogs.core import DatasetProfileView  # type: ignore
 
-from zenml.artifacts import StatisticsArtifact
+from zenml.enums import ArtifactType
 from zenml.integrations.whylogs.constants import (
     WHYLABS_DATASET_ID_ENV,
     WHYLABS_LOGGING_ENABLED_ENV,
@@ -35,9 +35,9 @@ class WhylogsMaterializer(BaseMaterializer):
     """Materializer to read/write whylogs dataset profile views."""
 
     ASSOCIATED_TYPES = (DatasetProfileView,)
-    ASSOCIATED_ARTIFACT_TYPES = (StatisticsArtifact,)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.STATISTICS
 
-    def handle_input(self, data_type: Type[Any]) -> DatasetProfileView:
+    def load(self, data_type: Type[Any]) -> DatasetProfileView:
         """Reads and returns a whylogs dataset profile view.
 
         Args:
@@ -46,8 +46,8 @@ class WhylogsMaterializer(BaseMaterializer):
         Returns:
             A loaded whylogs dataset profile view object.
         """
-        super().handle_input(data_type)
-        filepath = os.path.join(self.artifact.uri, PROFILE_FILENAME)
+        super().load(data_type)
+        filepath = os.path.join(self.uri, PROFILE_FILENAME)
 
         # Create a temporary folder
         temp_dir = tempfile.mkdtemp(prefix="zenml-temp-")
@@ -62,14 +62,14 @@ class WhylogsMaterializer(BaseMaterializer):
 
         return profile_view
 
-    def handle_return(self, profile_view: DatasetProfileView) -> None:
+    def save(self, profile_view: DatasetProfileView) -> None:
         """Writes a whylogs dataset profile view.
 
         Args:
             profile_view: A whylogs dataset profile view object.
         """
-        super().handle_return(profile_view)
-        filepath = os.path.join(self.artifact.uri, PROFILE_FILENAME)
+        super().save(profile_view)
+        filepath = os.path.join(self.uri, PROFILE_FILENAME)
 
         # Create a temporary folder
         temp_dir = tempfile.mkdtemp(prefix="zenml-temp-")

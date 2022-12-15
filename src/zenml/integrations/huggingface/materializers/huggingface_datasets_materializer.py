@@ -20,7 +20,7 @@ from typing import Any, Type
 from datasets import Dataset, load_from_disk  # type: ignore[attr-defined]
 from datasets.dataset_dict import DatasetDict
 
-from zenml.artifacts import DataArtifact
+from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import io_utils
@@ -32,9 +32,9 @@ class HFDatasetMaterializer(BaseMaterializer):
     """Materializer to read data to and from huggingface datasets."""
 
     ASSOCIATED_TYPES = (Dataset, DatasetDict)
-    ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA_ANALYSIS
 
-    def handle_input(self, data_type: Type[Any]) -> Dataset:
+    def load(self, data_type: Type[Any]) -> Dataset:
         """Reads Dataset.
 
         Args:
@@ -43,28 +43,28 @@ class HFDatasetMaterializer(BaseMaterializer):
         Returns:
             The dataset read from the specified dir.
         """
-        super().handle_input(data_type)
+        super().load(data_type)
         temp_dir = mkdtemp()
         io_utils.copy_dir(
-            os.path.join(self.artifact.uri, DEFAULT_DATASET_DIR),
+            os.path.join(self.uri, DEFAULT_DATASET_DIR),
             temp_dir,
         )
         return load_from_disk(temp_dir)
 
-    def handle_return(self, ds: Type[Any]) -> None:
+    def save(self, ds: Type[Any]) -> None:
         """Writes a Dataset to the specified dir.
 
         Args:
             ds: The Dataset to write.
         """
-        super().handle_return(ds)
+        super().save(ds)
         temp_dir = TemporaryDirectory()
         path = os.path.join(temp_dir.name, DEFAULT_DATASET_DIR)
         try:
             ds.save_to_disk(path)
             io_utils.copy_dir(
                 path,
-                os.path.join(self.artifact.uri, DEFAULT_DATASET_DIR),
+                os.path.join(self.uri, DEFAULT_DATASET_DIR),
             )
         finally:
             fileio.rmtree(temp_dir.name)

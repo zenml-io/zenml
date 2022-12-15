@@ -17,7 +17,6 @@ from typing import TYPE_CHECKING, Any, Optional, Type
 from uuid import UUID
 
 from zenml.logger import get_logger
-from zenml.utils import source_utils
 
 if TYPE_CHECKING:
     from zenml.materializers.base_materializer import BaseMaterializer
@@ -116,58 +115,26 @@ class ArtifactView:
         """Materializes the data stored in this artifact.
 
         Args:
-            output_data_type: The datatype to which the materializer should
-                read, will be passed to the materializers `handle_input` method.
-            materializer_class: The class of the materializer that should be
-                used to read the artifact data. If no materializer class is
-                given, we use the materializer that was used to write the
-                artifact during execution of the pipeline.
+            output_data_type: Deprecated; will be ignored.
+            materializer_class: Deprecated; will be ignored.
 
         Returns:
             The materialized data.
-
-        Raises:
-            ModuleNotFoundError: If the materializer class could not be found.
         """
-        if not materializer_class:
-            try:
-                materializer_class = source_utils.load_source_path_class(
-                    self.materializer
-                )
-            except (ModuleNotFoundError, AttributeError) as e:
-                logger.error(
-                    f"ZenML can not locate and import the materializer module "
-                    f"{self.materializer} which was used to write this "
-                    f"artifact. If you want to read from it, please provide "
-                    f"a 'materializer_class'."
-                )
-                raise ModuleNotFoundError(e) from e
+        if output_data_type is not None:
+            logger.warning(
+                "The `output_data_type` argument is deprecated and will be "
+                "removed in a future release."
+            )
+        if materializer_class is not None:
+            logger.warning(
+                "The `materializer_class` argument is deprecated and will be "
+                "removed in a future release."
+            )
 
-        if not output_data_type:
-            try:
-                output_data_type = source_utils.load_source_path_class(
-                    self.data_type
-                )
-            except (ModuleNotFoundError, AttributeError) as e:
-                logger.error(
-                    f"ZenML can not locate and import the data type of this "
-                    f"artifact {self.data_type}. If you want to read "
-                    f"from it, please provide a 'output_data_type'."
-                )
-                raise ModuleNotFoundError(e) from e
+        from zenml.utils.materializer_utils import load_artifact
 
-        logger.debug(
-            "Using '%s' to read '%s' (uri: %s).",
-            materializer_class.__qualname__,
-            self.type,
-            self.uri,
-        )
-
-        # TODO [ENG-162]: passing in `self` to initialize the materializer only
-        #  works because materializers only require a `.uri` property at the
-        #  moment.
-        materializer = materializer_class(self)  # type: ignore[arg-type]
-        return materializer.handle_input(output_data_type)
+        return load_artifact(self._model)
 
     def __repr__(self) -> str:
         """Returns a string representation of this artifact.
