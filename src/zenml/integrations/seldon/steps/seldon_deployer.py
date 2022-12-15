@@ -18,8 +18,6 @@ from typing import Optional, cast
 
 from pydantic import BaseModel, validator
 
-from zenml.artifacts.model_artifact import ModelArtifact
-from zenml.client import Client
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.environment import Environment
 from zenml.exceptions import DoesNotExistException
@@ -40,6 +38,7 @@ from zenml.integrations.seldon.services.seldon_deployment import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.materializers import UnmaterializedArtifact
 from zenml.steps import (
     STEP_ENVIRONMENT_NAME,
     BaseParameters,
@@ -115,7 +114,7 @@ def seldon_model_deployer_step(
     deploy_decision: bool,
     params: SeldonDeployerStepParameters,
     context: StepContext,
-    model: ModelArtifact,
+    model: UnmaterializedArtifact,
 ) -> SeldonDeploymentService:
     """Seldon Core model deployer pipeline step.
 
@@ -255,7 +254,7 @@ def seldon_custom_model_deployer_step(
     deploy_decision: bool,
     params: SeldonDeployerStepParameters,
     context: StepContext,
-    model: ModelArtifact,
+    model: UnmaterializedArtifact,
 ) -> SeldonDeploymentService:
     """Seldon Core custom model deployer pipeline step.
 
@@ -351,15 +350,9 @@ def seldon_custom_model_deployer_step(
     fileio.makedirs(served_model_uri)
     io_utils.copy_dir(model.uri, served_model_uri)
 
-    # Get the model artifact to extract information about the model
-    # and how it can be loaded again later in the deployment environment.
-    artifact = Client().zen_store.list_artifacts(artifact_uri=model.uri)
-    if not artifact:
-        raise DoesNotExistException("No artifact found at {}".format(model.uri))
-
     # save the model artifact metadata to the YAML file and copy it to the
     # deployment directory
-    model_metadata_file = save_model_metadata(artifact[0])
+    model_metadata_file = save_model_metadata(model)
     fileio.copy(
         model_metadata_file,
         os.path.join(served_model_uri, MODEL_METADATA_YAML_FILE_NAME),

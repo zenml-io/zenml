@@ -15,7 +15,6 @@ from contextlib import ExitStack as does_not_raise
 
 import pytest
 
-from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.exceptions import StepContextError
 from zenml.materializers import BuiltInMaterializer
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -27,13 +26,13 @@ def test_initialize_step_context_with_mismatched_keys():
     materializers and artifacts raises an Exception."""
 
     materializers = {"some_output_name": BaseMaterializer}
-    artifacts = {"some_different_output_name": BaseArtifact(uri="")}
+    artifact_uris = {"some_different_output_name": ""}
 
     with pytest.raises(StepContextError):
         StepContext(
             step_name="",
             output_materializers=materializers,
-            output_artifacts=artifacts,
+            output_artifact_uris=artifact_uris,
         )
 
 
@@ -42,13 +41,13 @@ def test_initialize_step_context_with_matching_keys():
     materializers and artifacts works."""
 
     materializers = {"some_output_name": BaseMaterializer}
-    artifacts = {"some_output_name": BaseArtifact(uri="")}
+    artifact_uris = {"some_output_name": ""}
 
     with does_not_raise():
         StepContext(
             step_name="",
             output_materializers=materializers,
-            output_artifacts=artifacts,
+            output_artifact_uris=artifact_uris,
         )
 
 
