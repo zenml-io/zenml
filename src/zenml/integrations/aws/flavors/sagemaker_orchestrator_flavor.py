@@ -27,7 +27,11 @@ if TYPE_CHECKING:
 class SagemakerOrchestratorSettings(BaseSettings):
     """Settings for the Sagemaker orchestrator."""
 
-    step_instance_type: Optional[str] = None
+    instance_type: Optional[str] = None
+    execution_role: Optional[str] = None
+    instance_count: Optional[int] = None
+    volume_size_in_gb: Optional[int] = None
+    max_runtime_in_seconds: Optional[int] = None
 
 
 class SagemakerOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173

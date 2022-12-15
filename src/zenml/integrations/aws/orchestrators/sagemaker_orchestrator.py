@@ -15,16 +15,18 @@
 
 import os
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Optional, Type, cast
 
 import sagemaker
 from sagemaker.workflow.pipeline import Pipeline
 from sagemaker.workflow.steps import ProcessingStep
 
+from zenml.config.base_settings import BaseSettings
 from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
     SagemakerOrchestratorConfig,
+    SagemakerOrchestratorSettings,
 )
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
@@ -98,6 +100,15 @@ class SagemakerOrchestrator(BaseOrchestrator):
         """
         return str(deployment.pipeline_id) + self._get_timestamp()
 
+    @property
+    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+        """Settings class for the Sagemaker orchestrator.
+
+        Returns:
+            The settings class.
+        """
+        return SagemakerOrchestratorSettings
+
     def prepare_or_run_pipeline(
         self, deployment: "PipelineDeployment", stack: "Stack"
     ) -> Any:
@@ -123,14 +134,25 @@ class SagemakerOrchestrator(BaseOrchestrator):
                 step_name=step_name
             )
             entrypoint = command + arguments
-            breakpoint()
+
+            settings = cast(
+                SagemakerOrchestratorSettings, self.get_settings(step)
+            )
+
+            instance_count = settings.instance_count or 1
+            instance_type = (
+                settings.instance_type or self.config.default_instance_type
+            )
+            execution_role = settings.execution_role or execution_role
+            volume_size_in_gb = settings.volume_size_in_gb or 30
+            max_runtime_in_seconds = settings.max_runtime_in_seconds or 86400
 
             processor = sagemaker.processing.Processor(
                 role=execution_role,
                 image_uri=image_name,
-                instance_count=1,
+                instance_count=instance_count,
                 sagemaker_session=session,
-                instance_type=self.config.default_instance_type,
+                instance_type=instance_type,
                 entrypoint=entrypoint,
                 base_job_name=deployment.run_name,
                 env={
@@ -138,6 +160,8 @@ class SagemakerOrchestrator(BaseOrchestrator):
                         deployment=deployment
                     )
                 },
+                volume_size_in_gb=volume_size_in_gb,
+                max_runtime_in_seconds=max_runtime_in_seconds,
             )
 
             sagemaker_step = ProcessingStep(
