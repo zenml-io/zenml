@@ -21,43 +21,48 @@ You should use the Sagemaker orchestrator if:
 
 ## How to deploy it
 
-In order to use a Vertex AI orchestrator, you need to first deploy [ZenML to the cloud](../../getting-started/deploying-zenml/deploying-zenml.md). It would be recommended to deploy ZenML in the same Google Cloud project as where the Vertex infrastructure is deployed, but it is not necessary to do so. You must ensure that you are [connected to the remote ZenML server](../../starter-guide/collaborate/zenml-deployment.md) before using this stack component.
+In order to use a Sagemaker AI orchestrator, you need to first deploy [ZenML to the
+cloud](../../getting-started/deploying-zenml/deploying-zenml.md). It would be
+recommended to deploy ZenML in the same region as you plan on using for
+Sagemaker, but it is not necessary to do so. You must ensure that you are
+[connected to the remote ZenML
+server](../../starter-guide/collaborate/zenml-deployment.md) before using this
+stack component.
 
-The only other thing necessary to use the ZenML Vertex orchestrator is enabling Vertex relevant APIs on the Google Cloud project.
+The only other thing necessary to use the ZenML Sagemaker orchestrator is
+enabling the relevant permissions for your particular role.
 
-In order to quickly enable APIs, and create other resources necessary for to use this integration, you can also consider using the [Vertex AI stack recipe](https://github.com/zenml-io/mlops-stacks/tree/main/vertex-ai), which helps you set up the infrastructure with one click.
+In order to quickly enable APIs, and create other resources necessary for to use
+this integration, we will soon provide a Sagemaker stack
+recipe via [our `mlops-stacks` recipe repository](https://github.com/zenml-io/mlops-stacks), which
+will help you set up the infrastructure with one click.
 
 ## How to use it
 
-To use the Vertex orchestrator, we need:
+To use the Sagemaker orchestrator, we need:
 
-* The ZenML `gcp` integration installed. If you haven't done so, run 
+* The ZenML `aws` integration installed. If you haven't done so, run 
     ```shell
-    zenml integration install gcp
+    zenml integration install aws
     ```
 * [Docker](https://www.docker.com) installed and running.
 * [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) installed.
 * A [remote artifact store](../artifact-stores/artifact-stores.md) as part of 
-your stack.
+your stack (configured with an `authentication_secret` attribute) along with [a remote secrets manager](../secrets-managers/secrets-managers.md) to store that
+authentication secret.
 * A [remote container registry](../container-registries/container-registries.md) 
 as part of your stack.
-* The GCP project ID and location in which you want to run your Vertex 
-AI pipelines.
-* The pipeline runner environment needs permissions to create a job in Vertex Pipelines,
-e.g. the `Vertex AI User` role: https://cloud.google.com/vertex-ai/docs/general/access-control#aiplatform.user
-* To run on a schedule, the runner environment also needs permissions to create a Google Cloud
-Function (e.g. with the [`cloudfunctions.serviceAgent Role`](https://cloud.google.com/functions/docs/concepts/iam))
-and to create a Google Cloud Scheduler (e.g. with the
-[Cloud Scheduler Job Runner Role](https://cloud.google.com/iam/docs/understanding-roles)). Additionally, it needs
-the [Storage Object Creator Role](https://cloud.google.com/storage/docs/access-control/iam-roles)
-to be able to write the pipeline JSON file to the artifact store directly.
+* An IAM role or user with an `AmazonSageMakerFullAccess` policy applied to it
+  as well as `sagemaker.amazonaws.com` added as a Principal Service. Full
+  details on these permissions can be found
+  [here](https://docs.aws.amazon.com/sagemaker/latest/dg/sagemaker-roles.html)
+  or use the ZenML recipe (when available) which will set up the necessary
+    permissions for you.
 
 We can then register the orchestrator and use it in our active stack:
 ```shell
 zenml orchestrator register <ORCHESTRATOR_NAME> \
-    --flavor=vertex \
-    --project=<PROJECT_ID> \
-    --location=<GCP_LOCATION>
+    --flavor=sagemaker
 
 # Register and activate a stack with the new orchestrator
 zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
@@ -65,134 +70,52 @@ zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 
 {% hint style="info" %}
 ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>`
-which includes your code and use it to run your pipeline steps in Vertex AI. 
+which includes your code and use it to run your pipeline steps in Sagemaker. 
 Check out [this page](../../advanced-guide/pipelines/containerization.md)
 if you want to learn more about how ZenML builds these images and
 how you can customize them.
 {% endhint %}
 
-You can now run any ZenML pipeline using the Vertex orchestrator:
+You can now run any ZenML pipeline using the Sagemaker orchestrator:
 ```shell
 python file_that_runs_a_zenml_pipeline.py
 ```
 
 ### Run pipelines on a schedule
 
-The Vertex Pipelines orchestrator supports running pipelines on a schedule, using
-logic resembling the [official approach recommended by GCP](https://cloud.google.com/vertex-ai/docs/pipelines/schedule-cloud-scheduler).
-
-ZenML utilizes the [Cloud Scheduler](https://cloud.google.com/scheduler) and
-[Cloud Functions](https://cloud.google.com/functions) services to enable scheduling
-on Vertex Pipelines. The following is the sequence of events that happen when running
-a pipeline on Vertex with a schedule:
-
-* Docker image is created and pushed (see above [containerization](../../advanced-guide/pipelines/containerization.md)).
-* The Vertex AI pipeline JSON file is copied to the [Artifact Store](../../component-gallery/artifact-stores/artifact-stores.md) specified in your [Stack](../../starter-guide/stacks/stacks.md)
-* Cloud Function is created that creates the Vertex Pipeline job when triggered.
-* Cloud Scheduler job is created that triggers the Cloud Function on the defined schedule.
-
-Therefore, to run on a schedule, the runner environment needs permissions to create a Google Cloud
-Function (e.g. with the [`cloudfunctions.serviceAgent` Role](https://cloud.google.com/functions/docs/concepts/iam))
-and to create a Google Cloud Scheduler (e.g. with the
-[Cloud Scheduler Job Runner Role](https://cloud.google.com/iam/docs/understanding-roles)).
-Additionally, it needs
-the [Storage Object Creator Role](https://cloud.google.com/storage/docs/access-control/iam-roles)
-to be able to write the pipeline JSON file to the artifact store directly.
-
-Once your have these permissions set in your local GCP CLI, here is how to create a scheduled
-Vertex pipeline in ZenML:
-
-```python
-from zenml.config.schedule import Schedule
-
-# Run a pipeline every 5th minute
-pipeline_instance.run(
-    schedule=Schedule(
-        cron_expression="*/5 * * * *"
-    )
-)
-```
-
-{% hint style="warning" %}
-The Vertex orchestrator only supports the `cron_expression` parameter in the `Schedule` object,
-and will ignore all other parameters supplied to define the schedule.
-{% endhint %}
-
-#### How to delete a scheduled pipeline
-
-Note that ZenML only gets involved to schedule a run, but maintaining the
-lifecycle of the schedule is the responsibility of the
-user.
-
-In order to cancel a scheduled Vertex pipeline, you need to manually delete the
-generated Google Cloud Function, along with the Cloud Scheduler job that schedules
-it (via the UI or the CLI).
+The ZenML Sagemaker orchestrator doesn't currently support running pipelines on
+a schedule. We maintain a public roadmap for ZenML, which you can find
+[here](https://zenml.io/roadmap). We welcome community contributions (see more
+[here](https://github.com/zenml-io/zenml/blob/main/CONTRIBUTING.md)) so if you
+want to enable scheduling for Sagemaker, please [do let us
+know](https://zenml.io/slack-invite)!
 
 ### Additional configuration
 
-For additional configuration of the Vertex orchestrator, you can pass
-`VertexOrchestratorSettings` which allows you to configure (among others) the following attributes:
+For additional configuration of the Sagemaker orchestrator, you can pass
+`SagemakerOrchestratorSettings` which allows you to configure (among others) the following attributes:
 
-* `pod_settings`: Node selectors, affinity and tolerations to apply to the Kubernetes Pods running
-your pipline. These can be either specified using the Kubernetes model objects or as dictionaries.
+* `instance_type`: The instance type to use for the Sagemaker training job.
+  (Defaults to `ml.t3.medium`.)
+* `execution_role: The IAM role to use for the Sagemaker training job.
+* `volume_size_in_gb`: The size of the volume to use for the Sagemaker training
+  job. (Defaults to 30 GB.)
+* `max_runtime_in_seconds`: The maximum runtime of the Sagemaker training job.
+  (Defaults to 1 day or 86400 seconds.)
 
-```python
-from zenml.integrations.gcp.flavors.vertex_orchestrator_flavor import VertexOrchestratorSettings
-from kubernetes.client.models import V1Toleration
-
-
-vertex_settings = VertexOrchestratorSettings(
-    pod_settings={
-        "affinity": {
-            "nodeAffinity": {
-                "requiredDuringSchedulingIgnoredDuringExecution": {
-                    "nodeSelectorTerms": [
-                        {
-                            "matchExpressions": [
-                                {
-                                    "key": "node.kubernetes.io/name",
-                                    "operator": "In",
-                                    "values": ["my_powerful_node_group"],
-                                }
-                            ]
-                        }
-                    ]
-                }
-            }
-        },
-        "tolerations": [
-            V1Toleration(
-                key="node.kubernetes.io/name",
-                operator="Equal",
-                value="",
-                effect="NoSchedule"
-            )
-        ]
-    }
-)
-
-@pipeline(
-    settings={
-        "orchestrator.vertex": vertex_settings
-    }
-)
-  ...
-```
-
-Check out the
-[API docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-gcp/#zenml.integrations.gcp.flavors.vertex_orchestrator_flavor.VertexOrchestratorSettings)
-for a full list of available attributes and [this docs page](../..//advanced-guide/pipelines/settings.md)
+Check out the [this docs page](../..//advanced-guide/pipelines/settings.md)
 for more information on how to specify settings.
 
-A concrete example of using the Vertex orchestrator can be found 
-[here](https://github.com/zenml-io/zenml/tree/main/examples/vertex_ai_orchestration).
+A concrete example of using the Sagemaker orchestrator can be found 
+[here](https://github.com/zenml-io/zenml/tree/main/examples/sagemaker_orchestration).
 
-For more information and a full list of configurable attributes of the Vertex 
-orchestrator, check out the [API Docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-gcp/#zenml.integrations.gcp.orchestrators.vertex_orchestrator.VertexOrchestrator).
+For more information and a full list of configurable attributes of the Sagemaker 
+orchestrator, check out the [API Docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-aws/#zenml.integrations.aws.orchestrators.sagemaker_orchestrator.SagemakerOrchestrator).
 
 ### Enabling CUDA for GPU-backed hardware
 
 Note that if you wish to use this orchestrator to run steps on a GPU, you will
-need to follow [the instructions on this page](../../advanced-guide/pipelines/gpu-hardware.md) to ensure that it works. It
-requires adding some extra settings customization and is essential to enable
+need to follow [the instructions on this
+page](../../advanced-guide/pipelines/gpu-hardware.md) to ensure that it works.
+It requires adding some extra settings customization and is essential to enable
 CUDA for the GPU to give its full acceleration.
