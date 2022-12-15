@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Local Docker image builder implementation."""
 
+import shutil
 from typing import Type, cast
 
 from zenml.image_builders import (
@@ -37,6 +38,18 @@ class LocalImageBuilder(BaseImageBuilder):
             The configuration.
         """
         return cast(LocalImageBuilderConfig, self._config)
+
+    @staticmethod
+    def _check_prerequisites() -> None:
+        """Checks that all prerequisites are installed.
+
+        Raises:
+            RuntimeError: If any of the prerequisites are not installed.
+        """
+        if not shutil.which("docker"):
+            raise RuntimeError(
+                "`docker` is required to run the local image builder."
+            )
 
 
 class LocalImageBuilderFlavor(BaseImageBuilderFlavor):

@@ -30,6 +30,7 @@ from zenml.constants import (
     ORCHESTRATOR_DOCKER_IMAGE_KEY,
 )
 from zenml.entrypoints import StepEntrypointConfiguration
+from zenml.enums import StackComponentType
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
 from zenml.orchestrators import utils as orchestrator_utils
@@ -37,7 +38,7 @@ from zenml.orchestrators.base_orchestrator import (
     BaseOrchestratorConfig,
     BaseOrchestratorFlavor,
 )
-from zenml.stack import Stack
+from zenml.stack import Stack, StackValidator
 from zenml.utils import string_utils
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
@@ -64,6 +65,17 @@ class LocalDockerOrchestrator(BaseOrchestrator):
             The settings class.
         """
         return LocalDockerOrchestratorSettings
+
+    @property
+    def validator(self) -> Optional[StackValidator]:
+        """Ensures theres an image builder in the stack.
+
+        Returns:
+            A `StackValidator` instance.
+        """
+        return StackValidator(
+            required_components={StackComponentType.IMAGE_BUILDER}
+        )
 
     def prepare_pipeline_deployment(
         self,

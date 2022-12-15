@@ -94,7 +94,10 @@ class KubernetesSparkStepOperator(SparkStepOperator):
             return True, ""
 
         return StackValidator(
-            required_components={StackComponentType.CONTAINER_REGISTRY},
+            required_components={
+                StackComponentType.CONTAINER_REGISTRY,
+                StackComponentType.IMAGE_BUILDER,
+            },
             custom_validation_function=_validate_remote_components,
         )
 
