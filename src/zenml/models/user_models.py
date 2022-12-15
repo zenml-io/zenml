@@ -78,7 +78,7 @@ class JWTToken(BaseModel):
             AuthorizationException: If the token is invalid.
         """
         # import here to keep these dependencies out of the client
-        from jose import JWTError, jwt  # type: ignore[import]
+        from jose import JWTError, jwt
 
         try:
             payload = jwt.decode(
@@ -197,7 +197,6 @@ class UserResponseModel(UserBaseModel, BaseResponseModel):
     """
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
-        "id",
         "name",
         "full_name",
         "active",

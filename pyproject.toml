@@ -261,6 +261,9 @@ module = [
     "mlflow.*",
     "python_terraform.*",
     "bentoml.*",
+    "multipart.*",
+    "jose.*",
+    "fastapi_utils.*",
 ]
 ignore_missing_imports = true
 

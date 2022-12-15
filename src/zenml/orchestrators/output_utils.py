@@ -14,18 +14,17 @@
 """Utilities for outputs."""
 
 import os
-from typing import TYPE_CHECKING, Dict, Sequence, Type
+from typing import TYPE_CHECKING, Dict, Sequence
 
-from zenml.artifacts.base_artifact import BaseArtifact
-from zenml.config.step_configurations import Step
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.models.step_run_models import StepRunResponseModel
-from zenml.stack import Stack
-from zenml.utils import source_utils
 
 if TYPE_CHECKING:
     from zenml.artifact_stores import BaseArtifactStore
+    from zenml.config.step_configurations import Step
+    from zenml.models.step_run_models import StepRunResponseModel
+    from zenml.stack import Stack
+
 
 logger = get_logger(__name__)
 
@@ -53,53 +52,42 @@ def generate_artifact_uri(
     )
 
 
-def prepare_output_artifacts(
+def prepare_output_artifact_uris(
     step_run: "StepRunResponseModel", stack: "Stack", step: "Step"
-) -> Dict[str, BaseArtifact]:
-    """Prepares the output artifacts to run the current step.
+) -> Dict[str, str]:
+    """Prepares the output artifact URIs to run the current step.
 
     Args:
-        step_run: The step run for which to prepare the artifacts.
+        step_run: The step run for which to prepare the artifact URIs.
         stack: The stack on which the pipeline is running.
         step: The step configuration.
 
     Raises:
-        RuntimeError: If the artifact URI already exists.
+        RuntimeError: If an artifact URI already exists.
 
     Returns:
-        The output artifacts.
+        A dictionary mapping output names to artifact URIs.
     """
-    output_artifacts: Dict[str, BaseArtifact] = {}
-    for name, artifact_config in step.config.outputs.items():
-        artifact_class: Type[
-            BaseArtifact
-        ] = source_utils.load_and_validate_class(
-            artifact_config.artifact_source, expected_class=BaseArtifact
-        )
+    output_artifact_uris: Dict[str, str] = {}
+    for output_name in step.config.outputs.keys():
         artifact_uri = generate_artifact_uri(
             artifact_store=stack.artifact_store,
             step_run=step_run,
-            output_name=name,
+            output_name=output_name,
         )
         if fileio.exists(artifact_uri):
             raise RuntimeError("Artifact already exists")
         fileio.makedirs(artifact_uri)
-
-        artifact_ = artifact_class(
-            name=name,
-            uri=artifact_uri,
-        )
-        output_artifacts[name] = artifact_
-
-    return output_artifacts
+        output_artifact_uris[output_name] = artifact_uri
+    return output_artifact_uris
 
 
-def remove_artifact_dirs(artifacts: Sequence[BaseArtifact]) -> None:
+def remove_artifact_dirs(artifact_uris: Sequence[str]) -> None:
     """Removes the artifact directories.
 
     Args:
-        artifacts: Artifacts for which to remove the directories.
+        artifact_uris: URIs of the artifacts to remove the directories for.
     """
-    for artifact in artifacts:
-        if fileio.isdir(artifact.uri):
-            fileio.rmtree(artifact.uri)
+    for artifact_uri in artifact_uris:
+        if fileio.isdir(artifact_uri):
+            fileio.rmtree(artifact_uri)

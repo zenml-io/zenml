@@ -16,9 +16,8 @@
 from datetime import datetime
 from typing import TYPE_CHECKING, Dict, List
 
-from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.client import Client
-from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.enums import ExecutionStatus
 from zenml.models.artifact_models import ArtifactRequestModel
 from zenml.models.pipeline_run_models import (
     PipelineRunResponseModel,
@@ -32,9 +31,11 @@ from zenml.models.step_run_models import (
 if TYPE_CHECKING:
     from uuid import UUID
 
+    from zenml.models.artifact_models import ArtifactRequestModel
+
 
 def publish_output_artifacts(
-    output_artifacts: Dict[str, BaseArtifact]
+    output_artifacts: Dict[str, "ArtifactRequestModel"]
 ) -> Dict[str, "UUID"]:
     """Publishes the given output artifacts.
 
@@ -43,41 +44,10 @@ def publish_output_artifacts(
 
     Returns:
         The IDs of the registered output artifacts.
-
-    Raises:
-        ValueError: If an artifact doesn't have a materializer or data type.
     """
     output_artifact_ids = {}
-    for name, artifact_ in output_artifacts.items():
-        if artifact_.materializer is None:
-            raise ValueError(
-                f"No materializer found for Artifact `{name}` of type `{artifact_.data_type}`. "
-                "Please specify a materializer for this artifact "
-                "or implement a materializer for this datatype."
-            )
-        if artifact_.data_type is None:
-            raise ValueError(
-                f"Artifact {name} does not have a data type. "
-                "Please set one before registering."
-            )
-        client = Client()
-        user = client.active_user.id
-        project = client.active_project.id
-        artifact_stores = client.active_stack_model.components.get(
-            StackComponentType.ARTIFACT_STORE
-        )
-        assert artifact_stores is not None  # Every stack has an artifact store.
-        artifact_store_id = artifact_stores[0].id
-        artifact_model = ArtifactRequestModel(
-            name=name,
-            type=artifact_.TYPE_NAME,
-            uri=artifact_.uri,
-            materializer=artifact_.materializer,
-            data_type=artifact_.data_type,
-            user=user,
-            project=project,
-            artifact_store_id=artifact_store_id,
-        )
+    client = Client()
+    for name, artifact_model in output_artifacts.items():
         artifact_response = client.zen_store.create_artifact(artifact_model)
         output_artifact_ids[name] = artifact_response.id
     return output_artifact_ids

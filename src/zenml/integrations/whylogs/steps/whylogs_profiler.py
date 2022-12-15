@@ -26,15 +26,12 @@ from zenml.integrations.whylogs.flavors import WhylogsDataValidatorFlavor
 from zenml.integrations.whylogs.flavors.whylogs_data_validator_flavor import (
     WhylogsDataValidatorSettings,
 )
+from zenml.steps.base_parameters import BaseParameters
 from zenml.steps.base_step import BaseStep
-from zenml.steps.step_interfaces.base_analyzer_step import (
-    BaseAnalyzerParameters,
-    BaseAnalyzerStep,
-)
 from zenml.utils import settings_utils
 
 
-class WhylogsProfilerParameters(BaseAnalyzerParameters):
+class WhylogsProfilerParameters(BaseParameters):
     """Parameters class for the WhylogsProfiler step.
 
     Attributes:
@@ -46,11 +43,11 @@ class WhylogsProfilerParameters(BaseAnalyzerParameters):
     dataset_timestamp: Optional[datetime.datetime]
 
 
-class WhylogsProfilerStep(BaseAnalyzerStep):
+class WhylogsProfilerStep(BaseStep):
     """Generates a whylogs data profile from a given pd.DataFrame."""
 
     @staticmethod
-    def entrypoint(  # type: ignore[override]
+    def entrypoint(
         dataset: pd.DataFrame,
         params: WhylogsProfilerParameters,
     ) -> DatasetProfileView:

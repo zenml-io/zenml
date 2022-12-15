@@ -18,8 +18,6 @@ being one of the nodes of a Directed Acyclic Graph (or DAG). Steps are
 responsible for one aspect of processing or interacting with the data /
 artifacts in the pipeline.
 
-ZenML currently implements a basic step interface, but there will be other more
-customized interfaces (layered in a hierarchy) for specialized implementations.
 Conceptually, a Step is a discrete and independent part of a pipeline that is
 responsible for one particular aspect of data manipulation inside a ZenML
 pipeline.
@@ -37,12 +35,12 @@ from zenml.steps.step_environment import STEP_ENVIRONMENT_NAME, StepEnvironment
 from zenml.steps.step_output import Output
 
 __all__ = [
-    "STEP_ENVIRONMENT_NAME",
+    "step",
     "BaseStep",
     "BaseParameters",
-    "StepContext",
-    "step",
     "Output",
     "ResourceSettings",
+    "StepContext",
     "StepEnvironment",
+    "STEP_ENVIRONMENT_NAME",
 ]

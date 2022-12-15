@@ -11,3 +11,17 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""SQLModel implementation for the server information table."""
+
+
+from uuid import UUID
+
+from sqlmodel import Field, SQLModel
+
+
+class IdentitySchema(SQLModel, table=True):
+    """SQL Model for the client/server identity."""
+
+    __tablename__ = "identity"
+
+    id: UUID = Field(primary_key=True)

@@ -16,6 +16,8 @@
 
 from typing import Optional
 
+from zenml.enums import ArtifactType
+
 
 class BaseArtifact:
     """Base class for all ZenML artifacts.
@@ -24,7 +26,7 @@ class BaseArtifact:
     given a unique TYPE_NAME.
     """
 
-    TYPE_NAME: str = "BaseArtifact"
+    TYPE_NAME: str = ArtifactType.BASE
 
     def __init__(
         self,

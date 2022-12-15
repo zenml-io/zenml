@@ -17,7 +17,6 @@ from typing import Optional, Type, cast
 
 from mlflow.tracking import MlflowClient, artifact_utils
 
-from zenml.artifacts.model_artifact import ModelArtifact
 from zenml.client import Client
 from zenml.constants import DEFAULT_SERVICE_START_STOP_TIMEOUT
 from zenml.environment import Environment
@@ -35,6 +34,7 @@ from zenml.integrations.mlflow.services.mlflow_deployment import (
     MLFlowDeploymentService,
 )
 from zenml.logger import get_logger
+from zenml.materializers import UnmaterializedArtifact
 from zenml.steps import (
     STEP_ENVIRONMENT_NAME,
     BaseParameters,
@@ -73,7 +73,7 @@ class MLFlowDeployerParameters(BaseParameters):
 @step(enable_cache=False)
 def mlflow_model_deployer_step(
     deploy_decision: bool,
-    model: ModelArtifact,
+    model: UnmaterializedArtifact,
     params: MLFlowDeployerParameters,
 ) -> MLFlowDeploymentService:
     """Model deployer pipeline step for MLflow.
