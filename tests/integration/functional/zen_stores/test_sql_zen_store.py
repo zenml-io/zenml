@@ -1383,6 +1383,18 @@ def test_list_artifacts_succeeds(sql_store_with_run):
     assert artifacts[0] == sql_store_with_run["artifact"]
 
 
+def test_list_unused_artifacts(sql_store_with_run):
+    """Tests listing with `unused=True` only returns unused artifacts."""
+    artifacts = sql_store_with_run["store"].list_artifacts()
+    assert len(artifacts) == 2
+    artifacts = sql_store_with_run["store"].list_artifacts(only_unused=True)
+    assert len(artifacts) == 0
+    run_id = sql_store_with_run["pipeline_run"].id
+    sql_store_with_run["store"].delete_run(run_id)
+    artifacts = sql_store_with_run["store"].list_artifacts(only_unused=True)
+    assert len(artifacts) == 2
+
+
 def test_delete_artifact_succeeds(sql_store_with_run):
     """Tests deleting artifact."""
     artifact_id = sql_store_with_run["artifact"].id

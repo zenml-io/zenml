@@ -726,7 +726,7 @@ Since every pipeline run creates a new pipeline by default, you might
 occasionally want to delete a pipeline, which you can do via:
 
 ```bash
-zenml pipeline delete PIPELINE_NAME
+zenml pipeline delete <PIPELINE_NAME>
 ```
 
 This will delete the pipeline and change all corresponding pipeline runs to
@@ -741,7 +741,7 @@ zenml pipeline runs list
 To delete a pipeline run, use:
 
 ```bash
-zenml pipeline runs delete PIPELINE_RUN_NAME_OR_ID
+zenml pipeline runs delete <PIPELINE_RUN_NAME_OR_ID>
 ```
 
 Each pipeline run automatically saves its artifacts in the artifact store. To
@@ -764,7 +764,7 @@ zenml artifact prune
 To delete a specific artifact, use:
 
 ```bash
-zenml artifact delete ARTIFACT_NAME_OR_ID
+zenml artifact delete <ARTIFACT_NAME_OR_ID>
 ```
 
 Managing the local ZenML Dashboard
