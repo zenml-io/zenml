@@ -60,7 +60,6 @@ class SagemakerOrchestrator(BaseOrchestrator):
         Returns:
             The orchestrator run id.
         """
-        print(os.environ)
         try:
             return os.environ[ENV_ZENML_SAGEMAKER_RUN_ID]
         except KeyError:
@@ -98,6 +97,7 @@ class SagemakerOrchestrator(BaseOrchestrator):
         Returns:
             A unique run id.
         """
+        # TODO: get this from sagemaker itself
         return str(deployment.pipeline_id) + self._get_timestamp()
 
     @property
@@ -135,24 +135,17 @@ class SagemakerOrchestrator(BaseOrchestrator):
             )
             entrypoint = command + arguments
 
-            settings = cast(
+            step_settings = cast(
                 SagemakerOrchestratorSettings, self.get_settings(step)
             )
-
-            instance_count = settings.instance_count or 1
-            instance_type = (
-                settings.instance_type or self.config.default_instance_type
-            )
-            execution_role = settings.execution_role or execution_role
-            volume_size_in_gb = settings.volume_size_in_gb or 30
-            max_runtime_in_seconds = settings.max_runtime_in_seconds or 86400
+            execution_role = step_settings.execution_role or execution_role
 
             processor = sagemaker.processing.Processor(
                 role=execution_role,
                 image_uri=image_name,
-                instance_count=instance_count,
+                instance_count=step_settings.instance_count,
                 sagemaker_session=session,
-                instance_type=instance_type,
+                instance_type=step_settings.instance_type,
                 entrypoint=entrypoint,
                 base_job_name=deployment.run_name,
                 env={
@@ -160,8 +153,8 @@ class SagemakerOrchestrator(BaseOrchestrator):
                         deployment=deployment
                     )
                 },
-                volume_size_in_gb=volume_size_in_gb,
-                max_runtime_in_seconds=max_runtime_in_seconds,
+                volume_size_in_gb=step_settings.volume_size_in_gb,
+                max_runtime_in_seconds=step_settings.max_runtime_in_seconds,
             )
 
             sagemaker_step = ProcessingStep(

@@ -27,11 +27,11 @@ if TYPE_CHECKING:
 class SagemakerOrchestratorSettings(BaseSettings):
     """Settings for the Sagemaker orchestrator."""
 
-    instance_type: Optional[str] = None
+    instance_type: str = "ml.t3.medium"
+    instance_count: Optional[int] = 1
     execution_role: Optional[str] = None
-    instance_count: Optional[int] = None
-    volume_size_in_gb: Optional[int] = None
-    max_runtime_in_seconds: Optional[int] = None
+    volume_size_in_gb: Optional[int] = 30
+    max_runtime_in_seconds: Optional[int] = 86400
 
 
 class SagemakerOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
@@ -39,14 +39,12 @@ class SagemakerOrchestratorConfig(  # type: ignore[misc] # https://github.com/py
 ):
     """Config for the Sagemaker orchestrator.
     Attributes:
-        default_instance_type: The instance type to use for the processing job.
+        processor_role: IAM role to use for the processing job.
         bucket: Name of the S3 bucket to use for storing artifacts
             from the job run. If not provided, a default bucket will be created
             based on the following format: "sagemaker-{region}-{aws-account-id}".
     """
 
-    # 'ml.t3.medium' is the default instance for Sagemaker processing jobs
-    default_instance_type: str = "ml.t3.medium"
     processor_role: Optional[str] = None
     bucket: Optional[str] = None
 
