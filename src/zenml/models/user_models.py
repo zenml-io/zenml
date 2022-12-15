@@ -197,7 +197,6 @@ class UserResponseModel(UserBaseModel, BaseResponseModel):
     """
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
-        "id",
         "name",
         "full_name",
         "active",
