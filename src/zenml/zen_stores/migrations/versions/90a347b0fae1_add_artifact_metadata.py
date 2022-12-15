@@ -1,7 +1,7 @@
 """Add Artifact Metadata [90a347b0fae1].
 
 Revision ID: 90a347b0fae1
-Revises: 7834208cc3f6
+Revises: 7e4a481d17f7
 Create Date: 2022-12-07 12:01:30.001826
 
 """
@@ -10,7 +10,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "90a347b0fae1"
-down_revision = "7834208cc3f6"
+down_revision = "7e4a481d17f7"
 branch_labels = None
 depends_on = None
 
