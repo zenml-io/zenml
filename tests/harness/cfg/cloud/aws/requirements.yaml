@@ -7,7 +7,7 @@ requirements:
     capabilities:
       secrets-scoping: true
     stacks:
-      - name: aws-zenfiles
+      - name: aws-ci-store
         type: artifact_store
         flavor: s3
         external: true
@@ -35,7 +35,7 @@ requirements:
     capabilities:
       synchronized: true
     stacks:
-      - name: aws-kubeflow-zenhacks
+      - name: aws-us-east-1-kubeflow
         type: orchestrator
         flavor: kubeflow
         containerized: true
@@ -51,7 +51,7 @@ requirements:
     capabilities:
       synchronized: true
     stacks:
-      - name: aws-kubernetes-zenhacks
+      - name: aws-us-east-1-kubernetes
         type: orchestrator
         flavor: kubernetes
         containerized: true
@@ -67,7 +67,7 @@ requirements:
     capabilities:
       synchronized: true
     stacks:
-      - name: aws-tekton-zenhacks
+      - name: aws-us-east-1-tekton
         type: orchestrator
         flavor: tekton
         containerized: true
@@ -77,7 +77,7 @@ requirements:
     description: >-
       MLFlow deployed in an EKS cluster in the us-east-1 region.
     stacks:          
-      - name: aws-mlflow-us-east-1
+      - name: aws-us-east-1-mlflow
         type: experiment_tracker
         flavor: mlflow
         external: true
@@ -88,7 +88,17 @@ requirements:
     system_tools:
       - kubectl
     stacks:
-      - name: aws-seldon-zenhacks
+      - name: aws-us-east-1-seldon
+        type: model_deployer
+        flavor: seldon
+        external: true
+  - name: aws-us-east-1-kserve-provision
+    description: >-
+      EKS cluster in the us-east-1 region that provides Kserve.
+    system_tools:
+      - kubectl
+    stacks:
+      - name: aws-us-east-1-seldon
         type: model_deployer
         flavor: seldon
         external: true

@@ -230,7 +230,7 @@ jobs:
       - name: Login to Amazon EKS
         id: login-eks
         run: |
-          aws eks --region us-east-1 update-kubeconfig --name zenhacks-cluster --alias zenml-eks
+          aws eks --region us-east-1 update-kubeconfig --name zenml-ci-cluster --alias zenml-ci-aws-us-east-1
         if: contains(inputs.test_environment, 'aws')
 
       - name: Setup tmate session before tests
