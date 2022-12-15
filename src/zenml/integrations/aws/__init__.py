@@ -34,14 +34,10 @@ class AWSIntegration(Integration):
     """Definition of AWS integration for ZenML."""
 
     NAME = AWS
-    # We need to pin protobuf to a version <=4 here, as this sagemaker release
-    # does not pin it. They fixed this in a later version, so we can probably
-    # remove this once we update the sagemaker version.
     REQUIREMENTS = [
         "boto3==1.26.26",
         "botocore==1.29.26",
         "sagemaker==2.121.1",
-        "protobuf>=3.1,<4.0.0",
     ]
 
     @classmethod
