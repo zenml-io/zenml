@@ -14,7 +14,7 @@
 """Implementation of the PyTorch DataLoader materializer."""
 
 import os
-from typing import Any, Type, cast
+from typing import Any, Type
 
 import torch
 from torch.utils.data.dataloader import DataLoader
@@ -33,7 +33,7 @@ class PyTorchDataLoaderMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (DataLoader,)
     ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
 
-    def handle_input(self, data_type: Type[Any]) -> DataLoader[Any]:
+    def handle_input(self, data_type: Type[Any]) -> Any:
         """Reads and returns a PyTorch dataloader.
 
         Args:
@@ -46,9 +46,9 @@ class PyTorchDataLoaderMaterializer(BaseMaterializer):
         with fileio.open(
             os.path.join(self.artifact.uri, DEFAULT_FILENAME), "rb"
         ) as f:
-            return cast(DataLoader[Any], torch.load(f))
+            return torch.load(f)
 
-    def handle_return(self, dataloader: DataLoader[Any]) -> None:
+    def handle_return(self, dataloader: Any) -> None:
         """Writes a PyTorch dataloader.
 
         Args:
