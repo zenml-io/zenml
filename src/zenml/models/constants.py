@@ -17,7 +17,7 @@
 MODEL_NAME_FIELD_MAX_LENGTH = 255
 # The maximum length of description string fields in models.
 MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH = 300
-# The maximum length of an URI string field in models.
+# The maximum length of a URI string field in models.
 MODEL_URI_FIELD_MAX_LENGTH = 1000
 # The maximum length of a metadata field in models.
 MODEL_METADATA_FIELD_MAX_LENGTH = 200

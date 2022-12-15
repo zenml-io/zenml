@@ -62,14 +62,7 @@ class ComponentBaseModel(BaseModel):
 class ComponentResponseModel(ComponentBaseModel, ShareableResponseModel):
     """Response model for stack components."""
 
-    ANALYTICS_FIELDS: ClassVar[List[str]] = [
-        "id",
-        "type",
-        "flavor",
-        "project",
-        "user",
-        "is_shared",
-    ]
+    ANALYTICS_FIELDS: ClassVar[List[str]] = ["type", "flavor"]
 
 
 # ------- #
@@ -80,13 +73,7 @@ class ComponentResponseModel(ComponentBaseModel, ShareableResponseModel):
 class ComponentRequestModel(ComponentBaseModel, ShareableRequestModel):
     """Request model for stack components."""
 
-    ANALYTICS_FIELDS: ClassVar[List[str]] = [
-        "type",
-        "flavor",
-        "project",
-        "user",
-        "is_shared",
-    ]
+    ANALYTICS_FIELDS: ClassVar[List[str]] = ["type", "flavor"]
 
     @validator("name")
     def name_cant_be_a_secret_reference(cls, name: str) -> str:
