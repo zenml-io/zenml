@@ -2403,7 +2403,7 @@ class Client(metaclass=ClientMetaClass):
             )
 
             if "project" in response_model.__fields__:
-                entities: List[AnyResponseModel] = list_method(
+                entities = list_method(
                     project_name_or_id=self.active_project.id,
                 )
             else:
