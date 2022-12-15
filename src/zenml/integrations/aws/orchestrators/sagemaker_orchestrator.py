@@ -114,6 +114,10 @@ class SagemakerOrchestrator(BaseOrchestrator):
                 "and the pipeline will be run immediately."
             )
 
+        orchestrator_run_name = get_orchestrator_run_name(
+            pipeline_name=deployment.pipeline.name
+        ).replace("_", "-")
+
         session = sagemaker.Session(default_bucket=self.config.bucket)
         image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
         execution_role = (
@@ -140,7 +144,7 @@ class SagemakerOrchestrator(BaseOrchestrator):
                 sagemaker_session=session,
                 instance_type=step_settings.instance_type,
                 entrypoint=entrypoint,
-                base_job_name=deployment.run_name,
+                base_job_name=orchestrator_run_name,
                 env={
                     ENV_ZENML_SAGEMAKER_RUN_ID: ExecutionVariables.PIPELINE_EXECUTION_ARN,
                 },
@@ -154,10 +158,6 @@ class SagemakerOrchestrator(BaseOrchestrator):
                 depends_on=step.spec.upstream_steps,
             )
             sagemaker_steps.append(sagemaker_step)
-
-        orchestrator_run_name = get_orchestrator_run_name(
-            pipeline_name=deployment.pipeline.name
-        ).replace("_", "-")
 
         # construct the pipeline from the sagemaker_steps
         pipeline = Pipeline(
