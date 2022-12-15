@@ -64,8 +64,6 @@ requirements:
     system_tools:
       - docker
       - kubectl
-    capabilities:
-      synchronized: true
     stacks:
       - name: aws-us-east-1-tekton
         type: orchestrator
@@ -92,13 +90,14 @@ requirements:
         type: model_deployer
         flavor: seldon
         external: true
-  - name: aws-us-east-1-kserve-provision
+
+  - name: aws-us-east-1-kserve
     description: >-
       EKS cluster in the us-east-1 region that provides Kserve.
     system_tools:
       - kubectl
     stacks:
-      - name: aws-us-east-1-seldon
+      - name: aws-us-east-1-kserve
         type: model_deployer
-        flavor: seldon
+        flavor: kserve
         external: true
