@@ -234,7 +234,7 @@ class StepRunner:
         """
         # Skip materialization for `UnmaterializedArtifact`.
         if data_type == UnmaterializedArtifact:
-            return UnmaterializedArtifact.parse_obj(artifact.dict())
+            return UnmaterializedArtifact.parse_obj(artifact)
 
         # Skip materialization for `BaseArtifact` and its subtypes.
         if issubclass(data_type, BaseArtifact):
