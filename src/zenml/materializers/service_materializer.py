@@ -14,7 +14,7 @@
 """Implementation of a materializer to read and write ZenML service instances."""
 
 import os
-from typing import Any, Type
+from typing import Any, Dict, Type
 
 from zenml.artifacts import ServiceArtifact
 from zenml.io import fileio
@@ -62,3 +62,18 @@ class ServiceMaterializer(BaseMaterializer):
         filepath = os.path.join(self.artifact.uri, SERVICE_CONFIG_FILENAME)
         with fileio.open(filepath, "w") as f:
             f.write(service.json(indent=4))
+
+    def extract_metadata(self, service: BaseService) -> Dict[str, str]:
+        """Extract metadata from the given service.
+
+        Args:
+            service: The service to extract metadata from.
+
+        Returns:
+            The extracted metadata as a dictionary.
+        """
+        base_metadata = super().extract_metadata(service)
+        service_metadata = {}
+        if service.endpoint and service.endpoint.status.uri:
+            service_metadata["uri"] = service.endpoint.status.uri
+        return {**base_metadata, **service_metadata}
