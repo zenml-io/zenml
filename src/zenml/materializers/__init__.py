@@ -27,6 +27,7 @@ from zenml.materializers.built_in_materializer import (
 from zenml.materializers.numpy_materializer import NumpyMaterializer
 from zenml.materializers.pandas_materializer import PandasMaterializer
 from zenml.materializers.service_materializer import ServiceMaterializer
+from zenml.materializers.unmaterialized_artifact import UnmaterializedArtifact
 
 __all__ = [
     "BuiltInContainerMaterializer",
@@ -35,4 +36,5 @@ __all__ = [
     "NumpyMaterializer",
     "PandasMaterializer",
     "ServiceMaterializer",
+    "UnmaterializedArtifact",
 ]

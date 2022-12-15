@@ -60,7 +60,7 @@ example.
 You should install the relevant integrations:
 
 ```shell
-zenml integration install label_studio pytorch azure
+zenml integration install label_studio pytorch azure pillow
 ```
 
 For this example we also need to upgrade the `torchvision` dependency, so please
@@ -107,7 +107,7 @@ running on a default port of 8093.
 You should install the relevant integrations:
 
 ```shell
-zenml integration install label_studio pytorch gcp
+zenml integration install label_studio pytorch gcp pillow
 ```
 
 This setup guide assumes that you have installed and are able to use the
@@ -165,7 +165,7 @@ running on a default port of 8093.
 You should install the relevant integrations:
 
 ```shell
-zenml integration install label_studio pytorch s3
+zenml integration install label_studio pytorch s3 pillow
 ```
 
 Create your basic S3 bucket via CLI command:

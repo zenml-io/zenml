@@ -17,7 +17,6 @@ import time
 from datetime import datetime
 from typing import TYPE_CHECKING, Dict, Tuple
 
-from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.client import Client
 from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
@@ -44,6 +43,7 @@ from zenml.utils import string_utils
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
+    from zenml.models.artifact_models import ArtifactResponseModel
     from zenml.step_operators import BaseStepOperator
 
 logger = get_logger(__name__)
@@ -298,10 +298,8 @@ class StepLauncher:
             run_id=pipeline_run.id,
             step_run_id=step_run.id,
         )
-        input_artifacts = input_utils.prepare_input_artifacts(
-            input_artifact_models=step_run.input_artifacts,
-        )
-        output_artifacts = output_utils.prepare_output_artifacts(
+
+        output_artifact_uris = output_utils.prepare_output_artifact_uris(
             step_run=step_run, stack=self._stack, step=self._step
         )
 
@@ -316,12 +314,12 @@ class StepLauncher:
             else:
                 self._run_step_without_step_operator(
                     step_run_info=step_run_info,
-                    input_artifacts=input_artifacts,
-                    output_artifacts=output_artifacts,
+                    input_artifacts=step_run.input_artifacts,
+                    output_artifact_uris=output_artifact_uris,
                 )
         except:  # noqa: E722
             output_utils.remove_artifact_dirs(
-                artifacts=list(output_artifacts.values())
+                artifact_uris=list(output_artifact_uris.values())
             )
             raise
 
@@ -370,19 +368,19 @@ class StepLauncher:
     def _run_step_without_step_operator(
         self,
         step_run_info: StepRunInfo,
-        input_artifacts: Dict[str, BaseArtifact],
-        output_artifacts: Dict[str, BaseArtifact],
+        input_artifacts: Dict[str, "ArtifactResponseModel"],
+        output_artifact_uris: Dict[str, str],
     ) -> None:
         """Runs the current step without a step operator.
 
         Args:
             step_run_info: Additional information needed to run the step.
             input_artifacts: The input artifacts of the current step.
-            output_artifacts: The output artifacts of the current step.
+            output_artifact_uris: The output artifact URIs of the current step.
         """
         runner = StepRunner(step=self._step, stack=self._stack)
         runner.run(
             input_artifacts=input_artifacts,
-            output_artifacts=output_artifacts,
+            output_artifact_uris=output_artifact_uris,
             step_run_info=step_run_info,
         )

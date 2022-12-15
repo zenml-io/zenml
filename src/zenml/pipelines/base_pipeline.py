@@ -396,13 +396,10 @@ class BasePipeline(metaclass=BasePipelineMeta):
             the metadata about the pipeline deployment
         """
         custom_materializer = False
-        custom_artifact = False
         for step in deployment.steps.values():
             for output in step.config.outputs.values():
                 if not output.materializer_source.startswith("zenml."):
                     custom_materializer = True
-                if not output.artifact_source.startswith("zenml."):
-                    custom_artifact = True
 
         stack_metadata = {
             component_type.value: component.flavor
@@ -414,7 +411,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
             "total_steps": len(self.steps),
             "schedule": bool(deployment.schedule),
             "custom_materializer": custom_materializer,
-            "custom_artifact": custom_artifact,
         }
 
     def run(

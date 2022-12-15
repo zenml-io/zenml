@@ -14,12 +14,12 @@
 """Implementation of the PyTorch DataLoader materializer."""
 
 import os
-from typing import Any, Type, cast
+from typing import Any, Type
 
 import torch
 from torch.utils.data.dataloader import DataLoader
 
-from zenml.artifacts import DataArtifact
+from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 
@@ -31,9 +31,9 @@ class PyTorchDataLoaderMaterializer(BaseMaterializer):
     """Materializer to read/write PyTorch dataloaders."""
 
     ASSOCIATED_TYPES = (DataLoader,)
-    ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
 
-    def handle_input(self, data_type: Type[Any]) -> DataLoader[Any]:
+    def load(self, data_type: Type[Any]) -> Any:
         """Reads and returns a PyTorch dataloader.
 
         Args:
@@ -42,22 +42,18 @@ class PyTorchDataLoaderMaterializer(BaseMaterializer):
         Returns:
             A loaded PyTorch dataloader.
         """
-        super().handle_input(data_type)
-        with fileio.open(
-            os.path.join(self.artifact.uri, DEFAULT_FILENAME), "rb"
-        ) as f:
-            return cast(DataLoader[Any], torch.load(f))
+        super().load(data_type)
+        with fileio.open(os.path.join(self.uri, DEFAULT_FILENAME), "rb") as f:
+            return torch.load(f)
 
-    def handle_return(self, dataloader: DataLoader[Any]) -> None:
+    def save(self, dataloader: Any) -> None:
         """Writes a PyTorch dataloader.
 
         Args:
             dataloader: A torch.utils.DataLoader or a dict to pass into dataloader.save
         """
-        super().handle_return(dataloader)
+        super().save(dataloader)
 
         # Save entire dataloader to artifact directory
-        with fileio.open(
-            os.path.join(self.artifact.uri, DEFAULT_FILENAME), "wb"
-        ) as f:
+        with fileio.open(os.path.join(self.uri, DEFAULT_FILENAME), "wb") as f:
             torch.save(dataloader, f)

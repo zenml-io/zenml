@@ -30,7 +30,7 @@ from sklearn.base import (
     TransformerMixin,
 )
 
-from zenml.artifacts import ModelArtifact
+from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 
@@ -52,9 +52,9 @@ class SklearnMaterializer(BaseMaterializer):
         DensityMixin,
         TransformerMixin,
     )
-    ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
 
-    def handle_input(
+    def load(
         self, data_type: Type[Any]
     ) -> Union[
         BaseEstimator,
@@ -76,13 +76,13 @@ class SklearnMaterializer(BaseMaterializer):
         Returns:
             The model.
         """
-        super().handle_input(data_type)
-        filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
+        super().load(data_type)
+        filepath = os.path.join(self.uri, DEFAULT_FILENAME)
         with fileio.open(filepath, "rb") as fid:
             clf = pickle.load(fid)
         return clf
 
-    def handle_return(
+    def save(
         self,
         clf: Union[
             BaseEstimator,
@@ -102,7 +102,7 @@ class SklearnMaterializer(BaseMaterializer):
         Args:
             clf: A sklearn model.
         """
-        super().handle_return(clf)
-        filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
+        super().save(clf)
+        filepath = os.path.join(self.uri, DEFAULT_FILENAME)
         with fileio.open(filepath, "wb") as fid:
             pickle.dump(clf, fid)

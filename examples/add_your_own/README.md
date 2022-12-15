@@ -23,11 +23,11 @@ to materialize, we have a minimal pipeline that shows a step that produces this
 object and a step that consumes the
 object.
 
-  ```python
+```python
 from typing import Type
 import os
 
-from zenml.artifacts import DataArtifact
+from zenml.enums import ArtifactType
 from zenml.steps import step
 from zenml.pipelines import pipeline
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -41,19 +41,19 @@ class MyObj:
 
 class MyMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (MyObj,)
-    ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
 
-    def handle_input(self, data_type: Type[MyObj]) -> MyObj:
+    def load(self, data_type: Type[MyObj]) -> MyObj:
         """Read from artifact store"""
-        super().handle_input(data_type)
-        with fileio.open(os.path.join(self.artifact.uri, "data.txt"), "r") as f:
+        super().load(data_type)
+        with fileio.open(os.path.join(self.uri, "data.txt"), "r") as f:
             name = f.read()
         return MyObj(name=name)
 
-    def handle_return(self, my_obj: MyObj) -> None:
+    def save(self, my_obj: MyObj) -> None:
         """Write to artifact store"""
-        super().handle_return(my_obj)
-        with fileio.open(os.path.join(self.artifact.uri, "data.txt"), "w") as f:
+        super().save(my_obj)
+        with fileio.open(os.path.join(self.uri, "data.txt"), "w") as f:
             f.write(my_obj.name)
 
 
@@ -76,7 +76,7 @@ if __name__ == "__main__":
     pipe(
         step1=step1().with_return_materializers(MyMaterializer), step2=step2()
     ).run()
-  ```
+```
 
 ## 📰 Write the Readme
 
