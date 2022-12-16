@@ -362,6 +362,8 @@ class GitStackRecipesHandler(object):
                 raise KeyError(
                     f"Stack recipe {stack_recipe_name} does not exist! "
                     f"Available Stack Recipes: {list(stack_recipe_dict)}"
+                    "If you want to deploy a custom stack recipe available "
+                    "locally, please use the `--skip-pull` flag."
                 )
         else:
             return self.stack_recipes
