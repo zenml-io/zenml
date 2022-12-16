@@ -27,6 +27,7 @@ requirements:
       - name: aws-us-east-1-sagemaker
         type: step_operator
         flavor: sagemaker
+        containerized: true
         external: true
 
   - name: aws-us-east-1-ecr

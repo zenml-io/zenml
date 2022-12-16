@@ -1,10 +1,10 @@
 deployments:
-  - name: gcp-europe-west-3-server
+  - name: gcp-europe-west3-server
     type: server
     setup: external
     config:
-      url: "{{GCP_EUROPE_WEST_3_SERVER_URL}}"
-      username: "{{GCP_EUROPE_WEST_3_SERVER_USERNAME}}"
-      password: "{{GCP_EUROPE_WEST_3_SERVER_PASSWORD}}"
+      url: "{{GCP_EUROPE_WEST3_SERVER_URL}}"
+      username: "{{GCP_EUROPE_WEST3_SERVER_USERNAME}}"
+      password: "{{GCP_EUROPE_WEST3_SERVER_PASSWORD}}"
     capabilities:
       server: true

@@ -167,3 +167,14 @@ tests:
           - pytorch
         packages:
           - torchvision
+
+  - module: tests.integration.examples.test_step_operator_remote_training
+    requirements:
+      - integrations:
+          - sklearn
+        packages:
+          - torchvision
+        stacks:
+          - type: step_operator
+      - capabilities:
+          synchronized: true

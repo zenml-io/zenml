@@ -95,7 +95,7 @@ def run_example(
     now = datetime.utcnow()
 
     # Run the example
-    example = LocalExample(name=name, path=dst_dir)
+    example = LocalExample(name=name, path=dst_dir, skip_manual_check=True)
     example.run_example_directly(*args)
 
     runs: List[PipelineRunView] = []

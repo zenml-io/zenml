@@ -126,9 +126,9 @@ jobs:
       AWS_US_EAST_1_SERVER_URL: ${{ secrets.AWS_US_EAST_1_SERVER_URL }}
       AWS_US_EAST_1_SERVER_USERNAME: ${{ secrets.AWS_US_EAST_1_SERVER_USERNAME }}
       AWS_US_EAST_1_SERVER_PASSWORD: ${{ secrets.AWS_US_EAST_1_SERVER_PASSWORD }}
-      GCP_EUROPE_WEST_3_SERVER_URL: ${{ secrets.GCP_EUROPE_WEST_3_SERVER_URL }}
-      GCP_EUROPE_WEST_3_SERVER_USERNAME: ${{ secrets.GCP_EUROPE_WEST_3_SERVER_USERNAME }}
-      GCP_EUROPE_WEST_3_SERVER_PASSWORD: ${{ secrets.GCP_EUROPE_WEST_3_SERVER_PASSWORD }}
+      GCP_EUROPE_WEST3_SERVER_URL: ${{ secrets.GCP_EUROPE_WEST3_SERVER_URL }}
+      GCP_EUROPE_WEST3_SERVER_USERNAME: ${{ secrets.GCP_EUROPE_WEST3_SERVER_USERNAME }}
+      GCP_EUROPE_WEST3_SERVER_PASSWORD: ${{ secrets.GCP_EUROPE_WEST3_SERVER_PASSWORD }}
 
     defaults:
       run:
@@ -163,7 +163,7 @@ jobs:
       - name: Configure GCP credentials
         uses: 'google-github-actions/auth@v1'
         with:
-          credentials_json: '${{ secrets.GCP_EUROPE_WEST_3_ENV_CREDENTIALS }}'
+          credentials_json: '${{ secrets.GCP_EUROPE_WEST3_ENV_CREDENTIALS }}'
         if: contains(inputs.test_environment, 'gcp')
 
       - name: 'Set up gcloud SDK'

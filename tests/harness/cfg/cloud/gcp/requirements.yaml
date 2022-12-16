@@ -1,8 +1,8 @@
 requirements:
 
-  - name: gcp-europe-west-3-cloud
+  - name: gcp-europe-west3-cloud
     description: >-
-      GCP environment in the europe-west-3 region with access to a GCS bucket
+      GCP environment in the europe-west3 region with access to a GCS bucket
       and a GCP Secrets Manager.
     capabilities:
       secrets-scoping: true
@@ -12,62 +12,66 @@ requirements:
         flavor: gcp
         external: true
 
-      - name: gcp-europe-west-3
+      - name: gcp-europe-west3
         type: secrets_manager
         flavor: gcp
         external: true
 
-  - name: gcp-europe-west-3-vertex-ai-op
+  - name: gcp-europe-west3-vertex-ai-op
     description: >-
-      GCP environment in the europe-west-3 region that provides a Vertex AI step
+      GCP environment in the europe-west3 region that provides a Vertex AI step
       operator.
     system_tools:
       - docker
     stacks:
-      - name: gcp-europe-west-3-vertex-ai
+      - name: gcp-europe-west3-vertex-ai
         type: step_operator
         flavor: vertex
+        containerized: true
         external: true
 
-  - name: gcp-europe-west-3-vertex-ai-orch
+  - name: gcp-europe-west3-vertex-ai-orch
     description: >-
-      GCP environment in the europe-west-3 region that provides a Vertex AI
+      GCP environment in the europe-west3 region that provides a Vertex AI
       orchestrator.
     system_tools:
       - docker
+    capabilities:
+      synchronized: true
     stacks:
-      - name: gcp-europe-west-3-vertex-ai
+      - name: gcp-europe-west3-vertex-ai
         type: orchestrator
         flavor: vertex
         external: true
+        containerized: true
 
-  - name: gcp-europe-west-3-gcr
+  - name: gcp-europe-west3-gcr
     description: >-
-      GCP environment in the europe-west-3 region with access to a GCR registry.
+      GCP environment in the europe-west3 region with access to a GCR registry.
     stacks:
-      - name: gcr-europe-west-3
+      - name: gcr-europe-west3
         type: container_registry
         flavor: gcp
         external: true
 
-  - name: gcp-europe-west-3-kubeflow
+  - name: gcp-europe-west3-kubeflow
     description: >-
-      GKE cluster in the europe-west-3 region that provides Kubeflow.
+      GKE cluster in the europe-west3 region that provides Kubeflow.
     system_tools:
       - docker
       - kubectl
     capabilities:
       synchronized: true
     stacks:
-      - name: gcp-europe-west-3-kubeflow
+      - name: gcp-europe-west3-kubeflow
         type: orchestrator
         flavor: kubeflow
         containerized: true
         external: true
 
-  - name: gcp-europe-west-3-kubernetes
+  - name: gcp-europe-west3-kubernetes
     description: >-
-      GKE cluster in the europe-west-3 region that can be used as a kubernetes
+      GKE cluster in the europe-west3 region that can be used as a kubernetes
       orchestrator.
     system_tools:
       - docker
@@ -75,53 +79,53 @@ requirements:
     capabilities:
       synchronized: true
     stacks:
-      - name: gcp-europe-west-3-kubernetes
+      - name: gcp-europe-west3-kubernetes
         type: orchestrator
         flavor: kubernetes
         containerized: true
         external: true
 
-  - name: gcp-europe-west-3-tekton
+  - name: gcp-europe-west3-tekton
     description: >-
-      GKE cluster in the europe-west-3 region that can be used as a Tekton
+      GKE cluster in the europe-west3 region that can be used as a Tekton
       orchestrator.
     system_tools:
       - docker
       - kubectl
     stacks:
-      - name: gcp-europe-west-3-tekton
+      - name: gcp-europe-west3-tekton
         type: orchestrator
         flavor: tekton
         containerized: true
         external: true
 
-  - name: gcp-europe-west-3-mlflow
+  - name: gcp-europe-west3-mlflow
     description: >-
-      MLFlow deployed in an GKE cluster in the europe-west-3 region.
+      MLFlow deployed in an GKE cluster in the europe-west3 region.
     stacks: 
-      - name: gcp-europe-west-3-mlflow
+      - name: gcp-europe-west3-mlflow
         type: experiment_tracker
         flavor: mlflow
         external: true
 
-  - name: gcp-europe-west-3-seldon
+  - name: gcp-europe-west3-seldon
     description: >-
-      GKE cluster in the europe-west-3 region that provides Seldon Core.
+      GKE cluster in the europe-west3 region that provides Seldon Core.
     system_tools:
       - kubectl
     stacks:
-      - name: gcp-europe-west-3-seldon
+      - name: gcp-europe-west3-seldon
         type: model_deployer
         flavor: seldon
         external: true
 
-  - name: gcp-europe-west-3-kserve
+  - name: gcp-europe-west3-kserve
     description: >-
-      GKE cluster in the europe-west-3 region that provides Kserve.
+      GKE cluster in the europe-west3 region that provides Kserve.
     system_tools:
       - kubectl
     stacks:
-      - name: gcp-europe-west-3-kserve
+      - name: gcp-europe-west3-kserve
         type: model_deployer
         flavor: kserve
         external: true
