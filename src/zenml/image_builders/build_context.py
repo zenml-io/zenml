@@ -1,0 +1,144 @@
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+"""Image build context."""
+
+
+import os
+from typing import BinaryIO, List, Optional, Tuple
+
+from zenml.io import fileio
+from zenml.logger import get_logger
+from zenml.utils import io_utils, string_utils
+
+logger = get_logger(__name__)
+
+
+class BuildContext:
+    def __init__(
+        self,
+        root: Optional[str] = None,
+        dockerignore_file: Optional[str] = None,
+    ) -> None:
+        self._root = root
+        self._dockerignore_file = dockerignore_file
+        self._extra_files = {}
+
+    @property
+    def dockerignore_file(self) -> Optional[str]:
+        if self._dockerignore_file:
+            return self._dockerignore_file
+
+        default_dockerignore_path = os.path.join(self._root, ".dockerignore")
+        if fileio.exists(default_dockerignore_path):
+            return default_dockerignore_path
+
+        return None
+
+    def add_file(self, destination: str, source: str) -> None:
+        self._extra_files[destination] = source
+
+    def add_directory(self, source: str, destination: str) -> None:
+        if not fileio.isdir(source):
+            raise ValueError()
+
+        for dir, _, files in fileio.walk(source):
+            for file_name in files:
+                file_source = os.path.join(dir, file_name)
+                file_destination = os.path.join(
+                    destination, os.path.relpath(dir, source), file_name
+                )
+
+                with fileio.open(file_source, "r") as f:
+                    self._extra_files[file_destination] = f.read()
+
+    def write_archive(self, output_file: BinaryIO, gzip: bool = True) -> None:
+        from docker.utils import build as docker_build_utils
+
+        files = self._get_files()
+        extra_files = self._get_extra_files()
+
+        context_archive = docker_build_utils.create_archive(
+            fileobj=output_file,
+            root=self._root,
+            files=sorted(files),
+            gzip=gzip,
+            extra_files=extra_files,
+        )
+
+        build_context_size = os.path.getsize(context_archive.name)
+        if build_context_size > 50 * 1024 * 1024 and not self.dockerignore_file:
+            # The build context exceeds 50MiB and we didn't find any excludes
+            # in dockerignore files -> remind to specify a .dockerignore file
+            logger.warning(
+                "Build context size for docker image: `%s`. If you believe this is "
+                "unreasonably large, make sure to include a `.dockerignore` file "
+                "at the root of your build context `%s` or specify a custom file "
+                "in the Docker configuration when defining your pipeline.",
+                string_utils.get_human_readable_filesize(build_context_size),
+                os.path.join(self._root, ".dockerignore"),
+            )
+
+    def _get_files(self) -> List[str]:
+        if self._root:
+            exclude_patterns = self._get_exclude_patterns()
+            from docker.utils import build as docker_build_utils
+
+            return docker_build_utils.exclude_paths(
+                self._root, patterns=exclude_patterns
+            )
+        else:
+            return []
+
+    def _get_extra_files(self) -> List[Tuple[str, str]]:
+        return list(self._extra_files.items())
+
+    def _get_exclude_patterns(self) -> List[str]:
+        dockerignore = self.dockerignore_file
+        if dockerignore:
+            return self._parse_dockerignore(dockerignore)
+        else:
+            logger.info(
+                "No `.dockerignore` found, including all files inside build "
+                "context.",
+            )
+            return []
+
+    @staticmethod
+    def _parse_dockerignore(dockerignore_path: str) -> List[str]:
+        """Parses a dockerignore file and returns a list of patterns to ignore.
+
+        Args:
+            dockerignore_path: Path to the dockerignore file.
+
+        Returns:
+            List of patterns to ignore.
+        """
+        try:
+            file_content = io_utils.read_file_contents_as_string(
+                dockerignore_path
+            )
+        except FileNotFoundError:
+            logger.warning(
+                "Unable to find dockerignore file at path '%s'.",
+                dockerignore_path,
+            )
+            return []
+
+        exclude_patterns = []
+        for line in file_content.split("\n"):
+            line = line.strip()
+            if line and not line.startswith("#"):
+                exclude_patterns.append(line)
+
+        return exclude_patterns

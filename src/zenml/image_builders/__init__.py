@@ -18,6 +18,7 @@ from zenml.image_builders.base_image_builder import (
     BaseImageBuilderConfig,
     BaseImageBuilderFlavor,
 )
+from zenml.image_builders.build_context import BuildContext
 from zenml.image_builders.local_image_builder import (
     LocalImageBuilder,
     LocalImageBuilderConfig,
@@ -31,4 +32,5 @@ __all__ = [
     "LocalImageBuilder",
     "LocalImageBuilderConfig",
     "LocalImageBuilderFlavor",
+    "BuildContext",
 ]

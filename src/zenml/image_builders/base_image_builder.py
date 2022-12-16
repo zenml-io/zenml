@@ -22,6 +22,7 @@ from zenml.stack.stack_component import StackComponentConfig
 
 if TYPE_CHECKING:
     from zenml.container_registries import BaseContainerRegistry
+    from zenml.image_builders import BuildContext
 
 
 class BaseImageBuilderConfig(StackComponentConfig):
@@ -40,13 +41,12 @@ class BaseImageBuilder(StackComponent, ABC):
         """
         return cast(BaseImageBuilderConfig, self._config)
 
-    def build(self, image_name: str, build_context_root: str) -> None:
+    def build(self, image_name: str, build_context: "BuildContext") -> None:
         """Builds an image.
 
         Args:
             image_name: The name of the image to build.
-            build_context_root: The root of the build context to use for the
-                image.
+            build_context: The build context to use for the image.
 
         Raises:
             NotImplementedError: If the image builder does not support the
@@ -61,14 +61,14 @@ class BaseImageBuilder(StackComponent, ABC):
     def build_and_push(
         self,
         image_name: str,
-        build_context_root: str,
+        build_context: "BuildContext",
         container_registry: "BaseContainerRegistry",
     ) -> str:
         """Builds and pushes a Docker image.
 
         Args:
             image_name: Name of the image to build and push.
-            build_context_root: The root of the Docker build context.
+            build_context: The build context to use for the image.
             container_registry: The container registry to push to.
 
         Returns:
