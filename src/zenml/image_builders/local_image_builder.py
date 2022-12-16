@@ -60,6 +60,7 @@ class LocalImageBuilder(BaseImageBuilder):
             )
 
     def build(self, image_name: str, build_context: "BuildContext") -> None:
+        self._check_prerequisites()
         docker_client = DockerClient.from_env()
 
         with tempfile.TemporaryFile(mode="w+b") as f:

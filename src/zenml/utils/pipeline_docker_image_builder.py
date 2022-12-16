@@ -205,8 +205,8 @@ class PipelineDockerImageBuilder:
             build_context = BuildContext(
                 root=docker_settings.build_context_root
             )
-            with open(docker_settings.dockerfile) as f:
-                build_context.add_file("Dockerfile", f.read())
+            build_context.add_file("Dockerfile", docker_settings.dockerfile)
+
             stack.image_builder.build(
                 image_name=user_image_name,
                 build_context=build_context,

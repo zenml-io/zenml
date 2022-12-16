@@ -17,16 +17,8 @@ import json
 import random
 import shutil
 import subprocess
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    BinaryIO,
-    Dict,
-    Optional,
-    Tuple,
-    Type,
-    cast,
-)
+import tempfile
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type, cast
 
 from zenml.config.base_settings import BaseSettings
 from zenml.enums import StackComponentType
@@ -40,6 +32,7 @@ from zenml.stack import StackValidator
 
 if TYPE_CHECKING:
     from zenml.container_registries import BaseContainerRegistry
+    from zenml.image_builders import BuildContext
     from zenml.stack import Stack
 
 
@@ -99,7 +92,7 @@ class KanikoImageBuilder(BaseImageBuilder):
     def build_and_push(
         self,
         image_name: str,
-        build_context: BinaryIO,
+        build_context: "BuildContext",
         container_registry: "BaseContainerRegistry",
     ) -> str:
         """Builds and pushes a Docker image.
@@ -173,14 +166,14 @@ class KanikoImageBuilder(BaseImageBuilder):
         self,
         pod_name: str,
         spec_overrides: Dict[str, Any],
-        build_context: BinaryIO,
+        build_context: "BuildContext",
     ) -> None:
         """Runs the Kaniko build in Kubernetes.
 
         Args:
             pod_name: Name of the Pod that should be created to run the build.
             spec_overrides: Pod spec override values.
-            build_context: Build context archive.
+            build_context: The build context.
 
         Raises:
             RuntimeError: If the process running the Kaniko build failed.
@@ -203,19 +196,21 @@ class KanikoImageBuilder(BaseImageBuilder):
             json.dumps(spec_overrides),
         ]
         logger.debug("Running Kaniko build with command: %s", command)
-        with subprocess.Popen(command, stdin=subprocess.PIPE) as p:
-            with p.stdin:
-                while True:
-                    data = build_context.read(1024)
-                    if not data:
-                        break
+        with tempfile.TemporaryFile(mode="w+b") as f:
+            build_context.write_archive(f, gzip=True)
+            with subprocess.Popen(command, stdin=subprocess.PIPE) as p:
+                with p.stdin:
+                    while True:
+                        data = f.read(1024)
+                        if not data:
+                            break
 
-                    p.stdin.write(data)
-            try:
-                return_code = p.wait()
-            except:
-                p.kill()
-                raise
+                        p.stdin.write(data)
+                try:
+                    return_code = p.wait()
+                except:
+                    p.kill()
+                    raise
 
         if return_code:
             raise RuntimeError(

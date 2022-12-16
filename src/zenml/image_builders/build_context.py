@@ -45,8 +45,12 @@ class BuildContext:
 
         return None
 
-    def add_file(self, destination: str, source: str) -> None:
-        self._extra_files[destination] = source
+    def add_file(self, source: str, destination: str) -> None:
+        if fileio.exists(source):
+            with fileio.open(source) as f:
+                self._extra_files[destination] = f.read()
+        else:
+            self._extra_files[destination] = source
 
     def add_directory(self, source: str, destination: str) -> None:
         if not fileio.isdir(source):
