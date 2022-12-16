@@ -3,7 +3,7 @@ description: How to orchestrate pipelines with Amazon Sagemaker
 ---
 
 The Sagemaker orchestrator is an [orchestrator](./orchestrators.md) flavor provided
-with the ZenML `aws` integration that uses [Amazon Sagemaker](https://aws.amazon.com/sagemaker)
+with the ZenML `aws` integration that uses [Amazon Sagemaker Pipelines](https://sagemaker-examples.readthedocs.io/en/latest/sagemaker-pipelines/index.html)
 to run your pipelines.
 
 {% hint style="warning" %}
