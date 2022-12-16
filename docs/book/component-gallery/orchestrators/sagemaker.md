@@ -42,9 +42,9 @@ will help you set up the infrastructure with one click.
 To use the Sagemaker orchestrator, we need:
 
 * The ZenML `aws` integration installed. If you haven't done so, run 
-    ```shell
-    zenml integration install aws
-    ```
+
+```shell
+zenml integration install aws
 * [Docker](https://www.docker.com) installed and running.
 * [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) installed.
 * A [remote artifact store](../artifact-stores/artifact-stores.md) as part of 
