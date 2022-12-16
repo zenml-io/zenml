@@ -1325,7 +1325,7 @@ class SqlZenStore(BaseZenStore):
         if existing_domain_component is not None:
             # Theoretically the user schema is optional, in this case there is
             #  no way that it will be None
-            assert StackComponentSchema.user
+            assert existing_domain_component.user
             raise StackComponentExistsError(
                 f"Unable to register '{component_type.value}' component "
                 f"with name '{name}': Found an existing "
