@@ -17,6 +17,30 @@ requirements:
         flavor: gcp
         external: true
 
+  - name: gcp-europe-west-3-vertex-ai-op
+    description: >-
+      GCP environment in the europe-west-3 region that provides a Vertex AI step
+      operator.
+    system_tools:
+      - docker
+    stacks:
+      - name: gcp-europe-west-3-vertex-ai
+        type: step_operator
+        flavor: vertex
+        external: true
+
+  - name: gcp-europe-west-3-vertex-ai-orch
+    description: >-
+      GCP environment in the europe-west-3 region that provides a Vertex AI
+      orchestrator.
+    system_tools:
+      - docker
+    stacks:
+      - name: gcp-europe-west-3-vertex-ai
+        type: orchestrator
+        flavor: vertex
+        external: true
+
   - name: gcp-europe-west-3-gcr
     description: >-
       GCP environment in the europe-west-3 region with access to a GCR registry.

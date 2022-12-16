@@ -55,15 +55,18 @@ environments:
   - name: aws-cloud-local-orchestrator
     description: >-
       AWS ZenML server with AWS cloud components (S3 artifact store, ECR
-      container registry, MLflow, Seldon Core, KServe) and local orchestrator.
+      container registry, MLflow, Seldon Core, KServe, Sagemaker step operator)
+      and local orchestrator.
     deployment: aws-us-east-1-server
     requirements:
       - external-data-validators
+      - aws-us-east-1-sagemaker
       - aws-us-east-1-mlflow
       - aws-us-east-1-seldon
       - aws-us-east-1-kserve
     mandatory_requirements:
       - aws-us-east-1-cloud
+      - aws-us-east-1-ecr # needed for the sagemaker step operator
     capabilities:
       synchronized: true
 
@@ -87,11 +90,12 @@ environments:
   - name: aws-cloud-kubeflow-orchestrator
     description: >-
       AWS ZenML server with AWS cloud components (S3 artifact store, ECR
-      container registry, MLflow, Seldon Core, KServe) and remote AWS Kubeflow
-      orchestrator.
+      container registry, MLflow, Seldon Core, KServe, Sagemaker step operator)
+      and remote AWS Kubeflow orchestrator.
     deployment: aws-us-east-1-server
     requirements:
       - external-data-validators
+      - aws-us-east-1-sagemaker
       - aws-us-east-1-mlflow
       - aws-us-east-1-seldon
       - aws-us-east-1-kserve
@@ -103,11 +107,12 @@ environments:
   - name: aws-cloud-kubernetes-orchestrator
     description: >-
       AWS ZenML server with AWS cloud components (S3 artifact store, ECR
-      container registry, MLflow, Seldon Core, KServe) and remote EKS kubernetes
-      orchestrator.
+      container registry, MLflow, Seldon Core, KServe, Sagemaker step operator)
+      and remote EKS kubernetes orchestrator.
     deployment: aws-us-east-1-server
     requirements:
       - external-data-validators
+      - aws-us-east-1-sagemaker
       - aws-us-east-1-mlflow
       - aws-us-east-1-seldon
       - aws-us-east-1-kserve
@@ -119,11 +124,12 @@ environments:
   - name: aws-cloud-tekton-orchestrator
     description: >-
       AWS ZenML server with AWS cloud components (S3 artifact store, ECR
-      container registry, MLflow, Seldon Core, KServe) and remote Tekton
-      orchestrator.
+      container registry, MLflow, Seldon Core, KServe, Sagemaker step operator)
+      and remote Tekton orchestrator.
     deployment: aws-us-east-1-server
     requirements:
       - external-data-validators
+      - aws-us-east-1-sagemaker
       - aws-us-east-1-mlflow
       - aws-us-east-1-seldon
       - aws-us-east-1-kserve

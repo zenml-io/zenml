@@ -88,6 +88,7 @@ on:
           - gcp-cloud-kubeflow-orchestrator
           - gcp-cloud-kubernetes-orchestrator
           - gcp-cloud-tekton-orchestrator
+          - gcp-cloud-vertex-ai-orchestrator
         required: false
         default: 'default'
       enable_tmate:

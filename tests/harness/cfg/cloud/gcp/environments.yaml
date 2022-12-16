@@ -64,15 +64,18 @@ environments:
   - name: gcp-cloud-local-orchestrator
     description: >-
       GCP ZenML server with GCP cloud components (GCS artifact store, GCR
-      container registry, MLflow, Seldon Core, KServe) and local orchestrator.
+      container registry, MLflow, Seldon Core, KServe, Vertex AI step operator)
+      and local orchestrator.
     deployment: gcp-europe-west-3-server
     requirements:
       - external-data-validators
+      - gcp-europe-west-3-vertex-ai-op
       - gcp-europe-west-3-mlflow
       - gcp-europe-west-3-seldon
       - gcp-europe-west-3-kserve
     mandatory_requirements:
       - gcp-europe-west-3-cloud
+      - gcp-europe-west-3-gcr # needed for the Vertex AI step operator
     capabilities:
       synchronized: true
 
@@ -96,11 +99,12 @@ environments:
   - name: gcp-cloud-kubeflow-orchestrator
     description: >-
       GCP ZenML server with GCP cloud components (GCS artifact store, GCR
-      container registry, MLflow, Seldon Core, KServe) and remote GCP Kubeflow
-      orchestrator.
+      container registry, MLflow, Seldon Core, KServe, Vertex AI step operator)
+      and remote GCP Kubeflow orchestrator.
     deployment: gcp-europe-west-3-server
     requirements:
       - external-data-validators
+      - gcp-europe-west-3-vertex-ai-op
       - gcp-europe-west-3-mlflow
       - gcp-europe-west-3-seldon
       - gcp-europe-west-3-kserve
@@ -112,11 +116,12 @@ environments:
   - name: gcp-cloud-kubernetes-orchestrator
     description: >-
       GCP ZenML server with GCP cloud components (GCS artifact store, GCR
-      container registry, MLflow, Seldon Core, KServe) and remote GKE kubernetes
-      orchestrator.
+      container registry, MLflow, Seldon Core, KServe, Vertex AI step operator)
+      and remote GKE kubernetes orchestrator.
     deployment: gcp-europe-west-3-server
     requirements:
       - external-data-validators
+      - gcp-europe-west-3-vertex-ai-op
       - gcp-europe-west-3-mlflow
       - gcp-europe-west-3-seldon
       - gcp-europe-west-3-kserve
@@ -128,11 +133,12 @@ environments:
   - name: gcp-cloud-tekton-orchestrator
     description: >-
       GCP ZenML server with GCP cloud components (GCS artifact store, GCR
-      container registry, MLflow, Seldon Core, KServe) and remote Tekton
-      orchestrator.
+      container registry, MLflow, Seldon Core, KServe, Vertex AI step operator)
+      and remote Tekton orchestrator.
     deployment: gcp-europe-west-3-server
     requirements:
       - external-data-validators
+      - gcp-europe-west-3-vertex-ai-op
       - gcp-europe-west-3-mlflow
       - gcp-europe-west-3-seldon
       - gcp-europe-west-3-kserve
@@ -140,3 +146,20 @@ environments:
       - gcp-europe-west-3-cloud
       - gcp-europe-west-3-gcr
       - gcp-europe-west-3-tekton
+
+  - name: gcp-cloud-vertex-ai-orchestrator
+    description: >-
+      GCP ZenML server with GCP cloud components (GCS artifact store, GCR
+      container registry, MLflow, Seldon Core, KServe, Vertex AI step operator)
+      and Vertex AI orchestrator.
+    deployment: gcp-europe-west-3-server
+    requirements:
+      - external-data-validators
+      - gcp-europe-west-3-vertex-ai-op
+      - gcp-europe-west-3-mlflow
+      - gcp-europe-west-3-seldon
+      - gcp-europe-west-3-kserve
+    mandatory_requirements:
+      - gcp-europe-west-3-cloud
+      - gcp-europe-west-3-gcr
+      - gcp-europe-west-3-vertex-ai-orch

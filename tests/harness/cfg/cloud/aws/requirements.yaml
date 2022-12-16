@@ -17,6 +17,18 @@ requirements:
         flavor: aws
         external: true
 
+  - name: aws-us-east-1-sagemaker
+    description: >-
+      AWS environment in the us-east-1 region that provides a Sagemaker step
+      operator.
+    system_tools:
+      - docker
+    stacks:
+      - name: aws-us-east-1-sagemaker
+        type: step_operator
+        flavor: sagemaker
+        external: true
+
   - name: aws-us-east-1-ecr
     description: >-
       AWS environment in the us-east-1 region with access to an ECR registry.
