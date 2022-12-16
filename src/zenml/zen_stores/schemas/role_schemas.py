@@ -102,7 +102,6 @@ class RoleSchema(NamedSchema, table=True):
                 created=self.created,
                 updated=self.updated,
                 permissions={PermissionType(p.name) for p in self.permissions},
-
             )
 
 

@@ -93,23 +93,43 @@ class StackComponentSchema(ShareableSchema, table=True):
         self.updated = datetime.utcnow()
         return self
 
-    def to_model(self) -> "ComponentResponseModel":
+    def to_model(
+        self, _block_recursion: bool = False
+    ) -> "ComponentResponseModel":
         """Creates a `ComponentModel` from an instance of a `StackSchema`.
+
+        Args:
+            _block_recursion: If other models should be recursively filled
 
         Returns:
             A `ComponentModel`
         """
-        return ComponentResponseModel(
-            id=self.id,
-            name=self.name,
-            type=self.type,
-            flavor=self.flavor,
-            user=self.user.to_model() if self.user else None,
-            project=self.project.to_model(),
-            is_shared=self.is_shared,
-            configuration=json.loads(
-                base64.b64decode(self.configuration).decode()
-            ),
-            created=self.created,
-            updated=self.updated,
-        )
+        if _block_recursion:
+            return ComponentResponseModel(
+                id=self.id,
+                name=self.name,
+                type=self.type,
+                flavor=self.flavor,
+                project=self.project.to_model(),
+                is_shared=self.is_shared,
+                configuration=json.loads(
+                    base64.b64decode(self.configuration).decode()
+                ),
+                created=self.created,
+                updated=self.updated,
+            )
+        else:
+            return ComponentResponseModel(
+                id=self.id,
+                name=self.name,
+                type=self.type,
+                flavor=self.flavor,
+                user=self.user.to_model(_block_recursion=True) if self.user else None,
+                project=self.project.to_model(),
+                is_shared=self.is_shared,
+                configuration=json.loads(
+                    base64.b64decode(self.configuration).decode()
+                ),
+                created=self.created,
+                updated=self.updated,
+            )

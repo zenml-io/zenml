@@ -119,19 +119,40 @@ class StackSchema(ShareableSchema, table=True):
         self.updated = datetime.utcnow()
         return self
 
-    def to_model(self) -> "StackResponseModel":
+    def to_model(self, _block_recursion: bool = False) -> "StackResponseModel":
         """Converts the schema to a model.
+
+        Args:
+            _block_recursion: If other models should be recursively filled
 
         Returns:
             The converted model.
         """
-        return StackResponseModel(
-            id=self.id,
-            name=self.name,
-            user=self.user.to_model() if self.user else None,
-            project=self.project.to_model(),
-            is_shared=self.is_shared,
-            components={c.type: [c.to_model()] for c in self.components},
-            created=self.created,
-            updated=self.updated,
-        )
+
+        if _block_recursion:
+            return StackResponseModel(
+                id=self.id,
+                name=self.name,
+                project=self.project.to_model(),
+                is_shared=self.is_shared,
+                components={
+                    c.type: [c.to_model(_block_recursion=True)]
+                    for c in self.components
+                },
+                created=self.created,
+                updated=self.updated,
+            )
+        else:
+            return StackResponseModel(
+                id=self.id,
+                name=self.name,
+                user=self.user.to_model(_block_recursion=True) if self.user else None,
+                project=self.project.to_model(),
+                is_shared=self.is_shared,
+                components={
+                    c.type: [c.to_model(_block_recursion=True)]
+                    for c in self.components
+                },
+                created=self.created,
+                updated=self.updated,
+            )

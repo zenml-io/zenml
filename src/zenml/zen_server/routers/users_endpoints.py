@@ -31,7 +31,6 @@ from zenml.enums import PermissionType
 from zenml.exceptions import IllegalOperationError, NotAuthorizedError
 from zenml.logger import get_logger
 from zenml.models import (
-    RoleAssignmentRequestModel,
     RoleAssignmentResponseModel,
     UserRequestModel,
     UserResponseModel,

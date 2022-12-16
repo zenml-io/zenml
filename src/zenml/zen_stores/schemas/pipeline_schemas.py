@@ -89,20 +89,18 @@ class PipelineSchema(NamedSchema, table=True):
                 id=self.id,
                 name=self.name,
                 project=self.project.to_model(),
-                user=self.user.to_model() if self.user else None,
                 docstring=self.docstring,
                 spec=PipelineSpec.parse_raw(self.spec),
                 created=self.created,
                 updated=self.updated,
-                status=status_last_x_runs,
             )
         else:
             return PipelineResponseModel(
                 id=self.id,
                 name=self.name,
                 project=self.project.to_model(),
-                user=self.user.to_model() if self.user else None,
-                runs=[r.to_model(True) for r in self.runs],
+                user=self.user.to_model(_block_recursion=True) if self.user else None,
+                runs=[r.to_model(_block_recursion=True) for r in x_runs],
                 docstring=self.docstring,
                 spec=PipelineSpec.parse_raw(self.spec),
                 created=self.created,
