@@ -740,6 +740,12 @@ def pull(
     is_flag=True,
     help="Don't deploy ZenML even if there's no active cloud deployment.",
 )
+@click.option(
+    "--skip-pull",
+    is_flag=True,
+    help="Skip the pull of the stack recipe before deploying. This should be used "
+    "if you have a local copy of your recipe already.",
+)
 @pass_git_stack_recipes_handler
 @click.pass_context
 def deploy(
@@ -752,6 +758,7 @@ def deploy(
     log_level: str,
     skip_check: bool,
     no_server: bool,
+    skip_pull: bool,
     stack_name: Optional[str],
 ) -> None:
     """Run the stack_recipe at the specified relative path.
@@ -776,6 +783,8 @@ def deploy(
             recipe.
         no_server: Don't deploy ZenML even if there's no active cloud
             deployment.
+        skip_pull: Skip the pull of the stack recipe before deploying. This
+            should be used if you have a local copy of your recipe already.
     """
     with event_handler(
         event=AnalyticsEvent.RUN_STACK_RECIPE,
@@ -797,9 +806,12 @@ def deploy(
             )
 
         try:
-            _ = git_stack_recipes_handler.get_stack_recipes(stack_recipe_name)[
-                0
-            ]
+            if skip_pull:
+                pass
+            else:
+                _ = git_stack_recipes_handler.get_stack_recipes(stack_recipe_name)[
+                    0
+                ]
         except KeyError as e:
             cli_utils.error(str(e))
         else:
@@ -809,12 +821,20 @@ def deploy(
             )
 
             if not local_stack_recipe.is_present():
-                ctx.invoke(
-                    pull,
-                    stack_recipe_name=stack_recipe_name,
-                    path=path,
-                    force=force,
-                )
+                if skip_pull:
+                    cli_utils.error(
+                        "You have specified the --skip-pull flag, but the "
+                        "stack recipe is not present locally at the specified "
+                        f"path. Please ensure the {stack_recipe_name} recipe is "
+                        f"present at {stack_recipe_dir} and try again."
+                    )
+                else:
+                    ctx.invoke(
+                        pull,
+                        stack_recipe_name=stack_recipe_name,
+                        path=path,
+                        force=force,
+                    )
 
             try:
                 # warn that prerequisites should be met
