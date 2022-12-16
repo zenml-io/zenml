@@ -97,7 +97,7 @@ For additional configuration of the Sagemaker orchestrator, you can pass
 
 * `instance_type`: The instance type to use for the Sagemaker training job.
   (Defaults to `ml.t3.medium`.)
-* `execution_role: The IAM role to use for the Sagemaker training job.
+* `execution_role`: The IAM role to use for the Sagemaker training job.
 * `volume_size_in_gb`: The size of the volume to use for the Sagemaker training
   job. (Defaults to 30 GB.)
 * `max_runtime_in_seconds`: The maximum runtime of the Sagemaker training job.
