@@ -1,0 +1,142 @@
+# GCP cloud environments.
+#
+# NOTE: to use these locally, you need to authenticate to GCP as follows:
+#
+#  gcloud config set project zenml-ci
+#  gcloud auth configure-docker --project zenml-ci
+#  gcloud container clusters get-credentials zenml-ci-cluster --region europe-west3 --project zenml-ci
+#
+
+environments:
+
+  - name: gcp-local-orchestrator
+    description: >-
+      GCP ZenML server with local orchestrator and all local
+      components.
+    deployment: gcp-europe-west-3-server
+    requirements:
+      - external-data-validators
+      - mlflow-local-tracker
+      - mlflow-local-deployer
+      - local-secrets-manager
+    capabilities:
+      synchronized: true
+
+  - name: gcp-docker-orchestrator
+    description: >-
+      GCP ZenML server with local docker orchestrator and all local
+      components.
+    deployment: gcp-europe-west-3-server
+    requirements:
+      - external-data-validators
+      - mlflow-local-tracker
+      - mlflow-local-deployer
+      - local-secrets-manager
+    mandatory_requirements:
+      - docker-local
+
+  - name: gcp-kubeflow-orchestrator
+    description: >-
+      GCP ZenML server with local kubeflow orchestrator and all
+      local components.
+    deployment: gcp-europe-west-3-server
+    requirements:
+      - external-data-validators
+      - mlflow-local-tracker
+      - mlflow-local-deployer
+      - local-secrets-manager
+    mandatory_requirements:
+      - kubeflow-local
+
+  - name: gcp-airflow-orchestrator
+    description: >-
+      GCP ZenML server with local airflow orchestrator and all
+      local components.
+    deployment: gcp-europe-west-3-server
+    requirements:
+      - external-data-validators
+      - mlflow-local-tracker
+      - mlflow-local-deployer
+      - local-secrets-manager
+    mandatory_requirements:
+      - airflow-local
+
+  - name: gcp-cloud-local-orchestrator
+    description: >-
+      GCP ZenML server with GCP cloud components (GCS artifact store, GCR
+      container registry, MLflow, Seldon Core, KServe) and local orchestrator.
+    deployment: gcp-europe-west-3-server
+    requirements:
+      - external-data-validators
+      - gcp-europe-west-3-mlflow
+      - gcp-europe-west-3-seldon
+      - gcp-europe-west-3-kserve
+    mandatory_requirements:
+      - gcp-europe-west-3-cloud
+    capabilities:
+      synchronized: true
+
+  - name: gcp-cloud-docker-orchestrator
+    description: >-
+      GCP ZenML server with GCP cloud components (GCS artifact store, GCR
+      container registry, MLflow, Seldon Core, KServe) and local docker
+      orchestrator.
+    deployment: gcp-europe-west-3-server
+    requirements:
+      - external-data-validators
+      - gcp-europe-west-3-mlflow
+      - gcp-europe-west-3-seldon
+      - gcp-europe-west-3-kserve
+    mandatory_requirements:
+      - gcp-europe-west-3-cloud
+      - docker-local
+    capabilities:
+      synchronized: true
+
+  - name: gcp-cloud-kubeflow-orchestrator
+    description: >-
+      GCP ZenML server with GCP cloud components (GCS artifact store, GCR
+      container registry, MLflow, Seldon Core, KServe) and remote GCP Kubeflow
+      orchestrator.
+    deployment: gcp-europe-west-3-server
+    requirements:
+      - external-data-validators
+      - gcp-europe-west-3-mlflow
+      - gcp-europe-west-3-seldon
+      - gcp-europe-west-3-kserve
+    mandatory_requirements:
+      - gcp-europe-west-3-cloud
+      - gcp-europe-west-3-gcr
+      - gcp-europe-west-3-kubeflow
+
+  - name: gcp-cloud-kubernetes-orchestrator
+    description: >-
+      GCP ZenML server with GCP cloud components (GCS artifact store, GCR
+      container registry, MLflow, Seldon Core, KServe) and remote GKE kubernetes
+      orchestrator.
+    deployment: gcp-europe-west-3-server
+    requirements:
+      - external-data-validators
+      - gcp-europe-west-3-mlflow
+      - gcp-europe-west-3-seldon
+      - gcp-europe-west-3-kserve
+    mandatory_requirements:
+      - gcp-europe-west-3-cloud
+      - gcp-europe-west-3-gcr
+      - gcp-europe-west-3-kubernetes
+
+  - name: gcp-cloud-tekton-orchestrator
+    description: >-
+      GCP ZenML server with GCP cloud components (GCS artifact store, GCR
+      container registry, MLflow, Seldon Core, KServe) and remote Tekton
+      orchestrator.
+    deployment: gcp-europe-west-3-server
+    requirements:
+      - external-data-validators
+      - gcp-europe-west-3-mlflow
+      - gcp-europe-west-3-seldon
+      - gcp-europe-west-3-kserve
+    mandatory_requirements:
+      - gcp-europe-west-3-cloud
+      - gcp-europe-west-3-gcr
+      - gcp-europe-west-3-tekton

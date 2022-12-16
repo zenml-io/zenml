@@ -77,6 +77,17 @@ on:
           - aws-cloud-kubeflow-orchestrator
           - aws-cloud-kubernetes-orchestrator
           - aws-cloud-tekton-orchestrator
+          # GCP ZenML server deployment with local components
+          - gcp-local-orchestrator
+          - gcp-docker-orchestrator
+          - gcp-kubeflow-orchestrator
+          - gcp-airflow-orchestrator
+          # GCP ZenML server deployment with AWS cloud components
+          - gcp-cloud-local-orchestrator
+          - gcp-cloud-docker-orchestrator
+          - gcp-cloud-kubeflow-orchestrator
+          - gcp-cloud-kubernetes-orchestrator
+          - gcp-cloud-tekton-orchestrator
         required: false
         default: 'default'
       enable_tmate:
@@ -114,6 +125,9 @@ jobs:
       AWS_US_EAST_1_SERVER_URL: ${{ secrets.AWS_US_EAST_1_SERVER_URL }}
       AWS_US_EAST_1_SERVER_USERNAME: ${{ secrets.AWS_US_EAST_1_SERVER_USERNAME }}
       AWS_US_EAST_1_SERVER_PASSWORD: ${{ secrets.AWS_US_EAST_1_SERVER_PASSWORD }}
+      GCP_EUROPE_WEST_3_SERVER_URL: ${{ secrets.GCP_EUROPE_WEST_3_SERVER_URL }}
+      GCP_EUROPE_WEST_3_SERVER_USERNAME: ${{ secrets.GCP_EUROPE_WEST_3_SERVER_USERNAME }}
+      GCP_EUROPE_WEST_3_SERVER_PASSWORD: ${{ secrets.GCP_EUROPE_WEST_3_SERVER_PASSWORD }}
 
     defaults:
       run:
@@ -144,6 +158,18 @@ jobs:
           role-to-assume: ${{ secrets.AWS_US_EAST_1_ENV_ROLE_ARN }}
           aws-region: us-east-1
         if: contains(inputs.test_environment, 'aws')
+
+      - name: Configure GCP credentials
+        uses: 'google-github-actions/auth@v1'
+        with:
+          credentials_json: '${{ secrets.GCP_EUROPE_WEST_3_ENV_CREDENTIALS }}'
+        if: contains(inputs.test_environment, 'gcp')
+
+      - name: 'Set up gcloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v1'
+        with:
+          install_components: 'gke-gcloud-auth-plugin'
+        if: contains(inputs.test_environment, 'gcp')
 
       - name: Setup environment with Poetry
         uses: ./.github/actions/setup_environment
@@ -232,6 +258,19 @@ jobs:
         run: |
           aws eks --region us-east-1 update-kubeconfig --name zenml-ci-cluster --alias zenml-ci-aws-us-east-1
         if: contains(inputs.test_environment, 'aws')
+
+      - name: Login to Google ECR
+        run: |
+          gcloud auth configure-docker --project zenml-ci
+        if: contains(inputs.test_environment, 'gcp')
+
+      - name: Login to Google GKE
+        uses: google-github-actions/get-gke-credentials@v0
+        with:
+          cluster_name: zenml-ci-cluster
+          location: europe-west3
+          project_id: zenml-ci
+        if: contains(inputs.test_environment, 'gcp')
 
       - name: Setup tmate session before tests
         if: ${{ inputs.enable_tmate == 'before-tests' }}
