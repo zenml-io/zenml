@@ -19,7 +19,7 @@ from typing import Any, Type
 from evidently.model_profile import Profile  # type: ignore
 from evidently.utils import NumpyEncoder  # type: ignore
 
-from zenml.artifacts import DataAnalysisArtifact
+from zenml.enums import ArtifactType
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import yaml_utils
@@ -34,9 +34,9 @@ class EvidentlyProfileMaterializer(BaseMaterializer):
     """Materializer to read data to and from an Evidently Profile."""
 
     ASSOCIATED_TYPES = (Profile,)
-    ASSOCIATED_ARTIFACT_TYPES = (DataAnalysisArtifact,)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA_ANALYSIS
 
-    def handle_input(self, data_type: Type[Any]) -> Profile:
+    def load(self, data_type: Type[Any]) -> Profile:
         """Reads an Evidently Profile object from a json file.
 
         Args:
@@ -48,8 +48,8 @@ class EvidentlyProfileMaterializer(BaseMaterializer):
         Raises:
             TypeError: if the json file contains an invalid data type.
         """
-        super().handle_input(data_type)
-        filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
+        super().load(data_type)
+        filepath = os.path.join(self.uri, DEFAULT_FILENAME)
         contents = yaml_utils.read_json(filepath)
         if type(contents) != dict:
             raise TypeError(
@@ -67,13 +67,13 @@ class EvidentlyProfileMaterializer(BaseMaterializer):
 
         return Profile(sections=sections)
 
-    def handle_return(self, data: Profile) -> None:
+    def save(self, data: Profile) -> None:
         """Serialize an Evidently Profile to a json file.
 
         Args:
             data: The Evidently Profile to be serialized.
         """
-        super().handle_return(data)
+        super().save(data)
 
         contents = data.object()
         # include the list of profile sections in the serialized dictionary,
@@ -82,5 +82,5 @@ class EvidentlyProfileMaterializer(BaseMaterializer):
             resolve_class(stage.__class__) for stage in data.stages
         ]
 
-        filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
+        filepath = os.path.join(self.uri, DEFAULT_FILENAME)
         yaml_utils.write_json(filepath, contents, encoder=NumpyEncoder)

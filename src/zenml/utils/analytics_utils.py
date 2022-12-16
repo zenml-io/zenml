@@ -502,7 +502,7 @@ class AnalyticsTrackedModelMixin(BaseModel):
     tracking metadata.
     """
 
-    ANALYTICS_FIELDS: ClassVar[List[str]]
+    ANALYTICS_FIELDS: ClassVar[List[str]] = []
 
     def get_analytics_metadata(self) -> Dict[str, Any]:
         """Get the analytics metadata for the model.

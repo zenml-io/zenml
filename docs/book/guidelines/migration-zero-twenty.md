@@ -593,7 +593,7 @@ once it has been run once. There are now three options to get around this:
 * Pipelines can be deleted and created again.
 * Pipelines can be given unique names each time they are run to uniquely identify them.
 
-**How to migrate**: No code changes, but rather keep in mind the behavior (e.g. in a notebook setting) when quickly [iterating over pipelines as experiments](../starter-guide/pipelines/iterating.md).
+**How to migrate**: No code changes, but rather keep in mind the behavior (e.g. in a notebook setting) when quickly [iterating over pipelines as experiments](../starter-guide/pipelines/parameters-and-caching.md).
 
 ### New post-execution workflow
 

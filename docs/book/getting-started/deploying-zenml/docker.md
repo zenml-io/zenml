@@ -105,17 +105,6 @@ useful in certain scenarios that require mirroring the same ZenML server
 configuration across multiple container instances (e.g. a Kubernetes
 deployment with multiple replicas):
 
-- **ZENML_USER_ID**:
-    This is a UUID value that is used to uniquely identify the server's
-    identity (e.g. in analytics). If not explicitly set, it is generated
-    automatically by the server and stored in the server's global configuration.
-    This should be set to a random UUID value, e.g.:
-
-     ```python
-     from uuid import uuid4
-     print(uuid4())
-     ```
-
 - **ZENML_JWT_SECRET_KEY**:
     This is a secret key used to sign JWT tokens used for authentication. If
     not explicitly set, a random key is generated automatically by the server

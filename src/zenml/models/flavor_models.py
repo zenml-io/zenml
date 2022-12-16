@@ -63,8 +63,6 @@ class FlavorResponseModel(FlavorBaseModel, ProjectScopedResponseModel):
         "id",
         "type",
         "integration",
-        "project",
-        "user",
     ]
 
 
@@ -79,6 +77,4 @@ class FlavorRequestModel(FlavorBaseModel, ProjectScopedRequestModel):
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
         "type",
         "integration",
-        "project",
-        "user",
     ]

@@ -14,29 +14,39 @@
 
 from uuid import UUID
 
-import pytest
-
-from zenml.artifacts.data_artifact import DataArtifact
-from zenml.artifacts.model_artifact import ModelArtifact
+from zenml.enums import ArtifactType
+from zenml.models.artifact_models import ArtifactRequestModel
 from zenml.orchestrators.publish_utils import publish_output_artifacts
 
 
 def test_publish_output_artifacts(clean_client):
     """Test that `register_output_artifacts()` registers new artifacts."""
-    artifact_1 = DataArtifact(
+    artifact_1 = ArtifactRequestModel(
         uri="some/uri/abc/",
         materializer="some_materializer",
         data_type="np.ndarray",
+        type=ArtifactType.DATA,
+        name="some_name",
+        user=clean_client.active_user.id,
+        project=clean_client.active_project.id,
     )
-    artifact_2 = DataArtifact(
+    artifact_2 = ArtifactRequestModel(
         uri="some/uri/def/",
         materializer="some_other_materializer",
         data_type="some data type",
+        type=ArtifactType.DATA,
+        name="some_name",
+        user=clean_client.active_user.id,
+        project=clean_client.active_project.id,
     )
-    artifact_3 = ModelArtifact(
+    artifact_3 = ArtifactRequestModel(
         uri="some/uri/ghi/",
         materializer="some_model_materializer",
         data_type="some model type",
+        type=ArtifactType.MODEL,
+        name="some_name",
+        user=clean_client.active_user.id,
+        project=clean_client.active_project.id,
     )
     assert len(clean_client.zen_store.list_artifacts()) == 0
     return_val = publish_output_artifacts({"output": artifact_1})
@@ -58,23 +68,3 @@ def test_publish_output_artifacts(clean_client):
     assert len(return_val) == 2
     assert isinstance(return_val["arias_data"], UUID)
     assert isinstance(return_val["arias_model"], UUID)
-
-
-def test_publish_output_artifacts_with_incomplete_artifacts(clean_client):
-    """Test that an error is raised if materializer or data type are missing."""
-
-    # data type missing
-    incomplete_artifact = DataArtifact(
-        uri="some/uri/abc/",
-        materializer="some_materializer",
-    )
-    with pytest.raises(ValueError):
-        publish_output_artifacts({"output": incomplete_artifact})
-
-    # materializer missing
-    incomplete_artifact = DataArtifact(
-        uri="some/uri/abc/",
-        data_type="some_data_type",
-    )
-    with pytest.raises(ValueError):
-        publish_output_artifacts({"output": incomplete_artifact})

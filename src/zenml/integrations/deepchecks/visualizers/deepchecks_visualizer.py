@@ -21,7 +21,7 @@ from typing import Any, Union
 from deepchecks.core.check_result import CheckResult
 from deepchecks.core.suite import SuiteResult
 
-from zenml.artifacts import DataAnalysisArtifact
+from zenml.enums import ArtifactType
 from zenml.environment import Environment
 from zenml.logger import get_logger
 from zenml.post_execution import StepView
@@ -44,7 +44,7 @@ class DeepchecksVisualizer(BaseVisualizer):
         """
         for artifact_view in object.outputs.values():
             # filter out anything but data analysis artifacts
-            if artifact_view.type == DataAnalysisArtifact.__name__:
+            if artifact_view.type == ArtifactType.DATA_ANALYSIS:
                 artifact = artifact_view.read()
                 self.generate_report(artifact)
 
