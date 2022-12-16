@@ -1312,6 +1312,7 @@ class SqlZenStore(BaseZenStore):
             StackComponentExistsError: If a component with the given name and
                                        type is already owned by the user
         """
+        assert user_id
         # Check if component with the same domain key (name, type, project,
         # owner) already exists
         existing_domain_component = session.exec(
@@ -1322,6 +1323,9 @@ class SqlZenStore(BaseZenStore):
             .where(StackComponentSchema.type == component_type)
         ).first()
         if existing_domain_component is not None:
+            # Theoretically the user schema is optional, in this case there is
+            #  no way that it will be None
+            assert StackComponentSchema.user
             raise StackComponentExistsError(
                 f"Unable to register '{component_type.value}' component "
                 f"with name '{name}': Found an existing "
