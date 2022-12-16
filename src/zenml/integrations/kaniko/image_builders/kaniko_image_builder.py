@@ -196,21 +196,21 @@ class KanikoImageBuilder(BaseImageBuilder):
             json.dumps(spec_overrides),
         ]
         logger.debug("Running Kaniko build with command: %s", command)
-        with tempfile.TemporaryFile(mode="w+b") as f:
-            build_context.write_archive(f, gzip=True)
-            with subprocess.Popen(command, stdin=subprocess.PIPE) as p:
-                with p.stdin:
+        with subprocess.Popen(command, stdin=subprocess.PIPE) as p:
+            with p.stdin:
+                with tempfile.TemporaryFile(mode="w+b") as f:
+                    build_context.write_archive(f, gzip=True)
                     while True:
                         data = f.read(1024)
                         if not data:
                             break
 
                         p.stdin.write(data)
-                try:
-                    return_code = p.wait()
-                except:
-                    p.kill()
-                    raise
+            try:
+                return_code = p.wait()
+            except:
+                p.kill()
+                raise
 
         if return_code:
             raise RuntimeError(

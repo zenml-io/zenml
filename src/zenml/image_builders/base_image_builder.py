@@ -41,6 +41,12 @@ class BaseImageBuilder(StackComponent, ABC):
         """
         return cast(BaseImageBuilderConfig, self._config)
 
+    @property
+    def build_context_class(self) -> Type["BuildContext"]:
+        from zenml.image_builders import BuildContext
+
+        return BuildContext
+
     def build(self, image_name: str, build_context: "BuildContext") -> None:
         """Builds an image.
 

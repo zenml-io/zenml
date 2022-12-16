@@ -28,7 +28,6 @@ from zenml.constants import (
     ENV_ZENML_CONFIG_PATH,
     ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
 )
-from zenml.image_builders import BuildContext
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 from zenml.utils import docker_utils, io_utils, source_utils
@@ -36,6 +35,7 @@ from zenml.utils import docker_utils, io_utils, source_utils
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.container_registries import BaseContainerRegistry
+    from zenml.image_builders import BuildContext
     from zenml.stack import Stack
 
 logger = get_logger(__name__)
@@ -156,6 +156,9 @@ class PipelineDockerImageBuilder:
                 specified and the Docker configuration doesn't require an
                 image build.
         """
+        assert stack.image_builder
+        build_context_class = stack.image_builder.build_context_class
+
         pipeline_name = deployment.pipeline.name
         docker_settings = (
             deployment.pipeline.docker_settings or DockerSettings()
@@ -202,7 +205,7 @@ class PipelineDockerImageBuilder:
                 # used directly, so we tag it with the requested target name.
                 user_image_name = target_image_name
 
-            build_context = BuildContext(
+            build_context = build_context_class(
                 root=docker_settings.build_context_root
             )
             build_context.add_file("Dockerfile", docker_settings.dockerfile)
@@ -235,7 +238,7 @@ class PipelineDockerImageBuilder:
                 if requires_build_context
                 else None
             )
-            build_context = BuildContext(
+            build_context = build_context_class(
                 root=build_context_root,
                 dockerignore_file=docker_settings.dockerignore,
             )
@@ -256,14 +259,6 @@ class PipelineDockerImageBuilder:
                     ", ".join(f"`{p}`" for p in apt_packages),
                 )
 
-            dockerfile = self._generate_zenml_pipeline_dockerfile(
-                parent_image=parent_image,
-                docker_settings=docker_settings,
-                requirements_files=requirements_file_names,
-                apt_packages=apt_packages,
-                entrypoint=entrypoint,
-            )
-
             if parent_image == DEFAULT_DOCKER_PARENT_IMAGE:
                 # The default parent image is static and doesn't require a pull
                 # each time
@@ -282,6 +277,13 @@ class PipelineDockerImageBuilder:
             build_context.add_file(
                 destination=DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE,
                 source=deployment.yaml(),
+            )
+            dockerfile = self._generate_zenml_pipeline_dockerfile(
+                parent_image=parent_image,
+                docker_settings=docker_settings,
+                requirements_files=requirements_file_names,
+                apt_packages=apt_packages,
+                entrypoint=entrypoint,
             )
             build_context.add_file(destination="Dockerfile", source=dockerfile)
 
@@ -303,7 +305,7 @@ class PipelineDockerImageBuilder:
     @staticmethod
     def _add_requirements_files(
         docker_settings: DockerSettings,
-        build_context: BuildContext,
+        build_context: "BuildContext",
         stack: "Stack",
     ) -> List[str]:
         """Adds requirements files to the build context.
