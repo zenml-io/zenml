@@ -231,6 +231,7 @@ jobs:
 
       - name: Install Prerequisites - Stage 2
         run: |
+          source $VENV
           # install integrations: round 2, needed because:
           #  - kserve requires a tritonclient version that is lower that the one needed by mlflow
           #  - seldon requires a prometheus-client version that is lower that the one needed by bentoml
@@ -242,6 +243,7 @@ jobs:
 
       - name: Install Prerequisites - Stage 3
         run: |
+          source $VENV
           # re-install zenml to be sure
           poetry install --extras server
           # install airflow requirements
