@@ -52,7 +52,20 @@ class ArtifactBaseModel(BaseModel):
         title="Data type of the artifact.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    metadata: Dict[str, str] = {}  # TODO: str -> Any?
+    metadata: Dict[str, str] = Field(
+        default={},
+        title="Metadata of the artifact.",
+        example={
+            "runtime_data_type": "<class 'numpy.ndarray'>",
+            "storage_size": "735KB",
+            "shape": "(1437, 64)",
+            "dtype": "float64",
+            "mean": "4.886177800974252",
+            "std": "6.00811374129213",
+            "min": "0.0",
+            "max": "16.0",
+        },
+    )
 
 
 # -------- #
