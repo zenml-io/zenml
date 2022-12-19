@@ -66,7 +66,7 @@ class FlavorSchema(NamedSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    user: "UserSchema" = Relationship(back_populates="flavors")
+    user: Optional["UserSchema"] = Relationship(back_populates="flavors")
 
     def to_model(self) -> FlavorResponseModel:
         """Converts a flavor schema to a flavor model.
@@ -81,7 +81,7 @@ class FlavorSchema(NamedSchema, table=True):
             source=self.source,
             config_schema=self.config_schema,
             integration=self.integration,
-            user=self.user.to_model(),
+            user=self.user.to_model() if self.user else None,
             project=self.project.to_model(),
             created=self.created,
             updated=self.updated,

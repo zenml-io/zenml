@@ -94,7 +94,9 @@ def authenticate_credentials(
     if user_name_or_id:
         try:
             user = zen_store().get_auth_user(user_name_or_id)
-            user_model = zen_store().get_user(user_name_or_id=user_name_or_id)
+            user_model = zen_store().get_user(
+                user_name_or_id=user_name_or_id, include_private=True
+            )
             auth_context = AuthContext(user=user_model)
         except KeyError:
             # even when the user does not exist, we still want to execute the
@@ -108,7 +110,9 @@ def authenticate_credentials(
         user = UserAuthModel.verify_access_token(access_token)
         if not user:
             return None
-        user_model = zen_store().get_user(user_name_or_id=user.id)
+        user_model = zen_store().get_user(
+            user_name_or_id=user.id, include_private=True
+        )
         auth_context = AuthContext(user=user_model)
     elif activation_token is not None:
         if not UserAuthModel.verify_activation_token(activation_token, user):

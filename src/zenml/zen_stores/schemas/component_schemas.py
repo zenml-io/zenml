@@ -64,7 +64,7 @@ class StackComponentSchema(ShareableSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    user: "UserSchema" = Relationship(back_populates="components")
+    user: Optional["UserSchema"] = Relationship(back_populates="components")
 
     artifacts: List["ArtifactSchema"] = Relationship(
         back_populates="artifact_store",
@@ -109,7 +109,7 @@ class StackComponentSchema(ShareableSchema, table=True):
             name=self.name,
             type=self.type,
             flavor=self.flavor,
-            user=self.user.to_model(),
+            user=self.user.to_model() if self.user else None,
             project=self.project.to_model(),
             is_shared=self.is_shared,
             configuration=json.loads(

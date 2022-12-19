@@ -402,14 +402,6 @@ class ZenStoreInterface(ABC):
     # -----
     # Users
     # -----
-    @property
-    @abstractmethod
-    def active_user_name(self) -> str:
-        """Gets the active username.
-
-        Returns:
-            The active username.
-        """
 
     @abstractmethod
     def create_user(self, user: UserRequestModel) -> UserResponseModel:
@@ -426,11 +418,16 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_user(self, user_name_or_id: Union[str, UUID]) -> UserResponseModel:
-        """Gets a specific user.
+    def get_user(
+        self,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
+        include_private: bool = False,
+    ) -> UserResponseModel:
+        """Gets a specific user, when no id is specified the active user is returned.
 
         Args:
             user_name_or_id: The name or ID of the user to get.
+            include_private: Whether to include private user information
 
         Returns:
             The requested user, if it was found.
