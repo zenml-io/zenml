@@ -298,11 +298,11 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
                 num_bytes = num_bytes // 1000
             return f"{num_bytes}YB"
 
-        artifact_storage_size = fileio.size(self.uri)
-        return {
-            "runtime_data_type": str(type(data)),
-            "storage_size": human_readable_size(artifact_storage_size),
-        }
+        metadata = {"runtime_data_type": str(type(data))}
+        storage_size = fileio.size(self.uri)
+        if storage_size:
+            metadata["storage_size"] = human_readable_size(storage_size)
+        return metadata
 
     def handle_input(self, data_type: Type[Any]) -> Any:
         """Deprecated method to load the data of an artifact.
