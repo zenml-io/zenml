@@ -298,11 +298,10 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
                 num_bytes = num_bytes // 1000
             return f"{num_bytes}YB"
 
-        artifact_storage_size = fileio.size(self.artifact.uri)
+        artifact_storage_size = fileio.size(self.uri)
         return {
-            "String Represenation": str(data),
-            "Data Type at Runtime": str(type(data)),
-            "Storage Size": human_readable_size(artifact_storage_size),
+            "runtime_data_type": str(type(data)),
+            "storage_size": human_readable_size(artifact_storage_size),
         }
 
     def handle_input(self, data_type: Type[Any]) -> Any:
