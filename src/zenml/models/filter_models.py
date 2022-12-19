@@ -38,8 +38,12 @@ class Filter(BaseModel, ABC):
     value: Any
 
     @validator("operation", pre=True)
-    def sort_column(cls, op):
-        """Validate that the sort_column is a valid filter field."""
+    def validate_operation(cls, op: str) -> str:
+        """Validate that the operation is a valid for the field type.
+
+        Args:
+            op: The operation of this filter.
+        """
         if op not in cls.ALLOWED_OPS:
             raise ValueError(
                 f"This datatype can not be filtered using this operation: "
@@ -190,9 +194,40 @@ class NumericFilter(Filter):
             return getattr(table, self.column) < self.value
 
 
-class DatetimeFilter(NumericFilter):
+class DatetimeFilter(Filter):
 
     value: datetime
+
+    ALLOWED_OPS: ClassVar[List[str]] = [
+        GenericFilterOps.EQUALS,
+        GenericFilterOps.GT,
+        GenericFilterOps.GTE,
+        GenericFilterOps.LT,
+        GenericFilterOps.LTE,
+    ]
+
+    def generate_query_conditions(
+        self,
+        table: Type[SQLModel],
+    ):
+        """Generate the query conditions for the database.
+
+        Args:
+            table: The SQLModel table to use for the query creation
+
+        Returns:
+            A list of conditions that will be combined using the `and` operation
+        """
+        if self.operation == GenericFilterOps.EQUALS:
+            return getattr(table, self.column) == self.value
+        elif self.operation == GenericFilterOps.GTE:
+            return getattr(table, self.column) >= self.value
+        elif self.operation == GenericFilterOps.GT:
+            return getattr(table, self.column) > self.value
+        elif self.operation == GenericFilterOps.LTE:
+            return getattr(table, self.column) <= self.value
+        elif self.operation == GenericFilterOps.LT:
+            return getattr(table, self.column) < self.value
 
 
 # ---------------- #

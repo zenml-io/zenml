@@ -1890,7 +1890,7 @@ class Client(metaclass=ClientMetaClass):
                     "No name_id_or_prefix provided and there is no active "
                     f"{component_type} in the current active stack."
                 )
-            return components
+            return components[0]
 
     def list_stack_components(
         self,
@@ -2054,7 +2054,7 @@ class Client(metaclass=ClientMetaClass):
             current_name = update_model.name or component.name
             existing_components = self.list_stack_components(
                 name=current_name, is_shared=True, type=component_type
-            )
+            ).items
             if any([e.id != component.id for e in existing_components]):
                 raise EntityExistsError(
                     f"There are already existing shared components with "
@@ -2279,10 +2279,10 @@ class Client(metaclass=ClientMetaClass):
             component_type=component_type
         )
 
-        custom_flavors = self.zen_store.list_flavors(
-            project_name_or_id=self.active_project.id,
-            component_type=component_type,
-        )
+        custom_flavors = self.list_custom_flavors(
+            project_id=self.active_project.id,
+            type=component_type,
+        ).items
 
         return zenml_flavors + custom_flavors
 
@@ -2315,11 +2315,11 @@ class Client(metaclass=ClientMetaClass):
         except KeyError:
             zenml_flavor = None
 
-        custom_flavors = self.zen_store.list_flavors(
-            project_name_or_id=self.active_project.id,
-            component_type=component_type,
-            name=name,
-        )
+        custom_flavors = self.list_custom_flavors(
+            project_id=self.active_project.id,
+            type=component_type,
+            name=name
+        ).items
 
         if custom_flavors:
             if len(custom_flavors) > 1:
