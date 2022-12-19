@@ -31,9 +31,10 @@ from zenml.enums import PermissionType
 from zenml.exceptions import IllegalOperationError, NotAuthorizedError
 from zenml.logger import get_logger
 from zenml.models import (
-    FilterBaseModel,
+    UserFilterModel,
     UserRequestModel,
     UserResponseModel,
+    UserRoleAssignmentFilterModel,
     UserRoleAssignmentResponseModel,
     UserUpdateModel,
 )
@@ -75,8 +76,7 @@ current_user_router = APIRouter(
 )
 @handle_exceptions
 def list_users(
-    name: Optional[str] = None,
-    params: FilterBaseModel = Depends(),
+    user_filter_model: UserFilterModel = Depends(),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[UserResponseModel]:
     """Returns a list of all users.
@@ -88,7 +88,7 @@ def list_users(
     Returns:
         A list of all users.
     """
-    return zen_store().list_users(name=name, params=params)
+    return zen_store().list_users(user_filter_model=user_filter_model)
 
 
 @router.post(
@@ -327,30 +327,19 @@ def email_opt_in_response(
 )
 @handle_exceptions
 def list_role_assignments_for_user(
-    user_name_or_id: Union[str, UUID],
-    project_name_or_id: Optional[Union[str, UUID]] = None,
-    role_name_or_id: Optional[Union[str, UUID]] = None,
-    params: FilterBaseModel = Depends(),
+    user_role_assignment_filter_model: UserRoleAssignmentFilterModel = Depends(),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[UserRoleAssignmentResponseModel]:
     """Returns a list of all roles that are assigned to a user.
 
     Args:
-        user_name_or_id: Name or ID of the user.
-        project_name_or_id: If provided, only list roles that are limited to
-            the given project.
-        role_name_or_id: If provided, only list assignments of the given
-            role
-        params: Parameters for pagination (page and size)
+        user_role_assignment_filter_model: filter models for user role assignments
 
     Returns:
         A list of all roles that are assigned to a user.
     """
     return zen_store().list_user_role_assignments(
-        user_name_or_id=user_name_or_id,
-        project_name_or_id=project_name_or_id,
-        role_name_or_id=role_name_or_id,
-        params=params,
+        user_role_assignment_filter_model=user_role_assignment_filter_model
     )
 
 

@@ -650,7 +650,7 @@ class SqlZenStore(BaseZenStore):
         total_pages = math.ceil(total / filter_model.size)
 
         # Get a page of the actual data
-        items: List[AnySchema] = (
+        item_schemas: List[AnySchema] = (
             session.exec(
                 query.limit(filter_model.size).offset(filter_model.offset)
             )
@@ -659,7 +659,7 @@ class SqlZenStore(BaseZenStore):
         )
 
         # Convert this page of items from schemas to models
-        items: List[B] = [i.to_model() for i in items]
+        items: List[B] = [i.to_model() for i in item_schemas]
 
         return Page(
             total=total,

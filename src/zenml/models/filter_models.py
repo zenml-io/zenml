@@ -2,7 +2,16 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Any, ClassVar, List, Type, Union, get_args
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    List,
+    Optional,
+    Type,
+    Union,
+    get_args,
+)
 from uuid import UUID
 
 from fastapi import Query
@@ -17,6 +26,9 @@ from zenml.constants import (
 )
 from zenml.enums import GenericFilterOps, LogicalOperators
 from zenml.logger import get_logger
+
+if TYPE_CHECKING:
+    from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 
 logger = get_logger(__name__)
 
@@ -56,7 +68,7 @@ class Filter(BaseModel, ABC):
     def generate_query_conditions(
         self,
         table: Type[SQLModel],
-    ):
+    ) -> Union["BinaryExpression", "BooleanClauseList"]:
         """Generate the query conditions for the database.
 
         Args:
@@ -71,7 +83,7 @@ class BoolFilter(Filter):
     def generate_query_conditions(
         self,
         table: Type[SQLModel],
-    ):
+    ) -> Union["BinaryExpression", "BooleanClauseList"]:
         """Generate the query conditions for the database.
 
         Args:
@@ -80,8 +92,7 @@ class BoolFilter(Filter):
         Returns:
             A list of conditions that will be combined using the `and` operation
         """
-        if self.operation == GenericFilterOps.EQUALS:
-            return getattr(table, self.column) == self.value
+        return getattr(table, self.column) == self.value
 
 
 class StrFilter(Filter):
@@ -97,7 +108,7 @@ class StrFilter(Filter):
     def generate_query_conditions(
         self,
         table: Type[SQLModel],
-    ):
+    ) -> Union["BinaryExpression", "BooleanClauseList"]:
         """Generate the query conditions for the database.
 
         Args:
@@ -106,14 +117,14 @@ class StrFilter(Filter):
         Returns:
             A list of conditions that will be combined using the `and` operation
         """
-        if self.operation == GenericFilterOps.EQUALS:
-            return getattr(table, self.column) == self.value
-        elif self.operation == GenericFilterOps.CONTAINS:
+        if self.operation == GenericFilterOps.CONTAINS:
             return getattr(table, self.column).like(f"%{self.value}%")
         elif self.operation == GenericFilterOps.STARTSWITH:
             return getattr(table, self.column).startswith(f"%{self.value}%")
         elif self.operation == GenericFilterOps.CONTAINS:
             return getattr(table, self.column).endswith(f"%{self.value}%")
+        else:
+            return getattr(table, self.column) == self.value
 
 
 class UUIDFilter(Filter):
@@ -129,7 +140,7 @@ class UUIDFilter(Filter):
     def generate_query_conditions(
         self,
         table: Type[SQLModel],
-    ):
+    ) -> Union["BinaryExpression", "BooleanClauseList"]:
         """Generate the query conditions for the database.
 
         Args:
@@ -141,9 +152,7 @@ class UUIDFilter(Filter):
         import sqlalchemy
         from sqlalchemy_utils.functions import cast_if
 
-        if self.operation == GenericFilterOps.EQUALS:
-            return getattr(table, self.column) == self.value
-        elif self.operation == GenericFilterOps.CONTAINS:
+        if self.operation == GenericFilterOps.CONTAINS:
             return cast_if(getattr(table, self.column), sqlalchemy.String).like(
                 f"%{self.value}%"
             )
@@ -155,6 +164,8 @@ class UUIDFilter(Filter):
             return cast_if(
                 getattr(table, self.column), sqlalchemy.String
             ).endswith(f"%{self.value}%")
+        else:
+            return getattr(table, self.column) == self.value
 
 
 class NumericFilter(Filter):
@@ -173,7 +184,7 @@ class NumericFilter(Filter):
     def generate_query_conditions(
         self,
         table: Type[SQLModel],
-    ):
+    ) -> Union["BinaryExpression", "BooleanClauseList"]:
         """Generate the query conditions for the database.
 
         Args:
@@ -182,9 +193,7 @@ class NumericFilter(Filter):
         Returns:
             A list of conditions that will be combined using the `and` operation
         """
-        if self.operation == GenericFilterOps.EQUALS:
-            return getattr(table, self.column) == self.value
-        elif self.operation == GenericFilterOps.GTE:
+        if self.operation == GenericFilterOps.GTE:
             return getattr(table, self.column) >= self.value
         elif self.operation == GenericFilterOps.GT:
             return getattr(table, self.column) > self.value
@@ -192,6 +201,8 @@ class NumericFilter(Filter):
             return getattr(table, self.column) <= self.value
         elif self.operation == GenericFilterOps.LT:
             return getattr(table, self.column) < self.value
+        else:
+            return getattr(table, self.column) == self.value
 
 
 class DatetimeFilter(Filter):
@@ -209,7 +220,7 @@ class DatetimeFilter(Filter):
     def generate_query_conditions(
         self,
         table: Type[SQLModel],
-    ):
+    ) -> Union["BinaryExpression", "BooleanClauseList"]:
         """Generate the query conditions for the database.
 
         Args:
@@ -218,9 +229,7 @@ class DatetimeFilter(Filter):
         Returns:
             A list of conditions that will be combined using the `and` operation
         """
-        if self.operation == GenericFilterOps.EQUALS:
-            return getattr(table, self.column) == self.value
-        elif self.operation == GenericFilterOps.GTE:
+        if self.operation == GenericFilterOps.GTE:
             return getattr(table, self.column) >= self.value
         elif self.operation == GenericFilterOps.GT:
             return getattr(table, self.column) > self.value
@@ -228,6 +237,8 @@ class DatetimeFilter(Filter):
             return getattr(table, self.column) <= self.value
         elif self.operation == GenericFilterOps.LT:
             return getattr(table, self.column) < self.value
+        else:
+            return getattr(table, self.column) == self.value
 
 
 # ---------------- #
@@ -272,7 +283,7 @@ class FilterBaseModel(BaseModel):
     list_of_filters: List["Filter"] = Field(None, exclude=True)
 
     sort_by: str = Query("created")
-    logical_operator: LogicalOperators = "and"
+    logical_operator: LogicalOperators = LogicalOperators.AND
 
     page: int = Query(PAGINATION_STARTING_PAGE, ge=1, description="Page number")
     size: int = Query(
@@ -290,7 +301,7 @@ class FilterBaseModel(BaseModel):
         fields = {"list_of_filters": {"exclude": True}}
 
     @validator("sort_by", pre=True)
-    def sort_column(cls, v):
+    def sort_column(cls, v: str) -> str:
         """Validate that the sort_column is a valid filter field."""
         if v in cls.FILTER_EXCLUDE_FIELDS:
             raise ValueError(
@@ -304,7 +315,7 @@ class FilterBaseModel(BaseModel):
             )
 
     @root_validator(pre=True)
-    def filter_ops(cls, values):
+    def filter_ops(cls, values: List[Any]) -> List[Any]:
         """Parse incoming filters to extract the operations on each value."""
         list_of_filters = []
 
@@ -434,11 +445,13 @@ class FilterBaseModel(BaseModel):
         )
 
     @property
-    def offset(self):
+    def offset(self) -> int:
         """Returns the offset needed for the query on the data persistence layer."""
         return self.size * (self.page - 1)
 
-    def _base_filter(self, table: Type[SQLModel]):
+    def _base_filter(
+        self, table: Type[SQLModel]
+    ) -> Union["BinaryExpression", "BooleanClauseList"]:
         from sqlalchemy import and_
         from sqlmodel import or_
 
@@ -450,16 +463,16 @@ class FilterBaseModel(BaseModel):
         elif self.logical_operator == LogicalOperators.AND:
             return and_(*filters)
         else:
-            logger.debug(
-                "No valid logical operator was supplied. Defaulting to"
-                "use conjunction."
-            )
-            return filters
+            raise RuntimeError("No valid logical operator was supplied.")
 
-    def _scope_filter(self, table: Type[SQLModel]):
+    def _scope_filter(
+        self, table: Type[SQLModel]
+    ) -> Optional[Union["BinaryExpression", "BooleanClauseList"]]:
         return None
 
-    def generate_filter(self, table: Type[SQLModel]):
+    def generate_filter(
+        self, table: Type[SQLModel]
+    ) -> Union["BinaryExpression", "BooleanClauseList"]:
         """Concatenate all filters together with the chosen operator."""
         from sqlalchemy import and_
 
@@ -476,11 +489,13 @@ class ProjectScopedFilterModel(FilterBaseModel):
 
     _scope_project: UUID = PrivateAttr(None)
 
-    def set_scope_project(self, project_id: UUID):
+    def set_scope_project(self, project_id: UUID) -> None:
         """Set the project to scope this response."""
         self._scope_project = project_id
 
-    def _scope_filter(self, table: Type["SQLModel"]):
+    def _scope_filter(
+        self, table: Type["SQLModel"]
+    ) -> Optional[Union["BinaryExpression", "BooleanClauseList"]]:
         """Scope by project.
 
         Args:
@@ -501,11 +516,13 @@ class ShareableProjectScopedFilterModel(ProjectScopedFilterModel):
 
     _scope_user: UUID = PrivateAttr(None)
 
-    def set_scope_user(self, user_id: UUID):
+    def set_scope_user(self, user_id: UUID) -> None:
         """Set the user that is performing the filtering to scope the response."""
         self._scope_user = user_id
 
-    def _scope_filter(self, table: Type["SQLModel"]):
+    def _scope_filter(
+        self, table: Type["SQLModel"]
+    ) -> Optional[Union["BinaryExpression", "BooleanClauseList"]]:
         """A User is only allowed to list the stacks that either belong to them or that are shared.
 
         The resulting filter from this method will be the union of the scoping

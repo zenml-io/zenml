@@ -18,7 +18,7 @@ from uuid import UUID
 
 from zenml.client import Client
 from zenml.logger import get_apidocs_link, get_logger
-from zenml.models import PipelineResponseModel
+from zenml.models import PipelineResponseModel, PipelineRunFilterModel
 from zenml.post_execution.pipeline_run import PipelineRunView
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 
@@ -121,9 +121,9 @@ def get_pipeline(
         name=pipeline_name,
         project_name_or_id=active_project_id,
     )
-    if len(pipeline_models) == 1:
+    if pipeline_models.total == 1:
         return PipelineView(pipeline_models[0])
-    elif len(pipeline_models) > 1:
+    elif pipeline_models.total > 1:
         raise RuntimeError(
             f"Pipeline_name `{pipeline_name}` not unique within Project "
             f"`{active_project_id}`."
@@ -202,10 +202,11 @@ class PipelineView:
         # lifecycle
         active_project_id = Client().active_project.id
         runs = Client().zen_store.list_runs(
-            project_name_or_id=active_project_id,
-            pipeline_id=self._model.id,
+            PipelineRunFilterModel(
+                project_id=active_project_id, pipeline_id=self._model.id
+            )
         )
-        return [PipelineRunView(run) for run in runs]
+        return [PipelineRunView(run) for run in runs.items]
 
     def get_run_for_completed_step(self, step_name: str) -> "PipelineRunView":
         """Ascertains which pipeline run produced the cached artifact of a given step.

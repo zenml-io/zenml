@@ -14,7 +14,7 @@
 """Base Zen Store implementation."""
 import os
 from abc import ABC
-from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, ClassVar, Dict, Optional, Tuple, Type, Union
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -34,16 +34,18 @@ from zenml.models import (
     ComponentRequestModel,
     ProjectRequestModel,
     ProjectResponseModel,
+    RoleFilterModel,
     RoleRequestModel,
     RoleResponseModel,
     StackFilterModel,
     StackRequestModel,
     StackResponseModel,
+    UserFilterModel,
     UserRequestModel,
     UserResponseModel,
-    UserRoleAssignmentRequestModel,
-    UserRoleAssignmentResponseModel, UserFilterModel, RoleFilterModel,
     UserRoleAssignmentFilterModel,
+    UserRoleAssignmentRequestModel,
+    UserRoleAssignmentResponseModel,
 )
 from zenml.models.page_model import Page
 from zenml.models.server_models import (

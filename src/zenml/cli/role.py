@@ -17,9 +17,9 @@ from typing import List, Optional, Tuple
 
 import click
 
-from zenml.cli import list_options
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
+from zenml.cli.utils import list_options
 from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories, PermissionType
@@ -258,8 +258,8 @@ def revoke_role(
                 team_id=team_name_or_id,
                 project_id=project_name_or_id,
             )
-            for user_role_assignment in team_role_assignments.items:
-                Client().delete_user_role_assignment(user_role_assignment.id)
+            for team_role_assignment in team_role_assignments.items:
+                Client().delete_user_role_assignment(team_role_assignment.id)
         except KeyError as err:
             cli_utils.warning(str(err))
         else:
