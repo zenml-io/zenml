@@ -12,16 +12,16 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for role assignments."""
-from typing import List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Security, Depends
+from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, USER_ROLE_ASSIGNMENTS, VERSION_1
 from zenml.enums import PermissionType
 from zenml.models import (
+    UserRoleAssignmentFilterModel,
     UserRoleAssignmentRequestModel,
-    UserRoleAssignmentResponseModel, UserRoleAssignmentFilterModel,
+    UserRoleAssignmentResponseModel,
 )
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
@@ -53,7 +53,8 @@ def list_user_role_assignments(
         List of all role assignments.
     """
     return zen_store().list_user_role_assignments(
-        user_role_assignment_filter_model=user_role_assignment_filter_model)
+        user_role_assignment_filter_model=user_role_assignment_filter_model
+    )
 
 
 @router.post(

@@ -52,9 +52,7 @@ class TeamRoleAssignmentResponseModel(
     team: Optional["TeamResponseModel"] = Field(
         title="The team the role is assigned to.", default=None
     )
-    role: "RoleResponseModel" = Field(
-        title="The assigned role.", default=None
-    )
+    role: "RoleResponseModel" = Field(title="The assigned role.", default=None)
 
 
 # ------ #

@@ -238,7 +238,7 @@ def revoke_role(
             user_role_assignments = client.list_user_role_assignment(
                 role_id=role_name_or_id,
                 user_id=user_name_or_id,
-                project_id=project_name_or_id
+                project_id=project_name_or_id,
             )
             for user_role_assignment in user_role_assignments.items:
                 Client().delete_user_role_assignment(user_role_assignment.id)
@@ -256,7 +256,7 @@ def revoke_role(
             team_role_assignments = client.list_team_role_assignment(
                 role_id=role_name_or_id,
                 team_id=team_name_or_id,
-                project_id=project_name_or_id
+                project_id=project_name_or_id,
             )
             for user_role_assignment in team_role_assignments.items:
                 Client().delete_user_role_assignment(user_role_assignment.id)
@@ -276,7 +276,7 @@ def assignment() -> None:
 
 @assignment.command("list")
 @list_options(UserRoleAssignmentFilterModel)
-def list_user_role_assignments(**kwargs) -> None:
+def list_role_assignments(**kwargs) -> None:
     """List all user role assignments that fulfill the filter requirements."""
 
     cli_utils.print_active_config()

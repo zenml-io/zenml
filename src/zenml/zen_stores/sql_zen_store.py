@@ -102,6 +102,9 @@ from zenml.models import (
     StepRunUpdateModel,
     TeamRequestModel,
     TeamResponseModel,
+    TeamRoleAssignmentFilterModel,
+    TeamRoleAssignmentRequestModel,
+    TeamRoleAssignmentResponseModel,
     TeamUpdateModel,
     UserAuthModel,
     UserFilterModel,
@@ -110,8 +113,7 @@ from zenml.models import (
     UserRoleAssignmentFilterModel,
     UserRoleAssignmentRequestModel,
     UserRoleAssignmentResponseModel,
-    UserUpdateModel, TeamRoleAssignmentRequestModel,
-    TeamRoleAssignmentResponseModel, TeamRoleAssignmentFilterModel,
+    UserUpdateModel,
 )
 from zenml.models.base_models import BaseResponseModel
 from zenml.models.page_model import Page

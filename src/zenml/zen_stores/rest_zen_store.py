@@ -47,15 +47,16 @@ from zenml.constants import (
     LOGIN,
     PIPELINES,
     PROJECTS,
-    USER_ROLE_ASSIGNMENTS,
     ROLES,
     RUNS,
     STACK_COMPONENTS,
     STACKS,
     STEPS,
+    TEAM_ROLE_ASSIGNMENTS,
     TEAMS,
+    USER_ROLE_ASSIGNMENTS,
     USERS,
-    VERSION_1, TEAM_ROLE_ASSIGNMENTS,
+    VERSION_1,
 )
 from zenml.enums import StoreType
 from zenml.exceptions import (
@@ -106,14 +107,16 @@ from zenml.models import (
     StepRunUpdateModel,
     TeamRequestModel,
     TeamResponseModel,
+    TeamRoleAssignmentFilterModel,
+    TeamRoleAssignmentRequestModel,
+    TeamRoleAssignmentResponseModel,
     UserFilterModel,
     UserRequestModel,
     UserResponseModel,
     UserRoleAssignmentFilterModel,
     UserRoleAssignmentRequestModel,
     UserRoleAssignmentResponseModel,
-    UserUpdateModel, TeamRoleAssignmentRequestModel,
-    TeamRoleAssignmentResponseModel, TeamRoleAssignmentFilterModel,
+    UserUpdateModel,
 )
 from zenml.models.base_models import (
     BaseRequestModel,
@@ -972,7 +975,7 @@ class RestZenStore(BaseZenStore):
     # ---------------------
 
     def create_team_role_assignment(
-            self, team_role_assignment: TeamRoleAssignmentRequestModel
+        self, team_role_assignment: TeamRoleAssignmentRequestModel
     ) -> TeamRoleAssignmentResponseModel:
         """Creates a new team role assignment.
 
@@ -989,7 +992,7 @@ class RestZenStore(BaseZenStore):
         )
 
     def get_team_role_assignment(
-            self, team_role_assignment_id: UUID
+        self, team_role_assignment_id: UUID
     ) -> TeamRoleAssignmentResponseModel:
         """Gets a specific role assignment.
 
@@ -1009,7 +1012,7 @@ class RestZenStore(BaseZenStore):
         )
 
     def delete_team_role_assignment(
-            self, team_role_assignment_id: UUID
+        self, team_role_assignment_id: UUID
     ) -> None:
         """Delete a specific role assignment.
 
@@ -1022,8 +1025,7 @@ class RestZenStore(BaseZenStore):
         )
 
     def list_team_role_assignments(
-            self,
-            team_role_assignment_filter_model: TeamRoleAssignmentFilterModel
+        self, team_role_assignment_filter_model: TeamRoleAssignmentFilterModel
     ) -> Page[TeamRoleAssignmentResponseModel]:
         """List all roles assignments matching the given filter criteria.
 

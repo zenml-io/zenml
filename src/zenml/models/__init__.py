@@ -49,16 +49,6 @@ from zenml.models.project_models import (
     ProjectResponseModel,
     ProjectUpdateModel,
 )
-from zenml.models.user_role_assignment_models import (
-    UserRoleAssignmentFilterModel,
-    UserRoleAssignmentRequestModel,
-    UserRoleAssignmentResponseModel,
-)
-from zenml.models.team_role_assignment_models import (
-    TeamRoleAssignmentFilterModel,
-    TeamRoleAssignmentRequestModel,
-    TeamRoleAssignmentResponseModel,
-)
 from zenml.models.role_models import (
     RoleFilterModel,
     RoleRequestModel,
@@ -83,12 +73,22 @@ from zenml.models.team_models import (
     TeamResponseModel,
     TeamUpdateModel,
 )
+from zenml.models.team_role_assignment_models import (
+    TeamRoleAssignmentFilterModel,
+    TeamRoleAssignmentRequestModel,
+    TeamRoleAssignmentResponseModel,
+)
 from zenml.models.user_models import (
     UserAuthModel,
     UserFilterModel,
     UserRequestModel,
     UserResponseModel,
     UserUpdateModel,
+)
+from zenml.models.user_role_assignment_models import (
+    UserRoleAssignmentFilterModel,
+    UserRoleAssignmentRequestModel,
+    UserRoleAssignmentResponseModel,
 )
 
 ComponentResponseModel.update_forward_refs(
@@ -111,6 +111,13 @@ UserResponseModel.update_forward_refs(TeamResponseModel=TeamResponseModel)
 TeamResponseModel.update_forward_refs(UserResponseModel=UserResponseModel)
 
 UserRoleAssignmentResponseModel.update_forward_refs(
+    RoleResponseModel=RoleResponseModel,
+    TeamResponseModel=TeamResponseModel,
+    UserResponseModel=UserResponseModel,
+    ProjectResponseModel=ProjectResponseModel,
+)
+
+TeamRoleAssignmentResponseModel.update_forward_refs(
     RoleResponseModel=RoleResponseModel,
     TeamResponseModel=TeamResponseModel,
     UserResponseModel=UserResponseModel,

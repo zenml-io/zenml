@@ -14,7 +14,7 @@
 """Models representing stacks."""
 
 import json
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Union
 from uuid import UUID
 
 from fastapi import Query

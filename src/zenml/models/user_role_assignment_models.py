@@ -52,9 +52,7 @@ class UserRoleAssignmentResponseModel(
     user: Optional["UserResponseModel"] = Field(
         title="The user the role is assigned to.", default=None
     )
-    role: "RoleResponseModel" = Field(
-        title="The assigned role.", default=None
-    )
+    role: "RoleResponseModel" = Field(title="The assigned role.", default=None)
 
 
 # ------ #

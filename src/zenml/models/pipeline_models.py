@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing pipelines."""
 
-from typing import ClassVar, List, Optional, Union
+from typing import List, Optional, Union
 from uuid import UUID
 
 from fastapi import Query

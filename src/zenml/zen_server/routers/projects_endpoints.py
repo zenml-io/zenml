@@ -22,12 +22,13 @@ from zenml.constants import (
     FLAVORS,
     PIPELINES,
     PROJECTS,
-    USER_ROLE_ASSIGNMENTS,
     RUNS,
     STACK_COMPONENTS,
     STACKS,
     STATISTICS,
-    VERSION_1, TEAM_ROLE_ASSIGNMENTS,
+    TEAM_ROLE_ASSIGNMENTS,
+    USER_ROLE_ASSIGNMENTS,
+    VERSION_1,
 )
 from zenml.enums import PermissionType
 from zenml.exceptions import IllegalOperationError
@@ -51,9 +52,10 @@ from zenml.models import (
     StackFilterModel,
     StackRequestModel,
     StackResponseModel,
-    UserRoleAssignmentFilterModel,
-    UserRoleAssignmentResponseModel, TeamRoleAssignmentResponseModel,
     TeamRoleAssignmentFilterModel,
+    TeamRoleAssignmentResponseModel,
+    UserRoleAssignmentFilterModel,
+    UserRoleAssignmentResponseModel,
 )
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
@@ -231,7 +233,8 @@ def list_team_role_assignments_for_project(
     project = zen_store().get_project(project_name_or_id)
     team_role_assignment_filter_model.project_id = project.id
     return zen_store().list_team_role_assignments(
-        team_role_assignment_filter_model=team_role_assignment_filter_model)
+        team_role_assignment_filter_model=team_role_assignment_filter_model
+    )
 
 
 @router.get(

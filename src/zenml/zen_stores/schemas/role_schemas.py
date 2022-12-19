@@ -24,9 +24,12 @@ from zenml.models import (
     RoleRequestModel,
     RoleResponseModel,
     RoleUpdateModel,
-    UserRoleAssignmentRequestModel, TeamRoleAssignmentResponseModel,
+    TeamRoleAssignmentResponseModel,
+    UserRoleAssignmentRequestModel,
 )
-from zenml.models.user_role_assignment_models import UserRoleAssignmentResponseModel
+from zenml.models.user_role_assignment_models import (
+    UserRoleAssignmentResponseModel,
+)
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field

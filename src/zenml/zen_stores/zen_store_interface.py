@@ -54,6 +54,9 @@ from zenml.models import (
     TeamFilterModel,
     TeamRequestModel,
     TeamResponseModel,
+    TeamRoleAssignmentFilterModel,
+    TeamRoleAssignmentRequestModel,
+    TeamRoleAssignmentResponseModel,
     TeamUpdateModel,
     UserAuthModel,
     UserFilterModel,
@@ -62,8 +65,7 @@ from zenml.models import (
     UserRoleAssignmentFilterModel,
     UserRoleAssignmentRequestModel,
     UserRoleAssignmentResponseModel,
-    UserUpdateModel, TeamRoleAssignmentRequestModel,
-    TeamRoleAssignmentResponseModel, TeamRoleAssignmentFilterModel,
+    UserUpdateModel,
 )
 from zenml.models.page_model import Page
 from zenml.models.server_models import ServerModel

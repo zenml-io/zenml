@@ -34,8 +34,7 @@ from pydantic import BaseModel, Field, SecretStr, root_validator
 from zenml.config.global_config import GlobalConfiguration
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
-from zenml.models import RoleResponseModel
-from zenml.models import FilterBaseModel
+from zenml.models import FilterBaseModel, RoleResponseModel
 from zenml.models.base_models import (
     BaseRequestModel,
     BaseResponseModel,

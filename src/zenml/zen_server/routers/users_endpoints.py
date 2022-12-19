@@ -34,7 +34,6 @@ from zenml.models import (
     FilterBaseModel,
     UserRequestModel,
     UserResponseModel,
-    UserRoleAssignmentRequestModel,
     UserRoleAssignmentResponseModel,
     UserUpdateModel,
 )

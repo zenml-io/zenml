@@ -87,6 +87,9 @@ from zenml.models import (
     TeamFilterModel,
     TeamRequestModel,
     TeamResponseModel,
+    TeamRoleAssignmentFilterModel,
+    TeamRoleAssignmentRequestModel,
+    TeamRoleAssignmentResponseModel,
     TeamUpdateModel,
     UserFilterModel,
     UserRequestModel,
@@ -94,8 +97,7 @@ from zenml.models import (
     UserRoleAssignmentFilterModel,
     UserRoleAssignmentRequestModel,
     UserRoleAssignmentResponseModel,
-    UserUpdateModel, TeamRoleAssignmentResponseModel,
-    TeamRoleAssignmentRequestModel, TeamRoleAssignmentFilterModel,
+    UserUpdateModel,
 )
 from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.models.base_models import BaseResponseModel
@@ -1048,8 +1050,7 @@ class Client(metaclass=ClientMetaClass):
     # --------------------- #
 
     def get_user_role_assignment(
-        self,
-        role_assignment_id: UUID
+        self, role_assignment_id: UUID
     ) -> UserRoleAssignmentResponseModel:
         """Get a role assignment.
 
@@ -1097,11 +1098,7 @@ class Client(metaclass=ClientMetaClass):
             user_role_assignment=role_assignment
         )
 
-    def delete_user_role_assignment(
-        self,
-        role_assignment_id: UUID
-
-    ) -> None:
+    def delete_user_role_assignment(self, role_assignment_id: UUID) -> None:
         """Delete a role assignment.
 
         Args:
@@ -1159,8 +1156,7 @@ class Client(metaclass=ClientMetaClass):
     # --------------------- #
 
     def get_team_role_assignment(
-        self,
-        team_role_assignment_id: UUID
+        self, team_role_assignment_id: UUID
     ) -> TeamRoleAssignmentResponseModel:
         """Get a role assignment.
 
@@ -1208,11 +1204,7 @@ class Client(metaclass=ClientMetaClass):
             team_role_assignment=role_assignment
         )
 
-    def delete_team_role_assignment(
-        self,
-        role_assignment_id: UUID
-
-    ) -> None:
+    def delete_team_role_assignment(self, role_assignment_id: UUID) -> None:
         """Delete a role assignment.
 
         Args:
@@ -1887,7 +1879,7 @@ class Client(metaclass=ClientMetaClass):
                         f"string '{name_id_or_prefix}':\n"
                         f"{[f'{m.name}: {m.id}' for m in entity.items]}.\n"
                         f"Please provide more characters to uniquely identify "
-                        f"only one of the pipeline runs."
+                        f"only one of the stack components."
                     )
         else:
             components = self.active_stack_model.components.get(
@@ -2859,5 +2851,5 @@ class Client(metaclass=ClientMetaClass):
                     f"string '{name_id_or_prefix}':\n"
                     f"{[f'{m.name}: {m.id}' for m in entity.items]}.\n"
                     f"Please provide more characters to uniquely identify "
-                    f"only one of the pipeline runs."
+                    f"only one of the {entity_label}s."
                 )
