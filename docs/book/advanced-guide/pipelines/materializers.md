@@ -69,6 +69,20 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         """
         # write `data` to self.uri
         ...
+    
+    def extract_metadata(self, data: Any) -> Dict[str, str]:
+        """Extract metadata from the given data.
+
+        This metadata will be tracked and displayed alongside the artifact.
+
+        Args:
+            data: The data to extract metadata from.
+
+        Returns:
+            A dictionary of metadata.
+        """
+        # optionally, extract some metadata from `data` for ZenML to store
+        ...
 ```
 
 ### Which Data Type to Handle?
@@ -108,6 +122,24 @@ of artifacts.
 You will need to overwrite these methods according to how you plan to serialize
 your objects. E.g., if you have custom PyTorch classes as `ASSOCIATED_TYPES`,
 then you might want to use `torch.save()` and `torch.load()` here.
+
+### (Optional) Which Metadata to Extract for the Artifact
+
+Optionally, you can choose to overwrite the `extract_metadata()` method to 
+extract custom metadata for all artifacts that were saved by your materializer.
+By default, this will extract the storage size, runtime data type, and string 
+representation of an artifact, but you can overwrite it to track anything you
+wish. E.g., the `zenml.materializers.NumpyMaterializer` overwrites this method
+to automatically track the `shape`, `dtype`, and some statistical properties of
+each `np.ndarray` that is saved by it.
+
+{% hint style="info" %}
+If you would like to disable artifact metadata extraction altogether, you can 
+set `enable_artifact_metadata` at either pipeline, step, or run level via 
+`@pipeline(enable_artifact_metadata=False)` or 
+`@step(enable_artifact_metadata=False)` or
+`my_pipeline(...).run(enable_artifact_metadata=False)`.
+{% endhint %}
 
 ## Using a Custom Materializer
 
