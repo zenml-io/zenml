@@ -273,9 +273,6 @@ class StepLauncher:
                 step_run.status = ExecutionStatus.CACHED
                 step_run.end_time = step_run.start_time
 
-        from rich import inspect
-
-        inspect(step_run)
         step_run_response = Client().zen_store.create_run_step(step_run)
 
         return execution_needed, step_run_response
