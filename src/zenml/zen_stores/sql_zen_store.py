@@ -110,7 +110,8 @@ from zenml.models import (
     UserRoleAssignmentFilterModel,
     UserRoleAssignmentRequestModel,
     UserRoleAssignmentResponseModel,
-    UserUpdateModel,
+    UserUpdateModel, TeamRoleAssignmentRequestModel,
+    TeamRoleAssignmentResponseModel, TeamRoleAssignmentFilterModel,
 )
 from zenml.models.base_models import BaseResponseModel
 from zenml.models.page_model import Page
@@ -2166,6 +2167,125 @@ class SqlZenStore(BaseZenStore):
             session.delete(user_role)
 
             session.commit()
+
+    # ---------------------
+    # Team Role assignments
+    # ---------------------
+
+    def create_team_role_assignment(
+        self, team_role_assignment: TeamRoleAssignmentRequestModel
+    ) -> TeamRoleAssignmentResponseModel:
+        """Creates a new team role assignment.
+
+        Args:
+            team_role_assignment: The role assignment model to create.
+
+        Returns:
+            The newly created role assignment.
+        """
+        with Session(self.engine) as session:
+            role = self._get_role_schema(
+                team_role_assignment.role, session=session
+            )
+            project: Optional[ProjectSchema] = None
+            if team_role_assignment.project:
+                project = self._get_project_schema(
+                    team_role_assignment.project, session=session
+                )
+            team = self._get_team_schema(
+                team_role_assignment.team, session=session
+            )
+            query = select(UserRoleAssignmentSchema).where(
+                UserRoleAssignmentSchema.user_id == team.id,
+                UserRoleAssignmentSchema.role_id == role.id,
+            )
+            if project is not None:
+                query = query.where(
+                    UserRoleAssignmentSchema.project_id == project.id
+                )
+            existing_role_assignment = session.exec(query).first()
+            if existing_role_assignment is not None:
+                raise EntityExistsError(
+                    f"Unable to assign role '{role.name}' to team "
+                    f"'{team.name}': Role already assigned in this project."
+                )
+            role_assignment = TeamRoleAssignmentSchema(
+                role_id=role.id,
+                team_id=team.id,
+                project_id=project.id if project else None,
+                role=role,
+                team=team,
+                project=project,
+            )
+            session.add(role_assignment)
+            session.commit()
+            return role_assignment.to_model()
+
+    def get_team_role_assignment(
+        self, team_role_assignment_id: UUID
+    ) -> TeamRoleAssignmentResponseModel:
+        """Gets a specific role assignment.
+
+        Args:
+            team_role_assignment_id: ID of the role assignment to get.
+
+        Returns:
+            The requested role assignment.
+
+        Raises:
+            KeyError: If no role assignment with the given ID exists.
+        """
+        with Session(self.engine) as session:
+            team_role = session.exec(
+                select(TeamRoleAssignmentSchema).where(
+                    TeamRoleAssignmentSchema.id == team_role_assignment_id
+                )
+            ).one_or_none()
+
+            if team_role:
+                return team_role.to_model()
+
+    def delete_team_role_assignment(
+        self, team_role_assignment_id: UUID
+    ) -> None:
+        """Delete a specific role assignment.
+
+        Args:
+            team_role_assignment_id: The ID of the specific role assignment
+        """
+        with Session(self.engine) as session:
+            team_role = session.exec(
+                select(TeamRoleAssignmentSchema).where(
+                    TeamRoleAssignmentSchema.id == team_role_assignment_id
+                )
+            ).one_or_none()
+
+            session.delete(team_role)
+
+            session.commit()
+
+    def list_team_role_assignments(
+        self, team_role_assignment_filter_model: TeamRoleAssignmentFilterModel
+    ) -> Page[TeamRoleAssignmentResponseModel]:
+        """List all roles assignments matching the given filter criteria.
+
+        Args:
+            team_role_assignment_filter_model: All filter parameters including
+                                          pagination params
+
+        Returns:
+            A list of all roles assignments matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            # Manually create the query and add any custom clauses
+            query = select(UserRoleAssignmentSchema)
+
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=TeamRoleAssignmentSchema,
+                filter_model=team_role_assignment_filter_model,
+            )
 
     # --------
     # Projects

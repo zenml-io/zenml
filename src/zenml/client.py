@@ -94,7 +94,8 @@ from zenml.models import (
     UserRoleAssignmentFilterModel,
     UserRoleAssignmentRequestModel,
     UserRoleAssignmentResponseModel,
-    UserUpdateModel,
+    UserUpdateModel, TeamRoleAssignmentResponseModel,
+    TeamRoleAssignmentRequestModel, TeamRoleAssignmentFilterModel,
 )
 from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.models.base_models import BaseResponseModel
@@ -607,11 +608,10 @@ class Client(metaclass=ClientMetaClass):
         created_user = self.zen_store.create_user(user=user)
 
         if initial_role:
-            self.create_role_assignment(
+            self.create_user_role_assignment(
                 role_name_or_id=initial_role,
-                user_or_team_name_or_id=created_user.id,
+                user_name_or_id=created_user.id,
                 project_name_or_id=None,
-                is_user=True,
             )
 
         return created_user
@@ -1043,25 +1043,18 @@ class Client(metaclass=ClientMetaClass):
         """
         self.zen_store.delete_role(role_name_or_id=name_id_or_prefix)
 
-    # ---------------- #
-    # ROLE ASSIGNMENTS #
-    # ---------------- #
+    # --------------------- #
+    # USER ROLE ASSIGNMENTS #
+    # --------------------- #
 
-    def get_role_assignment(
+    def get_user_role_assignment(
         self,
-        role_name_or_id: str,
-        user_or_team_name_or_id: str,
-        is_user: bool,
-        project_name_or_id: Optional[str] = None,
+        role_assignment_id: UUID
     ) -> UserRoleAssignmentResponseModel:
         """Get a role assignment.
 
         Args:
-            role_name_or_id: The name or ID of the role.
-            user_or_team_name_or_id: The name or ID of the user or team.
-            is_user: Whether to interpret the `user_or_team_name_or_id` field as
-                user (=True) or team (=False).
-            project_name_or_id: project scope within which to assign the role.
+            role_assignment_id: The id of the role assignments
 
         Returns:
             The role assignment.
@@ -1069,44 +1062,22 @@ class Client(metaclass=ClientMetaClass):
         Raises:
             RuntimeError: If the role assignment does not exist.
         """
-        if is_user:
-            role_assignments = self.zen_store.list_user_role_assignments(
-                project_name_or_id=project_name_or_id,
-                user_name_or_id=user_or_team_name_or_id,
-                role_name_or_id=role_name_or_id,
-            )
-        else:
-            role_assignments = self.zen_store.list_user_role_assignments(
-                project_name_or_id=project_name_or_id,
-                user_name_or_id=user_or_team_name_or_id,
-                role_name_or_id=role_name_or_id,
-            )
-        # Implicit assumption is that maximally one such assignment can exist
-        if role_assignments:
-            return role_assignments[0]
-        else:
-            raise RuntimeError(
-                "No such role assignment could be found for "
-                f"user/team : {user_or_team_name_or_id} with "
-                f"role : {role_name_or_id} within "
-                f"project : {project_name_or_id}"
-            )
+        return self.zen_store.get_user_role_assignment(
+            user_role_assignment_id=role_assignment_id
+        )
 
-    def create_role_assignment(
+    def create_user_role_assignment(
         self,
         role_name_or_id: Union[str, UUID],
-        user_or_team_name_or_id: Union[str, UUID],
-        is_user: bool,
+        user_name_or_id: Union[str, UUID],
         project_name_or_id: Optional[Union[str, UUID]] = None,
     ) -> UserRoleAssignmentResponseModel:
         """Create a role assignment.
 
         Args:
             role_name_or_id: Name or ID of the role to assign.
-            user_or_team_name_or_id: Name or ID of the user or team to assign
+            user_name_or_id: Name or ID of the user or team to assign
                 the role to.
-            is_user: Whether to interpret the `user_or_team_name_or_id` field as
-                user (=True) or team (=False).
             project_name_or_id: project scope within which to assign the role.
 
         Returns:
@@ -1116,48 +1087,28 @@ class Client(metaclass=ClientMetaClass):
         project = None
         if project_name_or_id:
             project = self.get_project(name_id_or_prefix=project_name_or_id)
-        if is_user:
-            user = self.get_user(name_id_or_prefix=user_or_team_name_or_id)
-            role_assignment = UserRoleAssignmentRequestModel(
-                role=role.id,
-                user=user.id,
-                project=project,
-            )
-        else:
-            team = self.get_team(name_id_or_prefix=user_or_team_name_or_id)
-            role_assignment = UserRoleAssignmentRequestModel(
-                role=role.id,
-                team=team.id,
-                project=project,
-            )
-
+        user = self.get_user(name_id_or_prefix=user_name_or_id)
+        role_assignment = UserRoleAssignmentRequestModel(
+            role=role.id,
+            user=user.id,
+            project=project,
+        )
         return self.zen_store.create_user_role_assignment(
             user_role_assignment=role_assignment
         )
 
-    def delete_role_assignment(
+    def delete_user_role_assignment(
         self,
-        role_name_or_id: str,
-        user_or_team_name_or_id: str,
-        is_user: bool,
-        project_name_or_id: Optional[str] = None,
+        role_assignment_id: UUID
+
     ) -> None:
         """Delete a role assignment.
 
         Args:
-            role_name_or_id: Role to assign
-            user_or_team_name_or_id: team to assign the role to
-            is_user: Whether to interpret the user_or_team_name_or_id field as
-                user (=True) or team (=False)
-            project_name_or_id: project scope within which to assign the role
+            role_assignment_id: The id of the role assignments
+
         """
-        role_assignment = self.get_role_assignment(
-            role_name_or_id=role_name_or_id,
-            user_or_team_name_or_id=user_or_team_name_or_id,
-            is_user=is_user,
-            project_name_or_id=project_name_or_id,
-        )
-        self.zen_store.delete_user_role_assignment(role_assignment.id)
+        self.zen_store.delete_user_role_assignment(role_assignment_id)
 
     def list_user_role_assignment(
         self,
@@ -1199,6 +1150,117 @@ class Client(metaclass=ClientMetaClass):
                 updated=updated,
                 project_id=project_id,
                 user_id=user_id,
+                role_id=role_id,
+            )
+        )
+
+    # --------------------- #
+    # TEAM ROLE ASSIGNMENTS #
+    # --------------------- #
+
+    def get_team_role_assignment(
+        self,
+        team_role_assignment_id: UUID
+    ) -> TeamRoleAssignmentResponseModel:
+        """Get a role assignment.
+
+        Args:
+            team_role_assignment_id: The id of the role assignments
+
+        Returns:
+            The role assignment.
+
+        Raises:
+            RuntimeError: If the role assignment does not exist.
+        """
+        return self.zen_store.get_team_role_assignment(
+            team_role_assignment_id=team_role_assignment_id
+        )
+
+    def create_team_role_assignment(
+        self,
+        role_name_or_id: Union[str, UUID],
+        team_name_or_id: Union[str, UUID],
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+    ) -> TeamRoleAssignmentResponseModel:
+        """Create a role assignment.
+
+        Args:
+            role_name_or_id: Name or ID of the role to assign.
+            team_name_or_id: Name or ID of the team to assign
+                the role to.
+            project_name_or_id: project scope within which to assign the role.
+
+        Returns:
+            The newly created role assignment.
+        """
+        role = self.get_role(name_id_or_prefix=role_name_or_id)
+        project = None
+        if project_name_or_id:
+            project = self.get_project(name_id_or_prefix=project_name_or_id)
+        team = self.get_team(name_id_or_prefix=team_name_or_id)
+        role_assignment = TeamRoleAssignmentRequestModel(
+            role=role.id,
+            team=team.id,
+            project=project,
+        )
+        return self.zen_store.create_team_role_assignment(
+            team_role_assignment=role_assignment
+        )
+
+    def delete_team_role_assignment(
+        self,
+        role_assignment_id: UUID
+
+    ) -> None:
+        """Delete a role assignment.
+
+        Args:
+            role_assignment_id: The id of the role assignments
+
+        """
+        self.zen_store.delete_team_role_assignment(role_assignment_id)
+
+    def list_team_role_assignment(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator=LogicalOperators.OR,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        project_id: Optional[Union[str, UUID]] = None,
+        team_id: Optional[Union[str, UUID]] = None,
+        role_id: Optional[Union[str, UUID]] = None,
+    ) -> Page[TeamRoleAssignmentResponseModel]:
+        """List all team role assignments.
+
+        Args:
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            id: Use the id of the team role assignment to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            project_id: The id of the project to filter by.
+            team_id: The id of the team to filter by.
+            role_id: The id of the role to filter by.
+        Returns:
+            The Team
+        """
+        return self.zen_store.list_team_role_assignments(
+            TeamRoleAssignmentFilterModel(
+                sort_by=sort_by,
+                page=page,
+                size=size,
+                logical_operator=logical_operator,
+                id=id,
+                created=created,
+                updated=updated,
+                project_id=project_id,
+                team_id=team_id,
                 role_id=role_id,
             )
         )

@@ -24,9 +24,9 @@ from zenml.models import (
     RoleRequestModel,
     RoleResponseModel,
     RoleUpdateModel,
-    UserRoleAssignmentRequestModel,
+    UserRoleAssignmentRequestModel, TeamRoleAssignmentResponseModel,
 )
-from zenml.models.role_assignment_models import UserRoleAssignmentResponseModel
+from zenml.models.user_role_assignment_models import UserRoleAssignmentResponseModel
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
@@ -234,13 +234,13 @@ class TeamRoleAssignmentSchema(BaseSchema, table=True):
             project_id=role_assignment.project,
         )
 
-    def to_model(self) -> UserRoleAssignmentResponseModel:
+    def to_model(self) -> TeamRoleAssignmentResponseModel:
         """Convert a `TeamRoleAssignmentSchema` to a `RoleAssignmentModel`.
 
         Returns:
             The converted `RoleAssignmentModel`.
         """
-        return UserRoleAssignmentResponseModel(
+        return TeamRoleAssignmentResponseModel(
             id=self.id,
             project=self.project.to_model() if self.project else None,
             team=self.team.to_model(_block_recursion=True),

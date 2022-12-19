@@ -22,12 +22,12 @@ from zenml.constants import (
     FLAVORS,
     PIPELINES,
     PROJECTS,
-    ROLE_ASSIGNMENTS,
+    USER_ROLE_ASSIGNMENTS,
     RUNS,
     STACK_COMPONENTS,
     STACKS,
     STATISTICS,
-    VERSION_1,
+    VERSION_1, TEAM_ROLE_ASSIGNMENTS,
 )
 from zenml.enums import PermissionType
 from zenml.exceptions import IllegalOperationError
@@ -52,7 +52,8 @@ from zenml.models import (
     StackRequestModel,
     StackResponseModel,
     UserRoleAssignmentFilterModel,
-    UserRoleAssignmentResponseModel,
+    UserRoleAssignmentResponseModel, TeamRoleAssignmentResponseModel,
+    TeamRoleAssignmentFilterModel,
 )
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
@@ -179,7 +180,7 @@ def delete_project(
 
 
 @router.get(
-    "/{project_name_or_id}" + ROLE_ASSIGNMENTS,
+    "/{project_name_or_id}" + USER_ROLE_ASSIGNMENTS,
     response_model=Page[UserRoleAssignmentResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
@@ -204,6 +205,33 @@ def list_user_role_assignments_for_project(
     return zen_store().list_user_role_assignments(
         user_role_assignment_filter_model=user_role_assignment_filter_model
     )
+
+
+@router.get(
+    "/{project_name_or_id}" + TEAM_ROLE_ASSIGNMENTS,
+    response_model=Page[TeamRoleAssignmentResponseModel],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def list_team_role_assignments_for_project(
+    project_name_or_id: Union[str, UUID],
+    team_role_assignment_filter_model: TeamRoleAssignmentFilterModel = Depends(),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+) -> Page[TeamRoleAssignmentResponseModel]:
+    """Returns a list of all roles that are assigned to a team.
+
+    Args:
+        project_name_or_id: Name or ID of the project.
+        team_role_assignment_filter_model: Filter model used for pagination, sorting,
+                                    filtering
+
+    Returns:
+        A list of all roles that are assigned to a team.
+    """
+    project = zen_store().get_project(project_name_or_id)
+    team_role_assignment_filter_model.project_id = project.id
+    return zen_store().list_team_role_assignments(
+        team_role_assignment_filter_model=team_role_assignment_filter_model)
 
 
 @router.get(

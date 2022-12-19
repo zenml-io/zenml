@@ -47,7 +47,7 @@ from zenml.constants import (
     LOGIN,
     PIPELINES,
     PROJECTS,
-    ROLE_ASSIGNMENTS,
+    USER_ROLE_ASSIGNMENTS,
     ROLES,
     RUNS,
     STACK_COMPONENTS,
@@ -55,7 +55,7 @@ from zenml.constants import (
     STEPS,
     TEAMS,
     USERS,
-    VERSION_1,
+    VERSION_1, TEAM_ROLE_ASSIGNMENTS,
 )
 from zenml.enums import StoreType
 from zenml.exceptions import (
@@ -112,7 +112,8 @@ from zenml.models import (
     UserRoleAssignmentFilterModel,
     UserRoleAssignmentRequestModel,
     UserRoleAssignmentResponseModel,
-    UserUpdateModel,
+    UserUpdateModel, TeamRoleAssignmentRequestModel,
+    TeamRoleAssignmentResponseModel, TeamRoleAssignmentFilterModel,
 )
 from zenml.models.base_models import (
     BaseRequestModel,
@@ -914,7 +915,7 @@ class RestZenStore(BaseZenStore):
             A list of all roles assignments matching the filter criteria.
         """
         return self._list_paginated_resources(
-            route=ROLE_ASSIGNMENTS,
+            route=USER_ROLE_ASSIGNMENTS,
             response_model=UserRoleAssignmentResponseModel,
             list_model=user_role_assignment_filter_model,
         )
@@ -932,7 +933,7 @@ class RestZenStore(BaseZenStore):
         """
         return self._get_resource(
             resource_id=user_role_assignment_id,
-            route=ROLE_ASSIGNMENTS,
+            route=USER_ROLE_ASSIGNMENTS,
             response_model=UserRoleAssignmentResponseModel,
         )
 
@@ -946,7 +947,7 @@ class RestZenStore(BaseZenStore):
         """
         self._delete_resource(
             resource_id=user_role_assignment_id,
-            route=ROLE_ASSIGNMENTS,
+            route=USER_ROLE_ASSIGNMENTS,
         )
 
     def create_user_role_assignment(
@@ -962,8 +963,81 @@ class RestZenStore(BaseZenStore):
         """
         return self._create_resource(
             resource=user_role_assignment,
-            route=ROLE_ASSIGNMENTS,
+            route=USER_ROLE_ASSIGNMENTS,
             response_model=UserRoleAssignmentResponseModel,
+        )
+
+    # ---------------------
+    # Team Role assignments
+    # ---------------------
+
+    def create_team_role_assignment(
+            self, team_role_assignment: TeamRoleAssignmentRequestModel
+    ) -> TeamRoleAssignmentResponseModel:
+        """Creates a new team role assignment.
+
+        Args:
+            team_role_assignment: The role assignment model to create.
+
+        Returns:
+            The newly created role assignment.
+        """
+        return self._create_resource(
+            resource=team_role_assignment,
+            route=TEAM_ROLE_ASSIGNMENTS,
+            response_model=TeamRoleAssignmentResponseModel,
+        )
+
+    def get_team_role_assignment(
+            self, team_role_assignment_id: UUID
+    ) -> TeamRoleAssignmentResponseModel:
+        """Gets a specific role assignment.
+
+        Args:
+            team_role_assignment_id: ID of the role assignment to get.
+
+        Returns:
+            The requested role assignment.
+
+        Raises:
+            KeyError: If no role assignment with the given ID exists.
+        """
+        return self._get_resource(
+            resource_id=team_role_assignment_id,
+            route=TEAM_ROLE_ASSIGNMENTS,
+            response_model=TeamRoleAssignmentResponseModel,
+        )
+
+    def delete_team_role_assignment(
+            self, team_role_assignment_id: UUID
+    ) -> None:
+        """Delete a specific role assignment.
+
+        Args:
+            team_role_assignment_id: The ID of the specific role assignment
+        """
+        self._delete_resource(
+            resource_id=team_role_assignment_id,
+            route=TEAM_ROLE_ASSIGNMENTS,
+        )
+
+    def list_team_role_assignments(
+            self,
+            team_role_assignment_filter_model: TeamRoleAssignmentFilterModel
+    ) -> Page[TeamRoleAssignmentResponseModel]:
+        """List all roles assignments matching the given filter criteria.
+
+        Args:
+            team_role_assignment_filter_model: All filter parameters including
+                                          pagination params
+
+        Returns:
+            A list of all roles assignments matching the filter criteria.
+        """
+        return self._list_paginated_resources(
+            route=TEAM_ROLE_ASSIGNMENTS,
+            response_model=TeamRoleAssignmentResponseModel,
+            list_model=team_role_assignment_filter_model,
         )
 
     # --------

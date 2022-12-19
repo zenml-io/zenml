@@ -49,10 +49,15 @@ from zenml.models.project_models import (
     ProjectResponseModel,
     ProjectUpdateModel,
 )
-from zenml.models.role_assignment_models import (
+from zenml.models.user_role_assignment_models import (
     UserRoleAssignmentFilterModel,
     UserRoleAssignmentRequestModel,
     UserRoleAssignmentResponseModel,
+)
+from zenml.models.team_role_assignment_models import (
+    TeamRoleAssignmentFilterModel,
+    TeamRoleAssignmentRequestModel,
+    TeamRoleAssignmentResponseModel,
 )
 from zenml.models.role_models import (
     RoleFilterModel,
@@ -163,6 +168,9 @@ __all__ = [
     "UserRoleAssignmentRequestModel",
     "UserRoleAssignmentResponseModel",
     "UserRoleAssignmentFilterModel",
+    "TeamRoleAssignmentRequestModel",
+    "TeamRoleAssignmentResponseModel",
+    "TeamRoleAssignmentFilterModel",
     "RoleRequestModel",
     "RoleResponseModel",
     "RoleUpdateModel",

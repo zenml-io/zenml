@@ -62,7 +62,8 @@ from zenml.models import (
     UserRoleAssignmentFilterModel,
     UserRoleAssignmentRequestModel,
     UserRoleAssignmentResponseModel,
-    UserUpdateModel,
+    UserUpdateModel, TeamRoleAssignmentRequestModel,
+    TeamRoleAssignmentResponseModel, TeamRoleAssignmentFilterModel,
 )
 from zenml.models.page_model import Page
 from zenml.models.server_models import ServerModel
@@ -602,9 +603,9 @@ class ZenStoreInterface(ABC):
             KeyError: If no role with the given ID exists.
         """
 
-    # ----------------
-    # Role assignments
-    # ----------------
+    # ---------------------
+    # User Role assignments
+    # ---------------------
     @abstractmethod
     def create_user_role_assignment(
         self, user_role_assignment: UserRoleAssignmentRequestModel
@@ -652,6 +653,62 @@ class ZenStoreInterface(ABC):
 
         Args:
             user_role_assignment_filter_model: All filter parameters including
+                                          pagination params
+
+        Returns:
+            A list of all roles assignments matching the filter criteria.
+        """
+
+    # ---------------------
+    # Team Role assignments
+    # ---------------------
+    @abstractmethod
+    def create_team_role_assignment(
+        self, team_role_assignment: TeamRoleAssignmentRequestModel
+    ) -> TeamRoleAssignmentResponseModel:
+        """Creates a new team role assignment.
+
+        Args:
+            team_role_assignment: The role assignment model to create.
+
+        Returns:
+            The newly created role assignment.
+        """
+
+    @abstractmethod
+    def get_team_role_assignment(
+        self, team_role_assignment_id: UUID
+    ) -> TeamRoleAssignmentResponseModel:
+        """Gets a specific role assignment.
+
+        Args:
+            team_role_assignment_id: ID of the role assignment to get.
+
+        Returns:
+            The requested role assignment.
+
+        Raises:
+            KeyError: If no role assignment with the given ID exists.
+        """
+
+    @abstractmethod
+    def delete_team_role_assignment(
+        self, team_role_assignment_id: UUID
+    ) -> None:
+        """Delete a specific role assignment.
+
+        Args:
+            team_role_assignment_id: The ID of the specific role assignment
+        """
+
+    @abstractmethod
+    def list_team_role_assignments(
+        self, team_role_assignment_filter_model: TeamRoleAssignmentFilterModel
+    ) -> Page[TeamRoleAssignmentResponseModel]:
+        """List all roles assignments matching the given filter criteria.
+
+        Args:
+            team_role_assignment_filter_model: All filter parameters including
                                           pagination params
 
         Returns:

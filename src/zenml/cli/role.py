@@ -174,10 +174,9 @@ def assign_role(
     # Assign the role to users
     for user_name_or_id in user_names_or_ids:
         try:
-            Client().create_role_assignment(
+            Client().create_user_role_assignment(
                 role_name_or_id=role_name_or_id,
-                user_or_team_name_or_id=user_name_or_id,
-                is_user=True,
+                user_name_or_id=user_name_or_id,
                 project_name_or_id=project_name_or_id,
             )
         except KeyError as err:
@@ -192,10 +191,9 @@ def assign_role(
     # Assign the role to teams
     for team_name_or_id in team_names_or_ids:
         try:
-            Client().create_role_assignment(
+            Client().create_team_role_assignment(
                 role_name_or_id=role_name_or_id,
-                user_or_team_name_or_id=team_name_or_id,
-                is_user=False,
+                team_name_or_id=team_name_or_id,
                 project_name_or_id=project_name_or_id,
             )
         except KeyError as err:
@@ -233,16 +231,17 @@ def revoke_role(
             role. If this is not provided, the role will be revoked globally.
     """
     cli_utils.print_active_config()
-
+    client = Client()
     # Revoke the role from users
     for user_name_or_id in user_names_or_ids:
         try:
-            Client().delete_role_assignment(
-                role_name_or_id=role_name_or_id,
-                user_or_team_name_or_id=user_name_or_id,
-                is_user=True,
-                project_name_or_id=project_name_or_id,
+            user_role_assignments = client.list_user_role_assignment(
+                role_id=role_name_or_id,
+                user_id=user_name_or_id,
+                project_id=project_name_or_id
             )
+            for user_role_assignment in user_role_assignments.items:
+                Client().delete_user_role_assignment(user_role_assignment.id)
         except KeyError as err:
             cli_utils.warning(str(err))
         else:
@@ -254,12 +253,13 @@ def revoke_role(
     # Revoke the role from teams
     for team_name_or_id in team_names_or_ids:
         try:
-            Client().delete_role_assignment(
-                role_name_or_id=role_name_or_id,
-                user_or_team_name_or_id=team_name_or_id,
-                is_user=False,
-                project_name_or_id=project_name_or_id,
+            team_role_assignments = client.list_team_role_assignment(
+                role_id=role_name_or_id,
+                team_id=team_name_or_id,
+                project_id=project_name_or_id
             )
+            for user_role_assignment in team_role_assignments.items:
+                Client().delete_user_role_assignment(user_role_assignment.id)
         except KeyError as err:
             cli_utils.warning(str(err))
         else:

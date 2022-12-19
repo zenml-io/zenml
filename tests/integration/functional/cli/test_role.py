@@ -146,9 +146,9 @@ def test_assign_role_to_user_twice_fails() -> None:
     user = create_sample_user()
     role_assign_command = cli.commands["role"].commands["assign"]
     runner = CliRunner()
-    Client().create_role_assignment(
+    Client().create_user_role_assignment(
         role_name_or_id=DEFAULT_ADMIN_ROLE,
-        user_or_team_name_or_id=str(user.id),
+        user_name_or_id=str(user.id),
         is_user=True,
     )
 
