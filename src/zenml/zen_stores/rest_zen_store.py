@@ -639,18 +639,6 @@ class RestZenStore(BaseZenStore):
     # Users
     # -----
 
-    @property
-    def active_user_name(self) -> str:
-        """Gets the active username.
-
-        Either the username specified in the config, or the username of the
-        currently authenticated user.
-
-        Returns:
-            The active username.
-        """
-        return self.config.username or self._get_active_user().name
-
     @track(AnalyticsEvent.CREATED_USER)
     def create_user(self, user: UserRequestModel) -> UserResponseModel:
         """Creates a new user.
@@ -667,29 +655,34 @@ class RestZenStore(BaseZenStore):
             response_model=UserResponseModel,
         )
 
-    def _get_active_user(self) -> UserResponseModel:
-        """Gets a specific user.
+    def get_user(
+        self,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
+        include_private: bool = False,
+    ) -> UserResponseModel:
+        """Gets a specific user, when no id is specified the active user is returned.
 
-        Returns:
-            The requested user, if it was found.
-        """
-        body = self.get(f"{CURRENT_USER}")
-        return UserResponseModel.parse_obj(body)
-
-    def get_user(self, user_name_or_id: Union[str, UUID]) -> UserResponseModel:
-        """Gets a specific user.
+        The `include_private` parameter is ignored here as it is handled
+        implicitly by the /current-user endpoint that is queried when no
+        user_name_or_id is set. Raises a KeyError in case a user with that id
+        does not exist.
 
         Args:
             user_name_or_id: The name or ID of the user to get.
+            include_private: Whether to include private user information
 
         Returns:
             The requested user, if it was found.
         """
-        return self._get_resource(
-            resource_id=user_name_or_id,
-            route=USERS,
-            response_model=UserResponseModel,
-        )
+        if user_name_or_id:
+            return self._get_resource(
+                resource_id=user_name_or_id,
+                route=USERS,
+                response_model=UserResponseModel,
+            )
+        else:
+            body = self.get(CURRENT_USER)
+            return UserResponseModel.parse_obj(body)
 
     def get_auth_user(
         self, user_name_or_id: Union[str, UUID]

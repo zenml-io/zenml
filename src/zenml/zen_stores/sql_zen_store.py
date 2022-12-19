@@ -1328,6 +1328,7 @@ class SqlZenStore(BaseZenStore):
             StackComponentExistsError: If a component with the given name and
                                        type is already owned by the user
         """
+        assert user_id
         # Check if component with the same domain key (name, type, project,
         # owner) already exists
         existing_domain_component = session.exec(
@@ -1338,6 +1339,9 @@ class SqlZenStore(BaseZenStore):
             .where(StackComponentSchema.type == component_type)
         ).first()
         if existing_domain_component is not None:
+            # Theoretically the user schema is optional, in this case there is
+            #  no way that it will be None
+            assert existing_domain_component.user
             raise StackComponentExistsError(
                 f"Unable to register '{component_type.value}' component "
                 f"with name '{name}': Found an existing "
@@ -1540,15 +1544,6 @@ class SqlZenStore(BaseZenStore):
     # Users
     # -----
 
-    @property
-    def active_user_name(self) -> str:
-        """Gets the active username.
-
-        Returns:
-            The active username.
-        """
-        return self._default_user_name
-
     @track(AnalyticsEvent.CREATED_USER)
     def create_user(self, user: UserRequestModel) -> UserResponseModel:
         """Creates a new user.
@@ -1580,19 +1575,29 @@ class SqlZenStore(BaseZenStore):
 
             return new_user.to_model()
 
-    def get_user(self, user_name_or_id: Union[str, UUID]) -> UserResponseModel:
-        """Gets a specific user.
+    def get_user(
+        self,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
+        include_private: bool = False,
+    ) -> UserResponseModel:
+        """Gets a specific user, when no id is specified the active user is returned.
+
+        Raises a KeyError in case a user with that id does not exist.
 
         Args:
             user_name_or_id: The name or ID of the user to get.
+            include_private: Whether to include private user information
 
         Returns:
             The requested user, if it was found.
         """
+        if not user_name_or_id:
+            user_name_or_id = self._default_user_name
+
         with Session(self.engine) as session:
             user = self._get_user_schema(user_name_or_id, session=session)
 
-            return user.to_model()
+            return user.to_model(include_private=include_private)
 
     def get_auth_user(self, user_name_or_id: Union[str, UUID]) -> UserAuthModel:
         """Gets the auth model to a specific user.

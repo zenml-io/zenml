@@ -105,11 +105,16 @@ class UserSchema(NamedSchema, table=True):
         self.updated = datetime.utcnow()
         return self
 
-    def to_model(self, _block_recursion: bool = False) -> UserResponseModel:
+    def to_model(
+        self, _block_recursion: bool = False, include_private: bool = False
+    ) -> UserResponseModel:
         """Convert a `UserSchema` to a `UserResponseModel`.
 
         Args:
             _block_recursion: Don't recursively fill attributes
+            include_private: Whether to include the user private information
+                             this is to limit the amount of data one can get
+                             about other users
 
         Returns:
             The converted `UserResponseModel`.
@@ -120,6 +125,7 @@ class UserSchema(NamedSchema, table=True):
                 name=self.name,
                 active=self.active,
                 email_opted_in=self.email_opted_in,
+                email=self.email if include_private else None,
                 full_name=self.full_name,
                 created=self.created,
                 updated=self.updated,
@@ -130,6 +136,7 @@ class UserSchema(NamedSchema, table=True):
                 name=self.name,
                 active=self.active,
                 email_opted_in=self.email_opted_in,
+                email=self.email if include_private else None,
                 teams=[t.to_model(_block_recursion=True) for t in self.teams],
                 full_name=self.full_name,
                 created=self.created,
