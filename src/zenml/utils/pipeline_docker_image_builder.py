@@ -217,7 +217,7 @@ class PipelineDockerImageBuilder:
                     parent_image
                 )
 
-            build_options = {"pull": pull_parent_image}
+            build_options = {"pull": pull_parent_image, "rm": False}
 
             build_context.add_file(
                 source=deployment.yaml(),

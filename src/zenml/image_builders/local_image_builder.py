@@ -101,11 +101,6 @@ class LocalImageBuilder(BaseImageBuilder):
         """
         self._check_prerequisites()
 
-        docker_build_options = {
-            "rm": False,  # don't remove intermediate containers to improve caching
-            **(docker_build_options or {}),
-        }
-
         docker_client = DockerClient.from_env()
 
         with tempfile.TemporaryFile(mode="w+b") as f:
@@ -116,7 +111,7 @@ class LocalImageBuilder(BaseImageBuilder):
                 fileobj=f,
                 custom_context=True,
                 tag=image_name,
-                **docker_build_options,
+                **(docker_build_options or {}),
             )
         docker_utils._process_stream(output_stream)
 
