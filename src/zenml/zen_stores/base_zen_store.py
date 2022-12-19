@@ -42,8 +42,10 @@ from zenml.models import (
     UserRequestModel,
     UserResponseModel,
     UserRoleAssignmentRequestModel,
-    UserRoleAssignmentResponseModel,
+    UserRoleAssignmentResponseModel, UserFilterModel, RoleFilterModel,
+    UserRoleAssignmentFilterModel,
 )
+from zenml.models.page_model import Page
 from zenml.models.server_models import (
     ServerDatabaseType,
     ServerDeploymentType,
@@ -629,13 +631,13 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
     # -----
 
     @property
-    def roles(self) -> List[RoleResponseModel]:
+    def roles(self) -> Page[RoleResponseModel]:
         """All existing roles.
 
         Returns:
             A list of all existing roles.
         """
-        return self.list_roles()
+        return self.list_roles(RoleFilterModel())
 
     # --------
     # Projects

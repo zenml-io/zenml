@@ -65,18 +65,15 @@ if TYPE_CHECKING:
     from zenml.integrations.integration import Integration
     from zenml.model_deployers import BaseModelDeployer
     from zenml.models import (
-        BaseSecretSchema,
-        BaseService,
         ComponentResponseModel,
         FlavorResponseModel,
         PipelineRunResponseModel,
-        ServerDeployment,
-        ServiceState,
         StackResponseModel,
     )
 
 MAX_ARGUMENT_VALUE_SIZE = 10240
 
+M = TypeVar("M", bound=BaseResponseModel)
 
 def title(text: str) -> None:
     """Echo a title formatted string on the CLI.
@@ -185,9 +182,6 @@ def print_table(obj: List[Dict[str, Any]], **columns: table.Column) -> None:
     if len(rich_table.columns) > 1:
         rich_table.columns[0].justify = "center"
     console.print(rich_table)
-
-
-M = TypeVar("M", bound=BaseModel)
 
 
 def print_pydantic_models(
@@ -1063,7 +1057,7 @@ def warn_unsupported_non_default_project() -> None:
         )
 
 
-def print_page_info(page: Page):
+def print_page_info(page: Page[M]):
     """Print all information pertaining to a page to show the amount of items and pages"""
     declare(
         f"Page `({page.page}/{page.total_pages})`, `{page.total}` items "
@@ -1074,7 +1068,7 @@ def print_page_info(page: Page):
 F = TypeVar("F", bound=Callable[..., None])
 
 
-def create_filter_help_text(filter_model: Type[FilterBaseModel], field: str):
+def create_filter_help_text(filter_model: Type[FilterBaseModel], field: str) -> str:
     """Create the help text used in the click option help text.
 
     Args:
@@ -1117,7 +1111,7 @@ def create_filter_help_text(filter_model: Type[FilterBaseModel], field: str):
         )
 
 
-def create_data_type_help_text(filter_model: Type[FilterBaseModel], field: str):
+def create_data_type_help_text(filter_model: Type[FilterBaseModel], field: str) -> str:
     """Create a general help text for a fields datatype.
 
     Args:
@@ -1159,7 +1153,7 @@ def create_data_type_help_text(filter_model: Type[FilterBaseModel], field: str):
 def list_options(filter_model: Type[FilterBaseModel]) -> F:
     """Create a decorator to generate the correct list of parameters to use for filtering."""
 
-    def inner_decorator(func: F) -> F:
+    def inner_decorator(func: Callable) -> Callable:
 
         options = list()
         data_type_descriptors = set()
@@ -1179,7 +1173,7 @@ def list_options(filter_model: Type[FilterBaseModel]) -> F:
                     create_data_type_help_text(filter_model, k)
                 )
 
-        def wrapper(function):
+        def wrapper(function: Callable) -> Callable:
             for option in reversed(options):
                 function = option(function)
             return function
