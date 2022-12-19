@@ -166,10 +166,6 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
             pipelines in. If not set, will try to spin up a local K3d cluster.
         skip_local_validations: If `True`, the local validations will be
             skipped.
-        skip_cluster_provisioning: If `True`, the k3d cluster provisioning will
-            be skipped.
-        skip_ui_daemon_provisioning: If `True`, provisioning the KFP UI daemon
-            will be skipped.
         container_registry_name: The name of the container registry stack
             component to use. If not specified, the container registry
             in the active stack is used.
@@ -178,10 +174,8 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
     kubeflow_pipelines_ui_port: int = DEFAULT_KFP_UI_PORT
     kubeflow_hostname: Optional[str] = None
     kubeflow_namespace: str = "kubeflow"
-    kubernetes_context: Optional[str] = None  # TODO: Potential setting
+    kubernetes_context: str
     skip_local_validations: bool = False
-    skip_cluster_provisioning: bool = False
-    skip_ui_daemon_provisioning: bool = False
 
     # IMPORTANT: This is a temporary solution to allow the Kubeflow orchestrator
     # to be provisioned as an individual component (i.e. same as running
@@ -206,7 +200,7 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
         """
         if (
             self.kubernetes_context is not None
-            and not self.kubernetes_context.startswith("k3d-zenml-kubeflow-")
+            and not self.kubernetes_context.startswith("k3d-minimal-zenml-")
         ):
             return True
         return False
@@ -223,7 +217,7 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
         """
         if (
             self.kubernetes_context is None
-            or self.kubernetes_context.startswith("k3d-zenml-kubeflow-")
+            or self.kubernetes_context.startswith("k3d-minimal-zenml-")
         ):
             return True
         return False

@@ -74,25 +74,3 @@ def test_kubeflow_orchestrator_stack_validation(
             artifact_store=local_artifact_store,
             container_registry=local_container_registry,
         ).validate()
-
-
-@pytest.mark.parametrize(
-    "config,skip_ui_daemon_provisioning",
-    [
-        (KubeflowOrchestratorConfig(), False),
-        (
-            KubeflowOrchestratorConfig(
-                kubeflow_hostname="https://arias-kubeflow.com/pipeline"
-            ),
-            True,
-        ),
-        (KubeflowOrchestratorConfig(skip_ui_daemon_provisioning=True), True),
-    ],
-)
-def test_skip_ui_daemon_provisioning(config, skip_ui_daemon_provisioning):
-    """Tests that the UI daemon provisioning is skipped if either set explicitly
-    or when a hostname is specified."""
-    assert (
-        _get_kubeflow_orchestrator(config).skip_ui_daemon_provisioning
-        is skip_ui_daemon_provisioning
-    )
