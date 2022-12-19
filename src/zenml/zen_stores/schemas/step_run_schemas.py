@@ -71,7 +71,7 @@ class StepRunSchema(NamedSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    user: "UserSchema" = Relationship(back_populates="step_runs")
+    user: Optional["UserSchema"] = Relationship(back_populates="step_runs")
 
     project_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -160,7 +160,7 @@ class StepRunSchema(NamedSchema, table=True):
             pipeline_run_id=self.pipeline_run_id,
             original_step_run_id=self.original_step_run_id,
             project=self.project.to_model(),
-            user=self.user.to_model(),
+            user=self.user.to_model() if self.user else None,
             parent_step_ids=parent_step_ids,
             cache_key=self.cache_key,
             start_time=self.start_time,

@@ -204,6 +204,8 @@ class Client(metaclass=ClientMetaClass):
     as their components.
     """
 
+    _active_user: Optional[UserResponseModel] = None
+
     def __init__(
         self,
         root: Optional[Path] = None,
@@ -555,7 +557,9 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The active user.
         """
-        return self.zen_store.active_user
+        if self._active_user is None:
+            self._active_user = self.zen_store.get_user(include_private=True)
+        return self._active_user
 
     def create_user(
         self,
@@ -1008,7 +1012,6 @@ class Client(metaclass=ClientMetaClass):
                 role=role.id,
                 user=user.id,
                 project=project,
-                is_user=True,
             )
         else:
             team = self.get_team(name_id_or_prefix=user_or_team_name_or_id)
@@ -1016,7 +1019,6 @@ class Client(metaclass=ClientMetaClass):
                 role=role.id,
                 team=team.id,
                 project=project,
-                is_user=False,
             )
 
         return self.zen_store.create_role_assignment(

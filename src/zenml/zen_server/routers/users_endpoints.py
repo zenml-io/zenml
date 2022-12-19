@@ -363,7 +363,7 @@ def get_role_assignments_for_user(
     response_model=UserResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-# @handle_exceptions
+@handle_exceptions
 def get_current_user(
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.READ]
