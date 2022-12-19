@@ -89,23 +89,30 @@ class KanikoImageBuilder(BaseImageBuilder):
             custom_validation_function=_validate_remote_container_registry,
         )
 
-    def build_and_push(
+    def build(
         self,
         image_name: str,
         build_context: "BuildContext",
-        container_registry: "BaseContainerRegistry",
+        docker_build_options: Dict[str, Any],
+        container_registry: Optional["BaseContainerRegistry"] = None,
     ) -> str:
         """Builds and pushes a Docker image.
 
         Args:
             image_name: Name of the image to build and push.
             build_context: The build context to use for the image.
-            container_registry: The container registry to push to.
+            docker_build_options: Docker build options.
+            container_registry: Optional container registry to push to.
 
         Returns:
             The Docker image repo digest.
         """
         self._check_prerequisites()
+        if not container_registry:
+            raise RuntimeError(
+                "Unable to use the Kaniko image builder without a container "
+                "registry."
+            )
 
         pod_name = self._generate_pod_name()
         spec_overrides = self._generate_spec_overrides(

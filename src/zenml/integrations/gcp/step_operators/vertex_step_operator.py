@@ -166,12 +166,12 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
         if not steps_to_run:
             return
         docker_image_builder = PipelineDockerImageBuilder()
-        image_digest = docker_image_builder.build_and_push_docker_image(
-            deployment=deployment,
-            stack=stack,
+        repo_digest = docker_image_builder.build_docker_image(
+            deployment=deployment, stack=stack
         )
+
         for step in steps_to_run:
-            step.config.extra[VERTEX_DOCKER_IMAGE_DIGEST_KEY] = image_digest
+            step.config.extra[VERTEX_DOCKER_IMAGE_DIGEST_KEY] = repo_digest
 
     def launch(
         self,

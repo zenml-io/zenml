@@ -143,7 +143,7 @@ class KServeModelDeployer(BaseModelDeployer):
 
         if needs_docker_image:
             docker_image_builder = PipelineDockerImageBuilder()
-            repo_digest = docker_image_builder.build_and_push_docker_image(
+            repo_digest = docker_image_builder.build_docker_image(
                 deployment=deployment, stack=stack
             )
             deployment.add_extra(KSERVE_DOCKER_IMAGE_KEY, repo_digest)

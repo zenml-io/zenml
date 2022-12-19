@@ -15,7 +15,7 @@
 
 import shutil
 import tempfile
-from typing import TYPE_CHECKING, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
 
 from docker.client import DockerClient
 
@@ -33,6 +33,15 @@ if TYPE_CHECKING:
 
 class LocalImageBuilderConfig(BaseImageBuilderConfig):
     """Local image builder configuration."""
+
+    @property
+    def is_local(self) -> bool:
+        """Checks if this stack component is running locally.
+
+        Returns:
+            True.
+        """
+        return True
 
 
 class LocalImageBuilder(BaseImageBuilder):
@@ -52,15 +61,51 @@ class LocalImageBuilder(BaseImageBuilder):
         """Checks that all prerequisites are installed.
 
         Raises:
-            RuntimeError: If any of the prerequisites are not installed.
+            RuntimeError: If any of the prerequisites are not installed or
+                running.
         """
         if not shutil.which("docker"):
             raise RuntimeError(
                 "`docker` is required to run the local image builder."
             )
 
-    def build(self, image_name: str, build_context: "BuildContext") -> None:
+        if not docker_utils.check_docker():
+            raise RuntimeError(
+                "Unable to connect to the Docker daemon. There are two "
+                "common causes for this:\n"
+                "1) The Docker daemon isn't running.\n"
+                "2) The Docker client isn't configured correctly. The client "
+                "loads its configuration from the following file: "
+                "$HOME/.docker/config.json. If your configuration file is in a "
+                "different location, set it using the `DOCKER_CONFIG` "
+                "environment variable."
+            )
+
+    def build(
+        self,
+        image_name: str,
+        build_context: "BuildContext",
+        docker_build_options: Optional[Dict[str, Any]] = None,
+        container_registry: Optional["BaseContainerRegistry"] = None,
+    ) -> str:
+        """Builds and optionally pushes an image using the local Docker client.
+
+        Args:
+            image_name: Name of the image to build and push.
+            build_context: The build context to use for the image.
+            docker_build_options: Docker build options.
+            container_registry: Optional container registry to push to.
+
+        Returns:
+            The Docker image repo digest.
+        """
         self._check_prerequisites()
+
+        docker_build_options = {
+            "rm": False,  # don't remove intermediate containers to improve caching
+            **(docker_build_options or {}),
+        }
+
         docker_client = DockerClient.from_env()
 
         with tempfile.TemporaryFile(mode="w+b") as f:
@@ -71,19 +116,14 @@ class LocalImageBuilder(BaseImageBuilder):
                 fileobj=f,
                 custom_context=True,
                 tag=image_name,
-                platform="linux/amd64",
-                # **build_options,
+                **docker_build_options,
             )
         docker_utils._process_stream(output_stream)
 
-    def build_and_push(
-        self,
-        image_name: str,
-        build_context: "BuildContext",
-        container_registry: "BaseContainerRegistry",
-    ) -> str:
-        self.build(image_name=image_name, build_context=build_context)
-        return container_registry.push_image(image_name)
+        if container_registry:
+            return container_registry.push_image(image_name)
+        else:
+            return image_name
 
 
 class LocalImageBuilderFlavor(BaseImageBuilderFlavor):

@@ -89,24 +89,12 @@ class LocalDockerOrchestrator(BaseOrchestrator):
             stack: The stack on which the pipeline will be deployed.
         """
         docker_image_builder = PipelineDockerImageBuilder()
-        if stack.container_registry:
-            repo_digest = docker_image_builder.build_and_push_docker_image(
-                deployment=deployment, stack=stack
-            )
-            deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
-        else:
-            # If there is no container registry, we only build the image
-            target_image_name = docker_image_builder.get_target_image_name(
-                deployment=deployment
-            )
-            docker_image_builder.build_docker_image(
-                target_image_name=target_image_name,
-                deployment=deployment,
-                stack=stack,
-            )
-            deployment.add_extra(
-                ORCHESTRATOR_DOCKER_IMAGE_KEY, target_image_name
-            )
+        image_name_or_digest = docker_image_builder.build_docker_image(
+            deployment=deployment, stack=stack
+        )
+        deployment.add_extra(
+            ORCHESTRATOR_DOCKER_IMAGE_KEY, image_name_or_digest
+        )
 
     def get_orchestrator_run_id(self) -> str:
         """Returns the active orchestrator run id.

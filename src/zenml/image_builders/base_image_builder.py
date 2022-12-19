@@ -14,7 +14,7 @@
 """Base class for all ZenML image builders."""
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
 
 from zenml.enums import StackComponentType
 from zenml.stack import Flavor, StackComponent
@@ -43,42 +43,40 @@ class BaseImageBuilder(StackComponent, ABC):
 
     @property
     def build_context_class(self) -> Type["BuildContext"]:
+        """Build context class to use.
+
+        The default build context class creates a build context that works
+        for the Docker daemon. Override this method if your image builder
+        requires a custom context.
+
+        Returns:
+            The build context class.
+        """
         from zenml.image_builders import BuildContext
 
         return BuildContext
 
-    def build(self, image_name: str, build_context: "BuildContext") -> None:
-        """Builds an image.
-
-        Args:
-            image_name: The name of the image to build.
-            build_context: The build context to use for the image.
-
-        Raises:
-            NotImplementedError: If the image builder does not support the
-                functionality of building images without pushing.
-        """
-        raise NotImplementedError(
-            "Building without pushing is not supported for the "
-            f"{self.__class__.__name__}."
-        )
-
     @abstractmethod
-    def build_and_push(
+    def build(
         self,
-        image_name: str,
+        image_name_without_registry: str,
         build_context: "BuildContext",
-        container_registry: "BaseContainerRegistry",
+        docker_build_options: Dict[str, Any],
+        container_registry: Optional["BaseContainerRegistry"] = None,
     ) -> str:
-        """Builds and pushes a Docker image.
+        """Builds a Docker image.
+
+        If a container registry is passed, the image will be pushed to that
+        registry.
 
         Args:
-            image_name: Name of the image to build and push.
+            image_name: Name of the image to build.
             build_context: The build context to use for the image.
-            container_registry: The container registry to push to.
+            docker_build_options: Docker build options.
+            container_registry: Optional container registry to push to.
 
         Returns:
-            The Docker image repo digest.
+            The Docker image repo digest or name.
         """
 
 

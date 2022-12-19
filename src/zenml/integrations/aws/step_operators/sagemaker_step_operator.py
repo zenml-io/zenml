@@ -126,13 +126,13 @@ class SagemakerStepOperator(BaseStepOperator):
             return
 
         docker_image_builder = PipelineDockerImageBuilder()
-        image_digest = docker_image_builder.build_and_push_docker_image(
+        repo_digest = docker_image_builder.build_docker_image(
             deployment=deployment,
             stack=stack,
             entrypoint=f"${_ENTRYPOINT_ENV_VARIABLE}",
         )
         for step in steps_to_run:
-            step.config.extra[SAGEMAKER_DOCKER_IMAGE_KEY] = image_digest
+            step.config.extra[SAGEMAKER_DOCKER_IMAGE_KEY] = repo_digest
 
     def launch(
         self,
