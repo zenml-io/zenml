@@ -31,7 +31,9 @@ from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
 from zenml.logger import get_logger
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
-from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
+from zenml.utils.pipeline_docker_image_builder import (
+    PipelineDockerImageBuilder,
+)
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
@@ -61,6 +63,9 @@ class SagemakerOrchestrator(BaseOrchestrator):
 
         Returns:
             The orchestrator run id.
+
+        Raises:
+            RuntimeError: If the run id cannot be read from the environment.
         """
         try:
             return os.environ[ENV_ZENML_SAGEMAKER_RUN_ID]
@@ -96,15 +101,12 @@ class SagemakerOrchestrator(BaseOrchestrator):
 
     def prepare_or_run_pipeline(
         self, deployment: "PipelineDeployment", stack: "Stack"
-    ) -> Any:
+    ) -> None:
         """Prepares or runs a pipeline on Sagemaker.
 
         Args:
             deployment: The deployment to prepare or run.
             stack: The stack to run on.
-
-        Returns:
-            The result of the pipeline run.
         """
         if deployment.schedule:
             logger.warning(
