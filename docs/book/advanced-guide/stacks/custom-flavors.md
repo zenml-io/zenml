@@ -168,6 +168,8 @@ With the configuration defined, we can move on to the logic behind the
 implementation:
 
 ```python
+PathType = Union[bytes, str]
+
 from zenml.artifact_stores import BaseArtifactStore
 
 
@@ -198,15 +200,18 @@ from zenml.artifact_stores import BaseArtifactStoreFlavor
 class MyArtifactStoreFlavor(BaseArtifactStoreFlavor):
     """Custom artifact store implementation."""
     
+    @property
     def name(self) -> str:
         """The name of the flavor."""
         return 'my_artifact_store'
     
+    @property
     def implementation_class(self) -> Type["BaseArtifactStore"]:
         """Implementation class for this flavor."""
         from ... import MyArtifactStore
         return MyArtifactStore
 
+    @property
     def config_class(self) -> Type[StackComponentConfig]:
         """Configuration class for this flavor."""
         from ... import MyArtifactStoreConfig

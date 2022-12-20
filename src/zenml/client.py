@@ -83,6 +83,7 @@ from zenml.models.base_models import BaseResponseModel
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.filesync_model import FileSyncModel
+from zenml.utils.source_utils import generate_configurations_from_custom_flavor
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_configurations import PipelineSpec
@@ -1879,11 +1880,17 @@ class Client(metaclass=ClientMetaClass):
             component_type=component_type,
         )()
 
+        configurations = generate_configurations_from_custom_flavor(source)
+
         create_flavor_request = FlavorRequestModel(
             source=source,
             type=flavor.type,
             name=flavor.name,
             config_schema=flavor.config_schema,
+            integration="custom",
+            user=self.active_user.id,
+            project=self.active_project.id,
+            configuration=configurations,
         )
 
         return self.zen_store.create_flavor(flavor=create_flavor_request)
@@ -1932,7 +1939,9 @@ class Client(metaclass=ClientMetaClass):
             A list of all the flavor models.
         """
         return self.zen_store.list_flavors(
-            project_name_or_id=project_name_or_id or self.active_project.id,
+            project_name_or_id=project_name_or_id
+            if project_name_or_id
+            else None,
             user_name_or_id=user_name_or_id,
         )
 
@@ -1949,18 +1958,17 @@ class Client(metaclass=ClientMetaClass):
         """
         logger.debug(f"Fetching the flavors of type {component_type}.")
 
-        from zenml.stack.flavor_registry import flavor_registry
-
-        zenml_flavors = flavor_registry.get_flavors_by_type(
-            component_type=component_type
+        global_flavors = self.zen_store.list_flavors(
+            component_type=component_type,
         )
-
-        custom_flavors = self.zen_store.list_flavors(
+        project_scoped_flavors = self.zen_store.list_flavors(
             project_name_or_id=self.active_project.id,
             component_type=component_type,
         )
 
-        return zenml_flavors + custom_flavors
+        flavors = global_flavors + project_scoped_flavors
+
+        return flavors
 
     def get_flavor_by_name_and_type(
         self, name: str, component_type: "StackComponentType"
@@ -1981,46 +1989,32 @@ class Client(metaclass=ClientMetaClass):
             f"Fetching the flavor of type {component_type} with name {name}."
         )
 
-        from zenml.stack.flavor_registry import flavor_registry
+        global_flavors = self.zen_store.list_flavors(
+            component_type=component_type,
+            name=name,
+        )
 
-        try:
-            zenml_flavor = flavor_registry.get_flavor_by_name_and_type(
-                component_type=component_type,
-                name=name,
-            )
-        except KeyError:
-            zenml_flavor = None
-
-        custom_flavors = self.zen_store.list_flavors(
+        project_scoped_flavors = self.zen_store.list_flavors(
             project_name_or_id=self.active_project.id,
             component_type=component_type,
             name=name,
         )
 
-        if custom_flavors:
-            if len(custom_flavors) > 1:
+        flavors = global_flavors + project_scoped_flavors
+
+        if flavors:
+            if len(flavors) > 1:
                 raise KeyError(
                     f"More than one flavor with name {name} and type "
                     f"{component_type} exists."
                 )
 
-            if zenml_flavor:
-                # If there is one, check whether the same flavor exists as
-                # a ZenML flavor to give out a warning
-                logger.warning(
-                    f"There is a custom implementation for the flavor "
-                    f"'{name}' of a {component_type}, which is currently "
-                    f"overwriting the same flavor provided by ZenML."
-                )
-            return custom_flavors[0]
+            return flavors[0]
         else:
-            if zenml_flavor:
-                return zenml_flavor
-            else:
-                raise KeyError(
-                    f"No flavor with name '{name}' and type '{component_type}' "
-                    "exists."
-                )
+            raise KeyError(
+                f"No flavor with name '{name}' and type '{component_type}' "
+                "exists."
+            )
 
     # -------------
     # - PIPELINES -

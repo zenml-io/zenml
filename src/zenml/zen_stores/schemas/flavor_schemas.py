@@ -22,7 +22,7 @@ from sqlmodel import Field, Relationship
 from zenml.enums import StackComponentType
 from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.models.flavor_models import (
-    FlavorConfigurationModel,
+    FlavorConfigurationField,
     FlavorResponseModel,
 )
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
@@ -93,7 +93,7 @@ class FlavorSchema(NamedSchema, table=True):
             updated=self.updated,
             logo_url=self.logo_url,
             configuration=[
-                FlavorConfigurationModel.parse_obj(item)
+                FlavorConfigurationField.parse_obj(item)
                 for item in json.loads(self.configuration)
             ],
         )

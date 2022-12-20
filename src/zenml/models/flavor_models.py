@@ -18,7 +18,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from zenml.enums import StackComponentType
+from zenml.enums import FlavorFieldDataType, StackComponentType
 from zenml.models.base_models import (
     UserScopedRequestModel,
     UserScopedResponseModel,
@@ -29,11 +29,38 @@ if TYPE_CHECKING:
     from zenml.models import ProjectResponseModel
 
 
-class FlavorConfigurationModel(BaseModel):
+class FlavorConfigurationField(BaseModel):
+    """Serializable representation that defines one specific configuration field of a Flavor Configuration Model."""
+
     field_name: str
-    datatype: str
+    datatype: FlavorFieldDataType
     is_required: bool
     description: str
+
+    @staticmethod
+    def convert_to_flavor_datatype(datatype: type) -> FlavorFieldDataType:
+        """Convert a python datatype into an enum value for serialization.
+
+        Args:
+            datatype: Field datatype
+
+        Returns:
+            String representation of that datatype.
+        """
+        if datatype == str:
+            return FlavorFieldDataType.STRING
+        elif datatype == int:
+            return FlavorFieldDataType.INT
+        elif datatype == float:
+            return FlavorFieldDataType.FLOAT
+        elif datatype == bool:
+            return FlavorFieldDataType.BOOL
+        elif datatype == list:
+            return FlavorFieldDataType.LIST
+        elif datatype == dict:
+            return FlavorFieldDataType.DICT
+        else:
+            return FlavorFieldDataType.ANY
 
 
 # ---- #
@@ -63,7 +90,7 @@ class FlavorBaseModel(BaseModel):
     )
     logo_url: str = Field(default="https://tinyurl.com/m4xab3yj")
 
-    configuration: List[FlavorConfigurationModel] = Field(default=[])
+    configuration: List[FlavorConfigurationField] = Field(default=[])
 
 
 # -------- #

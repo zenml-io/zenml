@@ -1434,6 +1434,10 @@ class SqlZenStore(BaseZenStore):
                 integration=flavor.integration,
                 project_id=flavor.project,
                 user_id=flavor.user,
+                logo_url=flavor.logo_url,
+                configuration=json.dumps(
+                    [f.dict() for f in flavor.configuration]
+                ),
             )
             session.add(new_flavor)
             session.commit()
