@@ -34,12 +34,14 @@ class SagemakerOrchestratorSettings(BaseSettings):
             job.
         max_runtime_in_seconds: The maximum runtime in seconds for the
             processing job.
+        processor_tags: Tags to apply to the processor assigned to the step.
     """
 
     instance_type: str = "ml.t3.medium"
     execution_role: Optional[str] = None
     volume_size_in_gb: Optional[int] = 30
     max_runtime_in_seconds: Optional[int] = 86400
+    processor_tags: Optional[dict[str, str]] = None
 
 
 class SagemakerOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
