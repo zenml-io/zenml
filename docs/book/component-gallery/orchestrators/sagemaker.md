@@ -46,7 +46,6 @@ To use the Sagemaker orchestrator, we need:
 ```shell
 zenml integration install aws
 * [Docker](https://www.docker.com) installed and running.
-* [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) installed.
 * A [remote artifact store](../artifact-stores/artifact-stores.md) as part of 
 your stack (configured with an `authentication_secret` attribute) along with [a remote secrets manager](../secrets-managers/secrets-managers.md) to store that
 authentication secret.
