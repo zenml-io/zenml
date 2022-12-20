@@ -542,7 +542,7 @@ class AirflowOrchestrator(BaseOrchestrator):
         logger.info("Airflow spun down.")
 
     def _set_server_env(self) -> None:
-        "Sets environment variables for the local Airflow server process."
+        """Sets environment variables for the local Airflow server process."""
         os.environ["AIRFLOW__CORE__DAGS_FOLDER"] = self.dags_directory
         os.environ["AIRFLOW__CORE__LOAD_EXAMPLES"] = "false"
         # check the DAG folder every 10 seconds for new files
