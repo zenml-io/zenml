@@ -41,10 +41,12 @@ will help you set up the infrastructure with one click.
 
 To use the Sagemaker orchestrator, we need:
 
-* The ZenML `aws` integration installed. If you haven't done so, run 
+* The ZenML `aws` and `s3` integrations installed. If you haven't done so, run 
 
 ```shell
-zenml integration install aws
+zenml integration install aws s3
+```
+
 * [Docker](https://www.docker.com) installed and running.
 * A [remote artifact store](../artifact-stores/artifact-stores.md) as part of 
 your stack (configured with an `authentication_secret` attribute) along with [a remote secrets manager](../secrets-managers/secrets-managers.md) to store that
@@ -57,6 +59,8 @@ as part of your stack.
   [here](https://docs.aws.amazon.com/sagemaker/latest/dg/sagemaker-roles.html)
   or use the ZenML recipe (when available) which will set up the necessary
     permissions for you.
+* The local client (whoever is running the pipeline) will also have to have the
+  necessary permissions or role to be able to launch Sagemaker jobs.
 
 We can then register the orchestrator and use it in our active stack:
 ```shell
