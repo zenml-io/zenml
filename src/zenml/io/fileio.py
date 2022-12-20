@@ -253,6 +253,10 @@ def size(path: "PathType") -> Optional[int]:
         )
         return None
 
+    # If the path does not exist, return 0.
+    if not exists(path):
+        return 0
+
     # If the path is a file, return its size.
     if not file_system.isdir(path):
         return file_system.size(path)

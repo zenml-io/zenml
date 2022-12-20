@@ -266,6 +266,23 @@ def test_stat_raises_error_when_file_doesnt_exist(tmp_path) -> None:
         fileio.stat(os.path.join(tmp_path, "not_a_file.txt"))
 
 
+def test_size_returns_int_for_file(tmp_path):
+    """Test that size returns an int for a file input"""
+    with NamedTemporaryFile(dir=tmp_path) as temp_file:
+        assert isinstance(fileio.size(temp_file.name), int)
+
+
+def test_size_returns_int_for_dir(tmp_path):
+    """Test that size returns an int for a directory input"""
+    with NamedTemporaryFile(dir=tmp_path):
+        assert isinstance(fileio.size(str(tmp_path)), int)
+
+
+def test_size_returns_zero_for_non_existent_file(tmp_path):
+    """Test that size returns zero for a non-existent file"""
+    assert fileio.size(os.path.join(tmp_path, "not_a_file.txt")) == 0
+
+
 def test_walk_returns_an_iterator(tmp_path) -> None:
     """Test that walk returns an iterator"""
     assert isinstance(fileio.walk(str(tmp_path)), Iterable)
