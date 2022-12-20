@@ -18,7 +18,6 @@ from typing import TYPE_CHECKING, Dict, List
 
 from zenml.client import Client
 from zenml.enums import ExecutionStatus
-from zenml.models.artifact_models import ArtifactRequestModel
 from zenml.models.pipeline_run_models import (
     PipelineRunResponseModel,
     PipelineRunUpdateModel,
