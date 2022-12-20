@@ -1930,14 +1930,10 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A list of all the flavor models.
         """
-        from zenml.stack.flavor_registry import flavor_registry
-
-        zenml_flavors = flavor_registry.flavors
-        custom_flavors = self.zen_store.list_flavors(
+        return self.zen_store.list_flavors(
             project_name_or_id=project_name_or_id or self.active_project.id,
             user_name_or_id=user_name_or_id,
         )
-        return zenml_flavors  # + custom_flavors
 
     def get_flavors_by_type(
         self, component_type: "StackComponentType"
