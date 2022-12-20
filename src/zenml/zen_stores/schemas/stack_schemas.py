@@ -128,7 +128,6 @@ class StackSchema(ShareableSchema, table=True):
         Returns:
             The converted model.
         """
-
         if _block_recursion:
             return StackResponseModel(
                 id=self.id,
