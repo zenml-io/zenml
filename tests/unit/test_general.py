@@ -78,7 +78,7 @@ def _test_materializer(
         loaded_data = materializer.load(step_output_type)
         assert isinstance(loaded_data, step_output_type)  # correct type
 
-        # Run addtional validation function if provided
+        # Run additional validation function if provided
         if validation_function:
             validation_function(artifact_uri)
 
