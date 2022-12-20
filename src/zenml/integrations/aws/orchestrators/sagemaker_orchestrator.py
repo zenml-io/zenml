@@ -139,7 +139,7 @@ class SagemakerOrchestrator(BaseOrchestrator):
                 SagemakerOrchestratorSettings, self.get_settings(step)
             )
             execution_role = step_settings.execution_role or execution_role
-            tags = step_settings.tags or None
+            tags = step_settings.processor_tags or None
 
             processor = sagemaker.processing.Processor(
                 role=execution_role,
@@ -176,6 +176,10 @@ class SagemakerOrchestrator(BaseOrchestrator):
 
         # mainly for testing purposes, we wait for the pipeline to finish
         if self.config.synchronous:
+            logger.info(
+                "Executing synchronously. Waiting for pipeline to finish..."
+            )
             pipeline_execution.wait(
                 delay=POLLING_DELAY, max_attempts=MAX_POLLING_ATTEMPTS
             )
+            logger.info("Pipeline completed successfully.")
