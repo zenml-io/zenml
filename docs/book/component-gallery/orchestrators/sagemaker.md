@@ -60,7 +60,8 @@ as part of your stack.
   or use the ZenML recipe (when available) which will set up the necessary
     permissions for you.
 * The local client (whoever is running the pipeline) will also have to have the
-  necessary permissions or role to be able to launch Sagemaker jobs.
+  necessary permissions or role to be able to launch Sagemaker jobs. (This would
+  be covered by the `AmazonSageMakerFullAccess` policy suggested above.)
 
 We can then register the orchestrator and use it in our active stack:
 ```shell
