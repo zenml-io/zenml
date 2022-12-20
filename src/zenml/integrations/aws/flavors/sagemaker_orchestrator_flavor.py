@@ -48,6 +48,7 @@ class SagemakerOrchestratorConfig(  # type: ignore[misc] # https://github.com/py
     BaseStepOperatorConfig, SagemakerOrchestratorSettings
 ):
     """Config for the Sagemaker orchestrator.
+
     Attributes:
         processor_role: IAM role to use for the processing job.
         bucket: Name of the S3 bucket to use for storing artifacts
