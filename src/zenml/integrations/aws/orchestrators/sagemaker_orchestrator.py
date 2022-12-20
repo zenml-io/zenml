@@ -37,8 +37,12 @@ if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.stack import Stack
 
-logger = get_logger(__name__)
+
 ENV_ZENML_SAGEMAKER_RUN_ID = "ZENML_SAGEMAKER_RUN_ID"
+MAX_POLLING_ATTEMPTS = 100
+POLLING_DELAY = 30
+
+logger = get_logger(__name__)
 
 
 class SagemakerOrchestrator(BaseOrchestrator):
@@ -168,4 +172,10 @@ class SagemakerOrchestrator(BaseOrchestrator):
         )
 
         pipeline.create(role_arn=execution_role)
-        pipeline.start()
+        pipeline_execution = pipeline.start()
+
+        # mainly for testing purposes, we wait for the pipeline to finish
+        if self.config.synchronous:
+            pipeline_execution.wait(
+                delay=POLLING_DELAY, max_attempts=MAX_POLLING_ATTEMPTS
+            )

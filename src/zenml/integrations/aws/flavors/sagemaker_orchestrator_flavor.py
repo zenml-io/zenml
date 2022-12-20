@@ -53,11 +53,15 @@ class SagemakerOrchestratorConfig(  # type: ignore[misc] # https://github.com/py
         processor_role: IAM role to use for the processing job.
         bucket: Name of the S3 bucket to use for storing artifacts
             from the job run. If not provided, a default bucket will be created
-            based on the following format: "sagemaker-{region}-{aws-account-id}".
+            based on the following format:
+            "sagemaker-{region}-{aws-account-id}".
+        synchronous: Whether to run the processing job synchronously or
+            asynchronously. Defaults to False.
     """
 
     processor_role: Optional[str] = None
     bucket: Optional[str] = None
+    synchronous: bool = False
 
     @property
     def is_remote(self) -> bool:
