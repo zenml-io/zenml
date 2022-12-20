@@ -81,6 +81,24 @@ class PartialStepConfiguration(StepConfigurationUpdate):
     inputs: Mapping[str, PartialArtifactConfiguration] = {}
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
 
+    @root_validator(pre=True)
+    def _fill_missing_values(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Fill in values that might be missing in old configs.
+
+        Args:
+            values: The values dict used to instantiate the model.
+
+        Returns:
+            The values dict with missing values filled in.
+        """
+        default_values = {
+            "enable_artifact_metadata": False,
+        }
+        for key, default_value in default_values.items():
+            if key not in values:
+                values[key] = default_value
+        return values
+
 
 class StepConfiguration(PartialStepConfiguration):
     """Step configuration class."""

@@ -14,7 +14,7 @@
 """Pipeline configuration classes."""
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from pydantic import validator
+from pydantic import root_validator, validator
 
 from zenml.config.constants import DOCKER_SETTINGS_KEY
 from zenml.config.schedule import Schedule
@@ -44,6 +44,24 @@ class PipelineConfiguration(PipelineConfigurationUpdate):
     name: str
     enable_cache: bool
     enable_artifact_metadata: bool
+
+    @root_validator(pre=True)
+    def _fill_missing_values(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Fill in values that might be missing in old configs.
+
+        Args:
+            values: The values dict used to instantiate the model.
+
+        Returns:
+            The values dict with missing values filled in.
+        """
+        default_values = {
+            "enable_artifact_metadata": False,
+        }
+        for key, default_value in default_values.items():
+            if key not in values:
+                values[key] = default_value
+        return values
 
     @validator("name")
     def ensure_pipeline_name_allowed(cls, name: str) -> str:
