@@ -133,6 +133,23 @@ def update_run(
     return zen_store().update_run(run_id=run_id, run_update=run_model)
 
 
+@router.delete(
+    "/{run_id}",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def delete_run(
+    run_id: UUID,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+) -> None:
+    """Deletes a run.
+
+    Args:
+        run_id: ID of the run.
+    """
+    zen_store().delete_run(run_id=run_id)
+
+
 @router.get(
     "/{run_id}" + GRAPH,
     response_model=LineageGraph,

@@ -54,6 +54,7 @@ class StepRunSchema(NamedSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
+    pipeline_run: "PipelineRunSchema" = Relationship(back_populates="step_runs")
     original_step_run_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
         target=__tablename__,
@@ -71,7 +72,7 @@ class StepRunSchema(NamedSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    user: "UserSchema" = Relationship(back_populates="step_runs")
+    user: Optional["UserSchema"] = Relationship(back_populates="step_runs")
 
     project_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -98,6 +99,27 @@ class StepRunSchema(NamedSchema, table=True):
     )
     docstring: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     num_outputs: Optional[int]
+
+    input_artifacts: List["StepRunInputArtifactSchema"] = Relationship(
+        back_populates="step_run", sa_relationship_kwargs={"cascade": "delete"}
+    )
+    output_artifacts: List["StepRunOutputArtifactSchema"] = Relationship(
+        back_populates="step_run", sa_relationship_kwargs={"cascade": "delete"}
+    )
+    parents: List["StepRunParentsSchema"] = Relationship(
+        back_populates="child",
+        sa_relationship_kwargs={
+            "cascade": "delete",
+            "primaryjoin": "StepRunParentsSchema.child_id == StepRunSchema.id",
+        },
+    )
+    children: List["StepRunParentsSchema"] = Relationship(
+        back_populates="parent",
+        sa_relationship_kwargs={
+            "cascade": "delete",
+            "primaryjoin": "StepRunParentsSchema.parent_id == StepRunSchema.id",
+        },
+    )
 
     @classmethod
     def from_request(cls, request: StepRunRequestModel) -> "StepRunSchema":
@@ -162,7 +184,7 @@ class StepRunSchema(NamedSchema, table=True):
             pipeline_run_id=self.pipeline_run_id,
             original_step_run_id=self.original_step_run_id,
             project=self.project.to_model(),
-            user=self.user.to_model(),
+            user=self.user.to_model() if self.user else None,
             parent_step_ids=parent_step_ids,
             enable_cache=self.enable_cache,
             enable_artifact_metadata=self.enable_artifact_metadata,
@@ -213,6 +235,12 @@ class StepRunParentsSchema(SQLModel, table=True):
         nullable=False,
         primary_key=True,
     )
+    parent: StepRunSchema = Relationship(
+        back_populates="children",
+        sa_relationship_kwargs={
+            "primaryjoin": "StepRunParentsSchema.parent_id == StepRunSchema.id"
+        },
+    )
     child_id: UUID = build_foreign_key_field(
         source=__tablename__,
         target=StepRunSchema.__tablename__,
@@ -221,6 +249,12 @@ class StepRunParentsSchema(SQLModel, table=True):
         ondelete="CASCADE",
         nullable=False,
         primary_key=True,
+    )
+    child: StepRunSchema = Relationship(
+        back_populates="parents",
+        sa_relationship_kwargs={
+            "primaryjoin": "StepRunParentsSchema.child_id == StepRunSchema.id"
+        },
     )
 
 
@@ -238,6 +272,7 @@ class StepRunInputArtifactSchema(SQLModel, table=True):
         nullable=False,
         primary_key=True,
     )
+    step_run: StepRunSchema = Relationship(back_populates="input_artifacts")
     artifact_id: UUID = build_foreign_key_field(
         source=__tablename__,
         target=ArtifactSchema.__tablename__,
@@ -247,6 +282,7 @@ class StepRunInputArtifactSchema(SQLModel, table=True):
         nullable=False,
         primary_key=True,
     )
+    artifact: ArtifactSchema = Relationship(back_populates="input_to_step_runs")
     name: str
 
 
@@ -264,6 +300,7 @@ class StepRunOutputArtifactSchema(SQLModel, table=True):
         nullable=False,
         primary_key=True,
     )
+    step_run: StepRunSchema = Relationship(back_populates="output_artifacts")
     artifact_id: UUID = build_foreign_key_field(
         source=__tablename__,
         target=ArtifactSchema.__tablename__,
@@ -272,5 +309,8 @@ class StepRunOutputArtifactSchema(SQLModel, table=True):
         ondelete="CASCADE",
         nullable=False,
         primary_key=True,
+    )
+    artifact: ArtifactSchema = Relationship(
+        back_populates="output_of_step_runs"
     )
     name: str
