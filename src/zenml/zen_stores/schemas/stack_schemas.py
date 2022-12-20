@@ -146,7 +146,9 @@ class StackSchema(ShareableSchema, table=True):
             return StackResponseModel(
                 id=self.id,
                 name=self.name,
-                user=self.user.to_model(_block_recursion=True) if self.user else None,
+                user=self.user.to_model(_block_recursion=True)
+                if self.user
+                else None,
                 project=self.project.to_model(),
                 is_shared=self.is_shared,
                 components={
