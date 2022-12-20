@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """ZenML Store interface."""
 from abc import ABC, abstractmethod
-from typing import Union
+from typing import Union, Optional
 from uuid import UUID
 
 from zenml.models import (
