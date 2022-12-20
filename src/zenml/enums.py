@@ -154,7 +154,7 @@ class PermissionType(StrEnum):
 
 
 class FlavorFieldDataType(StrEnum):
-    """All permission types."""
+    """All data types for flavor configuration fields."""
 
     STRING = "string"
     INT = "integer"

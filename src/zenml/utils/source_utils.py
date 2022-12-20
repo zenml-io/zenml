@@ -56,6 +56,7 @@ from typing import (
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
 from zenml.logger import get_logger
+from zenml.models.flavor_models import FlavorConfigurationField
 
 logger = get_logger(__name__)
 
@@ -625,6 +626,30 @@ def validate_flavor_source(
         )
 
     return flavor_class  # noqa
+
+
+def generate_configurations_from_custom_flavor(
+    source: str,
+) -> List[FlavorConfigurationField]:
+    flavor_class = load_source_path_class(source)
+
+    flavor = flavor_class()
+    conf_class = flavor.config_class
+
+    config_list = []
+    for field_name, field in conf_class.__fields__.items():
+        config_list.append(
+            FlavorConfigurationField(
+                field_name=field_name,
+                datatype=FlavorConfigurationField.convert_to_flavor_datatype(
+                    field.type_
+                ),
+                is_required=field.required,
+                description="",
+            )
+        )
+
+    return config_list
 
 
 def validate_config_source(
