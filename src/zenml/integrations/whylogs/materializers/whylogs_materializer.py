@@ -35,7 +35,7 @@ class WhylogsMaterializer(BaseMaterializer):
     """Materializer to read/write whylogs dataset profile views."""
 
     ASSOCIATED_TYPES = (DatasetProfileView,)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.STATISTICS
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA_ANALYSIS
 
     def load(self, data_type: Type[Any]) -> DatasetProfileView:
         """Reads and returns a whylogs dataset profile view.
