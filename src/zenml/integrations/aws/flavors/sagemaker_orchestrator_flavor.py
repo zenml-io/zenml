@@ -17,8 +17,8 @@ from typing import TYPE_CHECKING, Optional, Type
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.aws import AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR
+from zenml.orchestrators import BaseOrchestratorConfig
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorFlavor
-from zenml.step_operators.base_step_operator import BaseStepOperatorConfig
 
 if TYPE_CHECKING:
     from zenml.integrations.aws.orchestrators import SagemakerOrchestrator
@@ -45,7 +45,7 @@ class SagemakerOrchestratorSettings(BaseSettings):
 
 
 class SagemakerOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
-    BaseStepOperatorConfig, SagemakerOrchestratorSettings
+    BaseOrchestratorConfig, SagemakerOrchestratorSettings
 ):
     """Config for the Sagemaker orchestrator.
 
