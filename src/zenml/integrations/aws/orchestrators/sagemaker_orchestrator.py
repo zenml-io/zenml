@@ -63,7 +63,6 @@ class SagemakerOrchestrator(BaseOrchestrator):
             The orchestrator run id.
         """
         try:
-            print(os.environ[ENV_ZENML_SAGEMAKER_RUN_ID])
             return os.environ[ENV_ZENML_SAGEMAKER_RUN_ID]
         except KeyError:
             raise RuntimeError(
@@ -84,7 +83,6 @@ class SagemakerOrchestrator(BaseOrchestrator):
         repo_digest = docker_image_builder.build_and_push_docker_image(
             deployment=deployment, stack=stack
         )
-        # repo_digest = "833794477945.dkr.ecr.eu-north-1.amazonaws.com/zenml:not_so_basic_pipeline"
         deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
 
     @property
