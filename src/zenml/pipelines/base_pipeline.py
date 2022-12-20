@@ -478,46 +478,16 @@ class BasePipeline(metaclass=BasePipelineMeta):
             else:
                 run_config = PipelineRunConfiguration()
 
-        new_values = dict_utils.remove_none_values(
-            {
-                "run_name": run_name,
-                "enable_cache": enable_cache,
-                "enable_artifact_metadata": enable_artifact_metadata,
-                "steps": step_configurations,
-                "settings": settings,
-                "schedule": schedule,
-                "extra": extra,
-            }
-        )
-
-        # Update with the values in code so they take precedence
-        run_config = pydantic_utils.update_model(run_config, update=new_values)
-        from zenml.config.compiler import Compiler
-
-        pipeline_deployment = Compiler().compile(
-            pipeline=self, stack=stack, run_configuration=run_config
-        )
-
-        skip_pipeline_registration = constants.handle_bool_env_var(
-            constants.ENV_ZENML_SKIP_PIPELINE_REGISTRATION, default=False
-        )
-
-        register_pipeline = not (skip_pipeline_registration or unlisted)
-
-        pipeline_id = None
-        if register_pipeline:
-            step_specs = [
-                step.spec for step in pipeline_deployment.steps.values()
-            ]
-            pipeline_spec = PipelineSpec(steps=step_specs)
-
-            pipeline_id = Client().create_pipeline(
-                pipeline_name=pipeline_deployment.pipeline.name,
-                pipeline_spec=pipeline_spec,
-                pipeline_docstring=self.__doc__,
-            )
-            pipeline_deployment = pipeline_deployment.copy(
-                update={"pipeline_id": pipeline_id}
+            new_values = dict_utils.remove_none_values(
+                {
+                    "run_name": run_name,
+                    "enable_cache": enable_cache,
+                    "enable_artifact_metadata": enable_artifact_metadata,
+                    "steps": step_configurations,
+                    "settings": settings,
+                    "schedule": schedule,
+                    "extra": extra,
+                }
             )
 
             # Update with the values in code so they take precedence
