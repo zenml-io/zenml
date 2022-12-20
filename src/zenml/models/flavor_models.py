@@ -13,16 +13,28 @@
 #  permissions and limitations under the License.
 """Models representing stack component flavors."""
 
-from typing import ClassVar, List, Optional
+from typing import TYPE_CHECKING, ClassVar, List, Optional
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
 from zenml.enums import StackComponentType
 from zenml.models.base_models import (
-    ProjectScopedRequestModel,
-    ProjectScopedResponseModel,
+    UserScopedRequestModel,
+    UserScopedResponseModel,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
+
+if TYPE_CHECKING:
+    from zenml.models import ProjectResponseModel
+
+
+class FlavorConfigurationModel(BaseModel):
+    field_name: str
+    datatype: str
+    is_required: bool
+    description: str
+
 
 # ---- #
 # BASE #
@@ -49,6 +61,9 @@ class FlavorBaseModel(BaseModel):
         title="The name of the integration that the Flavor belongs to.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
+    logo_url: str = Field(default="https://tinyurl.com/m4xab3yj")
+
+    configuration: List[FlavorConfigurationModel] = Field(default=[])
 
 
 # -------- #
@@ -56,7 +71,7 @@ class FlavorBaseModel(BaseModel):
 # -------- #
 
 
-class FlavorResponseModel(FlavorBaseModel, ProjectScopedResponseModel):
+class FlavorResponseModel(FlavorBaseModel, UserScopedResponseModel):
     """Response model for stack component flavors."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
@@ -65,16 +80,24 @@ class FlavorResponseModel(FlavorBaseModel, ProjectScopedResponseModel):
         "integration",
     ]
 
+    project: Optional["ProjectResponseModel"] = Field(
+        title="The project of this resource."
+    )
+
 
 # ------- #
 # REQUEST #
 # ------- #
 
 
-class FlavorRequestModel(FlavorBaseModel, ProjectScopedRequestModel):
+class FlavorRequestModel(FlavorBaseModel, UserScopedRequestModel):
     """Request model for stack component flavors."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
         "type",
         "integration",
     ]
+
+    project: Optional[UUID] = Field(
+        title="The project to which this resource belongs."
+    )

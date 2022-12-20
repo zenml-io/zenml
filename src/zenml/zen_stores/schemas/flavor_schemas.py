@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """SQL Model Implementations for Flavors."""
-
+import json
 from typing import Optional
 from uuid import UUID
 
@@ -21,7 +21,10 @@ from sqlmodel import Field, Relationship
 
 from zenml.enums import StackComponentType
 from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
-from zenml.models.flavor_models import FlavorResponseModel
+from zenml.models.flavor_models import (
+    FlavorConfigurationModel,
+    FlavorResponseModel,
+)
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
@@ -68,6 +71,9 @@ class FlavorSchema(NamedSchema, table=True):
     )
     user: Optional["UserSchema"] = Relationship(back_populates="flavors")
 
+    logo_url: str
+    configuration: str
+
     def to_model(self) -> FlavorResponseModel:
         """Converts a flavor schema to a flavor model.
 
@@ -82,7 +88,12 @@ class FlavorSchema(NamedSchema, table=True):
             config_schema=self.config_schema,
             integration=self.integration,
             user=self.user.to_model() if self.user else None,
-            project=self.project.to_model(),
+            project=self.project.to_model() if self.project else None,
             created=self.created,
             updated=self.updated,
+            logo_url=self.logo_url,
+            configuration=[
+                FlavorConfigurationModel.parse_obj(item)
+                for item in json.loads(self.configuration)
+            ],
         )
