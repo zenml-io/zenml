@@ -164,8 +164,12 @@ class KanikoImageBuilder(BaseImageBuilder):
                         "stdin": True,
                         "stdinOnce": True,
                         "args": args,
+                        "env": self.config.env,
+                        "envFrom": self.config.env_from,
+                        "volumeMounts": self.config.volume_mounts,
                     }
-                ]
+                ],
+                "volumes": self.config.volumes,
             },
         }
 
@@ -256,7 +260,7 @@ class KanikoImageBuilder(BaseImageBuilder):
             'jsonpath="{.status.containerStatuses[0].state.terminated.message}"',
         ]
         output = subprocess.check_output(command).decode()
-        output = output.strip('"')
+        output = output.strip('"\n')
         return output
 
     def _delete_pod(self, pod_name: str) -> None:
