@@ -53,7 +53,7 @@ your stack (configured with an `authentication_secret` attribute) along with [a 
 authentication secret.
 * A [remote container registry](../container-registries/container-registries.md) 
 as part of your stack.
-* An IAM role or user with an `AmazonSageMakerFullAccess` policy applied to it
+* An IAM role or user with [an `AmazonSageMakerFullAccess` managed policy](https://docs.aws.amazon.com/sagemaker/latest/dg/security-iam-awsmanpol.html) applied to it
   as well as `sagemaker.amazonaws.com` added as a Principal Service. Full
   details on these permissions can be found
   [here](https://docs.aws.amazon.com/sagemaker/latest/dg/sagemaker-roles.html)
