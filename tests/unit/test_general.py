@@ -40,6 +40,7 @@ def _test_materializer(
     the same materializer and ensure that:
     - `materializer.save()` did write something to disk
     - `materializer.load()` did load the original data type again
+    - `materializer.extract_metadata()` returned a dict
 
     Args:
         step_output: The output artifact we want to materialize.
@@ -63,11 +64,23 @@ def _test_materializer(
     with TemporaryDirectory() as artifact_uri:
         materializer = materializer_class(uri=artifact_uri)
         existing_files = os.listdir(artifact_uri)
+
+        # Assert that materializer saves something to disk
         materializer.save(step_output)
         new_files = os.listdir(artifact_uri)
         assert len(new_files) > len(existing_files)  # something was written
+
+        # Assert that metadata extraction returns a dict
+        metadata = materializer.extract_metadata(step_output)
+        assert isinstance(metadata, dict)
+
+        # Assert that materializer loads the data with the correct type
         loaded_data = materializer.load(step_output_type)
         assert isinstance(loaded_data, step_output_type)  # correct type
+
+        # Run addtional validation function if provided
         if validation_function:
             validation_function(artifact_uri)
+
+        # Return the loaded data
         return loaded_data
