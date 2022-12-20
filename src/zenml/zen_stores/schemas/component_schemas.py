@@ -34,7 +34,6 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import StackSchema
-    from zenml.zen_stores.schemas.artifact_schemas import ArtifactSchema
 
 
 class StackComponentSchema(ShareableSchema, table=True):
@@ -65,10 +64,6 @@ class StackComponentSchema(ShareableSchema, table=True):
         nullable=True,
     )
     user: Optional["UserSchema"] = Relationship(back_populates="components")
-
-    artifacts: List["ArtifactSchema"] = Relationship(
-        back_populates="artifact_store",
-    )
 
     stacks: List["StackSchema"] = Relationship(
         back_populates="components", link_model=StackCompositionSchema
