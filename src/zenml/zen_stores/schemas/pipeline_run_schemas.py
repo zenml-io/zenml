@@ -15,7 +15,7 @@
 
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column
@@ -32,6 +32,7 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 
 if TYPE_CHECKING:
     from zenml.models import PipelineRunUpdateModel
+    from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
 
 
 class PipelineRunSchema(NamedSchema, table=True):
@@ -89,6 +90,11 @@ class PipelineRunSchema(NamedSchema, table=True):
     num_steps: Optional[int]
     zenml_version: str
     git_sha: Optional[str] = Field(nullable=True)
+
+    step_runs: List["StepRunSchema"] = Relationship(
+        back_populates="pipeline_run",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
 
     def to_model(
         self, _block_recursion: bool = False

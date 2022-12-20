@@ -110,11 +110,13 @@ def sql_store_with_run(
 
     store = sql_store["store"]
     pipeline_run = store.list_runs()[0]
-    pipeline_step = store.list_run_steps(pipeline_run.id)[1]
+    pipeline_step = store.list_run_steps()[1]
+    artifact = store.list_artifacts()[0]
     sql_store.update(
         {
             "pipeline_run": pipeline_run,
             "step": pipeline_step,
+            "artifact": artifact,
         }
     )
 

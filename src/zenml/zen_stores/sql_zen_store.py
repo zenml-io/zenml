@@ -2875,6 +2875,30 @@ class SqlZenStore(BaseZenStore):
             session.refresh(existing_run)
             return existing_run.to_model()
 
+    def delete_run(self, run_id: UUID) -> None:
+        """Deletes a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to delete.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+        with Session(self.engine) as session:
+            # Check if pipeline run with the given ID exists
+            existing_run = session.exec(
+                select(PipelineRunSchema).where(PipelineRunSchema.id == run_id)
+            ).first()
+            if existing_run is None:
+                raise KeyError(
+                    f"Unable to delete pipeline run with ID {run_id}: "
+                    f"No pipeline run with this ID found."
+                )
+
+            # Delete the pipeline run
+            session.delete(existing_run)
+            session.commit()
+
     # ------------------
     # Pipeline run steps
     # ------------------
@@ -3349,26 +3373,76 @@ class SqlZenStore(BaseZenStore):
 
     def list_artifacts(
         self,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
         artifact_uri: Optional[str] = None,
+        artifact_store_id: Optional[UUID] = None,
+        only_unused: bool = False,
     ) -> List[ArtifactResponseModel]:
         """Lists all artifacts.
 
         Args:
+            project_name_or_id: If specified, only artifacts from the given
+                project will be returned.
             artifact_uri: If specified, only artifacts with the given URI will
                 be returned.
+            artifact_store_id: If specified, only artifacts from the given
+                artifact store will be returned.
+            only_unused: If True, only return artifacts that are not used in
+                any runs.
 
         Returns:
             A list of all artifacts.
         """
         with Session(self.engine) as session:
             query = select(ArtifactSchema)
+            if project_name_or_id is not None:
+                project = self._get_project_schema(
+                    project_name_or_id, session=session
+                )
+                query = query.where(ArtifactSchema.project_id == project.id)
             if artifact_uri is not None:
                 query = query.where(ArtifactSchema.uri == artifact_uri)
+            if artifact_store_id is not None:
+                query = query.where(
+                    ArtifactSchema.artifact_store_id == artifact_store_id
+                )
+            if only_unused:
+                query = query.where(
+                    ArtifactSchema.id.notin_(  # type: ignore[attr-defined]
+                        select(StepRunOutputArtifactSchema.artifact_id)
+                    )
+                )
+                query = query.where(
+                    ArtifactSchema.id.notin_(  # type: ignore[attr-defined]
+                        select(StepRunInputArtifactSchema.artifact_id)
+                    )
+                )
             artifacts = session.exec(query).all()
             return [
                 self._artifact_schema_to_model(artifact)
                 for artifact in artifacts
             ]
+
+    def delete_artifact(self, artifact_id: UUID) -> None:
+        """Deletes an artifact.
+
+        Args:
+            artifact_id: The ID of the artifact to delete.
+
+        Raises:
+            KeyError: if the artifact doesn't exist.
+        """
+        with Session(self.engine) as session:
+            artifact = session.exec(
+                select(ArtifactSchema).where(ArtifactSchema.id == artifact_id)
+            ).first()
+            if artifact is None:
+                raise KeyError(
+                    f"Unable to delete artifact with ID {artifact_id}: "
+                    f"No artifact with this ID found."
+                )
+            session.delete(artifact)
+            session.commit()
 
     # =======================
     # Internal helper methods
