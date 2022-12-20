@@ -15,7 +15,7 @@
 
 import os
 import tempfile
-from typing import Type
+from typing import Dict, Type
 
 import bentoml
 from bentoml._internal.bento import Bento, bento
@@ -86,3 +86,21 @@ class BentoMaterializer(BaseMaterializer):
 
         # Remove the temporary directory
         fileio.rmtree(temp_dir.name)
+
+    def extract_metadata(self, bento: bento.Bento) -> Dict[str, str]:
+        """Extract metadata from the given `Bento` object.
+
+        Args:
+            bento: The `Bento` object to extract metadata from.
+
+        Returns:
+            The extracted metadata as a dictionary.
+        """
+        base_metadata = super().extract_metadata(bento)
+        bento_metadata = {
+            "bento_info_name": bento.info.name,
+            "bento_info_version": bento.info.version,
+            "bento_tag_name": bento.tag.name,
+            "bentoml_version": bento.info.bentoml_version,
+        }
+        return {**base_metadata, **bento_metadata}
