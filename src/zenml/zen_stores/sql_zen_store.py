@@ -3299,7 +3299,6 @@ class SqlZenStore(BaseZenStore):
                 filter_model=artifact_filter_model,
             )
 
-
     def delete_artifact(self, artifact_id: UUID) -> None:
         """Deletes an artifact.
 

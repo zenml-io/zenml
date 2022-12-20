@@ -13,8 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for steps (and artifacts) of pipeline runs."""
 
-from asyncio.log import logger
-from typing import List, Optional, Union
+from typing import List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security

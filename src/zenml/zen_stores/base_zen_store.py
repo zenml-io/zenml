@@ -40,12 +40,9 @@ from zenml.models import (
     StackFilterModel,
     StackRequestModel,
     StackResponseModel,
-    UserFilterModel,
     UserRequestModel,
     UserResponseModel,
-    UserRoleAssignmentFilterModel,
     UserRoleAssignmentRequestModel,
-    UserRoleAssignmentResponseModel,
 )
 from zenml.models.page_model import Page
 from zenml.models.server_models import (
@@ -251,16 +248,16 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
             default_user = self._default_user
         except KeyError:
             default_user = self._create_default_user()
-        # try:
-        self._get_default_stack(
-            project_name_or_id=default_project.id,
-            user_name_or_id=default_user.id,
-        )
-        # except KeyError:
-        #     self._create_default_stack(
-        #         project_name_or_id=default_project.id,
-        #         user_name_or_id=default_user.id,
-        #     )
+        try:
+            self._get_default_stack(
+                project_name_or_id=default_project.id,
+                user_name_or_id=default_user.id,
+            )
+        except KeyError:
+            self._create_default_stack(
+                project_name_or_id=default_project.id,
+                user_name_or_id=default_user.id,
+            )
 
     @property
     def url(self) -> str:

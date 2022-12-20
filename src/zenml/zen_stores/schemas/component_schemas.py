@@ -124,7 +124,9 @@ class StackComponentSchema(ShareableSchema, table=True):
                 name=self.name,
                 type=self.type,
                 flavor=self.flavor,
-                user=self.user.to_model(_block_recursion=True) if self.user else None,
+                user=self.user.to_model(_block_recursion=True)
+                if self.user
+                else None,
                 project=self.project.to_model(),
                 is_shared=self.is_shared,
                 configuration=json.loads(
