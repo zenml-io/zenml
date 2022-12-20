@@ -1,7 +1,7 @@
 """Port flavors into database. [bea8a6ce3015].
 
 Revision ID: bea8a6ce3015
-Revises: 7e4a481d17f7
+Revises: 248dfd320b68
 Create Date: 2022-12-20 11:20:30.731406
 
 """
@@ -11,11 +11,12 @@ from datetime import datetime
 from typing import Any, Dict, List
 
 import sqlalchemy as sa
+import sqlmodel
 from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "bea8a6ce3015"
-down_revision = "7e4a481d17f7"
+down_revision = "248dfd320b68"
 branch_labels = None
 depends_on = None
 
@@ -39,10 +40,10 @@ def upgrade() -> None:
     """Upgrade database schema and/or data, creating a new revision."""
     with op.batch_alter_table("flavor", schema=None) as batch_op:
 
-        batch_op.add_column(sa.Column("logo_url", sa.TEXT(), nullable=True))
+        batch_op.add_column(sa.Column("logo_url", sqlmodel.sql.sqltypes.AutoString(), nullable=True))
 
         batch_op.add_column(
-            sa.Column("configuration", sa.TEXT(), nullable=True)
+            sa.Column("configuration", sa.String(length=65536), nullable=True)
         )
 
         batch_op.alter_column(
@@ -69,3 +70,16 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """Downgrade database schema and/or data back to the previous revision."""
+    with op.batch_alter_table("flavor", schema=None) as batch_op:
+
+        batch_op.drop_column("logo_url")
+        batch_op.drop_column("configuration")
+
+        # TODO: all columns that don't conform to this will need to be dropped
+        batch_op.alter_column(
+            "project_id", existing_type=sa.VARCHAR(), nullable=False
+        )
+
+        batch_op.alter_column(
+            "user_id", existing_type=sa.VARCHAR(), nullable=False
+        )
