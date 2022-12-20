@@ -1938,7 +1938,7 @@ class Client(metaclass=ClientMetaClass):
             project_name_or_id=project_name_or_id or self.active_project.id,
             user_name_or_id=user_name_or_id,
         )
-        return zenml_flavors + custom_flavors
+        return zenml_flavors  # + custom_flavors
 
     def get_flavors_by_type(
         self, component_type: "StackComponentType"
