@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Amazon SageMaker orchestrator flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING, Dict, Optional, Type
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.aws import AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR
@@ -41,7 +41,7 @@ class SagemakerOrchestratorSettings(BaseSettings):
     execution_role: Optional[str] = None
     volume_size_in_gb: Optional[int] = 30
     max_runtime_in_seconds: Optional[int] = 86400
-    processor_tags: Optional[dict[str, str]] = None
+    processor_tags: Optional[Dict[str, str]] = None
 
 
 class SagemakerOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
