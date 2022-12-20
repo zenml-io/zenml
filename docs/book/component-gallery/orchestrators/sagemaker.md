@@ -58,7 +58,8 @@ as part of your stack.
   details on these permissions can be found
   [here](https://docs.aws.amazon.com/sagemaker/latest/dg/sagemaker-roles.html)
   or use the ZenML recipe (when available) which will set up the necessary
-    permissions for you.
+    permissions for you. The creation of this role is described in more detail
+    [in the instructions](https://github.com/zenml-io/zenml/tree/main/examples/sagemaker_orchestration) for using our `sagemaker_orchestration` example.
 * The local client (whoever is running the pipeline) will also have to have the
   necessary permissions or role to be able to launch Sagemaker jobs. (This would
   be covered by the `AmazonSageMakerFullAccess` policy suggested above.)
