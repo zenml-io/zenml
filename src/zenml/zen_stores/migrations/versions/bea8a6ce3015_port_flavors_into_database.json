@@ -14,7 +14,7 @@
     "config_schema": "{\"title\": \"AzureArtifactStoreConfig\", \"description\": \"Configuration class for Azure Artifact Store.\", \"type\": \"object\", \"properties\": {\"authentication_secret\": {\"title\": \"Authentication Secret\", \"type\": \"string\"}, \"path\": {\"title\": \"Path\", \"type\": \"string\"}}, \"required\": [\"path\"], \"additionalProperties\": false}",
     "source": "zenml.integrations.azure.flavors.azure_artifact_store_flavor.AzureArtifactStoreFlavor",
     "integration": "azure",
-    "logo_url": "https://3376789856-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/collections%2FUoWo1UaWzv9Bv1r8FK4K%2Ficon%2F9FC5shDCotdkDPemxZZ3%2F02%20-%20Logo.png?alt=media&token=ab93a501-d807-4c49-94cd-5aa56f2434ec",
+    "logo_url": "s3://public-flavor-logos/artifact_Store/azure.png",
     "configuration": []
   },
   {
@@ -23,7 +23,7 @@
     "config_schema": "{\"title\": \"GCPArtifactStoreConfig\", \"description\": \"Configuration for GCP Artifact Store.\", \"type\": \"object\", \"properties\": {\"authentication_secret\": {\"title\": \"Authentication Secret\", \"type\": \"string\"}, \"path\": {\"title\": \"Path\", \"type\": \"string\"}}, \"required\": [\"path\"], \"additionalProperties\": false}",
     "source": "zenml.integrations.gcp.flavors.gcp_artifact_store_flavor.GCPArtifactStoreFlavor",
     "integration": "gcp",
-    "logo_url": "https://3376789856-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/collections%2FUoWo1UaWzv9Bv1r8FK4K%2Ficon%2F9FC5shDCotdkDPemxZZ3%2F02%20-%20Logo.png?alt=media&token=ab93a501-d807-4c49-94cd-5aa56f2434ec",
+    "logo_url": "s3://public-flavor-logos/artifact_Store/gcp.png",
     "configuration": []
   },
   {
@@ -32,7 +32,7 @@
     "config_schema": "{\"title\": \"S3ArtifactStoreConfig\", \"description\": \"Configuration for the S3 Artifact Store.\\n\\nAll attributes of this class except `path` will be passed to the\\n`s3fs.S3FileSystem` initialization. See\\n[here](https://s3fs.readthedocs.io/en/latest/) for more information on how\\nto use those configuration options to connect to any S3-compatible storage.\\n\\nWhen you want to register an S3ArtifactStore from the CLI and need to pass\\n`client_kwargs`, `config_kwargs` or `s3_additional_kwargs`, you should pass\\nthem as a json string:\\n```\\nzenml artifact-store register my_s3_store --flavor=s3     --path=s3://my_bucket --client_kwargs='{\\\"endpoint_url\\\": \\\"http://my-s3-endpoint\\\"}'\\n```\", \"type\": \"object\", \"properties\": {\"authentication_secret\": {\"title\": \"Authentication Secret\", \"type\": \"string\"}, \"path\": {\"title\": \"Path\", \"type\": \"string\"}, \"key\": {\"title\": \"Key\", \"sensitive\": true, \"type\": \"string\"}, \"secret\": {\"title\": \"Secret\", \"sensitive\": true, \"type\": \"string\"}, \"token\": {\"title\": \"Token\", \"sensitive\": true, \"type\": \"string\"}, \"client_kwargs\": {\"title\": \"Client Kwargs\", \"type\": \"object\"}, \"config_kwargs\": {\"title\": \"Config Kwargs\", \"type\": \"object\"}, \"s3_additional_kwargs\": {\"title\": \"S3 Additional Kwargs\", \"type\": \"object\"}}, \"required\": [\"path\"], \"additionalProperties\": false}",
     "source": "zenml.integrations.s3.flavors.s3_artifact_store_flavor.S3ArtifactStoreFlavor",
     "integration": "s3",
-    "logo_url": "https://3376789856-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/collections%2FUoWo1UaWzv9Bv1r8FK4K%2Ficon%2F9FC5shDCotdkDPemxZZ3%2F02%20-%20Logo.png?alt=media&token=ab93a501-d807-4c49-94cd-5aa56f2434ec",
+    "logo_url": "s3://public-flavor-logos/artifact_Store/aws.png",
     "configuration": []
   },
   {
@@ -221,7 +221,7 @@
     "config_schema": "{\"title\": \"SagemakerStepOperatorConfig\", \"description\": \"Config for the Sagemaker step operator.\\n\\nAttributes:\\n    role: The role that has to be assigned to the jobs which are\\n        running in Sagemaker.\\n    bucket: Name of the S3 bucket to use for storing artifacts\\n        from the job run. If not provided, a default bucket will be created\\n        based on the following format: \\\"sagemaker-{region}-{aws-account-id}\\\".\", \"type\": \"object\", \"properties\": {\"instance_type\": {\"title\": \"Instance Type\", \"type\": \"string\"}, \"experiment_name\": {\"title\": \"Experiment Name\", \"type\": \"string\"}, \"role\": {\"title\": \"Role\", \"type\": \"string\"}, \"bucket\": {\"title\": \"Bucket\", \"type\": \"string\"}}, \"required\": [\"role\"], \"additionalProperties\": false}",
     "source": "zenml.integrations.aws.flavors.sagemaker_step_operator_flavor.SagemakerStepOperatorFlavor",
     "integration": "aws",
-    "logo_url": "https://3376789856-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/collections%2FUoWo1UaWzv9Bv1r8FK4K%2Ficon%2F9FC5shDCotdkDPemxZZ3%2F02%20-%20Logo.png?alt=media&token=ab93a501-d807-4c49-94cd-5aa56f2434ec",
+    "logo_url": "s3://public-flavor-logos/step_operator/sagemaker.png",
     "configuration": []
   },
   {
@@ -230,7 +230,7 @@
     "config_schema": "{\"title\": \"AzureMLStepOperatorConfig\", \"description\": \"Config for the AzureML step operator.\\n\\nAttributes:\\n    subscription_id: The Azure account's subscription ID\\n    resource_group: The resource group to which the AzureML workspace\\n        is deployed.\\n    workspace_name: The name of the AzureML Workspace.\\n    compute_target_name: The name of the configured ComputeTarget.\\n        An instance of it has to be created on the portal if it doesn't\\n        exist already.\\n    tenant_id: The Azure Tenant ID.\\n    service_principal_id: The ID for the service principal that is created\\n        to allow apps to access secure resources.\\n    service_principal_password: Password for the service principal.\", \"type\": \"object\", \"properties\": {\"environment_name\": {\"title\": \"Environment Name\", \"type\": \"string\"}, \"subscription_id\": {\"title\": \"Subscription Id\", \"type\": \"string\"}, \"resource_group\": {\"title\": \"Resource Group\", \"type\": \"string\"}, \"workspace_name\": {\"title\": \"Workspace Name\", \"type\": \"string\"}, \"compute_target_name\": {\"title\": \"Compute Target Name\", \"type\": \"string\"}, \"tenant_id\": {\"title\": \"Tenant Id\", \"sensitive\": true, \"type\": \"string\"}, \"service_principal_id\": {\"title\": \"Service Principal Id\", \"sensitive\": true, \"type\": \"string\"}, \"service_principal_password\": {\"title\": \"Service Principal Password\", \"sensitive\": true, \"type\": \"string\"}}, \"required\": [\"subscription_id\", \"resource_group\", \"workspace_name\", \"compute_target_name\"], \"additionalProperties\": false}",
     "source": "zenml.integrations.azure.flavors.azureml_step_operator_flavor.AzureMLStepOperatorFlavor",
     "integration": "azure",
-    "logo_url": "https://3376789856-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/collections%2FUoWo1UaWzv9Bv1r8FK4K%2Ficon%2F9FC5shDCotdkDPemxZZ3%2F02%20-%20Logo.png?alt=media&token=ab93a501-d807-4c49-94cd-5aa56f2434ec",
+    "logo_url": "s3://public-flavor-logos/step_operator/azureml.png",
     "configuration": []
   },
   {
@@ -239,7 +239,7 @@
     "config_schema": "{\"title\": \"VertexStepOperatorConfig\", \"description\": \"Configuration for the Vertex step operator.\\n\\nAttributes:\\n    region: Region name, e.g., `europe-west1`.\\n    project: GCP project name. If left None, inferred from the\\n        environment.\\n    encryption_spec_key_name: Encryption spec key name.\", \"type\": \"object\", \"properties\": {\"accelerator_type\": {\"title\": \"Accelerator Type\", \"type\": \"string\"}, \"accelerator_count\": {\"title\": \"Accelerator Count\", \"default\": 0, \"type\": \"integer\"}, \"machine_type\": {\"title\": \"Machine Type\", \"default\": \"n1-standard-4\", \"type\": \"string\"}, \"service_account_path\": {\"title\": \"Service Account Path\", \"type\": \"string\"}, \"region\": {\"title\": \"Region\", \"type\": \"string\"}, \"project\": {\"title\": \"Project\", \"type\": \"string\"}, \"encryption_spec_key_name\": {\"title\": \"Encryption Spec Key Name\", \"type\": \"string\"}}, \"required\": [\"region\"], \"additionalProperties\": false}",
     "source": "zenml.integrations.gcp.flavors.vertex_step_operator_flavor.VertexStepOperatorFlavor",
     "integration": "gcp",
-    "logo_url": "https://3376789856-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/collections%2FUoWo1UaWzv9Bv1r8FK4K%2Ficon%2F9FC5shDCotdkDPemxZZ3%2F02%20-%20Logo.png?alt=media&token=ab93a501-d807-4c49-94cd-5aa56f2434ec",
+    "logo_url": "s3://public-flavor-logos/step_operator/vertexai.png",
     "configuration": []
   },
   {
