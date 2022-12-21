@@ -29,12 +29,12 @@ class SagemakerOrchestratorSettings(BaseSettings):
 
     Attributes:
         instance_type: The instance type to use for the processing job.
-        execution_role: The IAM role to use for the pipeline execution.
+        processor_role: The IAM role to use for the step execution on a Processor.
         volume_size_in_gb: The size of the EBS volume to use for the processing
             job.
         max_runtime_in_seconds: The maximum runtime in seconds for the
             processing job.
-        processor_tags: Tags to apply to the processor assigned to the step.
+        processor_tags: Tags to apply to the Processor assigned to the step.
     """
 
     instance_type: str = "ml.t3.medium"
