@@ -151,15 +151,3 @@ class PermissionType(StrEnum):
     WRITE = "write"  # allows the user to create, update, delete everything
     READ = "read"  # allows the user to read everything
     ME = "me"  # allows the user to self administrate (change name, password...)
-
-
-class FlavorFieldDataType(StrEnum):
-    """All data types for flavor configuration fields."""
-
-    STRING = "string"
-    INT = "integer"
-    FLOAT = "float"
-    BOOL = "bool"
-    LIST = "list"
-    DICT = "dict"
-    ANY = "any"

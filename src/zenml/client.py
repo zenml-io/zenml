@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Client implementation."""
+import json
 import os
 from abc import ABCMeta
 from pathlib import Path
@@ -80,10 +81,10 @@ from zenml.models import (
 )
 from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.models.base_models import BaseResponseModel
+from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.filesync_model import FileSyncModel
-from zenml.utils.source_utils import generate_configurations_from_custom_flavor
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_configurations import PipelineSpec
@@ -1880,17 +1881,22 @@ class Client(metaclass=ClientMetaClass):
             component_type=component_type,
         )()
 
-        configurations = generate_configurations_from_custom_flavor(source)
+        if len(flavor.config_schema) > TEXT_FIELD_MAX_LENGTH:
+            raise ValueError(
+                "Json representation of configuration schema"
+                "exceeds max length. This could be caused by an"
+                "overly long docstring on the flavors "
+                "configuration class' docstring."
+            )
 
         create_flavor_request = FlavorRequestModel(
             source=source,
             type=flavor.type,
             name=flavor.name,
-            config_schema=flavor.config_schema,
+            config_schema=json.loads(flavor.config_schema),
             integration="custom",
             user=self.active_user.id,
             project=self.active_project.id,
-            configuration=configurations,
         )
 
         return self.zen_store.create_flavor(flavor=create_flavor_request)

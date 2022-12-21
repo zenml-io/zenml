@@ -98,6 +98,7 @@ from zenml.models import (
     UserResponseModel,
     UserUpdateModel,
 )
+from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.models.server_models import ServerDatabaseType, ServerModel
 from zenml.utils import uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
@@ -1426,23 +1427,29 @@ class SqlZenStore(BaseZenStore):
                     f"'{flavor.user}' user."
                 )
 
-            new_flavor = FlavorSchema(
-                name=flavor.name,
-                type=flavor.type,
-                source=flavor.source,
-                config_schema=flavor.config_schema,
-                integration=flavor.integration,
-                project_id=flavor.project,
-                user_id=flavor.user,
-                logo_url=flavor.logo_url,
-                configuration=json.dumps(
-                    [f.dict() for f in flavor.configuration]
-                ),
-            )
-            session.add(new_flavor)
-            session.commit()
+            config_schema = json.dumps(flavor.config_schema)
 
-            return new_flavor.to_model()
+            if len(config_schema) > TEXT_FIELD_MAX_LENGTH:
+                raise ValueError(
+                    "Json representation of configuration schema"
+                    "exceeds max length."
+                )
+
+            else:
+                new_flavor = FlavorSchema(
+                    name=flavor.name,
+                    type=flavor.type,
+                    source=flavor.source,
+                    config_schema=config_schema,
+                    integration=flavor.integration,
+                    project_id=flavor.project,
+                    user_id=flavor.user,
+                    logo_url=flavor.logo_url,
+                )
+                session.add(new_flavor)
+                session.commit()
+
+                return new_flavor.to_model()
 
     def get_flavor(self, flavor_id: UUID) -> FlavorResponseModel:
         """Get a flavor by ID.

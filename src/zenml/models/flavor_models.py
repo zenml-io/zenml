@@ -13,55 +13,20 @@
 #  permissions and limitations under the License.
 """Models representing stack component flavors."""
 
-from typing import TYPE_CHECKING, ClassVar, List, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from zenml.enums import FlavorFieldDataType, StackComponentType
+from zenml.enums import StackComponentType
 from zenml.models.base_models import (
     UserScopedRequestModel,
     UserScopedResponseModel,
 )
-from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
+from zenml.models.constants import STR_FIELD_MAX_LENGTH
 
 if TYPE_CHECKING:
     from zenml.models import ProjectResponseModel
-
-
-class FlavorConfigurationField(BaseModel):
-    """Serializable representation that defines one specific configuration field of a Flavor Configuration Model."""
-
-    field_name: str
-    datatype: FlavorFieldDataType
-    is_required: bool
-    description: str
-
-    @staticmethod
-    def convert_to_flavor_datatype(datatype: type) -> FlavorFieldDataType:
-        """Convert a python datatype into an enum value for serialization.
-
-        Args:
-            datatype: Field datatype
-
-        Returns:
-            String representation of that datatype.
-        """
-        if datatype == str:
-            return FlavorFieldDataType.STRING
-        elif datatype == int:
-            return FlavorFieldDataType.INT
-        elif datatype == float:
-            return FlavorFieldDataType.FLOAT
-        elif datatype == bool:
-            return FlavorFieldDataType.BOOL
-        elif datatype == list:
-            return FlavorFieldDataType.LIST
-        elif datatype == dict:
-            return FlavorFieldDataType.DICT
-        else:
-            return FlavorFieldDataType.ANY
-
 
 # ---- #
 # BASE #
@@ -76,9 +41,8 @@ class FlavorBaseModel(BaseModel):
         max_length=STR_FIELD_MAX_LENGTH,
     )
     type: StackComponentType = Field(title="The type of the Flavor.")
-    config_schema: str = Field(
+    config_schema: Dict[str, Any] = Field(
         title="The JSON schema of this flavor's corresponding configuration.",
-        max_length=TEXT_FIELD_MAX_LENGTH,
     )
     source: str = Field(
         title="The path to the module which contains this Flavor.",
@@ -88,9 +52,9 @@ class FlavorBaseModel(BaseModel):
         title="The name of the integration that the Flavor belongs to.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    logo_url: str = Field(default="https://tinyurl.com/m4xab3yj")
-
-    configuration: List[FlavorConfigurationField] = Field(default=[])
+    logo_url: str = Field(
+        default="https://3376789856-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/collections%2FUoWo1UaWzv9Bv1r8FK4K%2Ficon%2F9FC5shDCotdkDPemxZZ3%2F02%20-%20Logo.png?alt=media&token=ab93a501-d807-4c49-94cd-5aa56f2434ec"
+    )
 
 
 # -------- #

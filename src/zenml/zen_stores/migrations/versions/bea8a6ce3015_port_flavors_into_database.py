@@ -46,10 +46,6 @@ def upgrade() -> None:
             )
         )
 
-        batch_op.add_column(
-            sa.Column("configuration", sa.String(length=65536), nullable=True)
-        )
-
         batch_op.alter_column(
             "project_id", existing_type=sa.VARCHAR(), nullable=True
         )
