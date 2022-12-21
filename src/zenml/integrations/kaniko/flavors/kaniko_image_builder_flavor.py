@@ -59,6 +59,8 @@ class KanikoImageBuilderConfig(
     volume_mounts: List[Dict[str, Any]] = []
     volumes: List[Dict[str, Any]] = []
 
+    store_context_in_artifact_store: bool = False
+
     executor_args: List[str] = []
 
     @validator("env", "env_from", "volume_mounts", "volumes", pre=True)

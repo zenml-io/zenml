@@ -20,6 +20,7 @@ import subprocess
 import tempfile
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type, cast
 
+from zenml.client import Client
 from zenml.config.base_settings import BaseSettings
 from zenml.enums import StackComponentType
 from zenml.image_builders import BaseImageBuilder
@@ -115,8 +116,14 @@ class KanikoImageBuilder(BaseImageBuilder):
             )
 
         pod_name = self._generate_pod_name()
+
+        if self.config.store_context_in_artifact_store:
+            kaniko_context = self._upload_build_context(build_context)
+        else:
+            kaniko_context = "tar://stdin"
+
         spec_overrides = self._generate_spec_overrides(
-            pod_name=pod_name, image_name=image_name
+            pod_name=pod_name, image_name=image_name, context=kaniko_context
         )
 
         self._run_kaniko_build(
@@ -134,7 +141,7 @@ class KanikoImageBuilder(BaseImageBuilder):
         return image_name_with_sha
 
     def _generate_spec_overrides(
-        self, pod_name: str, image_name: str
+        self, pod_name: str, image_name: str, context: str
     ) -> Dict[str, Any]:
         """Generates Kubernetes spec overrides for the Kaniko build Pod.
 
@@ -147,7 +154,7 @@ class KanikoImageBuilder(BaseImageBuilder):
         """
         args = [
             "--dockerfile=Dockerfile",
-            "--context=tar://stdin",
+            f"--context={context}",
             f"--destination={image_name}",
             # Use the image name with repo digest as the Pod termination
             # message. We use this later to read the image name using kubectl.
@@ -208,15 +215,11 @@ class KanikoImageBuilder(BaseImageBuilder):
         ]
         logger.debug("Running Kaniko build with command: %s", command)
         with subprocess.Popen(command, stdin=subprocess.PIPE) as p:
-            with p.stdin:
-                with tempfile.TemporaryFile(mode="w+b") as f:
-                    build_context.write_archive(f, gzip=True)
-                    while True:
-                        data = f.read(1024)
-                        if not data:
-                            break
+            if not self.config.store_context_in_artifact_store:
+                self._transfer_build_context(
+                    process=p, build_context=build_context
+                )
 
-                        p.stdin.write(data)
             try:
                 return_code = p.wait()
             except:
@@ -228,6 +231,40 @@ class KanikoImageBuilder(BaseImageBuilder):
                 "The process that runs the Kaniko build Pod failed. Check the "
                 "log messages above for more information."
             )
+
+    def _upload_build_context(self, build_context: "BuildContext") -> str:
+        import hashlib
+
+        from zenml.io import fileio
+
+        hash_ = hashlib.sha1()
+        artifact_store = Client().active_stack.artifact_store
+        with tempfile.NamedTemporaryFile(mode="w+b") as f:
+            build_context.write_archive(f, gzip=True)
+
+            while True:
+                data = f.read(64 * 1024)
+                if not data:
+                    break
+                hash_.update(f.read())
+
+            filename = f"{artifact_store.path}/kaniko-contexts/{hash_.hexdigest()}.tar.gz"
+            if not fileio.exists(filename):
+                fileio.copy(f.name, filename)
+
+        return filename
+
+    @staticmethod
+    def _transfer_build_context(process, build_context: "BuildContext") -> None:
+        with process.stdin:
+            with tempfile.TemporaryFile(mode="w+b") as f:
+                build_context.write_archive(f, gzip=True)
+                while True:
+                    data = f.read(1024)
+                    if not data:
+                        break
+
+                    process.stdin.write(data)
 
     @staticmethod
     def _generate_pod_name() -> str:
