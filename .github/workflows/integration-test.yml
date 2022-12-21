@@ -277,7 +277,7 @@ jobs:
         uses: google-github-actions/get-gke-credentials@v0
         with:
           cluster_name: zenml-ci-cluster
-          location: europe-west3
+          location: us-east4
           project_id: zenml-ci
         if: contains(inputs.test_environment, 'gcp')
 
