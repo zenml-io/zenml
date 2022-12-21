@@ -31,7 +31,7 @@ from zenml.zen_stores.schemas.stack_schemas import StackSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineRunUpdateModel
+    from zenml.models import PipelineResponseModel, PipelineRunUpdateModel
     from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
 
 
@@ -97,56 +97,40 @@ class PipelineRunSchema(NamedSchema, table=True):
     )
 
     def to_model(
-        self, _block_recursion: bool = False
+        self,
+        pipeline: Optional["PipelineResponseModel"] = None,
     ) -> PipelineRunResponseModel:
         """Convert a `PipelineRunSchema` to a `PipelineRunResponseModel`.
+
+        Args:
+            pipeline: If provided, link `PipelineRunResponseModel.pipeline` to
+                this pipeline instead of hydrating `self.pipeline`.
 
         Returns:
             The created `PipelineRunResponseModel`.
         """
-        if _block_recursion:
-            return PipelineRunResponseModel(
-                id=self.id,
-                name=self.name,
-                stack=self.stack.to_model() if self.stack else None,
-                project=self.project.to_model(),
-                user=self.user.to_model() if self.user else None,
-                orchestrator_run_id=self.orchestrator_run_id,
-                enable_cache=self.enable_cache,
-                start_time=self.start_time,
-                end_time=self.end_time,
-                status=self.status,
-                pipeline_configuration=json.loads(self.pipeline_configuration),
-                num_steps=self.num_steps,
-                git_sha=self.git_sha,
-                zenml_version=self.zenml_version,
-                created=self.created,
-                updated=self.updated,
-            )
-        else:
-            return PipelineRunResponseModel(
-                id=self.id,
-                name=self.name,
-                stack=self.stack.to_model() if self.stack else None,
-                project=self.project.to_model(),
-                user=self.user.to_model() if self.user else None,
-                orchestrator_run_id=self.orchestrator_run_id,
-                enable_cache=self.enable_cache,
-                start_time=self.start_time,
-                end_time=self.end_time,
-                status=self.status,
-                pipeline=(
-                    self.pipeline.to_model(not _block_recursion)
-                    if self.pipeline
-                    else None
-                ),
-                pipeline_configuration=json.loads(self.pipeline_configuration),
-                num_steps=self.num_steps,
-                git_sha=self.git_sha,
-                zenml_version=self.zenml_version,
-                created=self.created,
-                updated=self.updated,
-            )
+        if not pipeline and self.pipeline:
+            pipeline = self.pipeline.to_model()
+
+        return PipelineRunResponseModel(
+            id=self.id,
+            name=self.name,
+            stack=self.stack.to_model() if self.stack else None,
+            project=self.project.to_model(),
+            user=self.user.to_model() if self.user else None,
+            orchestrator_run_id=self.orchestrator_run_id,
+            enable_cache=self.enable_cache,
+            start_time=self.start_time,
+            end_time=self.end_time,
+            status=self.status,
+            pipeline=pipeline,
+            pipeline_configuration=json.loads(self.pipeline_configuration),
+            num_steps=self.num_steps,
+            git_sha=self.git_sha,
+            zenml_version=self.zenml_version,
+            created=self.created,
+            updated=self.updated,
+        )
 
     def update(
         self, run_update: "PipelineRunUpdateModel"
