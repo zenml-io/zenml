@@ -139,7 +139,8 @@ class SagemakerOrchestrator(BaseOrchestrator):
                 SagemakerOrchestratorSettings, self.get_settings(step)
             )
             execution_role = step_settings.execution_role or execution_role
-            tags = step_settings["processor_tags"] or None
+            # accessing value via getattr to avoid mypy error
+            tags = getattr(step_settings, "processor_tags", None)
 
             processor = sagemaker.processing.Processor(
                 role=execution_role,
