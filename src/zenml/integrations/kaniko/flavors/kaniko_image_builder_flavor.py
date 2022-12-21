@@ -65,8 +65,8 @@ class KanikoImageBuilderConfig(
 
     @validator("env", "env_from", "volume_mounts", "volumes", pre=True)
     def _convert_json_string(
-        cls, value: Union[None, str, Dict[str, Any]]
-    ) -> Optional[Dict[str, Any]]:
+        cls, value: Union[None, str, List[Dict[str, Any]]]
+    ) -> Optional[List[Dict[str, Any]]]:
         """Converts potential JSON strings passed via the CLI to lists.
 
         Args:

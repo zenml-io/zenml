@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Kaniko image builder implementation."""
 
+import hashlib
 import json
 import random
 import shutil
@@ -28,6 +29,7 @@ from zenml.integrations.kaniko.flavors import (
     KanikoImageBuilderConfig,
     KanikoImageBuilderSettings,
 )
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.stack import StackValidator
 
@@ -216,7 +218,7 @@ class KanikoImageBuilder(BaseImageBuilder):
         logger.debug("Running Kaniko build with command: %s", command)
         with subprocess.Popen(command, stdin=subprocess.PIPE) as p:
             if not self.config.store_context_in_artifact_store:
-                self._transfer_build_context(
+                self._write_build_context(
                     process=p, build_context=build_context
                 )
 
@@ -232,11 +234,16 @@ class KanikoImageBuilder(BaseImageBuilder):
                 "log messages above for more information."
             )
 
-    def _upload_build_context(self, build_context: "BuildContext") -> str:
-        import hashlib
+    @staticmethod
+    def _upload_build_context(build_context: "BuildContext") -> str:
+        """Uploads a build context to the artifact store.
 
-        from zenml.io import fileio
+        Args:
+            build_context: The build context to upload.
 
+        Returns:
+            The path of the uploaded build context.
+        """
         hash_ = hashlib.sha1()
         artifact_store = Client().active_stack.artifact_store
         with tempfile.NamedTemporaryFile(mode="w+b") as f:
@@ -246,25 +253,33 @@ class KanikoImageBuilder(BaseImageBuilder):
                 data = f.read(64 * 1024)
                 if not data:
                     break
-                hash_.update(f.read())
+                hash_.update(data)
 
-            filename = f"{artifact_store.path}/kaniko-contexts/{hash_.hexdigest()}.tar.gz"
-            if not fileio.exists(filename):
-                fileio.copy(f.name, filename)
+            filename = f"{hash_.hexdigest()}.tar.gz"
+            filepath = f"{artifact_store.path}/kaniko-contexts/{filename}"
+            if not fileio.exists(filepath):
+                fileio.copy(f.name, filepath)
 
-        return filename
+        return filepath
 
     @staticmethod
-    def _transfer_build_context(process, build_context: "BuildContext") -> None:
-        with process.stdin:
-            with tempfile.TemporaryFile(mode="w+b") as f:
-                build_context.write_archive(f, gzip=True)
-                while True:
-                    data = f.read(1024)
-                    if not data:
-                        break
+    def _write_build_context(
+        process: subprocess.Popen[bytes], build_context: "BuildContext"
+    ) -> None:
+        """Writes the build context to the process stdin.
 
-                    process.stdin.write(data)
+        Args:
+            process: The process to which the context will be written.
+            build_context: The build context to write.
+        """
+        with process.stdin as _, tempfile.TemporaryFile(mode="w+b") as f:
+            build_context.write_archive(f, gzip=True)
+            while True:
+                data = f.read(1024)
+                if not data:
+                    break
+
+                process.stdin.write(data)
 
     @staticmethod
     def _generate_pod_name() -> str:
