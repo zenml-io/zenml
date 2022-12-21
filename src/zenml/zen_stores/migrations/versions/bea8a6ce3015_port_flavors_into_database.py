@@ -32,7 +32,6 @@ def built_in_flavors() -> List[Dict[str, Any]]:
             item["id"] = str(uuid.uuid4()).replace("-", "")
             item["created"] = datetime.utcnow()
             item["updated"] = datetime.utcnow()
-            item["configuration"] = json.dumps(item["configuration"])
 
         return flavors_list
 
