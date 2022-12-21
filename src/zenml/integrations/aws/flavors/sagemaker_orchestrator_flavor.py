@@ -39,9 +39,9 @@ class SagemakerOrchestratorSettings(BaseSettings):
 
     instance_type: str = "ml.t3.medium"
     execution_role: Optional[str] = None
-    volume_size_in_gb: Optional[int] = 30
-    max_runtime_in_seconds: Optional[int] = 86400
-    processor_tags: Optional[Dict[str, str]] = None
+    volume_size_in_gb: int = 30
+    max_runtime_in_seconds: int = 86400
+    processor_tags: Dict[str, str] = {}
 
 
 class SagemakerOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173

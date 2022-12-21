@@ -139,8 +139,6 @@ class SagemakerOrchestrator(BaseOrchestrator):
                 SagemakerOrchestratorSettings, self.get_settings(step)
             )
             execution_role = step_settings.execution_role or execution_role
-            # accessing value via getattr to avoid mypy error
-            tags = getattr(step_settings, "processor_tags", None)
 
             processor = sagemaker.processing.Processor(
                 role=execution_role,
@@ -155,7 +153,7 @@ class SagemakerOrchestrator(BaseOrchestrator):
                 },
                 volume_size_in_gb=step_settings.volume_size_in_gb,
                 max_runtime_in_seconds=step_settings.max_runtime_in_seconds,
-                tags=tags,
+                tags=step_settings.processor_tags,
             )
 
             sagemaker_step = ProcessingStep(
