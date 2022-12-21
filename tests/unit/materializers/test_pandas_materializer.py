@@ -34,3 +34,25 @@ def test_pandas_materializer():
             step_output=example,
         )
         assert example.equals(result)
+
+
+def test_pandas_materializer_with_index():
+    """Test the pandas Dataframe materializer with indices."""
+
+    df_indexed = pandas.DataFrame(
+        {"A": [1, 2, 3], "B": [4, 5, 6]}, index=["a", "b", "c"]
+    )
+    result = _test_materializer(
+        step_output_type=pandas.DataFrame,
+        materializer_class=PandasMaterializer,
+        step_output=df_indexed,
+    )
+    assert df_indexed.equals(result)
+
+    series_indexed = pandas.Series([1, 2, 3], index=["a", "b", "c"])
+    result = _test_materializer(
+        step_output_type=pandas.Series,
+        materializer_class=PandasMaterializer,
+        step_output=series_indexed,
+    )
+    assert series_indexed.equals(result)

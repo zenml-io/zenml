@@ -88,9 +88,7 @@ class PandasMaterializer(BaseMaterializer):
                 )
         else:
             with fileio.open(self.csv_path, mode="rb") as f:
-                df = pd.read_csv(f)
-                df.set_index(df.columns[0])
-                df = df.drop(df.columns[0], axis=1)
+                df = pd.read_csv(f, index_col=0)
 
         # validate the type of the data.
         def is_dataframe_or_series(
