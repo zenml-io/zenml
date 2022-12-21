@@ -139,21 +139,37 @@ class SagemakerOrchestrator(BaseOrchestrator):
                 step_settings.processor_role or self.config.execution_role
             )
 
-            processor = sagemaker.processing.Processor(
-                role=processor_role,
-                image_uri=image_name,
-                instance_count=1,
-                sagemaker_session=session,
-                instance_type=step_settings.instance_type,
-                entrypoint=entrypoint,
-                base_job_name=orchestrator_run_name,
-                env={
-                    ENV_ZENML_SAGEMAKER_RUN_ID: ExecutionVariables.PIPELINE_EXECUTION_ARN,
-                },
-                volume_size_in_gb=step_settings.volume_size_in_gb,
-                max_runtime_in_seconds=step_settings.max_runtime_in_seconds,
-                tags=[step_settings.processor_tags],
-            )
+            if step_settings.processor_tags:
+                processor = sagemaker.processing.Processor(
+                    role=processor_role,
+                    image_uri=image_name,
+                    instance_count=1,
+                    sagemaker_session=session,
+                    instance_type=step_settings.instance_type,
+                    entrypoint=entrypoint,
+                    base_job_name=orchestrator_run_name,
+                    env={
+                        ENV_ZENML_SAGEMAKER_RUN_ID: ExecutionVariables.PIPELINE_EXECUTION_ARN,
+                    },
+                    volume_size_in_gb=step_settings.volume_size_in_gb,
+                    max_runtime_in_seconds=step_settings.max_runtime_in_seconds,
+                    tags=[step_settings.processor_tags],
+                )
+            else:
+                processor = sagemaker.processing.Processor(
+                    role=processor_role,
+                    image_uri=image_name,
+                    instance_count=1,
+                    sagemaker_session=session,
+                    instance_type=step_settings.instance_type,
+                    entrypoint=entrypoint,
+                    base_job_name=orchestrator_run_name,
+                    env={
+                        ENV_ZENML_SAGEMAKER_RUN_ID: ExecutionVariables.PIPELINE_EXECUTION_ARN,
+                    },
+                    volume_size_in_gb=step_settings.volume_size_in_gb,
+                    max_runtime_in_seconds=step_settings.max_runtime_in_seconds,
+                )
 
             sagemaker_step = ProcessingStep(
                 name=step.config.name,
