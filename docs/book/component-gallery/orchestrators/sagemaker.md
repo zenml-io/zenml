@@ -67,7 +67,7 @@ as part of your stack.
 We can then register the orchestrator and use it in our active stack:
 ```shell
 zenml orchestrator register <ORCHESTRATOR_NAME> \
-    --flavor=sagemaker
+    --flavor=sagemaker --execution_role=<YOUR_ROLE_ARN>
 
 # Register and activate a stack with the new orchestrator
 zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
@@ -102,11 +102,13 @@ For additional configuration of the Sagemaker orchestrator, you can pass
 
 * `instance_type`: The instance type to use for the Sagemaker training job.
   (Defaults to `ml.t3.medium`.)
-* `execution_role`: The IAM role to use for the Sagemaker training job.
+* `processor_role`: The IAM role to use for the Sagemaker processing job/step.
 * `volume_size_in_gb`: The size of the volume to use for the Sagemaker training
   job. (Defaults to 30 GB.)
 * `max_runtime_in_seconds`: The maximum runtime of the Sagemaker training job.
   (Defaults to 1 day or 86400 seconds.)
+* `processor_tags`: Any tags you want to add to the particular step or pipeline
+  as a whole.
 
 Check out the [this docs page](../..//advanced-guide/pipelines/settings.md)
 for more information on how to specify settings.
