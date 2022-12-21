@@ -29,7 +29,7 @@ class SagemakerOrchestratorSettings(BaseSettings):
 
     Attributes:
         instance_type: The instance type to use for the processing job.
-        execution_role: The IAM role to use for the processing job.
+        execution_role: The IAM role to use for the pipeline execution.
         volume_size_in_gb: The size of the EBS volume to use for the processing
             job.
         max_runtime_in_seconds: The maximum runtime in seconds for the
@@ -38,7 +38,7 @@ class SagemakerOrchestratorSettings(BaseSettings):
     """
 
     instance_type: str = "ml.t3.medium"
-    execution_role: Optional[str] = None
+    processor_role: Optional[str] = None
     volume_size_in_gb: int = 30
     max_runtime_in_seconds: int = 86400
     processor_tags: Dict[str, str] = {}
@@ -52,7 +52,7 @@ class SagemakerOrchestratorConfig(  # type: ignore[misc] # https://github.com/py
     Attributes:
         synchronous: Whether to run the processing job synchronously or
             asynchronously. Defaults to False.
-        processor_role: IAM role to use for the processing job.
+        execution_role: The IAM role to use for the pipeline.
         bucket: Name of the S3 bucket to use for storing artifacts
             from the job run. If not provided, a default bucket will be created
             based on the following format:
@@ -60,7 +60,7 @@ class SagemakerOrchestratorConfig(  # type: ignore[misc] # https://github.com/py
     """
 
     synchronous: bool = False
-    processor_role: Optional[str] = None
+    execution_role: str
     bucket: Optional[str] = None
 
     @property

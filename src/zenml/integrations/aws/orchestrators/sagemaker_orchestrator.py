@@ -31,9 +31,7 @@ from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
 from zenml.logger import get_logger
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
-from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilder,
-)
+from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
@@ -125,9 +123,6 @@ class SagemakerOrchestrator(BaseOrchestrator):
 
         session = sagemaker.Session(default_bucket=self.config.bucket)
         image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
-        execution_role = (
-            self.config.execution_role or sagemaker.get_execution_role()
-        )
 
         sagemaker_steps = []
         for step_name, step in deployment.steps.items():
@@ -140,7 +135,9 @@ class SagemakerOrchestrator(BaseOrchestrator):
             step_settings = cast(
                 SagemakerOrchestratorSettings, self.get_settings(step)
             )
-            processor_role = self.config.processor_role or execution_role
+            processor_role = (
+                step_settings.processor_role or self.config.execution_role
+            )
 
             processor = sagemaker.processing.Processor(
                 role=processor_role,
@@ -155,7 +152,7 @@ class SagemakerOrchestrator(BaseOrchestrator):
                 },
                 volume_size_in_gb=step_settings.volume_size_in_gb,
                 max_runtime_in_seconds=step_settings.max_runtime_in_seconds,
-                tags=step_settings.processor_tags,
+                tags=[step_settings.processor_tags],
             )
 
             sagemaker_step = ProcessingStep(
@@ -172,7 +169,7 @@ class SagemakerOrchestrator(BaseOrchestrator):
             sagemaker_session=session,
         )
 
-        pipeline.create(role_arn=execution_role)
+        pipeline.create(role_arn=self.config.execution_role)
         pipeline_execution = pipeline.start()
 
         # mainly for testing purposes, we wait for the pipeline to finish
