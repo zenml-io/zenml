@@ -811,9 +811,9 @@ def deploy(
             if skip_pull:
                 pass
             else:
-                _ = git_stack_recipes_handler.get_stack_recipes(stack_recipe_name)[
-                    0
-                ]
+                _ = git_stack_recipes_handler.get_stack_recipes(
+                    stack_recipe_name
+                )[0]
         except KeyError as e:
             cli_utils.error(str(e))
         else:
