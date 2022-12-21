@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """Models representing stack components."""
 
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Type, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Type, Union, \
+    Optional
 from uuid import UUID
 
 from fastapi import Query
@@ -32,6 +33,7 @@ from zenml.utils import secret_utils
 
 if TYPE_CHECKING:
     from sqlmodel import SQLModel
+    from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 
 logger = get_logger(__name__)
 
@@ -107,11 +109,11 @@ class ComponentFilterModel(ShareableProjectScopedFilterModel):
 
     _scope_type: str = PrivateAttr(None)
 
-    def set_scope_type(self, component_type: str):
+    def set_scope_type(self, component_type: str) -> None:
         """Set the type of component on which to perform the filtering to scope the response."""
         self._scope_type = component_type
 
-    def _scope_filter(self, table: Type["SQLModel"]):
+    def _scope_filter(self, table: Type["SQLModel"]) -> Optional[Union["BinaryExpression", "BooleanClauseList"]]:
         """A Stack Components can also be scoped by type to narrow by type.
 
         The resulting filter from this method will be the union of the scoping

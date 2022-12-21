@@ -509,12 +509,10 @@ class RestZenStore(BaseZenStore):
         Returns:
             A list of all stack components matching the filter criteria.
         """
-        filters = locals()
-        filters.pop("self")
         return self._list_paginated_resources(
             route=STACK_COMPONENTS,
             response_model=ComponentResponseModel,
-            **filters,
+            list_model=component_filter_model,
         )
 
     @track(AnalyticsEvent.UPDATED_STACK_COMPONENT)

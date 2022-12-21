@@ -282,7 +282,7 @@ class FilterBaseModel(BaseModel):
 
     list_of_filters: List["Filter"] = Field(None, exclude=True)
 
-    sort_by: str = Query("created")
+    sort_by: str = Query("created", description="Which column to sort by.")
     logical_operator: LogicalOperators = LogicalOperators.AND
 
     page: int = Query(PAGINATION_STARTING_PAGE, ge=1, description="Page number")

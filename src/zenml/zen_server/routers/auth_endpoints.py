@@ -19,6 +19,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.param_functions import Form
 
 from zenml.constants import API, LOGIN, VERSION_1
+from zenml.models import UserRoleAssignmentFilterModel
 from zenml.zen_server.auth import authenticate_credentials
 from zenml.zen_server.utils import error_response, zen_store
 
@@ -98,7 +99,9 @@ def token(
             headers={"WWW-Authenticate": "Bearer"},
         )
     role_assignments = zen_store().list_user_role_assignments(
-        user_name_or_id=auth_context.user.id, project_name_or_id=None
+        user_role_assignment_filter_model=UserRoleAssignmentFilterModel(
+            user_id=auth_context.user.id
+        )
     )
 
     # TODO: This needs to happen at the sql level now
