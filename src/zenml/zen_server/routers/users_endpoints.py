@@ -82,8 +82,7 @@ def list_users(
     """Returns a list of all users.
 
     Args:
-        name: Optionally filter by name
-        params: Parameters for pagination (page and size)
+        user_filter_model: Model that takes care of filtering, sorting and pagination
 
     Returns:
         A list of all users.

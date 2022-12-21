@@ -141,7 +141,7 @@ def generate_stack_component_list_command(
         with console.status(f"Listing {component_type.plural}..."):
 
             components = client.list_stack_components(
-                type=component_type, **kwargs
+                **kwargs
             )
             if not components:
                 cli_utils.declare("No components found for the given filters.")
