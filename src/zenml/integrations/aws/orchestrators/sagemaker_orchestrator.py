@@ -31,7 +31,9 @@ from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
 from zenml.logger import get_logger
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
-from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
+from zenml.utils.pipeline_docker_image_builder import (
+    PipelineDockerImageBuilder,
+)
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
@@ -124,7 +126,7 @@ class SagemakerOrchestrator(BaseOrchestrator):
         session = sagemaker.Session(default_bucket=self.config.bucket)
         image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
         execution_role = (
-            self.config.processor_role or sagemaker.get_execution_role()
+            self.config.execution_role or sagemaker.get_execution_role()
         )
 
         sagemaker_steps = []
@@ -138,10 +140,10 @@ class SagemakerOrchestrator(BaseOrchestrator):
             step_settings = cast(
                 SagemakerOrchestratorSettings, self.get_settings(step)
             )
-            execution_role = step_settings.execution_role or execution_role
+            processor_role = self.config.processor_role or execution_role
 
             processor = sagemaker.processing.Processor(
-                role=execution_role,
+                role=processor_role,
                 image_uri=image_name,
                 instance_count=1,
                 sagemaker_session=session,
