@@ -40,7 +40,11 @@ def upgrade() -> None:
     """Upgrade database schema and/or data, creating a new revision."""
     with op.batch_alter_table("flavor", schema=None) as batch_op:
 
-        batch_op.add_column(sa.Column("logo_url", sqlmodel.sql.sqltypes.AutoString(), nullable=True))
+        batch_op.add_column(
+            sa.Column(
+                "logo_url", sqlmodel.sql.sqltypes.AutoString(), nullable=True
+            )
+        )
 
         batch_op.add_column(
             sa.Column("configuration", sa.String(length=65536), nullable=True)
