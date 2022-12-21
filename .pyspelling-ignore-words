@@ -113,6 +113,7 @@ BentoMLModelDeployer
 BentoMlDeploymentConfig
 Bentos
 Bing
+bigquery
 Bitbucket
 BluePill
 CIDR
