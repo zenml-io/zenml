@@ -57,7 +57,7 @@ stack with all of these components.
   **container registry**.
 * The **Sagemaker orchestrator** is responsible for running your ZenML pipeline
   in Sagemaker.
-* The **secrets manager** contains the secrets to allow access to the metadata
+* The **secrets manager** contains the secrets to allow access to the artifact
   store.
 
 When running the upcoming commands, make sure to
@@ -147,7 +147,7 @@ rm -rf zenml_examples
 ```
 
 Additionally, you might have to clean up your cloud resources to avoid running 
-costs for storage of artifacts, containers, metadata or secrets.
+costs for storage of artifacts, containers or secrets.
 
 # 📜 Learn more
 
