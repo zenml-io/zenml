@@ -138,7 +138,7 @@ class PipelineDockerImageBuilder:
                 # We will build an additional image on top of this one later
                 # to include user files and/or install requirements. The image
                 # we build now will be used as the parent for the next build.
-                user_image_name = f"zenml-intermediate-build:{pipeline_name}"
+                user_image_name = f"zenml:{pipeline_name}-intermediate-build"
                 if push and container_registry:
                     user_image_name = (
                         f"{container_registry.config.uri}/{user_image_name}"
