@@ -68,7 +68,7 @@ class FlavorSchema(NamedSchema, table=True):
     )
     user: Optional["UserSchema"] = Relationship(back_populates="flavors")
 
-    logo_url: str
+    logo_url: Optional[str]
 
     def to_model(self) -> FlavorResponseModel:
         """Converts a flavor schema to a flavor model.
