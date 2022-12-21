@@ -59,7 +59,7 @@ class PipelineSchema(NamedSchema, table=True):
         nullable=True,
     )
 
-    user: "UserSchema" = Relationship(back_populates="pipelines")
+    user: Optional["UserSchema"] = Relationship(back_populates="pipelines")
 
     runs: List["PipelineRunSchema"] = Relationship(
         back_populates="pipeline",
@@ -89,7 +89,7 @@ class PipelineSchema(NamedSchema, table=True):
                 id=self.id,
                 name=self.name,
                 project=self.project.to_model(),
-                user=self.user.to_model(),
+                user=self.user.to_model() if self.user else None,
                 docstring=self.docstring,
                 spec=PipelineSpec.parse_raw(self.spec),
                 created=self.created,
@@ -101,7 +101,7 @@ class PipelineSchema(NamedSchema, table=True):
                 id=self.id,
                 name=self.name,
                 project=self.project.to_model(),
-                user=self.user.to_model(),
+                user=self.user.to_model() if self.user else None,
                 runs=[r.to_model(True) for r in self.runs],
                 docstring=self.docstring,
                 spec=PipelineSpec.parse_raw(self.spec),

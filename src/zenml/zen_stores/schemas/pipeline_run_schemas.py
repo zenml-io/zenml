@@ -15,7 +15,7 @@
 
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column
@@ -32,6 +32,7 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 
 if TYPE_CHECKING:
     from zenml.models import PipelineRunUpdateModel
+    from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
 
 
 class PipelineRunSchema(NamedSchema, table=True):
@@ -67,7 +68,7 @@ class PipelineRunSchema(NamedSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    user: "UserSchema" = Relationship(back_populates="runs")
+    user: Optional["UserSchema"] = Relationship(back_populates="runs")
 
     project_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -90,6 +91,11 @@ class PipelineRunSchema(NamedSchema, table=True):
     zenml_version: str
     git_sha: Optional[str] = Field(nullable=True)
 
+    step_runs: List["StepRunSchema"] = Relationship(
+        back_populates="pipeline_run",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
+
     def to_model(
         self, _block_recursion: bool = False
     ) -> PipelineRunResponseModel:
@@ -104,7 +110,7 @@ class PipelineRunSchema(NamedSchema, table=True):
                 name=self.name,
                 stack=self.stack.to_model() if self.stack else None,
                 project=self.project.to_model(),
-                user=self.user.to_model(),
+                user=self.user.to_model() if self.user else None,
                 orchestrator_run_id=self.orchestrator_run_id,
                 enable_cache=self.enable_cache,
                 start_time=self.start_time,
@@ -123,7 +129,7 @@ class PipelineRunSchema(NamedSchema, table=True):
                 name=self.name,
                 stack=self.stack.to_model() if self.stack else None,
                 project=self.project.to_model(),
-                user=self.user.to_model(),
+                user=self.user.to_model() if self.user else None,
                 orchestrator_run_id=self.orchestrator_run_id,
                 enable_cache=self.enable_cache,
                 start_time=self.start_time,

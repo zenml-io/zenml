@@ -87,7 +87,7 @@ def list_users() -> None:
             "email_opted_in",
             "activation_token",
         ],
-        is_active=lambda u: u.name == Client().zen_store.active_user_name,
+        is_active=lambda u: u.name == Client().active_user.name,
     )
 
 

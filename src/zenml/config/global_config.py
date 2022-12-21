@@ -394,7 +394,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             # We want to check if the active user has opted in or out for using
             # an email address for marketing purposes and if so, record it in
             # the analytics.
-            active_user = store.active_user
+            active_user = store.get_user(include_private=True)
             if active_user.email_opted_in is not None:
                 self.record_email_opt_in_out(
                     opted_in=active_user.email_opted_in,
