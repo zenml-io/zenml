@@ -22,6 +22,7 @@ depends_on = None
 
 
 def built_in_flavors() -> List[Dict[str, Any]]:
+    """Load json file containing a json representation of all inbuilt flavors."""
     with open(
         "src/zenml/zen_stores/migrations/versions/bea8a6ce3015_port_flavors_into_database.json",
         "r",
@@ -73,7 +74,6 @@ def downgrade() -> None:
     with op.batch_alter_table("flavor", schema=None) as batch_op:
 
         batch_op.drop_column("logo_url")
-        batch_op.drop_column("configuration")
 
         # TODO: all columns that don't conform to this will need to be dropped
         batch_op.alter_column(
