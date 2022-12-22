@@ -30,6 +30,7 @@ from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 
 if TYPE_CHECKING:
+    from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
     from zenml.zen_stores.schemas.step_run_schemas import (
         StepRunInputArtifactSchema,
         StepRunOutputArtifactSchema,
@@ -78,6 +79,10 @@ class ArtifactSchema(NamedSchema, table=True):
         sa_column=Column(TEXT, nullable=True)
     )
 
+    run_metadata: List["RunMetadataSchema"] = Relationship(
+        back_populates="artifact",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
     input_to_step_runs: List["StepRunInputArtifactSchema"] = Relationship(
         back_populates="artifact",
         sa_relationship_kwargs={"cascade": "delete"},

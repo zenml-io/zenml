@@ -25,6 +25,7 @@ def upgrade() -> None:
             "pipeline_run_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
         ),
         sa.Column("step_run_id", sqlmodel.sql.sqltypes.GUID(), nullable=True),
+        sa.Column("artifact_id", sqlmodel.sql.sqltypes.GUID(), nullable=True),
         sa.Column(
             "stack_component_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
         ),
@@ -57,6 +58,12 @@ def upgrade() -> None:
             ["step_run_id"],
             ["step_run.id"],
             name="fk_run_metadata_step_run_id_step_run",
+            ondelete="CASCADE",
+        ),
+        sa.ForeignKeyConstraint(
+            ["artifact_id"],
+            ["artifact.id"],
+            name="fk_run_metadata_artifact_id_artifact",
             ondelete="CASCADE",
         ),
         sa.ForeignKeyConstraint(

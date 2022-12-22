@@ -42,6 +42,7 @@ def list_run_metadata(
     user_id: Optional[UUID] = None,
     pipeline_run_id: Optional[UUID] = None,
     step_run_id: Optional[UUID] = None,
+    artifact_id: Optional[UUID] = None,
     stack_component_id: Optional[UUID] = None,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> List[RunMetadataResponseModel]:
@@ -52,6 +53,7 @@ def list_run_metadata(
         user_id: ID of the user to filter by.
         pipeline_run_id: ID of the pipeline run to filter by.
         step_run_id: ID of the step run to filter by.
+        artifact_id: ID of the artifact to filter by.
         stack_component_id: ID of the stack component to filter by.
 
     Returns:
@@ -62,5 +64,6 @@ def list_run_metadata(
         user_id=user_id,
         pipeline_run_id=pipeline_run_id,
         step_run_id=step_run_id,
+        artifact_id=artifact_id,
         stack_component_id=stack_component_id,
     )

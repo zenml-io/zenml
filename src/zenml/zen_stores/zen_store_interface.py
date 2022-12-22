@@ -1131,6 +1131,7 @@ class ZenStoreInterface(ABC):
         user_id: Optional[UUID] = None,
         pipeline_run_id: Optional[UUID] = None,
         step_run_id: Optional[UUID] = None,
+        artifact_id: Optional[UUID] = None,
         stack_component_id: Optional[UUID] = None,
     ) -> List[RunMetadataResponseModel]:
         """List run metadata.
@@ -1141,6 +1142,7 @@ class ZenStoreInterface(ABC):
             pipeline_run_id: If provided, only return metadata for this pipeline
                 run.
             step_run_id: If provided, only return metadata for this step run.
+            artifact_id: If provided, only return metadata for this artifact.
             stack_component_id: If provided, only return metadata for this
                 stack component.
 

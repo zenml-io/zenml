@@ -2395,6 +2395,7 @@ class Client(metaclass=ClientMetaClass):
         metadata: Dict[str, str],
         pipeline_run_id: Optional[UUID] = None,
         step_run_id: Optional[UUID] = None,
+        artifact_id: Optional[UUID] = None,
         stack_component_id: Optional[UUID] = None,
     ) -> List[RunMetadataResponseModel]:
         """Create run metadata.
@@ -2404,6 +2405,8 @@ class Client(metaclass=ClientMetaClass):
             pipeline_run_id: The ID of the pipeline run during which the
                 metadata was produced.
             step_run_id: The ID of the step run during which the metadata was
+                produced.
+            artifact_id: The ID of the artifact for which the metadata was
                 produced.
             stack_component_id: The ID of the stack component that produced
                 the metadata.
@@ -2418,6 +2421,7 @@ class Client(metaclass=ClientMetaClass):
                 user=self.active_user.id,
                 pipeline_run_id=pipeline_run_id,
                 step_run_id=step_run_id,
+                artifact_id=artifact_id,
                 stack_component_id=stack_component_id,
                 key=key,
                 value=value,
@@ -2432,6 +2436,7 @@ class Client(metaclass=ClientMetaClass):
         user_id: Optional[UUID] = None,
         pipeline_run_id: Optional[UUID] = None,
         step_run_id: Optional[UUID] = None,
+        artifact_id: Optional[UUID] = None,
         stack_component_id: Optional[UUID] = None,
     ) -> List[RunMetadataResponseModel]:
         """List run metadata.
@@ -2442,6 +2447,7 @@ class Client(metaclass=ClientMetaClass):
             pipeline_run_id: If provided, only return metadata for this pipeline
                 run.
             step_run_id: If provided, only return metadata for this step run.
+            artifact_id: If provided, only return metadata for this artifact.
             stack_component_id: If provided, only return metadata for this
                 stack component.
 
@@ -2453,6 +2459,7 @@ class Client(metaclass=ClientMetaClass):
             user_id=user_id,
             pipeline_run_id=pipeline_run_id,
             step_run_id=step_run_id,
+            artifact_id=artifact_id,
             stack_component_id=stack_component_id,
         )
 

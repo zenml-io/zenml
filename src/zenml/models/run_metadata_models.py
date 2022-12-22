@@ -34,6 +34,7 @@ class RunMetadataBaseModel(BaseModel):
 
     pipeline_run_id: Optional[UUID]
     step_run_id: Optional[UUID]
+    artifact_id: Optional[UUID]
     stack_component_id: Optional[UUID]
     key: str = Field(
         title="The key of the metadata.",

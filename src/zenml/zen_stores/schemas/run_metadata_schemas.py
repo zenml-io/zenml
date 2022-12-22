@@ -24,6 +24,7 @@ from zenml.models.run_metadata_models import (
     RunMetadataRequestModel,
     RunMetadataResponseModel,
 )
+from zenml.zen_stores.schemas.artifact_schemas import ArtifactSchema
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
@@ -59,6 +60,16 @@ class RunMetadataSchema(BaseSchema, table=True):
         nullable=True,
     )
     step_run: "StepRunSchema" = Relationship(back_populates="run_metadata")
+
+    artifact_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=ArtifactSchema.__tablename__,
+        source_column="artifact_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=True,
+    )
+    artifact: "ArtifactSchema" = Relationship(back_populates="run_metadata")
 
     stack_component_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -105,6 +116,7 @@ class RunMetadataSchema(BaseSchema, table=True):
             id=self.id,
             pipeline_run_id=self.pipeline_run_id,
             step_run_id=self.step_run_id,
+            artifact_id=self.artifact_id,
             stack_component_id=self.stack_component_id,
             key=self.key,
             value=self.value,
@@ -131,6 +143,7 @@ class RunMetadataSchema(BaseSchema, table=True):
             user_id=request.user,
             pipeline_run_id=request.pipeline_run_id,
             step_run_id=request.step_run_id,
+            artifact_id=request.artifact_id,
             stack_component_id=request.stack_component_id,
             key=request.key,
             value=request.value,
