@@ -195,6 +195,33 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         if settings.nested:
             mlflow.start_run(run_name=info.config.name, nested=True, tags=tags)
 
+    def get_step_run_metadata(self, info: "StepRunInfo") -> Dict[str, str]:
+        """Get component- and step-specific metadata after a step ran.
+
+        Args:
+            info: Info about the step that was executed.
+
+        Returns:
+            A dictionary of metadata.
+        """
+        return {
+            "mlflow_run_id": mlflow.active_run().info.run_id,
+            "mlflow_experiment_id": mlflow.active_run().info.experiment_id,
+        }
+
+    def get_pipeline_run_metadata(self, info: "StepRunInfo") -> Dict[str, str]:
+        """Get general component-specific metadata after a step ran.
+
+        Args:
+            info: Info about the step that was executed.
+
+        Returns:
+            A dictionary of metadata.
+        """
+        return {
+            "mlflow_tracking_uri": self.get_tracking_uri(),
+        }
+
     def cleanup_step_run(
         self,
         info: "StepRunInfo",
