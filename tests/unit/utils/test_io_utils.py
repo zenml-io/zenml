@@ -102,3 +102,65 @@ def find_files_works(tmp_path):
     assert len(io_utils.find_files(tmp_path, "*")) == 2
 
     assert len(io_utils.find_files(tmp_path, "not_a_file.txt")) == 0
+
+
+def test_is_remote_works():
+    """Tests remote file detection."""
+    assert io_utils.is_remote("gs://test")
+    assert io_utils.is_remote("s3://test")
+    assert io_utils.is_remote("hdfs://test")
+    assert io_utils.is_remote("az://test")
+    assert io_utils.is_remote("abfs://test")
+    assert not io_utils.is_remote("test")
+    assert not io_utils.is_remote("file://test")
+    assert not io_utils.is_remote("file:///test")
+    assert not io_utils.is_remote("/test")
+    assert not io_utils.is_remote("test.txt")
+    assert isinstance(io_utils.is_remote("test.txt"), bool)
+
+
+def test_create_file_if_not_exists_works(tmp_path):
+    """Tests file creation."""
+    file_path = os.path.join(tmp_path, "test.txt")
+    io_utils.create_file_if_not_exists(file_path, "some_content_about_aria")
+    assert os.path.exists(file_path)
+    assert os.path.isfile(file_path)
+    with open(file_path, "r") as f:
+        assert f.read() == "some_content_about_aria"
+
+    io_utils.create_file_if_not_exists(file_path, "some_content_about_blupus")
+    assert os.path.exists(file_path)
+    assert os.path.isfile(file_path)
+    with open(file_path, "r") as f:
+        assert f.read() == "some_content_about_aria"
+
+
+def test_create_dir_if_not_exists_works(tmp_path):
+    """Tests directory creation."""
+    dir_path = os.path.join(tmp_path, "test")
+    io_utils.create_dir_if_not_exists(dir_path)
+    assert os.path.exists(dir_path)
+    assert os.path.isdir(dir_path)
+
+
+def test_create_dir_recursive_if_not_exists_works(tmp_path):
+    """Tests directory creation."""
+    dir_path = os.path.join(tmp_path, "test", "test2")
+    io_utils.create_dir_recursive_if_not_exists(dir_path)
+    assert os.path.exists(dir_path)
+    assert os.path.isdir(dir_path)
+
+
+def test_resolve_relative_path_works(tmp_path):
+    """Tests resolving relative path."""
+    file_path = os.path.join(tmp_path, "test.txt")
+    io_utils.create_file_if_not_exists(file_path, "some_content_about_aria")
+    relative_path = os.path.relpath(file_path)
+    assert relative_path != file_path
+    assert io_utils.resolve_relative_path(relative_path) == file_path
+
+
+def test_resolving_relative_remote_path_returns_path():
+    """Tests resolving relative remote path for remote paths."""
+    relative_path = "s3://test/test.txt"
+    assert io_utils.resolve_relative_path(relative_path) == relative_path
