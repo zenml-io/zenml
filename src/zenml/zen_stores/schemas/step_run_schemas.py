@@ -39,6 +39,7 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 
 if TYPE_CHECKING:
     from zenml.models import ArtifactResponseModel
+    from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
 
 
 class StepRunSchema(NamedSchema, table=True):
@@ -99,6 +100,9 @@ class StepRunSchema(NamedSchema, table=True):
     docstring: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     num_outputs: Optional[int]
 
+    run_metadata: List["RunMetadataSchema"] = Relationship(
+        back_populates="step_run", sa_relationship_kwargs={"cascade": "delete"}
+    )
     input_artifacts: List["StepRunInputArtifactSchema"] = Relationship(
         back_populates="step_run", sa_relationship_kwargs={"cascade": "delete"}
     )
@@ -176,6 +180,9 @@ class StepRunSchema(NamedSchema, table=True):
         Returns:
             The created StepRunModel.
         """
+        run_metadata: Dict[str, str] = {
+            rm.key: rm.value for rm in self.run_metadata
+        }
         return StepRunResponseModel(
             id=self.id,
             name=self.name,
@@ -193,6 +200,7 @@ class StepRunSchema(NamedSchema, table=True):
             updated=self.updated,
             input_artifacts=input_artifacts,
             output_artifacts=output_artifacts,
+            run_metadata=run_metadata,
         )
 
     def update(self, step_update: StepRunUpdateModel) -> "StepRunSchema":

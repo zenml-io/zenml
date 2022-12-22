@@ -11,45 +11,37 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Models representing artifacts."""
+"""Models representing run metadata."""
 
 from typing import Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from zenml.enums import ArtifactType
 from zenml.models.base_models import (
     ProjectScopedRequestModel,
     ProjectScopedResponseModel,
 )
-from zenml.models.constants import STR_FIELD_MAX_LENGTH
+from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 
 # ---- #
 # BASE #
 # ---- #
 
 
-class ArtifactBaseModel(BaseModel):
-    """Base model for artifacts."""
+class RunMetadataBaseModel(BaseModel):
+    """Base model for run metadata."""
 
-    name: str = Field(
-        title="Name of the output in the parent step.",
+    pipeline_run_id: UUID
+    step_run_id: Optional[UUID]
+    stack_component_id: Optional[UUID]
+    key: str = Field(
+        title="The key of the metadata.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-
-    artifact_store_id: Optional[UUID]
-    type: ArtifactType
-    uri: str = Field(
-        title="URI of the artifact.", max_length=STR_FIELD_MAX_LENGTH
-    )
-    materializer: str = Field(
-        title="Materializer class to use for this artifact.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
-    data_type: str = Field(
-        title="Data type of the artifact.",
-        max_length=STR_FIELD_MAX_LENGTH,
+    value: str = Field(
+        title="The value of the metadata.",
+        max_length=TEXT_FIELD_MAX_LENGTH,
     )
 
 
@@ -58,10 +50,10 @@ class ArtifactBaseModel(BaseModel):
 # -------- #
 
 
-class ArtifactResponseModel(ArtifactBaseModel, ProjectScopedResponseModel):
-    """Response model for artifacts."""
-
-    producer_step_run_id: Optional[UUID]
+class RunMetadataResponseModel(
+    RunMetadataBaseModel, ProjectScopedResponseModel
+):
+    """Response model for run metadata."""
 
 
 # ------- #
@@ -69,5 +61,5 @@ class ArtifactResponseModel(ArtifactBaseModel, ProjectScopedResponseModel):
 # ------- #
 
 
-class ArtifactRequestModel(ArtifactBaseModel, ProjectScopedRequestModel):
-    """Request model for artifacts."""
+class RunMetadataRequestModel(RunMetadataBaseModel, ProjectScopedRequestModel):
+    """Request model for run metadata."""

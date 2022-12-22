@@ -111,6 +111,14 @@ class PipelineRunResponseModel(
     stack: Optional["StackResponseModel"] = Field(
         title="The stack that was used for this run."
     )
+    run_metadata: Dict[str, str] = Field(
+        default={},
+        title="Metadata associated with this pipeline run.",
+        example={
+            "airflow_uri": "http://127.0.0.1:8080",
+            "mlflow_tracking_uri": "file:/Users/felix/Library/Application Support/zenml/local_stores/0936bd99-ac51-44c0-abbb-70edf7f6e258/mlruns",
+        },
+    )
 
 
 # ------- #

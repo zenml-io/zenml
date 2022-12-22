@@ -39,6 +39,8 @@ from zenml.models import (
     RoleRequestModel,
     RoleResponseModel,
     RoleUpdateModel,
+    RunMetadataRequestModel,
+    RunMetadataResponseModel,
     StackRequestModel,
     StackResponseModel,
     StackUpdateModel,
@@ -1100,4 +1102,48 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: if the artifact doesn't exist.
+        """
+
+    # ------------
+    # Run Metadata
+    # ------------
+
+    @abstractmethod
+    def create_run_metadata(
+        self, run_metadata: RunMetadataRequestModel
+    ) -> RunMetadataResponseModel:
+        """Creates run metadata.
+
+        If run metadata with the same key already exists for the given run,
+        the existing metadata will be overwritten.
+
+        Args:
+            run_metadata: The run metadata to create.
+
+        Returns:
+            The created run metadata.
+        """
+
+    @abstractmethod
+    def list_run_metadata(
+        self,
+        project_id: Optional[UUID] = None,
+        user_id: Optional[UUID] = None,
+        pipeline_run_id: Optional[UUID] = None,
+        step_run_id: Optional[UUID] = None,
+        stack_component_id: Optional[UUID] = None,
+    ) -> List[RunMetadataResponseModel]:
+        """List run metadata.
+
+        Args:
+            project_id: If provided, only return metadata for this project.
+            user_id: If provided, only return metadata for this user.
+            pipeline_run_id: If provided, only return metadata for this pipeline
+                run.
+            step_run_id: If provided, only return metadata for this step run.
+            stack_component_id: If provided, only return metadata for this
+                stack component.
+
+        Returns:
+            The run metadata.
         """

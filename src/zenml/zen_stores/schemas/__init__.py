@@ -27,6 +27,7 @@ from zenml.zen_stores.schemas.role_schemas import (
     TeamRoleAssignmentSchema,
     UserRoleAssignmentSchema,
 )
+from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
 from zenml.zen_stores.schemas.stack_schemas import (
     StackCompositionSchema,
     StackSchema,
@@ -54,6 +55,7 @@ __all__ = [
     "ProjectSchema",
     "RoleSchema",
     "RolePermissionSchema",
+    "RunMetadataSchema",
     "StackSchema",
     "StackComponentSchema",
     "StackCompositionSchema",

@@ -15,14 +15,14 @@
 
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
 from zenml.enums import ExecutionStatus
-from zenml.models import PipelineRunResponseModel
+from zenml.models import PipelineRunResponseModel, PipelineRunUpdateModel
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
@@ -32,6 +32,7 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 
 if TYPE_CHECKING:
     from zenml.models import PipelineRunUpdateModel
+    from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
     from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
 
 
@@ -91,6 +92,10 @@ class PipelineRunSchema(NamedSchema, table=True):
     zenml_version: str
     git_sha: Optional[str] = Field(nullable=True)
 
+    run_metadata: List["RunMetadataSchema"] = Relationship(
+        back_populates="pipeline_run",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
     step_runs: List["StepRunSchema"] = Relationship(
         back_populates="pipeline_run",
         sa_relationship_kwargs={"cascade": "delete"},
@@ -104,6 +109,11 @@ class PipelineRunSchema(NamedSchema, table=True):
         Returns:
             The created `PipelineRunResponseModel`.
         """
+        run_metadata: Dict[str, str] = {
+            rm.key: rm.value
+            for rm in self.run_metadata
+            if rm.step_run_id is None
+        }
         if _block_recursion:
             return PipelineRunResponseModel(
                 id=self.id,
@@ -122,6 +132,7 @@ class PipelineRunSchema(NamedSchema, table=True):
                 zenml_version=self.zenml_version,
                 created=self.created,
                 updated=self.updated,
+                run_metadata=run_metadata,
             )
         else:
             return PipelineRunResponseModel(
@@ -146,6 +157,7 @@ class PipelineRunSchema(NamedSchema, table=True):
                 zenml_version=self.zenml_version,
                 created=self.created,
                 updated=self.updated,
+                run_metadata=run_metadata,
             )
 
     def update(
