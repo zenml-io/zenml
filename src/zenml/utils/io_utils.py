@@ -198,8 +198,13 @@ def get_grandparent(dir_path: str) -> str:
         dir_path: Path to directory.
 
     Returns:
-        The input path's parent's parent.
+        Directory name of the input path's parent's parent.
+
+    Raises:
+        ValueError: If dir_path does not exist.
     """
+    if not os.path.exists(dir_path):
+        raise ValueError(f"Path '{dir_path}' does not exist.")
     return Path(dir_path).parent.parent.stem
 
 
@@ -211,7 +216,12 @@ def get_parent(dir_path: str) -> str:
 
     Returns:
         Parent (stem) of the dir as a string.
+
+    Raises:
+        ValueError: If dir_path does not exist.
     """
+    if not os.path.exists(dir_path):
+        raise ValueError(f"Path '{dir_path}' does not exist.")
     return Path(dir_path).parent.stem
 
 
