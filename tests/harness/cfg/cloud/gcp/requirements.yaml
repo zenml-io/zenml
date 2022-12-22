@@ -92,6 +92,8 @@ requirements:
     system_tools:
       - docker
       - kubectl
+    capabilities:
+      synchronized: true
     stacks:
       - name: gcp-us-east4-tekton
         type: orchestrator

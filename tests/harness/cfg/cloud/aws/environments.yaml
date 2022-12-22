@@ -1,3 +1,11 @@
+# AWS cloud environments.
+#
+# NOTE: to use these locally, you need to authenticate to AWS as follows:
+#
+#  aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 715803424590.dkr.ecr.us-east-1.amazonaws.com
+#  aws eks --region us-east-1 update-kubeconfig --name zenml-ci-cluster --alias zenml-ci-aws-us-east-1
+#
+
 environments:
 
   - name: aws-local-orchestrator

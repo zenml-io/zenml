@@ -77,6 +77,8 @@ requirements:
     system_tools:
       - docker
       - kubectl
+    capabilities:
+      synchronized: true
     stacks:
       - name: aws-us-east-1-tekton
         type: orchestrator
