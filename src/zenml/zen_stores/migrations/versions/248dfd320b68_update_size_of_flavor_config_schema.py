@@ -22,7 +22,7 @@ def upgrade() -> None:
         batch_op.alter_column(
             "config_schema",
             existing_type=sa.VARCHAR(length=4096),
-            type_=sa.String(length=65536),
+            type_=sa.TEXT(length=65535),
             existing_nullable=True,
         )
 
@@ -35,7 +35,7 @@ def downgrade() -> None:
     with op.batch_alter_table("flavor", schema=None) as batch_op:
         batch_op.alter_column(
             "config_schema",
-            existing_type=sa.String(length=65536),
+            existing_type=sa.TEXT(length=65535),
             type_=sa.VARCHAR(length=4096),
             existing_nullable=True,
         )
