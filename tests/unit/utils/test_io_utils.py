@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
+from pathlib import Path
 
 import pytest
 
@@ -248,3 +249,23 @@ def test_get_parent_raises_error_if_dir_doesnt_exist(tmp_path):
     dir_path = os.path.join(tmp_path, "aria", "blupus", "axel")
     with pytest.raises(ValueError):
         io_utils.get_parent(dir_path)
+
+
+def test_convert_to_str_works(tmp_path):
+    """Tests converting a PathType to a str using UTF-8 encoding."""
+    dir_path = os.path.join(tmp_path, "aria", "blupus", "axel")
+    io_utils.create_dir_recursive_if_not_exists(dir_path)
+    assert io_utils.convert_to_str(dir_path) == dir_path
+    assert io_utils.convert_to_str(os.path.join(dir_path)) == dir_path
+
+    # method doesn't work with Path objects
+    with pytest.raises(AttributeError):
+        io_utils.convert_to_str(Path(dir_path))
+
+
+def test_is_root_works(tmp_path):
+    """Tests checking if a path is root."""
+    dir_path = os.path.join(tmp_path, "aria")
+    io_utils.create_dir_recursive_if_not_exists(dir_path)
+    assert not io_utils.is_root(dir_path)
+    assert io_utils.is_root("/")
