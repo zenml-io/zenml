@@ -30,6 +30,7 @@ from zenml.artifact_stores import (
 )
 from zenml.config.global_config import GlobalConfiguration
 from zenml.exceptions import ArtifactStoreInterfaceError
+from zenml.io import fileio
 from zenml.io.local_filesystem import LocalFilesystem
 
 if TYPE_CHECKING:
