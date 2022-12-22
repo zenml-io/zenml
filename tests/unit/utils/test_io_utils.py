@@ -164,3 +164,87 @@ def test_resolving_relative_remote_path_returns_path():
     """Tests resolving relative remote path for remote paths."""
     relative_path = "s3://test/test.txt"
     assert io_utils.resolve_relative_path(relative_path) == relative_path
+
+
+def test_copy_dir_works(tmp_path):
+    """Tests copying directory."""
+    dir_path = os.path.join(tmp_path, "test")
+    io_utils.create_dir_if_not_exists(dir_path)
+    file_path = os.path.join(dir_path, "test.txt")
+    io_utils.create_file_if_not_exists(file_path, "some_content_about_aria")
+
+    new_dir_path = os.path.join(tmp_path, "test2")
+    io_utils.copy_dir(dir_path, new_dir_path)
+    assert os.path.exists(new_dir_path)
+    assert os.path.isdir(new_dir_path)
+    assert os.path.exists(os.path.join(new_dir_path, "test.txt"))
+    assert os.path.isfile(os.path.join(new_dir_path, "test.txt"))
+    with open(os.path.join(new_dir_path, "test.txt"), "r") as f:
+        assert f.read() == "some_content_about_aria"
+
+
+def test_copy_dir_overwriting_works(tmp_path):
+    """Tests copying directory overwriting."""
+    dir_path = os.path.join(tmp_path, "test")
+    io_utils.create_dir_if_not_exists(dir_path)
+    file_path = os.path.join(dir_path, "test.txt")
+    io_utils.create_file_if_not_exists(file_path, "some_content_about_aria")
+
+    new_dir_path = os.path.join(tmp_path, "test2")
+    io_utils.create_dir_if_not_exists(new_dir_path)
+    file_path = os.path.join(new_dir_path, "test.txt")
+    io_utils.create_file_if_not_exists(file_path, "some_content_about_blupus")
+
+    io_utils.copy_dir(dir_path, new_dir_path, overwrite=True)
+    assert os.path.exists(new_dir_path)
+    assert os.path.isdir(new_dir_path)
+    assert os.path.exists(os.path.join(new_dir_path, "test.txt"))
+    assert os.path.isfile(os.path.join(new_dir_path, "test.txt"))
+    with open(os.path.join(new_dir_path, "test.txt"), "r") as f:
+        assert f.read() == "some_content_about_aria"
+
+
+def test_copy_dir_throws_error_if_overwriting(tmp_path):
+    """Tests copying directory throwing error if overwriting."""
+    dir_path = os.path.join(tmp_path, "test")
+    io_utils.create_dir_if_not_exists(dir_path)
+    file_path = os.path.join(dir_path, "test.txt")
+    io_utils.create_file_if_not_exists(file_path, "some_content_about_aria")
+
+    new_dir_path = os.path.join(tmp_path, "test2")
+    io_utils.create_dir_if_not_exists(new_dir_path)
+    file_path = os.path.join(new_dir_path, "test.txt")
+    io_utils.create_file_if_not_exists(file_path, "some_content_about_blupus")
+
+    with pytest.raises(FileExistsError):
+        io_utils.copy_dir(dir_path, new_dir_path, overwrite=False)
+
+
+def test_get_grandparent_works(tmp_path):
+    """Tests getting grandparent."""
+    dir_path = os.path.join(tmp_path, "aria", "blupus", "axel")
+    io_utils.create_dir_recursive_if_not_exists(dir_path)
+    assert io_utils.get_grandparent(dir_path) == "aria"
+    assert io_utils.get_grandparent("/") == ""
+
+
+def test_get_grandparent_raises_error_if_dir_doesnt_exist(tmp_path):
+    """Tests getting grandparent raising error if dir doesn't exist."""
+    dir_path = os.path.join(tmp_path, "aria", "blupus", "axel")
+    with pytest.raises(ValueError):
+        io_utils.get_grandparent(dir_path)
+
+
+def test_get_parent_works(tmp_path):
+    """Tests getting parent."""
+    dir_path = os.path.join(tmp_path, "aria", "blupus", "axel")
+    io_utils.create_dir_recursive_if_not_exists(dir_path)
+    assert io_utils.get_parent(dir_path) == "blupus"
+    assert io_utils.get_parent("/") == ""
+
+
+def test_get_parent_raises_error_if_dir_doesnt_exist(tmp_path):
+    """Tests getting parent raising error if dir doesn't exist."""
+    dir_path = os.path.join(tmp_path, "aria", "blupus", "axel")
+    with pytest.raises(ValueError):
+        io_utils.get_parent(dir_path)
