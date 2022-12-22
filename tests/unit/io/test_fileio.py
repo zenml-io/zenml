@@ -334,7 +334,7 @@ def test_get_grandparent_gets_the_grandparent_directory(tmp_path) -> None:
     fileio.create_dir_recursive_if_not_exists(
         os.path.join(tmp_path, "new_dir/new_dir2")
     )
-    grandparent = io_utils.get_grandparent(
+    grandparent = fileio.get_grandparent(
         os.path.join(tmp_path, "new_dir/new_dir2")
     )
     assert grandparent == Path(tmp_path).stem
