@@ -173,9 +173,14 @@ class PipelineDockerImageBuilder:
                 )
             else:
                 # The parent image will be used directly to run the pipeline and
-                # needs to be tagged so it gets pushed later
-                # docker_utils.tag_image(parent_image, target=target_image_name)
-                image_name_or_digest = parent_image
+                # needs to be tagged/pushed
+                docker_utils.tag_image(parent_image, target=target_image_name)
+                if container_registry:
+                    image_name_or_digest = container_registry.push_image(
+                        target_image_name
+                    )
+                else:
+                    image_name_or_digest = target_image_name
 
         if requires_zenml_build:
             # Leave the build context empty if we don't want to copy any files

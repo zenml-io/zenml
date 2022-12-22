@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Image build context."""
 
-
 import os
 from typing import IO, Dict, List, Optional, Set, Tuple, cast
 
