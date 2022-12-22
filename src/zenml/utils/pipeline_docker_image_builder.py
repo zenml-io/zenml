@@ -82,6 +82,7 @@ class PipelineDockerImageBuilder:
             ValueError: If no Dockerfile and/or custom parent image is
                 specified and the Docker configuration doesn't require an
                 image build.
+            RuntimeError: If the stack does not contain an image builder.
         """
         image_builder = stack.image_builder
         if not image_builder:
@@ -303,6 +304,7 @@ class PipelineDockerImageBuilder:
         Args:
             docker_settings: Docker settings that specifies which
                 requirements to install.
+            build_context: Build context to add the requirements files to.
             stack: The stack on which the pipeline will run.
 
         Raises:

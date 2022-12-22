@@ -68,7 +68,7 @@ class LocalDockerOrchestrator(BaseOrchestrator):
 
     @property
     def validator(self) -> Optional[StackValidator]:
-        """Ensures theres an image builder in the stack.
+        """Ensures there is an image builder in the stack.
 
         Returns:
             A `StackValidator` instance.

@@ -34,6 +34,10 @@ if TYPE_CHECKING:
     from zenml.image_builders import BuildContext
     from zenml.stack import Stack
 
+    BytePopen = subprocess.Popen[bytes]
+else:
+    BytePopen = subprocess.Popen
+
 
 logger = get_logger(__name__)
 
@@ -96,6 +100,9 @@ class KanikoImageBuilder(BaseImageBuilder):
 
         Returns:
             The Docker image repo digest.
+
+        Raises:
+            RuntimeError: If no container registry is passed.
         """
         self._check_prerequisites()
         if not container_registry:
@@ -105,7 +112,11 @@ class KanikoImageBuilder(BaseImageBuilder):
             )
 
         pod_name = self._generate_pod_name()
-
+        logger.info(
+            "Using Kaniko to build image `%s` in pod `%s`.",
+            image_name,
+            pod_name,
+        )
         if self.config.store_context_in_artifact_store:
             kaniko_context = self._upload_build_context(build_context)
         else:
@@ -137,6 +148,7 @@ class KanikoImageBuilder(BaseImageBuilder):
         Args:
             pod_name: Name of the pod.
             image_name: Name of the image that should be built.
+            context: The Kaniko executor context argument.
 
         Returns:
             Dictionary of spec override values.
@@ -203,7 +215,10 @@ class KanikoImageBuilder(BaseImageBuilder):
             json.dumps(spec_overrides),
         ]
         logger.debug("Running Kaniko build with command: %s", command)
-        with subprocess.Popen(command, stdin=subprocess.PIPE) as p:
+        with subprocess.Popen(
+            command,
+            stdin=subprocess.PIPE,
+        ) as p:
             if not self.config.store_context_in_artifact_store:
                 self._write_build_context(
                     process=p, build_context=build_context
@@ -247,12 +262,14 @@ class KanikoImageBuilder(BaseImageBuilder):
             if not fileio.exists(filepath):
                 logger.info("Uploading Kaniko build context to `%s`.", filepath)
                 fileio.copy(f.name, filepath)
+            else:
+                logger.info("Build context already exists, not uploading.")
 
         return filepath
 
     @staticmethod
     def _write_build_context(
-        process: subprocess.Popen[bytes], build_context: "BuildContext"
+        process: BytePopen, build_context: "BuildContext"
     ) -> None:
         """Writes the build context to the process stdin.
 
@@ -260,6 +277,7 @@ class KanikoImageBuilder(BaseImageBuilder):
             process: The process to which the context will be written.
             build_context: The build context to write.
         """
+        logger.debug("Writing build context to process stdin.")
         assert process.stdin
         with process.stdin as _, tempfile.TemporaryFile(mode="w+b") as f:
             build_context.write_archive(f, gzip=True)
@@ -302,6 +320,7 @@ class KanikoImageBuilder(BaseImageBuilder):
         ]
         output = subprocess.check_output(command).decode()
         output = output.strip('"\n')
+        logger.debug("Kaniko build pod termination message: %s", output)
         return output
 
     def _delete_pod(self, pod_name: str) -> None:
@@ -320,8 +339,14 @@ class KanikoImageBuilder(BaseImageBuilder):
             "pod",
             pod_name,
         ]
-        subprocess.check_call(command)
-        logger.debug("Deleted Pod %s.", pod_name)
+
+        try:
+            subprocess.run(command, stdout=subprocess.PIPE, check=True)
+        except subprocess.CalledProcessError as e:
+            logger.error(e.output)
+            raise
+
+        logger.info("Deleted Kaniko build Pod %s.", pod_name)
 
     @staticmethod
     def _check_prerequisites() -> None:

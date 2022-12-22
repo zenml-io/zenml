@@ -68,7 +68,7 @@ class SeldonModelDeployer(BaseModelDeployer):
 
     @property
     def validator(self) -> Optional[StackValidator]:
-        """Ensures theres a container registry and image builder in the stack.
+        """Ensures there is a container registry and image builder in the stack.
 
         Returns:
             A `StackValidator` instance.
