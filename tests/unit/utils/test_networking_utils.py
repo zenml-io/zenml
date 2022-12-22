@@ -32,8 +32,7 @@ def find_open_port():
 def test_port_available_works():
     """Test if port_available works."""
     open_port = find_open_port()
-    assert networking_utils.port_available(open_port)
-    assert isinstance(networking_utils.port_available(open_port), bool)
+    networking_utils.port_available(open_port) is True
 
 
 def test_find_available_port_works():
