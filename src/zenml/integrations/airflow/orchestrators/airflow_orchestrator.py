@@ -49,6 +49,7 @@ from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.config.pipeline_deployment import PipelineDeployment
+    from zenml.config.step_run_info import StepRunInfo
     from zenml.integrations.airflow.orchestrators.dag_generator import (
         DagConfiguration,
         TaskConfiguration,
@@ -113,6 +114,7 @@ class AirflowOrchestrator(BaseOrchestrator):
             "airflow",
             str(self.id),
         )
+        self._dag_path: Optional[str] = None
         self._set_env()
 
     @property
@@ -326,6 +328,7 @@ class AirflowOrchestrator(BaseOrchestrator):
             try:
                 fileio.copy(local_zip_path, remote_zip_path)
                 logger.info("Copied DAG definition to `%s`.", remote_zip_path)
+                self._dag_path = remote_zip_path
             except Exception as e:
                 logger.exception(e)
                 logger.error(
@@ -338,6 +341,7 @@ class AirflowOrchestrator(BaseOrchestrator):
         else:
             zip_path = os.path.join(output_dir, dag_filename)
             _write_zip(zip_path)
+            self._dag_path = zip_path
 
     def get_orchestrator_run_id(self) -> str:
         """Returns the active orchestrator run id.
@@ -597,3 +601,20 @@ class AirflowOrchestrator(BaseOrchestrator):
             "with username: `admin` password: `%s`",
             password,
         )
+
+    def get_pipeline_run_metadata(self, info: "StepRunInfo") -> Dict[str, str]:
+        """Get general component-specific metadata after a step ran.
+
+        Args:
+            info: Info about the step that was executed.
+
+        Returns:
+            A dictionary of metadata.
+        """
+        run_metadata = {}
+        if self._dag_path:
+            run_metadata["airflow_dag_path"] = self._dag_path
+        if self.config.local:
+            run_metadata["airflow_log_file"] = self.log_file
+            run_metadata["airflow_uri"] = "http://localhost:8080"
+        return run_metadata
