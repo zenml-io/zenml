@@ -345,7 +345,7 @@ def test_get_parent_gets_the_parent_directory(tmp_path) -> None:
     fileio.create_dir_recursive_if_not_exists(
         os.path.join(tmp_path, "new_dir/new_dir2")
     )
-    parent = io_utils.get_parent(os.path.join(tmp_path, "new_dir/new_dir2"))
+    parent = fileio.get_parent(os.path.join(tmp_path, "new_dir/new_dir2"))
     assert parent == "new_dir"
 
 

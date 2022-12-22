@@ -30,7 +30,7 @@ from zenml.io.fileio import (
 )
 
 if TYPE_CHECKING:
-    from zenml.io.filesystem import PathType
+    pass
 
 
 def get_global_config_directory() -> str:
@@ -107,62 +107,45 @@ def copy_dir(
             copy(str(source_path), str(destination_path), overwrite)
 
 
-def get_grandparent(dir_path: str) -> str:
-    """Get grandparent of dir.
+# def get_grandparent(dir_path: str) -> str:
+#     """Get grandparent of dir.
 
-    Args:
-        dir_path: Path to directory.
+#     Args:
+#         dir_path: Path to directory.
 
-    Returns:
-        Directory name of the input path's parent's parent.
+#     Returns:
+#         Directory name of the input path's parent's parent.
 
-    Raises:
-        ValueError: If dir_path does not exist.
-    """
-    if not os.path.exists(dir_path):
-        raise ValueError(f"Path '{dir_path}' does not exist.")
-    return Path(dir_path).parent.parent.stem
-
-
-def get_parent(dir_path: str) -> str:
-    """Get parent of dir.
-
-    Args:
-        dir_path: Path to directory.
-
-    Returns:
-        Parent (stem) of the dir as a string.
-
-    Raises:
-        ValueError: If dir_path does not exist.
-    """
-    if not os.path.exists(dir_path):
-        raise ValueError(f"Path '{dir_path}' does not exist.")
-    return Path(dir_path).parent.stem
+#     Raises:
+#         ValueError: If dir_path does not exist.
+#     """
+#     if not os.path.exists(dir_path):
+#         raise ValueError(f"Path '{dir_path}' does not exist.")
+#     return Path(dir_path).parent.parent.stem
 
 
-def convert_to_str(path: "PathType") -> str:
-    """Converts a PathType to a str using UTF-8.
+# def convert_to_str(path: "PathType") -> str:
+#     """Converts a PathType to a str using UTF-8.
 
-    Args:
-        path: Path to convert.
+#     Args:
+#         path: Path to convert.
 
-    Returns:
-        Converted path.
-    """
-    if isinstance(path, str):
-        return path
-    else:
-        return path.decode("utf-8")
+#     Returns:
+#         Converted path.
+#     """
+#     if isinstance(path, str):
+#         return path
+#     else:
+#         return path.decode("utf-8")
 
 
-def is_root(path: str) -> bool:
-    """Returns true if path has no parent in local filesystem.
+# def is_root(path: str) -> bool:
+#     """Returns true if path has no parent in local filesystem.
 
-    Args:
-        path: Local path in filesystem.
+#     Args:
+#         path: Local path in filesystem.
 
-    Returns:
-        True if root, else False.
-    """
-    return Path(path).parent == Path(path)
+#     Returns:
+#         True if root, else False.
+#     """
+#     return Path(path).parent == Path(path)
