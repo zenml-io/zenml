@@ -351,9 +351,5 @@ def test_get_parent_gets_the_parent_directory(tmp_path) -> None:
 
 def test_convert_to_str_converts_to_string(tmp_path) -> None:
     """Test that convert_to_str converts bytes to a string"""
-    assert isinstance(
-        io_utils.convert_to_str(bytes(str(tmp_path), "ascii")), str
-    )
-    assert io_utils.convert_to_str(bytes(str(tmp_path), "ascii")) == str(
-        tmp_path
-    )
+    assert isinstance(fileio.convert_to_str(bytes(str(tmp_path), "ascii")), str)
+    assert fileio.convert_to_str(bytes(str(tmp_path), "ascii")) == str(tmp_path)

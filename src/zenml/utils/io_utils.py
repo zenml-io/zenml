@@ -21,6 +21,7 @@ import click
 
 from zenml.constants import APP_NAME, ENV_ZENML_CONFIG_PATH
 from zenml.io.fileio import (
+    convert_to_str,
     copy,
     create_dir_recursive_if_not_exists,
     exists,
@@ -105,21 +106,6 @@ def copy_dir(
                 os.path.dirname(destination_path)
             )
             copy(str(source_path), str(destination_path), overwrite)
-
-
-# def convert_to_str(path: "PathType") -> str:
-#     """Converts a PathType to a str using UTF-8.
-
-#     Args:
-#         path: Path to convert.
-
-#     Returns:
-#         Converted path.
-#     """
-#     if isinstance(path, str):
-#         return path
-#     else:
-#         return path.decode("utf-8")
 
 
 # def is_root(path: str) -> bool:

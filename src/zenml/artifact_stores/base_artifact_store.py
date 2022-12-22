@@ -35,7 +35,6 @@ from zenml.enums import StackComponentType
 from zenml.exceptions import ArtifactStoreInterfaceError
 from zenml.io import fileio
 from zenml.stack import Flavor, StackComponent, StackComponentConfig
-from zenml.utils import io_utils
 
 PathType = Union[bytes, str]
 
@@ -54,7 +53,7 @@ def _sanitize_potential_path(potential_path: Any) -> Any:
         path.
     """
     if isinstance(potential_path, bytes):
-        path = io_utils.convert_to_str(potential_path)
+        path = fileio.convert_to_str(potential_path)
     elif isinstance(potential_path, str):
         path = potential_path
     else:
