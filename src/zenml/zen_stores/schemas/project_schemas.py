@@ -30,6 +30,7 @@ if TYPE_CHECKING:
         FlavorSchema,
         PipelineRunSchema,
         PipelineSchema,
+        RunMetadataSchema,
         StackComponentSchema,
         StackSchema,
         StepRunSchema,
@@ -71,6 +72,9 @@ class ProjectSchema(NamedSchema, table=True):
         back_populates="project", sa_relationship_kwargs={"cascade": "delete"}
     )
     artifacts: List["ArtifactSchema"] = Relationship(
+        back_populates="project", sa_relationship_kwargs={"cascade": "delete"}
+    )
+    run_metadata: List["RunMetadataSchema"] = Relationship(
         back_populates="project", sa_relationship_kwargs={"cascade": "delete"}
     )
 

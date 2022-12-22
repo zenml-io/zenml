@@ -16,7 +16,6 @@
 from zenml.models.artifact_models import (
     ArtifactRequestModel,
     ArtifactResponseModel,
-    ArtifactUpdateModel,
 )
 from zenml.models.component_models import (
     ComponentRequestModel,
@@ -47,6 +46,10 @@ from zenml.models.role_models import (
     RoleRequestModel,
     RoleResponseModel,
     RoleUpdateModel,
+)
+from zenml.models.run_metadata_models import (
+    RunMetadataRequestModel,
+    RunMetadataResponseModel,
 )
 from zenml.models.stack_models import (
     StackRequestModel,
@@ -108,6 +111,11 @@ PipelineRunResponseModel.update_forward_refs(
     StackResponseModel=StackResponseModel,
 )
 
+RunMetadataResponseModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    ProjectResponseModel=ProjectResponseModel,
+)
+
 StepRunResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
     ProjectResponseModel=ProjectResponseModel,
@@ -122,7 +130,6 @@ ArtifactResponseModel.update_forward_refs(
 __all__ = [
     "ArtifactRequestModel",
     "ArtifactResponseModel",
-    "ArtifactUpdateModel",
     "ComponentRequestModel",
     "ComponentResponseModel",
     "ComponentUpdateModel",
@@ -142,6 +149,8 @@ __all__ = [
     "RoleRequestModel",
     "RoleResponseModel",
     "RoleUpdateModel",
+    "RunMetadataRequestModel",
+    "RunMetadataResponseModel",
     "StackRequestModel",
     "StackResponseModel",
     "StackUpdateModel",

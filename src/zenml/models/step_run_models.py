@@ -66,6 +66,14 @@ class StepRunResponseModel(StepRunBaseModel, ProjectScopedResponseModel):
 
     input_artifacts: Dict[str, "ArtifactResponseModel"] = {}
     output_artifacts: Dict[str, "ArtifactResponseModel"] = {}
+    run_metadata: Dict[str, str] = Field(
+        default={},
+        title="Metadata associated with this step run.",
+        example={
+            "mlflow_run_id": "08cca3ff189f48179449283ffb573f6a",
+            "mlflow_experiment_id": "0",
+        },
+    )
 
 
 # ------- #

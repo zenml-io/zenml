@@ -84,6 +84,8 @@ from zenml.models import (
     RoleRequestModel,
     RoleResponseModel,
     RoleUpdateModel,
+    RunMetadataRequestModel,
+    RunMetadataResponseModel,
     StackRequestModel,
     StackResponseModel,
     StackUpdateModel,
@@ -126,6 +128,7 @@ from zenml.zen_stores.schemas import (
     ProjectSchema,
     RolePermissionSchema,
     RoleSchema,
+    RunMetadataSchema,
     StackComponentSchema,
     StackCompositionSchema,
     StackSchema,
@@ -3443,6 +3446,96 @@ class SqlZenStore(BaseZenStore):
                 )
             session.delete(artifact)
             session.commit()
+
+    # ------------
+    # Run Metadata
+    # ------------
+
+    def create_run_metadata(
+        self, run_metadata: RunMetadataRequestModel
+    ) -> RunMetadataResponseModel:
+        """Creates run metadata.
+
+        If run metadata with the same key already exists for the given run,
+        the existing metadata will be overwritten.
+
+        Args:
+            run_metadata: The run metadata to create.
+
+        Returns:
+            The created run metadata.
+        """
+        with Session(self.engine) as session:
+
+            # Delete any existing run metadata with the same key and run ID.
+            query = (
+                select(RunMetadataSchema)
+                .where(RunMetadataSchema.key == run_metadata.key)
+                .where(
+                    RunMetadataSchema.pipeline_run_id
+                    == run_metadata.pipeline_run_id
+                )
+            )
+            if not run_metadata.step_run_id:
+                query = query.where(is_(RunMetadataSchema.step_run_id, None))
+            else:
+                query = query.where(
+                    RunMetadataSchema.step_run_id == run_metadata.step_run_id
+                )
+            existing_metadata = session.exec(query).first()
+            if existing_metadata is not None:
+                session.delete(existing_metadata)
+
+            # Create the run metadata.
+            run_metadata_schema = RunMetadataSchema.from_request(run_metadata)
+            session.add(run_metadata_schema)
+            session.commit()
+            return run_metadata_schema.to_model()
+
+    def list_run_metadata(
+        self,
+        project_id: Optional[UUID] = None,
+        user_id: Optional[UUID] = None,
+        pipeline_run_id: Optional[UUID] = None,
+        step_run_id: Optional[UUID] = None,
+        stack_component_id: Optional[UUID] = None,
+    ) -> List[RunMetadataResponseModel]:
+        """List run metadata.
+
+        Args:
+            project_id: If provided, only return metadata for this project.
+            user_id: If provided, only return metadata for this user.
+            pipeline_run_id: If provided, only return metadata for this pipeline
+                run.
+            step_run_id: If provided, only return metadata for this step run.
+            stack_component_id: If provided, only return metadata for this
+                stack component.
+
+        Returns:
+            The run metadata.
+        """
+        with Session(self.engine) as session:
+            query = select(RunMetadataSchema)
+            if project_id is not None:
+                query = query.where(RunMetadataSchema.project_id == project_id)
+            if user_id is not None:
+                query = query.where(RunMetadataSchema.user_id == user_id)
+            if pipeline_run_id is not None:
+                query = query.where(
+                    RunMetadataSchema.pipeline_run_id == pipeline_run_id
+                )
+            if step_run_id is not None:
+                query = query.where(
+                    RunMetadataSchema.step_run_id == step_run_id
+                )
+            if stack_component_id is not None:
+                query = query.where(
+                    RunMetadataSchema.stack_component_id == stack_component_id
+                )
+            return [
+                run_metadata_schema.to_model()
+                for run_metadata_schema in session.exec(query).all()
+            ]
 
     # =======================
     # Internal helper methods

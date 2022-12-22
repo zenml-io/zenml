@@ -24,7 +24,6 @@ from zenml.metadata.metadata_types import DType, MetadataType, StorageSize
 from zenml.models.base_models import (
     ProjectScopedRequestModel,
     ProjectScopedResponseModel,
-    update_model,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
 
@@ -88,13 +87,3 @@ class ArtifactResponseModel(ArtifactBaseModel, ProjectScopedResponseModel):
 
 class ArtifactRequestModel(ArtifactBaseModel, ProjectScopedRequestModel):
     """Request model for artifacts."""
-
-
-# ------ #
-# UPDATE #
-# ------ #
-
-
-@update_model
-class ArtifactUpdateModel(ArtifactRequestModel):
-    """Update model for artifacts."""

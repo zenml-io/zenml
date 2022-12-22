@@ -23,6 +23,7 @@ from zenml.constants import (
     PIPELINES,
     PROJECTS,
     ROLES,
+    RUN_METADATA,
     RUNS,
     STACK_COMPONENTS,
     STACKS,
@@ -44,6 +45,8 @@ from zenml.models import (
     ProjectResponseModel,
     ProjectUpdateModel,
     RoleAssignmentResponseModel,
+    RunMetadataRequestModel,
+    RunMetadataResponseModel,
     StackRequestModel,
     StackResponseModel,
 )
@@ -648,6 +651,51 @@ def create_pipeline_run(
     if get_if_exists:
         return zen_store().get_or_create_run(pipeline_run=pipeline_run)
     return zen_store().create_run(pipeline_run=pipeline_run)
+
+
+@router.post(
+    "/{project_name_or_id}" + RUN_METADATA,
+    response_model=RunMetadataResponseModel,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_run_metadata(
+    project_name_or_id: Union[str, UUID],
+    run_metadata: RunMetadataRequestModel,
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
+) -> RunMetadataResponseModel:
+    """Creates run metadata.
+
+    Args:
+        project_name_or_id: Name or ID of the project.
+        run_metadata: The run metadata to create.
+        auth_context: Authentication context.
+
+    Returns:
+        The created run metadata.
+
+    Raises:
+        IllegalOperationError: If the project or user specified in the run
+            metadata does not match the current project or authenticated user.
+    """
+    project = zen_store().get_project(run_metadata.project)
+
+    if run_metadata.project != project.id:
+        raise IllegalOperationError(
+            "Creating run metadata outside of the project scope "
+            f"of this endpoint `{project_name_or_id}` is "
+            f"not supported."
+        )
+
+    if run_metadata.user != auth_context.user.id:
+        raise IllegalOperationError(
+            "Creating run metadata for a user other than yourself "
+            "is not supported."
+        )
+
+    return zen_store().create_run_metadata(run_metadata=run_metadata)
 
 
 @router.get(

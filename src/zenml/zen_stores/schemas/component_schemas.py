@@ -34,6 +34,7 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import StackSchema
+    from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
 
 
 class StackComponentSchema(ShareableSchema, table=True):
@@ -67,6 +68,10 @@ class StackComponentSchema(ShareableSchema, table=True):
 
     stacks: List["StackSchema"] = Relationship(
         back_populates="components", link_model=StackCompositionSchema
+    )
+
+    run_metadata: List["RunMetadataSchema"] = Relationship(
+        back_populates="stack_component",
     )
 
     def update(

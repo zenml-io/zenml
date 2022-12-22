@@ -49,6 +49,7 @@ from zenml.constants import (
     PROJECTS,
     ROLE_ASSIGNMENTS,
     ROLES,
+    RUN_METADATA,
     RUNS,
     STACK_COMPONENTS,
     STACKS,
@@ -90,6 +91,8 @@ from zenml.models import (
     RoleRequestModel,
     RoleResponseModel,
     RoleUpdateModel,
+    RunMetadataRequestModel,
+    RunMetadataResponseModel,
     StackRequestModel,
     StackResponseModel,
     StackUpdateModel,
@@ -1465,6 +1468,60 @@ class RestZenStore(BaseZenStore):
             artifact_id: The ID of the artifact to delete.
         """
         self._delete_resource(resource_id=artifact_id, route=ARTIFACTS)
+
+    # ------------
+    # Run Metadata
+    # ------------
+
+    def create_run_metadata(
+        self, run_metadata: RunMetadataRequestModel
+    ) -> RunMetadataResponseModel:
+        """Creates run metadata.
+
+        If run metadata with the same key already exists for the given run,
+        the existing metadata will be overwritten.
+
+        Args:
+            run_metadata: The run metadata to create.
+
+        Returns:
+            The created run metadata.
+        """
+        return self._create_project_scoped_resource(
+            resource=run_metadata,
+            response_model=RunMetadataResponseModel,
+            route=RUN_METADATA,
+        )
+
+    def list_run_metadata(
+        self,
+        project_id: Optional[UUID] = None,
+        user_id: Optional[UUID] = None,
+        pipeline_run_id: Optional[UUID] = None,
+        step_run_id: Optional[UUID] = None,
+        stack_component_id: Optional[UUID] = None,
+    ) -> List[RunMetadataResponseModel]:
+        """List run metadata.
+
+        Args:
+            project_id: If provided, only return metadata for this project.
+            user_id: If provided, only return metadata for this user.
+            pipeline_run_id: If provided, only return metadata for this pipeline
+                run.
+            step_run_id: If provided, only return metadata for this step run.
+            stack_component_id: If provided, only return metadata for this
+                stack component.
+
+        Returns:
+            The run metadata.
+        """
+        filters = locals()
+        filters.pop("self")
+        return self._list_resources(
+            route=RUN_METADATA,
+            response_model=RunMetadataResponseModel,
+            **filters,
+        )
 
     # =======================
     # Internal helper methods
