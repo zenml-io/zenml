@@ -19,16 +19,12 @@ import random
 import shutil
 import subprocess
 import tempfile
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, cast
 
 from zenml.client import Client
-from zenml.config.base_settings import BaseSettings
 from zenml.enums import StackComponentType
 from zenml.image_builders import BaseImageBuilder
-from zenml.integrations.kaniko.flavors import (
-    KanikoImageBuilderConfig,
-    KanikoImageBuilderSettings,
-)
+from zenml.integrations.kaniko.flavors import KanikoImageBuilderConfig
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.stack import StackValidator
@@ -53,15 +49,6 @@ class KanikoImageBuilder(BaseImageBuilder):
             The configuration.
         """
         return cast(KanikoImageBuilderConfig, self._config)
-
-    @property
-    def settings_class(self) -> Optional[Type["BaseSettings"]]:
-        """Settings class for the Kaniko image builder.
-
-        Returns:
-            The settings class.
-        """
-        return KanikoImageBuilderSettings
 
     @property
     def validator(self) -> Optional[StackValidator]:
@@ -258,6 +245,7 @@ class KanikoImageBuilder(BaseImageBuilder):
             filename = f"{hash_.hexdigest()}.tar.gz"
             filepath = f"{artifact_store.path}/kaniko-contexts/{filename}"
             if not fileio.exists(filepath):
+                logger.info("Uploading Kaniko build context to `%s`.", filepath)
                 fileio.copy(f.name, filepath)
 
         return filepath
@@ -272,6 +260,7 @@ class KanikoImageBuilder(BaseImageBuilder):
             process: The process to which the context will be written.
             build_context: The build context to write.
         """
+        assert process.stdin
         with process.stdin as _, tempfile.TemporaryFile(mode="w+b") as f:
             build_context.write_archive(f, gzip=True)
             while True:

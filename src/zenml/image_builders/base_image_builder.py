@@ -59,7 +59,7 @@ class BaseImageBuilder(StackComponent, ABC):
     @abstractmethod
     def build(
         self,
-        image_name_without_registry: str,
+        image_name: str,
         build_context: "BuildContext",
         docker_build_options: Dict[str, Any],
         container_registry: Optional["BaseContainerRegistry"] = None,

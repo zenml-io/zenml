@@ -16,11 +16,9 @@
 from zenml.integrations.kaniko.flavors.kaniko_image_builder_flavor import (
     KanikoImageBuilderConfig,
     KanikoImageBuilderFlavor,
-    KanikoImageBuilderSettings,
 )
 
 __all__ = [
     "KanikoImageBuilderConfig",
     "KanikoImageBuilderFlavor",
-    "KanikoImageBuilderSettings",
 ]

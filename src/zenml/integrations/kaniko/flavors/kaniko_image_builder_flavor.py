@@ -18,7 +18,6 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
 
 from pydantic import validator
 
-from zenml.config.base_settings import BaseSettings
 from zenml.image_builders import BaseImageBuilderConfig, BaseImageBuilderFlavor
 from zenml.integrations.kaniko import KANIKO_IMAGE_BUILDER_FLAVOR
 
@@ -32,14 +31,14 @@ DEFAULT_KANIKO_EXECUTOR_IMAGE = (
 )
 
 
-class KanikoImageBuilderSettings(BaseSettings):
-    """Settings for the Kaniko image builder."""
-
-
-class KanikoImageBuilderConfig(
-    BaseImageBuilderConfig, KanikoImageBuilderSettings
-):
+class KanikoImageBuilderConfig(BaseImageBuilderConfig):
     """Kaniko image builder configuration.
+
+    The `env`, `env_from`, `volume_mounts` and `volumes` attributes will be
+    used to generate the container specification. They should be used to
+    configure secrets and environment variables so that the Kaniko build
+    container is able to push to the container registry (and optionally access
+    the artifact store to upload the build context).
 
     Attributes:
         kubernetes_context: The Kubernetes context in which to run the Kaniko
@@ -48,6 +47,18 @@ class KanikoImageBuilderConfig(
             Kaniko pod. This namespace will not be created and must already
             exist.
         executor_image: The image of the Kaniko executor to use.
+        env: `env` section of the Kubernetes container spec.
+        env_from: `envFrom` section of the Kubernetes container spec.
+        volume_mounts: `volumeMounts` section of the Kubernetes container spec.
+        volumes: `volumes` section of the Kubernetes pod spec.
+        store_context_in_artifact_store: If `True`, the build context will be
+            stored in the artifact store. If `False`, the build context will be
+            streamed over stdin of the `kubectl` process that runs the build.
+            In case the artifact store is used, the container running the build
+            needs read access to the artifact store.
+        executor_args: Additional arguments to forward to the Kaniko executor.
+            See https://github.com/GoogleContainerTools/kaniko#additional-flags
+            for a full list of available arguments.
     """
 
     kubernetes_context: str

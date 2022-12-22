@@ -15,7 +15,7 @@
 
 
 import os
-from typing import BinaryIO, List, Optional, Tuple
+from typing import IO, Dict, List, Optional, Set, Tuple, cast
 
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -25,27 +25,53 @@ logger = get_logger(__name__)
 
 
 class BuildContext:
+    """Image build context."""
+
     def __init__(
         self,
         root: Optional[str] = None,
         dockerignore_file: Optional[str] = None,
     ) -> None:
+        """Initializes a build context.
+
+        Args:
+            root: Optional root directory for the build context.
+            dockerignore_file: Optional path to a dockerignore file. If not
+                given, a file called `.dockerignore` in the build context root
+                directory will be used instead if it exists.
+        """
         self._root = root
         self._dockerignore_file = dockerignore_file
-        self._extra_files = {}
+        self._extra_files: Dict[str, str] = {}
 
     @property
     def dockerignore_file(self) -> Optional[str]:
+        """The dockerignore file to use.
+
+        Returns:
+            Path to the dockerignore file to use.
+        """
         if self._dockerignore_file:
             return self._dockerignore_file
 
-        default_dockerignore_path = os.path.join(self._root, ".dockerignore")
-        if fileio.exists(default_dockerignore_path):
-            return default_dockerignore_path
+        if self._root:
+            default_dockerignore_path = os.path.join(
+                self._root, ".dockerignore"
+            )
+            if fileio.exists(default_dockerignore_path):
+                return default_dockerignore_path
 
         return None
 
     def add_file(self, source: str, destination: str) -> None:
+        """Adds a file to the build context.
+
+        Args:
+            source: The source of the file to add. This can either be a path
+                or the file content.
+            destination: The path inside the build context where the file
+                should be added.
+        """
         if fileio.exists(source):
             with fileio.open(source) as f:
                 self._extra_files[destination] = f.read()
@@ -53,11 +79,26 @@ class BuildContext:
             self._extra_files[destination] = source
 
     def add_directory(self, source: str, destination: str) -> None:
+        """Adds a directory to the build context.
+
+        Args:
+            source: Path to the directory.
+            destination: The path inside the build context where the directory
+                should be added.
+
+        Raises:
+            ValueError: If `source` does not point to a directory.
+        """
         if not fileio.isdir(source):
-            raise ValueError()
+            raise ValueError(
+                f"Can't add directory {source} to the build context as it "
+                "does not exist or is not a directory."
+            )
 
         for dir, _, files in fileio.walk(source):
+            dir = fileio.convert_to_str(dir)
             for file_name in files:
+                file_name = fileio.convert_to_str(file_name)
                 file_source = os.path.join(dir, file_name)
                 file_destination = os.path.join(
                     destination, os.path.relpath(dir, source), file_name
@@ -66,7 +107,13 @@ class BuildContext:
                 with fileio.open(file_source, "r") as f:
                     self._extra_files[file_destination] = f.read()
 
-    def write_archive(self, output_file: BinaryIO, gzip: bool = True) -> None:
+    def write_archive(self, output_file: IO[bytes], gzip: bool = True) -> None:
+        """Writes an archive of the build context to the given file.
+
+        Args:
+            output_file: The file to write the archive to.
+            gzip: Whether to use `gzip` to compress the file.
+        """
         from docker.utils import build as docker_build_utils
 
         files = self._get_files()
@@ -81,7 +128,11 @@ class BuildContext:
         )
 
         build_context_size = os.path.getsize(context_archive.name)
-        if build_context_size > 50 * 1024 * 1024 and not self.dockerignore_file:
+        if (
+            self._root
+            and build_context_size > 50 * 1024 * 1024
+            and not self.dockerignore_file
+        ):
             # The build context exceeds 50MiB and we didn't find any excludes
             # in dockerignore files -> remind to specify a .dockerignore file
             logger.warning(
@@ -93,21 +144,40 @@ class BuildContext:
                 os.path.join(self._root, ".dockerignore"),
             )
 
-    def _get_files(self) -> List[str]:
+    def _get_files(self) -> Set[str]:
+        """Gets all non-ignored files in the build context root directory.
+
+        Returns:
+            All build context files.
+        """
         if self._root:
             exclude_patterns = self._get_exclude_patterns()
             from docker.utils import build as docker_build_utils
 
-            return docker_build_utils.exclude_paths(
-                self._root, patterns=exclude_patterns
+            return cast(
+                Set[str],
+                docker_build_utils.exclude_paths(
+                    self._root, patterns=exclude_patterns
+                ),
             )
         else:
-            return []
+            return set()
 
     def _get_extra_files(self) -> List[Tuple[str, str]]:
+        """Gets all extra files of the build context.
+
+        Returns:
+            A tuple (path, file_content) for all extra files in the build
+            context.
+        """
         return list(self._extra_files.items())
 
     def _get_exclude_patterns(self) -> List[str]:
+        """Gets all exclude patterns from the dockerignore file.
+
+        Returns:
+            The exclude patterns from the dockerignore file.
+        """
         dockerignore = self.dockerignore_file
         if dockerignore:
             return self._parse_dockerignore(dockerignore)
