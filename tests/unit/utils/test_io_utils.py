@@ -126,11 +126,13 @@ def test_copy_dir_throws_error_if_overwriting(tmp_path):
 
     with pytest.raises(FileExistsError):
         io_utils.copy_dir(dir_path, new_dir_path, overwrite=False)
-        assert (
-            io_utils.read_file_contents_as_string(file_path1)
-            == "some_content_about_aria"
-        )
-        assert (
-            io_utils.read_file_contents_as_string(file_path2)
-            == "some_content_about_blupus"
-        )
+
+    assert (
+        io_utils.read_file_contents_as_string(file_path1)
+        == "some_content_about_aria"
+    )
+
+    assert (
+        io_utils.read_file_contents_as_string(file_path2)
+        == "some_content_about_blupus"
+    )
