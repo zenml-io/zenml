@@ -13,24 +13,14 @@
 #  permissions and limitations under the License.
 """Various utility functions for the io module."""
 
-import fnmatch
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING, Iterable
+from typing import TYPE_CHECKING
 
 import click
 
-from zenml.constants import APP_NAME, ENV_ZENML_CONFIG_PATH, REMOTE_FS_PREFIX
-from zenml.io.fileio import (
-    copy,
-    exists,
-    isdir,
-    listdir,
-    makedirs,
-    mkdir,
-    open,
-    walk,
-)
+from zenml.constants import APP_NAME, ENV_ZENML_CONFIG_PATH
+from zenml.io.fileio import copy, exists, isdir, listdir, open
 
 if TYPE_CHECKING:
     from zenml.io.filesystem import PathType
@@ -82,85 +72,66 @@ def read_file_contents_as_string(file_path: str) -> str:
         return f.read()  # type: ignore[no-any-return]
 
 
-def find_files(dir_path: "PathType", pattern: str) -> Iterable[str]:
-    """Find files in a directory that match pattern.
+# def is_remote(path: str) -> bool:
+#     """Returns True if path exists remotely.
 
-    Args:
-        dir_path: Path to directory.
-        pattern: pattern like *.png.
+#     Args:
+#         path: Any path as a string.
 
-    Yields:
-        All matching filenames if found.
-    """
-    for root, dirs, files in walk(dir_path):
-        for basename in files:
-            if fnmatch.fnmatch(convert_to_str(basename), pattern):
-                filename = os.path.join(
-                    convert_to_str(root), convert_to_str(basename)
-                )
-                yield filename
+#     Returns:
+#         True if remote path, else False.
+#     """
+#     return any(path.startswith(prefix) for prefix in REMOTE_FS_PREFIX)
 
 
-def is_remote(path: str) -> bool:
-    """Returns True if path exists remotely.
+# def create_file_if_not_exists(
+#     file_path: str, file_contents: str = "{}"
+# ) -> None:
+#     """Creates file if it does not exist.
 
-    Args:
-        path: Any path as a string.
-
-    Returns:
-        True if remote path, else False.
-    """
-    return any(path.startswith(prefix) for prefix in REMOTE_FS_PREFIX)
-
-
-def create_file_if_not_exists(
-    file_path: str, file_contents: str = "{}"
-) -> None:
-    """Creates file if it does not exist.
-
-    Args:
-        file_path: Local path in filesystem.
-        file_contents: Contents of file.
-    """
-    full_path = Path(file_path)
-    if not exists(file_path):
-        create_dir_recursive_if_not_exists(str(full_path.parent))
-        with open(str(full_path), "w") as f:
-            f.write(file_contents)
+#     Args:
+#         file_path: Local path in filesystem.
+#         file_contents: Contents of file.
+#     """
+#     full_path = Path(file_path)
+#     if not exists(file_path):
+#         create_dir_recursive_if_not_exists(str(full_path.parent))
+#         with open(str(full_path), "w") as f:
+#             f.write(file_contents)
 
 
-def create_dir_if_not_exists(dir_path: str) -> None:
-    """Creates directory if it does not exist.
+# def create_dir_if_not_exists(dir_path: str) -> None:
+#     """Creates directory if it does not exist.
 
-    Args:
-        dir_path: Local path in filesystem.
-    """
-    if not isdir(dir_path):
-        mkdir(dir_path)
-
-
-def create_dir_recursive_if_not_exists(dir_path: str) -> None:
-    """Creates directory recursively if it does not exist.
-
-    Args:
-        dir_path: Local path in filesystem.
-    """
-    if not isdir(dir_path):
-        makedirs(dir_path)
+#     Args:
+#         dir_path: Local path in filesystem.
+#     """
+#     if not isdir(dir_path):
+#         mkdir(dir_path)
 
 
-def resolve_relative_path(path: str) -> str:
-    """Takes relative path and resolves it absolutely.
+# def create_dir_recursive_if_not_exists(dir_path: str) -> None:
+#     """Creates directory recursively if it does not exist.
 
-    Args:
-        path: Local path in filesystem.
+#     Args:
+#         dir_path: Local path in filesystem.
+#     """
+#     if not isdir(dir_path):
+#         makedirs(dir_path)
 
-    Returns:
-        Resolved path.
-    """
-    if is_remote(path):
-        return path
-    return str(Path(path).resolve())
+
+# def resolve_relative_path(path: str) -> str:
+#     """Takes relative path and resolves it absolutely.
+
+#     Args:
+#         path: Local path in filesystem.
+
+#     Returns:
+#         Resolved path.
+#     """
+#     if is_remote(path):
+#         return path
+#     return str(Path(path).resolve())
 
 
 def copy_dir(
