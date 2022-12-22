@@ -578,7 +578,7 @@ class GitExamplesHandler(object):
             example_: The example to copy.
             destination_dir: The destination directory to copy the example to.
         """
-        io_utils.create_dir_if_not_exists(destination_dir)
+        fileio.create_dir_if_not_exists(destination_dir)
         io_utils.copy_dir(
             str(example_.path_in_repo), destination_dir, overwrite=True
         )
@@ -797,7 +797,7 @@ def pull(
     git_examples_handler.pull(branch=branch, force=force)
 
     examples_dir = os.path.join(os.getcwd(), path)
-    io_utils.create_dir_if_not_exists(examples_dir)
+    fileio.create_dir_if_not_exists(examples_dir)
     try:
         examples = git_examples_handler.get_examples(example_name)
 
@@ -826,7 +826,7 @@ def pull(
 
                 declare(f"Pulling example {example_.name}...")
 
-                io_utils.create_dir_if_not_exists(destination_dir)
+                fileio.create_dir_if_not_exists(destination_dir)
                 git_examples_handler.copy_example(example_, destination_dir)
                 declare(f"Example pulled in directory: {destination_dir}")
 
