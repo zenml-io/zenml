@@ -82,7 +82,7 @@ on:
           - gcp-docker-orchestrator
           - gcp-kubeflow-orchestrator
           - gcp-airflow-orchestrator
-          # GCP ZenML server deployment with AWS cloud components
+          # GCP ZenML server deployment with GCP cloud components
           - gcp-cloud-local-orchestrator
           - gcp-cloud-docker-orchestrator
           - gcp-cloud-kubeflow-orchestrator
