@@ -54,7 +54,12 @@ def write_file_contents_as_string(file_path: str, content: str) -> None:
     Args:
         file_path: Path to file.
         content: Contents of file.
+
+    Raises:
+        ValueError: If content is not of type str.
     """
+    if not isinstance(content, str):
+        raise ValueError(f"Content must be of type str, got {type(content)}")
     with open(file_path, "w") as f:
         f.write(content)
 
