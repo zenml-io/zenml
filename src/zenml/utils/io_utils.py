@@ -106,15 +106,3 @@ def copy_dir(
                 os.path.dirname(destination_path)
             )
             copy(str(source_path), str(destination_path), overwrite)
-
-
-# def is_root(path: str) -> bool:
-#     """Returns true if path has no parent in local filesystem.
-
-#     Args:
-#         path: Local path in filesystem.
-
-#     Returns:
-#         True if root, else False.
-#     """
-#     return Path(path).parent == Path(path)

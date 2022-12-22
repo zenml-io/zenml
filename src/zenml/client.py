@@ -80,7 +80,6 @@ from zenml.models import (
 )
 from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.models.base_models import BaseResponseModel
-from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler, track
 from zenml.utils.filesync_model import FileSyncModel
 
@@ -465,7 +464,7 @@ class Client(metaclass=ClientMetaClass):
             if Client.is_repository_directory(path_):
                 return path_
 
-            if not search_parent_directories or io_utils.is_root(str(path_)):
+            if not search_parent_directories or fileio.is_root(str(path_)):
                 return None
 
             return _find_repository_helper(path_.parent)
