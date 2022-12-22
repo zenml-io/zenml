@@ -1884,6 +1884,8 @@ class Client(metaclass=ClientMetaClass):
             type=flavor.type,
             name=flavor.name,
             config_schema=flavor.config_schema,
+            user=self.active_user.id,
+            project=self.active_project.id,
         )
 
         return self.zen_store.create_flavor(flavor=create_flavor_request)
