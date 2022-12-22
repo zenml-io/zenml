@@ -2257,71 +2257,6 @@ class Client(metaclass=ClientMetaClass):
         """
         return self.zen_store.get_run_step(step_run_id)
 
-    def create_run_metadata(
-        self,
-        pipeline_run_id: UUID,
-        metadata: Dict[str, str],
-        step_run_id: Optional[UUID] = None,
-        stack_component_id: Optional[UUID] = None,
-    ) -> List[RunMetadataResponseModel]:
-        """Create run metadata.
-
-        Args:
-            pipeline_run_id: The ID of the pipeline run.
-            metadata: The metadata to create as a dictionary of key-value pairs.
-            step_run_id: The ID of the step run for which the metadata was
-                produced.
-            stack_component_id: The ID of the stack component that produced
-                the metadata.
-
-        Returns:
-            The created metadata.
-        """
-        created_metadata_list: List[RunMetadataResponseModel] = []
-        for key, value in metadata.items():
-            run_metadata = RunMetadataRequestModel(
-                project=self.active_project.id,
-                user=self.active_user.id,
-                pipeline_run_id=pipeline_run_id,
-                step_run_id=step_run_id,
-                stack_component_id=stack_component_id,
-                key=key,
-                value=value,
-            )
-            created_metadata = self.zen_store.create_run_metadata(run_metadata)
-            created_metadata_list.append(created_metadata)
-        return created_metadata_list
-
-    def list_run_metadata(
-        self,
-        project_id: Optional[UUID] = None,
-        user_id: Optional[UUID] = None,
-        pipeline_run_id: Optional[UUID] = None,
-        step_run_id: Optional[UUID] = None,
-        stack_component_id: Optional[UUID] = None,
-    ) -> List[RunMetadataResponseModel]:
-        """List run metadata.
-
-        Args:
-            project_id: If provided, only return metadata for this project.
-            user_id: If provided, only return metadata for this user.
-            pipeline_run_id: If provided, only return metadata for this pipeline
-                run.
-            step_run_id: If provided, only return metadata for this step run.
-            stack_component_id: If provided, only return metadata for this
-                stack component.
-
-        Returns:
-            The run metadata.
-        """
-        return self.zen_store.list_run_metadata(
-            project_id=project_id or self.active_project.id,
-            user_id=user_id,
-            pipeline_run_id=pipeline_run_id,
-            step_run_id=step_run_id,
-            stack_component_id=stack_component_id,
-        )
-
     # -------------
     # - Artifacts -
     # -------------
@@ -2450,6 +2385,76 @@ class Client(metaclass=ClientMetaClass):
             )
         self.zen_store.delete_artifact(artifact.id)
         logger.info(f"Deleted metadata of artifact '{artifact.uri}'.")
+
+    # ----------------
+    # - Run Metadata -
+    # ----------------
+
+    def create_run_metadata(
+        self,
+        metadata: Dict[str, str],
+        pipeline_run_id: Optional[UUID] = None,
+        step_run_id: Optional[UUID] = None,
+        stack_component_id: Optional[UUID] = None,
+    ) -> List[RunMetadataResponseModel]:
+        """Create run metadata.
+
+        Args:
+            metadata: The metadata to create as a dictionary of key-value pairs.
+            pipeline_run_id: The ID of the pipeline run during which the
+                metadata was produced.
+            step_run_id: The ID of the step run during which the metadata was
+                produced.
+            stack_component_id: The ID of the stack component that produced
+                the metadata.
+
+        Returns:
+            The created metadata.
+        """
+        created_metadata_list: List[RunMetadataResponseModel] = []
+        for key, value in metadata.items():
+            run_metadata = RunMetadataRequestModel(
+                project=self.active_project.id,
+                user=self.active_user.id,
+                pipeline_run_id=pipeline_run_id,
+                step_run_id=step_run_id,
+                stack_component_id=stack_component_id,
+                key=key,
+                value=value,
+            )
+            created_metadata = self.zen_store.create_run_metadata(run_metadata)
+            created_metadata_list.append(created_metadata)
+        return created_metadata_list
+
+    def list_run_metadata(
+        self,
+        project_id: Optional[UUID] = None,
+        user_id: Optional[UUID] = None,
+        pipeline_run_id: Optional[UUID] = None,
+        step_run_id: Optional[UUID] = None,
+        stack_component_id: Optional[UUID] = None,
+    ) -> List[RunMetadataResponseModel]:
+        """List run metadata.
+
+        Args:
+            project_id: If provided, only return metadata for this project.
+            user_id: If provided, only return metadata for this user.
+            pipeline_run_id: If provided, only return metadata for this pipeline
+                run.
+            step_run_id: If provided, only return metadata for this step run.
+            stack_component_id: If provided, only return metadata for this
+                stack component.
+
+        Returns:
+            The run metadata.
+        """
+        return self.zen_store.list_run_metadata(
+            project_id=project_id or self.active_project.id,
+            user_id=user_id,
+            pipeline_run_id=pipeline_run_id,
+            step_run_id=step_run_id,
+            stack_component_id=stack_component_id,
+        )
 
     # ---- utility prefix matching get functions -----
 

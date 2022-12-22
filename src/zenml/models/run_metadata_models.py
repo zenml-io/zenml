@@ -32,7 +32,7 @@ from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 class RunMetadataBaseModel(BaseModel):
     """Base model for run metadata."""
 
-    pipeline_run_id: UUID
+    pipeline_run_id: Optional[UUID]
     step_run_id: Optional[UUID]
     stack_component_id: Optional[UUID]
     key: str = Field(

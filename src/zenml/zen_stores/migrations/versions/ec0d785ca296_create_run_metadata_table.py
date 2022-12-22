@@ -1,7 +1,7 @@
 """Create Run Metadata Table [ec0d785ca296].
 
 Revision ID: ec0d785ca296
-Revises: 7e4a481d17f7
+Revises: 90a347b0fae1
 Create Date: 2022-12-16 11:34:17.005750
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "ec0d785ca296"
-down_revision = "7e4a481d17f7"
+down_revision = "90a347b0fae1"
 branch_labels = None
 depends_on = None
 
@@ -22,7 +22,7 @@ def upgrade() -> None:
     op.create_table(
         "run_metadata",
         sa.Column(
-            "pipeline_run_id", sqlmodel.sql.sqltypes.GUID(), nullable=False
+            "pipeline_run_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
         ),
         sa.Column("step_run_id", sqlmodel.sql.sqltypes.GUID(), nullable=True),
         sa.Column(

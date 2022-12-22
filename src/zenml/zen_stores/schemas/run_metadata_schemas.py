@@ -38,13 +38,13 @@ class RunMetadataSchema(BaseSchema, table=True):
 
     __tablename__ = "run_metadata"
 
-    pipeline_run_id: UUID = build_foreign_key_field(
+    pipeline_run_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
         target=PipelineRunSchema.__tablename__,
         source_column="pipeline_run_id",
         target_column="id",
         ondelete="CASCADE",
-        nullable=False,
+        nullable=True,
     )
     pipeline_run: "PipelineRunSchema" = Relationship(
         back_populates="run_metadata"
