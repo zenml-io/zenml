@@ -288,7 +288,7 @@ def test_create_dir_recursive_if_not_exists(tmp_path) -> None:
 def test_resolve_relative_path(tmp_path) -> None:
     """Test that resolve_relative_path resolves a relative path"""
     current_working_directory = os.getcwd()
-    assert current_working_directory == io_utils.resolve_relative_path(".")
+    assert current_working_directory == fileio.resolve_relative_path(".")
 
 
 def test_copy_dir_copies_dir_from_source_to_destination(tmp_path) -> None:

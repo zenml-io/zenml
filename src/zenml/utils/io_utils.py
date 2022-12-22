@@ -79,20 +79,6 @@ def read_file_contents_as_string(file_path: str) -> str:
         return f.read()  # type: ignore[no-any-return]
 
 
-# def resolve_relative_path(path: str) -> str:
-#     """Takes relative path and resolves it absolutely.
-
-#     Args:
-#         path: Local path in filesystem.
-
-#     Returns:
-#         Resolved path.
-#     """
-#     if is_remote(path):
-#         return path
-#     return str(Path(path).resolve())
-
-
 def copy_dir(
     source_dir: str, destination_dir: str, overwrite: bool = False
 ) -> None:
