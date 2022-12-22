@@ -12,6 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import datetime
+
 import pandas
 
 from tests.unit.test_general import _test_materializer
@@ -39,20 +41,54 @@ def test_pandas_materializer():
 def test_pandas_materializer_with_index():
     """Test the pandas Dataframe materializer with indices."""
 
-    df_indexed = pandas.DataFrame(
+    # Test with a DataFrame with a string index
+    df_string_indexed = pandas.DataFrame(
         {"A": [1, 2, 3], "B": [4, 5, 6]}, index=["a", "b", "c"]
     )
     result = _test_materializer(
         step_output_type=pandas.DataFrame,
         materializer_class=PandasMaterializer,
-        step_output=df_indexed,
+        step_output=df_string_indexed,
     )
-    assert df_indexed.equals(result)
+    assert df_string_indexed.equals(result)
 
-    series_indexed = pandas.Series([1, 2, 3], index=["a", "b", "c"])
+    # Test with a Series with a string index
+    series_string_indexed = pandas.Series([1, 2, 3], index=["a", "b", "c"])
     result = _test_materializer(
         step_output_type=pandas.Series,
         materializer_class=PandasMaterializer,
-        step_output=series_indexed,
+        step_output=series_string_indexed,
     )
-    assert series_indexed.equals(result)
+    assert series_string_indexed.equals(result)
+
+    # Test with a Series with a datetime index
+    series_datetime_indexed = pandas.Series(
+        [1, 2, 3],
+        index=[
+            datetime.datetime(2022, 1, 1),
+            datetime.datetime(2022, 1, 2),
+            datetime.datetime(2022, 1, 3),
+        ],
+    )
+    result = _test_materializer(
+        step_output_type=pandas.Series,
+        materializer_class=PandasMaterializer,
+        step_output=series_datetime_indexed,
+    )
+    assert series_datetime_indexed.equals(result)
+
+    # Test with a DataFrame with a datetime index
+    df_datetime_indexed = pandas.DataFrame(
+        {"A": [1, 2, 3], "B": [4, 5, 6]},
+        index=[
+            datetime.datetime(2022, 1, 1),
+            datetime.datetime(2022, 1, 2),
+            datetime.datetime(2022, 1, 3),
+        ],
+    )
+    result = _test_materializer(
+        step_output_type=pandas.DataFrame,
+        materializer_class=PandasMaterializer,
+        step_output=df_datetime_indexed,
+    )
+    assert df_datetime_indexed.equals(result)
