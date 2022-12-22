@@ -35,6 +35,7 @@ are provided by integrations:
 | [KubernetesOrchestrator](./kubernetes.md)        | `kubernetes`   | `kubernetes` | Runs your pipelines in Kubernetes clusters.                             |
 | [KubeflowOrchestrator](./kubeflow.md)            | `kubeflow`     | `kubeflow`   | Runs your pipelines using Kubeflow.                                     |
 | [VertexOrchestrator](./gcloud-vertexai.md)       | `vertex`       | `gcp`        | Runs your pipelines in Vertex AI.                                       |
+| [SagemakerOrchestrator](./sagemaker.md)       | `sagemaker`       | `aws`        | Runs your pipelines in Sagemaker.                                       |
 | [TektonOrchestrator](./tekton.md)                | `tekton`       | `tekton`     | Runs your pipelines using Tekton.                                       |
 | [AirflowOrchestrator](./airflow.md)              | `airflow`      | `airflow`    | Runs your pipelines using Airflow.                                      |
 | [GitHubActionsOrchestrator](./github-actions.md) | `github`       | `github`     | Runs your pipelines using GitHub Actions.                               |
