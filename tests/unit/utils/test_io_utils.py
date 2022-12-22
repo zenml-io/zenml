@@ -74,21 +74,6 @@ def test_read_file_contents_as_string_raises_error_when_file_not_exists(
         io_utils.read_file_contents_as_string(file_path)
 
 
-def test_is_remote_works():
-    """Tests remote file detection."""
-    assert io_utils.is_remote("gs://test")
-    assert io_utils.is_remote("s3://test")
-    assert io_utils.is_remote("hdfs://test")
-    assert io_utils.is_remote("az://test")
-    assert io_utils.is_remote("abfs://test")
-    assert not io_utils.is_remote("test")
-    assert not io_utils.is_remote("file://test")
-    assert not io_utils.is_remote("file:///test")
-    assert not io_utils.is_remote("/test")
-    assert not io_utils.is_remote("test.txt")
-    assert isinstance(io_utils.is_remote("test.txt"), bool)
-
-
 def test_copy_dir_works(tmp_path):
     """Tests copying directory."""
     dir_path = os.path.join(tmp_path, "test")
