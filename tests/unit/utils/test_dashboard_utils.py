@@ -12,6 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from unittest.mock import MagicMock
+
 from hypothesis import given
 from hypothesis.strategies import text
 
@@ -25,4 +27,30 @@ def test_get_run_url_works_without_server(random_text):
     if Client().zen_store.type == "sql":
         url = dashboard_utils.get_run_url(random_text)
         assert url == ""
+        assert isinstance(url, str)
+
+
+def test_get_run_url_works_with_mocked_server(monkeypatch):
+    """Test that the get_run_url function works with a server."""
+    mock_url = MagicMock()
+    mock_runs = MagicMock()
+    mock_store_type = MagicMock()
+
+    mock_url.return_value = "https://aria_rules.com"
+    mock_runs.return_value = []
+    mock_store_type.return_value = "rest"
+
+    monkeypatch.setattr(
+        "zenml.zen_stores.sql_zen_store.SqlZenStore.url", mock_url
+    )
+    monkeypatch.setattr(
+        "zenml.zen_stores.sql_zen_store.SqlZenStore.list_runs", mock_runs
+    )
+    monkeypatch.setattr(
+        "zenml.zen_stores.sql_zen_store.SqlZenStore.type", mock_store_type
+    )
+
+    if Client().zen_store.type == "rest":
+        url = dashboard_utils.get_run_url("test")
+        assert url == "https://aria_rules.com/pipelines/all-runs"
         assert isinstance(url, str)
