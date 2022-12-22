@@ -91,8 +91,6 @@ class Stack:
     ):
         """Initializes and validates a stack instance.
 
-        # noqa: DAR402
-
         Args:
             id: Unique ID of the stack.
             name: Name of the stack.
@@ -108,9 +106,6 @@ class Stack:
             annotator: Annotator component of the stack.
             data_validator: Data validator component of the stack.
             image_builder: Image builder component of the stack.
-
-        Raises:
-            StackValidationError: If the stack configuration is not valid.
         """
         self._id = id
         self._name = name
@@ -125,6 +120,54 @@ class Stack:
         self._alerter = alerter
         self._annotator = annotator
         self._data_validator = data_validator
+
+        requires_image_builder = (
+            orchestrator.flavor != "local"
+            or step_operator
+            or (model_deployer and model_deployer.flavor != "mlflow")
+        )
+        if requires_image_builder and not image_builder:
+            # This is a temporary fix to include a local image builder to each
+            # stack that needs it. This mirrors the behavior in previous
+            # versions and ensures we don't break all existing stacks
+            from datetime import datetime
+            from uuid import uuid4
+
+            from zenml.image_builders import (
+                LocalImageBuilder,
+                LocalImageBuilderConfig,
+                LocalImageBuilderFlavor,
+            )
+
+            flavor = LocalImageBuilderFlavor()
+
+            image_builder = LocalImageBuilder(
+                id=uuid4(),
+                name="temporary_default",
+                flavor=flavor.name,
+                type=flavor.type,
+                config=LocalImageBuilderConfig(),
+                user=Client().active_user.id,
+                project=Client().active_project.id,
+                created=datetime.utcnow(),
+                updated=datetime.utcnow(),
+            )
+
+            logger.warning(
+                "The stack `%s` contains components that require building "
+                "Docker images. Older versions of ZenML always built these "
+                "images locally, but since version 0.32.0 this behavior can be "
+                "configured using the `image_builder` stack component. This "
+                "stack will temporarily default to a local image builder that "
+                "mirrors the previous behavior, but this will be removed in "
+                "future versions of ZenML. Please add an image builder to this "
+                "stack:\n"
+                "`zenml image-builder register <NAME> ...\n"
+                "zenml stack udate %s -i <NAME>",
+                name,
+                id,
+            )
+
         self._image_builder = image_builder
 
     @classmethod
