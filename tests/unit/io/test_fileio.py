@@ -95,7 +95,7 @@ def test_is_remote_when_using_remote_prefix(filesystem):
     """is_remote returns True when path starts with one of
     the ZenML remote file prefixes"""
     some_random_path = os.path.join(f"{filesystem}some_directory")
-    assert io_utils.is_remote(some_random_path)
+    assert fileio.is_remote(some_random_path)
 
 
 @given(text())
@@ -103,7 +103,7 @@ def test_is_remote_when_using_non_remote_prefix(filesystem):
     """is_remote returns False when path doesn't start with
     a remote prefix"""
     some_random_path = os.path.join(f"{filesystem}some_directory")
-    assert io_utils.is_remote(some_random_path) is False
+    assert fileio.is_remote(some_random_path) is False
 
 
 def test_listdir_returns_a_list_of_file_names(tmp_path):

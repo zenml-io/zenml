@@ -95,20 +95,20 @@ def test_copy_dir_overwriting_works(tmp_path):
     """Tests copying directory overwriting."""
     dir_path = os.path.join(tmp_path, "test")
     fileio.create_dir_if_not_exists(dir_path)
-    file_path = os.path.join(dir_path, "test.txt")
-    fileio.create_file_if_not_exists(file_path, "some_content_about_aria")
+    file_path1 = os.path.join(dir_path, "test.txt")
+    fileio.create_file_if_not_exists(file_path1, "some_content_about_aria")
 
     new_dir_path = os.path.join(tmp_path, "test2")
     fileio.create_dir_if_not_exists(new_dir_path)
-    file_path = os.path.join(new_dir_path, "test.txt")
-    fileio.create_file_if_not_exists(file_path, "some_content_about_blupus")
+    file_path2 = os.path.join(new_dir_path, "test.txt")
+    fileio.create_file_if_not_exists(file_path2, "some_content_about_blupus")
 
     io_utils.copy_dir(dir_path, new_dir_path, overwrite=True)
     assert os.path.exists(new_dir_path)
     assert os.path.isdir(new_dir_path)
-    assert os.path.exists(os.path.join(new_dir_path, "test.txt"))
-    assert os.path.isfile(os.path.join(new_dir_path, "test.txt"))
-    with open(os.path.join(new_dir_path, "test.txt"), "r") as f:
+    assert os.path.exists(file_path2)
+    assert os.path.isfile(file_path2)
+    with open(file_path2, "r") as f:
         assert f.read() == "some_content_about_aria"
 
 
@@ -116,13 +116,17 @@ def test_copy_dir_throws_error_if_overwriting(tmp_path):
     """Tests copying directory throwing error if overwriting."""
     dir_path = os.path.join(tmp_path, "test")
     fileio.create_dir_if_not_exists(dir_path)
-    file_path = os.path.join(dir_path, "test.txt")
-    fileio.create_file_if_not_exists(file_path, "some_content_about_aria")
+    file_path1 = os.path.join(dir_path, "test.txt")
+    fileio.create_file_if_not_exists(file_path1, "some_content_about_aria")
 
     new_dir_path = os.path.join(tmp_path, "test2")
     fileio.create_dir_if_not_exists(new_dir_path)
-    file_path = os.path.join(new_dir_path, "test.txt")
-    fileio.create_file_if_not_exists(file_path, "some_content_about_blupus")
+    file_path2 = os.path.join(new_dir_path, "test.txt")
+    fileio.create_file_if_not_exists(file_path2, "some_content_about_blupus")
 
     with pytest.raises(FileExistsError):
         io_utils.copy_dir(dir_path, new_dir_path, overwrite=False)
+        assert (
+            io_utils.read_file_contents_as_string(file_path1)
+            == "some_content_about_aria"
+        )
