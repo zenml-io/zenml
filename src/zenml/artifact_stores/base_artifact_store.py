@@ -33,6 +33,7 @@ from pydantic import root_validator
 
 from zenml.enums import StackComponentType
 from zenml.exceptions import ArtifactStoreInterfaceError
+from zenml.io import fileio
 from zenml.stack import Flavor, StackComponent, StackComponentConfig
 from zenml.utils import io_utils
 
@@ -60,7 +61,7 @@ def _sanitize_potential_path(potential_path: Any) -> Any:
         # Neither string nor bytes, this is not a path
         return potential_path
 
-    if io_utils.is_remote(path):
+    if fileio.is_remote(path):
         # If we have a remote path, replace windows path separators with
         # slashes
         import ntpath

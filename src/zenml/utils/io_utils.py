@@ -72,18 +72,6 @@ def read_file_contents_as_string(file_path: str) -> str:
         return f.read()  # type: ignore[no-any-return]
 
 
-# def is_remote(path: str) -> bool:
-#     """Returns True if path exists remotely.
-
-#     Args:
-#         path: Any path as a string.
-
-#     Returns:
-#         True if remote path, else False.
-#     """
-#     return any(path.startswith(prefix) for prefix in REMOTE_FS_PREFIX)
-
-
 # def create_file_if_not_exists(
 #     file_path: str, file_contents: str = "{}"
 # ) -> None:
