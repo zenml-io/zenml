@@ -270,7 +270,7 @@ def find_files(dir_path: "PathType", pattern: str) -> Iterable[str]:
         pattern: pattern like *.png.
 
     Yields:
-         All matching filenames in the directory.
+        All matching filenames in the directory.
     """
     for root, _, files in walk(dir_path):
         for basename in files:
