@@ -59,6 +59,9 @@ def test_generate_uuid_from_string_works():
     """Test the generate_uuid_from_string function."""
     assert isinstance(uuid_utils.generate_uuid_from_string("abc"), UUID)
     assert uuid_utils.generate_uuid_from_string("abc") != "abc"
-    assert uuid_utils.generate_uuid_from_string("abc") == UUID(
-        "90015098-3cd2-4fb0-9696-3f7d28e17f72"
-    )
+
+    run1_output = uuid_utils.generate_uuid_from_string("abc")
+    run2_output = uuid_utils.generate_uuid_from_string("abc")
+    run3_output = uuid_utils.generate_uuid_from_string("def")
+    assert run1_output == run2_output
+    assert run1_output != run3_output
