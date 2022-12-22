@@ -22,6 +22,7 @@ from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.metadata.metadata_types import DType, MetadataType
 
 logger = get_logger(__name__)
 
@@ -133,7 +134,7 @@ class PandasMaterializer(BaseMaterializer):
 
     def extract_metadata(
         self, df: Union[pd.DataFrame, pd.Series]
-    ) -> Dict[str, str]:
+    ) -> Dict[str, "MetadataType"]:
         """Extract metadata from the given pandas dataframe or series.
 
         Args:
@@ -144,26 +145,39 @@ class PandasMaterializer(BaseMaterializer):
         """
         base_metadata = super().extract_metadata(df)
 
-        def _stat_to_str(stat: Any) -> str:
-            """Converts a statistic to a string.
+        def _convert_stat(stat: Any) -> Union[float, Dict[str, float]]:
+            """Converts a pandas statistic to builtin types.
+
+            If the statistic is a `pd.Series`, it is converted to a dictionary
+            of floats. Otherwise, it is converted to a float.
 
             Args:
-                stat: The statistic to convert.
+                stat: The pandas statistic to convert.
 
             Returns:
-                The string representation of the statistic.
+                The statistic as a builtin type.
             """
             if isinstance(stat, pd.Series):
-                return str(stat.to_dict())
-            return str(stat)
+                return {
+                    str(key): float(value)
+                    for key, value in stat.to_dict().items()
+                }
+            return float(stat.item())
 
-        dtype = df.dtypes if isinstance(df, pd.DataFrame) else df.dtype
-        pandas_metadata = {
-            "shape": str(df.shape),
-            "dtype": _stat_to_str(dtype),
-            "mean": _stat_to_str(df.mean()),
-            "std": _stat_to_str(df.std()),
-            "min": _stat_to_str(df.min()),
-            "max": _stat_to_str(df.max()),
+        dtype: Union[DType, Dict[str, DType]]
+        if isinstance(df, pd.Series):
+            dtype = DType(df.dtype.type)
+        else:
+            dtype = {
+                str(key): DType(value.type) for key, value in df.dtypes.items()
+            }
+
+        pandas_metadata: Dict[str, "MetadataType"] = {
+            "shape": df.shape,
+            "dtype": dtype,
+            "mean": _convert_stat(df.mean()),
+            "std": _convert_stat(df.std()),
+            "min": _convert_stat(df.min()),
+            "max": _convert_stat(df.max()),
         }
         return {**base_metadata, **pandas_metadata}

@@ -20,6 +20,7 @@ from zenml.logger import get_logger
 
 if TYPE_CHECKING:
     from zenml.materializers.base_materializer import BaseMaterializer
+    from zenml.metadata.metadata_types import MetadataType
     from zenml.models import ArtifactResponseModel
 
 
@@ -99,7 +100,7 @@ class ArtifactView:
         return self._model.materializer
 
     @property
-    def metadata(self) -> Dict[str, str]:
+    def metadata(self) -> Dict[str, "MetadataType"]:
         """Returns the metadata of the artifact.
 
         Returns:

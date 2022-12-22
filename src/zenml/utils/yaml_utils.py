@@ -120,14 +120,14 @@ def comment_out_yaml(yaml_string: str) -> str:
 
 def write_json(
     file_path: str,
-    contents: Dict[str, Any],
+    contents: Any,
     encoder: Optional[Type[json.JSONEncoder]] = None,
 ) -> None:
     """Write contents as JSON format to file_path.
 
     Args:
         file_path: Path to JSON file.
-        contents: Contents of JSON file as dict.
+        contents: Contents of JSON file.
         encoder: Custom JSON encoder to use when saving json.
 
     Raises:

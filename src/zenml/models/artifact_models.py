@@ -16,9 +16,11 @@
 from typing import Dict, Optional
 from uuid import UUID
 
+import numpy as np
 from pydantic import BaseModel, Field
 
 from zenml.enums import ArtifactType
+from zenml.metadata.metadata_types import DType, MetadataType, StorageSize
 from zenml.models.base_models import (
     ProjectScopedRequestModel,
     ProjectScopedResponseModel,
@@ -52,18 +54,18 @@ class ArtifactBaseModel(BaseModel):
         title="Data type of the artifact.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    metadata: Dict[str, str] = Field(
+    metadata: Dict[str, "MetadataType"] = Field(
         default={},
         title="Metadata of the artifact.",
         example={
-            "runtime_data_type": "<class 'numpy.ndarray'>",
-            "storage_size": "735KB",
-            "shape": "(1437, 64)",
-            "dtype": "float64",
-            "mean": "4.886177800974252",
-            "std": "6.00811374129213",
-            "min": "0.0",
-            "max": "16.0",
+            "runtime_data_type": DType(np.ndarray),
+            "storage_size": StorageSize(735123),
+            "shape": (1437, 64),
+            "dtype": DType(np.float64),
+            "mean": 4.886177800974252,
+            "std": 6.00811374129213,
+            "min": 0.0,
+            "max": 16.0,
         },
     )
 

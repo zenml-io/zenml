@@ -14,13 +14,16 @@
 """Implementation of a materializer to read and write ZenML service instances."""
 
 import os
-from typing import Any, Dict, Type
+from typing import TYPE_CHECKING, Any, Dict, Type
 
 from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.services.service import BaseService
 from zenml.services.service_registry import ServiceRegistry
+
+if TYPE_CHECKING:
+    from zenml.metadata.metadata_types import MetadataType
 
 SERVICE_CONFIG_FILENAME = "service.json"
 
@@ -63,7 +66,9 @@ class ServiceMaterializer(BaseMaterializer):
         with fileio.open(filepath, "w") as f:
             f.write(service.json(indent=4))
 
-    def extract_metadata(self, service: BaseService) -> Dict[str, str]:
+    def extract_metadata(
+        self, service: BaseService
+    ) -> Dict[str, "MetadataType"]:
         """Extract metadata from the given service.
 
         Args:
@@ -72,8 +77,10 @@ class ServiceMaterializer(BaseMaterializer):
         Returns:
             The extracted metadata as a dictionary.
         """
+        from zenml.metadata.metadata_types import Uri
+
         base_metadata = super().extract_metadata(service)
-        service_metadata = {}
+        service_metadata: Dict[str, "MetadataType"] = {}
         if service.endpoint and service.endpoint.status.uri:
-            service_metadata["uri"] = service.endpoint.status.uri
+            service_metadata["uri"] = Uri(service.endpoint.status.uri)
         return {**base_metadata, **service_metadata}

@@ -22,6 +22,7 @@ from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.metadata.metadata_types import DType, MetadataType
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -116,7 +117,9 @@ class NumpyMaterializer(BaseMaterializer):
             # statement
             cast(Any, np.save)(f, arr)
 
-    def extract_metadata(self, arr: "NDArray[Any]") -> Dict[str, str]:
+    def extract_metadata(
+        self, arr: "NDArray[Any]"
+    ) -> Dict[str, "MetadataType"]:
         """Extract metadata from the given numpy array.
 
         Args:
@@ -126,12 +129,12 @@ class NumpyMaterializer(BaseMaterializer):
             The extracted metadata as a dictionary.
         """
         base_metadata = super().extract_metadata(arr)
-        numpy_metadata = {
-            "shape": str(arr.shape),
-            "dtype": str(arr.dtype),
-            "mean": str(np.mean(arr)),
-            "std": str(np.std(arr)),
-            "min": str(np.min(arr)),
-            "max": str(np.max(arr)),
+        numpy_metadata: Dict[str, "MetadataType"] = {
+            "shape": tuple(arr.shape),
+            "dtype": DType(arr.dtype.type),
+            "mean": np.mean(arr).item(),
+            "std": np.std(arr).item(),
+            "min": np.min(arr).item(),
+            "max": np.max(arr).item(),
         }
         return {**base_metadata, **numpy_metadata}

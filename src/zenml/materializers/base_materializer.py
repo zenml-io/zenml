@@ -24,6 +24,7 @@ from zenml.logger import get_logger
 from zenml.materializers.default_materializer_registry import (
     default_materializer_registry,
 )
+from zenml.metadata.metadata_types import DType, MetadataType
 
 logger = get_logger(__name__)
 
@@ -261,7 +262,7 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
             )
             self.handle_return(data)
 
-    def extract_metadata(self, data: Any) -> Dict[str, str]:
+    def extract_metadata(self, data: Any) -> Dict[str, "MetadataType"]:
         """Extract metadata from the given data.
 
         This metadata will be tracked and displayed alongside the artifact.
@@ -275,6 +276,8 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         Raises:
             TypeError: If the data is not of the correct type.
         """
+        from zenml.metadata.metadata_types import StorageSize
+
         data_type = type(data)
         if not self._can_handle_type(data_type):
             raise TypeError(
@@ -283,25 +286,12 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
                 f"types: {self.ASSOCIATED_TYPES}."
             )
 
-        def human_readable_size(num_bytes: int) -> str:
-            """Converts a number of bytes to a human-readable string.
-
-            Args:
-                num_bytes: The number of bytes.
-
-            Returns:
-                A human-readable string representation of the data size.
-            """
-            for unit in ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB"]:
-                if abs(num_bytes) < 1000:
-                    return f"{num_bytes}{unit}"
-                num_bytes = num_bytes // 1000
-            return f"{num_bytes}YB"
-
-        metadata = {"runtime_data_type": str(type(data))}
+        metadata: Dict[str, "MetadataType"] = {
+            "runtime_data_type": DType(type(data))
+        }
         storage_size = fileio.size(self.uri)
         if storage_size:
-            metadata["storage_size"] = human_readable_size(storage_size)
+            metadata["storage_size"] = StorageSize(storage_size)
         return metadata
 
     def handle_input(self, data_type: Type[Any]) -> Any:
