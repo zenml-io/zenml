@@ -236,9 +236,11 @@ jobs:
           #  - kserve requires a tritonclient version that is lower that the one needed by mlflow
           #  - seldon requires a prometheus-client version that is lower that the one needed by bentoml
           #  - kserve requires a ray version that is not available on python 3.10
+          #  - kserve requires a botocore version that is too old for the AWS integration
           zenml integration export-requirements --output-file requirements.txt seldon kserve
           pip install -r requirements.txt
           rm requirements.txt
+          zenml integration install -y aws
         if: inputs.python-version != '3.10'
 
       - name: Install Prerequisites - Stage 3
