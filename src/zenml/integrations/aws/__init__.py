@@ -27,6 +27,7 @@ from zenml.stack import Flavor
 AWS_SECRET_MANAGER_FLAVOR = "aws"
 AWS_CONTAINER_REGISTRY_FLAVOR = "aws"
 AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR = "sagemaker"
+AWS_SAGEMAKER_ORCHESTRATOR_FLAVOR = "sagemaker"
 
 
 class AWSIntegration(Integration):
@@ -34,8 +35,9 @@ class AWSIntegration(Integration):
 
     NAME = AWS
     REQUIREMENTS = [
-        "boto3==1.21.0",
-        "sagemaker==2.117.0",
+        "boto3>=1.24.59,<=1.26.31",
+        "botocore>=1.27.59,<=1.29.31",
+        "sagemaker>=2.117.0,<=2.124.0",
     ]
 
     @classmethod
@@ -48,6 +50,7 @@ class AWSIntegration(Integration):
         from zenml.integrations.aws.flavors import (
             AWSContainerRegistryFlavor,
             AWSSecretsManagerFlavor,
+            SagemakerOrchestratorFlavor,
             SagemakerStepOperatorFlavor,
         )
 
@@ -55,6 +58,7 @@ class AWSIntegration(Integration):
             AWSSecretsManagerFlavor,
             AWSContainerRegistryFlavor,
             SagemakerStepOperatorFlavor,
+            SagemakerOrchestratorFlavor,
         ]
 
 

@@ -63,8 +63,7 @@ stack with all of these components.
   **container registry**.
 * The **Vertex orchestrator** is responsible for running your ZenML pipeline
   in Vertex AI.
-* The **secrets manager** contains the secrets to allow access to the metadata
-  store.
+* The **secrets manager** contains the secrets to allow access across Vertex AI.
 
 When running the upcoming commands, make sure to
 replace all the <PLACEHOLDERS> with the correct values from your GCP project.
