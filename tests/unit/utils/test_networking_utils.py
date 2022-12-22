@@ -60,10 +60,7 @@ def test_scan_for_available_port_works():
 def test_port_is_open_on_local_host_works():
     """Test if port_is_open_on_local_host works."""
     open_port = find_open_port()
-    assert networking_utils.port_is_open("127.0.0.1", open_port) is not None
-    assert isinstance(
-        networking_utils.port_is_open("127.0.0.1", open_port), bool
-    )
+    assert networking_utils.port_is_open("127.0.0.1", open_port) is True
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.bind(("127.0.0.1", open_port))
         assert networking_utils.port_is_open("127.0.0.1", open_port) is False
