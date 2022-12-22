@@ -358,7 +358,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         logger.debug(f"Writing config to {config_file}")
 
         if not fileio.exists(config_file):
-            io_utils.create_dir_recursive_if_not_exists(
+            fileio.create_dir_recursive_if_not_exists(
                 config_path or self.config_directory
             )
 
@@ -730,7 +730,10 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         return self.active_stack_id
 
     def record_email_opt_in_out(
-        self, opted_in: bool, email: Optional[str], source: AnalyticsEventSource
+        self,
+        opted_in: bool,
+        email: Optional[str],
+        source: AnalyticsEventSource,
     ) -> None:
         """Set the email address associated with this client.
 

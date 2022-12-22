@@ -100,7 +100,7 @@ def test_listdir_returns_a_list_of_file_names(tmp_path):
 def test_listdir_returns_one_result_for_one_file(tmp_path):
     """list_dir should return only one result, when there is only
     one file created"""
-    io_utils.create_file_if_not_exists(
+    fileio.create_file_if_not_exists(
         os.path.join(tmp_path, TEMPORARY_FILE_NAME)
     )
     assert len(fileio.listdir(str(tmp_path))) == 1
@@ -130,7 +130,7 @@ def test_copy_moves_file_to_new_location(tmp_path) -> None:
     """Test that copy moves the file to the new location"""
     src = os.path.join(tmp_path, "test_file.txt")
     dst = os.path.join(tmp_path, "test_file2.txt")
-    io_utils.create_file_if_not_exists(src)
+    fileio.create_file_if_not_exists(src)
     assert not os.path.exists(dst)
     fileio.copy(src, dst)
     assert os.path.exists(dst)
@@ -141,8 +141,8 @@ def test_copy_raises_error_when_file_exists(tmp_path) -> None:
     the desired location"""
     src = os.path.join(tmp_path, "test_file.txt")
     dst = os.path.join(tmp_path, "test_file2.txt")
-    io_utils.create_file_if_not_exists(src)
-    io_utils.create_file_if_not_exists(dst)
+    fileio.create_file_if_not_exists(src)
+    fileio.create_file_if_not_exists(dst)
     assert os.path.exists(src)
     assert os.path.exists(dst)
     with pytest.raises(FileExistsError):
@@ -163,7 +163,7 @@ def test_file_exists_when_file_doesnt_exist(tmp_path) -> None:
 def test_remove_function(tmp_path) -> None:
     """Test that remove function actually removes a file"""
     new_file_path = os.path.join(tmp_path, "test_file.txt")
-    io_utils.create_file_if_not_exists(new_file_path)
+    fileio.create_file_if_not_exists(new_file_path)
     assert fileio.exists(new_file_path)
     fileio.remove(new_file_path)
     assert not os.path.exists(new_file_path)
@@ -203,7 +203,7 @@ def test_mkdir_function_when_parent_doesnt_exist(tmp_path) -> None:
 
 def test_rename_function(tmp_path) -> None:
     """Test that renames a file"""
-    io_utils.create_file_if_not_exists(os.path.join(tmp_path, "test_file.txt"))
+    fileio.create_file_if_not_exists(os.path.join(tmp_path, "test_file.txt"))
     fileio.rename(
         os.path.join(tmp_path, "test_file.txt"),
         os.path.join(tmp_path, "new_file.txt"),
@@ -256,17 +256,17 @@ def test_walk_returns_an_iterator(tmp_path) -> None:
 
 def test_create_file_if_not_exists(tmp_path) -> None:
     """Test that create_file_if_not_exists creates a file"""
-    io_utils.create_file_if_not_exists(os.path.join(tmp_path, "new_file.txt"))
+    fileio.create_file_if_not_exists(os.path.join(tmp_path, "new_file.txt"))
     assert os.path.exists(os.path.join(tmp_path, "new_file.txt"))
 
 
 def test_create_file_if_not_exists_does_not_overwrite(tmp_path) -> None:
     """Test that create_file_if_not_exists doesn't overwrite an existing file"""
     temporary_file = os.path.join(tmp_path, "new_file.txt")
-    io_utils.create_file_if_not_exists(temporary_file)
+    fileio.create_file_if_not_exists(temporary_file)
     with open(temporary_file, "w") as f:
         f.write("Aria is a good cat")
-    io_utils.create_file_if_not_exists(temporary_file)
+    fileio.create_file_if_not_exists(temporary_file)
     with open(temporary_file, "r") as f:
         assert f.read() == "Aria is a good cat"
 
@@ -279,7 +279,7 @@ def test_create_dir_if_not_exists(tmp_path) -> None:
 
 def test_create_dir_recursive_if_not_exists(tmp_path) -> None:
     """Test that create_dir_recursive_if_not_exists creates a directory"""
-    io_utils.create_dir_recursive_if_not_exists(
+    fileio.create_dir_recursive_if_not_exists(
         os.path.join(tmp_path, "new_dir/new_dir2")
     )
     assert os.path.exists(os.path.join(tmp_path, "new_dir/new_dir2"))
@@ -297,7 +297,7 @@ def test_copy_dir_copies_dir_from_source_to_destination(tmp_path) -> None:
     target_dir = os.path.join(tmp_path, "test_dir_copy")
     source_file = os.path.join(source_dir, "new_file.txt")
     target_file = os.path.join(target_dir, "new_file.txt")
-    io_utils.create_file_if_not_exists(source_file)
+    fileio.create_file_if_not_exists(source_file)
     assert os.path.exists(source_file)
     assert not os.path.exists(target_dir)
     io_utils.copy_dir(source_dir, target_dir)
@@ -307,7 +307,7 @@ def test_copy_dir_copies_dir_from_source_to_destination(tmp_path) -> None:
 
 def test_move_moves_a_file_from_source_to_destination(tmp_path) -> None:
     """Test that move moves a file from source to destination"""
-    io_utils.create_file_if_not_exists(os.path.join(tmp_path, "new_file.txt"))
+    fileio.create_file_if_not_exists(os.path.join(tmp_path, "new_file.txt"))
     fileio.rename(
         os.path.join(tmp_path, "new_file.txt"),
         os.path.join(tmp_path, "new_file_moved.txt"),
@@ -318,7 +318,7 @@ def test_move_moves_a_file_from_source_to_destination(tmp_path) -> None:
 
 def test_move_moves_a_directory_from_source_to_destination(tmp_path) -> None:
     """Test that move moves a directory from source to destination"""
-    io_utils.create_file_if_not_exists(
+    fileio.create_file_if_not_exists(
         os.path.join(tmp_path, "new_folder/new_file.txt")
     )
     fileio.rename(
@@ -331,7 +331,7 @@ def test_move_moves_a_directory_from_source_to_destination(tmp_path) -> None:
 
 def test_get_grandparent_gets_the_grandparent_directory(tmp_path) -> None:
     """Test that get_grandparent gets the grandparent directory"""
-    io_utils.create_dir_recursive_if_not_exists(
+    fileio.create_dir_recursive_if_not_exists(
         os.path.join(tmp_path, "new_dir/new_dir2")
     )
     grandparent = io_utils.get_grandparent(
@@ -342,7 +342,7 @@ def test_get_grandparent_gets_the_grandparent_directory(tmp_path) -> None:
 
 def test_get_parent_gets_the_parent_directory(tmp_path) -> None:
     """Test that get_parent gets the parent directory"""
-    io_utils.create_dir_recursive_if_not_exists(
+    fileio.create_dir_recursive_if_not_exists(
         os.path.join(tmp_path, "new_dir/new_dir2")
     )
     parent = io_utils.get_parent(os.path.join(tmp_path, "new_dir/new_dir2"))

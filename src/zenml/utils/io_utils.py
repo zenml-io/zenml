@@ -20,7 +20,14 @@ from typing import TYPE_CHECKING
 import click
 
 from zenml.constants import APP_NAME, ENV_ZENML_CONFIG_PATH
-from zenml.io.fileio import copy, exists, isdir, listdir, open
+from zenml.io.fileio import (
+    copy,
+    create_dir_recursive_if_not_exists,
+    exists,
+    isdir,
+    listdir,
+    open,
+)
 
 if TYPE_CHECKING:
     from zenml.io.filesystem import PathType
@@ -70,16 +77,6 @@ def read_file_contents_as_string(file_path: str) -> str:
         raise FileNotFoundError(f"{file_path} does not exist!")
     with open(file_path) as f:
         return f.read()  # type: ignore[no-any-return]
-
-
-# def create_dir_recursive_if_not_exists(dir_path: str) -> None:
-#     """Creates directory recursively if it does not exist.
-
-#     Args:
-#         dir_path: Local path in filesystem.
-#     """
-#     if not isdir(dir_path):
-#         makedirs(dir_path)
 
 
 # def resolve_relative_path(path: str) -> str:

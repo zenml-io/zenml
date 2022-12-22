@@ -31,7 +31,6 @@ from zenml.artifact_stores import (
 from zenml.config.global_config import GlobalConfiguration
 from zenml.exceptions import ArtifactStoreInterfaceError
 from zenml.io.local_filesystem import LocalFilesystem
-from zenml.utils import io_utils
 
 if TYPE_CHECKING:
     from uuid import UUID
@@ -124,7 +123,7 @@ class LocalArtifactStore(LocalFilesystem, BaseArtifactStore):
             self._path = self.config.path
         else:
             self._path = self.get_default_local_path(self.id)
-        io_utils.create_dir_recursive_if_not_exists(self._path)
+        fileio.create_dir_recursive_if_not_exists(self._path)
         return self._path
 
     @property

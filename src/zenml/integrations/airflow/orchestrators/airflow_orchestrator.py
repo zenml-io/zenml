@@ -166,7 +166,9 @@ class AirflowOrchestrator(BaseOrchestrator):
             return None
         else:
 
-            def _validate_remote_components(stack: "Stack") -> Tuple[bool, str]:
+            def _validate_remote_components(
+                stack: "Stack",
+            ) -> Tuple[bool, str]:
                 for component in stack.components.values():
                     if not component.config.is_local:
                         continue
@@ -301,7 +303,7 @@ class AirflowOrchestrator(BaseOrchestrator):
             dag_generator_values: Values of the DAG generator to use.
             output_dir: The directory in which to write the DAG.
         """
-        io_utils.create_dir_recursive_if_not_exists(output_dir)
+        fileio.create_dir_recursive_if_not_exists(output_dir)
 
         if self.config.local and output_dir != self.dags_directory:
             logger.warning(
@@ -324,7 +326,7 @@ class AirflowOrchestrator(BaseOrchestrator):
 
         dag_filename = f"{dag_config.id}.zip"
         if fileio.is_remote(output_dir):
-            io_utils.create_dir_recursive_if_not_exists(self.dags_directory)
+            fileio.create_dir_recursive_if_not_exists(self.dags_directory)
             local_zip_path = os.path.join(self.dags_directory, dag_filename)
             remote_zip_path = os.path.join(output_dir, dag_filename)
             _write_zip(local_zip_path)
@@ -509,7 +511,7 @@ class AirflowOrchestrator(BaseOrchestrator):
         self._check_local_server_requirements()
 
         if not fileio.exists(self.dags_directory):
-            io_utils.create_dir_recursive_if_not_exists(self.dags_directory)
+            fileio.create_dir_recursive_if_not_exists(self.dags_directory)
 
         from airflow.cli.commands.standalone_command import StandaloneCommand
 
