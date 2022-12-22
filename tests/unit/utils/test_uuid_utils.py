@@ -38,3 +38,27 @@ def test_parse_name_or_uuid_works(generated_uuid):
     parsed_generated = uuid_utils.parse_name_or_uuid(str_generated_uuid)
     assert parsed_generated == generated_uuid
     assert isinstance(parsed_generated, UUID)
+    assert uuid_utils.parse_name_or_uuid(None) is None
+
+
+@given(uuids(allow_nil=False))
+def test_parse_optional_name_or_uuid_works(generated_uuid):
+    """Test the parse_optional_name_or_uuid function."""
+    assert uuid_utils.parse_optional_name_or_uuid("abc") == "abc"
+    assert uuid_utils.parse_optional_name_or_uuid("1234") == "1234"
+    assert uuid_utils.parse_optional_name_or_uuid(None) is None
+    str_generated_uuid = str(generated_uuid)
+    parsed_generated = uuid_utils.parse_optional_name_or_uuid(
+        str_generated_uuid
+    )
+    assert parsed_generated == generated_uuid
+    assert isinstance(parsed_generated, UUID)
+
+
+def test_generate_uuid_from_string_works():
+    """Test the generate_uuid_from_string function."""
+    assert isinstance(uuid_utils.generate_uuid_from_string("abc"), UUID)
+    assert uuid_utils.generate_uuid_from_string("abc") != "abc"
+    assert uuid_utils.generate_uuid_from_string("abc") == UUID(
+        "90015098-3cd2-4fb0-9696-3f7d28e17f72"
+    )
