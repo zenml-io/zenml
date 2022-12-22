@@ -72,22 +72,6 @@ def read_file_contents_as_string(file_path: str) -> str:
         return f.read()  # type: ignore[no-any-return]
 
 
-# def create_file_if_not_exists(
-#     file_path: str, file_contents: str = "{}"
-# ) -> None:
-#     """Creates file if it does not exist.
-
-#     Args:
-#         file_path: Local path in filesystem.
-#         file_contents: Contents of file.
-#     """
-#     full_path = Path(file_path)
-#     if not exists(file_path):
-#         create_dir_recursive_if_not_exists(str(full_path.parent))
-#         with open(str(full_path), "w") as f:
-#             f.write(file_contents)
-
-
 # def create_dir_if_not_exists(dir_path: str) -> None:
 #     """Creates directory if it does not exist.
 

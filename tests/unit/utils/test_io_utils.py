@@ -18,6 +18,7 @@ from pathlib import Path
 import pytest
 
 from zenml.constants import ENV_ZENML_CONFIG_PATH
+from zenml.io import fileio
 from zenml.utils import io_utils
 
 
@@ -89,22 +90,6 @@ def test_is_remote_works():
     assert isinstance(io_utils.is_remote("test.txt"), bool)
 
 
-def test_create_file_if_not_exists_works(tmp_path):
-    """Tests file creation."""
-    file_path = os.path.join(tmp_path, "test.txt")
-    io_utils.create_file_if_not_exists(file_path, "some_content_about_aria")
-    assert os.path.exists(file_path)
-    assert os.path.isfile(file_path)
-    with open(file_path, "r") as f:
-        assert f.read() == "some_content_about_aria"
-
-    io_utils.create_file_if_not_exists(file_path, "some_content_about_blupus")
-    assert os.path.exists(file_path)
-    assert os.path.isfile(file_path)
-    with open(file_path, "r") as f:
-        assert f.read() == "some_content_about_aria"
-
-
 def test_create_dir_if_not_exists_works(tmp_path):
     """Tests directory creation."""
     dir_path = os.path.join(tmp_path, "test")
@@ -124,7 +109,7 @@ def test_create_dir_recursive_if_not_exists_works(tmp_path):
 def test_resolve_relative_path_works(tmp_path):
     """Tests resolving relative path."""
     file_path = os.path.join(tmp_path, "test.txt")
-    io_utils.create_file_if_not_exists(file_path, "some_content_about_aria")
+    fileio.create_file_if_not_exists(file_path, "some_content_about_aria")
     relative_path = os.path.relpath(file_path)
     assert relative_path != file_path
     assert io_utils.resolve_relative_path(relative_path) == file_path
@@ -141,7 +126,7 @@ def test_copy_dir_works(tmp_path):
     dir_path = os.path.join(tmp_path, "test")
     io_utils.create_dir_if_not_exists(dir_path)
     file_path = os.path.join(dir_path, "test.txt")
-    io_utils.create_file_if_not_exists(file_path, "some_content_about_aria")
+    fileio.create_file_if_not_exists(file_path, "some_content_about_aria")
 
     new_dir_path = os.path.join(tmp_path, "test2")
     io_utils.copy_dir(dir_path, new_dir_path)
@@ -158,12 +143,12 @@ def test_copy_dir_overwriting_works(tmp_path):
     dir_path = os.path.join(tmp_path, "test")
     io_utils.create_dir_if_not_exists(dir_path)
     file_path = os.path.join(dir_path, "test.txt")
-    io_utils.create_file_if_not_exists(file_path, "some_content_about_aria")
+    fileio.create_file_if_not_exists(file_path, "some_content_about_aria")
 
     new_dir_path = os.path.join(tmp_path, "test2")
     io_utils.create_dir_if_not_exists(new_dir_path)
     file_path = os.path.join(new_dir_path, "test.txt")
-    io_utils.create_file_if_not_exists(file_path, "some_content_about_blupus")
+    fileio.create_file_if_not_exists(file_path, "some_content_about_blupus")
 
     io_utils.copy_dir(dir_path, new_dir_path, overwrite=True)
     assert os.path.exists(new_dir_path)
@@ -179,12 +164,12 @@ def test_copy_dir_throws_error_if_overwriting(tmp_path):
     dir_path = os.path.join(tmp_path, "test")
     io_utils.create_dir_if_not_exists(dir_path)
     file_path = os.path.join(dir_path, "test.txt")
-    io_utils.create_file_if_not_exists(file_path, "some_content_about_aria")
+    fileio.create_file_if_not_exists(file_path, "some_content_about_aria")
 
     new_dir_path = os.path.join(tmp_path, "test2")
     io_utils.create_dir_if_not_exists(new_dir_path)
     file_path = os.path.join(new_dir_path, "test.txt")
-    io_utils.create_file_if_not_exists(file_path, "some_content_about_blupus")
+    fileio.create_file_if_not_exists(file_path, "some_content_about_blupus")
 
     with pytest.raises(FileExistsError):
         io_utils.copy_dir(dir_path, new_dir_path, overwrite=False)
