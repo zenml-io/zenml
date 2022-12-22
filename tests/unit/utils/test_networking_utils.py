@@ -65,8 +65,8 @@ def test_port_is_open_on_local_host_works():
         networking_utils.port_is_open("127.0.0.1", open_port), bool
     )
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        sock.bind(("127.0.0.1", 8000))
-        assert networking_utils.port_is_open("127.0.0.1", 8000) is False
+        sock.bind(("127.0.0.1", open_port))
+        assert networking_utils.port_is_open("127.0.0.1", open_port) is False
 
 
 def test_replace_localhost_returns_url_when_running_outside_container():
