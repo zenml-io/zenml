@@ -36,7 +36,7 @@ if TYPE_CHECKING:
     from zenml.client import Client
 
 LOCAL_ZENML_SERVER_DEFAULT_PORT = 9000
-MYSQL_DOCKER_IMAGE = "mysql:5.7"
+MYSQL_DOCKER_IMAGE = "mysql:8.0"
 MYSQL_DEFAULT_PASSWORD = "zenml"
 MYSQL_DEFAULT_PORT = 3306
 ZENML_SERVER_IMAGE_NAME = "localhost/zenml-server"
