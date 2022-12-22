@@ -363,7 +363,9 @@ class GitStackRecipesHandler(object):
                     f"Stack recipe {stack_recipe_name} does not exist! "
                     f"Available Stack Recipes: {list(stack_recipe_dict)}"
                     "If you want to deploy a custom stack recipe available "
-                    "locally, please use the `--skip-pull` flag."
+                    "locally, please call deploy with the `--skip-pull` flag "
+                    "and specify the path to the stack recipe directory with "
+                    "the `--path` or `-p` flag."
                 )
         else:
             return self.stack_recipes
@@ -696,7 +698,7 @@ def pull(
     "-p",
     type=click.STRING,
     default="zenml_stack_recipes",
-    help="Relative path at which you want to install the stack_recipe(s)",
+    help="Relative path at which local stack recipe(s) should exist",
 )
 @click.option(
     "--force",
@@ -745,8 +747,9 @@ def pull(
 @click.option(
     "--skip-pull",
     is_flag=True,
-    help="Skip the pull of the stack recipe before deploying. This should be used "
-    "if you have a local copy of your recipe already.",
+    help="Skip the pulling of the stack recipe before deploying. This should be used "
+    "if you have a local copy of your recipe already. Use the `--path` or `-p` flag to "
+    "specify the directory that hosts your recipe(s)."
 )
 @pass_git_stack_recipes_handler
 @click.pass_context
