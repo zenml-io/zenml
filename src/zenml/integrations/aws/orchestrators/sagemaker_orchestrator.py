@@ -31,7 +31,9 @@ from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
 from zenml.logger import get_logger
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
-from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
+from zenml.utils.pipeline_docker_image_builder import (
+    PipelineDockerImageBuilder,
+)
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
@@ -139,37 +141,27 @@ class SagemakerOrchestrator(BaseOrchestrator):
                 step_settings.processor_role or self.config.execution_role
             )
 
-            if step_settings.processor_tags:
-                processor = sagemaker.processing.Processor(
-                    role=processor_role,
-                    image_uri=image_name,
-                    instance_count=1,
-                    sagemaker_session=session,
-                    instance_type=step_settings.instance_type,
-                    entrypoint=entrypoint,
-                    base_job_name=orchestrator_run_name,
-                    env={
-                        ENV_ZENML_SAGEMAKER_RUN_ID: ExecutionVariables.PIPELINE_EXECUTION_ARN,
-                    },
-                    volume_size_in_gb=step_settings.volume_size_in_gb,
-                    max_runtime_in_seconds=step_settings.max_runtime_in_seconds,
-                    tags=[step_settings.processor_tags],
-                )
-            else:
-                processor = sagemaker.processing.Processor(
-                    role=processor_role,
-                    image_uri=image_name,
-                    instance_count=1,
-                    sagemaker_session=session,
-                    instance_type=step_settings.instance_type,
-                    entrypoint=entrypoint,
-                    base_job_name=orchestrator_run_name,
-                    env={
-                        ENV_ZENML_SAGEMAKER_RUN_ID: ExecutionVariables.PIPELINE_EXECUTION_ARN,
-                    },
-                    volume_size_in_gb=step_settings.volume_size_in_gb,
-                    max_runtime_in_seconds=step_settings.max_runtime_in_seconds,
-                )
+            kwargs = (
+                {"tags": [step_settings.processor_tags]}
+                if step_settings.processor_tags
+                else {}
+            )
+
+            processor = sagemaker.processing.Processor(
+                role=processor_role,
+                image_uri=image_name,
+                instance_count=1,
+                sagemaker_session=session,
+                instance_type=step_settings.instance_type,
+                entrypoint=entrypoint,
+                base_job_name=orchestrator_run_name,
+                env={
+                    ENV_ZENML_SAGEMAKER_RUN_ID: ExecutionVariables.PIPELINE_EXECUTION_ARN,
+                },
+                volume_size_in_gb=step_settings.volume_size_in_gb,
+                max_runtime_in_seconds=step_settings.max_runtime_in_seconds,
+                **kwargs,
+            )
 
             sagemaker_step = ProcessingStep(
                 name=step.config.name,
