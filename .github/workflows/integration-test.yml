@@ -244,8 +244,8 @@ jobs:
       - name: Install Prerequisites - Stage 3
         run: |
           source $VENV
-          # re-install zenml to be sure
-          poetry install --extras server
+          # re-install zenml to be sure (don't use poetry because it will just use the versions in the lock file)
+          pip install -e .[server]
           # install airflow requirements
           pip install apache-airflow-providers-docker
           # the 1.24.0 numpy version locked in by ZenML breaks compatibility with previous versions
