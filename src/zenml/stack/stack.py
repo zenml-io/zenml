@@ -751,6 +751,37 @@ class Stack:
         ).values():
             component.prepare_step_run(info=info)
 
+    def publish_run_metadata(self, info: "StepRunInfo") -> None:
+        """Publish stack-component-specific metadata after a step ran.
+
+        Args:
+            info: Info about the step that was executed.
+        """
+        client = Client()
+        for component in self._get_active_components_for_step(
+            info.config
+        ).values():
+            # Publish step-specific run metadata
+            step_run_metadata = component.get_step_run_metadata(info=info)
+            if step_run_metadata:
+                client.create_run_metadata(
+                    pipeline_run_id=info.run_id,
+                    metadata=step_run_metadata,
+                    step_run_id=info.step_run_id,
+                    stack_component_id=component.id,
+                )
+
+            # Publish general run metadata
+            pipeline_run_metadata = component.get_pipeline_run_metadata(
+                info=info
+            )
+            if pipeline_run_metadata:
+                client.create_run_metadata(
+                    pipeline_run_id=info.run_id,
+                    metadata=pipeline_run_metadata,
+                    stack_component_id=component.id,
+                )
+
     def cleanup_step_run(self, info: "StepRunInfo", step_failed: bool) -> None:
         """Cleans up resources after the step run is finished.
 

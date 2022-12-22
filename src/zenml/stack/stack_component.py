@@ -14,7 +14,7 @@
 """Implementation of the ZenML Stack Component class."""
 from abc import ABC
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, List, Optional, Set, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Type, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Extra
@@ -508,6 +508,28 @@ class StackComponent:
         Args:
             info: Info about the step that will be executed.
         """
+
+    def get_step_run_metadata(self, info: "StepRunInfo") -> Dict[str, str]:
+        """Get component- and step-specific metadata after a step ran.
+
+        Args:
+            info: Info about the step that was executed.
+
+        Returns:
+            A dictionary of metadata.
+        """
+        return {}
+
+    def get_pipeline_run_metadata(self, info: "StepRunInfo") -> Dict[str, str]:
+        """Get general component-specific metadata after a step ran.
+
+        Args:
+            info: Info about the step that was executed.
+
+        Returns:
+            A dictionary of metadata.
+        """
+        return {}
 
     def cleanup_step_run(self, info: "StepRunInfo", step_failed: bool) -> None:
         """Cleans up resources after the step run is finished.
