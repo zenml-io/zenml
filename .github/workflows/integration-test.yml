@@ -229,19 +229,17 @@ jobs:
           pip install -r requirements.txt
           rm requirements.txt
 
-      - name: Install Prerequisites - Stage 2
-        run: |
-          source $VENV
-          # install integrations: round 2, needed because:
-          #  - kserve requires a tritonclient version that is lower that the one needed by mlflow
-          #  - seldon requires a prometheus-client version that is lower that the one needed by bentoml
-          #  - kserve requires a ray version that is not available on python 3.10
-          #  - kserve requires a botocore version that is too old for the AWS integration
-          zenml integration export-requirements --output-file requirements.txt seldon kserve
-          pip install -r requirements.txt
-          rm requirements.txt
-          zenml integration install -y aws
-        if: inputs.python-version != '3.10'
+      # - name: Install Prerequisites - Stage 2
+      #   run: |
+      #     source $VENV
+      #     # install integrations: round 2, needed because:
+      #     #  - kserve requires a tritonclient version that is lower that the one needed by mlflow
+      #     #  - seldon requires a prometheus-client version that is lower that the one needed by bentoml
+      #     #  - kserve requires a ray version that is not available on python 3.10
+      #     zenml integration export-requirements --output-file requirements.txt seldon kserve
+      #     pip install -r requirements.txt
+      #     rm requirements.txt
+      #   if: inputs.python-version != '3.10'
 
       - name: Install Prerequisites - Stage 3
         run: |
@@ -250,9 +248,6 @@ jobs:
           poetry install --extras server
           # install airflow requirements
           pip install apache-airflow-providers-docker
-          # the 1.24.0 numpy version locked in by ZenML breaks compatibility with previous versions
-          # and renders the kserve integration unusable
-          pip install 'numpy<1.24.0'
 
       - name: Check Python Env ahead of tests
         run: |
