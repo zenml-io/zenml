@@ -160,6 +160,9 @@ class LocalDaemonServiceStatus(ServiceStatus):
             try:
                 p = psutil.Process(pid)
                 cmd_line = p.cmdline()
+                config_file = self.config_file
+                if not config_file:
+                    return pid
                 if (
                     daemon_entrypoint.__name__ not in cmd_line
                     or self.config_file not in cmd_line
