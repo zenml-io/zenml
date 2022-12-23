@@ -749,7 +749,7 @@ def pull(
     is_flag=True,
     help="Skip the pulling of the stack recipe before deploying. This should be used "
     "if you have a local copy of your recipe already. Use the `--path` or `-p` flag to "
-    "specify the directory that hosts your recipe(s)."
+    "specify the directory that hosts your recipe(s).",
 )
 @pass_git_stack_recipes_handler
 @click.pass_context
