@@ -35,9 +35,7 @@ class AWSIntegration(Integration):
 
     NAME = AWS
     REQUIREMENTS = [
-        "boto3>=1.24.59,<=1.26.31",
-        "botocore>=1.27.59,<=1.29.31",
-        "sagemaker>=2.117.0,<=2.124.0",
+        "sagemaker==2.117.0",
     ]
 
     @classmethod
