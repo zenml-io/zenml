@@ -160,3 +160,21 @@ tests:
           - xgboost
       - capabilities:
           synchronized: true
+
+  - module: tests.integration.examples.test_airflow_orchestration
+    requirements:
+      - integrations:
+          - pytorch
+        packages:
+          - torchvision
+
+  - module: tests.integration.examples.test_step_operator_remote_training
+    requirements:
+      - integrations:
+          - sklearn
+        packages:
+          - torchvision
+        stacks:
+          - type: step_operator
+      - capabilities:
+          synchronized: true

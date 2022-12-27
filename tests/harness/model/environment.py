@@ -145,6 +145,17 @@ class EnvironmentConfig(BaseTestConfigModel):
             if isinstance(req, TestRequirements)
         ]
 
+    def has_capability(self, capability: str) -> bool:
+        """Check if this environment has a capability.
+
+        Args:
+            capability: The capability to check.
+
+        Returns:
+            True if the environment has the capability, False otherwise.
+        """
+        return self.capabilities.get(capability, False)
+
     def get_environment(self) -> "TestEnvironment":
         """Instantiate a test environment based on this configuration.
 

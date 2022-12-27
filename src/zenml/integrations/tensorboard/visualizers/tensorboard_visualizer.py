@@ -112,7 +112,7 @@ class TensorboardVisualizer(BaseVisualizer):
                             logdir=logdir,
                         )
                     )
-                    service.start(timeout=20)
+                    service.start(timeout=60)
                     if service.endpoint.status.port:
                         self.visualize_tensorboard(
                             service.endpoint.status.port, height

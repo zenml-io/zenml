@@ -69,6 +69,7 @@ def list_artifacts(
             "update your ZenML client to match the server version."
         )
     return zen_store().list_artifacts(
+        project_name_or_id=project_name_or_id,
         artifact_uri=artifact_uri,
         artifact_store_id=artifact_store_id,
         only_unused=only_unused,

@@ -22,8 +22,8 @@ def upgrade() -> None:
         batch_op.alter_column(
             "config_schema",
             existing_type=sa.VARCHAR(length=4096),
-            type_=sa.String(length=65536),
-            existing_nullable=True,
+            type_=sa.TEXT(),
+            nullable=False,
         )
 
     # ### end Alembic commands ###
@@ -35,9 +35,9 @@ def downgrade() -> None:
     with op.batch_alter_table("flavor", schema=None) as batch_op:
         batch_op.alter_column(
             "config_schema",
-            existing_type=sa.String(length=65536),
+            existing_type=sa.TEXT(),
             type_=sa.VARCHAR(length=4096),
-            existing_nullable=True,
+            nullable=True,
         )
 
     # ### end Alembic commands ###

@@ -1,4 +1,52 @@
 <!-- markdown-link-check-disable -->
+# 0.31.0
+
+The highlights of this release are:
+
+* our Materializers have been redesigned to be more flexible and easier to use
+* we have added a new integration test framework
+* the SageMaker orchestrator has been added to our list of supported orchestrators
+* pipeline runs and artifacts can now be deleted from the ZenML database via the CLI
+or the Client API
+* some integrations have been updated to a more recent version: Kubeflow, Seldon
+Core and Tekton
+
+This release also includes a few bug fixes and other minor improvements to
+existing features.
+
+## What's Changed
+* Fix installation instructions in readme and docs by @schustmi in https://github.com/zenml-io/zenml/pull/1167
+* Fix broken TOC for scheduling docs by @strickvl in https://github.com/zenml-io/zenml/pull/1169
+* Ensure model string fields have a max length by @strickvl in https://github.com/zenml-io/zenml/pull/1136
+* Integration test framework by @stefannica in https://github.com/zenml-io/zenml/pull/1099
+* Check if all ZenML server dependencies are installed for local zenml deployment using `zenml up` by @dnth in https://github.com/zenml-io/zenml/pull/1144
+* Persist the server ID in the database by @stefannica in https://github.com/zenml-io/zenml/pull/1173
+* Tiny docs improvements by @strickvl in https://github.com/zenml-io/zenml/pull/1179
+* Changing some interactions with analytics fields by @bcdurak in https://github.com/zenml-io/zenml/pull/1174
+* Fix `PyTorchDataLoaderMaterializer` for older torch versions by @fa9r in https://github.com/zenml-io/zenml/pull/1178
+* Redesign Materializers by @fa9r in https://github.com/zenml-io/zenml/pull/1154
+* Fixing the error messages when fetching entities by @bcdurak in https://github.com/zenml-io/zenml/pull/1171
+* Moved the active_user property onto the client, implemented get_myself as zenstore method by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1161
+* Bugfix/bump evidently version by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1183
+* Alembic migration to update size of flavor config schema by @fa9r in https://github.com/zenml-io/zenml/pull/1181
+* Deleting pipeline runs and artifacts by @fa9r in https://github.com/zenml-io/zenml/pull/1164
+* Signer email checked before setting in google cloud scheduler by @htahir1 in https://github.com/zenml-io/zenml/pull/1184
+* Fix zenml helm chart to not leak analytics events by @stefannica in https://github.com/zenml-io/zenml/pull/1190
+* Tests for `dict_utils` by @strickvl in https://github.com/zenml-io/zenml/pull/1196
+* Adding exception tracking to `zeml init` by @bcdurak in https://github.com/zenml-io/zenml/pull/1192
+* Prevent crashes during Airflow server forking on MacOS by @schustmi in https://github.com/zenml-io/zenml/pull/1186
+* add alpha as server deployment type by @wjayesh in https://github.com/zenml-io/zenml/pull/1197
+* Bugfix for custom flavor registration by @bcdurak in https://github.com/zenml-io/zenml/pull/1195
+* Tests for `uuid_utils` by @strickvl in https://github.com/zenml-io/zenml/pull/1200
+* Sagemaker orchestrator integration by @strickvl in https://github.com/zenml-io/zenml/pull/1177
+* Fix Pandas Materializer Index by @safoinme in https://github.com/zenml-io/zenml/pull/1193
+* Add support for deploying custom stack recipes using the ZenML CLI by @wjayesh in https://github.com/zenml-io/zenml/pull/1188
+* Add cloud CI environments by @stefannica in https://github.com/zenml-io/zenml/pull/1176
+* Fix project scoping for artifact list through ZenServer by @fa9r in https://github.com/zenml-io/zenml/pull/1203
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.30.0...0.31.0
+
 # 0.30.0
 
 In this release, ZenML finally adds Mac M1 support, Python 3.10 support and much
