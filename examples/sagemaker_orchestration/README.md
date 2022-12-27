@@ -136,7 +136,7 @@ def my_step(...) -> ...:
 ```
 
 For full details on which settings are configurable, please refer to [the API
-docs](https://apidocs.zenml.io/0.30.0/integration_code_docs/integrations-aws/#zenml.integrations.aws.flavors.sagemaker_step_orchestrator_flavor.SagemakerOrchestratorSettings) for full information.
+docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-aws/#zenml.integrations.aws.flavors.sagemaker_step_orchestrator_flavor.SagemakerOrchestratorSettings) for full information.
 
 ### 🧽 Clean up
 
