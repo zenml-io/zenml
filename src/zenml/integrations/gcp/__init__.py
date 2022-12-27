@@ -42,7 +42,7 @@ class GcpIntegration(Integration):
 
     NAME = GCP
     REQUIREMENTS = [
-        "kfp==1.8.13",
+        "kfp==1.8.16",
         "gcsfs",
         "google-cloud-secret-manager",
         "google-cloud-aiplatform>=1.11.0",
