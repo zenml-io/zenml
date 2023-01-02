@@ -83,3 +83,14 @@ def test_update_model_works_with_none_exclusion():
     )
     assert updated2.a == 3
     assert updated2.b is None
+
+
+def test_template_generator_works():
+    """Tests that the template generator works."""
+
+    class TestModel(BaseModel):
+        a: int
+        b: int
+
+    template = pydantic_utils.TemplateGenerator(TestModel).run()
+    assert template == {"a": "int", "b": "int"}
