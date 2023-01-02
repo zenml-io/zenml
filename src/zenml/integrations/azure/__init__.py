@@ -28,6 +28,7 @@ from zenml.stack import Flavor
 AZURE_ARTIFACT_STORE_FLAVOR = "azure"
 AZURE_SECRETS_MANAGER_FLAVOR = "azure"
 AZUREML_STEP_OPERATOR_FLAVOR = "azureml"
+AZUREML_ORCHESTRATOR_FLAVOR = "azureml"
 
 
 class AzureIntegration(Integration):
@@ -52,6 +53,7 @@ class AzureIntegration(Integration):
         from zenml.integrations.azure.flavors import (
             AzureArtifactStoreFlavor,
             AzureMLStepOperatorFlavor,
+            AzureOrchestratorFlavor,
             AzureSecretsManagerFlavor,
         )
 
@@ -59,6 +61,7 @@ class AzureIntegration(Integration):
             AzureArtifactStoreFlavor,
             AzureSecretsManagerFlavor,
             AzureMLStepOperatorFlavor,
+            AzureOrchestratorFlavor,
         ]
 
 

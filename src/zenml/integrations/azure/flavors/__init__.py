@@ -21,6 +21,10 @@ from zenml.integrations.azure.flavors.azure_secrets_manager_flavor import (
     AzureSecretsManagerConfig,
     AzureSecretsManagerFlavor,
 )
+from zenml.integrations.azure.flavors.azureml_orchestrator_flavor import (
+    AzureOrchestratorConfig,
+    AzureOrchestratorFlavor,
+)
 from zenml.integrations.azure.flavors.azureml_step_operator_flavor import (
     AzureMLStepOperatorConfig,
     AzureMLStepOperatorFlavor,
@@ -33,4 +37,6 @@ __all__ = [
     "AzureSecretsManagerConfig",
     "AzureMLStepOperatorFlavor",
     "AzureMLStepOperatorConfig",
+    "AzureOrchestratorFlavor",
+    "AzureOrchestratorConfig",
 ]
