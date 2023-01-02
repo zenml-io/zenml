@@ -41,8 +41,8 @@ def test_get_human_readable_filesize_formats_correctly() -> None:
 
 def test_random_str_is_random() -> None:
     """Test that random_str returns a random string."""
-    l: List[str] = []
-    for i in range(10000):
+    lst: List[str] = []
+    for _ in range(10000):
         new_str = string_utils.random_str(16)
-        assert new_str not in l
-        l.append(new_str)
+        assert new_str not in lst
+        lst.append(new_str)
