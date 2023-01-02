@@ -18,8 +18,7 @@ import json
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
-from sqlalchemy import TEXT, Column
-from sqlmodel import Field, Relationship
+from sqlmodel import Relationship
 
 from zenml.enums import ArtifactType
 from zenml.models import ArtifactRequestModel, ArtifactResponseModel
@@ -75,9 +74,6 @@ class ArtifactSchema(NamedSchema, table=True):
     uri: str
     materializer: str
     data_type: str
-    artifact_metadata: Optional[str] = Field(
-        sa_column=Column(TEXT, nullable=True)
-    )
 
     run_metadata: List["RunMetadataSchema"] = Relationship(
         back_populates="artifact",
@@ -113,7 +109,6 @@ class ArtifactSchema(NamedSchema, table=True):
             uri=artifact_request.uri,
             materializer=artifact_request.materializer,
             data_type=artifact_request.data_type,
-            artifact_metadata=json.dumps(artifact_request.metadata),
         )
 
     def to_model(
@@ -128,10 +123,14 @@ class ArtifactSchema(NamedSchema, table=True):
         Returns:
             The created `ArtifactModel`.
         """
-        if self.artifact_metadata:
-            metadata = json.loads(self.artifact_metadata)
-        else:
-            metadata = {}
+        from zenml.metadata.metadata_types import cast_to_metadata_type
+
+        artifact_metadata = {}
+        for metadata in self.run_metadata:
+            loaded_value = json.loads(metadata.value)
+            typed_value = cast_to_metadata_type(loaded_value, metadata.type)
+            artifact_metadata[metadata.key] = typed_value
+
         return ArtifactResponseModel(
             id=self.id,
             name=self.name,
@@ -145,5 +144,5 @@ class ArtifactSchema(NamedSchema, table=True):
             created=self.created,
             updated=self.updated,
             producer_step_run_id=producer_step_run_id,
-            metadata=metadata,
+            metadata=artifact_metadata,
         )

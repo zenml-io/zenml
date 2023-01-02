@@ -18,6 +18,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
 from zenml.models.base_models import (
     ProjectScopedRequestModel,
     ProjectScopedResponseModel,
@@ -40,9 +41,13 @@ class RunMetadataBaseModel(BaseModel):
         title="The key of the metadata.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    value: str = Field(
+    value: MetadataType = Field(
         title="The value of the metadata.",
         max_length=TEXT_FIELD_MAX_LENGTH,
+    )
+    type: MetadataTypeEnum = Field(
+        title="The type of the metadata.",
+        max_length=STR_FIELD_MAX_LENGTH,
     )
 
 

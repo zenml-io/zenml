@@ -15,7 +15,7 @@
 """Class to run steps."""
 
 import inspect
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Type
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Tuple, Type
 
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.client import Client
@@ -31,6 +31,7 @@ from zenml.models.artifact_models import (
     ArtifactResponseModel,
 )
 from zenml.orchestrators.publish_utils import (
+    publish_output_artifact_metadata,
     publish_output_artifacts,
     publish_successful_step_run,
 )
@@ -44,7 +45,9 @@ from zenml.utils import source_utils
 
 if TYPE_CHECKING:
     from zenml.config.step_configurations import Step
+    from zenml.metadata.metadata_types import MetadataType
     from zenml.stack import Stack
+
 
 logger = get_logger(__name__)
 
@@ -119,13 +122,17 @@ class StepRunner:
         # Store and publish the output artifacts of the step function.
         output_annotations = parse_return_type_annotations(spec.annotations)
         output_data = self._validate_outputs(return_values, output_annotations)
-        output_artifacts = self._store_output_artifacts(
+        output_artifacts, artifact_metadata = self._store_output_artifacts(
             output_data=output_data,
             output_artifact_uris=output_artifact_uris,
             output_materializers=output_materializers,
         )
         output_artifact_ids = publish_output_artifacts(
-            output_artifacts=output_artifacts
+            output_artifacts=output_artifacts,
+        )
+        publish_output_artifact_metadata(
+            output_artifact_ids=output_artifact_ids,
+            output_artifact_metadata=artifact_metadata,
         )
 
         # Update the status and output artifacts of the step run.
@@ -333,7 +340,9 @@ class StepRunner:
         output_data: Dict[str, Any],
         output_materializers: Dict[str, Type[BaseMaterializer]],
         output_artifact_uris: Dict[str, str],
-    ) -> Dict[str, ArtifactRequestModel]:
+    ) -> Tuple[
+        Dict[str, ArtifactRequestModel], Dict[str, Dict[str, "MetadataType"]]
+    ]:
         """Stores the output artifacts of the step.
 
         Args:
@@ -354,6 +363,7 @@ class StepRunner:
         assert artifact_stores is not None  # Every stack has an artifact store.
         artifact_store_id = artifact_stores[0].id
         output_artifacts: Dict[str, ArtifactRequestModel] = {}
+        output_artifact_metadata: Dict[str, Dict[str, "MetadataType"]] = {}
         for output_name, return_value in output_data.items():
             materializer_class = output_materializers[output_name]
             materializer_source = self.configuration.outputs[
@@ -362,10 +372,10 @@ class StepRunner:
             uri = output_artifact_uris[output_name]
             materializer = materializer_class(uri)
             materializer.save(return_value)
-            artifact_metadata = None
             # TODO: or self._pipeline.enable_artifact_metadata
             if self._step.config.enable_artifact_metadata:
                 artifact_metadata = materializer.extract_metadata(return_value)
+                output_artifact_metadata[output_name] = artifact_metadata
             output_artifact = ArtifactRequestModel(
                 name=output_name,
                 type=materializer_class.ASSOCIATED_ARTIFACT_TYPE,
@@ -375,7 +385,6 @@ class StepRunner:
                 user=active_user_id,
                 project=active_project_id,
                 artifact_store_id=artifact_store_id,
-                metadata=artifact_metadata,
             )
             output_artifacts[output_name] = output_artifact
-        return output_artifacts
+        return output_artifacts, output_artifact_metadata

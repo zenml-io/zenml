@@ -70,7 +70,7 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         # write `data` to self.uri
         ...
     
-    def extract_metadata(self, data: Any) -> Dict[str, str]:
+    def extract_metadata(self, data: Any) -> Dict[str, "MetadataType"]:
         """Extract metadata from the given data.
 
         This metadata will be tracked and displayed alongside the artifact.
@@ -127,11 +127,11 @@ then you might want to use `torch.save()` and `torch.load()` here.
 
 Optionally, you can choose to overwrite the `extract_metadata()` method to 
 extract custom metadata for all artifacts that were saved by your materializer.
-By default, this will extract the storage size, runtime data type, and string 
-representation of an artifact, but you can overwrite it to track anything you
-wish. E.g., the `zenml.materializers.NumpyMaterializer` overwrites this method
-to automatically track the `shape`, `dtype`, and some statistical properties of
-each `np.ndarray` that is saved by it.
+By default, this will only extract the storage size and runtime data type of an 
+artifact, but you can overwrite it to track anything you wish.
+E.g., the `zenml.materializers.NumpyMaterializer` overwrites this method to 
+automatically track the `shape`, `dtype`, and some statistical properties of
+each `np.ndarray` that it saves.
 
 {% hint style="info" %}
 If you would like to disable artifact metadata extraction altogether, you can 

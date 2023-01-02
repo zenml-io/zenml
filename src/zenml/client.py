@@ -88,6 +88,7 @@ from zenml.utils.filesync_model import FileSyncModel
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_configurations import PipelineSpec
+    from zenml.metadata.metadata_types import MetadataType
     from zenml.stack import Stack, StackComponentConfig
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
@@ -2392,7 +2393,7 @@ class Client(metaclass=ClientMetaClass):
 
     def create_run_metadata(
         self,
-        metadata: Dict[str, str],
+        metadata: Dict[str, "MetadataType"],
         pipeline_run_id: Optional[UUID] = None,
         step_run_id: Optional[UUID] = None,
         artifact_id: Optional[UUID] = None,
@@ -2414,6 +2415,8 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The created metadata.
         """
+        from zenml.metadata.metadata_types import get_metadata_type
+
         created_metadata_list: List[RunMetadataResponseModel] = []
         for key, value in metadata.items():
             run_metadata = RunMetadataRequestModel(
@@ -2425,6 +2428,7 @@ class Client(metaclass=ClientMetaClass):
                 stack_component_id=stack_component_id,
                 key=key,
                 value=value,
+                type=get_metadata_type(value),
             )
             created_metadata = self.zen_store.create_run_metadata(run_metadata)
             created_metadata_list.append(created_metadata)

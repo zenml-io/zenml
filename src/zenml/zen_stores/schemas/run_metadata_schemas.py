@@ -14,12 +14,14 @@
 """SQLModel implementation of pipeline run metadata tables."""
 
 
+import json
 from typing import Optional
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
+from zenml.metadata.metadata_types import MetadataTypeEnum
 from zenml.models.run_metadata_models import (
     RunMetadataRequestModel,
     RunMetadataResponseModel,
@@ -105,6 +107,7 @@ class RunMetadataSchema(BaseSchema, table=True):
 
     key: str
     value: str = Field(sa_column=Column(TEXT, nullable=False))
+    type: MetadataTypeEnum
 
     def to_model(self) -> "RunMetadataResponseModel":
         """Convert a `RunMetadataSchema` to a `RunMetadataResponseModel`.
@@ -119,7 +122,8 @@ class RunMetadataSchema(BaseSchema, table=True):
             artifact_id=self.artifact_id,
             stack_component_id=self.stack_component_id,
             key=self.key,
-            value=self.value,
+            value=json.loads(self.value),
+            type=self.type,
             project=self.project.to_model(),
             user=self.user.to_model(),
             created=self.created,
@@ -146,5 +150,6 @@ class RunMetadataSchema(BaseSchema, table=True):
             artifact_id=request.artifact_id,
             stack_component_id=request.stack_component_id,
             key=request.key,
-            value=request.value,
+            value=json.dumps(request.value),
+            type=request.type,
         )

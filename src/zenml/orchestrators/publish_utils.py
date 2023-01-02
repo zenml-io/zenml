@@ -30,6 +30,7 @@ from zenml.models.step_run_models import (
 if TYPE_CHECKING:
     from uuid import UUID
 
+    from zenml.metadata.metadata_types import MetadataType
     from zenml.models.artifact_models import ArtifactRequestModel
 
 
@@ -50,6 +51,24 @@ def publish_output_artifacts(
         artifact_response = client.zen_store.create_artifact(artifact_model)
         output_artifact_ids[name] = artifact_response.id
     return output_artifact_ids
+
+
+def publish_output_artifact_metadata(
+    output_artifact_ids: Dict[str, "UUID"],
+    output_artifact_metadata: Dict[str, Dict[str, "MetadataType"]],
+) -> None:
+    """Publishes the given output artifact metadata.
+
+    Args:
+        output_artifact_ids: The IDs of the output artifacts.
+        output_artifact_metadata: A mapping from output names to metadata.
+    """
+    client = Client()
+    for output_name, artifact_metadata in output_artifact_metadata.items():
+        artifact_id = output_artifact_ids[output_name]
+        client.create_run_metadata(
+            metadata=artifact_metadata, artifact_id=artifact_id
+        )
 
 
 def publish_successful_step_run(

@@ -15,6 +15,8 @@
 
 from typing import Union
 
+from zenml.utils.enum_utils import StrEnum
+
 
 class Uri(str):
     """Special string class to indicate a URI."""
@@ -49,7 +51,7 @@ class StorageSize(int):
         Returns:
             A human-readable string representation of the storage size.
         """
-        return human_readable_size(int(self))
+        return super().__str__()
 
 
 # Union of all types that can be used as metadata.
@@ -68,3 +70,73 @@ MetadataType = Union[
     DType,
     StorageSize,
 ]
+
+
+class MetadataTypeEnum(StrEnum):
+    """String Enum of all possible types that metadata can have."""
+
+    STRING = "str"
+    INT = "int"
+    FLOAT = "float"
+    BOOL = "bool"
+    LIST = "list"
+    DICT = "dict"
+    TUPLE = "tuple"
+    SET = "set"
+    URI = "Uri"
+    DTYPE = "DType"
+    STORAGE_SIZE = "StorageSize"
+
+
+metadata_type_to_enum_mapping = {
+    str: MetadataTypeEnum.STRING,
+    int: MetadataTypeEnum.INT,
+    float: MetadataTypeEnum.FLOAT,
+    bool: MetadataTypeEnum.BOOL,
+    dict: MetadataTypeEnum.DICT,
+    list: MetadataTypeEnum.LIST,
+    set: MetadataTypeEnum.SET,
+    tuple: MetadataTypeEnum.TUPLE,
+    Uri: MetadataTypeEnum.URI,
+    DType: MetadataTypeEnum.DTYPE,
+    StorageSize: MetadataTypeEnum.STORAGE_SIZE,
+}
+
+metadata_enum_to_type_mapping = {
+    value: key for key, value in metadata_type_to_enum_mapping.items()
+}
+
+
+def get_metadata_type(
+    object_: object,
+) -> MetadataTypeEnum:
+    """Get the metadata type enum for a given object.
+
+    Args:
+        object: The object to get the metadata type for.
+
+    Returns:
+        The corresponding metadata type enum.
+    """
+    metadata_type = type(object_)
+    if metadata_type in metadata_type_to_enum_mapping:
+        return metadata_type_to_enum_mapping[metadata_type]
+    raise ValueError(f"Metadata type {metadata_type} is not supported.")
+
+
+def cast_to_metadata_type(
+    value: object,
+    type_: MetadataTypeEnum,
+) -> MetadataType:
+    """Cast an object to a metadata type.
+
+    Args:
+        value: The object to cast.
+        type_: The metadata type to cast to.
+
+    Returns:
+        The casted value.
+    """
+    metadata_type = metadata_enum_to_type_mapping[type_]
+    typed_value = metadata_type(value)
+    return typed_value  # type: ignore[no-any-return]
