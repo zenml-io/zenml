@@ -52,8 +52,8 @@ class AzureIntegration(Integration):
         """
         from zenml.integrations.azure.flavors import (
             AzureArtifactStoreFlavor,
+            AzureMLOrchestratorFlavor,
             AzureMLStepOperatorFlavor,
-            AzureOrchestratorFlavor,
             AzureSecretsManagerFlavor,
         )
 
@@ -61,7 +61,7 @@ class AzureIntegration(Integration):
             AzureArtifactStoreFlavor,
             AzureSecretsManagerFlavor,
             AzureMLStepOperatorFlavor,
-            AzureOrchestratorFlavor,
+            AzureMLOrchestratorFlavor,
         ]
 
 

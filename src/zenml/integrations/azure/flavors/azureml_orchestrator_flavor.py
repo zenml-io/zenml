@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from zenml.integrations.azure.orchestrators import AzureOrchestrator
 
 
-class AzureOrchestratorSettings(BaseSettings):
+class AzureMLOrchestratorSettings(BaseSettings):
     """Settings for the AzureML orchestrator.
 
     Attributes:
@@ -44,8 +44,8 @@ class AzureOrchestratorSettings(BaseSettings):
     # processor_tags: Dict[str, str] = {}
 
 
-class AzureOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
-    BaseOrchestratorConfig, AzureOrchestratorSettings
+class AzureMLOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
+    BaseOrchestratorConfig, AzureMLOrchestratorSettings
 ):
     """Config for the AzureML orchestrator.
 
@@ -77,7 +77,7 @@ class AzureOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydant
         return True
 
 
-class AzureOrchestratorFlavor(BaseOrchestratorFlavor):
+class AzureMLOrchestratorFlavor(BaseOrchestratorFlavor):
     """Flavor for the AzureML orchestrator."""
 
     @property
@@ -90,13 +90,13 @@ class AzureOrchestratorFlavor(BaseOrchestratorFlavor):
         return AZUREML_ORCHESTRATOR_FLAVOR
 
     @property
-    def config_class(self) -> Type[AzureOrchestratorConfig]:
-        """Returns AzureOrchestratorConfig config class.
+    def config_class(self) -> Type[AzureMLOrchestratorConfig]:
+        """Returns AzureMLOrchestratorConfig config class.
 
         Returns:
             The config class.
         """
-        return AzureOrchestratorConfig
+        return AzureMLOrchestratorConfig
 
     @property
     def implementation_class(self) -> Type["AzureOrchestrator"]:
@@ -105,6 +105,6 @@ class AzureOrchestratorFlavor(BaseOrchestratorFlavor):
         Returns:
             The implementation class.
         """
-        from zenml.integrations.azure.orchestrators import AzureOrchestrator
+        from zenml.integrations.azure.orchestrators import AzureMLOrchestrator
 
-        return AzureOrchestrator
+        return AzureMLOrchestrator
