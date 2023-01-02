@@ -21,15 +21,15 @@ def test_enum_utils():
     class TestEnum(StrEnum):
         """Test enum."""
 
-        A = "a"
+        A = "aria"
         B = "b"
 
     assert TestEnum.A.name == "A"
-    assert TestEnum.A.value == "a"
-    assert TestEnum.A == "a"
+    assert TestEnum.A.value == "aria"
+    assert TestEnum.A == "aria"
     assert TestEnum.A == TestEnum.A
     assert TestEnum.A != TestEnum.B
     assert TestEnum.names() == ["A", "B"]
-    assert TestEnum.values() == ["a", "b"]
+    assert TestEnum.values() == ["aria", "b"]
     assert isinstance(TestEnum.A, TestEnum)
-    assert str(TestEnum.A) == "a"
+    assert str(TestEnum.A) == "aria"
