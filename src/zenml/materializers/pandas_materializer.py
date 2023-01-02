@@ -14,6 +14,7 @@
 """Materializer for Pandas."""
 
 import os
+import tempfile
 from typing import Any, Type, Union
 
 import pandas as pd
@@ -74,10 +75,15 @@ class PandasMaterializer(BaseMaterializer):
             The pandas dataframe or series.
         """
         super().load(data_type)
+        temp_dir = tempfile.mkdtemp(prefix="zenml-temp-")
         if fileio.exists(self.parquet_path):
             if self.pyarrow_exists:
-                with fileio.open(self.parquet_path, mode="rb") as f:
-                    df = pd.read_parquet(f)
+                # Create a temporary file
+                temp_file = os.path.join(str(temp_dir), PARQUET_FILENAME)
+                # Copy the data to the temporary file
+                fileio.copy(self.parquet_path, temp_file)
+                # Load the data from the temporary file
+                df = pd.read_parquet(temp_file)
             else:
                 raise ImportError(
                     "You have an old version of a `PandasMaterializer` "
@@ -87,8 +93,15 @@ class PandasMaterializer(BaseMaterializer):
                     "'`pip install pyarrow fastparquet`'."
                 )
         else:
-            with fileio.open(self.csv_path, mode="rb") as f:
-                df = pd.read_csv(f, index_col=0, parse_dates=True)
+            # Create a temporary file
+            temp_file = os.path.join(str(temp_dir), CSV_FILENAME)
+            # Copy the data to the temporary file
+            fileio.copy(self.csv_path, temp_file)
+            # Load the data from the temporary file
+            df = pd.read_csv(temp_file, index_col=0, parse_dates=True)
+
+        # Cleanup and return
+        fileio.rmtree(temp_dir)
 
         # validate the type of the data.
         def is_dataframe_or_series(
@@ -125,9 +138,20 @@ class PandasMaterializer(BaseMaterializer):
 
             df = df.to_frame(name="series")
 
+        # Create a temporary file to store the data
         if self.pyarrow_exists:
-            with fileio.open(self.parquet_path, mode="wb") as f:
-                df.to_parquet(f, compression=COMPRESSION_TYPE)
+            with tempfile.NamedTemporaryFile(
+                mode="wb", suffix=".gzip", delete=False
+            ) as f:
+                df.to_parquet(f.name, compression=COMPRESSION_TYPE)
+                fileio.copy(f.name, self.parquet_path)
         else:
-            with fileio.open(self.csv_path, mode="wb") as f:
-                df.to_csv(f, index=True)
+            with tempfile.NamedTemporaryFile(
+                mode="wb", suffix=".csv", delete=False
+            ) as f:
+                df.to_csv(f.name, index=True)
+                fileio.copy(f.name, self.csv_path)
+
+        # Close and remove the temporary file
+        f.close()
+        fileio.remove(f.name)
