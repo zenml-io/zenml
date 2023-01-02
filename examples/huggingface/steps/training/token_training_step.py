@@ -42,8 +42,12 @@ def token_trainer(
     )
 
     # Update label2id lookup
-    model.config.label2id = {l: i for i, l in enumerate(label_list)}
-    model.config.id2label = {i: l for i, l in enumerate(label_list)}
+    model.config.label2id = {
+        list_label: list_id for list_id, list_label in enumerate(label_list)
+    }
+    model.config.id2label = {
+        list_id: list_label for list_id, list_label in enumerate(label_list)
+    }
 
     # Prepare optimizer
     num_train_steps = (
