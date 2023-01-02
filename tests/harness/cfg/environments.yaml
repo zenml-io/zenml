@@ -60,8 +60,6 @@ environments:
       - local-secrets-manager
     mandatory_requirements:
       - docker-local
-    capabilities:
-      synchronized: true
 
   - name: default-kubeflow-orchestrator
     description: >-
@@ -75,9 +73,6 @@ environments:
       - local-secrets-manager
     mandatory_requirements:
       - kubeflow-local
-    capabilities:
-      synchronized: true
-
 
   - name: default-airflow-orchestrator
     description: >-
@@ -125,8 +120,6 @@ environments:
       - local-secrets-manager
     mandatory_requirements:
       - docker-local
-    capabilities:
-      synchronized: true
 
     # IMPORTANT: don't use this with pytest auto-provisioning. Running forked
     # daemons in pytest leads to serious issues because the whole test process
@@ -144,8 +137,6 @@ environments:
       - local-secrets-manager
     mandatory_requirements:
       - kubeflow-local
-    capabilities:
-      synchronized: true
 
     # IMPORTANT: don't use this with pytest auto-provisioning. Running forked
     # daemons in pytest leads to serious issues because the whole test process
@@ -174,8 +165,6 @@ environments:
       - mlflow-local-tracker
       - mlflow-local-deployer
       - local-secrets-manager
-    capabilities:
-      synchronized: true
 
   - name: docker-server-docker-orchestrator
     description: >-
@@ -189,8 +178,6 @@ environments:
       - local-secrets-manager
     mandatory_requirements:
       - docker-local
-    capabilities:
-      synchronized: true
 
   - name: docker-server-kubeflow-orchestrator
     description: >-
@@ -204,8 +191,6 @@ environments:
       - local-secrets-manager
     mandatory_requirements:
       - kubeflow-local
-    capabilities:
-      synchronized: true
 
   - name: docker-server-airflow-orchestrator
     description: >-

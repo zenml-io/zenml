@@ -36,7 +36,6 @@ To use the Vertex orchestrator, we need:
     zenml integration install gcp
     ```
 * [Docker](https://www.docker.com) installed and running.
-* [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) installed.
 * A [remote artifact store](../artifact-stores/artifact-stores.md) as part of 
 your stack.
 * A [remote container registry](../container-registries/container-registries.md) 
