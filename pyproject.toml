@@ -85,7 +85,7 @@ server = ["fastapi", "uvicorn", "python-multipart", "python-jose", "fastapi-util
 black = "^22.3.0"
 pytest = "^6.2.4"
 mypy = "^0.991"
-flake8 = "^3.9.2"
+ruff = "^0.0.206"
 interrogate = "^1.4.0"
 coverage = { extras = ["toml"], version = "^5.5" }
 isort = "^5.9.3"
@@ -180,6 +180,50 @@ exclude_lines = [
     'if __name__ == "__main__":',
     "if TYPE_CHECKING:",
 ]
+
+[tool.ruff]
+line-length = 80
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "venv",
+]
+per-file-ignores = {}
+# Never enforce `E501` (line length violations).
+ignore = ["E501", "F401"]
+src = ["src", "test"]
+target-version = "py37"
+ignore-init-module-imports = true
+# Disable autofix for unused imports (`F401`).
+unfixable = ["F401"]
+
+[tool.ruff.flake8-import-conventions.aliases]
+altair = "alt"
+"matplotlib.pyplot" = "plt"
+numpy = "np"
+pandas = "pd"
+seaborn = "sns"
+
+[tool.ruff.pydocstyle]
+# Use Google-style docstrings.
+convention = "google"
 
 [tool.isort]
 profile = "black"
