@@ -206,9 +206,9 @@ exclude = [
     "venv",
 ]
 per-file-ignores = {}
-# Never enforce `E501` (line length violations).
 ignore = ["E501", "F401"]
 src = ["src", "test"]
+# use Python 3.7 as the minimum version for autofixing
 target-version = "py37"
 ignore-init-module-imports = true
 # Disable autofix for unused imports (`F401`).
