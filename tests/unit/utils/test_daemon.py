@@ -12,34 +12,31 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import logging
 import sys
-import tempfile
+import time
 
 import pytest
 
 from zenml.utils import daemon
 
-DAEMON_PID_FILE = f"{tempfile.gettempdir()}/daemon.pid"
-
-
-@pytest.fixture
-def daemonize_fixture():
-    """Fixture to test daemonization."""
-
-    # @daemon.daemonize(pid_file=DAEMON_PID_FILE)
-    # def aria_daemon():
-    #     print("I am Aria's daemon.")
-
-    # aria_daemon()
-    # time.sleep(1)  # wait for daemon to start up
-    yield
-    daemon.stop_daemon(DAEMON_PID_FILE)
+logger = logging.getLogger(__name__)
 
 
 @pytest.mark.skipif(
     sys.platform == "win32", reason="Windows does not support daemonization"
 )
-def test_daemonize_works(daemonize_fixture):
+def test_daemonize_works(tmp_path):
     """Test daemonization works."""
+    tmp_pid = f"{tmp_path}/daemon.pid"
 
-    assert not daemon.check_if_daemon_is_running(DAEMON_PID_FILE)
+    @daemon.daemonize(pid_file=tmp_pid)
+    def our_function(period: int):
+        logger.info(f"I'm a daemon! I will sleep for {period} seconds.")
+        time.sleep(period)
+        logger.info("Done sleeping, flying away.")
+
+    our_function(period=5)
+    time.sleep(1)
+
+    assert daemon.check_if_daemon_is_running(pid_file=tmp_pid)
