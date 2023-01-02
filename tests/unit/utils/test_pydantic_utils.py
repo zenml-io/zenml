@@ -12,6 +12,74 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from contextlib import ExitStack as does_not_raise
+from typing import Dict, Optional
+
+from pydantic import BaseModel
 
 from zenml.utils import pydantic_utils
+
+
+def test_update_model_works():
+    """Tests that updating a Pydantic model using our util function works."""
+
+    class TestModel(BaseModel):
+        a: int
+        b: int
+
+    original = TestModel(a=1, b=2)
+    update = TestModel(a=3, b=4)
+    updated = pydantic_utils.update_model(original, update)
+    assert updated.a == 3
+    assert updated.b == 4
+
+
+def test_update_model_works_with_dict():
+    """Tests that updating a Pydantic model using our util function works."""
+
+    class TestModel(BaseModel):
+        a: int
+        b: int
+
+    original = TestModel(a=1, b=2)
+    update = {"a": 3, "b": 4}
+    updated = pydantic_utils.update_model(original, update)
+    assert updated.a == 3
+    assert updated.b == 4
+
+
+def test_update_model_works_recursively():
+    """Tests that updating a Pydantic model using our util function works."""
+
+    class TestModel(BaseModel):
+        a: int
+        b: Dict[str, Dict[str, str]]
+
+    original = TestModel(a=1, b={"c": {"d": "e"}})
+    update = TestModel(a=3, b={"c": {"d": "f"}})
+    updated = pydantic_utils.update_model(original, update, recursive=True)
+    assert updated.a == 3
+    assert updated.b["c"]["d"] == "f"
+
+
+def test_update_model_works_with_none_exclusion():
+    """'None' values in the update dictionary don't get removed.'"""
+
+    class TestModel(BaseModel):
+        a: int
+        b: Optional[int]
+
+    # Case: when exclude_none is True
+    original = TestModel(a=1, b=2)
+    update = {"a": 3, "b": None}
+    updated = pydantic_utils.update_model(original, update, exclude_none=True)
+    assert updated.a == 3
+    assert updated.b == 2
+
+    # Case: when exclude_none is False
+    original2 = TestModel(a=1, b=2)
+    update2 = {"a": 3, "b": None}
+    updated2 = pydantic_utils.update_model(
+        original2, update2, exclude_none=False
+    )
+    assert updated2.a == 3
+    assert updated2.b is None
