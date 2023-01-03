@@ -3466,27 +3466,6 @@ class SqlZenStore(BaseZenStore):
             The created run metadata.
         """
         with Session(self.engine) as session:
-
-            # Delete any existing run metadata with the same key and run ID.
-            query = (
-                select(RunMetadataSchema)
-                .where(RunMetadataSchema.key == run_metadata.key)
-                .where(
-                    RunMetadataSchema.pipeline_run_id
-                    == run_metadata.pipeline_run_id
-                )
-            )
-            if not run_metadata.step_run_id:
-                query = query.where(is_(RunMetadataSchema.step_run_id, None))
-            else:
-                query = query.where(
-                    RunMetadataSchema.step_run_id == run_metadata.step_run_id
-                )
-            existing_metadata = session.exec(query).first()
-            if existing_metadata is not None:
-                session.delete(existing_metadata)
-
-            # Create the run metadata.
             run_metadata_schema = RunMetadataSchema.from_request(run_metadata)
             session.add(run_metadata_schema)
             session.commit()
