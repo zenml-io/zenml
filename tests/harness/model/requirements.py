@@ -315,7 +315,7 @@ class TestRequirements(BaseTestConfigModel):
         if missing_system_tools:
             return (
                 False,
-                f"missing system tools: {', '.join(missing_system_tools)}",
+                f"missing system tools: {', '.join(set(missing_system_tools))}",
             )
 
         missing_integrations = []
@@ -334,7 +334,7 @@ class TestRequirements(BaseTestConfigModel):
         if missing_integrations:
             return (
                 False,
-                f"missing integrations: {', '.join(missing_integrations)}",
+                f"missing integrations: {', '.join(set(missing_integrations))}",
             )
 
         try:

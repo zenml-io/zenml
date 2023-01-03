@@ -113,7 +113,6 @@ BentoMLModelDeployer
 BentoMlDeploymentConfig
 Bentos
 Bing
-bigquery
 Bitbucket
 BluePill
 CIDR
@@ -226,6 +225,7 @@ Docstring
 DoesNotExistException
 DuplicateRunNameError
 DuplicatedConfigurationError
+EBS
 ECR
 ECS
 EKS
@@ -363,6 +363,7 @@ Keras
 KeyError
 Knative
 Kubeflow
+Kubeflow's
 Kubeflow's
 KubeflowMetadataStore
 KubeflowOrchestrator
@@ -591,6 +592,8 @@ SVCTrainerStepConfig
 SageMaker
 Sagemaker
 Sagemaker's
+SagemakerOrchestrator
+SagemakerOrchestratorConfig
 SagemakerStepOperatorConfig
 Sauron
 Scatch
@@ -686,6 +689,7 @@ Subnets
 SuiteResult
 SuperQuick
 Symlink
+SystemExit
 TBD
 TCP
 TFEvaluator
@@ -705,7 +709,9 @@ TensorBoard
 TensorBoardInfo
 TensorRT
 Terraform
+TestHarness
 TheMatrix
+TimeoutError
 Tokenize
 Tokenizer
 Tolerations
@@ -726,6 +732,7 @@ UTF
 UUID
 UUIDs
 Uncategorized
+Unprocessable
 Unregistering
 UpdateComponentRequest
 UpdateFlavorRequest
@@ -787,6 +794,7 @@ ZenStore
 ZenStoreModel
 ZenStores
 ZenTemplates
+Zipfile
 aDHogqi
 aZ
 aa
@@ -872,6 +880,7 @@ bento
 bentoctl
 bentoml
 bff
+bigquery
 bigquery
 bigrams
 blogpost
@@ -1071,6 +1080,7 @@ fs
 fsspec
 func
 gRPC
+gb
 gc
 gcloud
 gcp
@@ -1461,6 +1471,7 @@ sys
 syspath
 tada
 tbC
+teardown
 tekton
 tempfile
 tensorboard
@@ -1571,11 +1582,4 @@ zenmlexample
 zenmlregistry
 zenmlserver
 zenserver
-Kubeflow's
-Zipfile
 ziph
-TimeoutError
-teardown
-SystemExit
-TestHarness
-Unprocessable

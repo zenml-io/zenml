@@ -57,7 +57,6 @@ The `deploy` command, by default, tries to create an NGINX ingress controller on
 If you also already have a database that you would want to use with the deployment, you can choose to configure it with the use of the config file. Here we will demonstrate setting the database.
 
 > **Note**
-> Only MySQL version 5.7.x are supported by ZenML, currently.
 
 - Fill the fields below from the config file with values from your database.
 
