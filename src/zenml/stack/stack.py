@@ -751,8 +751,26 @@ class Stack:
         ).values():
             component.prepare_step_run(info=info)
 
-    def publish_run_metadata(self, info: "StepRunInfo") -> None:
-        """Publish stack-component-specific metadata after a step ran.
+    def publish_pipeline_run_metadata(self, run_id: UUID) -> None:
+        """Publish general component-specific metadata of a pipeline run.
+
+        Args:
+            run_id: ID of the pipeline run.
+        """
+        client = Client()
+        for component in self.components.values():
+            pipeline_run_metadata = component.get_pipeline_run_metadata(
+                run_id=run_id
+            )
+            if pipeline_run_metadata:
+                client.create_run_metadata(
+                    metadata=pipeline_run_metadata,
+                    pipeline_run_id=run_id,
+                    stack_component_id=component.id,
+                )
+
+    def publish_step_run_metadata(self, info: "StepRunInfo") -> None:
+        """Publish component- and step-specific metadata after a step ran.
 
         Args:
             info: Info about the step that was executed.
@@ -761,23 +779,11 @@ class Stack:
         for component in self._get_active_components_for_step(
             info.config
         ).values():
-            # Publish step-specific run metadata
             step_run_metadata = component.get_step_run_metadata(info=info)
             if step_run_metadata:
                 client.create_run_metadata(
                     metadata=step_run_metadata,
                     step_run_id=info.step_run_id,
-                    stack_component_id=component.id,
-                )
-
-            # Publish general run metadata
-            pipeline_run_metadata = component.get_pipeline_run_metadata(
-                info=info
-            )
-            if pipeline_run_metadata:
-                client.create_run_metadata(
-                    metadata=pipeline_run_metadata,
-                    pipeline_run_id=info.run_id,
                     stack_component_id=component.id,
                 )
 

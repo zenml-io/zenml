@@ -503,6 +503,19 @@ class StackComponent:
             stack: The stack on which the pipeline will be deployed.
         """
 
+    def get_pipeline_run_metadata(
+        self, run_id: UUID
+    ) -> Dict[str, "MetadataType"]:
+        """Get general component-specific metadata for a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run.
+
+        Returns:
+            A dictionary of metadata.
+        """
+        return {}
+
     def prepare_step_run(self, info: "StepRunInfo") -> None:
         """Prepares running a step.
 
@@ -514,19 +527,6 @@ class StackComponent:
         self, info: "StepRunInfo"
     ) -> Dict[str, "MetadataType"]:
         """Get component- and step-specific metadata after a step ran.
-
-        Args:
-            info: Info about the step that was executed.
-
-        Returns:
-            A dictionary of metadata.
-        """
-        return {}
-
-    def get_pipeline_run_metadata(
-        self, info: "StepRunInfo"
-    ) -> Dict[str, "MetadataType"]:
-        """Get general component-specific metadata after a step ran.
 
         Args:
             info: Info about the step that was executed.

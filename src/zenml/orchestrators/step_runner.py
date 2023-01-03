@@ -115,7 +115,7 @@ class StepRunner:
                 step_failed = True
                 raise
             finally:
-                self._stack.publish_run_metadata(
+                self._stack.publish_step_run_metadata(
                     info=step_run_info,
                 )
                 self._stack.cleanup_step_run(

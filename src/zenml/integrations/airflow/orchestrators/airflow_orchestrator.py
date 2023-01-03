@@ -29,6 +29,7 @@ from typing import (
     Type,
     cast,
 )
+from uuid import UUID
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
@@ -50,7 +51,6 @@ from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.config.pipeline_deployment import PipelineDeployment
-    from zenml.config.step_run_info import StepRunInfo
     from zenml.integrations.airflow.orchestrators.dag_generator import (
         DagConfiguration,
         TaskConfiguration,
@@ -605,12 +605,12 @@ class AirflowOrchestrator(BaseOrchestrator):
         )
 
     def get_pipeline_run_metadata(
-        self, info: "StepRunInfo"
+        self, run_id: UUID
     ) -> Dict[str, "MetadataType"]:
-        """Get general component-specific metadata after a step ran.
+        """Get general component-specific metadata for a pipeline run.
 
         Args:
-            info: Info about the step that was executed.
+            run_id: The ID of the pipeline run.
 
         Returns:
             A dictionary of metadata.

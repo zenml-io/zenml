@@ -143,8 +143,12 @@ class StepLauncher:
         """Launches the step."""
         logger.info(f"Step `{self._step_name}` has started.")
 
-        pipeline_run = self._create_or_reuse_run()
+        pipeline_run, run_was_created = self._create_or_reuse_run()
         try:
+            if run_was_created:
+                self._stack.publish_pipeline_run_metadata(
+                    run_id=pipeline_run.id
+                )
             client = Client()
             step_run = StepRunRequestModel(
                 name=self._step_name,
@@ -185,11 +189,12 @@ class StepLauncher:
             publish_utils.publish_failed_pipeline_run(pipeline_run.id)
             raise
 
-    def _create_or_reuse_run(self) -> PipelineRunResponseModel:
-        """Creates a run or reuses an existing one.
+    def _create_or_reuse_run(self) -> Tuple[PipelineRunResponseModel, bool]:
+        """Creates a pipeline run or reuses an existing one.
 
         Returns:
-            The created or existing run.
+            The created or existing pipeline run,
+            and a boolean indicating whether the run was created or reused.
         """
         run_id = orchestrator_utils.get_run_id_for_orchestrator_run_id(
             orchestrator=self._stack.orchestrator,
@@ -219,7 +224,9 @@ class StepLauncher:
             pipeline_configuration=self._deployment.pipeline.dict(),
             num_steps=len(self._deployment.steps),
         )
-        return client.zen_store.get_or_create_run(pipeline_run)
+        run_response = client.zen_store.get_or_create_run(pipeline_run)
+        run_was_created = run_response.name == run_name
+        return run_response, run_was_created
 
     def _prepare(
         self, step_run: StepRunRequestModel
