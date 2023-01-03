@@ -14,7 +14,6 @@
 """SQLModel implementation of artifact tables."""
 
 
-import json
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
@@ -123,14 +122,6 @@ class ArtifactSchema(NamedSchema, table=True):
         Returns:
             The created `ArtifactModel`.
         """
-        from zenml.metadata.metadata_types import cast_to_metadata_type
-
-        artifact_metadata = {}
-        for metadata in self.run_metadata:
-            loaded_value = json.loads(metadata.value)
-            typed_value = cast_to_metadata_type(loaded_value, metadata.type)
-            artifact_metadata[metadata.key] = typed_value
-
         return ArtifactResponseModel(
             id=self.id,
             name=self.name,
@@ -144,5 +135,5 @@ class ArtifactSchema(NamedSchema, table=True):
             created=self.created,
             updated=self.updated,
             producer_step_run_id=producer_step_run_id,
-            metadata=artifact_metadata,
+            metadata=[metadata.to_model() for metadata in self.run_metadata],
         )

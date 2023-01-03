@@ -113,10 +113,13 @@ def get_metadata_type(
     """Get the metadata type enum for a given object.
 
     Args:
-        object: The object to get the metadata type for.
+        object_: The object to get the metadata type for.
 
     Returns:
         The corresponding metadata type enum.
+
+    Raises:
+        ValueError: If the metadata type is not supported.
     """
     metadata_type = type(object_)
     if metadata_type in metadata_type_to_enum_mapping:
@@ -135,7 +138,7 @@ def cast_to_metadata_type(
         type_: The metadata type to cast to.
 
     Returns:
-        The casted value.
+        The value cast to the given metadata type.
     """
     metadata_type = metadata_enum_to_type_mapping[type_]
     typed_value = metadata_type(value)

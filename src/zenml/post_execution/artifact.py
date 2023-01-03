@@ -13,15 +13,14 @@
 #  permissions and limitations under the License.
 """Initialization for the post-execution artifact class."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type
+from typing import TYPE_CHECKING, Any, List, Optional, Type
 from uuid import UUID
 
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
     from zenml.materializers.base_materializer import BaseMaterializer
-    from zenml.metadata.metadata_types import MetadataType
-    from zenml.models import ArtifactResponseModel
+    from zenml.models import ArtifactResponseModel, RunMetadataResponseModel
 
 
 logger = get_logger(__name__)
@@ -100,7 +99,7 @@ class ArtifactView:
         return self._model.materializer
 
     @property
-    def metadata(self) -> Dict[str, "MetadataType"]:
+    def metadata(self) -> List["RunMetadataResponseModel"]:
         """Returns the metadata of the artifact.
 
         Returns:
