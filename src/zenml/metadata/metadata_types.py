@@ -22,6 +22,10 @@ class Uri(str):
     """Special string class to indicate a URI."""
 
 
+class Path(str):
+    """Special string class to indicate a path."""
+
+
 class DType(str):
     """Special string class to indicate a data type."""
 
@@ -59,6 +63,7 @@ MetadataType = Union[
     set,
     tuple,  # type: ignore[type-arg]
     Uri,
+    Path,
     DType,
     StorageSize,
 ]
@@ -76,6 +81,7 @@ class MetadataTypeEnum(StrEnum):
     TUPLE = "tuple"
     SET = "set"
     URI = "Uri"
+    PATH = "Path"
     DTYPE = "DType"
     STORAGE_SIZE = "StorageSize"
 
@@ -90,6 +96,7 @@ metadata_type_to_enum_mapping = {
     set: MetadataTypeEnum.SET,
     tuple: MetadataTypeEnum.TUPLE,
     Uri: MetadataTypeEnum.URI,
+    Path: MetadataTypeEnum.PATH,
     DType: MetadataTypeEnum.DTYPE,
     StorageSize: MetadataTypeEnum.STORAGE_SIZE,
 }

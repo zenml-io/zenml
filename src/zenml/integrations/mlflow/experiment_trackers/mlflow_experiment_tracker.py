@@ -35,10 +35,12 @@ from zenml.integrations.mlflow.flavors.mlflow_experiment_tracker_flavor import (
     is_remote_mlflow_tracking_uri,
 )
 from zenml.logger import get_logger
+from zenml.metadata.metadata_types import Uri
 from zenml.stack import StackValidator
 
 if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
+    from zenml.metadata.metadata_types import MetadataType
 
 logger = get_logger(__name__)
 
@@ -195,7 +197,9 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         if settings.nested:
             mlflow.start_run(run_name=info.config.name, nested=True, tags=tags)
 
-    def get_step_run_metadata(self, info: "StepRunInfo") -> Dict[str, str]:
+    def get_step_run_metadata(
+        self, info: "StepRunInfo"
+    ) -> Dict[str, "MetadataType"]:
         """Get component- and step-specific metadata after a step ran.
 
         Args:
@@ -209,7 +213,9 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
             "mlflow_experiment_id": mlflow.active_run().info.experiment_id,
         }
 
-    def get_pipeline_run_metadata(self, info: "StepRunInfo") -> Dict[str, str]:
+    def get_pipeline_run_metadata(
+        self, info: "StepRunInfo"
+    ) -> Dict[str, "MetadataType"]:
         """Get general component-specific metadata after a step ran.
 
         Args:
@@ -219,7 +225,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
             A dictionary of metadata.
         """
         return {
-            "mlflow_tracking_uri": self.get_tracking_uri(),
+            "mlflow_tracking_uri": Uri(self.get_tracking_uri()),
         }
 
     def cleanup_step_run(

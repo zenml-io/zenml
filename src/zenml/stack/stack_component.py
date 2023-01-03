@@ -29,6 +29,7 @@ from zenml.utils import secret_utils, settings_utils
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
+    from zenml.metadata.metadata_types import MetadataType
     from zenml.stack import Stack, StackValidator
 
 
@@ -509,7 +510,9 @@ class StackComponent:
             info: Info about the step that will be executed.
         """
 
-    def get_step_run_metadata(self, info: "StepRunInfo") -> Dict[str, str]:
+    def get_step_run_metadata(
+        self, info: "StepRunInfo"
+    ) -> Dict[str, "MetadataType"]:
         """Get component- and step-specific metadata after a step ran.
 
         Args:
@@ -520,7 +523,9 @@ class StackComponent:
         """
         return {}
 
-    def get_pipeline_run_metadata(self, info: "StepRunInfo") -> Dict[str, str]:
+    def get_pipeline_run_metadata(
+        self, info: "StepRunInfo"
+    ) -> Dict[str, "MetadataType"]:
         """Get general component-specific metadata after a step ran.
 
         Args:

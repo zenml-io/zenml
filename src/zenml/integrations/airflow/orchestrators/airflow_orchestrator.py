@@ -40,6 +40,7 @@ from zenml.integrations.airflow.flavors.airflow_orchestrator_flavor import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.metadata.metadata_types import Path, Uri
 from zenml.orchestrators import BaseOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
@@ -54,6 +55,7 @@ if TYPE_CHECKING:
         DagConfiguration,
         TaskConfiguration,
     )
+    from zenml.metadata.metadata_types import MetadataType
     from zenml.pipelines import Schedule
     from zenml.stack import Stack
 
@@ -602,7 +604,9 @@ class AirflowOrchestrator(BaseOrchestrator):
             password,
         )
 
-    def get_pipeline_run_metadata(self, info: "StepRunInfo") -> Dict[str, str]:
+    def get_pipeline_run_metadata(
+        self, info: "StepRunInfo"
+    ) -> Dict[str, "MetadataType"]:
         """Get general component-specific metadata after a step ran.
 
         Args:
@@ -613,8 +617,8 @@ class AirflowOrchestrator(BaseOrchestrator):
         """
         run_metadata = {}
         if self._dag_path:
-            run_metadata["airflow_dag_path"] = self._dag_path
+            run_metadata["airflow_dag_path"] = Path(self._dag_path)
         if self.config.local:
-            run_metadata["airflow_log_file"] = self.log_file
-            run_metadata["airflow_uri"] = "http://localhost:8080"
+            run_metadata["airflow_log_file"] = Path(self.log_file)
+            run_metadata["airflow_uri"] = Uri("http://localhost:8080")
         return run_metadata
