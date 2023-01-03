@@ -204,7 +204,7 @@ class StepRunSchema(NamedSchema, table=True):
             updated=self.updated,
             input_artifacts=input_artifacts,
             output_artifacts=output_artifacts,
-            run_metadata=[m.to_model() for m in self.run_metadata],
+            metadata=[m.to_model() for m in self.run_metadata],
         )
 
     def update(self, step_update: StepRunUpdateModel) -> "StepRunSchema":

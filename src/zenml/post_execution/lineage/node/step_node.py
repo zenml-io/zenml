@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Class for all lineage step nodes."""
 
-from typing import Any, Dict
+from typing import Any, Dict, List, Tuple
 
 from zenml.post_execution.lineage.node.base_node import (
     BaseNode,
@@ -29,6 +29,7 @@ class StepNodeDetails(BaseNodeDetails):
     configuration: Dict[str, Any]
     inputs: Dict[str, Any]
     outputs: Dict[str, Any]
+    metadata: List[Tuple[str, str, str]]  # (key, value, type)
 
 
 class StepNode(BaseNode):

@@ -21,7 +21,7 @@ from uuid import UUID
 from zenml.client import Client
 from zenml.enums import ExecutionStatus
 from zenml.logger import get_apidocs_link, get_logger
-from zenml.models import PipelineRunResponseModel
+from zenml.models import PipelineRunResponseModel, RunMetadataResponseModel
 from zenml.post_execution.step import StepView
 
 logger = get_logger(__name__)
@@ -188,6 +188,15 @@ class PipelineRunView:
             The git commit SHA that this pipeline run was performed on.
         """
         return self._model.git_sha
+
+    @property
+    def metadata(self) -> List["RunMetadataResponseModel"]:
+        """Returns the metadata of the pipeline run.
+
+        Returns:
+            The metadata of the pipeline run.
+        """
+        return self._model.metadata
 
     @property
     def status(self) -> ExecutionStatus:

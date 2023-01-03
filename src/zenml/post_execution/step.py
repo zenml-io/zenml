@@ -18,7 +18,7 @@ from uuid import UUID
 
 from zenml.client import Client
 from zenml.enums import ExecutionStatus
-from zenml.models import StepRunResponseModel
+from zenml.models import RunMetadataResponseModel, StepRunResponseModel
 from zenml.post_execution.artifact import ArtifactView
 
 if TYPE_CHECKING:
@@ -209,6 +209,15 @@ class StepView:
             The step spec.
         """
         return self._model.step.spec
+
+    @property
+    def metadata(self) -> List["RunMetadataResponseModel"]:
+        """Returns the metadata of the step run.
+
+        Returns:
+            The metadata of the step run.
+        """
+        return self._model.metadata
 
     @property
     def status(self) -> ExecutionStatus:

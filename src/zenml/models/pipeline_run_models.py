@@ -113,7 +113,7 @@ class PipelineRunResponseModel(
     stack: Optional["StackResponseModel"] = Field(
         title="The stack that was used for this run."
     )
-    run_metadata: List["RunMetadataResponseModel"] = Field(
+    metadata: List["RunMetadataResponseModel"] = Field(
         default=[],
         title="Metadata associated with this pipeline run.",
     )

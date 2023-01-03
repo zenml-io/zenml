@@ -129,7 +129,7 @@ class PipelineRunSchema(NamedSchema, table=True):
                 zenml_version=self.zenml_version,
                 created=self.created,
                 updated=self.updated,
-                run_metadata=[m.to_model() for m in self.run_metadata],
+                metadata=[m.to_model() for m in self.run_metadata],
             )
         else:
             return PipelineRunResponseModel(
@@ -155,7 +155,7 @@ class PipelineRunSchema(NamedSchema, table=True):
                 zenml_version=self.zenml_version,
                 created=self.created,
                 updated=self.updated,
-                run_metadata=[m.to_model() for m in self.run_metadata],
+                metadata=[m.to_model() for m in self.run_metadata],
             )
 
     def update(
