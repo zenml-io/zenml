@@ -56,10 +56,10 @@ class StepContext:
     """
 
     def __init__(
-        self,
-        step_name: str,
-        output_materializers: Dict[str, Type["BaseMaterializer"]],
-        output_artifact_uris: Dict[str, str],
+            self,
+            step_name: str,
+            output_materializers: Dict[str, Type["BaseMaterializer"]],
+            output_artifact_uris: Dict[str, str],
     ):
         """Initializes a StepContext instance.
 
@@ -92,7 +92,7 @@ class StepContext:
         self._stack = Client().active_stack
 
     def _get_output(
-        self, output_name: Optional[str] = None
+            self, output_name: Optional[str] = None
     ) -> StepContextOutput:
         """Returns the materializer and artifact URI for a given step output.
 
@@ -145,9 +145,9 @@ class StepContext:
         return self._stack
 
     def get_output_materializer(
-        self,
-        output_name: Optional[str] = None,
-        custom_materializer_class: Optional[Type["BaseMaterializer"]] = None,
+            self,
+            output_name: Optional[str] = None,
+            custom_materializer_class: Optional[Type["BaseMaterializer"]] = None,
     ) -> "BaseMaterializer":
         """Returns a materializer for a given step output.
 
@@ -184,3 +184,22 @@ class StepContext:
             Artifact URI for the given output.
         """
         return self._get_output(output_name).artifact_uri
+
+    @staticmethod
+    def _get_context_run_time() -> PipelineRunResponseModel:
+        """
+        Returns: PipelineRunResponseModel
+        """
+
+        pipeline_run_id = Environment().step_environment.pipeline_run_id
+        pipeline_run = Client().get_pipeline_run(pipeline_run_id)
+        return pipeline_run
+
+    def get_context_run_time(self) -> datetime.datetime:
+        """Returns the context run time for a given run.
+
+        Returns:
+            the context run time for a given run.
+        """
+
+        return self._get_context_run_time().start_time
