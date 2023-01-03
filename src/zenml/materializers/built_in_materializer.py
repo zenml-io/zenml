@@ -93,7 +93,7 @@ class BuiltInMaterializer(BaseMaterializer):
         """
         base_metadata = super().extract_metadata(data)
         builtin_metadata = {
-            "value": data,
+            "string_representation": str(data),
         }
         return {**base_metadata, **builtin_metadata}
 
