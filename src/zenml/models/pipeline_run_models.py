@@ -14,7 +14,7 @@
 """Models representing pipeline runs."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, Optional, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -29,6 +29,7 @@ from zenml.models.constants import STR_FIELD_MAX_LENGTH
 
 if TYPE_CHECKING:
     from zenml.models.pipeline_models import PipelineResponseModel
+    from zenml.models.run_metadata_models import RunMetadataResponseModel
     from zenml.models.stack_models import StackResponseModel
 
 
@@ -112,13 +113,9 @@ class PipelineRunResponseModel(
     stack: Optional["StackResponseModel"] = Field(
         title="The stack that was used for this run."
     )
-    run_metadata: Dict[str, str] = Field(
-        default={},
+    run_metadata: List["RunMetadataResponseModel"] = Field(
+        default=[],
         title="Metadata associated with this pipeline run.",
-        example={
-            "airflow_uri": "http://127.0.0.1:8080",
-            "mlflow_tracking_uri": "file:/Users/felix/Library/Application Support/zenml/local_stores/0936bd99-ac51-44c0-abbb-70edf7f6e258/mlruns",
-        },
     )
 
 

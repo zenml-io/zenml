@@ -28,7 +28,7 @@ from zenml.models.base_models import (
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
 
 if TYPE_CHECKING:
-    from zenml.models import ArtifactResponseModel
+    from zenml.models import ArtifactResponseModel, RunMetadataResponseModel
 
 # ---- #
 # BASE #
@@ -66,13 +66,9 @@ class StepRunResponseModel(StepRunBaseModel, ProjectScopedResponseModel):
 
     input_artifacts: Dict[str, "ArtifactResponseModel"] = {}
     output_artifacts: Dict[str, "ArtifactResponseModel"] = {}
-    run_metadata: Dict[str, str] = Field(
-        default={},
+    run_metadata: List["RunMetadataResponseModel"] = Field(
+        default=[],
         title="Metadata associated with this step run.",
-        example={
-            "mlflow_run_id": "08cca3ff189f48179449283ffb573f6a",
-            "mlflow_experiment_id": "0",
-        },
     )
 
 

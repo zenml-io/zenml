@@ -352,7 +352,8 @@ class StepRunner:
             output_artifact_uris: The output artifact URIs of the step.
 
         Returns:
-            An `ArtifactRequestModel` for each output artifact that was saved.
+            An `ArtifactRequestModel` for each output artifact that was saved,
+            and the metadata of each output artifact.
         """
         client = Client()
         active_user_id = client.active_user.id

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing artifacts."""
 
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -24,7 +24,9 @@ from zenml.models.base_models import (
     ProjectScopedResponseModel,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
-from zenml.models.run_metadata_models import RunMetadataResponseModel
+
+if TYPE_CHECKING:
+    from zenml.models.run_metadata_models import RunMetadataResponseModel
 
 # ---- #
 # BASE #

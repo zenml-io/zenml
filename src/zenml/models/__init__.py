@@ -104,27 +104,30 @@ PipelineResponseModel.update_forward_refs(
     ProjectResponseModel=ProjectResponseModel,
 )
 
+RunMetadataResponseModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    ProjectResponseModel=ProjectResponseModel,
+)
+
 PipelineRunResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
     ProjectResponseModel=ProjectResponseModel,
     PipelineResponseModel=PipelineResponseModel,
     StackResponseModel=StackResponseModel,
-)
-
-RunMetadataResponseModel.update_forward_refs(
-    UserResponseModel=UserResponseModel,
-    ProjectResponseModel=ProjectResponseModel,
+    RunMetadataResponseModel=RunMetadataResponseModel,
 )
 
 StepRunResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
     ProjectResponseModel=ProjectResponseModel,
     ArtifactResponseModel=ArtifactResponseModel,
+    RunMetadataResponseModel=RunMetadataResponseModel,
 )
 
 ArtifactResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
     ProjectResponseModel=ProjectResponseModel,
+    RunMetadataResponseModel=RunMetadataResponseModel,
 )
 
 __all__ = [

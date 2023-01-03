@@ -45,14 +45,6 @@ def human_readable_size(num_bytes: int) -> str:
 class StorageSize(int):
     """Storage size of an artifact in number of bytes."""
 
-    def __str__(self) -> str:
-        """Get a string representation of the storage size.
-
-        Returns:
-            A human-readable string representation of the storage size.
-        """
-        return super().__str__()
-
 
 # Union of all types that can be used as metadata.
 # We don't use subscripted generics here because they cannot be used for
