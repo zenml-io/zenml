@@ -2416,8 +2416,29 @@ class Client(metaclass=ClientMetaClass):
 
         Returns:
             The created metadata.
+
+        Raises:
+            ValueError: If not exactly one of either `pipeline_run_id`,
+                `step_run_id`, or `artifact_id` is provided.
         """
         from zenml.metadata.metadata_types import get_metadata_type
+
+        if not (pipeline_run_id or step_run_id or artifact_id):
+            raise ValueError(
+                "Cannot create run metadata without linking it to any entity. "
+                "Please provide either a `pipeline_run_id`, `step_run_id`, or "
+                "`artifact_id`."
+            )
+        if (
+            (pipeline_run_id and step_run_id)
+            or (pipeline_run_id and artifact_id)
+            or (step_run_id and artifact_id)
+        ):
+            raise ValueError(
+                "Cannot create run metadata linked to multiple entities. "
+                "Please provide only a `pipeline_run_id` or only a "
+                "`step_run_id` or only an `artifact_id`."
+            )
 
         created_metadata_list: List[RunMetadataResponseModel] = []
         for key, value in metadata.items():

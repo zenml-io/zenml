@@ -765,7 +765,6 @@ class Stack:
             step_run_metadata = component.get_step_run_metadata(info=info)
             if step_run_metadata:
                 client.create_run_metadata(
-                    pipeline_run_id=info.run_id,
                     metadata=step_run_metadata,
                     step_run_id=info.step_run_id,
                     stack_component_id=component.id,
@@ -777,8 +776,8 @@ class Stack:
             )
             if pipeline_run_metadata:
                 client.create_run_metadata(
-                    pipeline_run_id=info.run_id,
                     metadata=pipeline_run_metadata,
+                    pipeline_run_id=info.run_id,
                     stack_component_id=component.id,
                 )
 
