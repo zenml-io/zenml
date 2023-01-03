@@ -97,7 +97,9 @@ class AzureMLStepOperator(BaseStepOperator):
             store.
         """
 
-        def _validate_remote_artifact_store(stack: "Stack") -> Tuple[bool, str]:
+        def _validate_remote_artifact_store(
+            stack: "Stack",
+        ) -> Tuple[bool, str]:
             if stack.artifact_store.config.is_local:
                 return False, (
                     "The AzureML step operator runs code remotely and "
@@ -286,6 +288,7 @@ class AzureMLStepOperator(BaseStepOperator):
 
         settings = cast(AzureMLStepOperatorSettings, self.get_settings(info))
 
+        # TODO: [MEDIUM] Update to AzureML SDK v2 (using `MLClient`)
         workspace = Workspace.get(
             subscription_id=self.config.subscription_id,
             resource_group=self.config.resource_group,
