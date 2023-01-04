@@ -88,9 +88,7 @@ mypy = "^0.991"
 ruff = "^0.0.206"
 interrogate = "^1.4.0"
 coverage = { extras = ["toml"], version = "^5.5" }
-isort = "^5.9.3"
 pre-commit = "^2.14.0"
-autoflake = "^1.4"
 pyment = "^0.3.3"
 tox = "^3.24.3"
 hypothesis = "^6.43.1"
@@ -99,7 +97,6 @@ typing-extensions = ">=3.7.4"
 # pytest dev dependencies
 pytest-randomly = "^3.10.1"
 pytest-mock = "^3.6.1"
-codespell = "^2.1.0"
 darglint = "^1.8.1"
 pytest-clarity = "^1.0.1"
 pytest-xdist = "^3.0.2"
@@ -109,7 +106,6 @@ mkdocs="^1.2.3"
 mkdocs-material="^8.1.7"
 mkdocs-awesome-pages-plugin="^2.6.1"
 mkdocstrings="^0.17.0"
-pydocstyle="^6.1.1"
 mike="^1.1.2"
 
 # mypy type stubs
@@ -129,7 +125,6 @@ types-setuptools = "^57.4.2"
 types-six = "^1.16.2"
 types-termcolor = "^1.1.2"
 types-psutil = "^5.8.13"
-flake8-docstrings = "^1.6.0"
 
 # test framework dependencies
 docker-compose = "^1.28"
@@ -227,8 +222,6 @@ convention = "google"
 
 [tool.isort]
 profile = "black"
-known_third_party = []
-skip_glob = []
 line_length = 80
 
 [tool.mypy]
