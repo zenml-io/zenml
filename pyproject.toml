@@ -85,7 +85,7 @@ server = ["fastapi", "uvicorn", "python-multipart", "python-jose", "fastapi-util
 black = "^22.3.0"
 pytest = "^6.2.4"
 mypy = "^0.991"
-ruff = "^0.0.206"
+ruff = "^0.0.209"
 interrogate = "^1.4.0"
 coverage = { extras = ["toml"], version = "^5.5" }
 pre-commit = "^2.14.0"
@@ -97,7 +97,6 @@ typing-extensions = ">=3.7.4"
 # pytest dev dependencies
 pytest-randomly = "^3.10.1"
 pytest-mock = "^3.6.1"
-darglint = "^1.8.1"
 pytest-clarity = "^1.0.1"
 pytest-xdist = "^3.0.2"
 
@@ -199,15 +198,19 @@ exclude = [
     "dist",
     "node_modules",
     "venv",
+    '__init__.py',
+    'src/zenml/cli/version.py',
 ]
 per-file-ignores = {}
-ignore = ["E501", "F401"]
+# remove "D417" when ruff > 0.0.209 is released
+ignore = ["E501", "F401", "F403", "D403", "D407", "D213", "D203", "D417"]
 src = ["src", "test"]
 # use Python 3.7 as the minimum version for autofixing
 target-version = "py37"
 ignore-init-module-imports = true
 # Disable autofix for unused imports (`F401`).
 unfixable = ["F401"]
+select = ["D", "E", "F"]
 
 [tool.ruff.flake8-import-conventions.aliases]
 altair = "alt"
@@ -215,6 +218,10 @@ altair = "alt"
 numpy = "np"
 pandas = "pd"
 seaborn = "sns"
+
+[tool.ruff.mccabe]
+# Flag errors (`C901`) whenever the complexity level exceeds 5.
+max-complexity = 18
 
 [tool.ruff.pydocstyle]
 # Use Google-style docstrings.

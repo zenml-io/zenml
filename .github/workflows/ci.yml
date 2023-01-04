@@ -77,9 +77,6 @@ jobs:
       test_environment: ${{ matrix.test_environment }}
     secrets: inherit
 
-  spell-check:
-    uses: ./.github/workflows/spellcheck.yml
-
   docstring-check:
     uses: ./.github/workflows/docstring.yml
 
