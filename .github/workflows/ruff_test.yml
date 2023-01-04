@@ -1,4 +1,4 @@
-name: Build, Lint, Unit & Integration Test
+name: RUFF Build, Lint, Unit & Integration Test
 
 on:
   workflow_dispatch:
