@@ -10,7 +10,6 @@ export ZENML_DEBUG=1
 export ZENML_ANALYTICS_OPT_IN=false
 ruff $SRC
 autoflake --remove-all-unused-imports --recursive --remove-unused-variables --in-place $SRC --exclude=__init__.py --check | ( grep -v "No issues detected" || true )
-isort $SRC scripts --check-only
 black $SRC  --check
 
 # check type annotations

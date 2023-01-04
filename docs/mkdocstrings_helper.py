@@ -58,7 +58,7 @@ def _is_module_ignored(module_name: str, ignored_modules: List[str]) -> bool:
 
 
 def generate_title(s: str) -> str:
-    """Remove underscores and capitalize first letter to each word"""
+    """Remove underscores and capitalize first letter to each word."""
     s = s.replace("_", " ")
     s = s.title()
     return s

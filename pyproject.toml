@@ -203,14 +203,14 @@ exclude = [
 ]
 per-file-ignores = {}
 # remove "D417" when ruff > 0.0.209 is released
-ignore = ["E501", "F401", "F403", "D403", "D407", "D213", "D203", "D417"]
+ignore = ["E501", "F401", "F403", "D403", "D407", "D213", "D203", "D417", "S101", "S104", "S105", "S107"]
 src = ["src", "test"]
 # use Python 3.7 as the minimum version for autofixing
 target-version = "py37"
 ignore-init-module-imports = true
 # Disable autofix for unused imports (`F401`).
 unfixable = ["F401"]
-select = ["D", "E", "F"]
+select = ["D", "E", "F", "I", "C90", "I001", "S", "Q"]
 
 [tool.ruff.flake8-import-conventions.aliases]
 altair = "alt"
@@ -226,10 +226,6 @@ max-complexity = 18
 [tool.ruff.pydocstyle]
 # Use Google-style docstrings.
 convention = "google"
-
-[tool.isort]
-profile = "black"
-line_length = 80
 
 [tool.mypy]
 strict = true

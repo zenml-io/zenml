@@ -20,6 +20,6 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip setuptools
-          python -m pip install interrogate darglint
+          python -m pip install interrogate
       - name: Docstring Check
         run: bash scripts/docstring.sh
