@@ -79,7 +79,7 @@ def bento_builder_step(
     Returns:
         the BentoML Bento object.
     """
-    # save the model and bento uri as part of the bento lables
+    # save the model and bento uri as part of the bento labels
     labels = params.labels or {}
     labels["model_uri"] = model.uri
     labels["bento_uri"] = os.path.join(
