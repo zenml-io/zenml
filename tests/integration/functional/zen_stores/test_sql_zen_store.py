@@ -31,6 +31,7 @@ from zenml.exceptions import (
     StackComponentExistsError,
     StackExistsError,
 )
+from zenml.metadata.metadata_types import MetadataTypeEnum
 from zenml.models import (
     ArtifactRequestModel,
     ComponentRequestModel,
@@ -53,6 +54,7 @@ from zenml.models import (
     UserUpdateModel,
 )
 from zenml.models.base_models import BaseResponseModel
+from zenml.models.run_metadata_models import RunMetadataRequestModel
 from zenml.zen_stores.base_zen_store import (
     DEFAULT_ADMIN_ROLE,
     DEFAULT_GUEST_ROLE,
@@ -1399,6 +1401,68 @@ def test_delete_artifact_fails_when_artifact_does_not_exist(sql_store):
     """Tests deleting artifact fails when artifact does not exist."""
     with pytest.raises(KeyError):
         sql_store["store"].delete_artifact(artifact_id=uuid.uuid4())
+
+
+# ------------
+# Run Metadata
+# ------------
+
+
+def test_create_run_metadata_succeeds(sql_store_with_run):
+    """Test creating run metadata."""
+    metadata = RunMetadataRequestModel(
+        key="test_key",
+        value="test_value",
+        type=MetadataTypeEnum.STRING,
+        user=sql_store_with_run["active_user"].id,
+        project=sql_store_with_run["default_project"].id,
+        pipeline_run_id=sql_store_with_run["pipeline_run"].id,
+        stack_component_id=sql_store_with_run["default_stack"]
+        .components["orchestrator"][0]
+        .id,
+    )
+    with does_not_raise():
+        created_metadata = sql_store_with_run["store"].create_run_metadata(
+            metadata
+        )
+        assert created_metadata.key == metadata.key
+        assert created_metadata.value == metadata.value
+        assert created_metadata.type == metadata.type
+        assert created_metadata.user.id == metadata.user
+        assert created_metadata.project.id == metadata.project
+        assert created_metadata.pipeline_run_id == metadata.pipeline_run_id
+        assert (
+            created_metadata.stack_component_id == metadata.stack_component_id
+        )
+
+
+def test_list_run_metadata_succeeds(sql_store_with_run):
+    """Test listing run metadata."""
+    metadata = sql_store_with_run["store"].list_run_metadata(
+        pipeline_run_id=sql_store_with_run["pipeline_run"].id
+    )
+    assert len(metadata) == 0
+
+    metadata_request = RunMetadataRequestModel(
+        key="test_key",
+        value="test_value",
+        type=MetadataTypeEnum.STRING,
+        user=sql_store_with_run["active_user"].id,
+        project=sql_store_with_run["default_project"].id,
+        pipeline_run_id=sql_store_with_run["pipeline_run"].id,
+        stack_component_id=sql_store_with_run["default_stack"]
+        .components["orchestrator"][0]
+        .id,
+    )
+    sql_store_with_run["store"].create_run_metadata(metadata_request)
+    metadata = sql_store_with_run["store"].list_run_metadata(
+        pipeline_run_id=sql_store_with_run["pipeline_run"].id
+    )
+    assert len(metadata) == 1
+    metadata = sql_store_with_run["store"].list_run_metadata(
+        step_run_id=sql_store_with_run["step"].id
+    )
+    assert len(metadata) == 0
 
 
 # ----------------
