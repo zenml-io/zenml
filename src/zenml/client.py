@@ -2246,7 +2246,8 @@ class Client(metaclass=ClientMetaClass):
             A list of step runs.
         """
         return self.zen_store.list_run_steps(
-            run_id=pipeline_run_id, project_id=project_id
+            run_id=pipeline_run_id,
+            project_id=project_id or self.active_project.id,
         )
 
     def get_run_step(self, step_run_id: UUID) -> StepRunResponseModel:
