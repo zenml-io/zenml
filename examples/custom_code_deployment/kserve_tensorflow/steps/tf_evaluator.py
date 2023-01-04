@@ -24,7 +24,6 @@ def tf_evaluator(
     y_test: np.ndarray,
     model: tf.keras.Model,
 ) -> float:
-    """Calculate the loss for the model for each epoch in a graph"""
-
+    """Calculate the loss for the model for each epoch in a graph."""
     _, test_acc = model.evaluate(x_test, y_test, verbose=2)
     return test_acc

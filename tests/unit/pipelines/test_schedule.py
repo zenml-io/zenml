@@ -22,8 +22,8 @@ from zenml.pipelines import Schedule
 
 def test_schedule_requires_cron_or_interval():
     """Tests that a schedule can only be created if it contains a cron
-    expression and/or an interval."""
-
+    expression and/or an interval.
+    """
     with does_not_raise():
         # just a cron expression
         Schedule(cron_expression="* * * * *")

@@ -41,7 +41,6 @@ def bentoml_prediction_service_loader(
     params: PredictionServiceLoaderStepParameters,
 ) -> BentoMLDeploymentService:
     """Get the BentoML prediction service started by the deployment pipeline."""
-
     model_deployer = BentoMLModelDeployer.get_active_model_deployer()
 
     services = model_deployer.find_model_server(

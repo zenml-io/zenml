@@ -179,7 +179,6 @@ def test_update_stack_component_with_non_configured_property_fails(
 @pytest.fixture
 def test_flavor() -> Iterator[FlavorRequestModel]:
     """Create a flavor for testing."""
-
     aria_flavor = AriaOrchestratorFlavor()
     flavor_registry._register_flavor(aria_flavor.to_model())
     yield aria_flavor
@@ -190,7 +189,6 @@ def test_remove_attribute_component_succeeds(
     clean_project, test_flavor
 ) -> None:
     """Removing an optional attribute from a stack component succeeds."""
-
     orchestrator = test_flavor.implementation_class(
         name="arias_orchestrator",
         id=uuid4(),
@@ -422,7 +420,6 @@ def test_renaming_non_core_component_succeeds(clean_project) -> None:
 
 def test_renaming_core_component_succeeds(clean_project) -> None:
     """Test renaming a core stack component succeeds."""
-
     new_component_name = "arias_orchestrator"
     register_orchestrator_command = cli.commands["orchestrator"].commands[
         "register"

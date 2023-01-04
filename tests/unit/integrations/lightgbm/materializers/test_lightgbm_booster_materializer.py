@@ -26,8 +26,7 @@ from zenml.steps import step
 
 @pytest.fixture
 def empty_model_file() -> Path:
-    """Fixture to get an empty model.txt file"""
-
+    """Fixture to get an empty model.txt file."""
     with tempfile.NamedTemporaryFile() as tmp:
         yield tmp.name
 

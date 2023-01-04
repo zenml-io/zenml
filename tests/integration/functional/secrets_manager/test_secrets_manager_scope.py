@@ -232,7 +232,6 @@ def test_secrets_shared_at_scope_level(
     that the secrets added, updated and deleted in one instance are immediately
     visible in the second instance.
     """
-
     # secrets managers using component scope also have to share the same ID
     # value to be in the same scope, which is not possible
     if secrets_manager.config.scope == SecretsManagerScope.COMPONENT:

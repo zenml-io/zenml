@@ -22,7 +22,8 @@ from zenml.post_execution.pipeline import get_pipeline
 
 def test_get_pipeline():
     """Tests that getting post-execution pipelines forwards calls to the
-    metadata store of the (active) stack."""
+    metadata store of the (active) stack.
+    """
     # register a stack with a mysql metadata store
 
     @pipeline

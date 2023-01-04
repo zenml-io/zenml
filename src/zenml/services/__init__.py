@@ -59,7 +59,6 @@ from zenml.services.terraform.terraform_service import (
     TerraformServiceConfig,
     TerraformServiceStatus,
 )
-from zenml.services.utils import load_last_service_from_step
 
 __all__ = [
     "ServiceState",

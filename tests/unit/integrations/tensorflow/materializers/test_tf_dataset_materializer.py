@@ -23,8 +23,8 @@ from zenml.integrations.tensorflow.materializers.tf_dataset_materializer import 
 
 def test_tensorflow_tf_dataset_materializer(clean_client):
     """Tests whether the steps work for the TensorFlow TF Dataset
-    materializer."""
-
+    materializer.
+    """
     with does_not_raise():
         dataset = _test_materializer(
             step_output=tf.data.Dataset.from_tensor_slices([1, 2, 3]),

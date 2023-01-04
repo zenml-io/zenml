@@ -24,7 +24,7 @@ def lgbm_pipeline(
     trainer,
     predictor,
 ):
-    """Links all the steps together in a pipeline"""
+    """Links all the steps together in a pipeline."""
     mat_train, mat_test = data_loader()
     model = trainer(mat_train, mat_test)
     predictor(model)

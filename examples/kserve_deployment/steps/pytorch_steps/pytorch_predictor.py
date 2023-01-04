@@ -22,8 +22,7 @@ def pytorch_predictor(
     service: KServeDeploymentService,
     data: str,
 ) -> None:
-    """Run a inference request against a prediction service"""
-
+    """Run a inference request against a prediction service."""
     service.start(timeout=120)  # should be a NOP if already started
     response = service.predict(data)
     prediction = response["predictions"]

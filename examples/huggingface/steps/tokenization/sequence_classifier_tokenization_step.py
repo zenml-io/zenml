@@ -24,7 +24,7 @@ def sequence_classifier_tokenization(
     tokenizer: PreTrainedTokenizerBase,
     datasets: DatasetDict,
 ) -> DatasetDict:
-    """Tokenize dataset into tokens and then convert into encoded ids"""
+    """Tokenize dataset into tokens and then convert into encoded ids."""
 
     def preprocess_function(examples):
         result = tokenizer(

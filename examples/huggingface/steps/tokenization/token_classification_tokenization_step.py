@@ -24,7 +24,7 @@ def token_classification_tokenization(
     tokenizer: PreTrainedTokenizerBase,
     datasets: DatasetDict,
 ) -> DatasetDict:
-    """Tokenizer dataset into tokens and then convert into encoded ids"""
+    """Tokenizer dataset into tokens and then convert into encoded ids."""
 
     def tokenize_and_align_labels(examples):
         tokenized_inputs = tokenizer(

@@ -25,7 +25,8 @@ from zenml.integrations.neural_prophet.materializers.neural_prophet_materializer
 
 def test_neural_prophet_booster_materializer(clean_client):
     """Tests whether the steps work for the Neural Prophet forecaster
-    materializer."""
+    materializer.
+    """
     sample_df = pd.DataFrame(
         {
             "ds": pd.date_range("2018-01-01", periods=10),

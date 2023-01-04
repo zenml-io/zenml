@@ -17,8 +17,8 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple, Union, cast
 
 import pandas as pd
 from evidently.model_profile import Profile  # type: ignore[import]
-from evidently.pipeline.column_mapping import (  # type: ignore[import]
-    ColumnMapping,
+from evidently.pipeline.column_mapping import (
+    ColumnMapping,  # type: ignore[import]
 )
 from pydantic import BaseModel, Field
 from typing_extensions import Literal

@@ -37,8 +37,8 @@ from evidently.model_profile.sections import (  # type: ignore
     ProbClassificationPerformanceProfileSection,
     RegressionPerformanceProfileSection,
 )
-from evidently.model_profile.sections.base_profile_section import (  # type: ignore
-    ProfileSection,
+from evidently.model_profile.sections.base_profile_section import (
+    ProfileSection,  # type: ignore
 )
 from evidently.pipeline.column_mapping import ColumnMapping  # type: ignore
 

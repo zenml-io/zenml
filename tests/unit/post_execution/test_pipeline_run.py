@@ -22,8 +22,7 @@ def test_get_step_returns_stepview(
     sample_step_view: StepView,
     sample_pipeline_run_view: PipelineRunView,
 ):
-    """Test that the `get_step` method returns the correct step_view"""
-
+    """Test that the `get_step` method returns the correct step_view."""
     returned_sv = sample_pipeline_run_view.get_step(step="sample_step")
     assert sample_step_view.id == returned_sv.id
     assert sample_step_view.name == returned_sv.name

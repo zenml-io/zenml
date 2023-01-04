@@ -21,7 +21,8 @@ from zenml.steps import step
 @pytest.fixture
 def connected_two_step_pipeline():
     """Pytest fixture that returns a pipeline which takes two steps
-    `step_1` and `step_2` that are connected."""
+    `step_1` and `step_2` that are connected.
+    """
 
     @pipeline(name="test_pipeline")
     def _pipeline(step_1, step_2):

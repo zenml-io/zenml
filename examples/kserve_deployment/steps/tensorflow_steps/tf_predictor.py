@@ -23,8 +23,7 @@ def tf_predictor(
     service: KServeDeploymentService,
     data: str,
 ) -> None:
-    """Run a inference request against a prediction service"""
-
+    """Run a inference request against a prediction service."""
     service.start(timeout=120)  # should be a NOP if already started
     response = service.predict(data)
     prediction = np.array(response["predictions"])

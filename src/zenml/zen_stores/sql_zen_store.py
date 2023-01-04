@@ -453,7 +453,9 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
         return config
 
-    def get_sqlmodel_config(self) -> Tuple[str, Dict[str, Any], Dict[str, Any]]:
+    def get_sqlmodel_config(
+        self,
+    ) -> Tuple[str, Dict[str, Any], Dict[str, Any]]:
         """Get the SQLModel engine configuration for the SQL ZenML store.
 
         Returns:

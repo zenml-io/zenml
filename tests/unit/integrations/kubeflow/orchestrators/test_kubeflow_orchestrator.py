@@ -48,7 +48,8 @@ def test_kubeflow_orchestrator_stack_validation(
     mocker, local_artifact_store, local_container_registry
 ):
     """Tests that the kubeflow orchestrator validates that it's stack has a
-    container registry."""
+    container registry.
+    """
     mocker.patch(
         "zenml.integrations.kubeflow.orchestrators.kubeflow_orchestrator.KubeflowOrchestrator.get_kubernetes_contexts",
         return_value=([], ""),
@@ -91,7 +92,8 @@ def test_kubeflow_orchestrator_stack_validation(
 )
 def test_skip_ui_daemon_provisioning(config, skip_ui_daemon_provisioning):
     """Tests that the UI daemon provisioning is skipped if either set explicitly
-    or when a hostname is specified."""
+    or when a hostname is specified.
+    """
     assert (
         _get_kubeflow_orchestrator(config).skip_ui_daemon_provisioning
         is skip_ui_daemon_provisioning

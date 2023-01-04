@@ -18,22 +18,22 @@ from typing import Any, ClassVar, Dict, List, Optional, Sequence, Type, cast
 
 import pandas as pd
 import yaml
-from great_expectations.checkpoint.types.checkpoint_result import (  # type: ignore[import]
-    CheckpointResult,
+from great_expectations.checkpoint.types.checkpoint_result import (
+    CheckpointResult,  # type: ignore[import]
 )
 from great_expectations.core import ExpectationSuite  # type: ignore[import]
 from great_expectations.data_context.data_context import (  # type: ignore[import]
     BaseDataContext,
     DataContext,
 )
-from great_expectations.data_context.types.base import (  # type: ignore[import]
-    DataContextConfig,
+from great_expectations.data_context.types.base import (
+    DataContextConfig,  # type: ignore[import]
 )
-from great_expectations.data_context.types.resource_identifiers import (  # type: ignore[import]
-    ExpectationSuiteIdentifier,
+from great_expectations.data_context.types.resource_identifiers import (
+    ExpectationSuiteIdentifier,  # type: ignore[import]
 )
-from great_expectations.profile.user_configurable_profiler import (  # type: ignore[import]
-    UserConfigurableProfiler,
+from great_expectations.profile.user_configurable_profiler import (
+    UserConfigurableProfiler,  # type: ignore[import]
 )
 
 from zenml.client import Client

@@ -89,7 +89,7 @@ def _create_local_secrets_manager(client: Client):
 
 
 def test_describe_stack_contains_local_stack() -> None:
-    """Test that the stack describe command contains the default local stack"""
+    """Test that the stack describe command contains the default local stack."""
     runner = CliRunner()
     describe_command = cli.commands["stack"].commands["describe"]
     result = runner.invoke(describe_command)
@@ -101,7 +101,7 @@ def test_describe_stack_contains_local_stack() -> None:
 def test_describe_stack_bad_input_fails(
     not_a_stack: str,
 ) -> None:
-    """Test if the stack describe fails when passing in bad parameters"""
+    """Test if the stack describe fails when passing in bad parameters."""
     runner = CliRunner()
     describe_command = cli.commands["stack"].commands["describe"]
     result = runner.invoke(describe_command, [not_a_stack])
@@ -229,7 +229,8 @@ def test_updating_non_active_stack_succeeds(clean_project) -> None:
 
 def test_update_stack_adding_component_succeeds(clean_project) -> None:
     """Test stack update by adding a new component to a stack
-    succeeds."""
+    succeeds.
+    """
     # first we create and activate a non-default stack
     registered_stack = clean_project.active_stack_model
 
@@ -276,7 +277,8 @@ def test_update_stack_adding_component_succeeds(clean_project) -> None:
 
 def test_update_stack_adding_to_default_stack_fails(clean_project) -> None:
     """Test stack update by adding a new component to the default stack
-    is prohibited."""
+    is prohibited.
+    """
     # first we set the active stack to a non-default stack
     registered_stack = clean_project.active_stack_model
 
@@ -484,8 +486,8 @@ def test_share_stack_when_component_is_already_shared_by_other_user_fails(
     clean_project: Client,
 ) -> None:
     """When sharing a stack all the components are also shared, so if a
-    component with the same name is already shared this should fail."""
-
+    component with the same name is already shared this should fail.
+    """
     if clean_project.zen_store.type != StoreType.REST:
         pytest.skip("Only supported on ZenML server")
 
@@ -542,7 +544,8 @@ def test_create_shared_stack_when_component_is_private_fails(
     clean_project: Client,
 ) -> None:
     """When sharing a stack all the components should also be shared, so if a
-    component is not shared this should fail."""
+    component is not shared this should fail.
+    """
     runner = CliRunner()
     register_command = cli.commands["stack"].commands["register"]
     result = runner.invoke(
@@ -556,8 +559,8 @@ def test_add_private_component_to_shared_stack_fails(
     clean_project: Client,
 ) -> None:
     """When sharing a stack all the components are also shared, so if a
-    component with the same name is already shared this should fail."""
-
+    component with the same name is already shared this should fail.
+    """
     if clean_project.zen_store.type != StoreType.REST:
         pytest.skip("Only supported on ZenML server")
 
@@ -618,7 +621,8 @@ def test_share_stack_when_component_is_private_fails(
     clean_project: Client,
 ) -> None:
     """When sharing a stack all the components are also shared, so if a
-    component with the same name is already shared this should fail."""
+    component with the same name is already shared this should fail.
+    """
     # Non-shared components
     new_artifact_store = _create_local_artifact_store(clean_project)
 

@@ -48,7 +48,8 @@ def test_secret_reference_parsing(name, key):
 
 def test_secret_field():
     """Tests that the secret field inserts the correct property into the
-    pydantic field info."""
+    pydantic field info.
+    """
     field_info = secret_utils.SecretField()
     assert (
         field_info.extra[secret_utils.PYDANTIC_SENSITIVE_FIELD_MARKER] is True

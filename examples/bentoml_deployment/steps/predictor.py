@@ -31,7 +31,6 @@ def predictor(
         service: The BentoML service.
         data: The data to predict.
     """
-
     service.start(timeout=10)  # should be a NOP if already started
     for img, data in inference_data.items():
         prediction = service.predict("predict_ndarray", np.array(data))
@@ -48,7 +47,6 @@ def to_labels(prediction: List[float]) -> str:
     Returns:
         The list of labels.
     """
-
     labels = [
         "T-shirt/top",
         "Trouser",

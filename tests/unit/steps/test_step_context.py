@@ -23,8 +23,8 @@ from zenml.steps import StepContext
 
 def test_initialize_step_context_with_mismatched_keys():
     """Tests that initializing a step context with mismatched keys for
-    materializers and artifacts raises an Exception."""
-
+    materializers and artifacts raises an Exception.
+    """
     materializers = {"some_output_name": BaseMaterializer}
     artifact_uris = {"some_different_output_name": ""}
 
@@ -38,8 +38,8 @@ def test_initialize_step_context_with_mismatched_keys():
 
 def test_initialize_step_context_with_matching_keys():
     """Tests that initializing a step context with matching keys for
-    materializers and artifacts works."""
-
+    materializers and artifacts works.
+    """
     materializers = {"some_output_name": BaseMaterializer}
     artifact_uris = {"some_output_name": ""}
 
@@ -55,8 +55,8 @@ def test_get_step_context_output_for_step_with_no_outputs(
     step_context_with_no_output,
 ):
     """Tests that getting the artifact uri or materializer for a step context
-    with no outputs raises an exception."""
-
+    with no outputs raises an exception.
+    """
     with pytest.raises(StepContextError):
         step_context_with_no_output.get_output_artifact_uri()
 
@@ -68,8 +68,8 @@ def test_get_step_context_output_for_step_with_one_output(
     step_context_with_single_output,
 ):
     """Tests that getting the artifact uri or materializer for a step context
-    with a single output does NOT raise an exception."""
-
+    with a single output does NOT raise an exception.
+    """
     with does_not_raise():
         step_context_with_single_output.get_output_artifact_uri()
         step_context_with_single_output.get_output_materializer()
@@ -79,8 +79,8 @@ def test_get_step_context_output_for_step_with_multiple_outputs(
     step_context_with_two_outputs,
 ):
     """Tests that getting the artifact uri or materializer for a step context
-    with multiple outputs raises an exception."""
-
+    with multiple outputs raises an exception.
+    """
     with pytest.raises(StepContextError):
         step_context_with_two_outputs.get_output_artifact_uri()
 
@@ -92,8 +92,8 @@ def test_get_step_context_output_for_non_existent_output_key(
     step_context_with_single_output,
 ):
     """Tests that getting the artifact uri or materializer for a non-existent
-    output raises an exception."""
-
+    output raises an exception.
+    """
     with pytest.raises(StepContextError):
         step_context_with_single_output.get_output_artifact_uri(
             "some_non_existent_output_name"
@@ -109,8 +109,8 @@ def test_get_step_context_output_for_non_existing_output_key(
     step_context_with_two_outputs,
 ):
     """Tests that getting the artifact uri or materializer for an existing
-    output does NOT raise an exception."""
-
+    output does NOT raise an exception.
+    """
     with does_not_raise():
         step_context_with_two_outputs.get_output_artifact_uri("output_1")
         step_context_with_two_outputs.get_output_materializer("output_2")
@@ -120,8 +120,8 @@ def test_step_context_returns_instance_of_custom_materializer_class(
     step_context_with_single_output,
 ):
     """Tests that the returned materializer is an instance of the custom
-    materializer class if it was passed."""
-
+    materializer class if it was passed.
+    """
     materializer = step_context_with_single_output.get_output_materializer(
         custom_materializer_class=BuiltInMaterializer
     )

@@ -18,8 +18,8 @@ from tempfile import TemporaryDirectory
 from typing import Any, Type
 
 from transformers import AutoTokenizer  # type: ignore [import]
-from transformers.tokenization_utils_base import (  # type: ignore [import]
-    PreTrainedTokenizerBase,
+from transformers.tokenization_utils_base import (
+    PreTrainedTokenizerBase,  # type: ignore [import]
 )
 
 from zenml.enums import ArtifactType

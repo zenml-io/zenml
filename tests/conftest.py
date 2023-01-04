@@ -103,7 +103,6 @@ def auto_environment(
     Yields:
         The active environment and a client connected with it.
     """
-
     session_mocker.patch("analytics.track")
     session_mocker.patch("analytics.group")
     session_mocker.patch("analytics.identify")

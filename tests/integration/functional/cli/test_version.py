@@ -19,7 +19,7 @@ from zenml.cli.version import version
 
 
 def test_version_outputs_running_version_number() -> None:
-    """Checks that CLI version command works"""
+    """Checks that CLI version command works."""
     runner = CliRunner()
     result = runner.invoke(version)
     assert result.exit_code == 0

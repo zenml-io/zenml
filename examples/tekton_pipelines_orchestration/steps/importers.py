@@ -26,7 +26,7 @@ def importer() -> Output(
     y_train=np.ndarray,
     y_test=np.ndarray,
 ):
-    """Download the MNIST data store it as an artifact"""
+    """Download the MNIST data store it as an artifact."""
     (X_train, y_train), (
         X_test,
         y_test,

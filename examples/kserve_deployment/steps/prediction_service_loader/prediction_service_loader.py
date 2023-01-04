@@ -38,8 +38,7 @@ class PredectionServiceLoaderStepParameters(BaseParameters):
 def prediction_service_loader(
     params: PredectionServiceLoaderStepParameters,
 ) -> KServeDeploymentService:
-    """Get the prediction service started by the deployment pipeline"""
-
+    """Get the prediction service started by the deployment pipeline."""
     model_deployer = KServeModelDeployer.get_active_model_deployer()
 
     services = model_deployer.find_model_server(

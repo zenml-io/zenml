@@ -28,7 +28,7 @@ def training_fashion_mnist(
     bento_builder,
     deployer,
 ):
-    """Link all the steps and artifacts together"""
+    """Link all the steps and artifacts together."""
     train_dataloader, test_dataloader = importer()
     model = trainer(train_dataloader)
     accuracy = evaluator(test_dataloader=test_dataloader, model=model)

@@ -41,7 +41,7 @@ class NeuralNetwork(nn.Module):
 
 @step(enable_cache=False)
 def trainer(train_dataloader: DataLoader) -> nn.Module:
-    """Trains on the train dataloader"""
+    """Trains on the train dataloader."""
     model = NeuralNetwork().to(DEVICE)
     loss_fn = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=1e-3)

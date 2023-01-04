@@ -20,5 +20,6 @@ def analyze_drift(
     profile: Profile,
 ) -> bool:
     """Analyze the Evidently drift report and return a true/false value
-    indicating whether data drift was detected."""
+    indicating whether data drift was detected.
+    """
     return profile.object()["data_drift"]["data"]["metrics"]["dataset_drift"]

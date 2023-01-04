@@ -32,7 +32,6 @@ def kserve_predictor(
         service: The kserve deployment service.
         data: The data to predict.
     """
-
     service.start(timeout=120)  # should be a NOP if already started
     response = service.predict(data)
     rich_print(response)

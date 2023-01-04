@@ -30,7 +30,7 @@ def token_trainer(
     tokenized_datasets: DatasetDict,
     tokenizer: PreTrainedTokenizerBase,
 ) -> TFPreTrainedModel:
-    """Build and Train token classification model"""
+    """Build and Train token classification model."""
     # Get label list
     label_list = (
         tokenized_datasets["train"].features[params.label_column].feature.names

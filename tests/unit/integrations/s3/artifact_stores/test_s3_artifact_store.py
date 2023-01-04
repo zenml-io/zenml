@@ -30,7 +30,8 @@ from zenml.integrations.s3.flavors.s3_artifact_store_flavor import (
 
 def test_s3_artifact_store_attributes():
     """Tests that the basic attributes of the s3 artifact store are set
-    correctly."""
+    correctly.
+    """
     artifact_store = S3ArtifactStore(
         name="",
         id=uuid4(),
@@ -48,7 +49,8 @@ def test_s3_artifact_store_attributes():
 
 def test_must_be_s3_path():
     """Checks that a s3 artifact store can only be initialized with a s3
-    path."""
+    path.
+    """
     with pytest.raises(ArtifactStoreInterfaceError):
         S3ArtifactStore(
             name="",

@@ -24,7 +24,8 @@ from zenml.integrations.airflow.orchestrators import AirflowOrchestrator
 
 def test_airflow_orchestrator_attributes():
     """Tests that the basic attributes of the airflow orchestrator are set
-    correctly."""
+    correctly.
+    """
     orchestrator = AirflowOrchestrator(
         name="",
         id=uuid4(),

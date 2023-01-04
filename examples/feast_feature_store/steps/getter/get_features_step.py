@@ -63,7 +63,7 @@ def get_historical_features(
     params: FeastHistoricalFeaturesParameters,
     context: StepContext,
 ) -> pd.DataFrame:
-    """Feast Feature Store historical data step
+    """Feast Feature Store historical data step.
 
     Args:
         params: The step parameters.

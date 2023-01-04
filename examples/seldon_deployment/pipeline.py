@@ -38,7 +38,7 @@ logger = get_logger(__name__)
 def importer_mnist() -> Output(
     x_train=np.ndarray, y_train=np.ndarray, x_test=np.ndarray, y_test=np.ndarray
 ):
-    """Download the MNIST data store it as an artifact"""
+    """Download the MNIST data store it as an artifact."""
     (x_train, y_train), (
         x_test,
         y_test,
@@ -50,14 +50,14 @@ def importer_mnist() -> Output(
 def normalizer(
     x_train: np.ndarray, x_test: np.ndarray
 ) -> Output(x_train_normed=np.ndarray, x_test_normed=np.ndarray):
-    """Normalize the values for all the images so they are between 0 and 1"""
+    """Normalize the values for all the images so they are between 0 and 1."""
     x_train_normed = x_train / 255.0
     x_test_normed = x_test / 255.0
     return x_train_normed, x_test_normed
 
 
 class TensorflowTrainerParameters(BaseParameters):
-    """Trainer params"""
+    """Trainer params."""
 
     epochs: int = 1
     lr: float = 0.001
@@ -70,7 +70,9 @@ def tf_trainer(
     y_train: np.ndarray,
 ) -> tf.keras.Model:
     """Train a neural net from scratch to recognize MNIST digits return our
-    model or the learner"""
+    model or the learner
+    .
+    """
     model = tf.keras.Sequential(
         [
             tf.keras.layers.Flatten(input_shape=(28, 28)),
@@ -100,14 +102,13 @@ def tf_evaluator(
     y_test: np.ndarray,
     model: tf.keras.Model,
 ) -> float:
-    """Calculate the loss for the model for each epoch in a graph"""
-
+    """Calculate the loss for the model for each epoch in a graph."""
     _, test_acc = model.evaluate(x_test, y_test, verbose=2)
     return test_acc
 
 
 class SklearnTrainerParameters(BaseParameters):
-    """Trainer params"""
+    """Trainer params."""
 
     solver: str = "saga"
     penalty: str = "l1"
@@ -136,13 +137,12 @@ def sklearn_evaluator(
     model: ClassifierMixin,
 ) -> float:
     """Calculate accuracy score with classifier."""
-
     test_acc = model.score(x_test.reshape((x_test.shape[0], -1)), y_test)
     return test_acc
 
 
 class DeploymentTriggerParameters(BaseParameters):
-    """Parameters that are used to trigger the deployment"""
+    """Parameters that are used to trigger the deployment."""
 
     min_accuracy: float
 
@@ -153,8 +153,9 @@ def deployment_trigger(
     params: DeploymentTriggerParameters,
 ) -> bool:
     """Implements a simple model deployment trigger that looks at the
-    input model accuracy and decides if it is good enough to deploy"""
-
+    input model accuracy and decides if it is good enough to deploy
+    .
+    """
     return accuracy > params.min_accuracy
 
 
@@ -178,8 +179,7 @@ class SeldonDeploymentLoaderStepParameters(BaseParameters):
 def prediction_service_loader(
     params: SeldonDeploymentLoaderStepParameters,
 ) -> SeldonDeploymentService:
-    """Get the prediction service started by the deployment pipeline"""
-
+    """Get the prediction service started by the deployment pipeline."""
     model_deployer = SeldonModelDeployer.get_active_model_deployer()
 
     services = model_deployer.find_model_server(
@@ -247,8 +247,7 @@ def predictor(
     service: SeldonDeploymentService,
     data: str,
 ) -> Output(predictions=np.ndarray):
-    """Run a inference request against a prediction service"""
-
+    """Run a inference request against a prediction service."""
     service.start(timeout=120)  # should be a NOP if already started
     response = service.predict(data)
     prediction = np.array(response["data"]["ndarray"])

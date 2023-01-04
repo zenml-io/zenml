@@ -16,8 +16,8 @@
 from typing import Any, Dict, List, Optional
 
 import pandas as pd
-from great_expectations.checkpoint.types.checkpoint_result import (  # type: ignore[import]
-    CheckpointResult,
+from great_expectations.checkpoint.types.checkpoint_result import (
+    CheckpointResult,  # type: ignore[import]
 )
 
 from zenml.integrations.great_expectations.data_validators.ge_data_validator import (

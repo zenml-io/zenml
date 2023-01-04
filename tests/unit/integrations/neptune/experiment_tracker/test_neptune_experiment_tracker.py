@@ -81,7 +81,8 @@ def test_neptune_experiment_tracker_attributes(
     neptune_experiment_tracker,
 ) -> None:
     """Tests that the basic attributes of the neptune experiment tracker are set
-    correctly."""
+    correctly.
+    """
     assert (
         neptune_experiment_tracker.type == StackComponentType.EXPERIMENT_TRACKER
     )

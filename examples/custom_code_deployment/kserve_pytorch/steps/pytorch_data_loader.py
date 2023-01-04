@@ -43,7 +43,7 @@ def build_data_loader(
 
 
 class PytorchDataLoaderParameters(BaseParameters):
-    """DataLoader params"""
+    """DataLoader params."""
 
     train_shuffle: bool = True
     train_batch_size: int = 4

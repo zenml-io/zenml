@@ -40,8 +40,8 @@ def caching_example_validation():
 
 def mlflow_deployment_example_validation():
     """Validates the stored pipeline run info after running the MLflow deployment
-    example."""
-
+    example.
+    """
     # Verify the example run was successful
     deployment_pipeline = get_pipeline("continuous_deployment_pipeline")
     assert deployment_pipeline is not None

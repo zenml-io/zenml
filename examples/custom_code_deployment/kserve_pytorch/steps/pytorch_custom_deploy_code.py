@@ -35,7 +35,6 @@ def pre_process(tensor: torch.Tensor) -> dict:
     Returns:
         dict: The processed data, in this case a dictionary with the tensor as value.
     """
-
     tansformation = torchvision.transforms.Normalize((0.1307,), (0.3081,))
     processed_tensor = tansformation(tensor.to(torch.float))
     processed_tensor = processed_tensor.unsqueeze(0)
@@ -43,7 +42,7 @@ def pre_process(tensor: torch.Tensor) -> dict:
 
 
 def post_process(prediction: torch.Tensor) -> str:
-    """Pre process the data
+    """Pre process the data.
 
     Args:
         tensor (torch.Tensor): The tensor to pre process
@@ -51,7 +50,6 @@ def post_process(prediction: torch.Tensor) -> str:
     Returns:
         str: The processed data, in this case the predicted digit.
     """
-
     classes = [str(i) for i in range(10)]
     prediction = softmax(prediction)
     maxindex = np.argmax(prediction.detach().numpy())

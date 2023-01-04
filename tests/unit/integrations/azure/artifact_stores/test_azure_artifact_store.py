@@ -29,7 +29,8 @@ from zenml.integrations.azure.flavors.azure_artifact_store_flavor import (
 
 def test_azure_artifact_store_attributes():
     """Tests that the basic attributes of the azure artifact store are set
-    correctly."""
+    correctly.
+    """
     artifact_store = AzureArtifactStore(
         name="",
         id=uuid4(),
@@ -47,7 +48,8 @@ def test_azure_artifact_store_attributes():
 
 def test_must_be_azure_path():
     """Checks that an azure artifact store can only be initialized with a valid
-    path."""
+    path.
+    """
     with pytest.raises(ArtifactStoreInterfaceError):
         AzureArtifactStore(
             name="",

@@ -50,8 +50,7 @@ class StubSecretsManagerConfig(BaseSecretsManagerConfig):
 
 
 def test_base_secrets_manager_prevents_secret_references():
-    """Tests that the secrets manager prevents all secret references"""
-
+    """Tests that the secrets manager prevents all secret references."""
     with pytest.raises(ValueError):
         StubSecretsManager(
             name="",

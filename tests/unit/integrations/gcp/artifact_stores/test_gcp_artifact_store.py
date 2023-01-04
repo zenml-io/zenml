@@ -44,7 +44,8 @@ def _get_gcp_artifact_store(**kwargs):
 
 def test_must_be_gcs_path():
     """Checks that a gcp artifact store can only be initialized with a gcs
-    path."""
+    path.
+    """
     with pytest.raises(ArtifactStoreInterfaceError):
         _get_gcp_artifact_store(path="/local/path")
 

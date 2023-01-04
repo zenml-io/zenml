@@ -26,12 +26,12 @@ def runner(request):
 
 
 def test_cli_command_defines_a_cli_group() -> None:
-    """Check that cli command defines a CLI group when invoked"""
+    """Check that cli command defines a CLI group when invoked."""
     assert isinstance(cli, ZenMLCLI)
 
 
 def test_cli(runner):
-    """Check that basic cli call works"""
+    """Check that basic cli call works."""
     result = runner.invoke(cli)
     assert not result.exception
     assert result.exit_code == 0

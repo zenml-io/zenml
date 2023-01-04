@@ -140,28 +140,6 @@ def get_or_create_dataset(
         return cast(str, dataset.get_params()["title"])
 
     raise StackComponentInterfaceError("No active annotator.")
-    # if annotator and annotator._connection_available():
-    #     preexisting_dataset_list = [
-    #         dataset
-    #         for dataset in annotator.get_datasets()
-    #         if dataset.get_params()["title"] == config.dataset_name
-    #     ]
-    #     if (
-    #         not preexisting_dataset_list
-    #         and annotator
-    #         and annotator._connection_available()
-    #     ):
-    #         registered_dataset = annotator.register_dataset_for_annotation(
-    #             config
-    #         )
-    #     elif preexisting_dataset_list:
-    #         return cast(str, preexisting_dataset_list[0].get_params()["title"])
-    #     else:
-    #         raise StackComponentInterfaceError("No active annotator.")
-
-    #     return cast(str, registered_dataset.get_params()["title"])
-    # else:
-    #     raise StackComponentInterfaceError("No active annotator.")
 
 
 @step(enable_cache=False)
