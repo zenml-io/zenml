@@ -259,7 +259,6 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             ValueError: If the URL is invalid or the SQL driver is not
                 supported.
         """
-        # flake8: noqa: C901
         url = values.get("url")
         if url is None:
             return values
@@ -1378,7 +1377,7 @@ class SqlZenStore(BaseZenStore):
             .where(StackComponentSchema.name == name)
             .where(StackComponentSchema.project_id == project_id)
             .where(StackComponentSchema.type == component_type)
-            .where(StackComponentSchema.is_shared == True)
+            .where(StackComponentSchema.is_shared is True)
         ).first()
         if existing_shared_component is not None:
             raise StackComponentExistsError(

@@ -131,7 +131,7 @@ class EvidentlyDataValidator(BaseDataValidator):
         class with Evidently options
         * a dictionary with kwargs used as parameters for the option instance
 
-        Example:
+        Example:-
 
         ```python
             options = [

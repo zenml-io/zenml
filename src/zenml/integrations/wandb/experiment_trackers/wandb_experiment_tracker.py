@@ -51,7 +51,7 @@ class WandbExperimentTracker(BaseExperimentTracker):
 
     @property
     def settings_class(self) -> Optional[Type["BaseSettings"]]:
-        """settings class for the Wandb experiment tracker.
+        """Settings class for the Wandb experiment tracker.
 
         Returns:
             The settings class.

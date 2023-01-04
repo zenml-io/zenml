@@ -428,7 +428,7 @@ def track_event(
 def parametrized(
     dec: Callable[..., Callable[..., Any]]
 ) -> Callable[..., Callable[[Callable[..., Any]], Callable[..., Any]]]:
-    """This is a meta-decorator, that is, a decorator for decorators.
+    """A meta-decorator, that is, a decorator for decorators.
 
     As a decorator is a function, it actually works as a regular decorator
     with arguments.

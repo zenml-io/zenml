@@ -149,7 +149,6 @@ def up(
         image: A custom Docker image to use for the server, when the
             `--docker` flag is set.
     """
-    # flake8: noqa: C901
     with event_handler(
         AnalyticsEvent.ZENML_SERVER_STARTED
     ) as analytics_handler:

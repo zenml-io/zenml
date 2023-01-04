@@ -94,7 +94,6 @@ class DeepchecksDataValidator(BaseDataValidator):
         )
         return tabular_checks, vision_checks
 
-    # flake8: noqa: C901
     @classmethod
     def _create_and_run_check_suite(
         cls,
