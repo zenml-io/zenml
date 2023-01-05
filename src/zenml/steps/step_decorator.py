@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Step decorator function."""
 
+import inspect
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -36,6 +37,7 @@ from zenml.steps.utils import (
     PARAM_OUTPUT_ARTIFACTS,
     PARAM_OUTPUT_MATERIALIZERS,
     PARAM_SETTINGS,
+    PARAM_SOURCE_CODE,
     PARAM_STEP_NAME,
     PARAM_STEP_OPERATOR,
     STEP_INNER_FUNC_NAME,
@@ -146,6 +148,7 @@ def step(
                     PARAM_OUTPUT_MATERIALIZERS: output_materializers,
                     PARAM_SETTINGS: settings,
                     PARAM_EXTRA_OPTIONS: extra,
+                    PARAM_SOURCE_CODE: inspect.getsource(func),
                 },
                 "__module__": func.__module__,
                 "__doc__": func.__doc__,

@@ -121,6 +121,15 @@ class StepView:
         return self.step_configuration.docstring
 
     @property
+    def source_code(self) -> Optional[str]:
+        """Source code of the step function or class.
+
+        Returns:
+            The source code of the step function or class.
+        """
+        return self.step_configuration.source_code
+
+    @property
     def parameters(self) -> Dict[str, str]:
         """The parameters used to run this step.
 

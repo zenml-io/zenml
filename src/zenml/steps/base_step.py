@@ -62,6 +62,7 @@ from zenml.steps.utils import (
     PARAM_OUTPUT_ARTIFACTS,
     PARAM_OUTPUT_MATERIALIZERS,
     PARAM_SETTINGS,
+    PARAM_SOURCE_CODE,
     PARAM_STEP_NAME,
     PARAM_STEP_OPERATOR,
     parse_return_type_annotations,
@@ -260,6 +261,7 @@ class BaseStep(metaclass=BaseStepMeta):
 
         kwargs = {**self.INSTANCE_CONFIGURATION, **kwargs}
         name = kwargs.pop(PARAM_STEP_NAME, None) or self.__class__.__name__
+        source_code = kwargs.pop(PARAM_SOURCE_CODE, None)
 
         # This value is only used in `BaseStep.__created_by_functional_api()`
         kwargs.pop(PARAM_CREATED_BY_FUNCTIONAL_API, None)
@@ -288,7 +290,10 @@ class BaseStep(metaclass=BaseStepMeta):
         )
 
         self._configuration = PartialStepConfiguration(
-            name=name, enable_cache=enable_cache, docstring=self.__doc__
+            name=name,
+            enable_cache=enable_cache,
+            docstring=self.__doc__,
+            source_code=source_code,
         )
         self._apply_class_configuration(kwargs)
         self._verify_and_apply_init_params(*args, **kwargs)
