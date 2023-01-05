@@ -139,7 +139,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
         self._configuration = PipelineConfiguration(
             name=self.__class__.__name__,
-            enable_cache=kwargs.pop(PARAM_ENABLE_CACHE, True),
+            enable_cache=kwargs.pop(PARAM_ENABLE_CACHE, None),
         )
         self._apply_class_configuration(kwargs)
 
@@ -156,7 +156,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         return self.configuration.name
 
     @property
-    def enable_cache(self) -> bool:
+    def enable_cache(self) -> Optional[bool]:
         """If caching is enabled for the pipeline.
 
         Returns:
@@ -504,7 +504,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             )
             caching_status = (
                 "enabled"
-                if pipeline_deployment.pipeline.enable_cache
+                if pipeline_deployment.pipeline.enable_cache is not False
                 else "disabled"
             )
             logger.info(

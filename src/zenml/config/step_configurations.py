@@ -73,7 +73,6 @@ class PartialStepConfiguration(StepConfigurationUpdate):
     """Class representing a partial step configuration."""
 
     name: str
-    enable_cache: bool
     docstring: Optional[str] = None
     caching_parameters: Mapping[str, Any] = {}
     inputs: Mapping[str, PartialArtifactConfiguration] = {}

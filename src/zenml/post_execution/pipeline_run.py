@@ -147,12 +147,14 @@ class PipelineRunView:
         return cast(Dict[str, Any], extra)
 
     @property
-    def enable_cache(self) -> bool:
+    def enable_cache(self) -> Optional[bool]:
         """Returns whether caching is enabled for this pipeline run.
 
         Returns:
             True if caching is enabled for this pipeline run.
         """
+        if "enable_cache" not in self.pipeline_configuration:
+            return None
         enable_cache = self.pipeline_configuration["enable_cache"]
         return cast(bool, enable_cache)
 
