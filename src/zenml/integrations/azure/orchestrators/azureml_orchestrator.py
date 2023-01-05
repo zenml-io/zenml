@@ -14,12 +14,12 @@
 """Implementation of the AzureML orchestrator."""
 
 import os
+import webbrowser
 from typing import TYPE_CHECKING, Optional, Type, cast
 
-import sagemaker
-from sagemaker.workflow.execution_variables import ExecutionVariables
-from sagemaker.workflow.pipeline import Pipeline
-from sagemaker.workflow.steps import ProcessingStep
+from azure.ai.ml import MLClient, command, dsl
+from azure.ai.ml.entities import Environment
+from azure.identity import AzureCliCredential
 
 from zenml.config.base_settings import BaseSettings
 from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
@@ -31,6 +31,7 @@ from zenml.integrations.azure.flavors.azureml_orchestrator_flavor import (
 from zenml.logger import get_logger
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
+from zenml.utils.source_utils import get_source_root_path
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
@@ -117,73 +118,70 @@ class AzureMLOrchestrator(BaseOrchestrator):
                 "and the pipeline will be run immediately."
             )
 
+        credential = AzureCliCredential()
+        ml_client = MLClient.from_config(credential=credential)
+        # get the compute target to use to run our pipeline
+        # can be single node or cluster
+        cpu_compute_target = "cpu-cluster"
+        # cpu_cluster = ml_client.compute.get(cpu_compute_target)
+
+        # get/create the environment that will be used to run each step of the pipeline
+        # each step can have its own environment, or they can all use the same one
+        # Here you specify your dependencies etc.
+        # This can be a Docker image.
+        custom_env_name = "zenml-test-env"
+        source_directory = get_source_root_path()
         orchestrator_run_name = get_orchestrator_run_name(
             pipeline_name=deployment.pipeline.name
         ).replace("_", "-")
 
-        session = sagemaker.Session(default_bucket=self.config.bucket)
-        image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
+        pipeline_job_env = Environment(
+            name=custom_env_name,
+            image="zenmlazuretest.azurecr.io/zenml@sha256:972ffa104683ace512f76216d234650d9ab02e94c38e33adeedcd11a2e8d64d3",
+        )
+        pipeline_job_env = ml_client.environments.create_or_update(
+            pipeline_job_env
+        )
 
-        sagemaker_steps = []
+        steps = []
         for step_name, step in deployment.steps.items():
-            command = StepEntrypointConfiguration.get_entrypoint_command()
+            container_command = (
+                StepEntrypointConfiguration.get_entrypoint_command()
+            )
             arguments = StepEntrypointConfiguration.get_entrypoint_arguments(
                 step_name=step_name
             )
-            entrypoint = command + arguments
+            entrypoint = container_command + arguments
 
-            step_settings = cast(
-                SagemakerOrchestratorSettings, self.get_settings(step)
+            job = command(
+                environment=pipeline_job_env,
+                compute=cpu_compute_target,
+                command=" ".join(entrypoint),
+                experiment_name=orchestrator_run_name,
+                display_name=orchestrator_run_name,
+                code=source_directory,
             )
-            processor_role = (
-                step_settings.processor_role or self.config.execution_role
-            )
+            steps.append(job)
 
-            kwargs = (
-                {"tags": [step_settings.processor_tags]}
-                if step_settings.processor_tags
-                else {}
-            )
-
-            processor = sagemaker.processing.Processor(
-                role=processor_role,
-                image_uri=image_name,
-                instance_count=1,
-                sagemaker_session=session,
-                instance_type=step_settings.instance_type,
-                entrypoint=entrypoint,
-                base_job_name=orchestrator_run_name,
-                env={
-                    ENV_ZENML_SAGEMAKER_RUN_ID: ExecutionVariables.PIPELINE_EXECUTION_ARN,
-                },
-                volume_size_in_gb=step_settings.volume_size_in_gb,
-                max_runtime_in_seconds=step_settings.max_runtime_in_seconds,
-                **kwargs,
-            )
-
-            sagemaker_step = ProcessingStep(
-                name=step.config.name,
-                processor=processor,
-                depends_on=step.spec.upstream_steps,
-            )
-            sagemaker_steps.append(sagemaker_step)
-
-        # construct the pipeline from the sagemaker_steps
-        pipeline = Pipeline(
-            name=orchestrator_run_name,
-            steps=sagemaker_steps,
-            sagemaker_session=session,
+        @dsl.pipeline(
+            compute=cpu_compute_target,
         )
+        def test_pipeline():
+            steps[0]()
 
-        pipeline.create(role_arn=self.config.execution_role)
-        pipeline_execution = pipeline.start()
+        pipeline = test_pipeline()
 
-        # mainly for testing purposes, we wait for the pipeline to finish
-        if self.config.synchronous:
-            logger.info(
-                "Executing synchronously. Waiting for pipeline to finish..."
-            )
-            pipeline_execution.wait(
-                delay=POLLING_DELAY, max_attempts=MAX_POLLING_ATTEMPTS
-            )
-            logger.info("Pipeline completed successfully.")
+        pipeline_job = ml_client.jobs.create_or_update(
+            pipeline,
+            experiment_name="manual_test",
+        )
+        # open the pipeline in web browser
+        webbrowser.open(pipeline_job.studio_url)
+
+        # # mainly for testing purposes, we wait for the pipeline to finish
+        # if self.config.synchronous:
+        #     logger.info(
+        #         "Executing synchronously. Waiting for pipeline to finish..."
+        #     )
+        #     # TODO: implement a synchronous execution
+        #     logger.info("Pipeline completed successfully.")
