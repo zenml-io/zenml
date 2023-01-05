@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Initialization of the Label Studio config generators submodule."""
 
-from zenml.integrations.label_studio.label_config_generators.label_config_generators import (
+from zenml.integrations.label_studio.label_config_generators import (
     TASK_TO_FILENAME_REFERENCE_MAPPING,
     generate_image_classification_label_config,
 )
