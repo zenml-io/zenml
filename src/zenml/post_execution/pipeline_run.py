@@ -22,6 +22,7 @@ from zenml.client import Client
 from zenml.enums import ExecutionStatus
 from zenml.logger import get_apidocs_link, get_logger
 from zenml.models import PipelineRunResponseModel
+from zenml.pipelines.base_pipeline import PARAM_ENABLE_CACHE
 from zenml.post_execution.step import StepView
 
 logger = get_logger(__name__)
@@ -153,9 +154,9 @@ class PipelineRunView:
         Returns:
             True if caching is enabled for this pipeline run.
         """
-        if "enable_cache" not in self.pipeline_configuration:
+        if PARAM_ENABLE_CACHE not in self.pipeline_configuration:
             return None
-        enable_cache = self.pipeline_configuration["enable_cache"]
+        enable_cache = self.pipeline_configuration[PARAM_ENABLE_CACHE]
         return cast(bool, enable_cache)
 
     @property
