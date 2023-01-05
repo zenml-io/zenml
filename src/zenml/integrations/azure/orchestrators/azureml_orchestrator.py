@@ -21,6 +21,13 @@ from azure.ai.ml import MLClient, command, dsl
 from azure.ai.ml.entities import Environment
 from azure.identity import AzureCliCredential
 
+from zenml.constants import (
+    DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE,
+    ENV_ZENML_CONFIG_PATH,
+)
+from zenml.utils.pipeline_docker_image_builder import (
+    DOCKER_IMAGE_ZENML_CONFIG_DIR,
+)
 from zenml.config.base_settings import BaseSettings
 from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
 from zenml.entrypoints import StepEntrypointConfiguration
@@ -39,8 +46,7 @@ if TYPE_CHECKING:
 
 
 ENV_ZENML_AZUREML_RUN_ID = "ZENML_AZUREML_RUN_ID"
-# MAX_POLLING_ATTEMPTS = 100
-# POLLING_DELAY = 30
+ENV_ACTIVE_DEPLOYMENT = "ZENML_ACTIVE_DEPLOYMENT"
 
 logger = get_logger(__name__)
 
@@ -77,6 +83,85 @@ class AzureMLOrchestrator(BaseOrchestrator):
                 f"{ENV_ZENML_AZUREML_RUN_ID}."
             )
 
+    def _prepare_environment(
+        self,
+        docker_settings: "DockerSettings",
+        run_name: str,
+        environment_name: Optional[str] = None,
+    ) -> Environment:
+        """Prepares an AzureML environment.
+
+        Args:
+            docker_settings: The docker settings to use.
+            run_name: The name of the run.
+            environment_name: The name of the environment.
+
+        Returns:
+            The prepared environment.
+        """
+        docker_image_builder = PipelineDockerImageBuilder()
+        requirements_files = docker_image_builder._gather_requirements_files(
+            docker_settings=docker_settings,
+            stack=Client().active_stack,
+        )
+        requirements = list(
+            itertools.chain.from_iterable(
+                r[1].split("\n") for r in requirements_files
+            )
+        )
+        requirements.append(f"zenml=={zenml.__version__}")
+        logger.info(
+            "Using requirements for AzureML step operator environment: %s",
+            requirements,
+        )
+        if environment_name:
+            environment = Environment.get(
+                workspace=workspace, name=environment_name
+            )
+            if not environment.python.conda_dependencies:
+                environment.python.conda_dependencies = (
+                    CondaDependencies.create(
+                        python_version=ZenMLEnvironment.python_version()
+                    )
+                )
+
+            for requirement in requirements:
+                environment.python.conda_dependencies.add_pip_package(
+                    requirement
+                )
+        else:
+            environment = Environment(name=f"zenml-{run_name}")
+            environment.python.conda_dependencies = CondaDependencies.create(
+                pip_packages=requirements,
+                python_version=ZenMLEnvironment.python_version(),
+            )
+
+            if docker_settings.parent_image:
+                # replace the default azure base image
+                environment.docker.base_image = docker_settings.parent_image
+
+        environment_variables = {
+            "ENV_ZENML_PREVENT_PIPELINE_EXECUTION": "True",
+        }
+        # set credentials to access azure storage
+        for key in [
+            "AZURE_STORAGE_ACCOUNT_KEY",
+            "AZURE_STORAGE_ACCOUNT_NAME",
+            "AZURE_STORAGE_CONNECTION_STRING",
+            "AZURE_STORAGE_SAS_TOKEN",
+        ]:
+            value = os.getenv(key)
+            if value:
+                environment_variables[key] = value
+
+        environment_variables[
+            ENV_ZENML_CONFIG_PATH
+        ] = f"./{DOCKER_IMAGE_ZENML_CONFIG_DIR}"
+        environment_variables.update(docker_settings.environment)
+
+        environment.environment_variables = environment_variables
+        return environment
+
     def prepare_pipeline_deployment(
         self, deployment: "PipelineDeployment", stack: "Stack"
     ) -> None:
@@ -86,10 +171,20 @@ class AzureMLOrchestrator(BaseOrchestrator):
             deployment: The pipeline deployment configuration.
             stack: The stack on which the pipeline will be deployed.
         """
-        # docker_image_builder = PipelineDockerImageBuilder()
-        # repo_digest = docker_image_builder.build_and_push_docker_image(
-        #     deployment=deployment, stack=stack
-        # )
+        steps_to_run = [
+            step
+            for step in deployment.steps.values()
+            if step.config.step_operator == self.name
+        ]
+        if not steps_to_run:
+            return
+
+        os.environ[ENV_ACTIVE_DEPLOYMENT] = deployment.yaml()
+
+        docker_image_builder = PipelineDockerImageBuilder()
+        repo_digest = docker_image_builder.build_and_push_docker_image(
+            deployment=deployment, stack=stack
+        )
         repo_digest = "zenmlazuretest.azurecr.io/zenml@sha256:972ffa104683ace512f76216d234650d9ab02e94c38e33adeedcd11a2e8d64d3"
         deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
 
@@ -139,6 +234,8 @@ class AzureMLOrchestrator(BaseOrchestrator):
             name=custom_env_name,
             image="zenmlazuretest.azurecr.io/zenml@sha256:972ffa104683ace512f76216d234650d9ab02e94c38e33adeedcd11a2e8d64d3",
         )
+        pipeline_job_env
+        breakpoint()
         pipeline_job_env = ml_client.environments.create_or_update(
             pipeline_job_env
         )
