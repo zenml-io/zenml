@@ -35,7 +35,7 @@ class PipelineDeployment(StrictBaseModel):
     pipeline_id: Optional[UUID] = None
     steps: Dict[str, Step] = {}
     zenml_version: str = zenml.__version__
-    environment: Dict[str, str] = {}
+    client_environment: Dict[str, str] = {}
 
     def add_extra(self, key: str, value: Any) -> None:
         """Adds an extra key-value pair to the pipeline configuration.

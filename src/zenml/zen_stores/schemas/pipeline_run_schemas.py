@@ -90,7 +90,12 @@ class PipelineRunSchema(NamedSchema, table=True):
     pipeline_configuration: str = Field(sa_column=Column(TEXT, nullable=False))
     num_steps: Optional[int]
     zenml_version: str
-    environment: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
+    client_environment: Optional[str] = Field(
+        sa_column=Column(TEXT, nullable=True)
+    )
+    orchestrator_environment: Optional[str] = Field(
+        sa_column=Column(TEXT, nullable=True)
+    )
     git_sha: Optional[str] = Field(nullable=True)
 
     step_runs: List["StepRunSchema"] = Relationship(
@@ -111,7 +116,8 @@ class PipelineRunSchema(NamedSchema, table=True):
             The created `PipelineRunSchema`.
         """
         configuration = json.dumps(request.pipeline_configuration)
-        environment = json.dumps(request.environment)
+        client_environment = json.dumps(request.client_environment)
+        orchestrator_environment = json.dumps(request.orchestrator_environment)
 
         return cls(
             id=request.id,
@@ -128,7 +134,8 @@ class PipelineRunSchema(NamedSchema, table=True):
             num_steps=request.num_steps,
             git_sha=request.git_sha,
             zenml_version=request.zenml_version,
-            environment=environment,
+            client_environment=client_environment,
+            orchestrator_environment=orchestrator_environment,
         )
 
     def to_model(
@@ -139,7 +146,16 @@ class PipelineRunSchema(NamedSchema, table=True):
         Returns:
             The created `PipelineRunResponseModel`.
         """
-        environment = json.loads(self.environment) if self.environment else {}
+        client_environment = (
+            json.loads(self.client_environment)
+            if self.client_environment
+            else {}
+        )
+        orchestrator_environment = (
+            json.loads(self.orchestrator_environment)
+            if self.orchestrator_environment
+            else {}
+        )
 
         if _block_recursion:
             return PipelineRunResponseModel(
@@ -157,7 +173,8 @@ class PipelineRunSchema(NamedSchema, table=True):
                 num_steps=self.num_steps,
                 git_sha=self.git_sha,
                 zenml_version=self.zenml_version,
-                environment=environment,
+                client_environment=client_environment,
+                orchestrator_environment=orchestrator_environment,
                 created=self.created,
                 updated=self.updated,
             )
@@ -182,7 +199,8 @@ class PipelineRunSchema(NamedSchema, table=True):
                 num_steps=self.num_steps,
                 git_sha=self.git_sha,
                 zenml_version=self.zenml_version,
-                environment=environment,
+                client_environment=client_environment,
+                orchestrator_environment=orchestrator_environment,
                 created=self.created,
                 updated=self.updated,
             )
