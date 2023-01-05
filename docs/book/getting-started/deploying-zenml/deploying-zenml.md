@@ -9,13 +9,13 @@ easy-to-use abstraction layer on top of their infrastructure and environments,
 but also needs to act as a collaborative metadata store. To get a complete overview of
 the architecture of ZenML, read [here](../architecture-diagrams.md).
 
-As any other service however, ZenML needs to be deployed first in order to be able
-to use it. This section walks us through the various scenarios of deploying ZenML,
+As with any other service, however, ZenML needs to be deployed first in order to be able
+to use it. This section covers the various scenarios when it comes to deploying ZenML,
 from starting locally to transitioning to the cloud.
 
-**Tip**: In order to skip deploying ZenML completely, and get running
-quickly, you can get an early version of the [ZenML Cloud](https://zenml.io/cloud)
-to get a free and managed ZenML server!
+**Tip**: In order to skip deploying ZenML completely, or if you just want to get up and running
+quickly, you can use an early version of the [ZenML Cloud](https://zenml.io/cloud)
+where we'll give you a free and managed ZenML server!
 
 ## The components of a ZenML Deployment
 
@@ -94,7 +94,7 @@ your machine as well as from all stack components that need access to the server
 
  **Tip**: In order to quickly get access to a ZenML server deployed in the cloud
 without the hassle of setting it up and maintaining it, you can get a free, early version
-of the [ZenML Cloud](https://zenml.io/cloud) by filling out a form instead!
+of the [ZenML Cloud](https://zenml.io/cloud) by filling out this form instead!
 
 ### Scenario 3: Server and Database hosted on cloud
 
