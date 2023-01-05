@@ -217,6 +217,7 @@ class StepLauncher:
             status=ExecutionStatus.RUNNING,
             pipeline_configuration=self._deployment.pipeline.dict(),
             num_steps=len(self._deployment.steps),
+            environment=self._deployment.environment,
         )
         return client.zen_store.get_or_create_run(pipeline_run)
 

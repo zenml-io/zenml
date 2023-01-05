@@ -118,7 +118,7 @@ class Environment(metaclass=SingletonMetaClass):
         return self.has_component(STEP_ENVIRONMENT_NAME)
 
     @staticmethod
-    def get_system_info() -> Dict[str, Any]:
+    def get_system_info() -> Dict[str, str]:
         """Information about the operating system.
 
         Returns:

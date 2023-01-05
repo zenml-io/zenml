@@ -2721,24 +2721,8 @@ class SqlZenStore(BaseZenStore):
                         f"'{pipeline_run.name}' as unlisted run."
                     )
 
-            configuration = json.dumps(pipeline_run.pipeline_configuration)
-
-            new_run = PipelineRunSchema(
-                id=pipeline_run.id,
-                name=pipeline_run.name,
-                orchestrator_run_id=pipeline_run.orchestrator_run_id,
-                stack_id=stack_id,
-                project_id=pipeline_run.project,
-                user_id=pipeline_run.user,
-                pipeline_id=pipeline_id,
-                status=pipeline_run.status,
-                pipeline_configuration=configuration,
-                num_steps=pipeline_run.num_steps,
-                git_sha=pipeline_run.git_sha,
-                zenml_version=pipeline_run.zenml_version,
-            )
-
             # Create the pipeline run
+            new_run = PipelineRunSchema.from_request(pipeline_run)
             session.add(new_run)
             session.commit()
 

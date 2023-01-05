@@ -166,6 +166,15 @@ class PipelineRunView:
         return self._model.zenml_version
 
     @property
+    def environment(self) -> Dict[str, str]:
+        """Environment that this pipeline run was performed in.
+
+        Returns:
+            The environment that this pipeline run was performed in.
+        """
+        return self._model.environment
+
+    @property
     def git_sha(self) -> Optional[str]:
         """Git commit SHA that this pipeline run was performed on.
 

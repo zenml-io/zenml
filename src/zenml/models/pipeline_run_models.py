@@ -90,6 +90,9 @@ class PipelineRunBaseModel(BaseModel):
         default=current_zenml_version,
         max_length=STR_FIELD_MAX_LENGTH,
     )
+    environment: Dict[str, str] = Field(
+        default={}, title="Runtime environment (OS, Python version, etc.)."
+    )
     git_sha: Optional[str] = Field(
         default_factory=get_git_sha, max_length=STR_FIELD_MAX_LENGTH
     )
