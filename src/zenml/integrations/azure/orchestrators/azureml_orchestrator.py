@@ -31,9 +31,6 @@ from zenml.integrations.azure.flavors.azureml_orchestrator_flavor import (
 from zenml.logger import get_logger
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
-from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilder,
-)
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
@@ -88,12 +85,12 @@ class AzureMLOrchestrator(BaseOrchestrator):
             deployment: The pipeline deployment configuration.
             stack: The stack on which the pipeline will be deployed.
         """
-        docker_image_builder = PipelineDockerImageBuilder()
-        repo_digest = docker_image_builder.build_and_push_docker_image(
-            deployment=deployment, stack=stack
-        )
+        # docker_image_builder = PipelineDockerImageBuilder()
+        # repo_digest = docker_image_builder.build_and_push_docker_image(
+        #     deployment=deployment, stack=stack
+        # )
+        repo_digest = "zenmlazuretest.azurecr.io/zenml@sha256:972ffa104683ace512f76216d234650d9ab02e94c38e33adeedcd11a2e8d64d3"
         deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
-        breakpoint()
 
     @property
     def settings_class(self) -> Optional[Type["BaseSettings"]]:
