@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the AzureML orchestrator."""
 
+import itertools
 import os
 import webbrowser
 from typing import TYPE_CHECKING, Optional, Type, cast
@@ -20,17 +21,13 @@ from typing import TYPE_CHECKING, Optional, Type, cast
 from azure.ai.ml import MLClient, command, dsl
 from azure.ai.ml.entities import Environment
 from azure.identity import AzureCliCredential
+from azureml.core.conda_dependencies import CondaDependencies
 
-from zenml.constants import (
-    DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE,
-    ENV_ZENML_CONFIG_PATH,
-)
-from zenml.utils.pipeline_docker_image_builder import (
-    DOCKER_IMAGE_ZENML_CONFIG_DIR,
-)
-from zenml.config.base_settings import BaseSettings
-from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
+import zenml
+from zenml.client import Client
+from zenml.constants import ENV_ZENML_CONFIG_PATH, ORCHESTRATOR_DOCKER_IMAGE_KEY
 from zenml.entrypoints import StepEntrypointConfiguration
+from zenml.environment import Environment as ZenMLEnvironment
 from zenml.integrations.azure.flavors.azureml_orchestrator_flavor import (
     AzureMLOrchestratorConfig,
     AzureMLOrchestratorSettings,
@@ -38,9 +35,15 @@ from zenml.integrations.azure.flavors.azureml_orchestrator_flavor import (
 from zenml.logger import get_logger
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
+from zenml.utils.pipeline_docker_image_builder import (
+    DOCKER_IMAGE_ZENML_CONFIG_DIR,
+    PipelineDockerImageBuilder,
+)
 from zenml.utils.source_utils import get_source_root_path
 
 if TYPE_CHECKING:
+    from zenml.config import DockerSettings
+    from zenml.config.base_settings import BaseSettings
     from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.stack import Stack
 
