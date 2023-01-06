@@ -20,7 +20,7 @@ How this guide is organized:
 - examples/ -> Quick examples to get going quick
 - quickstart
 - ZenBytes
-- ZenFiles
+- ZenML Projects
 - YouTube Channel
 
 # How to guides
@@ -65,7 +65,7 @@ How this guide is organized:
 - [Contributing Guide](../guidelines/contributing.md)
 
 ZenBytes -> A mlops course using ZenML?
-ZenFiles -> Production-ready pipelines (ZenTemplates?)
+ZenML Projects -> Production-ready pipelines (ZenTemplates?)
 ZenHacks
 YouTube Channel
 
