@@ -102,9 +102,13 @@ def test_update_model_works_with_none_exclusion():
 def test_template_generator_works():
     """Tests that the template generator works."""
 
+    class ChildTestModel(BaseModel):
+        c: int
+        d: str
+
     class TestModel(BaseModel):
         a: int
-        b: int
+        b: ChildTestModel
 
     template = pydantic_utils.TemplateGenerator(TestModel).run()
-    assert template == {"a": "int", "b": "int"}
+    assert template == {"a": "int", "b": {"c": "int", "d": "str"}}
