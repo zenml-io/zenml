@@ -1999,14 +1999,14 @@ FeastIntegration            (<a class="autorefs autorefs-internal" title="zenml.
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/feast/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">FeastIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Definition of Feast integration for ZenML.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Definition of Feast integration for ZenML.&quot;&quot;&quot;</span>
 
     <span class="n">NAME</span> <span class="o">=</span> <span class="n">FEAST</span>
     <span class="n">REQUIREMENTS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;feast[redis]~=0.26.0&quot;</span><span class="p">,</span> <span class="s2">&quot;redis-server&gt;=6.0.9&quot;</span><span class="p">]</span>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Feast integration.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Feast integration.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            List of stack component flavors for this integration.</span>
@@ -2067,7 +2067,7 @@ FeastIntegration            (<a class="autorefs autorefs-internal" title="zenml.
           <summary>Source code in <code>zenml/integrations/feast/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
-    <span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Feast integration.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Feast integration.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        List of stack component flavors for this integration.</span>
@@ -2181,11 +2181,11 @@ FeastFeatureStore            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/feast/feature_stores/feast_feature_store.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">FeastFeatureStore</span><span class="p">(</span><span class="n">BaseFeatureStore</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Class to interact with the Feast feature store.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class to interact with the Feast feature store.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FeastFeatureStoreConfig</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the `FeastFeatureStoreConfig` config.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `FeastFeatureStoreConfig` config.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The configuration.</span>
@@ -2193,7 +2193,7 @@ FeastFeatureStore            (<a class="autorefs autorefs-internal" title="zenml
         <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">FeastFeatureStoreConfig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_validate_connection</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Validates the connection to the feature store.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validates the connection to the feature store.</span>
 
 <span class="sd">        Raises:</span>
 <span class="sd">            ConnectionError: If the online component (Redis) is not available.</span>
@@ -2215,7 +2215,7 @@ FeastFeatureStore            (<a class="autorefs autorefs-internal" title="zenml
         <span class="n">features</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
         <span class="n">full_feature_names</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the historical features for training or batch scoring.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the historical features for training or batch scoring.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            entity_df: The entity DataFrame or entity name.</span>
@@ -2242,7 +2242,7 @@ FeastFeatureStore            (<a class="autorefs autorefs-internal" title="zenml
         <span class="n">features</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
         <span class="n">full_feature_names</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the latest online feature data.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the latest online feature data.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            entity_rows: The entity rows to retrieve.</span>
@@ -2265,7 +2265,7 @@ FeastFeatureStore            (<a class="autorefs autorefs-internal" title="zenml
         <span class="p">)</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">get_data_sources</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the data sources&#39; names.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the data sources&#39; names.</span>
 
 <span class="sd">        Raise:</span>
 <span class="sd">            ConnectionError: If the online component (Redis) is not available.</span>
@@ -2278,7 +2278,7 @@ FeastFeatureStore            (<a class="autorefs autorefs-internal" title="zenml
         <span class="k">return</span> <span class="p">[</span><span class="n">ds</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">ds</span> <span class="ow">in</span> <span class="n">fs</span><span class="o">.</span><span class="n">list_data_sources</span><span class="p">()]</span>
 
     <span class="k">def</span> <span class="nf">get_entities</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the entity names.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the entity names.</span>
 
 <span class="sd">        Raise:</span>
 <span class="sd">            ConnectionError: If the online component (Redis) is not available.</span>
@@ -2291,7 +2291,7 @@ FeastFeatureStore            (<a class="autorefs autorefs-internal" title="zenml
         <span class="k">return</span> <span class="p">[</span><span class="n">ds</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">ds</span> <span class="ow">in</span> <span class="n">fs</span><span class="o">.</span><span class="n">list_entities</span><span class="p">()]</span>
 
     <span class="k">def</span> <span class="nf">get_feature_services</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the feature service names.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the feature service names.</span>
 
 <span class="sd">        Raise:</span>
 <span class="sd">            ConnectionError: If the online component (Redis) is not available.</span>
@@ -2304,7 +2304,7 @@ FeastFeatureStore            (<a class="autorefs autorefs-internal" title="zenml
         <span class="k">return</span> <span class="p">[</span><span class="n">ds</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">ds</span> <span class="ow">in</span> <span class="n">fs</span><span class="o">.</span><span class="n">list_feature_services</span><span class="p">()]</span>
 
     <span class="k">def</span> <span class="nf">get_feature_views</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the feature view names.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the feature view names.</span>
 
 <span class="sd">        Raise:</span>
 <span class="sd">            ConnectionError: If the online component (Redis) is not available.</span>
@@ -2317,7 +2317,7 @@ FeastFeatureStore            (<a class="autorefs autorefs-internal" title="zenml
         <span class="k">return</span> <span class="p">[</span><span class="n">ds</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">ds</span> <span class="ow">in</span> <span class="n">fs</span><span class="o">.</span><span class="n">list_feature_views</span><span class="p">()]</span>
 
     <span class="k">def</span> <span class="nf">get_project</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the project name.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the project name.</span>
 
 <span class="sd">        Raise:</span>
 <span class="sd">            ConnectionError: If the online component (Redis) is not available.</span>
@@ -2329,7 +2329,7 @@ FeastFeatureStore            (<a class="autorefs autorefs-internal" title="zenml
         <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">fs</span><span class="o">.</span><span class="n">project</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">get_registry</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Registry</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the feature store registry.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the feature store registry.</span>
 
 <span class="sd">        Raise:</span>
 <span class="sd">            ConnectionError: If the online component (Redis) is not available.</span>
@@ -2341,7 +2341,7 @@ FeastFeatureStore            (<a class="autorefs autorefs-internal" title="zenml
         <span class="k">return</span> <span class="n">fs</span><span class="o">.</span><span class="n">registry</span>
 
     <span class="k">def</span> <span class="nf">get_feast_version</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the version of Feast used.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the version of Feast used.</span>
 
 <span class="sd">        Raise:</span>
 <span class="sd">            ConnectionError: If the online component (Redis) is not available.</span>
@@ -2451,7 +2451,7 @@ FeastFeatureStore            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/feast/feature_stores/feast_feature_store.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_data_sources</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Returns the data sources&#39; names.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the data sources&#39; names.</span>
 
 <span class="sd">    Raise:</span>
 <span class="sd">        ConnectionError: If the online component (Redis) is not available.</span>
@@ -2517,7 +2517,7 @@ FeastFeatureStore            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/feast/feature_stores/feast_feature_store.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_entities</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Returns the entity names.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the entity names.</span>
 
 <span class="sd">    Raise:</span>
 <span class="sd">        ConnectionError: If the online component (Redis) is not available.</span>
@@ -2583,7 +2583,7 @@ FeastFeatureStore            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/feast/feature_stores/feast_feature_store.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_feast_version</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns the version of Feast used.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the version of Feast used.</span>
 
 <span class="sd">    Raise:</span>
 <span class="sd">        ConnectionError: If the online component (Redis) is not available.</span>
@@ -2648,7 +2648,7 @@ FeastFeatureStore            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/feast/feature_stores/feast_feature_store.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_feature_services</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Returns the feature service names.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the feature service names.</span>
 
 <span class="sd">    Raise:</span>
 <span class="sd">        ConnectionError: If the online component (Redis) is not available.</span>
@@ -2714,7 +2714,7 @@ FeastFeatureStore            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/feast/feature_stores/feast_feature_store.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_feature_views</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Returns the feature view names.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the feature view names.</span>
 
 <span class="sd">    Raise:</span>
 <span class="sd">        ConnectionError: If the online component (Redis) is not available.</span>
@@ -2816,7 +2816,7 @@ FeastFeatureStore            (<a class="autorefs autorefs-internal" title="zenml
     <span class="n">features</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
     <span class="n">full_feature_names</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns the historical features for training or batch scoring.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the historical features for training or batch scoring.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        entity_df: The entity DataFrame or entity name.</span>
@@ -2927,7 +2927,7 @@ FeastFeatureStore            (<a class="autorefs autorefs-internal" title="zenml
     <span class="n">features</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
     <span class="n">full_feature_names</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Returns the latest online feature data.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the latest online feature data.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        entity_rows: The entity rows to retrieve.</span>
@@ -3003,7 +3003,7 @@ FeastFeatureStore            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/feast/feature_stores/feast_feature_store.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_project</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns the project name.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the project name.</span>
 
 <span class="sd">    Raise:</span>
 <span class="sd">        ConnectionError: If the online component (Redis) is not available.</span>
@@ -3068,7 +3068,7 @@ FeastFeatureStore            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/feast/feature_stores/feast_feature_store.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_registry</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Registry</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns the feature store registry.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the feature store registry.</span>
 
 <span class="sd">    Raise:</span>
 <span class="sd">        ConnectionError: If the online component (Redis) is not available.</span>
@@ -3197,7 +3197,7 @@ FeastFeatureStoreConfig            (<a class="autorefs autorefs-internal" title=
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/feast/flavors/feast_feature_store_flavor.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">FeastFeatureStoreConfig</span><span class="p">(</span><span class="n">BaseFeatureStoreConfig</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Config for Feast feature store.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Config for Feast feature store.&quot;&quot;&quot;</span>
 
     <span class="n">online_host</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;localhost&quot;</span>
     <span class="n">online_port</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">6379</span>
@@ -3205,7 +3205,7 @@ FeastFeatureStoreConfig            (<a class="autorefs autorefs-internal" title=
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_local</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Checks if this stack component is running locally.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if this stack component is running locally.</span>
 
 <span class="sd">        This designation is used to determine if the stack component can be</span>
 <span class="sd">        shared with other users or if it is only usable on the local host.</span>
@@ -3307,11 +3307,11 @@ FeastFeatureStoreFlavor            (<a class="autorefs autorefs-internal" title=
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/feast/flavors/feast_feature_store_flavor.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">FeastFeatureStoreFlavor</span><span class="p">(</span><span class="n">BaseFeatureStoreFlavor</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Feast Feature store flavor.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Feast Feature store flavor.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The name of the flavor.</span>
@@ -3320,17 +3320,17 @@ FeastFeatureStoreFlavor            (<a class="autorefs autorefs-internal" title=
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">FeastFeatureStoreConfig</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns FeastFeatureStoreConfig config class.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns FeastFeatureStoreConfig config class.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">                The config class.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="sd">&quot;&quot;&quot;Config class for this flavor.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Config class for this flavor.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">FeastFeatureStoreConfig</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;FeastFeatureStore&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>

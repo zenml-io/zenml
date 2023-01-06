@@ -1723,14 +1723,14 @@ PytorchLightningIntegration            (<a class="autorefs autorefs-internal" ti
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/pytorch_lightning/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PytorchLightningIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Definition of PyTorch Lightning integration for ZenML.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Definition of PyTorch Lightning integration for ZenML.&quot;&quot;&quot;</span>
 
     <span class="n">NAME</span> <span class="o">=</span> <span class="n">PYTORCH_L</span>
     <span class="n">REQUIREMENTS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;pytorch_lightning&quot;</span><span class="p">]</span>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Activates the integration.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Activates the integration.&quot;&quot;&quot;</span>
         <span class="kn">from</span> <span class="nn">zenml.integrations.pytorch_lightning</span> <span class="kn">import</span> <span class="n">materializers</span>  <span class="c1"># noqa</span>
 </code></pre></div>
         </details>
@@ -1770,7 +1770,7 @@ PytorchLightningIntegration            (<a class="autorefs autorefs-internal" ti
           <summary>Source code in <code>zenml/integrations/pytorch_lightning/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span> <span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Activates the integration.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Activates the integration.&quot;&quot;&quot;</span>
     <span class="kn">from</span> <span class="nn">zenml.integrations.pytorch_lightning</span> <span class="kn">import</span> <span class="n">materializers</span>  <span class="c1"># noqa</span>
 </code></pre></div>
         </details>
@@ -1870,13 +1870,13 @@ PyTorchLightningMaterializer            (<a class="autorefs autorefs-internal" t
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/pytorch_lightning/materializers/pytorch_lightning_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PyTorchLightningMaterializer</span><span class="p">(</span><span class="n">BaseMaterializer</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Materializer to read/write PyTorch models.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Materializer to read/write PyTorch models.&quot;&quot;&quot;</span>
 
     <span class="n">ASSOCIATED_TYPES</span> <span class="o">=</span> <span class="p">(</span><span class="n">Trainer</span><span class="p">,)</span>
     <span class="n">ASSOCIATED_ARTIFACT_TYPE</span> <span class="o">=</span> <span class="n">ArtifactType</span><span class="o">.</span><span class="n">MODEL</span>
 
     <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Trainer</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Reads and returns a PyTorch Lightning trainer.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reads and returns a PyTorch Lightning trainer.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            data_type: The type of the trainer to load.</span>
@@ -1890,7 +1890,7 @@ PyTorchLightningMaterializer            (<a class="autorefs autorefs-internal" t
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trainer</span><span class="p">:</span> <span class="n">Trainer</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Writes a PyTorch Lightning trainer.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Writes a PyTorch Lightning trainer.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            trainer: A PyTorch Lightning trainer object.</span>
@@ -1965,7 +1965,7 @@ PyTorchLightningMaterializer            (<a class="autorefs autorefs-internal" t
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/pytorch_lightning/materializers/pytorch_lightning_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Trainer</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Reads and returns a PyTorch Lightning trainer.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reads and returns a PyTorch Lightning trainer.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        data_type: The type of the trainer to load.</span>
@@ -2021,7 +2021,7 @@ PyTorchLightningMaterializer            (<a class="autorefs autorefs-internal" t
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/pytorch_lightning/materializers/pytorch_lightning_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trainer</span><span class="p">:</span> <span class="n">Trainer</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Writes a PyTorch Lightning trainer.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Writes a PyTorch Lightning trainer.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        trainer: A PyTorch Lightning trainer object.</span>

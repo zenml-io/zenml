@@ -3349,7 +3349,7 @@ GcpIntegration            (<a class="autorefs autorefs-internal" title="zenml.in
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/gcp/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">GcpIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Definition of Google Cloud Platform integration for ZenML.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Definition of Google Cloud Platform integration for ZenML.&quot;&quot;&quot;</span>
 
     <span class="n">NAME</span> <span class="o">=</span> <span class="n">GCP</span>
     <span class="n">REQUIREMENTS</span> <span class="o">=</span> <span class="p">[</span>
@@ -3367,7 +3367,7 @@ GcpIntegration            (<a class="autorefs autorefs-internal" title="zenml.in
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the GCP integration.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the GCP integration.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            List of stack component flavors for this integration.</span>
@@ -3438,7 +3438,7 @@ GcpIntegration            (<a class="autorefs autorefs-internal" title="zenml.in
           <summary>Source code in <code>zenml/integrations/gcp/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
-    <span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the GCP integration.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the GCP integration.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        List of stack component flavors for this integration.</span>
@@ -3555,13 +3555,13 @@ GCPArtifactStore            (<a class="autorefs autorefs-internal" title="zenml.
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/gcp/artifact_stores/gcp_artifact_store.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">GCPArtifactStore</span><span class="p">(</span><span class="n">BaseArtifactStore</span><span class="p">,</span> <span class="n">AuthenticationMixin</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Artifact Store for Google Cloud Storage based artifacts.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Artifact Store for Google Cloud Storage based artifacts.&quot;&quot;&quot;</span>
 
     <span class="n">_filesystem</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">gcsfs</span><span class="o">.</span><span class="n">GCSFileSystem</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GCPArtifactStoreConfig</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the `GCPArtifactStoreConfig` config.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `GCPArtifactStoreConfig` config.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The configuration.</span>
@@ -3570,7 +3570,7 @@ GCPArtifactStore            (<a class="autorefs autorefs-internal" title="zenml.
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">filesystem</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">gcsfs</span><span class="o">.</span><span class="n">GCSFileSystem</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;The gcsfs filesystem to access this artifact store.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The gcsfs filesystem to access this artifact store.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The gcsfs filesystem to access this artifact store.</span>
@@ -3585,7 +3585,7 @@ GCPArtifactStore            (<a class="autorefs autorefs-internal" title="zenml.
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filesystem</span>
 
     <span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Open a file at the given path.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Open a file at the given path.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            path: Path of the file to open.</span>
@@ -3600,7 +3600,7 @@ GCPArtifactStore            (<a class="autorefs autorefs-internal" title="zenml.
     <span class="k">def</span> <span class="nf">copyfile</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">src</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Copy a file.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Copy a file.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            src: The path to copy from.</span>
@@ -3623,7 +3623,7 @@ GCPArtifactStore            (<a class="autorefs autorefs-internal" title="zenml.
         <span class="bp">self</span><span class="o">.</span><span class="n">filesystem</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">path1</span><span class="o">=</span><span class="n">src</span><span class="p">,</span> <span class="n">path2</span><span class="o">=</span><span class="n">dst</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Check whether a path exists.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check whether a path exists.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            path: The path to check.</span>
@@ -3634,7 +3634,7 @@ GCPArtifactStore            (<a class="autorefs autorefs-internal" title="zenml.
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">filesystem</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">)</span>  <span class="c1"># type: ignore[no-any-return]</span>
 
     <span class="k">def</span> <span class="nf">glob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pattern</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Return all paths that match the given glob pattern.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return all paths that match the given glob pattern.</span>
 
 <span class="sd">        The glob pattern may include:</span>
 <span class="sd">        - &#39;*&#39; to match any number of characters</span>
@@ -3655,7 +3655,7 @@ GCPArtifactStore            (<a class="autorefs autorefs-internal" title="zenml.
         <span class="p">]</span>
 
     <span class="k">def</span> <span class="nf">isdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Check whether a path is a directory.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check whether a path is a directory.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            path: The path to check.</span>
@@ -3666,7 +3666,7 @@ GCPArtifactStore            (<a class="autorefs autorefs-internal" title="zenml.
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">filesystem</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">)</span>  <span class="c1"># type: ignore[no-any-return]</span>
 
     <span class="k">def</span> <span class="nf">listdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Return a list of files in a directory.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a list of files in a directory.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            path: The path of the directory to list.</span>
@@ -3679,7 +3679,7 @@ GCPArtifactStore            (<a class="autorefs autorefs-internal" title="zenml.
             <span class="n">path_without_prefix</span> <span class="o">=</span> <span class="n">path_without_prefix</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">GCP_PATH_PREFIX</span><span class="p">)</span> <span class="p">:]</span>
 
         <span class="k">def</span> <span class="nf">_extract_basename</span><span class="p">(</span><span class="n">file_dict</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-            <span class="sd">&quot;&quot;&quot;Extracts the basename from a file info dict returned by GCP.</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Extracts the basename from a file info dict returned by GCP.</span>
 
 <span class="sd">            Args:</span>
 <span class="sd">                file_dict: A file info dict returned by the GCP filesystem.</span>
@@ -3700,7 +3700,7 @@ GCPArtifactStore            (<a class="autorefs autorefs-internal" title="zenml.
         <span class="p">]</span>
 
     <span class="k">def</span> <span class="nf">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Create a directory at the given path.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a directory at the given path.</span>
 
 <span class="sd">        If needed also create missing parent directories.</span>
 
@@ -3710,7 +3710,7 @@ GCPArtifactStore            (<a class="autorefs autorefs-internal" title="zenml.
         <span class="bp">self</span><span class="o">.</span><span class="n">filesystem</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">mkdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Create a directory at the given path.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a directory at the given path.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            path: The path of the directory to create.</span>
@@ -3718,7 +3718,7 @@ GCPArtifactStore            (<a class="autorefs autorefs-internal" title="zenml.
         <span class="bp">self</span><span class="o">.</span><span class="n">filesystem</span><span class="o">.</span><span class="n">makedir</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Remove the file at the given path.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove the file at the given path.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            path: The path of the file to remove.</span>
@@ -3728,7 +3728,7 @@ GCPArtifactStore            (<a class="autorefs autorefs-internal" title="zenml.
     <span class="k">def</span> <span class="nf">rename</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">src</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Rename source file to destination file.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Rename source file to destination file.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            src: The path of the file to rename.</span>
@@ -3752,7 +3752,7 @@ GCPArtifactStore            (<a class="autorefs autorefs-internal" title="zenml.
         <span class="bp">self</span><span class="o">.</span><span class="n">filesystem</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">path1</span><span class="o">=</span><span class="n">src</span><span class="p">,</span> <span class="n">path2</span><span class="o">=</span><span class="n">dst</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">rmtree</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Remove the given directory.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove the given directory.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            path: The path of the directory to remove.</span>
@@ -3760,7 +3760,7 @@ GCPArtifactStore            (<a class="autorefs autorefs-internal" title="zenml.
         <span class="bp">self</span><span class="o">.</span><span class="n">filesystem</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">stat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Return stat info for the given path.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return stat info for the given path.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            path: the path to get stat info for.</span>
@@ -3776,7 +3776,7 @@ GCPArtifactStore            (<a class="autorefs autorefs-internal" title="zenml.
         <span class="n">topdown</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">onerror</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">PathType</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]]]:</span>
-        <span class="sd">&quot;&quot;&quot;Return an iterator that walks the contents of the given directory.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return an iterator that walks the contents of the given directory.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            top: Path of directory to walk.</span>
@@ -3954,7 +3954,7 @@ and overwrite is not set to <code>True</code>.</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">copyfile</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">src</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Copy a file.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Copy a file.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        src: The path to copy from.</span>
@@ -4034,7 +4034,7 @@ and overwrite is not set to <code>True</code>.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/gcp/artifact_stores/gcp_artifact_store.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Check whether a path exists.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check whether a path exists.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to check.</span>
@@ -4108,7 +4108,7 @@ and overwrite is not set to <code>True</code>.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/gcp/artifact_stores/gcp_artifact_store.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">glob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pattern</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Return all paths that match the given glob pattern.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return all paths that match the given glob pattern.</span>
 
 <span class="sd">    The glob pattern may include:</span>
 <span class="sd">    - &#39;*&#39; to match any number of characters</span>
@@ -4186,7 +4186,7 @@ and overwrite is not set to <code>True</code>.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/gcp/artifact_stores/gcp_artifact_store.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">isdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Check whether a path is a directory.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check whether a path is a directory.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to check.</span>
@@ -4254,7 +4254,7 @@ and overwrite is not set to <code>True</code>.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/gcp/artifact_stores/gcp_artifact_store.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">listdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Return a list of files in a directory.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a list of files in a directory.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path of the directory to list.</span>
@@ -4267,7 +4267,7 @@ and overwrite is not set to <code>True</code>.</p></td>
         <span class="n">path_without_prefix</span> <span class="o">=</span> <span class="n">path_without_prefix</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">GCP_PATH_PREFIX</span><span class="p">)</span> <span class="p">:]</span>
 
     <span class="k">def</span> <span class="nf">_extract_basename</span><span class="p">(</span><span class="n">file_dict</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Extracts the basename from a file info dict returned by GCP.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Extracts the basename from a file info dict returned by GCP.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            file_dict: A file info dict returned by the GCP filesystem.</span>
@@ -4331,7 +4331,7 @@ and overwrite is not set to <code>True</code>.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/gcp/artifact_stores/gcp_artifact_store.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Create a directory at the given path.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a directory at the given path.</span>
 
 <span class="sd">    If needed also create missing parent directories.</span>
 
@@ -4383,7 +4383,7 @@ and overwrite is not set to <code>True</code>.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/gcp/artifact_stores/gcp_artifact_store.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">mkdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Create a directory at the given path.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a directory at the given path.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path of the directory to create.</span>
@@ -4455,7 +4455,7 @@ and overwrite is not set to <code>True</code>.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/gcp/artifact_stores/gcp_artifact_store.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Open a file at the given path.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Open a file at the given path.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: Path of the file to open.</span>
@@ -4510,7 +4510,7 @@ and overwrite is not set to <code>True</code>.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/gcp/artifact_stores/gcp_artifact_store.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Remove the file at the given path.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Remove the file at the given path.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path of the file to remove.</span>
@@ -4592,7 +4592,7 @@ and overwrite is not set to <code>True</code>.</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">rename</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">src</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Rename source file to destination file.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Rename source file to destination file.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        src: The path of the file to rename.</span>
@@ -4658,7 +4658,7 @@ and overwrite is not set to <code>True</code>.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/gcp/artifact_stores/gcp_artifact_store.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">rmtree</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Remove the given directory.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Remove the given directory.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path of the directory to remove.</span>
@@ -4723,7 +4723,7 @@ and overwrite is not set to <code>True</code>.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/gcp/artifact_stores/gcp_artifact_store.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">stat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Return stat info for the given path.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return stat info for the given path.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: the path to get stat info for.</span>
@@ -4810,7 +4810,7 @@ and a list of files inside the current directory.</p></td>
     <span class="n">topdown</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">onerror</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">PathType</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]]]:</span>
-    <span class="sd">&quot;&quot;&quot;Return an iterator that walks the contents of the given directory.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return an iterator that walks the contents of the given directory.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        top: Path of directory to walk.</span>
@@ -4994,7 +4994,7 @@ GCPArtifactStoreConfig            (<a class="autorefs autorefs-internal" title="
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">GCPArtifactStoreConfig</span><span class="p">(</span>
     <span class="n">BaseArtifactStoreConfig</span><span class="p">,</span> <span class="n">AuthenticationConfigMixin</span>
 <span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Configuration for GCP Artifact Store.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Configuration for GCP Artifact Store.&quot;&quot;&quot;</span>
 
     <span class="n">SUPPORTED_SCHEMES</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span><span class="n">GCP_PATH_PREFIX</span><span class="p">}</span>
 </code></pre></div>
@@ -5046,11 +5046,11 @@ GCPArtifactStoreFlavor            (<a class="autorefs autorefs-internal" title="
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/gcp/flavors/gcp_artifact_store_flavor.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">GCPArtifactStoreFlavor</span><span class="p">(</span><span class="n">BaseArtifactStoreFlavor</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Flavor of the GCP artifact store.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Flavor of the GCP artifact store.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The name of the flavor.</span>
@@ -5059,7 +5059,7 @@ GCPArtifactStoreFlavor            (<a class="autorefs autorefs-internal" title="
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">GCPArtifactStoreConfig</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns GCPArtifactStoreConfig config class.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns GCPArtifactStoreConfig config class.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">                The config class.</span>
@@ -5068,7 +5068,7 @@ GCPArtifactStoreFlavor            (<a class="autorefs autorefs-internal" title="
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;GCPArtifactStore&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>
@@ -5294,7 +5294,7 @@ Manager.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/gcp/flavors/gcp_secrets_manager_flavor.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">GCPSecretsManagerConfig</span><span class="p">(</span><span class="n">BaseSecretsManagerConfig</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Configuration for the GCP Secrets Manager.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Configuration for the GCP Secrets Manager.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        project_id: This is necessary to access the correct GCP project.</span>
@@ -5311,7 +5311,7 @@ Manager.</p></td>
         <span class="n">scope</span><span class="p">:</span> <span class="n">SecretsManagerScope</span><span class="p">,</span>
         <span class="n">namespace</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Validate the scope and namespace value.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate the scope and namespace value.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            scope: Scope value.</span>
@@ -5369,11 +5369,11 @@ GCPSecretsManagerFlavor            (<a class="autorefs autorefs-internal" title=
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/gcp/flavors/gcp_secrets_manager_flavor.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">GCPSecretsManagerFlavor</span><span class="p">(</span><span class="n">BaseSecretsManagerFlavor</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Class for the `GCPSecretsManagerFlavor`.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class for the `GCPSecretsManagerFlavor`.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The name of the flavor.</span>
@@ -5382,7 +5382,7 @@ GCPSecretsManagerFlavor            (<a class="autorefs autorefs-internal" title=
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">GCPSecretsManagerConfig</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns GCPSecretsManagerConfig config class.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns GCPSecretsManagerConfig config class.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">                The config class.</span>
@@ -5391,7 +5391,7 @@ GCPSecretsManagerFlavor            (<a class="autorefs autorefs-internal" title=
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;GCPSecretsManager&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>
@@ -5599,7 +5599,7 @@ and the hyphen (-) and underscore (_) characters</p>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/gcp/flavors/gcp_secrets_manager_flavor.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">validate_gcp_secret_name_or_namespace</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Validate a secret name or namespace.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate a secret name or namespace.</span>
 
 <span class="sd">    A Google secret ID is a string with a maximum length of 255 characters</span>
 <span class="sd">    and can contain uppercase and lowercase letters, numerals, and the</span>
@@ -5783,7 +5783,7 @@ https://cloud.google.com/vertex-ai/docs/training/configure-compute#specifying_gp
     <span class="n">GoogleCredentialsConfigMixin</span><span class="p">,</span>
     <span class="n">VertexOrchestratorSettings</span><span class="p">,</span>
 <span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Configuration for the Vertex orchestrator.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Configuration for the Vertex orchestrator.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        project: GCP project name. If `None`, the project will be inferred from</span>
@@ -5839,7 +5839,7 @@ https://cloud.google.com/vertex-ai/docs/training/configure-compute#specifying_gp
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_remote</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Checks if this stack component is running remotely.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if this stack component is running remotely.</span>
 
 <span class="sd">        This designation is used to determine if the stack component can be</span>
 <span class="sd">        used with a local ZenML database or if it requires a remote ZenML</span>
@@ -5947,11 +5947,11 @@ VertexOrchestratorFlavor            (<a class="autorefs autorefs-internal" title
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/gcp/flavors/vertex_orchestrator_flavor.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">VertexOrchestratorFlavor</span><span class="p">(</span><span class="n">BaseOrchestratorFlavor</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Vertex Orchestrator flavor.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Vertex Orchestrator flavor.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Name of the orchestrator flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the orchestrator flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Name of the orchestrator flavor.</span>
@@ -5960,7 +5960,7 @@ VertexOrchestratorFlavor            (<a class="autorefs autorefs-internal" title
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">VertexOrchestratorConfig</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns VertexOrchestratorConfig config class.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns VertexOrchestratorConfig config class.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">                The config class.</span>
@@ -5969,7 +5969,7 @@ VertexOrchestratorFlavor            (<a class="autorefs autorefs-internal" title
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;VertexOrchestrator&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Implementation class for this flavor.</span>
@@ -6184,7 +6184,7 @@ Hint: the selected region (location) must provide the requested accelerator
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/gcp/flavors/vertex_orchestrator_flavor.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">VertexOrchestratorSettings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Settings for the Vertex orchestrator.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Settings for the Vertex orchestrator.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        synchronous: If `True`, running a pipeline using this orchestrator will</span>
@@ -6339,7 +6339,7 @@ environment.</p></td>
     <span class="n">GoogleCredentialsConfigMixin</span><span class="p">,</span>
     <span class="n">VertexStepOperatorSettings</span><span class="p">,</span>
 <span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Configuration for the Vertex step operator.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Configuration for the Vertex step operator.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        region: Region name, e.g., `europe-west1`.</span>
@@ -6357,7 +6357,7 @@ environment.</p></td>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_remote</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Checks if this stack component is running remotely.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if this stack component is running remotely.</span>
 
 <span class="sd">        This designation is used to determine if the stack component can be</span>
 <span class="sd">        used with a local ZenML database or if it requires a remote ZenML</span>
@@ -6459,11 +6459,11 @@ VertexStepOperatorFlavor            (<a class="autorefs autorefs-internal" title
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/gcp/flavors/vertex_step_operator_flavor.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">VertexStepOperatorFlavor</span><span class="p">(</span><span class="n">BaseStepOperatorFlavor</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Vertex Step Operator flavor.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Vertex Step Operator flavor.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Name of the flavor.</span>
@@ -6472,7 +6472,7 @@ VertexStepOperatorFlavor            (<a class="autorefs autorefs-internal" title
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">VertexStepOperatorConfig</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns `VertexStepOperatorConfig` config class.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns `VertexStepOperatorConfig` config class.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">                The config class.</span>
@@ -6481,7 +6481,7 @@ VertexStepOperatorFlavor            (<a class="autorefs autorefs-internal" title
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;VertexStepOperator&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>
@@ -6685,7 +6685,7 @@ https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/gcp/flavors/vertex_step_operator_flavor.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">VertexStepOperatorSettings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Settings for the Vertex step operator.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Settings for the Vertex step operator.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        accelerator_type: Defines which accelerator (GPU, TPU) is used for the</span>
@@ -6892,7 +6892,7 @@ https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types
     <span class="n">credentials</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;Credentials&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1800</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Create google cloud function from specified directory path.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create google cloud function from specified directory path.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        directory_path: Local path to directory where function code resides.</span>
@@ -7013,7 +7013,7 @@ https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_cloud_functions_api</span><span class="p">(</span>
     <span class="n">credentials</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;Credentials&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">functions_v2</span><span class="o">.</span><span class="n">FunctionServiceClient</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Gets the cloud functions API resource client.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets the cloud functions API resource client.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        credentials: Google cloud credentials.</span>
@@ -7090,7 +7090,7 @@ https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types
     <span class="n">directory_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">upload_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StorageSource</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Uploads local directory to remote one.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Uploads local directory to remote one.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        upload_path: GCS path where to upload the zipped function code.</span>
@@ -7168,7 +7168,7 @@ https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/gcp/google_cloud_function.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">zipdir</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">ziph</span><span class="p">:</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Zips a directory using an Zipfile object.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Zips a directory using an Zipfile object.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: Path to zip directory to.</span>
@@ -7304,7 +7304,7 @@ https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types
     <span class="n">schedule</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;* * * * *&quot;</span><span class="p">,</span>
     <span class="n">time_zone</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Etc/UTC&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Creates a Google Cloud Scheduler job.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Creates a Google Cloud Scheduler job.</span>
 
 <span class="sd">    Job periodically sends POST request to the specified HTTP URI on a schedule.</span>
 
@@ -7431,7 +7431,7 @@ will be used.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/gcp/google_credentials_mixin.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">GoogleCredentialsConfigMixin</span><span class="p">(</span><span class="n">StackComponentConfig</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Config mixin for Google Cloud Platform credentials.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Config mixin for Google Cloud Platform credentials.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        service_account_path: path to the service account credentials file to be</span>
@@ -7489,11 +7489,11 @@ GoogleCredentialsMixin            (<a class="autorefs autorefs-internal" title="
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/gcp/google_credentials_mixin.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">GoogleCredentialsMixin</span><span class="p">(</span><span class="n">StackComponent</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;StackComponent mixin to get Google Cloud Platform credentials.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;StackComponent mixin to get Google Cloud Platform credentials.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GoogleCredentialsConfigMixin</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the `GoogleCredentialsConfigMixin` config.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `GoogleCredentialsConfigMixin` config.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The configuration.</span>
@@ -7501,7 +7501,7 @@ GoogleCredentialsMixin            (<a class="autorefs autorefs-internal" title="
         <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">GoogleCredentialsConfigMixin</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_get_authentication</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="s2">&quot;Credentials&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Get GCP credentials and the project ID associated with the credentials.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get GCP credentials and the project ID associated with the credentials.</span>
 
 <span class="sd">        If `service_account_path` is provided, then the credentials will be</span>
 <span class="sd">        loaded from the file at that path. Otherwise, the default credentials</span>
@@ -7674,13 +7674,13 @@ VertexOrchestrator            (<a class="autorefs autorefs-internal" title="zenm
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/gcp/orchestrators/vertex_orchestrator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">VertexOrchestrator</span><span class="p">(</span><span class="n">BaseOrchestrator</span><span class="p">,</span> <span class="n">GoogleCredentialsMixin</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Orchestrator responsible for running pipelines on Vertex AI.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Orchestrator responsible for running pipelines on Vertex AI.&quot;&quot;&quot;</span>
 
     <span class="n">_pipeline_root</span><span class="p">:</span> <span class="nb">str</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">VertexOrchestratorConfig</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the `VertexOrchestratorConfig` config.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `VertexOrchestratorConfig` config.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The configuration.</span>
@@ -7689,7 +7689,7 @@ VertexOrchestrator            (<a class="autorefs autorefs-internal" title="zenm
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">settings_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseSettings&quot;</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Settings class for the Vertex orchestrator.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Settings class for the Vertex orchestrator.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The settings class.</span>
@@ -7698,7 +7698,7 @@ VertexOrchestrator            (<a class="autorefs autorefs-internal" title="zenm
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">validator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">StackValidator</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Validates that the stack contains a container registry.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validates that the stack contains a container registry.</span>
 
 <span class="sd">        Also validates that the artifact store is not local.</span>
 
@@ -7707,7 +7707,7 @@ VertexOrchestrator            (<a class="autorefs autorefs-internal" title="zenm
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">def</span> <span class="nf">_validate_stack_requirements</span><span class="p">(</span><span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-            <span class="sd">&quot;&quot;&quot;Validates that all the stack components are not local.</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Validates that all the stack components are not local.</span>
 
 <span class="sd">            Args:</span>
 <span class="sd">                stack: The stack to validate.</span>
@@ -7772,7 +7772,7 @@ VertexOrchestrator            (<a class="autorefs autorefs-internal" title="zenm
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">root_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns path to the root directory for files for this orchestrator.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns path to the root directory for files for this orchestrator.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The path to the root directory for all files concerning this</span>
@@ -7784,7 +7784,7 @@ VertexOrchestrator            (<a class="autorefs autorefs-internal" title="zenm
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">pipeline_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns path to directory where kubeflow pipelines files are stored.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns path to directory where kubeflow pipelines files are stored.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Path to the pipeline directory.</span>
@@ -7792,7 +7792,7 @@ VertexOrchestrator            (<a class="autorefs autorefs-internal" title="zenm
         <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root_directory</span><span class="p">,</span> <span class="s2">&quot;pipelines&quot;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_get_authentication</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="s2">&quot;Credentials&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Get GCP credentials and the project ID associated with the credentials.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get GCP credentials and the project ID associated with the credentials.</span>
 
 <span class="sd">        This function is the same as the super function except that it also checks</span>
 <span class="sd">        against the value of the `config` class of this orchestrator.</span>
@@ -7820,7 +7820,7 @@ VertexOrchestrator            (<a class="autorefs autorefs-internal" title="zenm
         <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">,</span>
         <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Build a Docker image and push it to the container registry.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build a Docker image and push it to the container registry.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            deployment: The pipeline deployment configuration.</span>
@@ -7859,7 +7859,7 @@ VertexOrchestrator            (<a class="autorefs autorefs-internal" title="zenm
         <span class="n">resource_settings</span><span class="p">:</span> <span class="s2">&quot;ResourceSettings&quot;</span><span class="p">,</span>
         <span class="n">node_selector_constraint</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Adds resource requirements to the container.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Adds resource requirements to the container.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            container_op: The kubeflow container operation to configure.</span>
@@ -7907,7 +7907,7 @@ VertexOrchestrator            (<a class="autorefs autorefs-internal" title="zenm
         <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">,</span>
         <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Creates a KFP JSON pipeline.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Creates a KFP JSON pipeline.</span>
 
 <span class="sd">        # noqa: DAR402</span>
 
@@ -7970,7 +7970,7 @@ VertexOrchestrator            (<a class="autorefs autorefs-internal" title="zenm
         <span class="n">image_name</span> <span class="o">=</span> <span class="n">deployment</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">extra</span><span class="p">[</span><span class="n">ORCHESTRATOR_DOCKER_IMAGE_KEY</span><span class="p">]</span>
 
         <span class="k">def</span> <span class="nf">_construct_kfp_pipeline</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="sd">&quot;&quot;&quot;Create a `ContainerOp` for each step.</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Create a `ContainerOp` for each step.</span>
 
 <span class="sd">            This should contain the name of the Docker image and configures the</span>
 <span class="sd">            entrypoint of the Docker image to run the step.</span>
@@ -7997,11 +7997,11 @@ VertexOrchestrator            (<a class="autorefs autorefs-internal" title="zenm
                 <span class="c1"># class directly is deprecated when using the Kubeflow SDK v2.</span>
                 <span class="n">container_op</span> <span class="o">=</span> <span class="n">kfp</span><span class="o">.</span><span class="n">components</span><span class="o">.</span><span class="n">load_component_from_text</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">                    name: </span><span class="si">{</span><span class="n">step</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"></span>
+<span class="s2">                    name: </span><span class="si">{</span><span class="n">step</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">name</span><span class="si">}</span>
 <span class="s2">                    implementation:</span>
 <span class="s2">                        container:</span>
-<span class="s2">                            image: </span><span class="si">{</span><span class="n">image_name</span><span class="si">}</span><span class="s2"></span>
-<span class="s2">                            command: </span><span class="si">{</span><span class="n">command</span> <span class="o">+</span> <span class="n">arguments</span><span class="si">}</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">                            image: </span><span class="si">{</span><span class="n">image_name</span><span class="si">}</span>
+<span class="s2">                            command: </span><span class="si">{</span><span class="n">command</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">arguments</span><span class="si">}</span><span class="s2">&quot;&quot;&quot;</span>
                 <span class="p">)()</span>
 
                 <span class="n">container_op</span><span class="o">.</span><span class="n">set_env_variable</span><span class="p">(</span>
@@ -8092,7 +8092,7 @@ VertexOrchestrator            (<a class="autorefs autorefs-internal" title="zenm
         <span class="n">pipeline_file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">settings</span><span class="p">:</span> <span class="n">VertexOrchestratorSettings</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Uploads and schedules pipeline on GCP.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Uploads and schedules pipeline on GCP.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            pipeline_name: Name of the pipeline.</span>
@@ -8177,7 +8177,7 @@ VertexOrchestrator            (<a class="autorefs autorefs-internal" title="zenm
         <span class="n">run_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">settings</span><span class="p">:</span> <span class="n">VertexOrchestratorSettings</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Uploads and run the pipeline on the Vertex AI Pipelines service.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Uploads and run the pipeline on the Vertex AI Pipelines service.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            pipeline_name: Name of the pipeline.</span>
@@ -8259,7 +8259,7 @@ VertexOrchestrator            (<a class="autorefs autorefs-internal" title="zenm
             <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">get_orchestrator_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the active orchestrator run id.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the active orchestrator run id.</span>
 
 <span class="sd">        Raises:</span>
 <span class="sd">            RuntimeError: If the environment variable specifying the run id</span>
@@ -8530,7 +8530,7 @@ is not set.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/gcp/orchestrators/vertex_orchestrator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_orchestrator_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns the active orchestrator run id.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the active orchestrator run id.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        RuntimeError: If the environment variable specifying the run id</span>
@@ -8638,7 +8638,7 @@ raised if attempting to schedule pipeline run without using the
     <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">,</span>
     <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Creates a KFP JSON pipeline.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Creates a KFP JSON pipeline.</span>
 
 <span class="sd">    # noqa: DAR402</span>
 
@@ -8701,7 +8701,7 @@ raised if attempting to schedule pipeline run without using the
     <span class="n">image_name</span> <span class="o">=</span> <span class="n">deployment</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">extra</span><span class="p">[</span><span class="n">ORCHESTRATOR_DOCKER_IMAGE_KEY</span><span class="p">]</span>
 
     <span class="k">def</span> <span class="nf">_construct_kfp_pipeline</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Create a `ContainerOp` for each step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a `ContainerOp` for each step.</span>
 
 <span class="sd">        This should contain the name of the Docker image and configures the</span>
 <span class="sd">        entrypoint of the Docker image to run the step.</span>
@@ -8728,11 +8728,11 @@ raised if attempting to schedule pipeline run without using the
             <span class="c1"># class directly is deprecated when using the Kubeflow SDK v2.</span>
             <span class="n">container_op</span> <span class="o">=</span> <span class="n">kfp</span><span class="o">.</span><span class="n">components</span><span class="o">.</span><span class="n">load_component_from_text</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">                name: </span><span class="si">{</span><span class="n">step</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"></span>
+<span class="s2">                name: </span><span class="si">{</span><span class="n">step</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">name</span><span class="si">}</span>
 <span class="s2">                implementation:</span>
 <span class="s2">                    container:</span>
-<span class="s2">                        image: </span><span class="si">{</span><span class="n">image_name</span><span class="si">}</span><span class="s2"></span>
-<span class="s2">                        command: </span><span class="si">{</span><span class="n">command</span> <span class="o">+</span> <span class="n">arguments</span><span class="si">}</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">                        image: </span><span class="si">{</span><span class="n">image_name</span><span class="si">}</span>
+<span class="s2">                        command: </span><span class="si">{</span><span class="n">command</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">arguments</span><span class="si">}</span><span class="s2">&quot;&quot;&quot;</span>
             <span class="p">)()</span>
 
             <span class="n">container_op</span><span class="o">.</span><span class="n">set_env_variable</span><span class="p">(</span>
@@ -8882,7 +8882,7 @@ raised if attempting to schedule pipeline run without using the
     <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">,</span>
     <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Build a Docker image and push it to the container registry.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build a Docker image and push it to the container registry.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        deployment: The pipeline deployment configuration.</span>
@@ -9063,7 +9063,7 @@ raised if attempting to schedule pipeline run without using the
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/gcp/orchestrators/vertex_scheduler/main.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">trigger_vertex_job</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="s2">&quot;Request&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Response&quot;</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Processes the incoming HTTP request.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Processes the incoming HTTP request.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        request: HTTP request object.</span>
@@ -9233,13 +9233,13 @@ GCPSecretsManager            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/gcp/secrets_manager/gcp_secrets_manager.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">GCPSecretsManager</span><span class="p">(</span><span class="n">BaseSecretsManager</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Class to interact with the GCP secrets manager.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class to interact with the GCP secrets manager.&quot;&quot;&quot;</span>
 
     <span class="n">CLIENT</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GCPSecretsManagerConfig</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the `GCPSecretsManagerConfig` config.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `GCPSecretsManagerConfig` config.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The configuration.</span>
@@ -9253,7 +9253,7 @@ GCPSecretsManager            (<a class="autorefs autorefs-internal" title="zenml
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">parent_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Construct the GCP parent path to the secret manager.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Construct the GCP parent path to the secret manager.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The parent path to the secret manager</span>
@@ -9263,7 +9263,7 @@ GCPSecretsManager            (<a class="autorefs autorefs-internal" title="zenml
     <span class="k">def</span> <span class="nf">_convert_secret_content</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">secret</span><span class="p">:</span> <span class="n">BaseSecretSchema</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Convert the secret content into a Google compatible representation.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert the secret content into a Google compatible representation.</span>
 
 <span class="sd">        This method implements two currently supported modes of adapting between</span>
 <span class="sd">        the naming schemas used for ZenML secrets and Google secrets:</span>
@@ -9298,7 +9298,7 @@ GCPSecretsManager            (<a class="autorefs autorefs-internal" title="zenml
     <span class="k">def</span> <span class="nf">_get_secret_labels</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">secret</span><span class="p">:</span> <span class="n">BaseSecretSchema</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Return a list of Google secret label values for a given secret.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a list of Google secret label values for a given secret.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            secret: the secret object</span>
@@ -9320,7 +9320,7 @@ GCPSecretsManager            (<a class="autorefs autorefs-internal" title="zenml
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">secret_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Return a Google filter expression for the entire scope or just a scoped secret.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a Google filter expression for the entire scope or just a scoped secret.</span>
 
 <span class="sd">        These filters can be used when querying the Google Secrets Manager</span>
 <span class="sd">        for all secrets or for a single secret available in the configured</span>
@@ -9348,7 +9348,7 @@ GCPSecretsManager            (<a class="autorefs autorefs-internal" title="zenml
         <span class="k">return</span> <span class="s2">&quot; AND &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">filters</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_list_secrets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">secret_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;List all secrets matching a name.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;List all secrets matching a name.</span>
 
 <span class="sd">        This method lists all the secrets in the current scope without loading</span>
 <span class="sd">        their contents. An optional secret name can be supplied to filter out</span>
@@ -9384,7 +9384,7 @@ GCPSecretsManager            (<a class="autorefs autorefs-internal" title="zenml
         <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">set_of_secrets</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">register_secret</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">secret</span><span class="p">:</span> <span class="n">BaseSecretSchema</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Registers a new secret.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Registers a new secret.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            secret: the secret to register</span>
@@ -9427,7 +9427,7 @@ GCPSecretsManager            (<a class="autorefs autorefs-internal" title="zenml
             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Added value to secret.&quot;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">get_secret</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">secret_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseSecretSchema</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Get a secret by its name.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a secret by its name.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            secret_name: the name of the secret to get</span>
@@ -9532,7 +9532,7 @@ GCPSecretsManager            (<a class="autorefs autorefs-internal" title="zenml
         <span class="k">return</span> <span class="n">zenml_secret</span>
 
     <span class="k">def</span> <span class="nf">get_all_secret_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Get all secret keys.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all secret keys.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            A list of all secret keys</span>
@@ -9540,7 +9540,7 @@ GCPSecretsManager            (<a class="autorefs autorefs-internal" title="zenml
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_list_secrets</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">update_secret</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">secret</span><span class="p">:</span> <span class="n">BaseSecretSchema</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Update an existing secret by creating new versions of the existing secrets.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update an existing secret by creating new versions of the existing secrets.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            secret: the secret to update</span>
@@ -9569,7 +9569,7 @@ GCPSecretsManager            (<a class="autorefs autorefs-internal" title="zenml
             <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">delete_secret</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">secret_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Delete an existing secret by name.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Delete an existing secret by name.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            secret_name: the name of the secret to delete</span>
@@ -9594,7 +9594,7 @@ GCPSecretsManager            (<a class="autorefs autorefs-internal" title="zenml
             <span class="bp">self</span><span class="o">.</span><span class="n">CLIENT</span><span class="o">.</span><span class="n">delete_secret</span><span class="p">(</span><span class="n">request</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">secret</span><span class="o">.</span><span class="n">name</span><span class="p">})</span>
 
     <span class="k">def</span> <span class="nf">delete_all_secrets</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Delete all existing secrets.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Delete all existing secrets.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_ensure_client_connected</span><span class="p">()</span>
 
         <span class="c1"># List all secrets.</span>
@@ -9715,7 +9715,7 @@ GCPSecretsManager            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/gcp/secrets_manager/gcp_secrets_manager.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">delete_all_secrets</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Delete all existing secrets.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Delete all existing secrets.&quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_ensure_client_connected</span><span class="p">()</span>
 
     <span class="c1"># List all secrets.</span>
@@ -9786,7 +9786,7 @@ GCPSecretsManager            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/gcp/secrets_manager/gcp_secrets_manager.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">delete_secret</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">secret_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Delete an existing secret by name.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Delete an existing secret by name.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        secret_name: the name of the secret to delete</span>
@@ -9849,7 +9849,7 @@ GCPSecretsManager            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/gcp/secrets_manager/gcp_secrets_manager.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_all_secret_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Get all secret keys.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get all secret keys.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of all secret keys</span>
@@ -9929,7 +9929,7 @@ GCPSecretsManager            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/gcp/secrets_manager/gcp_secrets_manager.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_secret</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">secret_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseSecretSchema</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Get a secret by its name.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a secret by its name.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        secret_name: the name of the secret to get</span>
@@ -10091,7 +10091,7 @@ GCPSecretsManager            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/gcp/secrets_manager/gcp_secrets_manager.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">register_secret</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">secret</span><span class="p">:</span> <span class="n">BaseSecretSchema</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Registers a new secret.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Registers a new secret.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        secret: the secret to register</span>
@@ -10191,7 +10191,7 @@ GCPSecretsManager            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/gcp/secrets_manager/gcp_secrets_manager.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">update_secret</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">secret</span><span class="p">:</span> <span class="n">BaseSecretSchema</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Update an existing secret by creating new versions of the existing secrets.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Update an existing secret by creating new versions of the existing secrets.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        secret: the secret to update</span>
@@ -10309,7 +10309,7 @@ GCPSecretsManager            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/gcp/secrets_manager/gcp_secrets_manager.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">remove_group_name_from_key</span><span class="p">(</span><span class="n">combined_key_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">group_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Removes the secret group name from the secret key.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Removes the secret group name from the secret key.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        combined_key_name: Full name as it is within the gcp secrets manager</span>
@@ -10441,14 +10441,14 @@ ZenML entrypoint command in it.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/gcp/step_operators/vertex_step_operator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">VertexStepOperator</span><span class="p">(</span><span class="n">BaseStepOperator</span><span class="p">,</span> <span class="n">GoogleCredentialsMixin</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Step operator to run a step on Vertex AI.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Step operator to run a step on Vertex AI.</span>
 
 <span class="sd">    This class defines code that can set up a Vertex AI environment and run the</span>
 <span class="sd">    ZenML entrypoint command in it.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Initializes the step operator and validates the accelerator type.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes the step operator and validates the accelerator type.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            *args: Variable length argument list.</span>
@@ -10458,7 +10458,7 @@ ZenML entrypoint command in it.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">VertexStepOperatorConfig</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the `VertexStepOperatorConfig` config.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `VertexStepOperatorConfig` config.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The configuration.</span>
@@ -10467,7 +10467,7 @@ ZenML entrypoint command in it.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">settings_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseSettings&quot;</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Settings class for the Vertex step operator.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Settings class for the Vertex step operator.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The settings class.</span>
@@ -10476,7 +10476,7 @@ ZenML entrypoint command in it.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">validator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">StackValidator</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Validates the stack.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validates the stack.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            A validator that checks that the stack contains a remote container</span>
@@ -10519,7 +10519,7 @@ ZenML entrypoint command in it.</p>
         <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">,</span>
         <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Build a Docker image and push it to the container registry.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build a Docker image and push it to the container registry.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            deployment: The pipeline deployment configuration.</span>
@@ -10545,7 +10545,7 @@ ZenML entrypoint command in it.</p>
         <span class="n">info</span><span class="p">:</span> <span class="s2">&quot;StepRunInfo&quot;</span><span class="p">,</span>
         <span class="n">entrypoint_command</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Launches a step on VertexAI.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Launches a step on VertexAI.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            info: Information about the step run.</span>
@@ -10569,7 +10569,7 @@ ZenML entrypoint command in it.</p>
         <span class="n">settings</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="n">VertexStepOperatorSettings</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_settings</span><span class="p">(</span><span class="n">info</span><span class="p">))</span>
         <span class="n">validate_accelerator_type</span><span class="p">(</span><span class="n">settings</span><span class="o">.</span><span class="n">accelerator_type</span><span class="p">)</span>
 
-        <span class="n">job_labels</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;zenml-</span><span class="si">{</span><span class="n">__version__</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">}</span>
+        <span class="n">job_labels</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;zenml-</span><span class="si">{</span><span class="n">__version__</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;_&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">}</span>
 
         <span class="c1"># Step 1: Authenticate with Google</span>
         <span class="n">credentials</span><span class="p">,</span> <span class="n">project_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_authentication</span><span class="p">()</span>
@@ -10877,7 +10877,7 @@ registry and a remote artifact store.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/gcp/step_operators/vertex_step_operator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Initializes the step operator and validates the accelerator type.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes the step operator and validates the accelerator type.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        *args: Variable length argument list.</span>
@@ -10957,7 +10957,7 @@ registry and a remote artifact store.</p></td>
     <span class="n">info</span><span class="p">:</span> <span class="s2">&quot;StepRunInfo&quot;</span><span class="p">,</span>
     <span class="n">entrypoint_command</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Launches a step on VertexAI.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Launches a step on VertexAI.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        info: Information about the step run.</span>
@@ -10981,7 +10981,7 @@ registry and a remote artifact store.</p></td>
     <span class="n">settings</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="n">VertexStepOperatorSettings</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_settings</span><span class="p">(</span><span class="n">info</span><span class="p">))</span>
     <span class="n">validate_accelerator_type</span><span class="p">(</span><span class="n">settings</span><span class="o">.</span><span class="n">accelerator_type</span><span class="p">)</span>
 
-    <span class="n">job_labels</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;zenml-</span><span class="si">{</span><span class="n">__version__</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">}</span>
+    <span class="n">job_labels</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;zenml-</span><span class="si">{</span><span class="n">__version__</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;_&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">}</span>
 
     <span class="c1"># Step 1: Authenticate with Google</span>
     <span class="n">credentials</span><span class="p">,</span> <span class="n">project_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_authentication</span><span class="p">()</span>
@@ -11168,7 +11168,7 @@ registry and a remote artifact store.</p></td>
     <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">,</span>
     <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Build a Docker image and push it to the container registry.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build a Docker image and push it to the container registry.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        deployment: The pipeline deployment configuration.</span>
@@ -11258,7 +11258,7 @@ registry and a remote artifact store.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/gcp/step_operators/vertex_step_operator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">validate_accelerator_type</span><span class="p">(</span><span class="n">accelerator_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Validates that the accelerator type is valid.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validates that the accelerator type is valid.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        accelerator_type: The accelerator type to validate.</span>

@@ -2382,21 +2382,21 @@ WhylogsIntegration            (<a class="autorefs autorefs-internal" title="zenm
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/whylogs/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">WhylogsIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Definition of [whylogs](https://github.com/whylabs/whylogs) integration for ZenML.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Definition of [whylogs](https://github.com/whylabs/whylogs) integration for ZenML.&quot;&quot;&quot;</span>
 
     <span class="n">NAME</span> <span class="o">=</span> <span class="n">WHYLOGS</span>
     <span class="n">REQUIREMENTS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;whylogs[viz]~=1.0.5&quot;</span><span class="p">,</span> <span class="s2">&quot;whylogs[whylabs]~=1.0.5&quot;</span><span class="p">]</span>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Activates the integration.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Activates the integration.&quot;&quot;&quot;</span>
         <span class="kn">from</span> <span class="nn">zenml.integrations.whylogs</span> <span class="kn">import</span> <span class="n">materializers</span>  <span class="c1"># noqa</span>
         <span class="kn">from</span> <span class="nn">zenml.integrations.whylogs</span> <span class="kn">import</span> <span class="n">secret_schemas</span>  <span class="c1"># noqa</span>
         <span class="kn">from</span> <span class="nn">zenml.integrations.whylogs</span> <span class="kn">import</span> <span class="n">visualizers</span>  <span class="c1"># noqa</span>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Great Expectations integration.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Great Expectations integration.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            List of stack component flavors for this integration.</span>
@@ -2444,7 +2444,7 @@ WhylogsIntegration            (<a class="autorefs autorefs-internal" title="zenm
           <summary>Source code in <code>zenml/integrations/whylogs/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span> <span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Activates the integration.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Activates the integration.&quot;&quot;&quot;</span>
     <span class="kn">from</span> <span class="nn">zenml.integrations.whylogs</span> <span class="kn">import</span> <span class="n">materializers</span>  <span class="c1"># noqa</span>
     <span class="kn">from</span> <span class="nn">zenml.integrations.whylogs</span> <span class="kn">import</span> <span class="n">secret_schemas</span>  <span class="c1"># noqa</span>
     <span class="kn">from</span> <span class="nn">zenml.integrations.whylogs</span> <span class="kn">import</span> <span class="n">visualizers</span>  <span class="c1"># noqa</span>
@@ -2492,7 +2492,7 @@ WhylogsIntegration            (<a class="autorefs autorefs-internal" title="zenm
           <summary>Source code in <code>zenml/integrations/whylogs/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
-    <span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Great Expectations integration.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Great Expectations integration.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        List of stack component flavors for this integration.</span>
@@ -2660,7 +2660,7 @@ stored in the ZenML Artifact Store.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/whylogs/data_validators/whylogs_data_validator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">WhylogsDataValidator</span><span class="p">(</span><span class="n">BaseDataValidator</span><span class="p">,</span> <span class="n">AuthenticationMixin</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Whylogs data validator stack component.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Whylogs data validator stack component.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        authentication_secret: Optional ZenML secret with Whylabs credentials.</span>
@@ -2674,7 +2674,7 @@ stored in the ZenML Artifact Store.</p></td>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WhylogsDataValidatorConfig</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the `WhylogsDataValidatorConfig` config.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `WhylogsDataValidatorConfig` config.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The configuration.</span>
@@ -2683,7 +2683,7 @@ stored in the ZenML Artifact Store.</p></td>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">settings_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseSettings&quot;</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Settings class for the Whylogs data validator.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Settings class for the Whylogs data validator.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The settings class.</span>
@@ -2691,7 +2691,7 @@ stored in the ZenML Artifact Store.</p></td>
         <span class="k">return</span> <span class="n">WhylogsDataValidatorSettings</span>
 
     <span class="k">def</span> <span class="nf">prepare_step_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="s2">&quot;StepRunInfo&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Configures Whylabs logging.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Configures Whylabs logging.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            info: Info about the step that will be executed.</span>
@@ -2703,7 +2703,7 @@ stored in the ZenML Artifact Store.</p></td>
             <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="n">WHYLABS_DATASET_ID_ENV</span><span class="p">]</span> <span class="o">=</span> <span class="n">settings</span><span class="o">.</span><span class="n">dataset_id</span>
 
     <span class="k">def</span> <span class="nf">cleanup_step_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="s2">&quot;StepRunInfo&quot;</span><span class="p">,</span> <span class="n">step_failed</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Resets Whylabs configuration.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Resets Whylabs configuration.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            info: Info about the step that was executed.</span>
@@ -2723,7 +2723,7 @@ stored in the ZenML Artifact Store.</p></td>
         <span class="n">dataset_timestamp</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DatasetProfileView</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Analyze a dataset and generate a data profile with whylogs.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Analyze a dataset and generate a data profile with whylogs.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            dataset: Target dataset to be profiled.</span>
@@ -2750,7 +2750,7 @@ stored in the ZenML Artifact Store.</p></td>
         <span class="n">profile_view</span><span class="p">:</span> <span class="n">DatasetProfileView</span><span class="p">,</span>
         <span class="n">dataset_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Upload a whylogs data profile view to Whylabs, if configured to do so.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Upload a whylogs data profile view to Whylabs, if configured to do so.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            profile_view: Whylogs profile view to upload.</span>
@@ -2908,11 +2908,11 @@ FLAVOR            (<a class="autorefs autorefs-internal" title="zenml.data_valid
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/whylogs/data_validators/whylogs_data_validator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">WhylogsDataValidatorFlavor</span><span class="p">(</span><span class="n">BaseDataValidatorFlavor</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Whylogs data validator flavor.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Whylogs data validator flavor.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The name of the flavor.</span>
@@ -2921,7 +2921,7 @@ FLAVOR            (<a class="autorefs autorefs-internal" title="zenml.data_valid
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">WhylogsDataValidatorConfig</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns `WhylogsDataValidatorConfig` config class.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns `WhylogsDataValidatorConfig` config class.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">                The config class.</span>
@@ -2930,7 +2930,7 @@ FLAVOR            (<a class="autorefs autorefs-internal" title="zenml.data_valid
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;WhylogsDataValidator&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>
@@ -3123,7 +3123,7 @@ FLAVOR            (<a class="autorefs autorefs-internal" title="zenml.data_valid
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/whylogs/data_validators/whylogs_data_validator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">cleanup_step_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="s2">&quot;StepRunInfo&quot;</span><span class="p">,</span> <span class="n">step_failed</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Resets Whylabs configuration.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Resets Whylabs configuration.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        info: Info about the step that was executed.</span>
@@ -3228,7 +3228,7 @@ supplied.</p></td>
     <span class="n">dataset_timestamp</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DatasetProfileView</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Analyze a dataset and generate a data profile with whylogs.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Analyze a dataset and generate a data profile with whylogs.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        dataset: Target dataset to be profiled.</span>
@@ -3293,7 +3293,7 @@ supplied.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/whylogs/data_validators/whylogs_data_validator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">prepare_step_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="s2">&quot;StepRunInfo&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Configures Whylabs logging.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Configures Whylabs logging.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        info: Info about the step that will be executed.</span>
@@ -3379,7 +3379,7 @@ retrieved or inferred from other sources.</p></td>
     <span class="n">profile_view</span><span class="p">:</span> <span class="n">DatasetProfileView</span><span class="p">,</span>
     <span class="n">dataset_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Upload a whylogs data profile view to Whylabs, if configured to do so.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Upload a whylogs data profile view to Whylabs, if configured to do so.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        profile_view: Whylogs profile view to upload.</span>
@@ -3550,7 +3550,7 @@ WhylogsDataValidatorConfig            (<a class="autorefs autorefs-internal" tit
     <span class="n">AuthenticationConfigMixin</span><span class="p">,</span>
     <span class="n">WhylogsDataValidatorSettings</span><span class="p">,</span>
 <span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Config for the whylogs data validator.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Config for the whylogs data validator.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
 
@@ -3599,11 +3599,11 @@ WhylogsDataValidatorFlavor            (<a class="autorefs autorefs-internal" tit
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/whylogs/flavors/whylogs_data_validator_flavor.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">WhylogsDataValidatorFlavor</span><span class="p">(</span><span class="n">BaseDataValidatorFlavor</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Whylogs data validator flavor.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Whylogs data validator flavor.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The name of the flavor.</span>
@@ -3612,7 +3612,7 @@ WhylogsDataValidatorFlavor            (<a class="autorefs autorefs-internal" tit
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">WhylogsDataValidatorConfig</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns `WhylogsDataValidatorConfig` config class.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns `WhylogsDataValidatorConfig` config class.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">                The config class.</span>
@@ -3621,7 +3621,7 @@ WhylogsDataValidatorFlavor            (<a class="autorefs autorefs-internal" tit
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;WhylogsDataValidator&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>
@@ -3817,7 +3817,7 @@ to the Whylabs platform if Whylabs credentials are configured.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/whylogs/flavors/whylogs_data_validator_flavor.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">WhylogsDataValidatorSettings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Settings for the Whylogs data validator.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Settings for the Whylogs data validator.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        enable_whylabs: If set to `True` for a step, all the whylogs data</span>
@@ -3955,13 +3955,13 @@ WhylogsMaterializer            (<a class="autorefs autorefs-internal" title="zen
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/whylogs/materializers/whylogs_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">WhylogsMaterializer</span><span class="p">(</span><span class="n">BaseMaterializer</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Materializer to read/write whylogs dataset profile views.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Materializer to read/write whylogs dataset profile views.&quot;&quot;&quot;</span>
 
     <span class="n">ASSOCIATED_TYPES</span> <span class="o">=</span> <span class="p">(</span><span class="n">DatasetProfileView</span><span class="p">,)</span>
     <span class="n">ASSOCIATED_ARTIFACT_TYPE</span> <span class="o">=</span> <span class="n">ArtifactType</span><span class="o">.</span><span class="n">STATISTICS</span>
 
     <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">DatasetProfileView</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Reads and returns a whylogs dataset profile view.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reads and returns a whylogs dataset profile view.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            data_type: The type of the data to read.</span>
@@ -3986,7 +3986,7 @@ WhylogsMaterializer            (<a class="autorefs autorefs-internal" title="zen
         <span class="k">return</span> <span class="n">profile_view</span>
 
     <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">profile_view</span><span class="p">:</span> <span class="n">DatasetProfileView</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Writes a whylogs dataset profile view.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Writes a whylogs dataset profile view.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            profile_view: A whylogs dataset profile view object.</span>
@@ -4084,7 +4084,7 @@ WhylogsMaterializer            (<a class="autorefs autorefs-internal" title="zen
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/whylogs/materializers/whylogs_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">DatasetProfileView</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Reads and returns a whylogs dataset profile view.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reads and returns a whylogs dataset profile view.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        data_type: The type of the data to read.</span>
@@ -4151,7 +4151,7 @@ WhylogsMaterializer            (<a class="autorefs autorefs-internal" title="zen
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/whylogs/materializers/whylogs_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">profile_view</span><span class="p">:</span> <span class="n">DatasetProfileView</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Writes a whylogs dataset profile view.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Writes a whylogs dataset profile view.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        profile_view: A whylogs dataset profile view object.</span>
@@ -4332,7 +4332,7 @@ logging data profiles.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/whylogs/secret_schemas/whylabs_secret_schema.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">WhylabsSecretSchema</span><span class="p">(</span><span class="n">BaseSecretSchema</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Whylabs credentials.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Whylabs credentials.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        whylabs_default_org_id: the Whylabs organization ID.</span>
@@ -4497,7 +4497,7 @@ supplied.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/whylogs/steps/whylogs_profiler.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">WhylogsProfilerParameters</span><span class="p">(</span><span class="n">BaseParameters</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Parameters class for the WhylogsProfiler step.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parameters class for the WhylogsProfiler step.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        dataset_timestamp: timestamp to associate with the generated</span>
@@ -4554,14 +4554,14 @@ WhylogsProfilerStep            (<a class="autorefs autorefs-internal" title="zen
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/whylogs/steps/whylogs_profiler.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">WhylogsProfilerStep</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Generates a whylogs data profile from a given pd.DataFrame.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generates a whylogs data profile from a given pd.DataFrame.&quot;&quot;&quot;</span>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">entrypoint</span><span class="p">(</span>
         <span class="n">dataset</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
         <span class="n">params</span><span class="p">:</span> <span class="n">WhylogsProfilerParameters</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DatasetProfileView</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Main entrypoint function for the whylogs profiler.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Main entrypoint function for the whylogs profiler.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            dataset: pd.DataFrame, the given dataset</span>
@@ -4637,7 +4637,7 @@ supplied.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/whylogs/steps/whylogs_profiler.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">WhylogsProfilerParameters</span><span class="p">(</span><span class="n">BaseParameters</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Parameters class for the WhylogsProfiler step.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parameters class for the WhylogsProfiler step.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        dataset_timestamp: timestamp to associate with the generated</span>
@@ -4740,7 +4740,7 @@ supplied.</p></td>
     <span class="n">dataset</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
     <span class="n">params</span><span class="p">:</span> <span class="n">WhylogsProfilerParameters</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DatasetProfileView</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Main entrypoint function for the whylogs profiler.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Main entrypoint function for the whylogs profiler.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        dataset: pd.DataFrame, the given dataset</span>
@@ -4845,7 +4845,7 @@ artifact.</p>
     <span class="n">params</span><span class="p">:</span> <span class="n">WhylogsProfilerParameters</span><span class="p">,</span>
     <span class="n">dataset_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseStep</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Shortcut function to create a new instance of the WhylogsProfilerStep step.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Shortcut function to create a new instance of the WhylogsProfilerStep step.</span>
 
 <span class="sd">    The returned WhylogsProfilerStep can be used in a pipeline to generate a</span>
 <span class="sd">    whylogs DatasetProfileView from a given pd.DataFrame and save it as an</span>
@@ -4972,7 +4972,7 @@ WhylogsVisualizer            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/whylogs/visualizers/whylogs_visualizer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">WhylogsVisualizer</span><span class="p">(</span><span class="n">BaseVisualizer</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;The implementation of a Whylogs Visualizer.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The implementation of a Whylogs Visualizer.&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">visualize</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -4981,7 +4981,7 @@ WhylogsVisualizer            (<a class="autorefs autorefs-internal" title="zenml
         <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Visualize whylogs dataset profiles present as outputs in the step view.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Visualize whylogs dataset profiles present as outputs in the step view.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            object: StepView fetched from run.get_step().</span>
@@ -4996,7 +4996,7 @@ WhylogsVisualizer            (<a class="autorefs autorefs-internal" title="zenml
         <span class="k">def</span> <span class="nf">extract_profile</span><span class="p">(</span>
             <span class="n">step_view</span><span class="p">:</span> <span class="n">StepView</span><span class="p">,</span>
         <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">DatasetProfileView</span><span class="p">]:</span>
-            <span class="sd">&quot;&quot;&quot;Extract a whylogs DatasetProfileView from a step view.</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Extract a whylogs DatasetProfileView from a step view.</span>
 
 <span class="sd">            Args:</span>
 <span class="sd">                step_view: a step view</span>
@@ -5027,7 +5027,7 @@ WhylogsVisualizer            (<a class="autorefs autorefs-internal" title="zenml
         <span class="n">profile</span><span class="p">:</span> <span class="n">DatasetProfileView</span><span class="p">,</span>
         <span class="n">reference_profile</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">DatasetProfileView</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Generate a visualization of one or two whylogs dataset profile.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate a visualization of one or two whylogs dataset profile.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            profile: whylogs DatasetProfileView to visualize</span>
@@ -5140,7 +5140,7 @@ method</p></td>
     <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Visualize whylogs dataset profiles present as outputs in the step view.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Visualize whylogs dataset profiles present as outputs in the step view.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        object: StepView fetched from run.get_step().</span>
@@ -5155,7 +5155,7 @@ method</p></td>
     <span class="k">def</span> <span class="nf">extract_profile</span><span class="p">(</span>
         <span class="n">step_view</span><span class="p">:</span> <span class="n">StepView</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">DatasetProfileView</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Extract a whylogs DatasetProfileView from a step view.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract a whylogs DatasetProfileView from a step view.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            step_view: a step view</span>
@@ -5235,7 +5235,7 @@ generate a data drift visualization</p></td>
     <span class="n">profile</span><span class="p">:</span> <span class="n">DatasetProfileView</span><span class="p">,</span>
     <span class="n">reference_profile</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">DatasetProfileView</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Generate a visualization of one or two whylogs dataset profile.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate a visualization of one or two whylogs dataset profile.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        profile: whylogs DatasetProfileView to visualize</span>

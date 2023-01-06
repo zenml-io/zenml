@@ -1924,7 +1924,7 @@ given a unique TYPE_NAME.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/artifacts/base_artifact.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseArtifact</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Base class for all ZenML artifacts.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for all ZenML artifacts.</span>
 
 <span class="sd">    Every implementation of an artifact needs to inherit from this class and be</span>
 <span class="sd">    given a unique TYPE_NAME.</span>
@@ -1939,7 +1939,7 @@ given a unique TYPE_NAME.</p>
         <span class="n">data_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Init method for BaseArtifact.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Init method for BaseArtifact.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            uri: The URI of the artifact.</span>
@@ -2030,7 +2030,7 @@ given a unique TYPE_NAME.</p>
     <span class="n">data_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Init method for BaseArtifact.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Init method for BaseArtifact.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        uri: The URI of the artifact.</span>
@@ -2120,7 +2120,7 @@ detection etc.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/artifacts/data_analysis_artifact.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DataAnalysisArtifact</span><span class="p">(</span><span class="n">BaseArtifact</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Class for all ZenML data analysis artifacts.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class for all ZenML data analysis artifacts.</span>
 
 <span class="sd">    This should act as a base class for all artifacts generated from</span>
 <span class="sd">    processes such as data profiling, data drift analyses, model drift</span>
@@ -2211,7 +2211,7 @@ DataArtifact            (<a class="autorefs autorefs-internal" title="zenml.arti
         <details class="quote">
           <summary>Source code in <code>zenml/artifacts/data_artifact.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DataArtifact</span><span class="p">(</span><span class="n">BaseArtifact</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Class for all ZenML data artifacts.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class for all ZenML data artifacts.&quot;&quot;&quot;</span>
 
     <span class="n">TYPE_NAME</span> <span class="o">=</span> <span class="n">ArtifactType</span><span class="o">.</span><span class="n">DATA</span>
 </code></pre></div>
@@ -2297,7 +2297,7 @@ ModelArtifact            (<a class="autorefs autorefs-internal" title="zenml.art
         <details class="quote">
           <summary>Source code in <code>zenml/artifacts/model_artifact.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ModelArtifact</span><span class="p">(</span><span class="n">BaseArtifact</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Class for all ZenML model artifacts.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class for all ZenML model artifacts.&quot;&quot;&quot;</span>
 
     <span class="n">TYPE_NAME</span> <span class="o">=</span> <span class="n">ArtifactType</span><span class="o">.</span><span class="n">MODEL</span>
 </code></pre></div>
@@ -2383,7 +2383,7 @@ SchemaArtifact            (<a class="autorefs autorefs-internal" title="zenml.ar
         <details class="quote">
           <summary>Source code in <code>zenml/artifacts/schema_artifact.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SchemaArtifact</span><span class="p">(</span><span class="n">BaseArtifact</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Class for all ZenML schema artifacts.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class for all ZenML schema artifacts.&quot;&quot;&quot;</span>
 
     <span class="n">TYPE_NAME</span> <span class="o">=</span> <span class="n">ArtifactType</span><span class="o">.</span><span class="n">SCHEMA</span>
 </code></pre></div>
@@ -2469,7 +2469,7 @@ ServiceArtifact            (<a class="autorefs autorefs-internal" title="zenml.a
         <details class="quote">
           <summary>Source code in <code>zenml/artifacts/service_artifact.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ServiceArtifact</span><span class="p">(</span><span class="n">BaseArtifact</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Class for all ZenML service artifacts.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class for all ZenML service artifacts.&quot;&quot;&quot;</span>
 
     <span class="n">TYPE_NAME</span> <span class="o">=</span> <span class="n">ArtifactType</span><span class="o">.</span><span class="n">SERVICE</span>
 </code></pre></div>
@@ -2555,7 +2555,7 @@ StatisticsArtifact            (<a class="autorefs autorefs-internal" title="zenm
         <details class="quote">
           <summary>Source code in <code>zenml/artifacts/statistics_artifact.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StatisticsArtifact</span><span class="p">(</span><span class="n">BaseArtifact</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Class for all ZenML statistics artifacts.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class for all ZenML statistics artifacts.&quot;&quot;&quot;</span>
 
     <span class="n">TYPE_NAME</span> <span class="o">=</span> <span class="n">ArtifactType</span><span class="o">.</span><span class="n">STATISTICS</span>
 </code></pre></div>

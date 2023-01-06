@@ -2629,14 +2629,14 @@ KubernetesIntegration            (<a class="autorefs autorefs-internal" title="z
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kubernetes/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">KubernetesIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Definition of Kubernetes integration for ZenML.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Definition of Kubernetes integration for ZenML.&quot;&quot;&quot;</span>
 
     <span class="n">NAME</span> <span class="o">=</span> <span class="n">KUBERNETES</span>
     <span class="n">REQUIREMENTS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;kubernetes==18.20.0&quot;</span><span class="p">]</span>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Kubernetes integration.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Kubernetes integration.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            List of new stack component flavors.</span>
@@ -2699,7 +2699,7 @@ KubernetesIntegration            (<a class="autorefs autorefs-internal" title="z
           <summary>Source code in <code>zenml/integrations/kubernetes/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
-    <span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Kubernetes integration.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Kubernetes integration.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        List of new stack component flavors.</span>
@@ -2844,7 +2844,7 @@ clients. This is only useful for unit testing.</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">KubernetesOrchestratorConfig</span><span class="p">(</span>  <span class="c1"># type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173</span>
     <span class="n">BaseOrchestratorConfig</span><span class="p">,</span> <span class="n">KubernetesOrchestratorSettings</span>
 <span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Configuration for the Kubernetes orchestrator.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Configuration for the Kubernetes orchestrator.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        kubernetes_context: Optional name of a Kubernetes context to run</span>
@@ -2863,7 +2863,7 @@ clients. This is only useful for unit testing.</p></td>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_remote</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Checks if this stack component is running remotely.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if this stack component is running remotely.</span>
 
 <span class="sd">        This designation is used to determine if the stack component can be</span>
 <span class="sd">        used with a local ZenML database or if it requires a remote ZenML</span>
@@ -2965,11 +2965,11 @@ KubernetesOrchestratorFlavor            (<a class="autorefs autorefs-internal" t
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kubernetes/flavors/kubernetes_orchestrator_flavor.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">KubernetesOrchestratorFlavor</span><span class="p">(</span><span class="n">BaseOrchestratorFlavor</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Kubernetes orchestrator flavor.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Kubernetes orchestrator flavor.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The name of the flavor.</span>
@@ -2978,7 +2978,7 @@ KubernetesOrchestratorFlavor            (<a class="autorefs autorefs-internal" t
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">KubernetesOrchestratorConfig</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns `KubernetesOrchestratorConfig` config class.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns `KubernetesOrchestratorConfig` config class.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">                The config class.</span>
@@ -2987,7 +2987,7 @@ KubernetesOrchestratorFlavor            (<a class="autorefs autorefs-internal" t
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;KubernetesOrchestrator&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>
@@ -3188,7 +3188,7 @@ to wait for an unlimited duration.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kubernetes/flavors/kubernetes_orchestrator_flavor.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">KubernetesOrchestratorSettings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Settings for the Kubernetes orchestrator.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Settings for the Kubernetes orchestrator.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        synchronous: If `True`, running a pipeline using this orchestrator will</span>
@@ -3336,7 +3336,7 @@ https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-phase.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kubernetes/orchestrators/kube_utils.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PodPhase</span><span class="p">(</span><span class="n">enum</span><span class="o">.</span><span class="n">Enum</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Phase of the Kubernetes pod.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Phase of the Kubernetes pod.</span>
 
 <span class="sd">    Pod phases are defined in</span>
 <span class="sd">    https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-phase.</span>
@@ -3445,7 +3445,7 @@ Defaults to "zenml-edit".</p></td>
     <span class="n">namespace</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">cluster_role_binding_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;zenml-edit&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Create a new Kubernetes service account with &quot;edit&quot; rights.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a new Kubernetes service account with &quot;edit&quot; rights.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        core_api: Client of Core V1 API of Kubernetes API.</span>
@@ -3561,7 +3561,7 @@ Defaults to <code>"mysql-pv-claim"</code>.</p></td>
     <span class="n">volume_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;mysql-pv-volume&quot;</span><span class="p">,</span>
     <span class="n">volume_claim_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;mysql-pv-claim&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Create a Kubernetes deployment with a MySQL database running on it.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a Kubernetes deployment with a MySQL database running on it.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        core_api: Client of Core V1 API of Kubernetes API.</span>
@@ -3652,7 +3652,7 @@ Defaults to <code>"mysql-pv-claim"</code>.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kubernetes/orchestrators/kube_utils.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">create_namespace</span><span class="p">(</span><span class="n">core_api</span><span class="p">:</span> <span class="n">k8s_client</span><span class="o">.</span><span class="n">CoreV1Api</span><span class="p">,</span> <span class="n">namespace</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Create a Kubernetes namespace.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a Kubernetes namespace.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        core_api: Client of Core V1 API of Kubernetes API.</span>
@@ -3718,7 +3718,7 @@ Defaults to <code>"mysql-pv-claim"</code>.</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">delete_deployment</span><span class="p">(</span>
     <span class="n">apps_api</span><span class="p">:</span> <span class="n">k8s_client</span><span class="o">.</span><span class="n">AppsV1Api</span><span class="p">,</span> <span class="n">deployment_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">namespace</span><span class="p">:</span> <span class="nb">str</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Delete a Kubernetes deployment.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Delete a Kubernetes deployment.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        apps_api: Client of Apps V1 API of Kubernetes API.</span>
@@ -3820,7 +3820,7 @@ Defaults to <code>"mysql-pv-claim"</code>.</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_pod</span><span class="p">(</span>
     <span class="n">core_api</span><span class="p">:</span> <span class="n">k8s_client</span><span class="o">.</span><span class="n">CoreV1Api</span><span class="p">,</span> <span class="n">pod_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">namespace</span><span class="p">:</span> <span class="nb">str</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">k8s_client</span><span class="o">.</span><span class="n">V1Pod</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Get a pod from Kubernetes metadata API.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a pod from Kubernetes metadata API.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        core_api: Client of `CoreV1Api` of Kubernetes API.</span>
@@ -3879,7 +3879,7 @@ Defaults to <code>"mysql-pv-claim"</code>.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kubernetes/orchestrators/kube_utils.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">is_inside_kubernetes</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Check whether we are inside a Kubernetes cluster or on a remote host.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check whether we are inside a Kubernetes cluster or on a remote host.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        True if inside a Kubernetes cluster, else False.</span>
@@ -3937,7 +3937,7 @@ currently active context.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kubernetes/orchestrators/kube_utils.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">load_kube_config</span><span class="p">(</span><span class="n">context</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Load the Kubernetes client config.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load the Kubernetes client config.</span>
 
 <span class="sd">    Depending on the environment (whether it is inside the running Kubernetes</span>
 <span class="sd">    cluster or remote host), different location will be searched for the config</span>
@@ -4010,7 +4010,7 @@ currently active context.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kubernetes/orchestrators/kube_utils.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">pod_failed</span><span class="p">(</span><span class="n">pod</span><span class="p">:</span> <span class="n">k8s_client</span><span class="o">.</span><span class="n">V1Pod</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Check if pod status is &#39;Failed&#39;.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if pod status is &#39;Failed&#39;.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        pod: Kubernetes pod.</span>
@@ -4078,7 +4078,7 @@ currently active context.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kubernetes/orchestrators/kube_utils.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">pod_is_done</span><span class="p">(</span><span class="n">pod</span><span class="p">:</span> <span class="n">k8s_client</span><span class="o">.</span><span class="n">V1Pod</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Check if pod status is &#39;Succeeded&#39;.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if pod status is &#39;Succeeded&#39;.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        pod: Kubernetes pod.</span>
@@ -4146,7 +4146,7 @@ currently active context.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kubernetes/orchestrators/kube_utils.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">pod_is_not_pending</span><span class="p">(</span><span class="n">pod</span><span class="p">:</span> <span class="n">k8s_client</span><span class="o">.</span><span class="n">V1Pod</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Check if pod status is not &#39;Pending&#39;.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if pod status is not &#39;Pending&#39;.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        pod: Kubernetes pod.</span>
@@ -4214,7 +4214,7 @@ currently active context.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kubernetes/orchestrators/kube_utils.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">sanitize_pod_name</span><span class="p">(</span><span class="n">pod_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Sanitize pod names so they conform to Kubernetes pod naming convention.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Sanitize pod names so they conform to Kubernetes pod naming convention.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        pod_name: Arbitrary input pod name.</span>
@@ -4349,7 +4349,7 @@ Defaults to False.</p></td>
     <span class="n">exponential_backoff</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">stream_logs</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">k8s_client</span><span class="o">.</span><span class="n">V1Pod</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Wait for a pod to meet an exit condition.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Wait for a pod to meet an exit condition.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        core_api: Client of `CoreV1Api` of Kubernetes API.</span>
@@ -4483,14 +4483,14 @@ KubernetesOrchestrator            (<a class="autorefs autorefs-internal" title="
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kubernetes/orchestrators/kubernetes_orchestrator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">KubernetesOrchestrator</span><span class="p">(</span><span class="n">BaseOrchestrator</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Orchestrator for running ZenML pipelines using native Kubernetes.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Orchestrator for running ZenML pipelines using native Kubernetes.&quot;&quot;&quot;</span>
 
     <span class="n">_k8s_core_api</span><span class="p">:</span> <span class="n">k8s_client</span><span class="o">.</span><span class="n">CoreV1Api</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">_k8s_batch_api</span><span class="p">:</span> <span class="n">k8s_client</span><span class="o">.</span><span class="n">BatchV1beta1Api</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">_k8s_rbac_api</span><span class="p">:</span> <span class="n">k8s_client</span><span class="o">.</span><span class="n">RbacAuthorizationV1Api</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Initialize the class and the Kubernetes clients.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the class and the Kubernetes clients.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            *args: The positional arguments to pass to the Pydantic object.</span>
@@ -4500,7 +4500,7 @@ KubernetesOrchestrator            (<a class="autorefs autorefs-internal" title="
         <span class="bp">self</span><span class="o">.</span><span class="n">_initialize_k8s_clients</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">_initialize_k8s_clients</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Initialize the Kubernetes clients.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the Kubernetes clients.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">skip_config_loading</span><span class="p">:</span>
             <span class="k">return</span>
         <span class="n">kube_utils</span><span class="o">.</span><span class="n">load_kube_config</span><span class="p">(</span><span class="n">context</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">kubernetes_context</span><span class="p">)</span>
@@ -4510,7 +4510,7 @@ KubernetesOrchestrator            (<a class="autorefs autorefs-internal" title="
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">KubernetesOrchestratorConfig</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the `KubernetesOrchestratorConfig` config.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `KubernetesOrchestratorConfig` config.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The configuration.</span>
@@ -4519,7 +4519,7 @@ KubernetesOrchestrator            (<a class="autorefs autorefs-internal" title="
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">settings_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseSettings&quot;</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Settings class for the Kubernetes orchestrator.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Settings class for the Kubernetes orchestrator.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The settings class.</span>
@@ -4527,7 +4527,7 @@ KubernetesOrchestrator            (<a class="autorefs autorefs-internal" title="
         <span class="k">return</span> <span class="n">KubernetesOrchestratorSettings</span>
 
     <span class="k">def</span> <span class="nf">get_kubernetes_contexts</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Get list of configured Kubernetes contexts and the active context.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get list of configured Kubernetes contexts and the active context.</span>
 
 <span class="sd">        Raises:</span>
 <span class="sd">            RuntimeError: if the Kubernetes configuration cannot be loaded.</span>
@@ -4549,14 +4549,14 @@ KubernetesOrchestrator            (<a class="autorefs autorefs-internal" title="
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">validator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">StackValidator</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Defines the validator that checks whether the stack is valid.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Defines the validator that checks whether the stack is valid.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Stack validator.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">def</span> <span class="nf">_validate_local_requirements</span><span class="p">(</span><span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-            <span class="sd">&quot;&quot;&quot;Validates that the stack contains no local components.</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Validates that the stack contains no local components.</span>
 
 <span class="sd">            Args:</span>
 <span class="sd">                stack: The stack.</span>
@@ -4637,7 +4637,7 @@ KubernetesOrchestrator            (<a class="autorefs autorefs-internal" title="
         <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">,</span>
         <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Build a Docker image and push it to the container registry.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build a Docker image and push it to the container registry.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            deployment: The pipeline deployment configuration.</span>
@@ -4654,7 +4654,7 @@ KubernetesOrchestrator            (<a class="autorefs autorefs-internal" title="
         <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">,</span>
         <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Runs the pipeline in Kubernetes.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Runs the pipeline in Kubernetes.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            deployment: The pipeline deployment to prepare or run.</span>
@@ -4780,7 +4780,7 @@ KubernetesOrchestrator            (<a class="autorefs autorefs-internal" title="
             <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">get_orchestrator_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the active orchestrator run id.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the active orchestrator run id.</span>
 
 <span class="sd">        Raises:</span>
 <span class="sd">            RuntimeError: If the environment variable specifying the run id</span>
@@ -4970,7 +4970,7 @@ KubernetesOrchestrator            (<a class="autorefs autorefs-internal" title="
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kubernetes/orchestrators/kubernetes_orchestrator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Initialize the class and the Kubernetes clients.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize the class and the Kubernetes clients.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        *args: The positional arguments to pass to the Pydantic object.</span>
@@ -5034,7 +5034,7 @@ active_context_name: Name of the active Kubernetes context.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kubernetes/orchestrators/kubernetes_orchestrator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_kubernetes_contexts</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Get list of configured Kubernetes contexts and the active context.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get list of configured Kubernetes contexts and the active context.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        RuntimeError: if the Kubernetes configuration cannot be loaded.</span>
@@ -5109,7 +5109,7 @@ is not set.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kubernetes/orchestrators/kubernetes_orchestrator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_orchestrator_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns the active orchestrator run id.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the active orchestrator run id.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        RuntimeError: If the environment variable specifying the run id</span>
@@ -5194,7 +5194,7 @@ is not set.</p></td>
     <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">,</span>
     <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Runs the pipeline in Kubernetes.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Runs the pipeline in Kubernetes.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        deployment: The pipeline deployment to prepare or run.</span>
@@ -5372,7 +5372,7 @@ is not set.</p></td>
     <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">,</span>
     <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Build a Docker image and push it to the container registry.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build a Docker image and push it to the container registry.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        deployment: The pipeline deployment configuration.</span>
@@ -5457,7 +5457,7 @@ is not set.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kubernetes/orchestrators/kubernetes_orchestrator_entrypoint.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Entrypoint of the k8s master/orchestrator pod.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Entrypoint of the k8s master/orchestrator pod.&quot;&quot;&quot;</span>
     <span class="c1"># Log to the container&#39;s stdout so it can be streamed by the client.</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Kubernetes orchestrator pod started.&quot;</span><span class="p">)</span>
 
@@ -5482,7 +5482,7 @@ is not set.</p></td>
     <span class="n">step_command</span> <span class="o">=</span> <span class="n">StepEntrypointConfiguration</span><span class="o">.</span><span class="n">get_entrypoint_command</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">run_step_on_kubernetes</span><span class="p">(</span><span class="n">step_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Run a pipeline step in a separate Kubernetes pod.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run a pipeline step in a separate Kubernetes pod.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            step_name: Name of the step.</span>
@@ -5573,7 +5573,7 @@ is not set.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kubernetes/orchestrators/kubernetes_orchestrator_entrypoint.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">parse_args</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Parse entrypoint arguments.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parse entrypoint arguments.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Parsed args.</span>
@@ -5649,11 +5649,11 @@ KubernetesOrchestratorEntrypointConfiguration        </code>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kubernetes/orchestrators/kubernetes_orchestrator_entrypoint_configuration.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">KubernetesOrchestratorEntrypointConfiguration</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Entrypoint configuration for the k8s master/orchestrator pod.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Entrypoint configuration for the k8s master/orchestrator pod.&quot;&quot;&quot;</span>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">get_entrypoint_options</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Gets all the options required for running this entrypoint.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets all the options required for running this entrypoint.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Entrypoint options.</span>
@@ -5667,7 +5667,7 @@ KubernetesOrchestratorEntrypointConfiguration        </code>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">get_entrypoint_command</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns a command that runs the entrypoint module.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns a command that runs the entrypoint module.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Entrypoint command.</span>
@@ -5686,7 +5686,7 @@ KubernetesOrchestratorEntrypointConfiguration        </code>
         <span class="n">image_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">kubernetes_namespace</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Gets all arguments that the entrypoint command should be called with.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets all arguments that the entrypoint command should be called with.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            run_name: Name of the ZenML run.</span>
@@ -5793,7 +5793,7 @@ KubernetesOrchestratorEntrypointConfiguration        </code>
     <span class="n">image_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">kubernetes_namespace</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Gets all arguments that the entrypoint command should be called with.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets all arguments that the entrypoint command should be called with.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        run_name: Name of the ZenML run.</span>
@@ -5857,7 +5857,7 @@ KubernetesOrchestratorEntrypointConfiguration        </code>
           <summary>Source code in <code>zenml/integrations/kubernetes/orchestrators/kubernetes_orchestrator_entrypoint_configuration.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span> <span class="nf">get_entrypoint_command</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Returns a command that runs the entrypoint module.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a command that runs the entrypoint module.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Entrypoint command.</span>
@@ -5912,7 +5912,7 @@ KubernetesOrchestratorEntrypointConfiguration        </code>
           <summary>Source code in <code>zenml/integrations/kubernetes/orchestrators/kubernetes_orchestrator_entrypoint_configuration.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span> <span class="nf">get_entrypoint_options</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Gets all the options required for running this entrypoint.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets all the options required for running this entrypoint.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Entrypoint options.</span>
@@ -6032,7 +6032,7 @@ KubernetesOrchestratorEntrypointConfiguration        </code>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">add_pod_settings</span><span class="p">(</span>
     <span class="n">settings</span><span class="p">:</span> <span class="n">KubernetesPodSettings</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Updates `spec` fields in pod if passed in orchestrator settings.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Updates `spec` fields in pod if passed in orchestrator settings.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        settings: Pod settings to apply.</span>
@@ -6134,7 +6134,7 @@ KubernetesOrchestratorEntrypointConfiguration        </code>
     <span class="n">service_account_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">namespace</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;default&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Build a manifest for a cluster role binding of a service account.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build a manifest for a cluster role binding of a service account.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: Name of the cluster role binding.</span>
@@ -6281,7 +6281,7 @@ run Kubernetes commands from within the cluster.</p></td>
     <span class="n">settings</span><span class="p">:</span> <span class="n">KubernetesOrchestratorSettings</span><span class="p">,</span>
     <span class="n">service_account_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Create a manifest for launching a pod as scheduled CRON job.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a manifest for launching a pod as scheduled CRON job.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        cron_expression: CRON job schedule expression, e.g. &quot;* * * * *&quot;.</span>
@@ -6404,7 +6404,7 @@ Defaults to <code>"mysql-pv-claim"</code>.</p></td>
     <span class="n">port</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3306</span><span class="p">,</span>
     <span class="n">pv_claim_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;mysql-pv-claim&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Build a manifest for deploying a MySQL database.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build a manifest for deploying a MySQL database.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: Name of the deployment. Defaults to &quot;mysql&quot;.</span>
@@ -6540,7 +6540,7 @@ Defaults to <code>"mysql-pv-claim"</code>.</p></td>
     <span class="n">namespace</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;default&quot;</span><span class="p">,</span>
     <span class="n">port</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3306</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Build a manifest for a service relating to a deployed MySQL database.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build a manifest for a service relating to a deployed MySQL database.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: Name of the service. Defaults to &quot;mysql&quot;.</span>
@@ -6622,7 +6622,7 @@ Defaults to <code>"mysql-pv-claim"</code>.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kubernetes/orchestrators/manifest_utils.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">build_namespace_manifest</span><span class="p">(</span><span class="n">namespace</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Build the manifest for a new namespace.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build the manifest for a new namespace.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        namespace: Kubernetes namespace.</span>
@@ -6712,7 +6712,7 @@ Defaults to <code>"mysql-pv-claim"</code>.</p></td>
     <span class="n">namespace</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;default&quot;</span><span class="p">,</span>
     <span class="n">storage_request</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;10Gi&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Build a manifest for a persistent volume claim.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build a manifest for a persistent volume claim.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: Name of the persistent volume claim.</span>
@@ -6821,7 +6821,7 @@ Defaults to <code>"mysql-pv-claim"</code>.</p></td>
     <span class="n">storage_capacity</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;10Gi&quot;</span><span class="p">,</span>
     <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;/mnt/data&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Build a manifest for a persistent volume.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build a manifest for a persistent volume.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: Name of the persistent volume.</span>
@@ -6966,7 +6966,7 @@ run Kubernetes commands from within the cluster.</p></td>
     <span class="n">service_account_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">env</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Build a Kubernetes pod manifest for a ZenML run or step.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build a Kubernetes pod manifest for a ZenML run or step.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        pod_name: Name of the pod.</span>
@@ -7090,7 +7090,7 @@ run Kubernetes commands from within the cluster.</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">build_service_account_manifest</span><span class="p">(</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">namespace</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;default&quot;</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Build the manifest for a service account.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build the manifest for a service account.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: Name of the service account.</span>
@@ -7209,7 +7209,7 @@ KubernetesPodSettings            (<a class="autorefs autorefs-internal" title="z
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kubernetes/pod_settings.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">KubernetesPodSettings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Kubernetes Pod settings.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Kubernetes Pod settings.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        node_selectors: Node selectors to apply to the pod.</span>
@@ -7225,7 +7225,7 @@ KubernetesPodSettings            (<a class="autorefs autorefs-internal" title="z
     <span class="k">def</span> <span class="nf">_convert_affinity</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="s2">&quot;V1Affinity&quot;</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Converts Kubernetes affinity to a dict.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Converts Kubernetes affinity to a dict.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            value: The affinity value.</span>
@@ -7244,7 +7244,7 @@ KubernetesPodSettings            (<a class="autorefs autorefs-internal" title="z
     <span class="k">def</span> <span class="nf">_convert_tolerations</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="s2">&quot;V1Toleration&quot;</span><span class="p">]]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Converts Kubernetes tolerations to dicts.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Converts Kubernetes tolerations to dicts.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            value: The tolerations list.</span>
@@ -7404,7 +7404,7 @@ KubernetesPodSettings            (<a class="autorefs autorefs-internal" title="z
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kubernetes/serialization_utils.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">deserialize_kubernetes_model</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">class_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Deserializes a Kubernetes model.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Deserializes a Kubernetes model.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        data: The model data.</span>
@@ -7537,7 +7537,7 @@ KubernetesPodSettings            (<a class="autorefs autorefs-internal" title="z
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kubernetes/serialization_utils.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_model_class</span><span class="p">(</span><span class="n">class_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Gets a Kubernetes model class.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets a Kubernetes model class.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        class_name: Name of the class to get.</span>
@@ -7618,7 +7618,7 @@ KubernetesPodSettings            (<a class="autorefs autorefs-internal" title="z
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kubernetes/serialization_utils.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">is_model_class</span><span class="p">(</span><span class="n">class_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Checks whether the given class name is a Kubernetes model class.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks whether the given class name is a Kubernetes model class.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        class_name: Name of the class to check.</span>
@@ -7703,7 +7703,7 @@ KubernetesPodSettings            (<a class="autorefs autorefs-internal" title="z
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kubernetes/serialization_utils.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">serialize_kubernetes_model</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Serializes a Kubernetes model.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Serializes a Kubernetes model.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        model: The model to serialize.</span>

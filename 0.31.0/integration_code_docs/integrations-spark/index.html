@@ -2382,19 +2382,19 @@ SparkIntegration            (<a class="autorefs autorefs-internal" title="zenml.
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/spark/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SparkIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Definition of Spark integration for ZenML.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Definition of Spark integration for ZenML.&quot;&quot;&quot;</span>
 
     <span class="n">NAME</span> <span class="o">=</span> <span class="n">SPARK</span>
     <span class="n">REQUIREMENTS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;pyspark==3.2.1&quot;</span><span class="p">]</span>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Activating the corresponding Spark materializers.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Activating the corresponding Spark materializers.&quot;&quot;&quot;</span>
         <span class="kn">from</span> <span class="nn">zenml.integrations.spark</span> <span class="kn">import</span> <span class="n">materializers</span>  <span class="c1"># noqa</span>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Spark integration.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Spark integration.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The flavor wrapper for the step operator flavor</span>
@@ -2442,7 +2442,7 @@ SparkIntegration            (<a class="autorefs autorefs-internal" title="zenml.
           <summary>Source code in <code>zenml/integrations/spark/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span> <span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Activating the corresponding Spark materializers.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Activating the corresponding Spark materializers.&quot;&quot;&quot;</span>
     <span class="kn">from</span> <span class="nn">zenml.integrations.spark</span> <span class="kn">import</span> <span class="n">materializers</span>  <span class="c1"># noqa</span>
 </code></pre></div>
         </details>
@@ -2488,7 +2488,7 @@ SparkIntegration            (<a class="autorefs autorefs-internal" title="zenml.
           <summary>Source code in <code>zenml/integrations/spark/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
-    <span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Spark integration.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Spark integration.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The flavor wrapper for the step operator flavor</span>
@@ -2623,7 +2623,7 @@ components (to create and watch the pods).</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/spark/flavors/spark_on_kubernetes_step_operator_flavor.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">KubernetesSparkStepOperatorConfig</span><span class="p">(</span><span class="n">SparkStepOperatorConfig</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Config for the Kubernetes Spark step operator.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Config for the Kubernetes Spark step operator.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        namespace: the namespace under which the driver and executor pods</span>
@@ -2684,11 +2684,11 @@ KubernetesSparkStepOperatorFlavor            (<a class="autorefs autorefs-intern
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/spark/flavors/spark_on_kubernetes_step_operator_flavor.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">KubernetesSparkStepOperatorFlavor</span><span class="p">(</span><span class="n">SparkStepOperatorFlavor</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Flavor for the Kubernetes Spark step operator.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Flavor for the Kubernetes Spark step operator.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The name of the flavor.</span>
@@ -2697,7 +2697,7 @@ KubernetesSparkStepOperatorFlavor            (<a class="autorefs autorefs-intern
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">KubernetesSparkStepOperatorConfig</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns `KubernetesSparkStepOperatorConfig` config class.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns `KubernetesSparkStepOperatorConfig` config class.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">                The config class.</span>
@@ -2706,7 +2706,7 @@ KubernetesSparkStepOperatorFlavor            (<a class="autorefs autorefs-intern
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;KubernetesSparkStepOperator&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>
@@ -2937,7 +2937,7 @@ the implementation supports Kubernetes as a cluster manager.</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SparkStepOperatorConfig</span><span class="p">(</span>  <span class="c1"># type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173</span>
     <span class="n">BaseStepOperatorConfig</span><span class="p">,</span> <span class="n">SparkStepOperatorSettings</span>
 <span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Spark step operator config.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Spark step operator config.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        master: is the master URL for the cluster. You might see different</span>
@@ -2996,11 +2996,11 @@ SparkStepOperatorFlavor            (<a class="autorefs autorefs-internal" title=
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/spark/flavors/spark_step_operator_flavor.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SparkStepOperatorFlavor</span><span class="p">(</span><span class="n">BaseStepOperatorFlavor</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Spark step operator flavor.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Spark step operator flavor.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The name of the flavor.</span>
@@ -3009,7 +3009,7 @@ SparkStepOperatorFlavor            (<a class="autorefs autorefs-internal" title=
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">SparkStepOperatorConfig</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns `SparkStepOperatorConfig` config class.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns `SparkStepOperatorConfig` config class.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">                The config class.</span>
@@ -3018,7 +3018,7 @@ SparkStepOperatorFlavor            (<a class="autorefs autorefs-internal" title=
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;SparkStepOperator&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>
@@ -3216,7 +3216,7 @@ operator was not implemented).</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/spark/flavors/spark_step_operator_flavor.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SparkStepOperatorSettings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Spark step operator settings.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Spark step operator settings.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        deploy_mode: can either be &#39;cluster&#39; (default) or &#39;client&#39; and it</span>
@@ -3234,7 +3234,7 @@ operator was not implemented).</p></td>
     <span class="k">def</span> <span class="nf">_convert_json_string</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Converts potential JSON strings passed via the CLI to dictionaries.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Converts potential JSON strings passed via the CLI to dictionaries.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            value: The value to convert.</span>
@@ -3390,13 +3390,13 @@ SparkDataFrameMaterializer            (<a class="autorefs autorefs-internal" tit
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/spark/materializers/spark_dataframe_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SparkDataFrameMaterializer</span><span class="p">(</span><span class="n">BaseMaterializer</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Materializer to read/write Spark dataframes.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Materializer to read/write Spark dataframes.&quot;&quot;&quot;</span>
 
     <span class="n">ASSOCIATED_TYPES</span> <span class="o">=</span> <span class="p">(</span><span class="n">DataFrame</span><span class="p">,)</span>
     <span class="n">ASSOCIATED_ARTIFACT_TYPE</span> <span class="o">=</span> <span class="n">ArtifactType</span><span class="o">.</span><span class="n">DATA</span>
 
     <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Reads and returns a spark dataframe.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reads and returns a spark dataframe.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            data_type: The type of the data to read.</span>
@@ -3413,7 +3413,7 @@ SparkDataFrameMaterializer            (<a class="autorefs autorefs-internal" tit
         <span class="k">return</span> <span class="n">spark</span><span class="o">.</span><span class="n">read</span><span class="o">.</span><span class="n">parquet</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Writes a spark dataframe.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Writes a spark dataframe.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            df: A spark dataframe object.</span>
@@ -3491,7 +3491,7 @@ SparkDataFrameMaterializer            (<a class="autorefs autorefs-internal" tit
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/spark/materializers/spark_dataframe_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Reads and returns a spark dataframe.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reads and returns a spark dataframe.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        data_type: The type of the data to read.</span>
@@ -3550,7 +3550,7 @@ SparkDataFrameMaterializer            (<a class="autorefs autorefs-internal" tit
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/spark/materializers/spark_dataframe_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Writes a spark dataframe.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Writes a spark dataframe.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        df: A spark dataframe object.</span>
@@ -3636,7 +3636,7 @@ SparkModelMaterializer            (<a class="autorefs autorefs-internal" title="
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/spark/materializers/spark_model_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SparkModelMaterializer</span><span class="p">(</span><span class="n">BaseMaterializer</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Materializer to read/write Spark models.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Materializer to read/write Spark models.&quot;&quot;&quot;</span>
 
     <span class="n">ASSOCIATED_TYPES</span> <span class="o">=</span> <span class="p">(</span><span class="n">Transformer</span><span class="p">,</span> <span class="n">Estimator</span><span class="p">,</span> <span class="n">Model</span><span class="p">)</span>
     <span class="n">ASSOCIATED_ARTIFACT_TYPE</span> <span class="o">=</span> <span class="n">ArtifactType</span><span class="o">.</span><span class="n">MODEL</span>
@@ -3644,7 +3644,7 @@ SparkModelMaterializer            (<a class="autorefs autorefs-internal" title="
     <span class="k">def</span> <span class="nf">load</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">model_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Transformer</span><span class="p">,</span> <span class="n">Estimator</span><span class="p">,</span> <span class="n">Model</span><span class="p">]:</span>  <span class="c1"># type: ignore[type-arg]</span>
-        <span class="sd">&quot;&quot;&quot;Reads and returns a Spark ML model.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reads and returns a Spark ML model.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            model_type: The type of the model to read.</span>
@@ -3659,7 +3659,7 @@ SparkModelMaterializer            (<a class="autorefs autorefs-internal" title="
     <span class="k">def</span> <span class="nf">save</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Transformer</span><span class="p">,</span> <span class="n">Estimator</span><span class="p">,</span> <span class="n">Model</span><span class="p">]</span>  <span class="c1"># type: ignore[type-arg]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Writes a spark model.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Writes a spark model.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            model: A spark model.</span>
@@ -3739,7 +3739,7 @@ SparkModelMaterializer            (<a class="autorefs autorefs-internal" title="
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">load</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">model_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Transformer</span><span class="p">,</span> <span class="n">Estimator</span><span class="p">,</span> <span class="n">Model</span><span class="p">]:</span>  <span class="c1"># type: ignore[type-arg]</span>
-    <span class="sd">&quot;&quot;&quot;Reads and returns a Spark ML model.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reads and returns a Spark ML model.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        model_type: The type of the model to read.</span>
@@ -3796,7 +3796,7 @@ SparkModelMaterializer            (<a class="autorefs autorefs-internal" title="
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">save</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Transformer</span><span class="p">,</span> <span class="n">Estimator</span><span class="p">,</span> <span class="n">Model</span><span class="p">]</span>  <span class="c1"># type: ignore[type-arg]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Writes a spark model.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Writes a spark model.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        model: A spark model.</span>
@@ -3926,11 +3926,11 @@ KubernetesSparkStepOperator            (<a class="autorefs autorefs-internal" ti
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/spark/step_operators/kubernetes_step_operator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">KubernetesSparkStepOperator</span><span class="p">(</span><span class="n">SparkStepOperator</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Step operator which runs Steps with Spark on Kubernetes.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Step operator which runs Steps with Spark on Kubernetes.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">KubernetesSparkStepOperatorConfig</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the `KubernetesSparkStepOperatorConfig` config.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `KubernetesSparkStepOperatorConfig` config.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The configuration.</span>
@@ -3939,7 +3939,7 @@ KubernetesSparkStepOperator            (<a class="autorefs autorefs-internal" ti
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">validator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">StackValidator</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Validates the stack.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validates the stack.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            A validator that checks that the stack contains a remote container</span>
@@ -3979,7 +3979,7 @@ KubernetesSparkStepOperator            (<a class="autorefs autorefs-internal" ti
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">application_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Provides the application path in the corresponding docker image.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Provides the application path in the corresponding docker image.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The path to the application entrypoint within the docker image</span>
@@ -3991,7 +3991,7 @@ KubernetesSparkStepOperator            (<a class="autorefs autorefs-internal" ti
         <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">,</span>
         <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Build a Docker image and push it to the container registry.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build a Docker image and push it to the container registry.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            deployment: The pipeline deployment configuration.</span>
@@ -4036,7 +4036,7 @@ KubernetesSparkStepOperator            (<a class="autorefs autorefs-internal" ti
         <span class="n">spark_config</span><span class="p">:</span> <span class="n">SparkConf</span><span class="p">,</span>
         <span class="n">step_config</span><span class="p">:</span> <span class="s2">&quot;StepConfiguration&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Configures Spark to run on Kubernetes.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Configures Spark to run on Kubernetes.</span>
 
 <span class="sd">        This method will build and push a docker image for the drivers and</span>
 <span class="sd">        executors and adjust the config accordingly.</span>
@@ -4250,7 +4250,7 @@ registry and a remote artifact store.</p></td>
     <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">,</span>
     <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Build a Docker image and push it to the container registry.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build a Docker image and push it to the container registry.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        deployment: The pipeline deployment configuration.</span>
@@ -4364,10 +4364,10 @@ SparkEntrypointConfiguration            (<a class="autorefs autorefs-internal" t
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/spark/step_operators/spark_entrypoint_configuration.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SparkEntrypointConfiguration</span><span class="p">(</span><span class="n">StepOperatorEntrypointConfiguration</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Entrypoint configuration for the Spark step operator.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Entrypoint configuration for the Spark step operator.&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Runs the entrypoint configuration.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Runs the entrypoint configuration.</span>
 
 <span class="sd">        This prepends the directory containing the source files to the python</span>
 <span class="sd">        path so that spark can find them.</span>
@@ -4408,7 +4408,7 @@ path so that spark can find them.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/spark/step_operators/spark_entrypoint_configuration.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Runs the entrypoint configuration.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Runs the entrypoint configuration.</span>
 
 <span class="sd">    This prepends the directory containing the source files to the python</span>
 <span class="sd">    path so that spark can find them.</span>
@@ -4491,11 +4491,11 @@ SparkStepOperator            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/spark/step_operators/spark_step_operator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SparkStepOperator</span><span class="p">(</span><span class="n">BaseStepOperator</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base class for all Spark-related step operators.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for all Spark-related step operators.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SparkStepOperatorConfig</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the `SparkStepOperatorConfig` config.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `SparkStepOperatorConfig` config.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The configuration.</span>
@@ -4504,7 +4504,7 @@ SparkStepOperator            (<a class="autorefs autorefs-internal" title="zenml
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">settings_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseSettings&quot;</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Settings class for the Spark step operator.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Settings class for the Spark step operator.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The settings class.</span>
@@ -4513,7 +4513,7 @@ SparkStepOperator            (<a class="autorefs autorefs-internal" title="zenml
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">application_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Optional method for providing the application path.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Optional method for providing the application path.</span>
 
 <span class="sd">        This is especially critical when using &#39;spark-submit&#39; as it defines the</span>
 <span class="sd">        path (to the application in the environment where Spark is running)</span>
@@ -4533,7 +4533,7 @@ SparkStepOperator            (<a class="autorefs autorefs-internal" title="zenml
         <span class="n">spark_config</span><span class="p">:</span> <span class="n">SparkConf</span><span class="p">,</span>
         <span class="n">resource_settings</span><span class="p">:</span> <span class="s2">&quot;ResourceSettings&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Configures Spark to handle the resource settings.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Configures Spark to handle the resource settings.</span>
 
 <span class="sd">        This should serve as the layer between our ResourceSettings</span>
 <span class="sd">        and Spark&#39;s own ways of configuring its resources.</span>
@@ -4566,7 +4566,7 @@ SparkStepOperator            (<a class="autorefs autorefs-internal" title="zenml
         <span class="n">spark_config</span><span class="p">:</span> <span class="n">SparkConf</span><span class="p">,</span>
         <span class="n">step_config</span><span class="p">:</span> <span class="s2">&quot;StepConfiguration&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Configures Spark to handle backends like YARN, Mesos or Kubernetes.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Configures Spark to handle backends like YARN, Mesos or Kubernetes.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            spark_config: a SparkConf object which collects all the</span>
@@ -4575,7 +4575,7 @@ SparkStepOperator            (<a class="autorefs autorefs-internal" title="zenml
 <span class="sd">        &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">_io_configuration</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spark_config</span><span class="p">:</span> <span class="n">SparkConf</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Configures Spark to handle different input/output sources.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Configures Spark to handle different input/output sources.</span>
 
 <span class="sd">        When you work with the Spark integration, you get materializers</span>
 <span class="sd">        such as SparkDataFrameMaterializer, SparkModelMaterializer. However, in</span>
@@ -4651,7 +4651,7 @@ SparkStepOperator            (<a class="autorefs autorefs-internal" title="zenml
     <span class="k">def</span> <span class="nf">_additional_configuration</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">spark_config</span><span class="p">:</span> <span class="n">SparkConf</span><span class="p">,</span> <span class="n">settings</span><span class="p">:</span> <span class="n">SparkStepOperatorSettings</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Appends the user-defined configuration parameters.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Appends the user-defined configuration parameters.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            spark_config: a SparkConf object which collects all the</span>
@@ -4669,7 +4669,7 @@ SparkStepOperator            (<a class="autorefs autorefs-internal" title="zenml
         <span class="n">deploy_mode</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">entrypoint_command</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Generates and executes a spark-submit command.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generates and executes a spark-submit command.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            spark_config: a SparkConf object which collects all the</span>
@@ -4723,7 +4723,7 @@ SparkStepOperator            (<a class="autorefs autorefs-internal" title="zenml
         <span class="n">info</span><span class="p">:</span> <span class="s2">&quot;StepRunInfo&quot;</span><span class="p">,</span>
         <span class="n">entrypoint_command</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Launches a step on Spark.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Launches a step on Spark.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            info: Information about the step run.</span>
@@ -4936,7 +4936,7 @@ which is used within the command.</p>
     <span class="n">info</span><span class="p">:</span> <span class="s2">&quot;StepRunInfo&quot;</span><span class="p">,</span>
     <span class="n">entrypoint_command</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Launches a step on Spark.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Launches a step on Spark.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        info: Information about the step run.</span>

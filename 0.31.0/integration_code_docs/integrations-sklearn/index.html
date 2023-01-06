@@ -1723,14 +1723,14 @@ SklearnIntegration            (<a class="autorefs autorefs-internal" title="zenm
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/sklearn/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SklearnIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Definition of sklearn integration for ZenML.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Definition of sklearn integration for ZenML.&quot;&quot;&quot;</span>
 
     <span class="n">NAME</span> <span class="o">=</span> <span class="n">SKLEARN</span>
     <span class="n">REQUIREMENTS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;scikit-learn&quot;</span><span class="p">]</span>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Activates the integration.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Activates the integration.&quot;&quot;&quot;</span>
         <span class="kn">from</span> <span class="nn">zenml.integrations.sklearn</span> <span class="kn">import</span> <span class="n">materializers</span>  <span class="c1"># noqa</span>
 </code></pre></div>
         </details>
@@ -1770,7 +1770,7 @@ SklearnIntegration            (<a class="autorefs autorefs-internal" title="zenm
           <summary>Source code in <code>zenml/integrations/sklearn/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span> <span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Activates the integration.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Activates the integration.&quot;&quot;&quot;</span>
     <span class="kn">from</span> <span class="nn">zenml.integrations.sklearn</span> <span class="kn">import</span> <span class="n">materializers</span>  <span class="c1"># noqa</span>
 </code></pre></div>
         </details>
@@ -1870,7 +1870,7 @@ SklearnMaterializer            (<a class="autorefs autorefs-internal" title="zen
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/sklearn/materializers/sklearn_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SklearnMaterializer</span><span class="p">(</span><span class="n">BaseMaterializer</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Materializer to read data to and from sklearn.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Materializer to read data to and from sklearn.&quot;&quot;&quot;</span>
 
     <span class="n">ASSOCIATED_TYPES</span> <span class="o">=</span> <span class="p">(</span>
         <span class="n">BaseEstimator</span><span class="p">,</span>
@@ -1900,7 +1900,7 @@ SklearnMaterializer            (<a class="autorefs autorefs-internal" title="zen
         <span class="n">DensityMixin</span><span class="p">,</span>
         <span class="n">TransformerMixin</span><span class="p">,</span>
     <span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Reads a base sklearn model from a pickle file.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reads a base sklearn model from a pickle file.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            data_type: The type of the model.</span>
@@ -1929,7 +1929,7 @@ SklearnMaterializer            (<a class="autorefs autorefs-internal" title="zen
             <span class="n">TransformerMixin</span><span class="p">,</span>
         <span class="p">],</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Creates a pickle for a sklearn model.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Creates a pickle for a sklearn model.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            clf: A sklearn model.</span>
@@ -2019,7 +2019,7 @@ SklearnMaterializer            (<a class="autorefs autorefs-internal" title="zen
     <span class="n">DensityMixin</span><span class="p">,</span>
     <span class="n">TransformerMixin</span><span class="p">,</span>
 <span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Reads a base sklearn model from a pickle file.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reads a base sklearn model from a pickle file.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        data_type: The type of the model.</span>
@@ -2090,7 +2090,7 @@ SklearnMaterializer            (<a class="autorefs autorefs-internal" title="zen
         <span class="n">TransformerMixin</span><span class="p">,</span>
     <span class="p">],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Creates a pickle for a sklearn model.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Creates a pickle for a sklearn model.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        clf: A sklearn model.</span>

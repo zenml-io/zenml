@@ -2283,14 +2283,14 @@ GitHubIntegration            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/github/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">GitHubIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Definition of GitHub integration for ZenML.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Definition of GitHub integration for ZenML.&quot;&quot;&quot;</span>
 
     <span class="n">NAME</span> <span class="o">=</span> <span class="n">GITHUB</span>
     <span class="n">REQUIREMENTS</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;PyNaCl~=1.5.0&quot;</span><span class="p">]</span>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the GitHub integration.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the GitHub integration.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            List of stack component flavors for this integration.</span>
@@ -2354,7 +2354,7 @@ GitHubIntegration            (<a class="autorefs autorefs-internal" title="zenml
           <summary>Source code in <code>zenml/integrations/github/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
-    <span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the GitHub integration.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the GitHub integration.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        List of stack component flavors for this integration.</span>
@@ -2499,7 +2499,7 @@ be committed and pushed manually.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/github/flavors/github_actions_orchestrator_flavor.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">GitHubActionsOrchestratorConfig</span><span class="p">(</span><span class="n">BaseOrchestratorConfig</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Configuration for the GitHub Actions orchestrator.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Configuration for the GitHub Actions orchestrator.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        skip_dirty_repository_check: If `True`, this orchestrator will not</span>
@@ -2519,7 +2519,7 @@ be committed and pushed manually.</p></td>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_remote</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Checks if this stack component is running remotely.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if this stack component is running remotely.</span>
 
 <span class="sd">        This designation is used to determine if the stack component can be</span>
 <span class="sd">        used with a local ZenML database or if it requires a remote ZenML</span>
@@ -2621,11 +2621,11 @@ GitHubActionsOrchestratorFlavor            (<a class="autorefs autorefs-internal
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/github/flavors/github_actions_orchestrator_flavor.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">GitHubActionsOrchestratorFlavor</span><span class="p">(</span><span class="n">BaseOrchestratorFlavor</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;GitHub Actions orchestrator flavor.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;GitHub Actions orchestrator flavor.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Name of the orchestrator flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the orchestrator flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Name of the orchestrator flavor.</span>
@@ -2634,7 +2634,7 @@ GitHubActionsOrchestratorFlavor            (<a class="autorefs autorefs-internal
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">GitHubActionsOrchestratorConfig</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns `GitHubActionsOrchestratorConfig` config class.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns `GitHubActionsOrchestratorConfig` config class.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">                The config class.</span>
@@ -2643,7 +2643,7 @@ GitHubActionsOrchestratorFlavor            (<a class="autorefs autorefs-internal
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;GitHubActionsOrchestrator&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>
@@ -2874,7 +2874,7 @@ GitHubSecretsManagerConfig            (<a class="autorefs autorefs-internal" tit
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/github/flavors/github_secrets_manager_flavor.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">GitHubSecretsManagerConfig</span><span class="p">(</span><span class="n">BaseSecretsManagerConfig</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;The configuration for the GitHub Secrets Manager.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The configuration for the GitHub Secrets Manager.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        owner: The owner (either individual or organization) of the repository.</span>
@@ -2933,11 +2933,11 @@ GitHubSecretsManagerFlavor            (<a class="autorefs autorefs-internal" tit
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/github/flavors/github_secrets_manager_flavor.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">GitHubSecretsManagerFlavor</span><span class="p">(</span><span class="n">BaseSecretsManagerFlavor</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Class for the `GitHubSecretsManagerFlavor`.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class for the `GitHubSecretsManagerFlavor`.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The name of the flavor.</span>
@@ -2946,7 +2946,7 @@ GitHubSecretsManagerFlavor            (<a class="autorefs autorefs-internal" tit
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">GitHubSecretsManagerConfig</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns `GitHubSecretsManagerConfig` config class.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns `GitHubSecretsManagerConfig` config class.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">                The config class.</span>
@@ -2955,7 +2955,7 @@ GitHubSecretsManagerFlavor            (<a class="autorefs autorefs-internal" tit
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;GitHubSecretsManager&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>
@@ -3206,13 +3206,13 @@ GitHubActionsOrchestrator            (<a class="autorefs autorefs-internal" titl
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/github/orchestrators/github_actions_orchestrator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">GitHubActionsOrchestrator</span><span class="p">(</span><span class="n">BaseOrchestrator</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Orchestrator responsible for running pipelines using GitHub Actions.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Orchestrator responsible for running pipelines using GitHub Actions.&quot;&quot;&quot;</span>
 
     <span class="n">_git_repo</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Repo</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GitHubActionsOrchestratorConfig</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the `GitHubActionsOrchestratorConfig` config.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `GitHubActionsOrchestratorConfig` config.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The configuration.</span>
@@ -3221,7 +3221,7 @@ GitHubActionsOrchestrator            (<a class="autorefs autorefs-internal" titl
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">git_repo</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Repo</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the git repository for the current working directory.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the git repository for the current working directory.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Git repository for the current working directory.</span>
@@ -3260,7 +3260,7 @@ GitHubActionsOrchestrator            (<a class="autorefs autorefs-internal" titl
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">workflow_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns path to the GitHub workflows directory.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns path to the GitHub workflows directory.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The GitHub workflows directory.</span>
@@ -3270,7 +3270,7 @@ GitHubActionsOrchestrator            (<a class="autorefs autorefs-internal" titl
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">validator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">StackValidator</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Validator that ensures that the stack is compatible.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validator that ensures that the stack is compatible.</span>
 
 <span class="sd">        Makes sure that the stack contains a container registry and only</span>
 <span class="sd">        remote components.</span>
@@ -3324,7 +3324,7 @@ GitHubActionsOrchestrator            (<a class="autorefs autorefs-internal" titl
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">container_registry</span><span class="p">:</span> <span class="n">BaseContainerRegistry</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;GitHub Actions step for authenticating with the container registry.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;GitHub Actions step for authenticating with the container registry.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            container_registry: The container registry which (potentially)</span>
@@ -3365,7 +3365,7 @@ GitHubActionsOrchestrator            (<a class="autorefs autorefs-internal" titl
         <span class="n">file_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">secrets_manager</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseSecretsManager</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;GitHub Actions step for writing required environment variables.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;GitHub Actions step for writing required environment variables.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            file_name: Name of the environment file that should be written.</span>
@@ -3412,7 +3412,7 @@ GitHubActionsOrchestrator            (<a class="autorefs autorefs-internal" titl
         <span class="p">}</span>
 
     <span class="k">def</span> <span class="nf">get_orchestrator_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the active orchestrator run id.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the active orchestrator run id.</span>
 
 <span class="sd">        Raises:</span>
 <span class="sd">            RuntimeError: If the environment variable specifying the run id</span>
@@ -3434,7 +3434,7 @@ GitHubActionsOrchestrator            (<a class="autorefs autorefs-internal" titl
         <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">,</span>
         <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Build a Docker image and push it to the container registry.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build a Docker image and push it to the container registry.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            deployment: The pipeline deployment configuration.</span>
@@ -3467,7 +3467,7 @@ GitHubActionsOrchestrator            (<a class="autorefs autorefs-internal" titl
         <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">,</span>
         <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Writes a GitHub Action workflow yaml and optionally pushes it.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Writes a GitHub Action workflow yaml and optionally pushes it.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            deployment: The pipeline deployment to prepare or run.</span>
@@ -3863,7 +3863,7 @@ is not set.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/github/orchestrators/github_actions_orchestrator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_orchestrator_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns the active orchestrator run id.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the active orchestrator run id.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        RuntimeError: If the environment variable specifying the run id</span>
@@ -3949,7 +3949,7 @@ invalid cron expression is passed.</p></td>
     <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">,</span>
     <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Writes a GitHub Action workflow yaml and optionally pushes it.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Writes a GitHub Action workflow yaml and optionally pushes it.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        deployment: The pipeline deployment to prepare or run.</span>
@@ -4182,7 +4182,7 @@ repository and the repository is dirty.</p></td>
     <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">,</span>
     <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Build a Docker image and push it to the container registry.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build a Docker image and push it to the container registry.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        deployment: The pipeline deployment configuration.</span>
@@ -4333,13 +4333,13 @@ GitHubSecretsManager            (<a class="autorefs autorefs-internal" title="ze
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/github/secrets_managers/github_secrets_manager.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">GitHubSecretsManager</span><span class="p">(</span><span class="n">BaseSecretsManager</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Class to interact with the GitHub secrets manager.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class to interact with the GitHub secrets manager.&quot;&quot;&quot;</span>
 
     <span class="n">_session</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">requests</span><span class="o">.</span><span class="n">Session</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GitHubSecretsManagerConfig</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the `GitHubSecretsManagerConfig` config.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `GitHubSecretsManagerConfig` config.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The configuration.</span>
@@ -4348,7 +4348,7 @@ GitHubSecretsManager            (<a class="autorefs autorefs-internal" title="ze
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">post_registration_message</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Info message regarding GitHub API authentication env variables.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Info message regarding GitHub API authentication env variables.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The info message.</span>
@@ -4357,7 +4357,7 @@ GitHubSecretsManager            (<a class="autorefs autorefs-internal" title="ze
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">session</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">requests</span><span class="o">.</span><span class="n">Session</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Session to send requests to the GitHub API.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Session to send requests to the GitHub API.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Session to use for GitHub API calls.</span>
@@ -4386,7 +4386,7 @@ GitHubSecretsManager            (<a class="autorefs autorefs-internal" title="ze
     <span class="k">def</span> <span class="nf">_send_request</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">resource</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">requests</span><span class="o">.</span><span class="n">Response</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Sends an HTTP request to the GitHub API.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sends an HTTP request to the GitHub API.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            method: Method of the HTTP request that should be sent.</span>
@@ -4417,7 +4417,7 @@ GitHubSecretsManager            (<a class="autorefs autorefs-internal" title="ze
         <span class="k">return</span> <span class="n">response</span>
 
     <span class="k">def</span> <span class="nf">_encrypt_secret</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">secret_value</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Encrypts a secret value.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Encrypts a secret value.</span>
 
 <span class="sd">        This method first fetches a public key from the GitHub API and then uses</span>
 <span class="sd">        this key to encrypt the secret value. This is needed in order to</span>
@@ -4442,7 +4442,7 @@ GitHubSecretsManager            (<a class="autorefs autorefs-internal" title="ze
         <span class="k">return</span> <span class="n">encrypted_string</span><span class="p">,</span> <span class="n">cast</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">response_json</span><span class="p">[</span><span class="s2">&quot;key_id&quot;</span><span class="p">])</span>
 
     <span class="k">def</span> <span class="nf">_has_secret</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">secret_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Checks whether a secret exists for the given name.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks whether a secret exists for the given name.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            secret_name: Name of the secret which should be checked.</span>
@@ -4454,7 +4454,7 @@ GitHubSecretsManager            (<a class="autorefs autorefs-internal" title="ze
         <span class="k">return</span> <span class="n">secret_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_all_secret_keys</span><span class="p">(</span><span class="n">include_prefix</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">get_secret</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">secret_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseSecretSchema</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Gets the value of a secret.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets the value of a secret.</span>
 
 <span class="sd">        This method only works when called from within a GitHub Actions</span>
 <span class="sd">        environment.</span>
@@ -4517,7 +4517,7 @@ GitHubSecretsManager            (<a class="autorefs autorefs-internal" title="ze
         <span class="k">return</span> <span class="n">schema_class</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">secret_name</span><span class="p">,</span> <span class="o">**</span><span class="n">secret_content</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">get_all_secret_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">include_prefix</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Get all secret keys.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all secret keys.</span>
 
 <span class="sd">        If we&#39;re running inside a GitHub Actions environment, this will return</span>
 <span class="sd">        the names of all environment variables starting with a ZenML internal</span>
@@ -4555,7 +4555,7 @@ GitHubSecretsManager            (<a class="autorefs autorefs-internal" title="ze
         <span class="k">return</span> <span class="n">keys</span>
 
     <span class="k">def</span> <span class="nf">register_secret</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">secret</span><span class="p">:</span> <span class="n">BaseSecretSchema</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Registers a new secret.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Registers a new secret.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            secret: The secret to register.</span>
@@ -4588,7 +4588,7 @@ GitHubSecretsManager            (<a class="autorefs autorefs-internal" title="ze
         <span class="bp">self</span><span class="o">.</span><span class="n">_send_request</span><span class="p">(</span><span class="s2">&quot;PUT&quot;</span><span class="p">,</span> <span class="n">resource</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;/</span><span class="si">{</span><span class="n">full_secret_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="n">body</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">update_secret</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">secret</span><span class="p">:</span> <span class="n">BaseSecretSchema</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NoReturn</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Update an existing secret.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update an existing secret.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            secret: The secret to update.</span>
@@ -4605,7 +4605,7 @@ GitHubSecretsManager            (<a class="autorefs autorefs-internal" title="ze
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">delete_secret</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">secret_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Delete an existing secret.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Delete an existing secret.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            secret_name: The name of the secret to delete.</span>
@@ -4614,7 +4614,7 @@ GitHubSecretsManager            (<a class="autorefs autorefs-internal" title="ze
         <span class="bp">self</span><span class="o">.</span><span class="n">_send_request</span><span class="p">(</span><span class="s2">&quot;DELETE&quot;</span><span class="p">,</span> <span class="n">resource</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;/</span><span class="si">{</span><span class="n">full_secret_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">delete_all_secrets</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Delete all existing secrets.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Delete all existing secrets.&quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">secret_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_all_secret_keys</span><span class="p">(</span><span class="n">include_prefix</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">delete_secret</span><span class="p">(</span><span class="n">secret_name</span><span class="o">=</span><span class="n">secret_name</span><span class="p">)</span>
 </code></pre></div>
@@ -4779,7 +4779,7 @@ not set.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/github/secrets_managers/github_secrets_manager.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">delete_all_secrets</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Delete all existing secrets.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Delete all existing secrets.&quot;&quot;&quot;</span>
     <span class="k">for</span> <span class="n">secret_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_all_secret_keys</span><span class="p">(</span><span class="n">include_prefix</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">delete_secret</span><span class="p">(</span><span class="n">secret_name</span><span class="o">=</span><span class="n">secret_name</span><span class="p">)</span>
 </code></pre></div>
@@ -4826,7 +4826,7 @@ not set.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/github/secrets_managers/github_secrets_manager.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">delete_secret</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">secret_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Delete an existing secret.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Delete an existing secret.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        secret_name: The name of the secret to delete.</span>
@@ -4898,7 +4898,7 @@ included in the returned names.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/github/secrets_managers/github_secrets_manager.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_all_secret_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">include_prefix</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Get all secret keys.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get all secret keys.</span>
 
 <span class="sd">    If we&#39;re running inside a GitHub Actions environment, this will return</span>
 <span class="sd">    the names of all environment variables starting with a ZenML internal</span>
@@ -5014,7 +5014,7 @@ environment.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/github/secrets_managers/github_secrets_manager.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_secret</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">secret_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseSecretSchema</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Gets the value of a secret.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets the value of a secret.</span>
 
 <span class="sd">    This method only works when called from within a GitHub Actions</span>
 <span class="sd">    environment.</span>
@@ -5134,7 +5134,7 @@ environment.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/github/secrets_managers/github_secrets_manager.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">register_secret</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">secret</span><span class="p">:</span> <span class="n">BaseSecretSchema</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Registers a new secret.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Registers a new secret.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        secret: The secret to register.</span>
@@ -5226,7 +5226,7 @@ secret values outside of a GitHub Actions environment.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/github/secrets_managers/github_secrets_manager.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">update_secret</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">secret</span><span class="p">:</span> <span class="n">BaseSecretSchema</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NoReturn</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Update an existing secret.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Update an existing secret.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        secret: The secret to update.</span>
@@ -5292,7 +5292,7 @@ secret values outside of a GitHub Actions environment.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/github/secrets_managers/github_secrets_manager.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">inside_github_action_environment</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns if the current code is executing in a GitHub Actions environment.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns if the current code is executing in a GitHub Actions environment.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        `True` if running in a GitHub Actions environment, `False` otherwise.</span>

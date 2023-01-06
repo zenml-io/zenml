@@ -3048,14 +3048,14 @@ execution.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/post_execution/artifact.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ArtifactView</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Post-execution artifact class.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Post-execution artifact class.</span>
 
 <span class="sd">    This can be used to read artifact data that was created during a pipeline</span>
 <span class="sd">    execution.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="s2">&quot;ArtifactResponseModel&quot;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Initializes a post-execution artifact object.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes a post-execution artifact object.</span>
 
 <span class="sd">        In most cases `ArtifactView` objects should not be created manually but</span>
 <span class="sd">        retrieved from a `StepView` via the `inputs` or `outputs` properties.</span>
@@ -3067,7 +3067,7 @@ execution.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UUID</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the artifact id.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the artifact id.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The artifact id.</span>
@@ -3076,7 +3076,7 @@ execution.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the name of the artifact (output name in the parent step).</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the name of the artifact (output name in the parent step).</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The name of the artifact.</span>
@@ -3085,7 +3085,7 @@ execution.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the artifact type.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the artifact type.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The artifact type.</span>
@@ -3094,7 +3094,7 @@ execution.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">data_type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the data type of the artifact.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the data type of the artifact.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The data type of the artifact.</span>
@@ -3103,7 +3103,7 @@ execution.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">uri</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the URI where the artifact data is stored.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the URI where the artifact data is stored.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The URI where the artifact data is stored.</span>
@@ -3112,7 +3112,7 @@ execution.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">materializer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the materializer that was used to write this artifact.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the materializer that was used to write this artifact.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The materializer that was used to write this artifact.</span>
@@ -3121,7 +3121,7 @@ execution.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">producer_step_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UUID</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the ID of the original step that produced the artifact.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the ID of the original step that produced the artifact.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The ID of the original step that produced the artifact.</span>
@@ -3133,7 +3133,7 @@ execution.</p>
         <span class="n">output_data_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">materializer_class</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseMaterializer&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Materializes the data stored in this artifact.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Materializes the data stored in this artifact.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            output_data_type: Deprecated; will be ignored.</span>
@@ -3158,7 +3158,7 @@ execution.</p>
         <span class="k">return</span> <span class="n">load_artifact</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns a string representation of this artifact.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns a string representation of this artifact.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            A string representation of this artifact.</span>
@@ -3170,7 +3170,7 @@ execution.</p>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns whether the other object is referring to the same artifact.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns whether the other object is referring to the same artifact.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            other: The other object to compare to.</span>
@@ -3518,7 +3518,7 @@ False.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/post_execution/artifact.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns whether the other object is referring to the same artifact.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns whether the other object is referring to the same artifact.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        other: The other object to compare to.</span>
@@ -3579,7 +3579,7 @@ retrieved from a <code>StepView</code> via the <code>inputs</code> or <code>outp
         <details class="quote">
           <summary>Source code in <code>zenml/post_execution/artifact.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="s2">&quot;ArtifactResponseModel&quot;</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Initializes a post-execution artifact object.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes a post-execution artifact object.</span>
 
 <span class="sd">    In most cases `ArtifactView` objects should not be created manually but</span>
 <span class="sd">    retrieved from a `StepView` via the `inputs` or `outputs` properties.</span>
@@ -3631,7 +3631,7 @@ retrieved from a <code>StepView</code> via the <code>inputs</code> or <code>outp
         <details class="quote">
           <summary>Source code in <code>zenml/post_execution/artifact.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns a string representation of this artifact.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a string representation of this artifact.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A string representation of this artifact.</span>
@@ -3710,7 +3710,7 @@ retrieved from a <code>StepView</code> via the <code>inputs</code> or <code>outp
     <span class="n">output_data_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">materializer_class</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseMaterializer&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Materializes the data stored in this artifact.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Materializes the data stored in this artifact.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        output_data_type: Deprecated; will be ignored.</span>
@@ -3843,7 +3843,7 @@ Edge            (<span title="pydantic.main.BaseModel">BaseModel</span>)
         <details class="quote">
           <summary>Source code in <code>zenml/post_execution/lineage/edge.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Edge</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;A class that represents an edge in a lineage graph.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A class that represents an edge in a lineage graph.&quot;&quot;&quot;</span>
 
     <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">source</span><span class="p">:</span> <span class="nb">str</span>
@@ -3940,14 +3940,14 @@ LineageGraph            (<span title="pydantic.main.BaseModel">BaseModel</span>)
         <details class="quote">
           <summary>Source code in <code>zenml/post_execution/lineage/lineage_graph.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">LineageGraph</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;A lineage graph representation of a PipelineRunView.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A lineage graph representation of a PipelineRunView.&quot;&quot;&quot;</span>
 
     <span class="n">nodes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">StepNode</span><span class="p">,</span> <span class="n">ArtifactNode</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">edges</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Edge</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">root_step_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
 
     <span class="k">def</span> <span class="nf">generate_step_nodes_and_edges</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">:</span> <span class="n">StepView</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Generates the step nodes and the edges between them.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generates the step nodes and the edges between them.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            step: The step to generate the nodes and edges for.</span>
@@ -4015,7 +4015,7 @@ LineageGraph            (<span title="pydantic.main.BaseModel">BaseModel</span>)
             <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">generate_run_nodes_and_edges</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run</span><span class="p">:</span> <span class="n">PipelineRunView</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Generates the run nodes and the edges between them.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generates the run nodes and the edges between them.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            run: The PipelineRunView to generate the lineage graph for.</span>
@@ -4078,7 +4078,7 @@ LineageGraph            (<span title="pydantic.main.BaseModel">BaseModel</span>)
         <details class="quote">
           <summary>Source code in <code>zenml/post_execution/lineage/lineage_graph.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">generate_run_nodes_and_edges</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run</span><span class="p">:</span> <span class="n">PipelineRunView</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Generates the run nodes and the edges between them.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generates the run nodes and the edges between them.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        run: The PipelineRunView to generate the lineage graph for.</span>
@@ -4129,7 +4129,7 @@ LineageGraph            (<span title="pydantic.main.BaseModel">BaseModel</span>)
         <details class="quote">
           <summary>Source code in <code>zenml/post_execution/lineage/lineage_graph.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">generate_step_nodes_and_edges</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">:</span> <span class="n">StepView</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Generates the step nodes and the edges between them.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generates the step nodes and the edges between them.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        step: The step to generate the nodes and edges for.</span>
@@ -4305,7 +4305,7 @@ ArtifactNode            (<a class="autorefs autorefs-internal" title="zenml.post
         <details class="quote">
           <summary>Source code in <code>zenml/post_execution/lineage/node/artifact_node.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ArtifactNode</span><span class="p">(</span><span class="n">BaseNode</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;A class that represents an artifact node in a lineage graph.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A class that represents an artifact node in a lineage graph.&quot;&quot;&quot;</span>
 
     <span class="nb">type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;artifact&quot;</span>
     <span class="n">data</span><span class="p">:</span> <span class="n">ArtifactNodeDetails</span>
@@ -4359,7 +4359,7 @@ ArtifactNodeDetails            (<a class="autorefs autorefs-internal" title="zen
         <details class="quote">
           <summary>Source code in <code>zenml/post_execution/lineage/node/artifact_node.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ArtifactNodeDetails</span><span class="p">(</span><span class="n">BaseNodeDetails</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Captures all artifact details for the node.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Captures all artifact details for the node.&quot;&quot;&quot;</span>
 
     <span class="n">is_cached</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">artifact_type</span><span class="p">:</span> <span class="nb">str</span>
@@ -4460,7 +4460,7 @@ BaseNode            (<span title="pydantic.main.BaseModel">BaseModel</span>)
         <details class="quote">
           <summary>Source code in <code>zenml/post_execution/lineage/node/base_node.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseNode</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;A class that represents a node in a lineage graph.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A class that represents a node in a lineage graph.&quot;&quot;&quot;</span>
 
     <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span>
     <span class="nb">type</span><span class="p">:</span> <span class="nb">str</span>
@@ -4518,7 +4518,7 @@ BaseNodeDetails            (<span title="pydantic.main.BaseModel">BaseModel</spa
         <details class="quote">
           <summary>Source code in <code>zenml/post_execution/lineage/node/base_node.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseNodeDetails</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Captures all details for the node.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Captures all details for the node.&quot;&quot;&quot;</span>
 
     <span class="n">execution_id</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
@@ -4613,7 +4613,7 @@ StepNode            (<a class="autorefs autorefs-internal" title="zenml.post_exe
         <details class="quote">
           <summary>Source code in <code>zenml/post_execution/lineage/node/step_node.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StepNode</span><span class="p">(</span><span class="n">BaseNode</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;A class that represents a step node in a lineage graph.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A class that represents a step node in a lineage graph.&quot;&quot;&quot;</span>
 
     <span class="nb">type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;step&quot;</span>
     <span class="n">data</span><span class="p">:</span> <span class="n">StepNodeDetails</span>
@@ -4667,7 +4667,7 @@ StepNodeDetails            (<a class="autorefs autorefs-internal" title="zenml.p
         <details class="quote">
           <summary>Source code in <code>zenml/post_execution/lineage/node/step_node.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StepNodeDetails</span><span class="p">(</span><span class="n">BaseNodeDetails</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Captures all artifact details for the node.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Captures all artifact details for the node.&quot;&quot;&quot;</span>
 
     <span class="n">entrypoint_name</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">parameters</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
@@ -4781,10 +4781,10 @@ PipelineView        </code>
         <details class="quote">
           <summary>Source code in <code>zenml/post_execution/pipeline.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PipelineView</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Post-execution pipeline class.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Post-execution pipeline class.&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">PipelineResponseModel</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Initializes a post-execution pipeline object.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes a post-execution pipeline object.</span>
 
 <span class="sd">        In most cases `PipelineView` objects should not be created manually</span>
 <span class="sd">        but retrieved using the `get_pipelines()` utility from</span>
@@ -4797,7 +4797,7 @@ PipelineView        </code>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UUID</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the ID of this pipeline.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the ID of this pipeline.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The ID of this pipeline.</span>
@@ -4807,7 +4807,7 @@ PipelineView        </code>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the name of the pipeline.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the name of the pipeline.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The name of the pipeline.</span>
@@ -4816,7 +4816,7 @@ PipelineView        </code>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">docstring</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the docstring of the pipeline.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the docstring of the pipeline.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The docstring of the pipeline.</span>
@@ -4825,7 +4825,7 @@ PipelineView        </code>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">spec</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;PipelineSpec&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the spec of the pipeline.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the spec of the pipeline.</span>
 
 <span class="sd">        The pipeline spec contains the source paths of all steps, as well as</span>
 <span class="sd">        each of their upstream step names. This is primarily used to compare</span>
@@ -4838,7 +4838,7 @@ PipelineView        </code>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">runs</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="s2">&quot;PipelineRunView&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns all stored runs of this pipeline.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns all stored runs of this pipeline.</span>
 
 <span class="sd">        The runs are returned in chronological order, so the latest</span>
 <span class="sd">        run will be the last element in this list.</span>
@@ -4856,7 +4856,7 @@ PipelineView        </code>
         <span class="k">return</span> <span class="p">[</span><span class="n">PipelineRunView</span><span class="p">(</span><span class="n">run</span><span class="p">)</span> <span class="k">for</span> <span class="n">run</span> <span class="ow">in</span> <span class="n">runs</span><span class="p">]</span>
 
     <span class="k">def</span> <span class="nf">get_run_for_completed_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;PipelineRunView&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Ascertains which pipeline run produced the cached artifact of a given step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Ascertains which pipeline run produced the cached artifact of a given step.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            step_name: Name of step at hand</span>
@@ -4887,7 +4887,7 @@ PipelineView        </code>
         <span class="k">return</span> <span class="n">orig_pipeline_run</span>
 
     <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns a string representation of this pipeline.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns a string representation of this pipeline.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            A string representation of this pipeline.</span>
@@ -4898,7 +4898,7 @@ PipelineView        </code>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns whether the other object is referring to the same pipeline.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns whether the other object is referring to the same pipeline.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            other: The other object to compare to.</span>
@@ -5175,7 +5175,7 @@ False otherwise.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/post_execution/pipeline.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns whether the other object is referring to the same pipeline.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns whether the other object is referring to the same pipeline.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        other: The other object to compare to.</span>
@@ -5237,7 +5237,7 @@ but retrieved using the <code>get_pipelines()</code> utility from
         <details class="quote">
           <summary>Source code in <code>zenml/post_execution/pipeline.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">PipelineResponseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Initializes a post-execution pipeline object.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes a post-execution pipeline object.</span>
 
 <span class="sd">    In most cases `PipelineView` objects should not be created manually</span>
 <span class="sd">    but retrieved using the `get_pipelines()` utility from</span>
@@ -5290,7 +5290,7 @@ but retrieved using the <code>get_pipelines()</code> utility from
         <details class="quote">
           <summary>Source code in <code>zenml/post_execution/pipeline.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns a string representation of this pipeline.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a string representation of this pipeline.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A string representation of this pipeline.</span>
@@ -5374,7 +5374,7 @@ but retrieved using the <code>get_pipelines()</code> utility from
         <details class="quote">
           <summary>Source code in <code>zenml/post_execution/pipeline.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_run_for_completed_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;PipelineRunView&quot;</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Ascertains which pipeline run produced the cached artifact of a given step.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Ascertains which pipeline run produced the cached artifact of a given step.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        step_name: Name of step at hand</span>
@@ -5480,14 +5480,14 @@ pipeline execution.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/post_execution/pipeline_run.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PipelineRunView</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Post-execution pipeline run class.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Post-execution pipeline run class.</span>
 
 <span class="sd">    This can be used to query steps and artifact information associated with a</span>
 <span class="sd">    pipeline execution.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">PipelineRunResponseModel</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Initializes a post-execution pipeline run object.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes a post-execution pipeline run object.</span>
 
 <span class="sd">        In most cases `PipelineRunView` objects should not be created manually</span>
 <span class="sd">        but retrieved from a `PipelineView` object instead.</span>
@@ -5500,7 +5500,7 @@ pipeline execution.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UUID</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the ID of this pipeline run.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the ID of this pipeline run.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The ID of this pipeline run.</span>
@@ -5510,7 +5510,7 @@ pipeline execution.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the name of the pipeline run.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the name of the pipeline run.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The name of the pipeline run.</span>
@@ -5519,7 +5519,7 @@ pipeline execution.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">pipeline_configuration</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the pipeline configuration.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the pipeline configuration.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The pipeline configuration.</span>
@@ -5528,7 +5528,7 @@ pipeline execution.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">settings</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the pipeline settings.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the pipeline settings.</span>
 
 <span class="sd">        These are runtime settings passed down to stack components, which</span>
 <span class="sd">        can be set at pipeline level.</span>
@@ -5541,7 +5541,7 @@ pipeline execution.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">extra</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the pipeline extras.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the pipeline extras.</span>
 
 <span class="sd">        This dict is meant to be used to pass any configuration down to the</span>
 <span class="sd">        pipeline or stack components that the user has use of.</span>
@@ -5554,7 +5554,7 @@ pipeline execution.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">enable_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns whether caching is enabled for this pipeline run.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns whether caching is enabled for this pipeline run.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            True if caching is enabled for this pipeline run.</span>
@@ -5564,7 +5564,7 @@ pipeline execution.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">zenml_version</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Version of ZenML that this pipeline run was performed with.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Version of ZenML that this pipeline run was performed with.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The version of ZenML that this pipeline run was performed with.</span>
@@ -5573,7 +5573,7 @@ pipeline execution.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">git_sha</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Git commit SHA that this pipeline run was performed on.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Git commit SHA that this pipeline run was performed on.</span>
 
 <span class="sd">        This will only be set if the pipeline code is in a git repository and</span>
 <span class="sd">        there are no dirty files when running the pipeline.</span>
@@ -5585,7 +5585,7 @@ pipeline execution.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ExecutionStatus</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the current status of the pipeline run.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the current status of the pipeline run.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The current status of the pipeline run.</span>
@@ -5596,7 +5596,7 @@ pipeline execution.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">created</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the creation time of the pipeline run.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the creation time of the pipeline run.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The creation time of the pipeline run.</span>
@@ -5605,7 +5605,7 @@ pipeline execution.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">steps</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">StepView</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns all steps that were executed as part of this pipeline run.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns all steps that were executed as part of this pipeline run.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            A list of all steps that were executed as part of this pipeline run.</span>
@@ -5614,7 +5614,7 @@ pipeline execution.</p>
         <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_steps</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
 
     <span class="k">def</span> <span class="nf">get_step_names</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns a list of all step names.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns a list of all step names.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            A list of all step names.</span>
@@ -5627,7 +5627,7 @@ pipeline execution.</p>
         <span class="n">step</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StepView</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns a step for the given name.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns a step for the given name.</span>
 
 <span class="sd">        The name refers to the name of the step in the pipeline definition, not</span>
 <span class="sd">        the class name of the step-class.</span>
@@ -5690,7 +5690,7 @@ pipeline execution.</p>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_steps</span><span class="p">[</span><span class="n">step</span><span class="p">]</span>
 
     <span class="k">def</span> <span class="nf">_ensure_steps_fetched</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Fetches all steps for this pipeline run from the metadata store.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Fetches all steps for this pipeline run from the metadata store.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_steps</span><span class="p">:</span>
             <span class="c1"># we already fetched the steps, no need to do anything</span>
             <span class="k">return</span>
@@ -5700,7 +5700,7 @@ pipeline execution.</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">_steps</span> <span class="o">=</span> <span class="p">{</span><span class="n">step</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">StepView</span><span class="p">(</span><span class="n">step</span><span class="p">)</span> <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="n">steps</span><span class="p">}</span>
 
     <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns a string representation of this pipeline run.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns a string representation of this pipeline run.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            A string representation of this pipeline run.</span>
@@ -5711,7 +5711,7 @@ pipeline execution.</p>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns whether the other object is referring to the same pipeline run.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns whether the other object is referring to the same pipeline run.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            other: The other object to compare to.</span>
@@ -6215,7 +6215,7 @@ can be set at pipeline level.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/post_execution/pipeline_run.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns whether the other object is referring to the same pipeline run.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns whether the other object is referring to the same pipeline run.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        other: The other object to compare to.</span>
@@ -6275,7 +6275,7 @@ but retrieved from a <code>PipelineView</code> object instead.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/post_execution/pipeline_run.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">PipelineRunResponseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Initializes a post-execution pipeline run object.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes a post-execution pipeline run object.</span>
 
 <span class="sd">    In most cases `PipelineRunView` objects should not be created manually</span>
 <span class="sd">    but retrieved from a `PipelineView` object instead.</span>
@@ -6328,7 +6328,7 @@ but retrieved from a <code>PipelineView</code> object instead.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/post_execution/pipeline_run.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns a string representation of this pipeline run.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a string representation of this pipeline run.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A string representation of this pipeline run.</span>
@@ -6432,7 +6432,7 @@ specify the step instead of using the <code>step</code> argument.</p></td>
     <span class="n">step</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StepView</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns a step for the given name.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a step for the given name.</span>
 
 <span class="sd">    The name refers to the name of the step in the pipeline definition, not</span>
 <span class="sd">    the class name of the step-class.</span>
@@ -6533,7 +6533,7 @@ specify the step instead of using the <code>step</code> argument.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/post_execution/pipeline_run.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_step_names</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Returns a list of all step names.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a list of all step names.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of all step names.</span>
@@ -6629,7 +6629,7 @@ specify the step instead of using the <code>step</code> argument.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/post_execution/pipeline_run.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_run</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;PipelineRunView&quot;</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Fetches the post-execution view of a run with the given name.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fetches the post-execution view of a run with the given name.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: The name of the run to fetch.</span>
@@ -6697,7 +6697,7 @@ specify the step instead of using the <code>step</code> argument.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/post_execution/pipeline_run.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_unlisted_runs</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="s2">&quot;PipelineRunView&quot;</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Fetches post-execution views of all unlisted runs.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fetches post-execution views of all unlisted runs.</span>
 
 <span class="sd">    Unlisted runs are runs that are not associated with any pipeline.</span>
 
@@ -6774,13 +6774,13 @@ StepView        </code>
         <details class="quote">
           <summary>Source code in <code>zenml/post_execution/step.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StepView</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Post-execution step class.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Post-execution step class.</span>
 
 <span class="sd">    This can be used to query artifact information associated with a pipeline step.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">StepRunResponseModel</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Initializes a post-execution step object.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes a post-execution step object.</span>
 
 <span class="sd">        In most cases `StepView` objects should not be created manually</span>
 <span class="sd">        but retrieved from a `PipelineRunView` object instead.</span>
@@ -6794,7 +6794,7 @@ StepView        </code>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UUID</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the step id.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the step id.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The step id.</span>
@@ -6804,7 +6804,7 @@ StepView        </code>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">parent_step_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">UUID</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns a list of IDs of all parents of this step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns a list of IDs of all parents of this step.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            A list of IDs of all parents of this step.</span>
@@ -6814,7 +6814,7 @@ StepView        </code>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">entrypoint_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the step entrypoint_name.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the step entrypoint_name.</span>
 
 <span class="sd">        This name is equal to the name argument passed to the @step decorator</span>
 <span class="sd">        or the actual function name if no explicit name was given.</span>
@@ -6835,7 +6835,7 @@ StepView        </code>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the name as it is defined in the pipeline.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the name as it is defined in the pipeline.</span>
 
 <span class="sd">        This name is equal to the name given to the step within the pipeline</span>
 <span class="sd">        context</span>
@@ -6860,7 +6860,7 @@ StepView        </code>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">docstring</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Docstring of the step function or class.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Docstring of the step function or class.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The docstring of the step function or class.</span>
@@ -6869,7 +6869,7 @@ StepView        </code>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;The parameters used to run this step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The parameters used to run this step.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The parameters used to run this step.</span>
@@ -6878,7 +6878,7 @@ StepView        </code>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">step_configuration</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;StepConfiguration&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the step configuration.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the step configuration.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The step configuration.</span>
@@ -6887,7 +6887,7 @@ StepView        </code>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">settings</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;BaseSettings&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the step settings.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the step settings.</span>
 
 <span class="sd">        These are runtime settings passed down to stack components, which</span>
 <span class="sd">        can be set at step level.</span>
@@ -6899,7 +6899,7 @@ StepView        </code>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">extra</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the extra dictionary.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the extra dictionary.</span>
 
 <span class="sd">        This dict is meant to be used to pass any configuration down to the</span>
 <span class="sd">        step that the user has use of.</span>
@@ -6911,7 +6911,7 @@ StepView        </code>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">enable_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns whether caching is enabled for this step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns whether caching is enabled for this step.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Whether caching is enabled for this step.</span>
@@ -6920,7 +6920,7 @@ StepView        </code>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">step_operator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the name of the step operator of the step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the name of the step operator of the step.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The name of the step operator of the step.</span>
@@ -6929,7 +6929,7 @@ StepView        </code>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">experiment_tracker</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the name of the experiment tracker of the step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the name of the experiment tracker of the step.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The name of the experiment tracker of the step.</span>
@@ -6938,7 +6938,7 @@ StepView        </code>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">spec</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;StepSpec&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the step spec.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the step spec.</span>
 
 <span class="sd">        The step spec defines the source path and upstream steps of a step and</span>
 <span class="sd">        is used primarily to compare whether two steps are the same.</span>
@@ -6950,7 +6950,7 @@ StepView        </code>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ExecutionStatus</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the current status of the step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the current status of the step.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The current status of the step.</span>
@@ -6961,7 +6961,7 @@ StepView        </code>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_cached</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns whether the step is cached or not.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns whether the step is cached or not.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            True if the step is cached, False otherwise.</span>
@@ -6970,7 +6970,7 @@ StepView        </code>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_completed</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns whether the step is cached or not.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns whether the step is cached or not.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            True if the step is completed, False otherwise.</span>
@@ -6979,7 +6979,7 @@ StepView        </code>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ArtifactView</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns all input artifacts that were used to run this step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns all input artifacts that were used to run this step.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            A dictionary of artifact names to artifact views.</span>
@@ -6989,7 +6989,7 @@ StepView        </code>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">input</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ArtifactView</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the input artifact that was used to run this step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the input artifact that was used to run this step.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The input artifact.</span>
@@ -7006,7 +7006,7 @@ StepView        </code>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">outputs</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ArtifactView</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns all output artifacts that were written by this step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns all output artifacts that were written by this step.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            A dictionary of artifact names to artifact views.</span>
@@ -7016,7 +7016,7 @@ StepView        </code>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">output</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ArtifactView</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the output artifact that was written by this step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the output artifact that was written by this step.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The output artifact.</span>
@@ -7032,7 +7032,7 @@ StepView        </code>
         <span class="k">return</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">outputs</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
 
     <span class="k">def</span> <span class="nf">_ensure_inputs_fetched</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Fetches all step inputs from the ZenStore.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Fetches all step inputs from the ZenStore.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inputs</span><span class="p">:</span>
             <span class="c1"># we already fetched inputs, no need to do anything</span>
             <span class="k">return</span>
@@ -7043,7 +7043,7 @@ StepView        </code>
         <span class="p">}</span>
 
     <span class="k">def</span> <span class="nf">_ensure_outputs_fetched</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Fetches all step outputs from the ZenStore.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Fetches all step outputs from the ZenStore.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_outputs</span><span class="p">:</span>
             <span class="c1"># we already fetched outputs, no need to do anything</span>
             <span class="k">return</span>
@@ -7054,7 +7054,7 @@ StepView        </code>
         <span class="p">}</span>
 
     <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns a string representation of this step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns a string representation of this step.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            A string representation of this step.</span>
@@ -7065,7 +7065,7 @@ StepView        </code>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns whether the other object is referring to the same step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns whether the other object is referring to the same step.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            other: The other object to compare to.</span>
@@ -7965,7 +7965,7 @@ otherwise.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/post_execution/step.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns whether the other object is referring to the same step.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns whether the other object is referring to the same step.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        other: The other object to compare to.</span>
@@ -8026,7 +8026,7 @@ but retrieved from a <code>PipelineRunView</code> object instead.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/post_execution/step.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">StepRunResponseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Initializes a post-execution step object.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes a post-execution step object.</span>
 
 <span class="sd">    In most cases `StepView` objects should not be created manually</span>
 <span class="sd">    but retrieved from a `PipelineRunView` object instead.</span>
@@ -8080,7 +8080,7 @@ but retrieved from a <code>PipelineRunView</code> object instead.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/post_execution/step.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns a string representation of this step.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a string representation of this step.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A string representation of this step.</span>

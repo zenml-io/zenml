@@ -2161,7 +2161,7 @@ subsequently retrieve it by calling <code>Environment().get_component</code>.</p
         <details class="quote">
           <summary>Source code in <code>zenml/environment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseEnvironmentComponent</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">EnvironmentComponentMeta</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base Environment component class.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base Environment component class.</span>
 
 <span class="sd">    All Environment components must inherit from this class and provide a unique</span>
 <span class="sd">    value for the `NAME` attribute.</span>
@@ -2240,11 +2240,11 @@ subsequently retrieve it by calling <code>Environment().get_component</code>.</p
     <span class="n">NAME</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">_BASE_ENVIRONMENT_COMPONENT_NAME</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Initialize an environment component.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize an environment component.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_active</span> <span class="o">=</span> <span class="kc">False</span>
 
     <span class="k">def</span> <span class="nf">activate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Activate the environment component and register it in the global Environment.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Activate the environment component and register it in the global Environment.</span>
 
 <span class="sd">        Raises:</span>
 <span class="sd">            RuntimeError: if the component is already active.</span>
@@ -2257,7 +2257,7 @@ subsequently retrieve it by calling <code>Environment().get_component</code>.</p
         <span class="bp">self</span><span class="o">.</span><span class="n">_active</span> <span class="o">=</span> <span class="kc">True</span>
 
     <span class="k">def</span> <span class="nf">deactivate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Deactivate the environment component and deregister it from the global Environment.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Deactivate the environment component and deregister it from the global Environment.</span>
 
 <span class="sd">        Raises:</span>
 <span class="sd">            RuntimeError: if the component is not active.</span>
@@ -2271,7 +2271,7 @@ subsequently retrieve it by calling <code>Environment().get_component</code>.</p
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">active</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Check if the environment component is currently active.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if the environment component is currently active.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            `True` if the environment component is currently active, `False`</span>
@@ -2280,7 +2280,7 @@ subsequently retrieve it by calling <code>Environment().get_component</code>.</p
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_active</span>
 
     <span class="k">def</span> <span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseEnvironmentComponent&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Environment component context entry point.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Environment component context entry point.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The BaseEnvironmentComponent instance.</span>
@@ -2289,7 +2289,7 @@ subsequently retrieve it by calling <code>Environment().get_component</code>.</p
         <span class="k">return</span> <span class="bp">self</span>
 
     <span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Environment component context exit point.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Environment component context exit point.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            *args: the arguments passed to the context exit point.</span>
@@ -2385,7 +2385,7 @@ otherwise.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/environment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseEnvironmentComponent&quot;</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Environment component context entry point.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Environment component context entry point.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The BaseEnvironmentComponent instance.</span>
@@ -2439,7 +2439,7 @@ otherwise.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/environment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Environment component context exit point.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Environment component context exit point.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        *args: the arguments passed to the context exit point.</span>
@@ -2473,7 +2473,7 @@ otherwise.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/environment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Initialize an environment component.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize an environment component.&quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_active</span> <span class="o">=</span> <span class="kc">False</span>
 </code></pre></div>
         </details>
@@ -2515,7 +2515,7 @@ otherwise.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/environment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">activate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Activate the environment component and register it in the global Environment.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Activate the environment component and register it in the global Environment.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        RuntimeError: if the component is already active.</span>
@@ -2566,7 +2566,7 @@ otherwise.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/environment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">deactivate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Deactivate the environment component and deregister it from the global Environment.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Deactivate the environment component and deregister it from the global Environment.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        RuntimeError: if the component is not active.</span>
@@ -2617,7 +2617,7 @@ the global Environment object with additional information (see
         <details class="quote">
           <summary>Source code in <code>zenml/environment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Environment</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">SingletonMetaClass</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Provides environment information.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Provides environment information.</span>
 
 <span class="sd">    Individual environment components can be registered separately to extend</span>
 <span class="sd">    the global Environment object with additional information (see</span>
@@ -2625,7 +2625,7 @@ the global Environment object with additional information (see
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Initializes an Environment instance.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes an Environment instance.</span>
 
 <span class="sd">        Note: Environment is a singleton class, which means this method will</span>
 <span class="sd">        only get called once. All following `Environment()` calls will return</span>
@@ -2635,7 +2635,7 @@ the global Environment object with additional information (see
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">step_is_running</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns if a step is currently running.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns if a step is currently running.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            `True` if a step is currently running, `False` otherwise.</span>
@@ -2648,7 +2648,7 @@ the global Environment object with additional information (see
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">get_system_info</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Information about the operating system.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Information about the operating system.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            A dictionary containing information about the operating system.</span>
@@ -2682,7 +2682,7 @@ the global Environment object with additional information (see
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">python_version</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the python version of the running interpreter.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the python version of the running interpreter.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            str: the python version</span>
@@ -2691,7 +2691,7 @@ the global Environment object with additional information (see
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">in_container</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;If the current python process is running in a container.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;If the current python process is running in a container.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            `True` if the current python process is running in a</span>
@@ -2702,7 +2702,7 @@ the global Environment object with additional information (see
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">in_docker</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;If the current python process is running in a docker container.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;If the current python process is running in a docker container.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            `True` if the current python process is running in a docker</span>
@@ -2720,7 +2720,7 @@ the global Environment object with additional information (see
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">in_kubernetes</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;If the current python process is running in a kubernetes pod.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;If the current python process is running in a kubernetes pod.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            `True` if the current python process is running in a kubernetes</span>
@@ -2738,7 +2738,7 @@ the global Environment object with additional information (see
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">in_google_colab</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;If the current Python process is running in a Google Colab.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;If the current Python process is running in a Google Colab.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            `True` if the current Python process is running in a Google Colab,</span>
@@ -2754,7 +2754,7 @@ the global Environment object with additional information (see
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">in_notebook</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;If the current Python process is running in a notebook.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;If the current Python process is running in a notebook.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            `True` if the current Python process is running in a notebook,</span>
@@ -2772,7 +2772,7 @@ the global Environment object with additional information (see
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">in_paperspace_gradient</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;If the current Python process is running in Paperspace Gradient.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;If the current Python process is running in Paperspace Gradient.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            `True` if the current Python process is running in Paperspace</span>
@@ -2782,7 +2782,7 @@ the global Environment object with additional information (see
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">in_github_actions</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;If the current Python process is running in GitHub Actions.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;If the current Python process is running in GitHub Actions.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            `True` if the current Python process is running in GitHub</span>
@@ -2792,7 +2792,7 @@ the global Environment object with additional information (see
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">in_gitlab_ci</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;If the current Python process is running in GitLab CI.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;If the current Python process is running in GitLab CI.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            `True` if the current Python process is running in GitLab</span>
@@ -2802,7 +2802,7 @@ the global Environment object with additional information (see
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">in_circle_ci</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;If the current Python process is running in Circle CI.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;If the current Python process is running in Circle CI.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            `True` if the current Python process is running in Circle</span>
@@ -2812,7 +2812,7 @@ the global Environment object with additional information (see
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">in_bitbucket_ci</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;If the current Python process is running in Bitbucket CI.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;If the current Python process is running in Bitbucket CI.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            `True` if the current Python process is running in Bitbucket</span>
@@ -2822,7 +2822,7 @@ the global Environment object with additional information (see
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">in_ci</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;If the current Python process is running in any CI.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;If the current Python process is running in any CI.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            `True` if the current Python process is running in any</span>
@@ -2833,7 +2833,7 @@ the global Environment object with additional information (see
     <span class="k">def</span> <span class="nf">register_component</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">component</span><span class="p">:</span> <span class="s2">&quot;BaseEnvironmentComponent&quot;</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseEnvironmentComponent&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Registers an environment component.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Registers an environment component.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            component: a BaseEnvironmentComponent instance.</span>
@@ -2856,7 +2856,7 @@ the global Environment object with additional information (see
     <span class="k">def</span> <span class="nf">deregister_component</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">component</span><span class="p">:</span> <span class="s2">&quot;BaseEnvironmentComponent&quot;</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Deregisters an environment component.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Deregisters an environment component.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            component: a BaseEnvironmentComponent instance.</span>
@@ -2872,7 +2872,7 @@ the global Environment object with additional information (see
             <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">get_component</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;BaseEnvironmentComponent&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Get the environment component with a known name.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the environment component with a known name.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name: the environment component name.</span>
@@ -2886,7 +2886,7 @@ the global Environment object with additional information (see
     <span class="k">def</span> <span class="nf">get_components</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;BaseEnvironmentComponent&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Get all registered environment components.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all registered environment components.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            A dictionary containing all registered environment components.</span>
@@ -2894,7 +2894,7 @@ the global Environment object with additional information (see
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_components</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">has_component</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Check if the environment component with a known name is available.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if the environment component with a known name is available.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name: the environment component name.</span>
@@ -2906,7 +2906,7 @@ the global Environment object with additional information (see
         <span class="k">return</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_components</span>
 
     <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseEnvironmentComponent&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Get the environment component with the given name.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the environment component with the given name.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name: the environment component name.</span>
@@ -2933,7 +2933,7 @@ the global Environment object with additional information (see
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">step_environment</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;StepEnvironment&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Get the current step environment component, if one is available.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the current step environment component, if one is available.</span>
 
 <span class="sd">        This should only be called in the context of a step function.</span>
 
@@ -3106,7 +3106,7 @@ name.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/environment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseEnvironmentComponent&quot;</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Get the environment component with the given name.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the environment component with the given name.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: the environment component name.</span>
@@ -3161,7 +3161,7 @@ the previously initialized instance.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/environment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Initializes an Environment instance.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes an Environment instance.</span>
 
 <span class="sd">    Note: Environment is a singleton class, which means this method will</span>
 <span class="sd">    only get called once. All following `Environment()` calls will return</span>
@@ -3214,7 +3214,7 @@ the previously initialized instance.</p>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">deregister_component</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">component</span><span class="p">:</span> <span class="s2">&quot;BaseEnvironmentComponent&quot;</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Deregisters an environment component.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Deregisters an environment component.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        component: a BaseEnvironmentComponent instance.</span>
@@ -3288,7 +3288,7 @@ or None if no such component is registered.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/environment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_component</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;BaseEnvironmentComponent&quot;</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Get the environment component with a known name.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the environment component with a known name.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: the environment component name.</span>
@@ -3340,7 +3340,7 @@ or None if no such component is registered.</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_components</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;BaseEnvironmentComponent&quot;</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Get all registered environment components.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get all registered environment components.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A dictionary containing all registered environment components.</span>
@@ -3390,7 +3390,7 @@ or None if no such component is registered.</p></td>
           <summary>Source code in <code>zenml/environment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span> <span class="nf">get_system_info</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Information about the operating system.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Information about the operating system.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A dictionary containing information about the operating system.</span>
@@ -3481,7 +3481,7 @@ currently registered for the given name, <code>False</code> otherwise.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/environment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">has_component</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Check if the environment component with a known name is available.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if the environment component with a known name is available.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: the environment component name.</span>
@@ -3536,7 +3536,7 @@ CI, <code>False</code> otherwise.</p></td>
           <summary>Source code in <code>zenml/environment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span> <span class="nf">in_bitbucket_ci</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;If the current Python process is running in Bitbucket CI.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;If the current Python process is running in Bitbucket CI.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        `True` if the current Python process is running in Bitbucket</span>
@@ -3588,7 +3588,7 @@ CI, <code>False</code> otherwise.</p></td>
           <summary>Source code in <code>zenml/environment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span> <span class="nf">in_ci</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;If the current Python process is running in any CI.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;If the current Python process is running in any CI.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        `True` if the current Python process is running in any</span>
@@ -3640,7 +3640,7 @@ CI, <code>False</code> otherwise.</p></td>
           <summary>Source code in <code>zenml/environment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span> <span class="nf">in_circle_ci</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;If the current Python process is running in Circle CI.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;If the current Python process is running in Circle CI.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        `True` if the current Python process is running in Circle</span>
@@ -3692,7 +3692,7 @@ container, <code>False</code> otherwise.</p></td>
           <summary>Source code in <code>zenml/environment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span> <span class="nf">in_container</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;If the current python process is running in a container.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;If the current python process is running in a container.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        `True` if the current python process is running in a</span>
@@ -3745,7 +3745,7 @@ container, <code>False</code> otherwise.</p></td>
           <summary>Source code in <code>zenml/environment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span> <span class="nf">in_docker</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;If the current python process is running in a docker container.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;If the current python process is running in a docker container.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        `True` if the current python process is running in a docker</span>
@@ -3805,7 +3805,7 @@ Actions, <code>False</code> otherwise.</p></td>
           <summary>Source code in <code>zenml/environment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span> <span class="nf">in_github_actions</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;If the current Python process is running in GitHub Actions.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;If the current Python process is running in GitHub Actions.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        `True` if the current Python process is running in GitHub</span>
@@ -3857,7 +3857,7 @@ CI, <code>False</code> otherwise.</p></td>
           <summary>Source code in <code>zenml/environment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span> <span class="nf">in_gitlab_ci</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;If the current Python process is running in GitLab CI.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;If the current Python process is running in GitLab CI.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        `True` if the current Python process is running in GitLab</span>
@@ -3909,7 +3909,7 @@ CI, <code>False</code> otherwise.</p></td>
           <summary>Source code in <code>zenml/environment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span> <span class="nf">in_google_colab</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;If the current Python process is running in a Google Colab.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;If the current Python process is running in a Google Colab.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        `True` if the current Python process is running in a Google Colab,</span>
@@ -3967,7 +3967,7 @@ pod, <code>False</code> otherwise.</p></td>
           <summary>Source code in <code>zenml/environment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span> <span class="nf">in_kubernetes</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;If the current python process is running in a kubernetes pod.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;If the current python process is running in a kubernetes pod.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        `True` if the current python process is running in a kubernetes</span>
@@ -4027,7 +4027,7 @@ pod, <code>False</code> otherwise.</p></td>
           <summary>Source code in <code>zenml/environment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span> <span class="nf">in_notebook</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;If the current Python process is running in a notebook.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;If the current Python process is running in a notebook.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        `True` if the current Python process is running in a notebook,</span>
@@ -4087,7 +4087,7 @@ Gradient, <code>False</code> otherwise.</p></td>
           <summary>Source code in <code>zenml/environment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span> <span class="nf">in_paperspace_gradient</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;If the current Python process is running in Paperspace Gradient.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;If the current Python process is running in Paperspace Gradient.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        `True` if the current Python process is running in Paperspace</span>
@@ -4138,7 +4138,7 @@ Gradient, <code>False</code> otherwise.</p></td>
           <summary>Source code in <code>zenml/environment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span> <span class="nf">python_version</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns the python version of the running interpreter.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the python version of the running interpreter.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        str: the python version</span>
@@ -4206,7 +4206,7 @@ component that was already registered under the given name.</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">register_component</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">component</span><span class="p">:</span> <span class="s2">&quot;BaseEnvironmentComponent&quot;</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseEnvironmentComponent&quot;</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Registers an environment component.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Registers an environment component.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        component: a BaseEnvironmentComponent instance.</span>
@@ -4263,12 +4263,12 @@ EnvironmentComponentMeta            (<span title="type">type</span>)
         <details class="quote">
           <summary>Source code in <code>zenml/environment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">EnvironmentComponentMeta</span><span class="p">(</span><span class="nb">type</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Metaclass registering environment components in the global Environment.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Metaclass registering environment components in the global Environment.&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__new__</span><span class="p">(</span>
         <span class="n">mcs</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">bases</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="o">...</span><span class="p">],</span> <span class="n">dct</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;EnvironmentComponentMeta&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Hook into creation of an BaseEnvironmentComponent class.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Hook into creation of an BaseEnvironmentComponent class.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name: the name of the class being created.</span>
@@ -4372,7 +4372,7 @@ EnvironmentComponentMeta            (<span title="type">type</span>)
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__new__</span><span class="p">(</span>
     <span class="n">mcs</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">bases</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="o">...</span><span class="p">],</span> <span class="n">dct</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;EnvironmentComponentMeta&quot;</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Hook into creation of an BaseEnvironmentComponent class.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Hook into creation of an BaseEnvironmentComponent class.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: the name of the class being created.</span>
@@ -4443,7 +4443,7 @@ EnvironmentComponentMeta            (<span title="type">type</span>)
         <details class="quote">
           <summary>Source code in <code>zenml/environment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_environment</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns a string representing the execution environment of the pipeline.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a string representing the execution environment of the pipeline.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        str: the execution environment</span>
@@ -4513,7 +4513,7 @@ EnvironmentComponentMeta            (<span title="type">type</span>)
         <details class="quote">
           <summary>Source code in <code>zenml/environment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_system_details</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns OS, python and ZenML information.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns OS, python and ZenML information.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        str: OS, python and ZenML information</span>

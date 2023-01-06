@@ -1908,11 +1908,11 @@ BaseAnnotator            (<a class="autorefs autorefs-internal" title="zenml.sta
         <details class="quote">
           <summary>Source code in <code>zenml/annotators/base_annotator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseAnnotator</span><span class="p">(</span><span class="n">StackComponent</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base class for all ZenML annotators.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for all ZenML annotators.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseAnnotatorConfig</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the `BaseAnnotatorConfig` config.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `BaseAnnotatorConfig` config.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The configuration.</span>
@@ -1921,7 +1921,7 @@ BaseAnnotator            (<a class="autorefs autorefs-internal" title="zenml.sta
 
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">get_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Gets the URL of the annotation interface.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets the URL of the annotation interface.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The URL of the annotation interface.</span>
@@ -1929,7 +1929,7 @@ BaseAnnotator            (<a class="autorefs autorefs-internal" title="zenml.sta
 
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">get_url_for_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Gets the URL of the annotation interface for a specific dataset.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets the URL of the annotation interface for a specific dataset.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            dataset_name: name of the dataset.</span>
@@ -1940,7 +1940,7 @@ BaseAnnotator            (<a class="autorefs autorefs-internal" title="zenml.sta
 
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">get_datasets</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Gets the datasets currently available for annotation.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets the datasets currently available for annotation.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The datasets currently available for annotation.</span>
@@ -1948,7 +1948,7 @@ BaseAnnotator            (<a class="autorefs autorefs-internal" title="zenml.sta
 
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">get_dataset_names</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Gets the names of the datasets currently available for annotation.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets the names of the datasets currently available for annotation.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The names of the datasets currently available for annotation.</span>
@@ -1956,7 +1956,7 @@ BaseAnnotator            (<a class="autorefs autorefs-internal" title="zenml.sta
 
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">get_dataset_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Gets the statistics of a dataset.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets the statistics of a dataset.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            dataset_name: name of the dataset.</span>
@@ -1968,7 +1968,7 @@ BaseAnnotator            (<a class="autorefs autorefs-internal" title="zenml.sta
 
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">launch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Launches the annotation interface.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Launches the annotation interface.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            url: The URL of the annotation interface.</span>
@@ -1976,7 +1976,7 @@ BaseAnnotator            (<a class="autorefs autorefs-internal" title="zenml.sta
 
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">add_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Registers a dataset for annotation.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Registers a dataset for annotation.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            **kwargs: keyword arguments.</span>
@@ -1987,7 +1987,7 @@ BaseAnnotator            (<a class="autorefs autorefs-internal" title="zenml.sta
 
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">get_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Gets the dataset with the given name.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets the dataset with the given name.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            **kwargs: keyword arguments.</span>
@@ -1998,7 +1998,7 @@ BaseAnnotator            (<a class="autorefs autorefs-internal" title="zenml.sta
 
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">delete_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Deletes a dataset.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Deletes a dataset.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            **kwargs: keyword arguments.</span>
@@ -2006,7 +2006,7 @@ BaseAnnotator            (<a class="autorefs autorefs-internal" title="zenml.sta
 
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">get_labeled_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Gets the labeled data for the given dataset.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets the labeled data for the given dataset.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            **kwargs: keyword arguments.</span>
@@ -2017,7 +2017,7 @@ BaseAnnotator            (<a class="autorefs autorefs-internal" title="zenml.sta
 
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">get_unlabeled_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Gets the unlabeled data for the given dataset.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets the unlabeled data for the given dataset.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            **kwargs: Additional keyword arguments to pass to the Label Studio client.</span>
@@ -2130,7 +2130,7 @@ BaseAnnotator            (<a class="autorefs autorefs-internal" title="zenml.sta
           <summary>Source code in <code>zenml/annotators/base_annotator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span> <span class="nf">add_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Registers a dataset for annotation.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Registers a dataset for annotation.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        **kwargs: keyword arguments.</span>
@@ -2183,7 +2183,7 @@ BaseAnnotator            (<a class="autorefs autorefs-internal" title="zenml.sta
           <summary>Source code in <code>zenml/annotators/base_annotator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span> <span class="nf">delete_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Deletes a dataset.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Deletes a dataset.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        **kwargs: keyword arguments.</span>
@@ -2248,7 +2248,7 @@ BaseAnnotator            (<a class="autorefs autorefs-internal" title="zenml.sta
           <summary>Source code in <code>zenml/annotators/base_annotator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span> <span class="nf">get_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Gets the dataset with the given name.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets the dataset with the given name.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        **kwargs: keyword arguments.</span>
@@ -2297,7 +2297,7 @@ BaseAnnotator            (<a class="autorefs autorefs-internal" title="zenml.sta
           <summary>Source code in <code>zenml/annotators/base_annotator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span> <span class="nf">get_dataset_names</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Gets the names of the datasets currently available for annotation.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets the names of the datasets currently available for annotation.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The names of the datasets currently available for annotation.</span>
@@ -2363,7 +2363,7 @@ BaseAnnotator            (<a class="autorefs autorefs-internal" title="zenml.sta
           <summary>Source code in <code>zenml/annotators/base_annotator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span> <span class="nf">get_dataset_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Gets the statistics of a dataset.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets the statistics of a dataset.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        dataset_name: name of the dataset.</span>
@@ -2413,7 +2413,7 @@ BaseAnnotator            (<a class="autorefs autorefs-internal" title="zenml.sta
           <summary>Source code in <code>zenml/annotators/base_annotator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span> <span class="nf">get_datasets</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Gets the datasets currently available for annotation.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets the datasets currently available for annotation.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The datasets currently available for annotation.</span>
@@ -2478,7 +2478,7 @@ BaseAnnotator            (<a class="autorefs autorefs-internal" title="zenml.sta
           <summary>Source code in <code>zenml/annotators/base_annotator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span> <span class="nf">get_labeled_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Gets the labeled data for the given dataset.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets the labeled data for the given dataset.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        **kwargs: keyword arguments.</span>
@@ -2546,7 +2546,7 @@ BaseAnnotator            (<a class="autorefs autorefs-internal" title="zenml.sta
           <summary>Source code in <code>zenml/annotators/base_annotator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span> <span class="nf">get_unlabeled_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Gets the unlabeled data for the given dataset.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets the unlabeled data for the given dataset.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        **kwargs: Additional keyword arguments to pass to the Label Studio client.</span>
@@ -2595,7 +2595,7 @@ BaseAnnotator            (<a class="autorefs autorefs-internal" title="zenml.sta
           <summary>Source code in <code>zenml/annotators/base_annotator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span> <span class="nf">get_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Gets the URL of the annotation interface.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets the URL of the annotation interface.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The URL of the annotation interface.</span>
@@ -2660,7 +2660,7 @@ BaseAnnotator            (<a class="autorefs autorefs-internal" title="zenml.sta
           <summary>Source code in <code>zenml/annotators/base_annotator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span> <span class="nf">get_url_for_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Gets the URL of the annotation interface for a specific dataset.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets the URL of the annotation interface for a specific dataset.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        dataset_name: name of the dataset.</span>
@@ -2713,7 +2713,7 @@ BaseAnnotator            (<a class="autorefs autorefs-internal" title="zenml.sta
           <summary>Source code in <code>zenml/annotators/base_annotator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span> <span class="nf">launch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Launches the annotation interface.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Launches the annotation interface.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        url: The URL of the annotation interface.</span>
@@ -2776,7 +2776,7 @@ BaseAnnotatorConfig            (<a class="autorefs autorefs-internal" title="zen
         <details class="quote">
           <summary>Source code in <code>zenml/annotators/base_annotator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseAnnotatorConfig</span><span class="p">(</span><span class="n">StackComponentConfig</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base config for annotators.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base config for annotators.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        notebook_only: if the annotator can only be used in a notebook.</span>
@@ -2832,11 +2832,11 @@ BaseAnnotatorFlavor            (<a class="autorefs autorefs-internal" title="zen
         <details class="quote">
           <summary>Source code in <code>zenml/annotators/base_annotator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseAnnotatorFlavor</span><span class="p">(</span><span class="n">Flavor</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base class for annotator flavors.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for annotator flavors.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StackComponentType</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the flavor type.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the flavor type.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The flavor type.</span>
@@ -2845,7 +2845,7 @@ BaseAnnotatorFlavor            (<a class="autorefs autorefs-internal" title="zen
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseAnnotatorConfig</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Config class for this flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Config class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The config class.</span>
@@ -2855,7 +2855,7 @@ BaseAnnotatorFlavor            (<a class="autorefs autorefs-internal" title="zen
     <span class="nd">@property</span>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseAnnotator</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Implementation class.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>

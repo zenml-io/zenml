@@ -3447,7 +3447,7 @@ steps.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/config/base_settings.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseSettings</span><span class="p">(</span><span class="n">SecretReferenceMixin</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base class for settings.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for settings.</span>
 
 <span class="sd">    The `LEVEL` class variable defines on which level the settings can be</span>
 <span class="sd">    specified. By default, subclasses can be defined on both pipelines and</span>
@@ -3459,7 +3459,7 @@ steps.</p>
     <span class="p">)</span>
 
     <span class="k">class</span> <span class="nc">Config</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Pydantic configuration class.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Pydantic configuration class.&quot;&quot;&quot;</span>
 
         <span class="c1"># public attributes are immutable</span>
         <span class="n">allow_mutation</span> <span class="o">=</span> <span class="kc">False</span>
@@ -3499,7 +3499,7 @@ Config        </code>
         <details class="quote">
           <summary>Source code in <code>zenml/config/base_settings.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Config</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Pydantic configuration class.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Pydantic configuration class.&quot;&quot;&quot;</span>
 
     <span class="c1"># public attributes are immutable</span>
     <span class="n">allow_mutation</span> <span class="o">=</span> <span class="kc">False</span>
@@ -3569,7 +3569,7 @@ can be specified.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/config/base_settings.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ConfigurationLevel</span><span class="p">(</span><span class="n">IntFlag</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Settings configuration level.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Settings configuration level.</span>
 
 <span class="sd">    Bit flag that can be used to specify where a `BaseSettings` subclass</span>
 <span class="sd">    can be specified.</span>
@@ -3661,7 +3661,7 @@ Compiler        </code>
         <details class="quote">
           <summary>Source code in <code>zenml/config/compiler.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Compiler</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Compiles ZenML pipelines to serializable representations.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compiles ZenML pipelines to serializable representations.&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">compile</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -3669,7 +3669,7 @@ Compiler        </code>
         <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
         <span class="n">run_configuration</span><span class="p">:</span> <span class="n">PipelineRunConfiguration</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PipelineDeployment</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Compiles a ZenML pipeline to a serializable representation.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compiles a ZenML pipeline to a serializable representation.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            pipeline: The pipeline to compile.</span>
@@ -3737,7 +3737,7 @@ Compiler        </code>
     <span class="k">def</span> <span class="nf">_apply_run_configuration</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">pipeline</span><span class="p">:</span> <span class="s2">&quot;BasePipeline&quot;</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">PipelineRunConfiguration</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Applies run configurations to the pipeline and its steps.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Applies run configurations to the pipeline and its steps.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            pipeline: The pipeline to configure.</span>
@@ -3761,7 +3761,7 @@ Compiler        </code>
     <span class="k">def</span> <span class="nf">_apply_stack_default_settings</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">pipeline</span><span class="p">:</span> <span class="s2">&quot;BasePipeline&quot;</span><span class="p">,</span> <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Applies stack default settings to a pipeline.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Applies stack default settings to a pipeline.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            pipeline: The pipeline to which to apply the default settings.</span>
@@ -3792,7 +3792,7 @@ Compiler        </code>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">stack_component</span><span class="p">:</span> <span class="s2">&quot;StackComponent&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseSettings&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Gets default settings configured on a stack component.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets default settings configured on a stack component.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            stack_component: The stack component for which to get the settings.</span>
@@ -3811,7 +3811,7 @@ Compiler        </code>
         <span class="k">return</span> <span class="n">default_settings</span>
 
     <span class="k">def</span> <span class="nf">_verify_distinct_step_names</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pipeline</span><span class="p">:</span> <span class="s2">&quot;BasePipeline&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Verifies that all steps inside the pipeline have separate names.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Verifies that all steps inside the pipeline have separate names.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            pipeline: The pipeline to verify.</span>
@@ -3838,7 +3838,7 @@ Compiler        </code>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_verify_run_name</span><span class="p">(</span><span class="n">run_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Verifies that the run name contains only valid placeholders.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Verifies that the run name contains only valid placeholders.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            run_name: The run name to verify.</span>
@@ -3862,7 +3862,7 @@ Compiler        </code>
         <span class="n">configuration_level</span><span class="p">:</span> <span class="n">ConfigurationLevel</span><span class="p">,</span>
         <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;BaseSettings&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Filters and validates settings.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Filters and validates settings.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            settings: The settings to check.</span>
@@ -3899,7 +3899,7 @@ Compiler        </code>
         <span class="k">return</span> <span class="n">validated_settings</span>
 
     <span class="k">def</span> <span class="nf">_get_step_spec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">:</span> <span class="s2">&quot;BaseStep&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StepSpec</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Gets the spec for a step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets the spec for a step.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            step: The step for which to get the spec.</span>
@@ -3920,7 +3920,7 @@ Compiler        </code>
         <span class="n">pipeline_extra</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
         <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Step</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Compiles a ZenML step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compiles a ZenML step.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            step: The step to compile.</span>
@@ -3959,7 +3959,7 @@ Compiler        </code>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_get_default_run_name</span><span class="p">(</span><span class="n">pipeline_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Gets the default name for a pipeline run.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets the default name for a pipeline run.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            pipeline_name: Name of the pipeline which will be run.</span>
@@ -3973,7 +3973,7 @@ Compiler        </code>
     <span class="k">def</span> <span class="nf">_get_sorted_steps</span><span class="p">(</span>
         <span class="n">steps</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;BaseStep&quot;</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;BaseStep&quot;</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Sorts the steps of a pipeline using topological sort.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sorts the steps of a pipeline using topological sort.</span>
 
 <span class="sd">        The resulting list of steps will be in an order that can be executed</span>
 <span class="sd">        sequentially without any conflicts.</span>
@@ -4019,7 +4019,7 @@ Compiler        </code>
     <span class="k">def</span> <span class="nf">_ensure_required_stack_components_exist</span><span class="p">(</span>
         <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span> <span class="n">steps</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="s2">&quot;Step&quot;</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Ensures that the stack components required for each step exist.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Ensures that the stack components required for each step exist.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            stack: The stack on which the pipeline should be deployed.</span>
@@ -4141,7 +4141,7 @@ Compiler        </code>
     <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
     <span class="n">run_configuration</span><span class="p">:</span> <span class="n">PipelineRunConfiguration</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PipelineDeployment</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Compiles a ZenML pipeline to a serializable representation.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compiles a ZenML pipeline to a serializable representation.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        pipeline: The pipeline to compile.</span>
@@ -4279,11 +4279,11 @@ ConfigKeys        </code>
         <details class="quote">
           <summary>Source code in <code>zenml/config/config_keys.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ConfigKeys</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Class to validate dictionary configurations.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class to validate dictionary configurations.&quot;&quot;&quot;</span>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">get_keys</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Gets all the required and optional config keys for this class.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets all the required and optional config keys for this class.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            A tuple (required, optional) which are lists of the</span>
@@ -4305,7 +4305,7 @@ ConfigKeys        </code>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">key_check</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Checks whether a configuration dict contains all required keys and no unknown keys.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks whether a configuration dict contains all required keys and no unknown keys.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            config: The configuration dict to verify.</span>
@@ -4386,7 +4386,7 @@ required/optional keys for this class.</p></td>
           <summary>Source code in <code>zenml/config/config_keys.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span> <span class="nf">get_keys</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
-    <span class="sd">&quot;&quot;&quot;Gets all the required and optional config keys for this class.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets all the required and optional config keys for this class.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A tuple (required, optional) which are lists of the</span>
@@ -4472,7 +4472,7 @@ required/optional keys for this class.</p></td>
           <summary>Source code in <code>zenml/config/config_keys.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span> <span class="nf">key_check</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Checks whether a configuration dict contains all required keys and no unknown keys.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks whether a configuration dict contains all required keys and no unknown keys.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        config: The configuration dict to verify.</span>
@@ -4539,7 +4539,7 @@ PipelineConfigurationKeys            (<a class="autorefs autorefs-internal" titl
         <details class="quote">
           <summary>Source code in <code>zenml/config/config_keys.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PipelineConfigurationKeys</span><span class="p">(</span><span class="n">ConfigKeys</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Keys for a pipeline configuration dict.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Keys for a pipeline configuration dict.&quot;&quot;&quot;</span>
 
     <span class="n">NAME</span> <span class="o">=</span> <span class="s2">&quot;name&quot;</span>
     <span class="n">STEPS</span> <span class="o">=</span> <span class="s2">&quot;steps&quot;</span>
@@ -4590,7 +4590,7 @@ SourceConfigurationKeys            (<a class="autorefs autorefs-internal" title=
         <details class="quote">
           <summary>Source code in <code>zenml/config/config_keys.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SourceConfigurationKeys</span><span class="p">(</span><span class="n">ConfigKeys</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Keys for a step configuration source dict.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Keys for a step configuration source dict.&quot;&quot;&quot;</span>
 
     <span class="n">FILE_</span> <span class="o">=</span> <span class="s2">&quot;file&quot;</span>
     <span class="n">NAME_</span> <span class="o">=</span> <span class="s2">&quot;name&quot;</span>
@@ -4641,7 +4641,7 @@ StepConfigurationKeys            (<a class="autorefs autorefs-internal" title="z
         <details class="quote">
           <summary>Source code in <code>zenml/config/config_keys.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StepConfigurationKeys</span><span class="p">(</span><span class="n">ConfigKeys</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Keys for a step configuration dict.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Keys for a step configuration dict.&quot;&quot;&quot;</span>
 
     <span class="n">SOURCE_</span> <span class="o">=</span> <span class="s2">&quot;source&quot;</span>
     <span class="n">PARAMETERS_</span> <span class="o">=</span> <span class="s2">&quot;parameters&quot;</span>
@@ -4933,7 +4933,7 @@ entrypoint as this user.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/config/docker_settings.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DockerSettings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Settings for building Docker images to run ZenML pipelines.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Settings for building Docker images to run ZenML pipelines.</span>
 
 <span class="sd">    Build process:</span>
 <span class="sd">    --------------</span>
@@ -5054,7 +5054,7 @@ entrypoint as this user.</p></td>
     <span class="n">user</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="k">class</span> <span class="nc">Config</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Pydantic configuration class.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Pydantic configuration class.&quot;&quot;&quot;</span>
 
         <span class="c1"># public attributes are immutable</span>
         <span class="n">allow_mutation</span> <span class="o">=</span> <span class="kc">False</span>
@@ -5108,7 +5108,7 @@ Config        </code>
         <details class="quote">
           <summary>Source code in <code>zenml/config/docker_settings.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Config</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Pydantic configuration class.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Pydantic configuration class.&quot;&quot;&quot;</span>
 
     <span class="c1"># public attributes are immutable</span>
     <span class="n">allow_mutation</span> <span class="o">=</span> <span class="kc">False</span>
@@ -5175,14 +5175,14 @@ PythonEnvironmentExportMethod            (<span title="enum.Enum">Enum</span>)
         <details class="quote">
           <summary>Source code in <code>zenml/config/docker_settings.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PythonEnvironmentExportMethod</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Different methods to export the local Python environment.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Different methods to export the local Python environment.&quot;&quot;&quot;</span>
 
     <span class="n">PIP_FREEZE</span> <span class="o">=</span> <span class="s2">&quot;pip_freeze&quot;</span>
     <span class="n">POETRY_EXPORT</span> <span class="o">=</span> <span class="s2">&quot;poetry_export&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">command</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Shell command that outputs local python packages.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Shell command that outputs local python packages.</span>
 
 <span class="sd">        The output string must be something that can be interpreted as a</span>
 <span class="sd">        requirements file for pip once it&#39;s written to a file.</span>
@@ -5289,7 +5289,7 @@ config file is older than the current version of the ZenML package.</li>
         <details class="quote">
           <summary>Source code in <code>zenml/config/global_config.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">GlobalConfigMetaClass</span><span class="p">(</span><span class="n">ModelMetaclass</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Global configuration metaclass.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Global configuration metaclass.</span>
 
 <span class="sd">    This metaclass is used to enforce a singleton instance of the</span>
 <span class="sd">    GlobalConfiguration class with the following additional properties:</span>
@@ -5302,7 +5302,7 @@ config file is older than the current version of the ZenML package.</li>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Initialize a singleton class.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize a singleton class.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            *args: positional arguments</span>
@@ -5312,7 +5312,7 @@ config file is older than the current version of the ZenML package.</li>
         <span class="bp">cls</span><span class="o">.</span><span class="n">_global_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;GlobalConfiguration&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;GlobalConfiguration&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Create or return the default global config instance.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create or return the default global config instance.</span>
 
 <span class="sd">        If the GlobalConfiguration constructor is called with custom arguments,</span>
 <span class="sd">        the singleton functionality of the metaclass is bypassed: a new</span>
@@ -5416,7 +5416,7 @@ without saving it as the global GlobalConfiguration singleton.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/config/global_config.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;GlobalConfiguration&quot;</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Create or return the default global config instance.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create or return the default global config instance.</span>
 
 <span class="sd">    If the GlobalConfiguration constructor is called with custom arguments,</span>
 <span class="sd">    the singleton functionality of the metaclass is bypassed: a new</span>
@@ -5494,7 +5494,7 @@ without saving it as the global GlobalConfiguration singleton.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/config/global_config.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Initialize a singleton class.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize a singleton class.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        *args: positional arguments</span>
@@ -5609,7 +5609,7 @@ global config.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/config/global_config.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">GlobalConfiguration</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">,</span> <span class="n">metaclass</span><span class="o">=</span><span class="n">GlobalConfigMetaClass</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Stores global configuration options.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Stores global configuration options.</span>
 
 <span class="sd">    Configuration options are read from a config file, but can be overwritten</span>
 <span class="sd">    by environment variables. See `GlobalConfiguration.__getattribute__` for</span>
@@ -5646,7 +5646,7 @@ global config.</p></td>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">config_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Initializes a GlobalConfiguration using values from the config file.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes a GlobalConfiguration using values from the config file.</span>
 
 <span class="sd">        GlobalConfiguration is a singleton class: only one instance can exist.</span>
 <span class="sd">        Calling this constructor multiple times will always yield the same</span>
@@ -5680,7 +5680,7 @@ global config.</p></td>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">get_instance</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;GlobalConfiguration&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Return the GlobalConfiguration singleton instance.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the GlobalConfiguration singleton instance.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The GlobalConfiguration singleton instance or None, if the</span>
@@ -5692,7 +5692,7 @@ global config.</p></td>
     <span class="k">def</span> <span class="nf">_reset_instance</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;GlobalConfiguration&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Reset the GlobalConfiguration singleton instance.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reset the GlobalConfiguration singleton instance.</span>
 
 <span class="sd">        This method is only meant for internal use and testing purposes.</span>
 
@@ -5705,7 +5705,7 @@ global config.</p></td>
 
     <span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;version&quot;</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">_validate_version</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Validate the version attribute.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate the version attribute.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            v: The version attribute value.</span>
@@ -5728,7 +5728,7 @@ global config.</p></td>
         <span class="k">return</span> <span class="n">v</span>
 
     <span class="k">def</span> <span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Sets an attribute and persists it in the global configuration.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sets an attribute and persists it in the global configuration.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            key: The attribute name.</span>
@@ -5740,7 +5740,7 @@ global config.</p></td>
         <span class="bp">self</span><span class="o">.</span><span class="n">_write_config</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">__custom_getattribute__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Gets an attribute value for a specific key.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets an attribute value for a specific key.</span>
 
 <span class="sd">        If a value for this attribute was specified using an environment</span>
 <span class="sd">        variable called `$(CONFIG_ENV_VAR_PREFIX)$(ATTRIBUTE_NAME)` and its</span>
@@ -5778,7 +5778,7 @@ global config.</p></td>
         <span class="fm">__getattribute__</span> <span class="o">=</span> <span class="n">__custom_getattribute__</span>
 
     <span class="k">def</span> <span class="nf">_migrate_config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Migrates the global config to the latest version.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Migrates the global config to the latest version.&quot;&quot;&quot;</span>
         <span class="n">curr_version</span> <span class="o">=</span> <span class="n">version</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">__version__</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">version</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
@@ -5820,7 +5820,7 @@ global config.</p></td>
         <span class="bp">self</span><span class="o">.</span><span class="n">version</span> <span class="o">=</span> <span class="n">__version__</span>
 
     <span class="k">def</span> <span class="nf">_read_config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Reads configuration options from disk.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reads configuration options from disk.</span>
 
 <span class="sd">        If the config file doesn&#39;t exist yet, this method returns an empty</span>
 <span class="sd">        dictionary.</span>
@@ -5838,7 +5838,7 @@ global config.</p></td>
         <span class="k">return</span> <span class="n">config_values</span>
 
     <span class="k">def</span> <span class="nf">_write_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Writes the global configuration options to disk.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Writes the global configuration options to disk.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            config_path: custom config file path. When not specified, the</span>
@@ -5861,7 +5861,7 @@ global config.</p></td>
         <span class="n">skip_default_registrations</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Configure the global zen store.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Configure the global zen store.</span>
 
 <span class="sd">        This method creates and initializes the global store according to the</span>
 <span class="sd">        supplied configuration.</span>
@@ -5902,7 +5902,7 @@ global config.</p></td>
             <span class="n">local_stores_path</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_sanitize_config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Sanitize and save the global configuration.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sanitize and save the global configuration.</span>
 
 <span class="sd">        This method is called to ensure that the active stack and project</span>
 <span class="sd">        are set to their default values, if possible.</span>
@@ -5918,7 +5918,7 @@ global config.</p></td>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">default_config_directory</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Path to the default global configuration directory.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Path to the default global configuration directory.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The default global configuration directory.</span>
@@ -5926,7 +5926,7 @@ global config.</p></td>
         <span class="k">return</span> <span class="n">io_utils</span><span class="o">.</span><span class="n">get_global_config_directory</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">_config_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Path to the file where global configuration options are stored.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Path to the file where global configuration options are stored.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            config_path: custom config file path. When not specified, the</span>
@@ -5944,7 +5944,7 @@ global config.</p></td>
         <span class="n">store_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">StoreConfiguration</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">empty_store</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;GlobalConfiguration&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Create a copy of the global config using a different config path.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a copy of the global config using a different config path.</span>
 
 <span class="sd">        This method is used to copy the global configuration and store it in a</span>
 <span class="sd">        different configuration path, where it can be loaded in the context of a</span>
@@ -6007,7 +6007,7 @@ global config.</p></td>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Directory where the global configuration file is located.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Directory where the global configuration file is located.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The directory where the global configuration file is located.</span>
@@ -6016,7 +6016,7 @@ global config.</p></td>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">local_stores_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Path where local stores information is stored.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Path where local stores information is stored.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The path where local stores information is stored.</span>
@@ -6030,7 +6030,7 @@ global config.</p></td>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">get_default_store</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StoreConfiguration</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Get the default store configuration.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the default store configuration.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The default store configuration.</span>
@@ -6062,7 +6062,7 @@ global config.</p></td>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">set_default_store</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Creates and sets the default store configuration.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Creates and sets the default store configuration.</span>
 
 <span class="sd">        Call this method to initialize or revert the store configuration to the</span>
 <span class="sd">        default store.</span>
@@ -6078,7 +6078,7 @@ global config.</p></td>
             <span class="p">}</span>
 
     <span class="k">def</span> <span class="nf">uses_default_store</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Check if the global configuration uses the default store.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if the global configuration uses the default store.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            `True` if the global configuration uses the default store.</span>
@@ -6094,7 +6094,7 @@ global config.</p></td>
         <span class="n">skip_default_registrations</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Update the active store configuration.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update the active store configuration.</span>
 
 <span class="sd">        Call this method to validate and update the active store configuration.</span>
 
@@ -6134,7 +6134,7 @@ global config.</p></td>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">zen_store</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseZenStore&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Initialize and/or return the global zen store.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize and/or return the global zen store.</span>
 
 <span class="sd">        If the store hasn&#39;t been initialized yet, it is initialized when this</span>
 <span class="sd">        property is first accessed according to the global store configuration.</span>
@@ -6154,7 +6154,7 @@ global config.</p></td>
     <span class="k">def</span> <span class="nf">set_active_project</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">project</span><span class="p">:</span> <span class="s2">&quot;ProjectResponseModel&quot;</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ProjectResponseModel&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Set the project for the local client.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the project for the local client.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            project: The project to set active.</span>
@@ -6169,7 +6169,7 @@ global config.</p></td>
         <span class="k">return</span> <span class="n">project</span>
 
     <span class="k">def</span> <span class="nf">set_active_stack</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;StackResponseModel&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Set the active stack for the local client.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the active stack for the local client.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            stack: The model of the stack to set active.</span>
@@ -6177,7 +6177,7 @@ global config.</p></td>
         <span class="bp">self</span><span class="o">.</span><span class="n">active_stack_id</span> <span class="o">=</span> <span class="n">stack</span><span class="o">.</span><span class="n">id</span>
 
     <span class="k">def</span> <span class="nf">get_active_project</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ProjectResponseModel&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Get a model of the active project for the local client.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a model of the active project for the local client.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The model of the active project.</span>
@@ -6193,7 +6193,7 @@ global config.</p></td>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_active_project</span><span class="p">(</span><span class="n">project</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">get_active_project_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Get the name of the active project.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the name of the active project.</span>
 
 <span class="sd">        If the active project doesn&#39;t exist yet, the ZenStore is reinitialized.</span>
 
@@ -6207,7 +6207,7 @@ global config.</p></td>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">active_project_name</span>
 
     <span class="k">def</span> <span class="nf">get_active_stack_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UUID</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Get the ID of the active stack.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the ID of the active stack.</span>
 
 <span class="sd">        If the active stack doesn&#39;t exist yet, the ZenStore is reinitialized.</span>
 
@@ -6223,7 +6223,7 @@ global config.</p></td>
     <span class="k">def</span> <span class="nf">record_email_opt_in_out</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">opted_in</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">email</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">source</span><span class="p">:</span> <span class="n">AnalyticsEventSource</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Set the email address associated with this client.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the email address associated with this client.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            opted_in: Whether the user has opted in to email communication.</span>
@@ -6259,7 +6259,7 @@ global config.</p></td>
             <span class="bp">self</span><span class="o">.</span><span class="n">user_email_opt_in</span> <span class="o">=</span> <span class="n">opted_in</span>
 
     <span class="k">class</span> <span class="nc">Config</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Pydantic configuration class.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Pydantic configuration class.&quot;&quot;&quot;</span>
 
         <span class="c1"># Validate attributes when assigning them. We need to set this in order</span>
         <span class="c1"># to have a mix of mutable and immutable attributes</span>
@@ -6427,7 +6427,7 @@ Config        </code>
         <details class="quote">
           <summary>Source code in <code>zenml/config/global_config.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Config</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Pydantic configuration class.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Pydantic configuration class.&quot;&quot;&quot;</span>
 
     <span class="c1"># Validate attributes when assigning them. We need to set this in order</span>
     <span class="c1"># to have a mix of mutable and immutable attributes</span>
@@ -6527,7 +6527,7 @@ environment variable is returned instead.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/config/global_config.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">__custom_getattribute__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Gets an attribute value for a specific key.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets an attribute value for a specific key.</span>
 
 <span class="sd">    If a value for this attribute was specified using an environment</span>
 <span class="sd">    variable called `$(CONFIG_ENV_VAR_PREFIX)$(ATTRIBUTE_NAME)` and its</span>
@@ -6623,7 +6623,7 @@ environment variable is returned instead.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/config/global_config.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">__custom_getattribute__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Gets an attribute value for a specific key.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets an attribute value for a specific key.</span>
 
 <span class="sd">    If a value for this attribute was specified using an environment</span>
 <span class="sd">    variable called `$(CONFIG_ENV_VAR_PREFIX)$(ATTRIBUTE_NAME)` and its</span>
@@ -6723,7 +6723,7 @@ runtime environments.</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">config_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Initializes a GlobalConfiguration using values from the config file.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes a GlobalConfiguration using values from the config file.</span>
 
 <span class="sd">    GlobalConfiguration is a singleton class: only one instance can exist.</span>
 <span class="sd">    Calling this constructor multiple times will always yield the same</span>
@@ -6808,7 +6808,7 @@ runtime environments.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/config/global_config.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Sets an attribute and persists it in the global configuration.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Sets an attribute and persists it in the global configuration.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        key: The attribute name.</span>
@@ -6922,7 +6922,7 @@ the new environment.</p></td>
     <span class="n">store_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">StoreConfiguration</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">empty_store</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;GlobalConfiguration&quot;</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Create a copy of the global config using a different config path.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a copy of the global config using a different config path.</span>
 
 <span class="sd">    This method is used to copy the global configuration and store it in a</span>
 <span class="sd">    different configuration path, where it can be loaded in the context of a</span>
@@ -7026,7 +7026,7 @@ the new environment.</p></td>
           <summary>Source code in <code>zenml/config/global_config.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span> <span class="nf">default_config_directory</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Path to the default global configuration directory.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Path to the default global configuration directory.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The default global configuration directory.</span>
@@ -7072,7 +7072,7 @@ the new environment.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/config/global_config.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_active_project</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ProjectResponseModel&quot;</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Get a model of the active project for the local client.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a model of the active project for the local client.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The model of the active project.</span>
@@ -7127,7 +7127,7 @@ the new environment.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/config/global_config.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_active_project_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Get the name of the active project.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the name of the active project.</span>
 
 <span class="sd">    If the active project doesn&#39;t exist yet, the ZenStore is reinitialized.</span>
 
@@ -7180,7 +7180,7 @@ the new environment.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/config/global_config.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_active_stack_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UUID</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Get the ID of the active stack.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the ID of the active stack.</span>
 
 <span class="sd">    If the active stack doesn&#39;t exist yet, the ZenStore is reinitialized.</span>
 
@@ -7232,7 +7232,7 @@ the new environment.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/config/global_config.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_default_store</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StoreConfiguration</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Get the default store configuration.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the default store configuration.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The default store configuration.</span>
@@ -7307,7 +7307,7 @@ GlobalConfiguration hasn't been initialized yet.</p></td>
           <summary>Source code in <code>zenml/config/global_config.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span> <span class="nf">get_instance</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;GlobalConfiguration&quot;</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Return the GlobalConfiguration singleton instance.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the GlobalConfiguration singleton instance.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The GlobalConfiguration singleton instance or None, if the</span>
@@ -7372,7 +7372,7 @@ GlobalConfiguration hasn't been initialized yet.</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">record_email_opt_in_out</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">opted_in</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">email</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">source</span><span class="p">:</span> <span class="n">AnalyticsEventSource</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Set the email address associated with this client.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Set the email address associated with this client.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        opted_in: Whether the user has opted in to email communication.</span>
@@ -7467,7 +7467,7 @@ GlobalConfiguration hasn't been initialized yet.</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">set_active_project</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">project</span><span class="p">:</span> <span class="s2">&quot;ProjectResponseModel&quot;</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ProjectResponseModel&quot;</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Set the project for the local client.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Set the project for the local client.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        project: The project to set active.</span>
@@ -7524,7 +7524,7 @@ GlobalConfiguration hasn't been initialized yet.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/config/global_config.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">set_active_stack</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;StackResponseModel&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Set the active stack for the local client.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Set the active stack for the local client.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        stack: The model of the stack to set active.</span>
@@ -7557,7 +7557,7 @@ default store.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/config/global_config.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">set_default_store</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Creates and sets the default store configuration.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Creates and sets the default store configuration.</span>
 
 <span class="sd">    Call this method to initialize or revert the store configuration to the</span>
 <span class="sd">    default store.</span>
@@ -7635,7 +7635,7 @@ constructor.</p></td>
     <span class="n">skip_default_registrations</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Update the active store configuration.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Update the active store configuration.</span>
 
 <span class="sd">    Call this method to validate and update the active store configuration.</span>
 
@@ -7712,7 +7712,7 @@ constructor.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/config/global_config.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">uses_default_store</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Check if the global configuration uses the default store.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if the global configuration uses the default store.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        `True` if the global configuration uses the default store.</span>
@@ -7773,7 +7773,7 @@ constructor.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/config/global_config.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">generate_jwt_secret_key</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Generate a random JWT secret key.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate a random JWT secret key.</span>
 
 <span class="sd">    This key is used to sign and verify generated JWT tokens.</span>
 
@@ -7849,14 +7849,14 @@ PipelineConfiguration            (<a class="autorefs autorefs-internal" title="z
         <details class="quote">
           <summary>Source code in <code>zenml/config/pipeline_configurations.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PipelineConfiguration</span><span class="p">(</span><span class="n">PipelineConfigurationUpdate</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Pipeline configuration class.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Pipeline configuration class.&quot;&quot;&quot;</span>
 
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">enable_cache</span><span class="p">:</span> <span class="nb">bool</span>
 
     <span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">ensure_pipeline_name_allowed</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Ensures the pipeline name is allowed.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Ensures the pipeline name is allowed.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name: Name of the pipeline.</span>
@@ -7876,7 +7876,7 @@ PipelineConfiguration            (<a class="autorefs autorefs-internal" title="z
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">docker_settings</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;DockerSettings&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Docker settings of this pipeline.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Docker settings of this pipeline.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The Docker settings of this pipeline.</span>
@@ -8013,7 +8013,7 @@ PipelineConfiguration            (<a class="autorefs autorefs-internal" title="z
           <summary>Source code in <code>zenml/config/pipeline_configurations.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">ensure_pipeline_name_allowed</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Ensures the pipeline name is allowed.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Ensures the pipeline name is allowed.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: Name of the pipeline.</span>
@@ -8071,7 +8071,7 @@ PipelineConfigurationUpdate            (<a class="autorefs autorefs-internal" ti
         <details class="quote">
           <summary>Source code in <code>zenml/config/pipeline_configurations.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PipelineConfigurationUpdate</span><span class="p">(</span><span class="n">StrictBaseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Class for pipeline configuration updates.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class for pipeline configuration updates.&quot;&quot;&quot;</span>
 
     <span class="n">enable_cache</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">settings</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">BaseSettings</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
@@ -8129,7 +8129,7 @@ PipelineRunConfiguration            (<a class="autorefs autorefs-internal" title
         <details class="quote">
           <summary>Source code in <code>zenml/config/pipeline_configurations.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PipelineRunConfiguration</span><span class="p">(</span><span class="n">StrictBaseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Class for pipeline run configurations.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class for pipeline run configurations.&quot;&quot;&quot;</span>
 
     <span class="n">run_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">enable_cache</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
@@ -8193,13 +8193,13 @@ PipelineSpec            (<a class="autorefs autorefs-internal" title="zenml.conf
         <details class="quote">
           <summary>Source code in <code>zenml/config/pipeline_configurations.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PipelineSpec</span><span class="p">(</span><span class="n">StrictBaseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Specification of a pipeline.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Specification of a pipeline.&quot;&quot;&quot;</span>
 
     <span class="n">version</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;0.1&quot;</span>
     <span class="n">steps</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">StepSpec</span><span class="p">]</span>
 
     <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns whether the other object is referring to the same pipeline.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns whether the other object is referring to the same pipeline.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            other: The other object to compare to.</span>
@@ -8282,7 +8282,7 @@ PipelineSpec            (<a class="autorefs autorefs-internal" title="zenml.conf
         <details class="quote">
           <summary>Source code in <code>zenml/config/pipeline_configurations.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns whether the other object is referring to the same pipeline.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns whether the other object is referring to the same pipeline.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        other: The other object to compare to.</span>
@@ -8372,7 +8372,7 @@ PipelineDeployment            (<a class="autorefs autorefs-internal" title="zenm
         <details class="quote">
           <summary>Source code in <code>zenml/config/pipeline_deployment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PipelineDeployment</span><span class="p">(</span><span class="n">StrictBaseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Class representing the deployment of a ZenML pipeline.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class representing the deployment of a ZenML pipeline.&quot;&quot;&quot;</span>
 
     <span class="n">zenml_version</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">zenml</span><span class="o">.</span><span class="n">__version__</span>
     <span class="n">run_name</span><span class="p">:</span> <span class="nb">str</span>
@@ -8383,7 +8383,7 @@ PipelineDeployment            (<a class="autorefs autorefs-internal" title="zenm
     <span class="n">steps</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Step</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
 
     <span class="k">def</span> <span class="nf">add_extra</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Adds an extra key-value pair to the pipeline configuration.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Adds an extra key-value pair to the pipeline configuration.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            key: Key for which to add the extra value.</span>
@@ -8392,7 +8392,7 @@ PipelineDeployment            (<a class="autorefs autorefs-internal" title="zenm
         <span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">extra</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
 
     <span class="k">def</span> <span class="nf">yaml</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Yaml representation of the deployment.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Yaml representation of the deployment.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            **kwargs: Kwargs to pass to the pydantic json(...) method.</span>
@@ -8468,7 +8468,7 @@ PipelineDeployment            (<a class="autorefs autorefs-internal" title="zenm
         <details class="quote">
           <summary>Source code in <code>zenml/config/pipeline_deployment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">add_extra</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Adds an extra key-value pair to the pipeline configuration.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Adds an extra key-value pair to the pipeline configuration.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        key: Key for which to add the extra value.</span>
@@ -8534,7 +8534,7 @@ PipelineDeployment            (<a class="autorefs autorefs-internal" title="zenm
         <details class="quote">
           <summary>Source code in <code>zenml/config/pipeline_deployment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">yaml</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Yaml representation of the deployment.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Yaml representation of the deployment.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        **kwargs: Kwargs to pass to the pydantic json(...) method.</span>
@@ -8620,7 +8620,7 @@ ByteUnit            (<span title="enum.Enum">Enum</span>)
         <details class="quote">
           <summary>Source code in <code>zenml/config/resource_settings.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ByteUnit</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Enum for byte units.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Enum for byte units.&quot;&quot;&quot;</span>
 
     <span class="n">KB</span> <span class="o">=</span> <span class="s2">&quot;KB&quot;</span>
     <span class="n">KIB</span> <span class="o">=</span> <span class="s2">&quot;KiB&quot;</span>
@@ -8635,7 +8635,7 @@ ByteUnit            (<span title="enum.Enum">Enum</span>)
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">byte_value</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the amount of bytes that this unit represents.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the amount of bytes that this unit represents.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The byte value of this unit.</span>
@@ -8737,7 +8737,7 @@ ResourceSettings            (<a class="autorefs autorefs-internal" title="zenml.
         <details class="quote">
           <summary>Source code in <code>zenml/config/resource_settings.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ResourceSettings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Hardware resource settings.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Hardware resource settings.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        cpu_count: The amount of CPU cores that should be configured.</span>
@@ -8751,7 +8751,7 @@ ResourceSettings            (<a class="autorefs autorefs-internal" title="zenml.
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">empty</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns if this object is &quot;empty&quot; (=no values configured) or not.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns if this object is &quot;empty&quot; (=no values configured) or not.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            `True` if no values were configured, `False` otherwise.</span>
@@ -8764,7 +8764,7 @@ ResourceSettings            (<a class="autorefs autorefs-internal" title="zenml.
     <span class="k">def</span> <span class="nf">get_memory</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">unit</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ByteUnit</span><span class="p">]</span> <span class="o">=</span> <span class="n">ByteUnit</span><span class="o">.</span><span class="n">GB</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Gets the memory configuration in a specific unit.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets the memory configuration in a specific unit.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            unit: The unit to which the memory should be converted.</span>
@@ -8792,7 +8792,7 @@ ResourceSettings            (<a class="autorefs autorefs-internal" title="zenml.
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unable to parse memory unit from &#39;</span><span class="si">{</span><span class="n">memory</span><span class="si">}</span><span class="s2">&#39;.&quot;</span><span class="p">)</span>
 
     <span class="k">class</span> <span class="nc">Config</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Pydantic configuration class.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Pydantic configuration class.&quot;&quot;&quot;</span>
 
         <span class="c1"># public attributes are immutable</span>
         <span class="n">allow_mutation</span> <span class="o">=</span> <span class="kc">False</span>
@@ -8872,7 +8872,7 @@ Config        </code>
         <details class="quote">
           <summary>Source code in <code>zenml/config/resource_settings.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Config</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Pydantic configuration class.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Pydantic configuration class.&quot;&quot;&quot;</span>
 
     <span class="c1"># public attributes are immutable</span>
     <span class="n">allow_mutation</span> <span class="o">=</span> <span class="kc">False</span>
@@ -8979,7 +8979,7 @@ if no memory was configured.</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_memory</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">unit</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ByteUnit</span><span class="p">]</span> <span class="o">=</span> <span class="n">ByteUnit</span><span class="o">.</span><span class="n">GB</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Gets the memory configuration in a specific unit.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets the memory configuration in a specific unit.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        unit: The unit to which the memory should be converted.</span>
@@ -9129,7 +9129,7 @@ internally, you should turn catchup off to avoid duplicate backfill.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/config/schedule.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Schedule</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Class for defining a pipeline schedule.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class for defining a pipeline schedule.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        cron_expression: Cron expression for the pipeline schedule. If a value</span>
@@ -9157,7 +9157,7 @@ internally, you should turn catchup off to avoid duplicate backfill.</p></td>
     <span class="k">def</span> <span class="nf">_ensure_cron_or_periodic_schedule_configured</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span> <span class="n">values</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Ensures that the cron expression or start time + interval are set.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Ensures that the cron expression or start time + interval are set.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            values: All attributes of the schedule.</span>
@@ -9193,7 +9193,7 @@ internally, you should turn catchup off to avoid duplicate backfill.</p></td>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">utc_start_time</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Optional ISO-formatted string of the UTC start time.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Optional ISO-formatted string of the UTC start time.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Optional ISO-formatted string of the UTC start time.</span>
@@ -9205,7 +9205,7 @@ internally, you should turn catchup off to avoid duplicate backfill.</p></td>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">utc_end_time</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Optional ISO-formatted string of the UTC end time.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Optional ISO-formatted string of the UTC end time.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Optional ISO-formatted string of the UTC end time.</span>
@@ -9383,10 +9383,10 @@ SecretReferenceMixin            (<span title="pydantic.main.BaseModel">BaseModel
         <details class="quote">
           <summary>Source code in <code>zenml/config/secret_reference_mixin.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SecretReferenceMixin</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Mixin class for secret references in pydantic model attributes.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Mixin class for secret references in pydantic model attributes.&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Ensures that secret references are only passed for valid fields.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Ensures that secret references are only passed for valid fields.</span>
 
 <span class="sd">        This method ensures that secret references are not passed for fields</span>
 <span class="sd">        that explicitly prevent them or require pydantic validation.</span>
@@ -9439,7 +9439,7 @@ SecretReferenceMixin            (<span title="pydantic.main.BaseModel">BaseModel
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">__custom_getattribute__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the (potentially resolved) attribute value for the given key.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the (potentially resolved) attribute value for the given key.</span>
 
 <span class="sd">        An attribute value may be either specified directly, or as a secret</span>
 <span class="sd">        reference. In case of a secret reference, this method resolves the</span>
@@ -9497,7 +9497,7 @@ SecretReferenceMixin            (<span title="pydantic.main.BaseModel">BaseModel
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">required_secrets</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="n">secret_utils</span><span class="o">.</span><span class="n">SecretReference</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;All required secrets for this object.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;All required secrets for this object.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The required secrets of this object.</span>
@@ -9637,7 +9637,7 @@ reference and returns the secret value instead.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/config/secret_reference_mixin.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">__custom_getattribute__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns the (potentially resolved) attribute value for the given key.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the (potentially resolved) attribute value for the given key.</span>
 
 <span class="sd">    An attribute value may be either specified directly, or as a secret</span>
 <span class="sd">    reference. In case of a secret reference, this method resolves the</span>
@@ -9770,7 +9770,7 @@ reference and returns the secret value instead.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/config/secret_reference_mixin.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">__custom_getattribute__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns the (potentially resolved) attribute value for the given key.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the (potentially resolved) attribute value for the given key.</span>
 
 <span class="sd">    An attribute value may be either specified directly, or as a secret</span>
 <span class="sd">    reference. In case of a secret reference, this method resolves the</span>
@@ -9885,7 +9885,7 @@ is passed as a secret reference.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/config/secret_reference_mixin.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Ensures that secret references are only passed for valid fields.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Ensures that secret references are only passed for valid fields.</span>
 
 <span class="sd">    This method ensures that secret references are not passed for fields</span>
 <span class="sd">    that explicitly prevent them or require pydantic validation.</span>
@@ -10013,14 +10013,14 @@ depending on the key for which these settings were specified.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/config/settings_resolver.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SettingsResolver</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Class for resolving settings.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class for resolving settings.</span>
 
 <span class="sd">    This class converts a `BaseSettings` instance to the correct subclass</span>
 <span class="sd">    depending on the key for which these settings were specified.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">settings</span><span class="p">:</span> <span class="s2">&quot;BaseSettings&quot;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Checks if the settings key is valid.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if the settings key is valid.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            key: Settings key.</span>
@@ -10043,7 +10043,7 @@ depending on the key for which these settings were specified.</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">_settings</span> <span class="o">=</span> <span class="n">settings</span>
 
     <span class="k">def</span> <span class="nf">resolve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseSettings&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Resolves settings for the given stack.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Resolves settings for the given stack.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            stack: The stack for which to resolve the settings.</span>
@@ -10063,7 +10063,7 @@ depending on the key for which these settings were specified.</p>
     <span class="k">def</span> <span class="nf">_resolve_general_settings_class</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseSettings&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Resolves general settings.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Resolves general settings.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The resolved settings.</span>
@@ -10073,7 +10073,7 @@ depending on the key for which these settings were specified.</p>
     <span class="k">def</span> <span class="nf">_resolve_stack_component_setting_class</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseSettings&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Resolves stack component settings with the given stack.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Resolves stack component settings with the given stack.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            stack: The stack to use for resolving.</span>
@@ -10096,7 +10096,7 @@ depending on the key for which these settings were specified.</p>
         <span class="k">return</span> <span class="n">settings_class</span>
 
     <span class="k">def</span> <span class="nf">_convert_settings</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;T&quot;</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s2">&quot;T&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Converts the settings to their correct class.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Converts the settings to their correct class.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            target_class: The correct settings class.</span>
@@ -10190,7 +10190,7 @@ depending on the key for which these settings were specified.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/config/settings_resolver.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">settings</span><span class="p">:</span> <span class="s2">&quot;BaseSettings&quot;</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Checks if the settings key is valid.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks if the settings key is valid.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        key: Settings key.</span>
@@ -10270,7 +10270,7 @@ depending on the key for which these settings were specified.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/config/settings_resolver.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">resolve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseSettings&quot;</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Resolves settings for the given stack.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Resolves settings for the given stack.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        stack: The stack for which to resolve the settings.</span>
@@ -10364,7 +10364,7 @@ ArtifactConfiguration            (<a class="autorefs autorefs-internal" title="z
         <details class="quote">
           <summary>Source code in <code>zenml/config/step_configurations.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ArtifactConfiguration</span><span class="p">(</span><span class="n">PartialArtifactConfiguration</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Class representing a complete input/output artifact configuration.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class representing a complete input/output artifact configuration.&quot;&quot;&quot;</span>
 
     <span class="n">materializer_source</span><span class="p">:</span> <span class="nb">str</span>
 </code></pre></div>
@@ -10417,7 +10417,7 @@ InputSpec            (<a class="autorefs autorefs-internal" title="zenml.config.
         <details class="quote">
           <summary>Source code in <code>zenml/config/step_configurations.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">InputSpec</span><span class="p">(</span><span class="n">StrictBaseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Step input specification.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Step input specification.&quot;&quot;&quot;</span>
 
     <span class="n">step_name</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">output_name</span><span class="p">:</span> <span class="nb">str</span>
@@ -10473,7 +10473,7 @@ PartialArtifactConfiguration            (<a class="autorefs autorefs-internal" t
         <details class="quote">
           <summary>Source code in <code>zenml/config/step_configurations.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PartialArtifactConfiguration</span><span class="p">(</span><span class="n">StrictBaseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Class representing a partial input/output artifact configuration.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class representing a partial input/output artifact configuration.&quot;&quot;&quot;</span>
 
     <span class="n">materializer_source</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
@@ -10481,7 +10481,7 @@ PartialArtifactConfiguration            (<a class="autorefs autorefs-internal" t
     <span class="k">def</span> <span class="nf">_remove_deprecated_attributes</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span> <span class="n">values</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Removes deprecated attributes from the values dict.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Removes deprecated attributes from the values dict.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            values: The values dict used to instantiate the model.</span>
@@ -10545,7 +10545,7 @@ PartialStepConfiguration            (<a class="autorefs autorefs-internal" title
         <details class="quote">
           <summary>Source code in <code>zenml/config/step_configurations.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PartialStepConfiguration</span><span class="p">(</span><span class="n">StepConfigurationUpdate</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Class representing a partial step configuration.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class representing a partial step configuration.&quot;&quot;&quot;</span>
 
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">enable_cache</span><span class="p">:</span> <span class="nb">bool</span>
@@ -10606,7 +10606,7 @@ Step            (<a class="autorefs autorefs-internal" title="zenml.config.stric
         <details class="quote">
           <summary>Source code in <code>zenml/config/step_configurations.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Step</span><span class="p">(</span><span class="n">StrictBaseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Class representing a ZenML step.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class representing a ZenML step.&quot;&quot;&quot;</span>
 
     <span class="n">spec</span><span class="p">:</span> <span class="n">StepSpec</span>
     <span class="n">config</span><span class="p">:</span> <span class="n">StepConfiguration</span>
@@ -10662,14 +10662,14 @@ StepConfiguration            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/config/step_configurations.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StepConfiguration</span><span class="p">(</span><span class="n">PartialStepConfiguration</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Step configuration class.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Step configuration class.&quot;&quot;&quot;</span>
 
     <span class="n">inputs</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ArtifactConfiguration</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="n">outputs</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ArtifactConfiguration</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">resource_settings</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ResourceSettings&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Resource settings of this step configuration.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Resource settings of this step configuration.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The resource settings of this step configuration.</span>
@@ -10768,7 +10768,7 @@ StepConfigurationUpdate            (<a class="autorefs autorefs-internal" title=
         <details class="quote">
           <summary>Source code in <code>zenml/config/step_configurations.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StepConfigurationUpdate</span><span class="p">(</span><span class="n">StrictBaseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Class for step configuration updates.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class for step configuration updates.&quot;&quot;&quot;</span>
 
     <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">enable_cache</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
@@ -10837,7 +10837,7 @@ StepSpec            (<a class="autorefs autorefs-internal" title="zenml.config.s
         <details class="quote">
           <summary>Source code in <code>zenml/config/step_configurations.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StepSpec</span><span class="p">(</span><span class="n">StrictBaseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Specification of a pipeline.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Specification of a pipeline.&quot;&quot;&quot;</span>
 
     <span class="n">source</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">upstream_steps</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
@@ -10845,7 +10845,7 @@ StepSpec            (<a class="autorefs autorefs-internal" title="zenml.config.s
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">module_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;The step module name.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The step module name.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The step module name.</span>
@@ -10855,7 +10855,7 @@ StepSpec            (<a class="autorefs autorefs-internal" title="zenml.config.s
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">class_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;The step class name.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The step class name.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The step class name.</span>
@@ -10864,7 +10864,7 @@ StepSpec            (<a class="autorefs autorefs-internal" title="zenml.config.s
         <span class="k">return</span> <span class="n">class_name</span>
 
     <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns whether the other object is referring to the same step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns whether the other object is referring to the same step.</span>
 
 <span class="sd">        This is the case if the other objects is a `StepSpec` with the same</span>
 <span class="sd">        `upstream_steps` and a `source` that meets one of the following</span>
@@ -11062,7 +11062,7 @@ StepSpec            (<a class="autorefs autorefs-internal" title="zenml.config.s
         <details class="quote">
           <summary>Source code in <code>zenml/config/step_configurations.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns whether the other object is referring to the same step.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns whether the other object is referring to the same step.</span>
 
 <span class="sd">    This is the case if the other objects is a `StepSpec` with the same</span>
 <span class="sd">    `upstream_steps` and a `source` that meets one of the following</span>
@@ -11185,7 +11185,7 @@ StepRunInfo            (<a class="autorefs autorefs-internal" title="zenml.confi
         <details class="quote">
           <summary>Source code in <code>zenml/config/step_run_info.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StepRunInfo</span><span class="p">(</span><span class="n">StrictBaseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;All information necessary to run a step.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;All information necessary to run a step.&quot;&quot;&quot;</span>
 
     <span class="n">step_run_id</span><span class="p">:</span> <span class="n">UUID</span>
     <span class="n">run_id</span><span class="p">:</span> <span class="n">UUID</span>
@@ -11311,7 +11311,7 @@ to those defined in this class.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/config/store_config.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StoreConfiguration</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Generic store configuration.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generic store configuration.</span>
 
 <span class="sd">    The store configurations of concrete store implementations must inherit from</span>
 <span class="sd">    this class and validate any extra attributes that are configured in addition</span>
@@ -11332,7 +11332,7 @@ to those defined in this class.</p>
         <span class="n">config_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">load_config_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PurePath</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;StoreConfiguration&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Create a copy of the store config using a different configuration path.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a copy of the store config using a different configuration path.</span>
 
 <span class="sd">        This method is used to create a copy of the store configuration that can</span>
 <span class="sd">        be loaded using a different configuration path or in the context of a</span>
@@ -11361,7 +11361,7 @@ to those defined in this class.</p>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">supports_url_scheme</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Check if a URL scheme is supported by this store.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if a URL scheme is supported by this store.</span>
 
 <span class="sd">        Concrete store configuration classes should override this method to</span>
 <span class="sd">        check if a URL scheme is supported by the store.</span>
@@ -11375,7 +11375,7 @@ to those defined in this class.</p>
         <span class="k">return</span> <span class="kc">True</span>
 
     <span class="k">class</span> <span class="nc">Config</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Pydantic configuration class.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Pydantic configuration class.&quot;&quot;&quot;</span>
 
         <span class="c1"># Validate attributes when assigning them. We need to set this in order</span>
         <span class="c1"># to have a mix of mutable and immutable attributes</span>
@@ -11420,7 +11420,7 @@ Config        </code>
         <details class="quote">
           <summary>Source code in <code>zenml/config/store_config.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Config</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Pydantic configuration class.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Pydantic configuration class.&quot;&quot;&quot;</span>
 
     <span class="c1"># Validate attributes when assigning them. We need to set this in order</span>
     <span class="c1"># to have a mix of mutable and immutable attributes</span>
@@ -11548,7 +11548,7 @@ path.</p></td>
     <span class="n">config_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">load_config_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PurePath</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;StoreConfiguration&quot;</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Create a copy of the store config using a different configuration path.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a copy of the store config using a different configuration path.</span>
 
 <span class="sd">    This method is used to create a copy of the store configuration that can</span>
 <span class="sd">    be loaded using a different configuration path or in the context of a</span>
@@ -11639,7 +11639,7 @@ check if a URL scheme is supported by the store.</p>
           <summary>Source code in <code>zenml/config/store_config.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span> <span class="nf">supports_url_scheme</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Check if a URL scheme is supported by this store.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if a URL scheme is supported by this store.</span>
 
 <span class="sd">    Concrete store configuration classes should override this method to</span>
 <span class="sd">    check if a URL scheme is supported by the store.</span>
@@ -11729,10 +11729,10 @@ StrictBaseModel            (<span title="pydantic.main.BaseModel">BaseModel</spa
         <details class="quote">
           <summary>Source code in <code>zenml/config/strict_base_model.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StrictBaseModel</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Immutable pydantic model which prevents extra attributes.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Immutable pydantic model which prevents extra attributes.&quot;&quot;&quot;</span>
 
     <span class="k">class</span> <span class="nc">Config</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Pydantic config class.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Pydantic config class.&quot;&quot;&quot;</span>
 
         <span class="n">allow_mutation</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="n">extra</span> <span class="o">=</span> <span class="n">Extra</span><span class="o">.</span><span class="n">forbid</span>
@@ -11768,7 +11768,7 @@ Config        </code>
         <details class="quote">
           <summary>Source code in <code>zenml/config/strict_base_model.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Config</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Pydantic config class.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Pydantic config class.&quot;&quot;&quot;</span>
 
     <span class="n">allow_mutation</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="n">extra</span> <span class="o">=</span> <span class="n">Extra</span><span class="o">.</span><span class="n">forbid</span>

@@ -2677,7 +2677,7 @@ as their components.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/client.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Client</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">ClientMetaClass</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;ZenML client class.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;ZenML client class.</span>
 
 <span class="sd">    The ZenML client manages configuration options for ZenML stacks as well</span>
 <span class="sd">    as their components.</span>
@@ -2689,7 +2689,7 @@ as their components.</p>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">root</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Initializes the global client instance.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes the global client instance.</span>
 
 <span class="sd">        Client is a singleton class: only one instance can exist. Calling</span>
 <span class="sd">        this constructor multiple times will always yield the same instance (see</span>
@@ -2721,7 +2721,7 @@ as their components.</p>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">get_instance</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;Client&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Return the Client singleton instance.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the Client singleton instance.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The Client singleton instance or None, if the Client hasn&#39;t</span>
@@ -2731,7 +2731,7 @@ as their components.</p>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">_reset_instance</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">client</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;Client&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Reset the Client singleton instance.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reset the Client singleton instance.</span>
 
 <span class="sd">        This method is only meant for internal use and testing purposes.</span>
 
@@ -2743,7 +2743,7 @@ as their components.</p>
         <span class="bp">cls</span><span class="o">.</span><span class="n">_global_client</span> <span class="o">=</span> <span class="n">client</span>
 
     <span class="k">def</span> <span class="nf">_set_active_root</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">root</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Set the supplied path as the repository root.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the supplied path as the repository root.</span>
 
 <span class="sd">        If a client configuration is found at the given path or the</span>
 <span class="sd">        path, it is loaded and used to initialize the client.</span>
@@ -2775,7 +2775,7 @@ as their components.</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">_sanitize_config</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">_config_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Path to the client configuration file.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Path to the client configuration file.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Path to the client configuration file or None if the client</span>
@@ -2786,7 +2786,7 @@ as their components.</p>
         <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config_directory</span> <span class="o">/</span> <span class="s2">&quot;config.yaml&quot;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_sanitize_config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Sanitize and save the client configuration.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sanitize and save the client configuration.</span>
 
 <span class="sd">        This method is called to ensure that the client configuration</span>
 <span class="sd">        doesn&#39;t contain outdated information, such as an active stack or</span>
@@ -2804,7 +2804,7 @@ as their components.</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">set_active_project</span><span class="p">(</span><span class="n">active_project</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_load_config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ClientConfiguration</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Loads the client configuration from disk.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Loads the client configuration from disk.</span>
 
 <span class="sd">        This happens if the client has an active root and the configuration</span>
 <span class="sd">        file exists. If the configuration file doesn&#39;t exist, an empty</span>
@@ -2834,7 +2834,7 @@ as their components.</p>
     <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span>
         <span class="n">root</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Initializes a new ZenML repository at the given path.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes a new ZenML repository at the given path.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            root: The root directory where the repository should be created.</span>
@@ -2859,7 +2859,7 @@ as their components.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">uses_local_configuration</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Check if the client is using a local configuration.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if the client is using a local configuration.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            True if the client is using a local configuration,</span>
@@ -2869,7 +2869,7 @@ as their components.</p>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">is_repository_directory</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Checks whether a ZenML client exists at the given path.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks whether a ZenML client exists at the given path.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            path: The path to check.</span>
@@ -2885,7 +2885,7 @@ as their components.</p>
     <span class="k">def</span> <span class="nf">find_repository</span><span class="p">(</span>
         <span class="n">path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">enable_warnings</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Search for a ZenML repository directory.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Search for a ZenML repository directory.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            path: Optional path to look for the repository. If no path is</span>
@@ -2931,7 +2931,7 @@ as their components.</p>
             <span class="p">)</span>
 
         <span class="k">def</span> <span class="nf">_find_repository_helper</span><span class="p">(</span><span class="n">path_</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">]:</span>
-            <span class="sd">&quot;&quot;&quot;Recursively search parent directories for a ZenML repository.</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Recursively search parent directories for a ZenML repository.</span>
 
 <span class="sd">            Args:</span>
 <span class="sd">                path_: The path to search.</span>
@@ -2958,7 +2958,7 @@ as their components.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">zen_store</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseZenStore&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Shortcut to return the global zen store.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Shortcut to return the global zen store.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The global zen store.</span>
@@ -2967,7 +2967,7 @@ as their components.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">root</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;The root directory of this client.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The root directory of this client.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The root directory of this client, or None, if the client</span>
@@ -2977,7 +2977,7 @@ as their components.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;The configuration directory of this client.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The configuration directory of this client.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The configuration directory of this client, or None, if the</span>
@@ -2988,7 +2988,7 @@ as their components.</p>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span> <span class="o">/</span> <span class="n">REPOSITORY_DIRECTORY_NAME</span>
 
     <span class="k">def</span> <span class="nf">activate_root</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">root</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Set the active repository root directory.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the active repository root directory.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            root: The path to set as the active repository root. If not set,</span>
@@ -3003,7 +3003,7 @@ as their components.</p>
     <span class="k">def</span> <span class="nf">set_active_project</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">project_name_or_id</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UUID</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ProjectResponseModel&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Set the project for the local client.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the project for the local client.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            project_name_or_id: The name or ID of the project to set active.</span>
@@ -3031,7 +3031,7 @@ as their components.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">active_user</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;UserResponseModel&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Get the user that is currently in use.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the user that is currently in use.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The active user.</span>
@@ -3046,7 +3046,7 @@ as their components.</p>
         <span class="n">initial_role</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">password</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UserResponseModel</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Create a new user.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a new user.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name: The name of the user.</span>
@@ -3078,7 +3078,7 @@ as their components.</p>
     <span class="k">def</span> <span class="nf">get_user</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">name_id_or_prefix</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UUID</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UserResponseModel</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Gets a user.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets a user.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name_id_or_prefix: The name or ID of the user.</span>
@@ -3094,7 +3094,7 @@ as their components.</p>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">list_users</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">UserResponseModel</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;List all users.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;List all users.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name: The name to filter by</span>
@@ -3105,7 +3105,7 @@ as their components.</p>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">zen_store</span><span class="o">.</span><span class="n">list_users</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">delete_user</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_name_or_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Delete a user.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Delete a user.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            user_name_or_id: The name or ID of the user to delete.</span>
@@ -3121,7 +3121,7 @@ as their components.</p>
         <span class="n">updated_email</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">updated_email_opt_in</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UserResponseModel</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Update a user.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update a user.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            user_name_or_id: The name or ID of the user to update.</span>
@@ -3158,7 +3158,7 @@ as their components.</p>
     <span class="k">def</span> <span class="nf">get_team</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">name_id_or_prefix</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UUID</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TeamResponseModel</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Gets a team.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets a team.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name_id_or_prefix: The name or ID of the team.</span>
@@ -3174,7 +3174,7 @@ as their components.</p>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">list_teams</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">TeamResponseModel</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;List all teams.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;List all teams.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name: The name to filter by</span>
@@ -3187,7 +3187,7 @@ as their components.</p>
     <span class="k">def</span> <span class="nf">create_team</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">users</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TeamResponseModel</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Create a team.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a team.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name: Name of the team.</span>
@@ -3208,7 +3208,7 @@ as their components.</p>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">zen_store</span><span class="o">.</span><span class="n">create_team</span><span class="p">(</span><span class="n">team</span><span class="o">=</span><span class="n">team</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">delete_team</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">team_name_or_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Delete a team.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Delete a team.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            team_name_or_id: The name or ID of the team to delete.</span>
@@ -3223,7 +3223,7 @@ as their components.</p>
         <span class="n">remove_users</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">add_users</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TeamResponseModel</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Update a team.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update a team.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            team_name_or_id: The name or ID of the team to update.</span>
@@ -3290,7 +3290,7 @@ as their components.</p>
     <span class="k">def</span> <span class="nf">get_role</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">name_id_or_prefix</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UUID</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RoleResponseModel</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Gets a role.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets a role.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name_id_or_prefix: The name or ID of the role.</span>
@@ -3306,7 +3306,7 @@ as their components.</p>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">list_roles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">RoleResponseModel</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Fetches roles.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Fetches roles.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name: The name of the roles.</span>
@@ -3319,7 +3319,7 @@ as their components.</p>
     <span class="k">def</span> <span class="nf">create_role</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">permissions_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RoleResponseModel</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Creates a role.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Creates a role.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name: The name for the new role.</span>
@@ -3343,7 +3343,7 @@ as their components.</p>
         <span class="n">remove_permission</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">add_permission</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RoleResponseModel</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Updates a role.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Updates a role.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name_id_or_prefix: The name or ID of the role.</span>
@@ -3405,7 +3405,7 @@ as their components.</p>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">delete_role</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name_id_or_prefix</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Deletes a role.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Deletes a role.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name_id_or_prefix: The name or ID of the role.</span>
@@ -3423,7 +3423,7 @@ as their components.</p>
         <span class="n">is_user</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
         <span class="n">project_name_or_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RoleAssignmentResponseModel</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Get a role assignment.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a role assignment.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            role_name_or_id: The name or ID of the role.</span>
@@ -3468,7 +3468,7 @@ as their components.</p>
         <span class="n">is_user</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
         <span class="n">project_name_or_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UUID</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RoleAssignmentResponseModel</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Create a role assignment.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a role assignment.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            role_name_or_id: Name or ID of the role to assign.</span>
@@ -3511,7 +3511,7 @@ as their components.</p>
         <span class="n">is_user</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
         <span class="n">project_name_or_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Delete a role assignment.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Delete a role assignment.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            role_name_or_id: Role to assign</span>
@@ -3535,7 +3535,7 @@ as their components.</p>
         <span class="n">team_name_or_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">project_name_or_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">RoleAssignmentResponseModel</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;List role assignments.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;List role assignments.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            role_name_or_id: Only list assignments for this role</span>
@@ -3559,7 +3559,7 @@ as their components.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">active_project</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ProjectResponseModel&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Get the currently active project of the local client.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the currently active project of the local client.</span>
 
 <span class="sd">        If no active project is configured locally for the client, the</span>
 <span class="sd">        active project in the global configuration is used instead.</span>
@@ -3600,7 +3600,7 @@ as their components.</p>
     <span class="k">def</span> <span class="nf">get_project</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">name_id_or_prefix</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">UUID</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ProjectResponseModel</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Gets a project.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets a project.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name_id_or_prefix: The name or ID of the project.</span>
@@ -3620,7 +3620,7 @@ as their components.</p>
     <span class="k">def</span> <span class="nf">create_project</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">description</span><span class="p">:</span> <span class="nb">str</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ProjectResponseModel&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Create a new project.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a new project.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name: Name of the project.</span>
@@ -3639,7 +3639,7 @@ as their components.</p>
         <span class="n">new_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">new_description</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ProjectResponseModel&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Update a project.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update a project.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name_id_or_prefix: Name, ID or prefix of the project to update.</span>
@@ -3661,7 +3661,7 @@ as their components.</p>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">delete_project</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">project_name_or_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Delete a project.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Delete a project.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            project_name_or_id: The name or ID of the project to delete.</span>
@@ -3683,7 +3683,7 @@ as their components.</p>
     <span class="c1"># ------ #</span>
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">active_stack_model</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;StackResponseModel&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;The model of the active stack for this client.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The model of the active stack for this client.</span>
 
 <span class="sd">        If no active stack is configured locally for the client, the active</span>
 <span class="sd">        stack in the global configuration is used instead.</span>
@@ -3716,7 +3716,7 @@ as their components.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">active_stack</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Stack&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;The active stack for this client.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The active stack for this client.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The active stack for this client.</span>
@@ -3728,7 +3728,7 @@ as their components.</p>
     <span class="k">def</span> <span class="nf">get_stack</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">name_id_or_prefix</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">UUID</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;StackResponseModel&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Get a stack by name, ID or prefix.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a stack by name, ID or prefix.</span>
 
 <span class="sd">        If no name, ID or prefix is provided, the active stack is returned.</span>
 
@@ -3754,7 +3754,7 @@ as their components.</p>
         <span class="n">components</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="n">StackComponentType</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UUID</span><span class="p">]],</span>
         <span class="n">is_shared</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;StackResponseModel&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Registers a stack and its components.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Registers a stack and its components.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name: The name of the stack to register.</span>
@@ -3785,7 +3785,7 @@ as their components.</p>
                             <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">c_type</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> in a shared stack. This &quot;</span>
                             <span class="sa">f</span><span class="s2">&quot;is not supported. You can either share&quot;</span>
                             <span class="sa">f</span><span class="s2">&quot; the </span><span class="si">{</span><span class="n">c_type</span><span class="si">}</span><span class="s2"> with the following &quot;</span>
-                            <span class="sa">f</span><span class="s2">&quot;command: </span><span class="se">\n</span><span class="s2"> `zenml </span><span class="si">{</span><span class="n">c_type</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="s1">&#39;-&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> &quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;command: </span><span class="se">\n</span><span class="s2"> `zenml </span><span class="si">{</span><span class="n">c_type</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;-&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> &quot;</span>
                             <span class="sa">f</span><span class="s2">&quot;share`</span><span class="si">{</span><span class="n">component</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">`</span><span class="se">\n</span><span class="s2"> &quot;</span>
                             <span class="sa">f</span><span class="s2">&quot;or create the stack privately and &quot;</span>
                             <span class="sa">f</span><span class="s2">&quot;then share it and all of its components using: &quot;</span>
@@ -3814,7 +3814,7 @@ as their components.</p>
             <span class="n">Dict</span><span class="p">[</span><span class="n">StackComponentType</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">UUID</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]]</span>
         <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;StackResponseModel&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Updates a stack and its components.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Updates a stack and its components.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name_id_or_prefix: The name, id or prefix of the stack to update.</span>
@@ -3875,7 +3875,7 @@ as their components.</p>
                             <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">component_type</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">c</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; is not shared. Set &quot;</span>
                             <span class="sa">f</span><span class="s2">&quot;the </span><span class="si">{</span><span class="n">component_type</span><span class="si">}</span><span class="s2"> to shared like this and &quot;</span>
                             <span class="sa">f</span><span class="s2">&quot;then try re-sharing your stack:</span><span class="se">\n</span><span class="s2"> &quot;</span>
-                            <span class="sa">f</span><span class="s2">&quot;`zenml </span><span class="si">{</span><span class="n">component_type</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="s1">&#39;-&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> &quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;`zenml </span><span class="si">{</span><span class="n">component_type</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;-&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> &quot;</span>
                             <span class="sa">f</span><span class="s2">&quot;share </span><span class="si">{</span><span class="n">c</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">`</span><span class="se">\n</span><span class="s2">Alternatively, you can rerun &quot;</span>
                             <span class="sa">f</span><span class="s2">&quot;your command with `-r` to recursively &quot;</span>
                             <span class="sa">f</span><span class="s2">&quot;share all components within the stack.&quot;</span>
@@ -3910,7 +3910,7 @@ as their components.</p>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">delete_stack</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name_id_or_prefix</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UUID</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Deregisters a stack.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Deregisters a stack.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name_id_or_prefix: The name, id or prefix id of the stack</span>
@@ -3949,7 +3949,7 @@ as their components.</p>
         <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">is_shared</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="s2">&quot;StackResponseModel&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Lists all stacks.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Lists all stacks.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            project_name_or_id: The name or id of the project to filter by.</span>
@@ -3971,7 +3971,7 @@ as their components.</p>
 
     <span class="nd">@track</span><span class="p">(</span><span class="n">event</span><span class="o">=</span><span class="n">AnalyticsEvent</span><span class="o">.</span><span class="n">SET_STACK</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">activate_stack</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stack_name_id_or_prefix</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UUID</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Sets the stack as active.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sets the stack as active.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            stack_name_id_or_prefix: Model of the stack to activate.</span>
@@ -3998,7 +3998,7 @@ as their components.</p>
             <span class="n">GlobalConfiguration</span><span class="p">()</span><span class="o">.</span><span class="n">set_active_stack</span><span class="p">(</span><span class="n">stack</span><span class="o">=</span><span class="n">stack</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_validate_stack_configuration</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;StackRequestModel&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Validates the configuration of a stack.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validates the configuration of a stack.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            stack: The stack to validate.</span>
@@ -4070,7 +4070,7 @@ as their components.</p>
         <span class="n">component_type</span><span class="p">:</span> <span class="n">StackComponentType</span><span class="p">,</span>
         <span class="n">name_id_or_prefix</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UUID</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ComponentResponseModel&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Fetches a registered stack component.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Fetches a registered stack component.</span>
 
 <span class="sd">        If the name_id_or_prefix is provided, it will try to fetch the component</span>
 <span class="sd">        with the corresponding identifier. If not, it will try to fetch the</span>
@@ -4113,7 +4113,7 @@ as their components.</p>
         <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">is_shared</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="s2">&quot;ComponentResponseModel&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Lists all registered stack components.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Lists all registered stack components.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            project_name_or_id: The name or id of the project to filter by.</span>
@@ -4143,7 +4143,7 @@ as their components.</p>
         <span class="n">configuration</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
         <span class="n">is_shared</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ComponentResponseModel&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Registers a stack component.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Registers a stack component.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name: The name of the stack component.</span>
@@ -4194,7 +4194,7 @@ as their components.</p>
         <span class="n">configuration</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">is_shared</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ComponentResponseModel&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Updates a stack component.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Updates a stack component.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name_id_or_prefix: The name, id or prefix of the stack component to</span>
@@ -4232,7 +4232,7 @@ as their components.</p>
             <span class="k">if</span> <span class="n">existing_components</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">EntityExistsError</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;There are already existing &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;shared&#39;</span> <span class="k">if</span> <span class="n">shared_status</span> <span class="k">else</span> <span class="s1">&#39;unshared&#39;</span><span class="si">}</span><span class="s2"> components &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;shared&#39;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">shared_status</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;unshared&#39;</span><span class="si">}</span><span class="s2"> components &quot;</span>
                     <span class="sa">f</span><span class="s2">&quot;with the name &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;.&quot;</span>
                 <span class="p">)</span>
             <span class="n">update_model</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
@@ -4283,7 +4283,7 @@ as their components.</p>
         <span class="n">name_id_or_prefix</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UUID</span><span class="p">],</span>
         <span class="n">component_type</span><span class="p">:</span> <span class="n">StackComponentType</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Deletes a registered stack component.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Deletes a registered stack component.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name_id_or_prefix: The model of the component to delete.</span>
@@ -4306,7 +4306,7 @@ as their components.</p>
         <span class="n">component_type</span><span class="p">:</span> <span class="s2">&quot;StackComponentType&quot;</span><span class="p">,</span>
         <span class="n">configuration</span><span class="p">:</span> <span class="s2">&quot;StackComponentConfig&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Validates the configuration of a stack component.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validates the configuration of a stack component.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            component_type: The type of the component.</span>
@@ -4341,7 +4341,7 @@ as their components.</p>
         <span class="n">source</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">component_type</span><span class="p">:</span> <span class="n">StackComponentType</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;FlavorResponseModel&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Creates a new flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Creates a new flavor.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            source: The flavor to create.</span>
@@ -4369,7 +4369,7 @@ as their components.</p>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">zen_store</span><span class="o">.</span><span class="n">create_flavor</span><span class="p">(</span><span class="n">flavor</span><span class="o">=</span><span class="n">create_flavor_request</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">get_flavor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name_id_or_prefix</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;FlavorResponseModel&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Get a stack component flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a stack component flavor.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name_id_or_prefix: The name, ID or prefix to the id of the flavor</span>
@@ -4386,7 +4386,7 @@ as their components.</p>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">delete_flavor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name_id_or_prefix</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Deletes a flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Deletes a flavor.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name_id_or_prefix: The name, id or prefix of the id for the</span>
@@ -4402,7 +4402,7 @@ as their components.</p>
         <span class="n">project_name_or_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UUID</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">user_name_or_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UUID</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="s2">&quot;FlavorResponseModel&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Fetches all the flavor models.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Fetches all the flavor models.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            project_name_or_id: The name or id of the project to filter by.</span>
@@ -4423,7 +4423,7 @@ as their components.</p>
     <span class="k">def</span> <span class="nf">get_flavors_by_type</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">component_type</span><span class="p">:</span> <span class="s2">&quot;StackComponentType&quot;</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="s2">&quot;FlavorResponseModel&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Fetches the list of flavor for a stack component type.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Fetches the list of flavor for a stack component type.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            component_type: The type of the component to fetch.</span>
@@ -4449,7 +4449,7 @@ as their components.</p>
     <span class="k">def</span> <span class="nf">get_flavor_by_name_and_type</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">component_type</span><span class="p">:</span> <span class="s2">&quot;StackComponentType&quot;</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;FlavorResponseModel&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Fetches a registered flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Fetches a registered flavor.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            component_type: The type of the component to fetch.</span>
@@ -4516,7 +4516,7 @@ as their components.</p>
         <span class="n">pipeline_spec</span><span class="p">:</span> <span class="s2">&quot;PipelineSpec&quot;</span><span class="p">,</span>
         <span class="n">pipeline_docstring</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UUID</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Registers a pipeline in the ZenStore within the active project.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Registers a pipeline in the ZenStore within the active project.</span>
 
 <span class="sd">        This will do one of the following three things:</span>
 <span class="sd">        A) If there is no pipeline with this name, register a new pipeline.</span>
@@ -4590,7 +4590,7 @@ as their components.</p>
         <span class="n">user_name_or_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UUID</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PipelineResponseModel</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;List pipelines.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;List pipelines.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            project_name_or_id: If provided, only list pipelines in this</span>
@@ -4610,7 +4610,7 @@ as their components.</p>
     <span class="k">def</span> <span class="nf">get_pipeline</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">name_id_or_prefix</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UUID</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PipelineResponseModel</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Get a pipeline by name, id or prefix.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a pipeline by name, id or prefix.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name_id_or_prefix: The name, id or prefix of the pipeline.</span>
@@ -4626,7 +4626,7 @@ as their components.</p>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">delete_pipeline</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name_id_or_prefix</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UUID</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Delete a pipeline.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Delete a pipeline.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name_id_or_prefix: The name, id or prefix id of the pipeline</span>
@@ -4649,7 +4649,7 @@ as their components.</p>
         <span class="n">pipeline_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UUID</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">unlisted</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PipelineRunResponseModel</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Gets all pipeline runs.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets all pipeline runs.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            project_name_or_id: If provided, only return runs for this project.</span>
@@ -4679,7 +4679,7 @@ as their components.</p>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">name_id_or_prefix</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UUID</span><span class="p">],</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PipelineRunResponseModel</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Gets a pipeline run by name, ID, or prefix.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets a pipeline run by name, ID, or prefix.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name_id_or_prefix: Name, ID, or prefix of the pipeline run.</span>
@@ -4698,7 +4698,7 @@ as their components.</p>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">name_id_or_prefix</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UUID</span><span class="p">],</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Deletes a pipeline run.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Deletes a pipeline run.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name_id_or_prefix: Name, ID, or prefix of the pipeline run.</span>
@@ -4711,7 +4711,7 @@ as their components.</p>
         <span class="n">pipeline_run_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UUID</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">project_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UUID</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">StepRunResponseModel</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Get all step runs.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all step runs.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            pipeline_run_id: If provided, only return steps for this pipeline run.</span>
@@ -4725,7 +4725,7 @@ as their components.</p>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">get_run_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step_run_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StepRunResponseModel</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Get a step run by ID.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a step run by ID.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            step_run_id: The ID of the step run to get.</span>
@@ -4746,7 +4746,7 @@ as their components.</p>
         <span class="n">artifact_store_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UUID</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">only_unused</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ArtifactResponseModel</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Get all artifacts.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all artifacts.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            project_name_or_id: If provided, only return artifacts for this</span>
@@ -4768,7 +4768,7 @@ as their components.</p>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">get_artifact</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">artifact_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ArtifactResponseModel</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Get an artifact by ID.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get an artifact by ID.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            artifact_id: The ID of the artifact to get.</span>
@@ -4784,7 +4784,7 @@ as their components.</p>
         <span class="n">delete_metadata</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">delete_from_artifact_store</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Delete an artifact.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Delete an artifact.</span>
 
 <span class="sd">        By default, this will delete only the metadata of the artifact from the</span>
 <span class="sd">        database, not the artifact itself.</span>
@@ -4805,7 +4805,7 @@ as their components.</p>
     <span class="k">def</span> <span class="nf">_delete_artifact_from_artifact_store</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">artifact</span><span class="p">:</span> <span class="n">ArtifactResponseModel</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Delete an artifact from the artifact store.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Delete an artifact from the artifact store.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            artifact: The artifact to delete.</span>
@@ -4847,7 +4847,7 @@ as their components.</p>
     <span class="k">def</span> <span class="nf">_delete_artifact_metadata</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">artifact</span><span class="p">:</span> <span class="n">ArtifactResponseModel</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Delete the metadata of an artifact from the database.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Delete the metadata of an artifact from the database.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            artifact: The artifact to delete.</span>
@@ -4874,7 +4874,7 @@ as their components.</p>
         <span class="n">name_id_or_prefix</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UUID</span><span class="p">],</span>
         <span class="n">component_type</span><span class="p">:</span> <span class="n">StackComponentType</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ComponentResponseModel&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Fetches a component of given type using the name, id or partial id.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Fetches a component of given type using the name, id or partial id.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name_id_or_prefix: The id, name or partial id of the component to</span>
@@ -4963,7 +4963,7 @@ as their components.</p>
         <span class="n">list_method</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">AnyResponseModel</span><span class="p">]],</span>
         <span class="n">name_id_or_prefix</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UUID</span><span class="p">],</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;AnyResponseModel&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Fetches an entity using the name, id or partial id.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Fetches an entity using the name, id or partial id.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            response_model: The response model to use for the entity.</span>
@@ -5008,7 +5008,7 @@ as their components.</p>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">entities</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
             <span class="n">entity_list</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
                 <span class="p">[</span>
-                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">getattr</span><span class="p">(</span><span class="n">entity</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">entity</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">)&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">getattr</span><span class="p">(</span><span class="n">entity</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">entity</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">)&quot;</span>
                     <span class="k">for</span> <span class="n">entity</span> <span class="ow">in</span> <span class="n">entities</span>
                 <span class="p">]</span>
             <span class="p">)</span>
@@ -5041,7 +5041,7 @@ as their components.</p>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">filtered_entities</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="n">entity_list</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
                     <span class="p">[</span>
-                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">getattr</span><span class="p">(</span><span class="n">f_entity</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">f_entity</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">)&quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">getattr</span><span class="p">(</span><span class="n">f_entity</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">f_entity</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">)&quot;</span>
                         <span class="k">for</span> <span class="n">f_entity</span> <span class="ow">in</span> <span class="n">filtered_entities</span>
                     <span class="p">]</span>
                 <span class="p">)</span>
@@ -5476,7 +5476,7 @@ clients internally.</p></td>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">root</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Initializes the global client instance.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes the global client instance.</span>
 
 <span class="sd">    Client is a singleton class: only one instance can exist. Calling</span>
 <span class="sd">    this constructor multiple times will always yield the same instance (see</span>
@@ -5553,7 +5553,7 @@ directory.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/client.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">activate_root</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">root</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Set the active repository root directory.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Set the active repository root directory.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        root: The path to set as the active repository root. If not set,</span>
@@ -5622,7 +5622,7 @@ directory.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/client.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">inner_func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Inner decorator function.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Inner decorator function.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        *args: Arguments to be passed to the function.</span>
@@ -5722,7 +5722,7 @@ directory.</p></td>
     <span class="n">source</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">component_type</span><span class="p">:</span> <span class="n">StackComponentType</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;FlavorResponseModel&quot;</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Creates a new flavor.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Creates a new flavor.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        source: The flavor to create.</span>
@@ -5844,7 +5844,7 @@ project with the same name but a different configuration.</p></td>
     <span class="n">pipeline_spec</span><span class="p">:</span> <span class="s2">&quot;PipelineSpec&quot;</span><span class="p">,</span>
     <span class="n">pipeline_docstring</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UUID</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Registers a pipeline in the ZenStore within the active project.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Registers a pipeline in the ZenStore within the active project.</span>
 
 <span class="sd">    This will do one of the following three things:</span>
 <span class="sd">    A) If there is no pipeline with this name, register a new pipeline.</span>
@@ -5978,7 +5978,7 @@ project with the same name but a different configuration.</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">create_project</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">description</span><span class="p">:</span> <span class="nb">str</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ProjectResponseModel&quot;</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Create a new project.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a new project.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: Name of the project.</span>
@@ -6057,7 +6057,7 @@ project with the same name but a different configuration.</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">create_role</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">permissions_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RoleResponseModel</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Creates a role.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Creates a role.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: The name for the new role.</span>
@@ -6158,7 +6158,7 @@ user (=True) or team (=False).</p></td>
     <span class="n">is_user</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
     <span class="n">project_name_or_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UUID</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RoleAssignmentResponseModel</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Create a role assignment.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a role assignment.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        role_name_or_id: Name or ID of the role to assign.</span>
@@ -6285,7 +6285,7 @@ attempted to be registered as shared.</p></td>
     <span class="n">components</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="n">StackComponentType</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UUID</span><span class="p">]],</span>
     <span class="n">is_shared</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;StackResponseModel&quot;</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Registers a stack and its components.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Registers a stack and its components.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: The name of the stack to register.</span>
@@ -6316,7 +6316,7 @@ attempted to be registered as shared.</p></td>
                         <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">c_type</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> in a shared stack. This &quot;</span>
                         <span class="sa">f</span><span class="s2">&quot;is not supported. You can either share&quot;</span>
                         <span class="sa">f</span><span class="s2">&quot; the </span><span class="si">{</span><span class="n">c_type</span><span class="si">}</span><span class="s2"> with the following &quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot;command: </span><span class="se">\n</span><span class="s2"> `zenml </span><span class="si">{</span><span class="n">c_type</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="s1">&#39;-&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;command: </span><span class="se">\n</span><span class="s2"> `zenml </span><span class="si">{</span><span class="n">c_type</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;-&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> &quot;</span>
                         <span class="sa">f</span><span class="s2">&quot;share`</span><span class="si">{</span><span class="n">component</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">`</span><span class="se">\n</span><span class="s2"> &quot;</span>
                         <span class="sa">f</span><span class="s2">&quot;or create the stack privately and &quot;</span>
                         <span class="sa">f</span><span class="s2">&quot;then share it and all of its components using: &quot;</span>
@@ -6424,7 +6424,7 @@ attempted to be registered as shared.</p></td>
     <span class="n">configuration</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
     <span class="n">is_shared</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ComponentResponseModel&quot;</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Registers a stack component.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Registers a stack component.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: The name of the stack component.</span>
@@ -6533,7 +6533,7 @@ attempted to be registered as shared.</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">create_team</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">users</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TeamResponseModel</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Create a team.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a team.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: Name of the team.</span>
@@ -6629,7 +6629,7 @@ be created with empty password.</p></td>
     <span class="n">initial_role</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">password</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UserResponseModel</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Create a new user.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a new user.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: The name of the user.</span>
@@ -6722,7 +6722,7 @@ the artifact store.</p></td>
     <span class="n">delete_metadata</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">delete_from_artifact_store</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Delete an artifact.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Delete an artifact.</span>
 
 <span class="sd">    By default, this will delete only the metadata of the artifact from the</span>
 <span class="sd">    database, not the artifact itself.</span>
@@ -6784,7 +6784,7 @@ flavor to delete.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/client.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">delete_flavor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name_id_or_prefix</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Deletes a flavor.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Deletes a flavor.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name_id_or_prefix: The name, id or prefix of the id for the</span>
@@ -6839,7 +6839,7 @@ to delete.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/client.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">delete_pipeline</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name_id_or_prefix</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UUID</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Delete a pipeline.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Delete a pipeline.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name_id_or_prefix: The name, id or prefix id of the pipeline</span>
@@ -6894,7 +6894,7 @@ to delete.</p></td>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">name_id_or_prefix</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UUID</span><span class="p">],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Deletes a pipeline run.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Deletes a pipeline run.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name_id_or_prefix: Name, ID, or prefix of the pipeline run.</span>
@@ -6961,7 +6961,7 @@ project.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/client.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">delete_project</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">project_name_or_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Delete a project.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Delete a project.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        project_name_or_id: The name or ID of the project to delete.</span>
@@ -7021,7 +7021,7 @@ project.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/client.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">delete_role</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name_id_or_prefix</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Deletes a role.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Deletes a role.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name_id_or_prefix: The name or ID of the role.</span>
@@ -7096,7 +7096,7 @@ user (=True) or team (=False)</p></td>
     <span class="n">is_user</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
     <span class="n">project_name_or_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Delete a role assignment.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Delete a role assignment.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        role_name_or_id: Role to assign</span>
@@ -7173,7 +7173,7 @@ client.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/client.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">delete_stack</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name_id_or_prefix</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UUID</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Deregisters a stack.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Deregisters a stack.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name_id_or_prefix: The name, id or prefix id of the stack</span>
@@ -7247,7 +7247,7 @@ client.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/client.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">delete_team</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">team_name_or_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Delete a team.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Delete a team.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        team_name_or_id: The name or ID of the team to delete.</span>
@@ -7298,7 +7298,7 @@ client.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/client.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">delete_user</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_name_or_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Delete a user.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Delete a user.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        user_name_or_id: The name or ID of the user to delete.</span>
@@ -7359,7 +7359,7 @@ client.</p></td>
     <span class="n">name_id_or_prefix</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UUID</span><span class="p">],</span>
     <span class="n">component_type</span><span class="p">:</span> <span class="n">StackComponentType</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Deletes a registered stack component.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Deletes a registered stack component.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name_id_or_prefix: The model of the component to delete.</span>
@@ -7453,7 +7453,7 @@ repository directory was found.</p></td>
 <span class="k">def</span> <span class="nf">find_repository</span><span class="p">(</span>
     <span class="n">path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">enable_warnings</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Search for a ZenML repository directory.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Search for a ZenML repository directory.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: Optional path to look for the repository. If no path is</span>
@@ -7499,7 +7499,7 @@ repository directory was found.</p></td>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_find_repository_helper</span><span class="p">(</span><span class="n">path_</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Recursively search parent directories for a ZenML repository.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Recursively search parent directories for a ZenML repository.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            path_: The path to search.</span>
@@ -7582,7 +7582,7 @@ repository directory was found.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/client.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_artifact</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">artifact_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ArtifactResponseModel</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Get an artifact by ID.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get an artifact by ID.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        artifact_id: The ID of the artifact to get.</span>
@@ -7651,7 +7651,7 @@ to get.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/client.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_flavor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name_id_or_prefix</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;FlavorResponseModel&quot;</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Get a stack component flavor.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a stack component flavor.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name_id_or_prefix: The name, ID or prefix to the id of the flavor</span>
@@ -7748,7 +7748,7 @@ to get.</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_flavor_by_name_and_type</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">component_type</span><span class="p">:</span> <span class="s2">&quot;StackComponentType&quot;</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;FlavorResponseModel&quot;</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Fetches a registered flavor.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fetches a registered flavor.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        component_type: The type of the component to fetch.</span>
@@ -7865,7 +7865,7 @@ to get.</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_flavors_by_type</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">component_type</span><span class="p">:</span> <span class="s2">&quot;StackComponentType&quot;</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="s2">&quot;FlavorResponseModel&quot;</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Fetches the list of flavor for a stack component type.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fetches the list of flavor for a stack component type.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        component_type: The type of the component to fetch.</span>
@@ -7932,7 +7932,7 @@ been initialized yet.</p></td>
           <summary>Source code in <code>zenml/client.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span> <span class="nf">get_instance</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;Client&quot;</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Return the Client singleton instance.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the Client singleton instance.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The Client singleton instance or None, if the Client hasn&#39;t</span>
@@ -8000,7 +8000,7 @@ been initialized yet.</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_pipeline</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">name_id_or_prefix</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UUID</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PipelineResponseModel</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Get a pipeline by name, id or prefix.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a pipeline by name, id or prefix.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name_id_or_prefix: The name, id or prefix of the pipeline.</span>
@@ -8076,7 +8076,7 @@ been initialized yet.</p></td>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">name_id_or_prefix</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UUID</span><span class="p">],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PipelineRunResponseModel</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Gets a pipeline run by name, ID, or prefix.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets a pipeline run by name, ID, or prefix.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name_id_or_prefix: Name, ID, or prefix of the pipeline run.</span>
@@ -8151,7 +8151,7 @@ been initialized yet.</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_project</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">name_id_or_prefix</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">UUID</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ProjectResponseModel</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Gets a project.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets a project.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name_id_or_prefix: The name or ID of the project.</span>
@@ -8228,7 +8228,7 @@ been initialized yet.</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_role</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">name_id_or_prefix</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UUID</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RoleResponseModel</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Gets a role.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets a role.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name_id_or_prefix: The name or ID of the role.</span>
@@ -8341,7 +8341,7 @@ user (=True) or team (=False).</p></td>
     <span class="n">is_user</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
     <span class="n">project_name_or_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RoleAssignmentResponseModel</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Get a role assignment.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a role assignment.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        role_name_or_id: The name or ID of the role.</span>
@@ -8437,7 +8437,7 @@ user (=True) or team (=False).</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/client.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_run_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step_run_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StepRunResponseModel</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Get a step run by ID.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a step run by ID.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        step_run_id: The ID of the step run to get.</span>
@@ -8508,7 +8508,7 @@ user (=True) or team (=False).</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_stack</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">name_id_or_prefix</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">UUID</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;StackResponseModel&quot;</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Get a stack by name, ID or prefix.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a stack by name, ID or prefix.</span>
 
 <span class="sd">    If no name, ID or prefix is provided, the active stack is returned.</span>
 
@@ -8615,7 +8615,7 @@ is part of the active stack.</p></td>
     <span class="n">component_type</span><span class="p">:</span> <span class="n">StackComponentType</span><span class="p">,</span>
     <span class="n">name_id_or_prefix</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UUID</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ComponentResponseModel&quot;</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Fetches a registered stack component.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fetches a registered stack component.</span>
 
 <span class="sd">    If the name_id_or_prefix is provided, it will try to fetch the component</span>
 <span class="sd">    with the corresponding identifier. If not, it will try to fetch the</span>
@@ -8709,7 +8709,7 @@ is part of the active stack.</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_team</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">name_id_or_prefix</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UUID</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TeamResponseModel</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Gets a team.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets a team.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name_id_or_prefix: The name or ID of the team.</span>
@@ -8784,7 +8784,7 @@ is part of the active stack.</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_user</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">name_id_or_prefix</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UUID</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UserResponseModel</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Gets a user.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets a user.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name_id_or_prefix: The name or ID of the user.</span>
@@ -8865,7 +8865,7 @@ ZenML repository.</p></td>
 <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span>
     <span class="n">root</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Initializes a new ZenML repository at the given path.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes a new ZenML repository at the given path.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        root: The root directory where the repository should be created.</span>
@@ -8951,7 +8951,7 @@ False otherwise.</p></td>
           <summary>Source code in <code>zenml/client.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span> <span class="nf">is_repository_directory</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Checks whether a ZenML client exists at the given path.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks whether a ZenML client exists at the given path.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to check.</span>
@@ -9048,7 +9048,7 @@ any runs.</p></td>
     <span class="n">artifact_store_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UUID</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">only_unused</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ArtifactResponseModel</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Get all artifacts.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get all artifacts.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        project_name_or_id: If provided, only return artifacts for this</span>
@@ -9137,7 +9137,7 @@ any runs.</p></td>
     <span class="n">project_name_or_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UUID</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">user_name_or_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UUID</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="s2">&quot;FlavorResponseModel&quot;</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Fetches all the flavor models.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fetches all the flavor models.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        project_name_or_id: The name or id of the project to filter by.</span>
@@ -9231,7 +9231,7 @@ project.</p></td>
     <span class="n">user_name_or_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UUID</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PipelineResponseModel</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;List pipelines.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;List pipelines.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        project_name_or_id: If provided, only list pipelines in this</span>
@@ -9330,7 +9330,7 @@ project.</p></td>
     <span class="n">team_name_or_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">project_name_or_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">RoleAssignmentResponseModel</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;List role assignments.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;List role assignments.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        role_name_or_id: Only list assignments for this role</span>
@@ -9406,7 +9406,7 @@ project.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/client.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">list_roles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">RoleResponseModel</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Fetches roles.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fetches roles.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: The name of the roles.</span>
@@ -9484,7 +9484,7 @@ project.</p></td>
     <span class="n">pipeline_run_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UUID</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">project_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UUID</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">StepRunResponseModel</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Get all step runs.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get all step runs.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        pipeline_run_id: If provided, only return steps for this pipeline run.</span>
@@ -9602,7 +9602,7 @@ associated with any pipeline (filter by <code>pipeline_id==None</code>).</p></td
     <span class="n">pipeline_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UUID</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">unlisted</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PipelineRunResponseModel</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Gets all pipeline runs.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets all pipeline runs.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        project_name_or_id: If provided, only return runs for this project.</span>
@@ -9724,7 +9724,7 @@ associated with any pipeline (filter by <code>pipeline_id==None</code>).</p></td
     <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">is_shared</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="s2">&quot;ComponentResponseModel&quot;</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Lists all registered stack components.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Lists all registered stack components.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        project_name_or_id: The name or id of the project to filter by.</span>
@@ -9835,7 +9835,7 @@ associated with any pipeline (filter by <code>pipeline_id==None</code>).</p></td
     <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">is_shared</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="s2">&quot;StackResponseModel&quot;</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Lists all stacks.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Lists all stacks.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        project_name_or_id: The name or id of the project to filter by.</span>
@@ -9913,7 +9913,7 @@ associated with any pipeline (filter by <code>pipeline_id==None</code>).</p></td
         <details class="quote">
           <summary>Source code in <code>zenml/client.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">list_teams</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">TeamResponseModel</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;List all teams.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;List all teams.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: The name to filter by</span>
@@ -9981,7 +9981,7 @@ associated with any pipeline (filter by <code>pipeline_id==None</code>).</p></td
         <details class="quote">
           <summary>Source code in <code>zenml/client.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">list_users</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">UserResponseModel</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;List all users.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;List all users.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: The name to filter by</span>
@@ -10049,7 +10049,7 @@ associated with any pipeline (filter by <code>pipeline_id==None</code>).</p></td
         <details class="quote">
           <summary>Source code in <code>zenml/client.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">inner_func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Inner decorator function.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Inner decorator function.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        *args: Arguments to be passed to the function.</span>
@@ -10156,7 +10156,7 @@ associated with any pipeline (filter by <code>pipeline_id==None</code>).</p></td
     <span class="n">new_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">new_description</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ProjectResponseModel&quot;</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Update a project.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Update a project.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name_id_or_prefix: Name, ID or prefix of the project to update.</span>
@@ -10275,7 +10275,7 @@ associated with any pipeline (filter by <code>pipeline_id==None</code>).</p></td
     <span class="n">remove_permission</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">add_permission</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RoleResponseModel</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Updates a role.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Updates a role.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name_id_or_prefix: The name or ID of the role.</span>
@@ -10448,7 +10448,7 @@ attempted to be shared.</p></td>
         <span class="n">Dict</span><span class="p">[</span><span class="n">StackComponentType</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">UUID</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]]</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;StackResponseModel&quot;</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Updates a stack and its components.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Updates a stack and its components.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name_id_or_prefix: The name, id or prefix of the stack to update.</span>
@@ -10509,7 +10509,7 @@ attempted to be shared.</p></td>
                         <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">component_type</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">c</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; is not shared. Set &quot;</span>
                         <span class="sa">f</span><span class="s2">&quot;the </span><span class="si">{</span><span class="n">component_type</span><span class="si">}</span><span class="s2"> to shared like this and &quot;</span>
                         <span class="sa">f</span><span class="s2">&quot;then try re-sharing your stack:</span><span class="se">\n</span><span class="s2"> &quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot;`zenml </span><span class="si">{</span><span class="n">component_type</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="s1">&#39;-&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;`zenml </span><span class="si">{</span><span class="n">component_type</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;-&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> &quot;</span>
                         <span class="sa">f</span><span class="s2">&quot;share </span><span class="si">{</span><span class="n">c</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">`</span><span class="se">\n</span><span class="s2">Alternatively, you can rerun &quot;</span>
                         <span class="sa">f</span><span class="s2">&quot;your command with `-r` to recursively &quot;</span>
                         <span class="sa">f</span><span class="s2">&quot;share all components within the stack.&quot;</span>
@@ -10648,7 +10648,7 @@ update.</p></td>
     <span class="n">configuration</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">is_shared</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ComponentResponseModel&quot;</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Updates a stack component.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Updates a stack component.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name_id_or_prefix: The name, id or prefix of the stack component to</span>
@@ -10686,7 +10686,7 @@ update.</p></td>
         <span class="k">if</span> <span class="n">existing_components</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">EntityExistsError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;There are already existing &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;shared&#39;</span> <span class="k">if</span> <span class="n">shared_status</span> <span class="k">else</span> <span class="s1">&#39;unshared&#39;</span><span class="si">}</span><span class="s2"> components &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;shared&#39;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">shared_status</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;unshared&#39;</span><span class="si">}</span><span class="s2"> components &quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;with the name &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;.&quot;</span>
             <span class="p">)</span>
         <span class="n">update_model</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
@@ -10830,7 +10830,7 @@ update.</p></td>
     <span class="n">remove_users</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">add_users</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TeamResponseModel</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Update a team.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Update a team.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        team_name_or_id: The name or ID of the team to update.</span>
@@ -10979,7 +10979,7 @@ update.</p></td>
     <span class="n">updated_email</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">updated_email_opt_in</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UserResponseModel</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Update a user.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Update a user.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        user_name_or_id: The name or ID of the user to update.</span>
@@ -11049,7 +11049,7 @@ ClientConfiguration            (<a class="autorefs autorefs-internal" title="zen
         <details class="quote">
           <summary>Source code in <code>zenml/client.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ClientConfiguration</span><span class="p">(</span><span class="n">FileSyncModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Pydantic object used for serializing client configuration options.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Pydantic object used for serializing client configuration options.&quot;&quot;&quot;</span>
 
     <span class="n">_active_project</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;ProjectResponseModel&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">active_project_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UUID</span><span class="p">]</span>
@@ -11057,7 +11057,7 @@ ClientConfiguration            (<a class="autorefs autorefs-internal" title="zen
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">active_project</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ProjectResponseModel</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Get the active project for the local client.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the active project for the local client.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The active project.</span>
@@ -11075,7 +11075,7 @@ ClientConfiguration            (<a class="autorefs autorefs-internal" title="zen
             <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">set_active_project</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">project</span><span class="p">:</span> <span class="s2">&quot;ProjectResponseModel&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Set the project for the local client.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the project for the local client.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            project: The project to set active.</span>
@@ -11084,7 +11084,7 @@ ClientConfiguration            (<a class="autorefs autorefs-internal" title="zen
         <span class="bp">self</span><span class="o">.</span><span class="n">active_project_id</span> <span class="o">=</span> <span class="n">project</span><span class="o">.</span><span class="n">id</span>
 
     <span class="k">def</span> <span class="nf">set_active_stack</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;StackResponseModel&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Set the stack for the local client.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the stack for the local client.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            stack: The stack to set active.</span>
@@ -11092,7 +11092,7 @@ ClientConfiguration            (<a class="autorefs autorefs-internal" title="zen
         <span class="bp">self</span><span class="o">.</span><span class="n">active_stack_id</span> <span class="o">=</span> <span class="n">stack</span><span class="o">.</span><span class="n">id</span>
 
     <span class="k">class</span> <span class="nc">Config</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Pydantic configuration class.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Pydantic configuration class.&quot;&quot;&quot;</span>
 
         <span class="c1"># Validate attributes when assigning them. We need to set this in order</span>
         <span class="c1"># to have a mix of mutable and immutable attributes</span>
@@ -11190,7 +11190,7 @@ Config        </code>
         <details class="quote">
           <summary>Source code in <code>zenml/client.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Config</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Pydantic configuration class.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Pydantic configuration class.&quot;&quot;&quot;</span>
 
     <span class="c1"># Validate attributes when assigning them. We need to set this in order</span>
     <span class="c1"># to have a mix of mutable and immutable attributes</span>
@@ -11269,7 +11269,7 @@ Config        </code>
         <details class="quote">
           <summary>Source code in <code>zenml/client.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">set_active_project</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">project</span><span class="p">:</span> <span class="s2">&quot;ProjectResponseModel&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Set the project for the local client.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Set the project for the local client.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        project: The project to set active.</span>
@@ -11320,7 +11320,7 @@ Config        </code>
         <details class="quote">
           <summary>Source code in <code>zenml/client.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">set_active_stack</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;StackResponseModel&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Set the stack for the local client.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Set the stack for the local client.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        stack: The stack to set active.</span>
@@ -11372,7 +11372,7 @@ is logged if this is attempted).</li>
         <details class="quote">
           <summary>Source code in <code>zenml/client.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ClientMetaClass</span><span class="p">(</span><span class="n">ABCMeta</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Client singleton metaclass.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Client singleton metaclass.</span>
 
 <span class="sd">    This metaclass is used to enforce a singleton instance of the Client</span>
 <span class="sd">    class with the following additional properties:</span>
@@ -11384,7 +11384,7 @@ is logged if this is attempted).</li>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Initialize the Client class.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the Client class.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            *args: Positional arguments.</span>
@@ -11394,7 +11394,7 @@ is logged if this is attempted).</li>
         <span class="bp">cls</span><span class="o">.</span><span class="n">_global_client</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;Client&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Client&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Create or return the global Client instance.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create or return the global Client instance.</span>
 
 <span class="sd">        If the Client constructor is called with custom arguments,</span>
 <span class="sd">        the singleton functionality of the metaclass is bypassed: a new</span>
@@ -11496,7 +11496,7 @@ saving it as the global Client singleton.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/client.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Client&quot;</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Create or return the global Client instance.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create or return the global Client instance.</span>
 
 <span class="sd">    If the Client constructor is called with custom arguments,</span>
 <span class="sd">    the singleton functionality of the metaclass is bypassed: a new</span>
@@ -11572,7 +11572,7 @@ saving it as the global Client singleton.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/client.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Initialize the Client class.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize the Client class.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        *args: Positional arguments.</span>

@@ -1913,14 +1913,14 @@ TensorBoardIntegration            (<a class="autorefs autorefs-internal" title="
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/tensorboard/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">TensorBoardIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Definition of TensorBoard integration for ZenML.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Definition of TensorBoard integration for ZenML.&quot;&quot;&quot;</span>
 
     <span class="n">NAME</span> <span class="o">=</span> <span class="n">TENSORBOARD</span>
     <span class="n">REQUIREMENTS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;tensorboard==2.8.0&quot;</span><span class="p">,</span> <span class="s2">&quot;protobuf&gt;=3.6.0,&lt;4.0.0&quot;</span><span class="p">]</span>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Activates the integration.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Activates the integration.&quot;&quot;&quot;</span>
         <span class="kn">from</span> <span class="nn">zenml.integrations.tensorboard</span> <span class="kn">import</span> <span class="n">services</span>  <span class="c1"># noqa</span>
 </code></pre></div>
         </details>
@@ -1960,7 +1960,7 @@ TensorBoardIntegration            (<a class="autorefs autorefs-internal" title="
           <summary>Source code in <code>zenml/integrations/tensorboard/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span> <span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Activates the integration.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Activates the integration.&quot;&quot;&quot;</span>
     <span class="kn">from</span> <span class="nn">zenml.integrations.tensorboard</span> <span class="kn">import</span> <span class="n">services</span>  <span class="c1"># noqa</span>
 </code></pre></div>
         </details>
@@ -2092,7 +2092,7 @@ the TensorBoard service class</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/tensorboard/services/tensorboard_service.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">TensorboardService</span><span class="p">(</span><span class="n">LocalDaemonService</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;TensorBoard service.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;TensorBoard service.</span>
 
 <span class="sd">    This can be used to start a local TensorBoard server for one or more models.</span>
 
@@ -2118,7 +2118,7 @@ the TensorBoard service class</p></td>
         <span class="n">config</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TensorboardServiceConfig</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
         <span class="o">**</span><span class="n">attrs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Initialization for TensorBoard service.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialization for TensorBoard service.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            config: service configuration</span>
@@ -2146,7 +2146,7 @@ the TensorBoard service class</p></td>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span> <span class="o">**</span><span class="n">attrs</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Initialize and run the TensorBoard server.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize and run the TensorBoard server.&quot;&quot;&quot;</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
             <span class="s2">&quot;Starting TensorBoard service as blocking &quot;</span>
             <span class="s2">&quot;process... press CTRL+C once to stop it.&quot;</span>
@@ -2238,7 +2238,7 @@ the TensorBoard service class</p></td>
     <span class="n">config</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TensorboardServiceConfig</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
     <span class="o">**</span><span class="n">attrs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Initialization for TensorBoard service.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialization for TensorBoard service.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        config: service configuration</span>
@@ -2290,7 +2290,7 @@ the TensorBoard service class</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/tensorboard/services/tensorboard_service.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Initialize and run the TensorBoard server.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize and run the TensorBoard server.&quot;&quot;&quot;</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
         <span class="s2">&quot;Starting TensorBoard service as blocking &quot;</span>
         <span class="s2">&quot;process... press CTRL+C once to stop it.&quot;</span>
@@ -2385,7 +2385,7 @@ seconds. Set to 0 to load just once at startup.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/tensorboard/services/tensorboard_service.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">TensorboardServiceConfig</span><span class="p">(</span><span class="n">LocalDaemonServiceConfig</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;TensorBoard service configuration.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;TensorBoard service configuration.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        logdir: location of TensorBoard log files.</span>
@@ -2526,13 +2526,13 @@ TensorboardVisualizer            (<a class="autorefs autorefs-internal" title="z
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/tensorboard/visualizers/tensorboard_visualizer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">TensorboardVisualizer</span><span class="p">(</span><span class="n">BaseVisualizer</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;The implementation of a TensorBoard Visualizer.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The implementation of a TensorBoard Visualizer.&quot;&quot;&quot;</span>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">find_running_tensorboard_server</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span> <span class="n">logdir</span><span class="p">:</span> <span class="nb">str</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TensorBoardInfo</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Find a local TensorBoard server instance.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Find a local TensorBoard server instance.</span>
 
 <span class="sd">        Finds when it is running for the supplied logdir location and return its</span>
 <span class="sd">        TCP port.</span>
@@ -2560,7 +2560,7 @@ TensorboardVisualizer            (<a class="autorefs autorefs-internal" title="z
         <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Start a TensorBoard server.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Start a TensorBoard server.</span>
 
 <span class="sd">        Allows for the visualization of all models logged as artifacts by the</span>
 <span class="sd">        indicated step. The server will monitor and display all the models</span>
@@ -2611,7 +2611,7 @@ TensorboardVisualizer            (<a class="autorefs autorefs-internal" title="z
         <span class="n">port</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">height</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Generate a visualization of a TensorBoard.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate a visualization of a TensorBoard.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            port: the TCP port where the TensorBoard server is listening for</span>
@@ -2633,7 +2633,7 @@ TensorboardVisualizer            (<a class="autorefs autorefs-internal" title="z
         <span class="bp">self</span><span class="p">,</span>
         <span class="nb">object</span><span class="p">:</span> <span class="n">StepView</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Stop the TensorBoard server previously started for a pipeline step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Stop the TensorBoard server previously started for a pipeline step.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            object: StepView fetched from run.get_step().</span>
@@ -2738,7 +2738,7 @@ None if no server is running for the supplied logdir location.</p></td>
 <span class="k">def</span> <span class="nf">find_running_tensorboard_server</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span> <span class="n">logdir</span><span class="p">:</span> <span class="nb">str</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TensorBoardInfo</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Find a local TensorBoard server instance.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Find a local TensorBoard server instance.</span>
 
 <span class="sd">    Finds when it is running for the supplied logdir location and return its</span>
 <span class="sd">    TCP port.</span>
@@ -2805,7 +2805,7 @@ None if no server is running for the supplied logdir location.</p></td>
     <span class="bp">self</span><span class="p">,</span>
     <span class="nb">object</span><span class="p">:</span> <span class="n">StepView</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Stop the TensorBoard server previously started for a pipeline step.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Stop the TensorBoard server previously started for a pipeline step.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        object: StepView fetched from run.get_step().</span>
@@ -2906,7 +2906,7 @@ logged by past and future step runs.</p>
     <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Start a TensorBoard server.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Start a TensorBoard server.</span>
 
 <span class="sd">    Allows for the visualization of all models logged as artifacts by the</span>
 <span class="sd">    indicated step. The server will monitor and display all the models</span>
@@ -3006,7 +3006,7 @@ requests.</p></td>
     <span class="n">port</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">height</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Generate a visualization of a TensorBoard.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate a visualization of a TensorBoard.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        port: the TCP port where the TensorBoard server is listening for</span>
@@ -3114,7 +3114,7 @@ requests.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/tensorboard/visualizers/tensorboard_visualizer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_step</span><span class="p">(</span><span class="n">pipeline_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">step_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StepView</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Get the StepView for the specified pipeline and step name.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the StepView for the specified pipeline and step name.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        pipeline_name: The name of the pipeline.</span>
@@ -3188,7 +3188,7 @@ requests.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/tensorboard/visualizers/tensorboard_visualizer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">stop_tensorboard_server</span><span class="p">(</span><span class="n">pipeline_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">step_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Stop the TensorBoard server previously started for a pipeline step.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Stop the TensorBoard server previously started for a pipeline step.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        pipeline_name: the name of the pipeline</span>
@@ -3249,7 +3249,7 @@ past and future step runs.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/tensorboard/visualizers/tensorboard_visualizer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">visualize_tensorboard</span><span class="p">(</span><span class="n">pipeline_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">step_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Start a TensorBoard server.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Start a TensorBoard server.</span>
 
 <span class="sd">    Allows for the visualization of all models logged as output by the named</span>
 <span class="sd">    pipeline step. The server will monitor and display all the models logged by</span>

@@ -3191,7 +3191,7 @@ authentication credentials.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/stack/authentication_mixin.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AuthenticationConfigMixin</span><span class="p">(</span><span class="n">StackComponentConfig</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base config for authentication mixins.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base config for authentication mixins.</span>
 
 <span class="sd">    Any stack component that implements `AuthenticationMixin` should have a</span>
 <span class="sd">    config that inherits from this class.</span>
@@ -3253,7 +3253,7 @@ inherits from <code>AuthenticationConfigMixin</code>.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/stack/authentication_mixin.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AuthenticationMixin</span><span class="p">(</span><span class="n">StackComponent</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Stack component mixin for authentication.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Stack component mixin for authentication.</span>
 
 <span class="sd">    Any stack component that implements this mixin should have a config that</span>
 <span class="sd">    inherits from `AuthenticationConfigMixin`.</span>
@@ -3261,7 +3261,7 @@ inherits from <code>AuthenticationConfigMixin</code>.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AuthenticationConfigMixin</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the `AuthenticationConfigMixin` config.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `AuthenticationConfigMixin` config.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The configuration.</span>
@@ -3271,7 +3271,7 @@ inherits from <code>AuthenticationConfigMixin</code>.</p>
     <span class="k">def</span> <span class="nf">get_authentication_secret</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">expected_schema_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">T</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">T</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Gets the secret referred to by the authentication secret attribute.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets the secret referred to by the authentication secret attribute.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            expected_schema_type: The expected secret schema class.</span>
@@ -3435,7 +3435,7 @@ inherits from <code>AuthenticationConfigMixin</code>.</p>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_authentication_secret</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">expected_schema_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">T</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">T</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Gets the secret referred to by the authentication secret attribute.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets the secret referred to by the authentication secret attribute.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        expected_schema_type: The expected secret schema class.</span>
@@ -3547,12 +3547,12 @@ Flavor        </code>
         <details class="quote">
           <summary>Source code in <code>zenml/stack/flavor.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Flavor</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Class for ZenML Flavors.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class for ZenML Flavors.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;The flavor name.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The flavor name.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The flavor name.</span>
@@ -3561,7 +3561,7 @@ Flavor        </code>
     <span class="nd">@property</span>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StackComponentType</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;The stack component type.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The stack component type.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The stack component type.</span>
@@ -3570,7 +3570,7 @@ Flavor        </code>
     <span class="nd">@property</span>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">StackComponent</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class for this flavor.</span>
@@ -3579,7 +3579,7 @@ Flavor        </code>
     <span class="nd">@property</span>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">StackComponentConfig</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns `StackComponentConfig` config class.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns `StackComponentConfig` config class.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The config class.</span>
@@ -3587,7 +3587,7 @@ Flavor        </code>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config_schema</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;The config schema for a flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The config schema for a flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The config schema.</span>
@@ -3596,7 +3596,7 @@ Flavor        </code>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">from_model</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">flavor_model</span><span class="p">:</span> <span class="n">FlavorResponseModel</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Flavor&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Loads a flavor from a model.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Loads a flavor from a model.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            flavor_model: The model to load from.</span>
@@ -3608,7 +3608,7 @@ Flavor        </code>
         <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">Flavor</span><span class="p">,</span> <span class="n">flavor</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">to_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">integration</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FlavorRequestModel</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Converts a flavor to a model.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Converts a flavor to a model.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            integration: The integration to use for the model.</span>
@@ -3889,7 +3889,7 @@ Flavor        </code>
           <summary>Source code in <code>zenml/stack/flavor.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span> <span class="nf">from_model</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">flavor_model</span><span class="p">:</span> <span class="n">FlavorResponseModel</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Flavor&quot;</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Loads a flavor from a model.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Loads a flavor from a model.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        flavor_model: The model to load from.</span>
@@ -3958,7 +3958,7 @@ Flavor        </code>
         <details class="quote">
           <summary>Source code in <code>zenml/stack/flavor.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">to_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">integration</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FlavorRequestModel</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Converts a flavor to a model.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Converts a flavor to a model.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        integration: The integration to use for the model.</span>
@@ -4056,13 +4056,13 @@ FlavorRegistry        </code>
         <details class="quote">
           <summary>Source code in <code>zenml/stack/flavor_registry.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">FlavorRegistry</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Registry for stack component flavors.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Registry for stack component flavors.</span>
 
 <span class="sd">    The flavors defined by ZenML must be registered here.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Initialization of the flavors.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialization of the flavors.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_flavors</span><span class="p">:</span> <span class="n">DefaultDict</span><span class="p">[</span>
             <span class="n">StackComponentType</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FlavorResponseModel</span><span class="p">]</span>
         <span class="p">]</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">dict</span><span class="p">)</span>
@@ -4071,7 +4071,7 @@ FlavorRegistry        </code>
         <span class="bp">self</span><span class="o">.</span><span class="n">register_integration_flavors</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">register_default_flavors</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Registers the default built-in flavors.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Registers the default built-in flavors.&quot;&quot;&quot;</span>
         <span class="kn">from</span> <span class="nn">zenml.artifact_stores</span> <span class="kn">import</span> <span class="n">LocalArtifactStoreFlavor</span>
         <span class="kn">from</span> <span class="nn">zenml.container_registries</span> <span class="kn">import</span> <span class="p">(</span>
             <span class="n">AzureContainerRegistryFlavor</span><span class="p">,</span>
@@ -4104,7 +4104,7 @@ FlavorRegistry        </code>
             <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">register_integration_flavors</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Registers the flavors implemented by integrations.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Registers the flavors implemented by integrations.&quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">integration</span> <span class="ow">in</span> <span class="n">integration_registry</span><span class="o">.</span><span class="n">integrations</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="n">integrated_flavors</span> <span class="o">=</span> <span class="n">integration</span><span class="o">.</span><span class="n">flavors</span><span class="p">()</span>
             <span class="k">if</span> <span class="n">integrated_flavors</span><span class="p">:</span>
@@ -4115,7 +4115,7 @@ FlavorRegistry        </code>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">flavor</span><span class="p">:</span> <span class="n">FlavorRequestModel</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Registers a stack component flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Registers a stack component flavor.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            flavor: The flavor to register.</span>
@@ -4154,7 +4154,7 @@ FlavorRegistry        </code>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">FlavorResponseModel</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns all registered flavors.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns all registered flavors.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The list of all registered flavors.</span>
@@ -4168,7 +4168,7 @@ FlavorRegistry        </code>
     <span class="k">def</span> <span class="nf">get_flavors_by_type</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">component_type</span><span class="p">:</span> <span class="n">StackComponentType</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">FlavorResponseModel</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Return the list of flavors with given type.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the list of flavors with given type.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            component_type: The type of the stack component.</span>
@@ -4181,7 +4181,7 @@ FlavorRegistry        </code>
     <span class="k">def</span> <span class="nf">get_flavor_by_name_and_type</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">component_type</span><span class="p">:</span> <span class="n">StackComponentType</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FlavorResponseModel</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Gets the flavor for a given name and type.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets the flavor for a given name and type.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name: The name of the flavor.</span>
@@ -4264,7 +4264,7 @@ FlavorRegistry        </code>
         <details class="quote">
           <summary>Source code in <code>zenml/stack/flavor_registry.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Initialization of the flavors.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialization of the flavors.&quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_flavors</span><span class="p">:</span> <span class="n">DefaultDict</span><span class="p">[</span>
         <span class="n">StackComponentType</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">FlavorResponseModel</span><span class="p">]</span>
     <span class="p">]</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">dict</span><span class="p">)</span>
@@ -4338,7 +4338,7 @@ FlavorRegistry        </code>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_flavor_by_name_and_type</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">component_type</span><span class="p">:</span> <span class="n">StackComponentType</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FlavorResponseModel</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Gets the flavor for a given name and type.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets the flavor for a given name and type.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: The name of the flavor.</span>
@@ -4409,7 +4409,7 @@ FlavorRegistry        </code>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_flavors_by_type</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">component_type</span><span class="p">:</span> <span class="n">StackComponentType</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">FlavorResponseModel</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Return the list of flavors with given type.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the list of flavors with given type.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        component_type: The type of the stack component.</span>
@@ -4443,7 +4443,7 @@ FlavorRegistry        </code>
         <details class="quote">
           <summary>Source code in <code>zenml/stack/flavor_registry.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">register_default_flavors</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Registers the default built-in flavors.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Registers the default built-in flavors.&quot;&quot;&quot;</span>
     <span class="kn">from</span> <span class="nn">zenml.artifact_stores</span> <span class="kn">import</span> <span class="n">LocalArtifactStoreFlavor</span>
     <span class="kn">from</span> <span class="nn">zenml.container_registries</span> <span class="kn">import</span> <span class="p">(</span>
         <span class="n">AzureContainerRegistryFlavor</span><span class="p">,</span>
@@ -4499,7 +4499,7 @@ FlavorRegistry        </code>
         <details class="quote">
           <summary>Source code in <code>zenml/stack/flavor_registry.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">register_integration_flavors</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Registers the flavors implemented by integrations.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Registers the flavors implemented by integrations.&quot;&quot;&quot;</span>
     <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">integration</span> <span class="ow">in</span> <span class="n">integration_registry</span><span class="o">.</span><span class="n">integrations</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="n">integrated_flavors</span> <span class="o">=</span> <span class="n">integration</span><span class="o">.</span><span class="n">flavors</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">integrated_flavors</span><span class="p">:</span>
@@ -4585,7 +4585,7 @@ if other stack components depend on them.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/stack/stack.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Stack</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;ZenML stack class.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;ZenML stack class.</span>
 
 <span class="sd">    A ZenML stack is a collection of multiple stack components that are</span>
 <span class="sd">    required to run ZenML pipelines. Some of these components (orchestrator,</span>
@@ -4611,7 +4611,7 @@ if other stack components depend on them.</p>
         <span class="n">annotator</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;BaseAnnotator&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">data_validator</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;BaseDataValidator&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Initializes and validates a stack instance.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes and validates a stack instance.</span>
 
 <span class="sd">        # noqa: DAR402</span>
 
@@ -4649,7 +4649,7 @@ if other stack components depend on them.</p>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">from_model</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">stack_model</span><span class="p">:</span> <span class="n">StackResponseModel</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Stack&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Creates a Stack instance from a StackModel.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Creates a Stack instance from a StackModel.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            stack_model: The StackModel to create the Stack from.</span>
@@ -4676,7 +4676,7 @@ if other stack components depend on them.</p>
         <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">components</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">StackComponentType</span><span class="p">,</span> <span class="s2">&quot;StackComponent&quot;</span><span class="p">],</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Stack&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Creates a stack instance from a dict of stack components.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Creates a stack instance from a dict of stack components.</span>
 
 <span class="sd">        # noqa: DAR402</span>
 
@@ -4707,7 +4707,7 @@ if other stack components depend on them.</p>
         <span class="k">def</span> <span class="nf">_raise_type_error</span><span class="p">(</span>
             <span class="n">component</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;StackComponent&quot;</span><span class="p">],</span> <span class="n">expected_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span>
         <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NoReturn</span><span class="p">:</span>
-            <span class="sd">&quot;&quot;&quot;Raises a TypeError that the component has an unexpected type.</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Raises a TypeError that the component has an unexpected type.</span>
 
 <span class="sd">            Args:</span>
 <span class="sd">                component: The component that has an unexpected type.</span>
@@ -4802,7 +4802,7 @@ if other stack components depend on them.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">components</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="n">StackComponentType</span><span class="p">,</span> <span class="s2">&quot;StackComponent&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;All components of the stack.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;All components of the stack.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            A dictionary of all components of the stack.</span>
@@ -4827,7 +4827,7 @@ if other stack components depend on them.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UUID</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;The ID of the stack.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The ID of the stack.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The ID of the stack.</span>
@@ -4836,7 +4836,7 @@ if other stack components depend on them.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;The name of the stack.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The name of the stack.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            str: The name of the stack.</span>
@@ -4845,7 +4845,7 @@ if other stack components depend on them.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">orchestrator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseOrchestrator&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;The orchestrator of the stack.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The orchestrator of the stack.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The orchestrator of the stack.</span>
@@ -4854,7 +4854,7 @@ if other stack components depend on them.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">artifact_store</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseArtifactStore&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;The artifact store of the stack.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The artifact store of the stack.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The artifact store of the stack.</span>
@@ -4863,7 +4863,7 @@ if other stack components depend on them.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">container_registry</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;BaseContainerRegistry&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;The container registry of the stack.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The container registry of the stack.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The container registry of the stack or None if the stack does not</span>
@@ -4873,7 +4873,7 @@ if other stack components depend on them.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">secrets_manager</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;BaseSecretsManager&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;The secrets manager of the stack.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The secrets manager of the stack.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The secrets manager of the stack.</span>
@@ -4882,7 +4882,7 @@ if other stack components depend on them.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">step_operator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;BaseStepOperator&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;The step operator of the stack.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The step operator of the stack.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The step operator of the stack.</span>
@@ -4891,7 +4891,7 @@ if other stack components depend on them.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">feature_store</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;BaseFeatureStore&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;The feature store of the stack.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The feature store of the stack.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The feature store of the stack.</span>
@@ -4900,7 +4900,7 @@ if other stack components depend on them.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">model_deployer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;BaseModelDeployer&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;The model deployer of the stack.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The model deployer of the stack.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The model deployer of the stack.</span>
@@ -4909,7 +4909,7 @@ if other stack components depend on them.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">experiment_tracker</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;BaseExperimentTracker&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;The experiment tracker of the stack.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The experiment tracker of the stack.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The experiment tracker of the stack.</span>
@@ -4918,7 +4918,7 @@ if other stack components depend on them.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">alerter</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;BaseAlerter&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;The alerter of the stack.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The alerter of the stack.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The alerter of the stack.</span>
@@ -4927,7 +4927,7 @@ if other stack components depend on them.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">annotator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;BaseAnnotator&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;The annotator of the stack.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The annotator of the stack.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The annotator of the stack.</span>
@@ -4936,7 +4936,7 @@ if other stack components depend on them.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">data_validator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;BaseDataValidator&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;The data validator of the stack.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The data validator of the stack.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The data validator of the stack.</span>
@@ -4944,7 +4944,7 @@ if other stack components depend on them.</p>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data_validator</span>
 
     <span class="k">def</span> <span class="nf">dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Converts the stack into a dictionary.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Converts the stack into a dictionary.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            A dictionary containing the stack components.</span>
@@ -4960,7 +4960,7 @@ if other stack components depend on them.</p>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">exclude_components</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">AbstractSet</span><span class="p">[</span><span class="n">StackComponentType</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Set of PyPI requirements for the stack.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set of PyPI requirements for the stack.</span>
 
 <span class="sd">        This method combines the requirements of all stack components (except</span>
 <span class="sd">        the ones specified in `exclude_components`).</span>
@@ -4982,7 +4982,7 @@ if other stack components depend on them.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">apt_packages</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;List of APT package requirements for the stack.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;List of APT package requirements for the stack.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            A list of APT package requirements for the stack.</span>
@@ -4994,7 +4994,7 @@ if other stack components depend on them.</p>
         <span class="p">]</span>
 
     <span class="k">def</span> <span class="nf">check_local_paths</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Checks if the stack has local paths.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if the stack has local paths.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            True if the stack has local paths, False otherwise.</span>
@@ -5030,7 +5030,7 @@ if other stack components depend on them.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">required_secrets</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="s2">&quot;secret_utils.SecretReference&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;All required secrets for this stack.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;All required secrets for this stack.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The required secrets of this stack.</span>
@@ -5043,7 +5043,7 @@ if other stack components depend on them.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">setting_classes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseSettings&quot;</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Setting classes of all components of this stack.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Setting classes of all components of this stack.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            All setting classes and their respective keys.</span>
@@ -5057,7 +5057,7 @@ if other stack components depend on them.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">requires_remote_server</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;If the stack requires a remote ZenServer to run.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;If the stack requires a remote ZenServer to run.</span>
 
 <span class="sd">        This is the case if any code is getting executed remotely. This is the</span>
 <span class="sd">        case for both remote orchestrators as well as remote step operators.</span>
@@ -5071,7 +5071,7 @@ if other stack components depend on them.</p>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_validate_secrets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raise_exception</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Validates that all secrets of the stack exists.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validates that all secrets of the stack exists.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            raise_exception: If `True`, raises an exception if the stack has</span>
@@ -5096,7 +5096,7 @@ if other stack components depend on them.</p>
         <span class="p">):</span>
 
             <span class="k">def</span> <span class="nf">_handle_error</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="sd">&quot;&quot;&quot;Handles the error by raising an exception or logging.</span>
+<span class="w">                </span><span class="sd">&quot;&quot;&quot;Handles the error by raising an exception or logging.</span>
 
 <span class="sd">                Args:</span>
 <span class="sd">                    message: The error message.</span>
@@ -5157,7 +5157,7 @@ if other stack components depend on them.</p>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">fail_if_secrets_missing</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Checks whether the stack configuration is valid.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks whether the stack configuration is valid.</span>
 
 <span class="sd">        To check if a stack configuration is valid, the following criteria must</span>
 <span class="sd">        be met:</span>
@@ -5179,7 +5179,7 @@ if other stack components depend on them.</p>
     <span class="k">def</span> <span class="nf">prepare_pipeline_deployment</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Prepares the stack for a pipeline deployment.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Prepares the stack for a pipeline deployment.</span>
 
 <span class="sd">        This method is called before a pipeline is deployed.</span>
 
@@ -5218,7 +5218,7 @@ if other stack components depend on them.</p>
             <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">deploy_pipeline</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Deploys a pipeline on this stack.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Deploys a pipeline on this stack.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            deployment: The pipeline deployment.</span>
@@ -5231,7 +5231,7 @@ if other stack components depend on them.</p>
     <span class="k">def</span> <span class="nf">_get_active_components_for_step</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">step_config</span><span class="p">:</span> <span class="s2">&quot;StepConfiguration&quot;</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="n">StackComponentType</span><span class="p">,</span> <span class="s2">&quot;StackComponent&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Gets all the active stack components for a stack.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets all the active stack components for a stack.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            step_config: Configuration of the step for which to get the active</span>
@@ -5242,7 +5242,7 @@ if other stack components depend on them.</p>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">def</span> <span class="nf">_is_active</span><span class="p">(</span><span class="n">component</span><span class="p">:</span> <span class="s2">&quot;StackComponent&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-            <span class="sd">&quot;&quot;&quot;Checks whether a stack component is actively used in the step.</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Checks whether a stack component is actively used in the step.</span>
 
 <span class="sd">            Args:</span>
 <span class="sd">                component: The component to check.</span>
@@ -5265,7 +5265,7 @@ if other stack components depend on them.</p>
         <span class="p">}</span>
 
     <span class="k">def</span> <span class="nf">prepare_step_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="s2">&quot;StepRunInfo&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Prepares running a step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Prepares running a step.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            info: Info about the step that will be executed.</span>
@@ -5276,7 +5276,7 @@ if other stack components depend on them.</p>
             <span class="n">component</span><span class="o">.</span><span class="n">prepare_step_run</span><span class="p">(</span><span class="n">info</span><span class="o">=</span><span class="n">info</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">cleanup_step_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="s2">&quot;StepRunInfo&quot;</span><span class="p">,</span> <span class="n">step_failed</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Cleans up resources after the step run is finished.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Cleans up resources after the step run is finished.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            info: Info about the step that was executed.</span>
@@ -5289,7 +5289,7 @@ if other stack components depend on them.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_provisioned</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;If the stack provisioned resources to run locally.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;If the stack provisioned resources to run locally.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            True if the stack provisioned resources to run locally.</span>
@@ -5300,7 +5300,7 @@ if other stack components depend on them.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_running</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;If the stack is running locally.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;If the stack is running locally.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            True if the stack is running locally, False otherwise.</span>
@@ -5310,7 +5310,7 @@ if other stack components depend on them.</p>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">provision</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Provisions resources to run the stack locally.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Provisions resources to run the stack locally.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="n">fail_if_secrets_missing</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Provisioning resources for stack &#39;</span><span class="si">%s</span><span class="s2">&#39;.&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">component</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">components</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
@@ -5319,7 +5319,7 @@ if other stack components depend on them.</p>
                 <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Provisioned resources for </span><span class="si">%s</span><span class="s2">.&quot;</span><span class="p">,</span> <span class="n">component</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">deprovision</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Deprovisions all local resources of the stack.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Deprovisions all local resources of the stack.&quot;&quot;&quot;</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Deprovisioning resources for stack &#39;</span><span class="si">%s</span><span class="s2">&#39;.&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">component</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">components</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
             <span class="k">if</span> <span class="n">component</span><span class="o">.</span><span class="n">is_provisioned</span><span class="p">:</span>
@@ -5330,7 +5330,7 @@ if other stack components depend on them.</p>
                     <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">resume</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Resumes the provisioned local resources of the stack.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Resumes the provisioned local resources of the stack.</span>
 
 <span class="sd">        Raises:</span>
 <span class="sd">            ProvisioningError: If any stack component is missing provisioned</span>
@@ -5351,7 +5351,7 @@ if other stack components depend on them.</p>
                 <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">suspend</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Suspends the provisioned local resources of the stack.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Suspends the provisioned local resources of the stack.&quot;&quot;&quot;</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
             <span class="s2">&quot;Suspending provisioned resources for stack &#39;</span><span class="si">%s</span><span class="s2">&#39;.&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
         <span class="p">)</span>
@@ -6287,7 +6287,7 @@ case for both remote orchestrators as well as remote step operators.</p>
     <span class="n">annotator</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;BaseAnnotator&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">data_validator</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;BaseDataValidator&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Initializes and validates a stack instance.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes and validates a stack instance.</span>
 
 <span class="sd">    # noqa: DAR402</span>
 
@@ -6379,7 +6379,7 @@ local stores directory.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/stack/stack.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">check_local_paths</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Checks if the stack has local paths.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks if the stack has local paths.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        True if the stack has local paths, False otherwise.</span>
@@ -6462,7 +6462,7 @@ local stores directory.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/stack/stack.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">cleanup_step_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="s2">&quot;StepRunInfo&quot;</span><span class="p">,</span> <span class="n">step_failed</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Cleans up resources after the step run is finished.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Cleans up resources after the step run is finished.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        info: Info about the step that was executed.</span>
@@ -6531,7 +6531,7 @@ local stores directory.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/stack/stack.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">deploy_pipeline</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Deploys a pipeline on this stack.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Deploys a pipeline on this stack.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        deployment: The pipeline deployment.</span>
@@ -6565,7 +6565,7 @@ local stores directory.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/stack/stack.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">deprovision</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Deprovisions all local resources of the stack.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Deprovisions all local resources of the stack.&quot;&quot;&quot;</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Deprovisioning resources for stack &#39;</span><span class="si">%s</span><span class="s2">&#39;.&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">component</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">components</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
         <span class="k">if</span> <span class="n">component</span><span class="o">.</span><span class="n">is_provisioned</span><span class="p">:</span>
@@ -6614,7 +6614,7 @@ local stores directory.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/stack/stack.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Converts the stack into a dictionary.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Converts the stack into a dictionary.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A dictionary containing the stack components.</span>
@@ -6722,7 +6722,7 @@ doesn't inherit from the expected base class.</p></td>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">components</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">StackComponentType</span><span class="p">,</span> <span class="s2">&quot;StackComponent&quot;</span><span class="p">],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Stack&quot;</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Creates a stack instance from a dict of stack components.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Creates a stack instance from a dict of stack components.</span>
 
 <span class="sd">    # noqa: DAR402</span>
 
@@ -6753,7 +6753,7 @@ doesn't inherit from the expected base class.</p></td>
     <span class="k">def</span> <span class="nf">_raise_type_error</span><span class="p">(</span>
         <span class="n">component</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;StackComponent&quot;</span><span class="p">],</span> <span class="n">expected_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NoReturn</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Raises a TypeError that the component has an unexpected type.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Raises a TypeError that the component has an unexpected type.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            component: The component that has an unexpected type.</span>
@@ -6908,7 +6908,7 @@ doesn't inherit from the expected base class.</p></td>
           <summary>Source code in <code>zenml/stack/stack.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span> <span class="nf">from_model</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">stack_model</span><span class="p">:</span> <span class="n">StackResponseModel</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Stack&quot;</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Creates a Stack instance from a StackModel.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Creates a Stack instance from a StackModel.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        stack_model: The StackModel to create the Stack from.</span>
@@ -6994,7 +6994,7 @@ ZenML server with a local one.</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">prepare_pipeline_deployment</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Prepares the stack for a pipeline deployment.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Prepares the stack for a pipeline deployment.</span>
 
 <span class="sd">    This method is called before a pipeline is deployed.</span>
 
@@ -7075,7 +7075,7 @@ ZenML server with a local one.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/stack/stack.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">prepare_step_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="s2">&quot;StepRunInfo&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Prepares running a step.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Prepares running a step.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        info: Info about the step that will be executed.</span>
@@ -7109,7 +7109,7 @@ ZenML server with a local one.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/stack/stack.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">provision</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Provisions resources to run the stack locally.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Provisions resources to run the stack locally.&quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="n">fail_if_secrets_missing</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Provisioning resources for stack &#39;</span><span class="si">%s</span><span class="s2">&#39;.&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">component</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">components</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
@@ -7181,7 +7181,7 @@ requirements should not be included in the output.</p></td>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">exclude_components</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">AbstractSet</span><span class="p">[</span><span class="n">StackComponentType</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Set of PyPI requirements for the stack.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Set of PyPI requirements for the stack.</span>
 
 <span class="sd">    This method combines the requirements of all stack components (except</span>
 <span class="sd">    the ones specified in `exclude_components`).</span>
@@ -7241,7 +7241,7 @@ resources.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/stack/stack.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">resume</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Resumes the provisioned local resources of the stack.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Resumes the provisioned local resources of the stack.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        ProvisioningError: If any stack component is missing provisioned</span>
@@ -7285,7 +7285,7 @@ resources.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/stack/stack.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">suspend</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Suspends the provisioned local resources of the stack.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Suspends the provisioned local resources of the stack.&quot;&quot;&quot;</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
         <span class="s2">&quot;Suspending provisioned resources for stack &#39;</span><span class="si">%s</span><span class="s2">&#39;.&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
     <span class="p">)</span>
@@ -7354,7 +7354,7 @@ warning will be logged.</p></td>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">fail_if_secrets_missing</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Checks whether the stack configuration is valid.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks whether the stack configuration is valid.</span>
 
 <span class="sd">    To check if a stack configuration is valid, the following criteria must</span>
 <span class="sd">    be met:</span>
@@ -7447,7 +7447,7 @@ StackComponent        </code>
         <details class="quote">
           <summary>Source code in <code>zenml/stack/stack_component.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StackComponent</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Abstract StackComponent class for all components of a ZenML stack.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Abstract StackComponent class for all components of a ZenML stack.&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -7463,7 +7463,7 @@ StackComponent        </code>
         <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Initializes a StackComponent.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes a StackComponent.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name: The name of the component.</span>
@@ -7501,7 +7501,7 @@ StackComponent        </code>
     <span class="k">def</span> <span class="nf">from_model</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span> <span class="n">component_model</span><span class="p">:</span> <span class="s2">&quot;ComponentResponseModel&quot;</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;StackComponent&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Creates a StackComponent from a ComponentModel.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Creates a StackComponent from a ComponentModel.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            component_model: The ComponentModel to create the StackComponent</span>
@@ -7549,7 +7549,7 @@ StackComponent        </code>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StackComponentConfig</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the configuration of the stack component.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the configuration of the stack component.</span>
 
 <span class="sd">        This should be overwritten by any subclasses that define custom configs</span>
 <span class="sd">        to return the correct config class.</span>
@@ -7561,7 +7561,7 @@ StackComponent        </code>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">settings_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseSettings&quot;</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Class specifying available settings for this component.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Class specifying available settings for this component.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Optional settings class.</span>
@@ -7571,7 +7571,7 @@ StackComponent        </code>
     <span class="k">def</span> <span class="nf">get_settings</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">container</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="s2">&quot;Step&quot;</span><span class="p">,</span> <span class="s2">&quot;StepRunInfo&quot;</span><span class="p">,</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseSettings&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Gets settings for this stack component.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets settings for this stack component.</span>
 
 <span class="sd">        This will return `None` if the stack component doesn&#39;t specify a</span>
 <span class="sd">        settings class or the container doesn&#39;t contain runtime</span>
@@ -7611,7 +7611,7 @@ StackComponent        </code>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">log_file</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Optional path to a log file for the stack component.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Optional path to a log file for the stack component.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Optional path to a log file for the stack component.</span>
@@ -7623,7 +7623,7 @@ StackComponent        </code>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">requirements</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Set of PyPI requirements for the component.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set of PyPI requirements for the component.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            A set of PyPI requirements for the component.</span>
@@ -7634,7 +7634,7 @@ StackComponent        </code>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">apt_packages</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;List of APT package requirements for the component.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;List of APT package requirements for the component.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            A list of APT package requirements for the component.</span>
@@ -7646,7 +7646,7 @@ StackComponent        </code>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">local_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Path to a local directory to store persistent information.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Path to a local directory to store persistent information.</span>
 
 <span class="sd">        This property should only be implemented by components that need to</span>
 <span class="sd">        store persistent information in a directory on the local machine and</span>
@@ -7683,7 +7683,7 @@ StackComponent        </code>
         <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">,</span>
         <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Prepares deploying the pipeline.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Prepares deploying the pipeline.</span>
 
 <span class="sd">        This method gets called immediately before a pipeline is deployed.</span>
 <span class="sd">        Subclasses should override it if they require runtime configuration</span>
@@ -7695,14 +7695,14 @@ StackComponent        </code>
 <span class="sd">        &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">prepare_step_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="s2">&quot;StepRunInfo&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Prepares running a step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Prepares running a step.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            info: Info about the step that will be executed.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">cleanup_step_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="s2">&quot;StepRunInfo&quot;</span><span class="p">,</span> <span class="n">step_failed</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Cleans up resources after the step run is finished.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Cleans up resources after the step run is finished.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            info: Info about the step that was executed.</span>
@@ -7711,7 +7711,7 @@ StackComponent        </code>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">post_registration_message</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Optional message printed after the stack component is registered.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Optional message printed after the stack component is registered.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            An optional message.</span>
@@ -7720,7 +7720,7 @@ StackComponent        </code>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">validator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;StackValidator&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;The optional validator of the stack component.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The optional validator of the stack component.</span>
 
 <span class="sd">        This validator will be called each time a stack with the stack</span>
 <span class="sd">        component is initialized. Subclasses should override this property</span>
@@ -7734,7 +7734,7 @@ StackComponent        </code>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_provisioned</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;If the component provisioned resources to run.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;If the component provisioned resources to run.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            True if the component provisioned resources to run.</span>
@@ -7743,7 +7743,7 @@ StackComponent        </code>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_running</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;If the component is running.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;If the component is running.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            True if the component is running.</span>
@@ -7752,7 +7752,7 @@ StackComponent        </code>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_suspended</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;If the component is suspended.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;If the component is suspended.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            True if the component is suspended.</span>
@@ -7760,7 +7760,7 @@ StackComponent        </code>
         <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_running</span>
 
     <span class="k">def</span> <span class="nf">provision</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Provisions resources to run the component.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Provisions resources to run the component.</span>
 
 <span class="sd">        Raises:</span>
 <span class="sd">            NotImplementedError: If the component does not implement this</span>
@@ -7771,7 +7771,7 @@ StackComponent        </code>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">deprovision</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Deprovisions all resources of the component.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Deprovisions all resources of the component.</span>
 
 <span class="sd">        Raises:</span>
 <span class="sd">            NotImplementedError: If the component does not implement this</span>
@@ -7782,7 +7782,7 @@ StackComponent        </code>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">resume</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Resumes the provisioned resources of the component.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Resumes the provisioned resources of the component.</span>
 
 <span class="sd">        Raises:</span>
 <span class="sd">            NotImplementedError: If the component does not implement this</span>
@@ -7793,7 +7793,7 @@ StackComponent        </code>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">suspend</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Suspends the provisioned resources of the component.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Suspends the provisioned resources of the component.</span>
 
 <span class="sd">        Raises:</span>
 <span class="sd">            NotImplementedError: If the component does not implement this</span>
@@ -7804,7 +7804,7 @@ StackComponent        </code>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;String representation of the stack component.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;String representation of the stack component.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            A string representation of the stack component.</span>
@@ -7818,7 +7818,7 @@ StackComponent        </code>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;String representation of the stack component.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;String representation of the stack component.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            A string representation of the stack component.</span>
@@ -8411,7 +8411,7 @@ any stack that they're not compatible with.</p>
     <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Initializes a StackComponent.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes a StackComponent.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: The name of the component.</span>
@@ -8487,7 +8487,7 @@ any stack that they're not compatible with.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/stack/stack_component.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;String representation of the stack component.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;String representation of the stack component.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A string representation of the stack component.</span>
@@ -8542,7 +8542,7 @@ any stack that they're not compatible with.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/stack/stack_component.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;String representation of the stack component.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;String representation of the stack component.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A string representation of the stack component.</span>
@@ -8598,7 +8598,7 @@ any stack that they're not compatible with.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/stack/stack_component.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">cleanup_step_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="s2">&quot;StepRunInfo&quot;</span><span class="p">,</span> <span class="n">step_failed</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Cleans up resources after the step run is finished.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Cleans up resources after the step run is finished.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        info: Info about the step that was executed.</span>
@@ -8645,7 +8645,7 @@ method.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/stack/stack_component.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">deprovision</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Deprovisions all resources of the component.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Deprovisions all resources of the component.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        NotImplementedError: If the component does not implement this</span>
@@ -8734,7 +8734,7 @@ method.</p></td>
 <span class="k">def</span> <span class="nf">from_model</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span> <span class="n">component_model</span><span class="p">:</span> <span class="s2">&quot;ComponentResponseModel&quot;</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;StackComponent&quot;</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Creates a StackComponent from a ComponentModel.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Creates a StackComponent from a ComponentModel.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        component_model: The ComponentModel to create the StackComponent</span>
@@ -8860,7 +8860,7 @@ class.</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_settings</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">container</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="s2">&quot;Step&quot;</span><span class="p">,</span> <span class="s2">&quot;StepRunInfo&quot;</span><span class="p">,</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseSettings&quot;</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Gets settings for this stack component.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets settings for this stack component.</span>
 
 <span class="sd">    This will return `None` if the stack component doesn&#39;t specify a</span>
 <span class="sd">    settings class or the container doesn&#39;t contain runtime</span>
@@ -8954,7 +8954,7 @@ options or if they need to run code before the pipeline deployment.</p>
     <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">,</span>
     <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Prepares deploying the pipeline.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Prepares deploying the pipeline.</span>
 
 <span class="sd">    This method gets called immediately before a pipeline is deployed.</span>
 <span class="sd">    Subclasses should override it if they require runtime configuration</span>
@@ -9008,7 +9008,7 @@ options or if they need to run code before the pipeline deployment.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/stack/stack_component.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">prepare_step_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="s2">&quot;StepRunInfo&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Prepares running a step.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Prepares running a step.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        info: Info about the step that will be executed.</span>
@@ -9054,7 +9054,7 @@ method.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/stack/stack_component.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">provision</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Provisions resources to run the component.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Provisions resources to run the component.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        NotImplementedError: If the component does not implement this</span>
@@ -9104,7 +9104,7 @@ method.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/stack/stack_component.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">resume</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Resumes the provisioned resources of the component.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Resumes the provisioned resources of the component.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        NotImplementedError: If the component does not implement this</span>
@@ -9154,7 +9154,7 @@ method.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/stack/stack_component.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">suspend</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Suspends the provisioned resources of the component.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Suspends the provisioned resources of the component.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        NotImplementedError: If the component does not implement this</span>
@@ -9204,10 +9204,10 @@ StackComponentConfig            (<span title="pydantic.main.BaseModel">BaseModel
         <details class="quote">
           <summary>Source code in <code>zenml/stack/stack_component.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StackComponentConfig</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base class for all ZenML stack component configs.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for all ZenML stack component configs.&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Ensures that secret references don&#39;t clash with pydantic validation.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Ensures that secret references don&#39;t clash with pydantic validation.</span>
 
 <span class="sd">        StackComponents allow the specification of all their string attributes</span>
 <span class="sd">        using secret references of the form `{{secret_name.key}}`. This however</span>
@@ -9263,7 +9263,7 @@ StackComponentConfig            (<span title="pydantic.main.BaseModel">BaseModel
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">required_secrets</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="n">secret_utils</span><span class="o">.</span><span class="n">SecretReference</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;All required secrets for this stack component.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;All required secrets for this stack component.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The required secrets of this stack component.</span>
@@ -9276,7 +9276,7 @@ StackComponentConfig            (<span title="pydantic.main.BaseModel">BaseModel
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_remote</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Checks if this stack component is running remotely.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if this stack component is running remotely.</span>
 
 <span class="sd">        Concrete stack component configuration classes should override this</span>
 <span class="sd">        method to return True if the stack component is running in a remote</span>
@@ -9299,7 +9299,7 @@ StackComponentConfig            (<span title="pydantic.main.BaseModel">BaseModel
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_local</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Checks if this stack component is running locally.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if this stack component is running locally.</span>
 
 <span class="sd">        Concrete stack component configuration classes should override this</span>
 <span class="sd">        method to return True if the stack component is relying on local</span>
@@ -9320,7 +9320,7 @@ StackComponentConfig            (<span title="pydantic.main.BaseModel">BaseModel
         <span class="k">return</span> <span class="kc">False</span>
 
     <span class="k">def</span> <span class="nf">__custom_getattribute__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the (potentially resolved) attribute value for the given key.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the (potentially resolved) attribute value for the given key.</span>
 
 <span class="sd">        An attribute value may be either specified directly, or as a secret</span>
 <span class="sd">        reference. In case of a secret reference, this method resolves the</span>
@@ -9391,7 +9391,7 @@ StackComponentConfig            (<span title="pydantic.main.BaseModel">BaseModel
         <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">secret_value</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_is_part_of_active_stack</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Checks if this config belongs to a component in the active stack.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if this config belongs to a component in the active stack.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            True if this config belongs to a component in the active stack,</span>
@@ -9411,7 +9411,7 @@ StackComponentConfig            (<span title="pydantic.main.BaseModel">BaseModel
         <span class="fm">__getattribute__</span> <span class="o">=</span> <span class="n">__custom_getattribute__</span>
 
     <span class="k">class</span> <span class="nc">Config</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Pydantic configuration class.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Pydantic configuration class.&quot;&quot;&quot;</span>
 
         <span class="c1"># public attributes are immutable</span>
         <span class="n">allow_mutation</span> <span class="o">=</span> <span class="kc">False</span>
@@ -9594,7 +9594,7 @@ Config        </code>
         <details class="quote">
           <summary>Source code in <code>zenml/stack/stack_component.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Config</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Pydantic configuration class.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Pydantic configuration class.&quot;&quot;&quot;</span>
 
     <span class="c1"># public attributes are immutable</span>
     <span class="n">allow_mutation</span> <span class="o">=</span> <span class="kc">False</span>
@@ -9711,7 +9711,7 @@ stack, or the active stack is missing a secrets manager.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/stack/stack_component.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">__custom_getattribute__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns the (potentially resolved) attribute value for the given key.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the (potentially resolved) attribute value for the given key.</span>
 
 <span class="sd">    An attribute value may be either specified directly, or as a secret</span>
 <span class="sd">    reference. In case of a secret reference, this method resolves the</span>
@@ -9865,7 +9865,7 @@ stack, or the active stack is missing a secrets manager.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/stack/stack_component.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">__custom_getattribute__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns the (potentially resolved) attribute value for the given key.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the (potentially resolved) attribute value for the given key.</span>
 
 <span class="sd">    An attribute value may be either specified directly, or as a secret</span>
 <span class="sd">    reference. In case of a secret reference, this method resolves the</span>
@@ -10006,7 +10006,7 @@ was passed as a secret reference.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/stack/stack_component.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Ensures that secret references don&#39;t clash with pydantic validation.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Ensures that secret references don&#39;t clash with pydantic validation.</span>
 
 <span class="sd">    StackComponents allow the specification of all their string attributes</span>
 <span class="sd">    using secret references of the form `{{secret_name.key}}`. This however</span>
@@ -10140,7 +10140,7 @@ in Kubeflow Pipelines.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/stack/stack_validator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StackValidator</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;A `StackValidator` is used to validate a stack configuration.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A `StackValidator` is used to validate a stack configuration.</span>
 
 <span class="sd">    Each `StackComponent` can provide a `StackValidator` to make sure it is</span>
 <span class="sd">    compatible with all components of the stack. The `KubeflowOrchestrator`</span>
@@ -10156,7 +10156,7 @@ in Kubeflow Pipelines.</p>
             <span class="n">Callable</span><span class="p">[[</span><span class="s2">&quot;Stack&quot;</span><span class="p">],</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span>
         <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Initializes a `StackValidator` instance.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes a `StackValidator` instance.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            required_components: Optional set of stack components that must</span>
@@ -10168,7 +10168,7 @@ in Kubeflow Pipelines.</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">_custom_validation_function</span> <span class="o">=</span> <span class="n">custom_validation_function</span>
 
     <span class="k">def</span> <span class="nf">validate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Validates the given stack.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validates the given stack.</span>
 
 <span class="sd">        Checks if the stack contains all the required components and passes</span>
 <span class="sd">        the custom validation function of the validator.</span>
@@ -10262,7 +10262,7 @@ a stack is valid and an error message to show if not valid.</p></td>
         <span class="n">Callable</span><span class="p">[[</span><span class="s2">&quot;Stack&quot;</span><span class="p">],</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Initializes a `StackValidator` instance.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes a `StackValidator` instance.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        required_components: Optional set of stack components that must</span>
@@ -10334,7 +10334,7 @@ validation criteria.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/stack/stack_validator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">validate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Validates the given stack.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validates the given stack.</span>
 
 <span class="sd">    Checks if the stack contains all the required components and passes</span>
 <span class="sd">    the custom validation function of the validator.</span>

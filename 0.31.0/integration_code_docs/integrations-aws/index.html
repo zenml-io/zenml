@@ -2795,7 +2795,7 @@ AWSIntegration            (<a class="autorefs autorefs-internal" title="zenml.in
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AWSIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Definition of AWS integration for ZenML.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Definition of AWS integration for ZenML.&quot;&quot;&quot;</span>
 
     <span class="n">NAME</span> <span class="o">=</span> <span class="n">AWS</span>
     <span class="n">REQUIREMENTS</span> <span class="o">=</span> <span class="p">[</span>
@@ -2804,7 +2804,7 @@ AWSIntegration            (<a class="autorefs autorefs-internal" title="zenml.in
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the AWS integration.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the AWS integration.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            List of stack component flavors for this integration.</span>
@@ -2875,7 +2875,7 @@ AWSIntegration            (<a class="autorefs autorefs-internal" title="zenml.in
           <summary>Source code in <code>zenml/integrations/aws/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
-    <span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the AWS integration.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the AWS integration.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        List of stack component flavors for this integration.</span>
@@ -2992,11 +2992,11 @@ AWSContainerRegistry            (<a class="autorefs autorefs-internal" title="ze
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/container_registries/aws_container_registry.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AWSContainerRegistry</span><span class="p">(</span><span class="n">BaseContainerRegistry</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Class for AWS Container Registry.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class for AWS Container Registry.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AWSContainerRegistryConfig</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the `AWSContainerRegistryConfig` config.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `AWSContainerRegistryConfig` config.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The configuration.</span>
@@ -3004,7 +3004,7 @@ AWSContainerRegistry            (<a class="autorefs autorefs-internal" title="ze
         <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">AWSContainerRegistryConfig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_get_region</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Parses the AWS region from the registry URI.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Parses the AWS region from the registry URI.</span>
 
 <span class="sd">        Raises:</span>
 <span class="sd">            RuntimeError: If the region parsing fails due to an invalid URI.</span>
@@ -3023,7 +3023,7 @@ AWSContainerRegistry            (<a class="autorefs autorefs-internal" title="ze
         <span class="k">return</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">prepare_image_push</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Logs warning message if trying to push an image for which no repository exists.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Logs warning message if trying to push an image for which no repository exists.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            image_name: Name of the docker image that will be pushed.</span>
@@ -3062,7 +3062,7 @@ AWSContainerRegistry            (<a class="autorefs autorefs-internal" title="ze
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">post_registration_message</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Optional message printed after the stack component is registered.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Optional message printed after the stack component is registered.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Info message regarding docker repositories in AWS.</span>
@@ -3217,7 +3217,7 @@ AWSContainerRegistry            (<a class="autorefs autorefs-internal" title="ze
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/container_registries/aws_container_registry.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">prepare_image_push</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Logs warning message if trying to push an image for which no repository exists.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Logs warning message if trying to push an image for which no repository exists.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        image_name: Name of the docker image that will be pushed.</span>
@@ -3372,11 +3372,11 @@ AWSContainerRegistryConfig            (<a class="autorefs autorefs-internal" tit
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/flavors/aws_container_registry_flavor.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AWSContainerRegistryConfig</span><span class="p">(</span><span class="n">BaseContainerRegistryConfig</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Configuration for AWS Container Registry.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Configuration for AWS Container Registry.&quot;&quot;&quot;</span>
 
     <span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;uri&quot;</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">validate_aws_uri</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">uri</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Validates that the URI is in the correct format.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validates that the URI is in the correct format.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            uri: URI to validate.</span>
@@ -3482,7 +3482,7 @@ AWSContainerRegistryConfig            (<a class="autorefs autorefs-internal" tit
           <summary>Source code in <code>zenml/integrations/aws/flavors/aws_container_registry_flavor.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;uri&quot;</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">validate_aws_uri</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">uri</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Validates that the URI is in the correct format.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validates that the URI is in the correct format.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        uri: URI to validate.</span>
@@ -3538,11 +3538,11 @@ AWSContainerRegistryFlavor            (<a class="autorefs autorefs-internal" tit
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/flavors/aws_container_registry_flavor.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AWSContainerRegistryFlavor</span><span class="p">(</span><span class="n">BaseContainerRegistryFlavor</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;AWS Container Registry flavor.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;AWS Container Registry flavor.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The name of the flavor.</span>
@@ -3551,7 +3551,7 @@ AWSContainerRegistryFlavor            (<a class="autorefs autorefs-internal" tit
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">AWSContainerRegistryConfig</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Config class for this flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Config class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The config class.</span>
@@ -3560,7 +3560,7 @@ AWSContainerRegistryFlavor            (<a class="autorefs autorefs-internal" tit
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;AWSContainerRegistry&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Implementation class.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>
@@ -3786,7 +3786,7 @@ AWSSecretsManagerConfig            (<a class="autorefs autorefs-internal" title=
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/flavors/aws_secrets_manager_flavor.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AWSSecretsManagerConfig</span><span class="p">(</span><span class="n">BaseSecretsManagerConfig</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Configuration for the AWS Secrets Manager.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Configuration for the AWS Secrets Manager.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        region_name: The region name of the AWS Secrets Manager.</span>
@@ -3802,7 +3802,7 @@ AWSSecretsManagerConfig            (<a class="autorefs autorefs-internal" title=
         <span class="n">scope</span><span class="p">:</span> <span class="s2">&quot;SecretsManagerScope&quot;</span><span class="p">,</span>
         <span class="n">namespace</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Validate the scope and namespace value.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate the scope and namespace value.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            scope: Scope value.</span>
@@ -3860,11 +3860,11 @@ AWSSecretsManagerFlavor            (<a class="autorefs autorefs-internal" title=
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/flavors/aws_secrets_manager_flavor.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AWSSecretsManagerFlavor</span><span class="p">(</span><span class="n">BaseSecretsManagerFlavor</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Class for the `AWSSecretsManagerFlavor`.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class for the `AWSSecretsManagerFlavor`.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Name of the flavor.</span>
@@ -3873,7 +3873,7 @@ AWSSecretsManagerFlavor            (<a class="autorefs autorefs-internal" title=
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">AWSSecretsManagerConfig</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Config class for this flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Config class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Config class for this flavor.</span>
@@ -3882,7 +3882,7 @@ AWSSecretsManagerFlavor            (<a class="autorefs autorefs-internal" title=
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;AWSSecretsManager&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Implementation class.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Implementation class.</span>
@@ -4084,7 +4084,7 @@ scopes.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/flavors/aws_secrets_manager_flavor.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">validate_aws_secret_name_or_namespace</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Validate a secret name or namespace.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate a secret name or namespace.</span>
 
 <span class="sd">    AWS secret names must contain only alphanumeric characters and the</span>
 <span class="sd">    characters /_+=.@-. The `/` character is only used internally to delimit</span>
@@ -4201,7 +4201,7 @@ based on the following format:
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SagemakerOrchestratorConfig</span><span class="p">(</span>  <span class="c1"># type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173</span>
     <span class="n">BaseOrchestratorConfig</span><span class="p">,</span> <span class="n">SagemakerOrchestratorSettings</span>
 <span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Config for the Sagemaker orchestrator.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Config for the Sagemaker orchestrator.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        synchronous: Whether to run the processing job synchronously or</span>
@@ -4219,7 +4219,7 @@ based on the following format:
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_remote</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Checks if this stack component is running remotely.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if this stack component is running remotely.</span>
 
 <span class="sd">        This designation is used to determine if the stack component can be</span>
 <span class="sd">        used with a local ZenML database or if it requires a remote ZenML</span>
@@ -4321,11 +4321,11 @@ SagemakerOrchestratorFlavor            (<a class="autorefs autorefs-internal" ti
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/flavors/sagemaker_orchestrator_flavor.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SagemakerOrchestratorFlavor</span><span class="p">(</span><span class="n">BaseOrchestratorFlavor</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Flavor for the Sagemaker orchestrator.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Flavor for the Sagemaker orchestrator.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The name of the flavor.</span>
@@ -4334,7 +4334,7 @@ SagemakerOrchestratorFlavor            (<a class="autorefs autorefs-internal" ti
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">SagemakerOrchestratorConfig</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns SagemakerOrchestratorConfig config class.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns SagemakerOrchestratorConfig config class.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The config class.</span>
@@ -4343,7 +4343,7 @@ SagemakerOrchestratorFlavor            (<a class="autorefs autorefs-internal" ti
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;SagemakerOrchestrator&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Implementation class.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>
@@ -4552,7 +4552,7 @@ processing job.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/flavors/sagemaker_orchestrator_flavor.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SagemakerOrchestratorSettings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Settings for the Sagemaker orchestrator.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Settings for the Sagemaker orchestrator.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        instance_type: The instance type to use for the processing job.</span>
@@ -4688,7 +4688,7 @@ based on the following format: "sagemaker-{region}-{aws-account-id}".</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SagemakerStepOperatorConfig</span><span class="p">(</span>  <span class="c1"># type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173</span>
     <span class="n">BaseStepOperatorConfig</span><span class="p">,</span> <span class="n">SagemakerStepOperatorSettings</span>
 <span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Config for the Sagemaker step operator.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Config for the Sagemaker step operator.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        role: The role that has to be assigned to the jobs which are</span>
@@ -4703,7 +4703,7 @@ based on the following format: "sagemaker-{region}-{aws-account-id}".</p></td>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_remote</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Checks if this stack component is running remotely.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if this stack component is running remotely.</span>
 
 <span class="sd">        This designation is used to determine if the stack component can be</span>
 <span class="sd">        used with a local ZenML database or if it requires a remote ZenML</span>
@@ -4804,11 +4804,11 @@ SagemakerStepOperatorFlavor            (<a class="autorefs autorefs-internal" ti
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/flavors/sagemaker_step_operator_flavor.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SagemakerStepOperatorFlavor</span><span class="p">(</span><span class="n">BaseStepOperatorFlavor</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Flavor for the Sagemaker step operator.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Flavor for the Sagemaker step operator.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The name of the flavor.</span>
@@ -4817,7 +4817,7 @@ SagemakerStepOperatorFlavor            (<a class="autorefs autorefs-internal" ti
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">SagemakerStepOperatorConfig</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns SagemakerStepOperatorConfig config class.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns SagemakerStepOperatorConfig config class.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The config class.</span>
@@ -4826,7 +4826,7 @@ SagemakerStepOperatorFlavor            (<a class="autorefs autorefs-internal" ti
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;SagemakerStepOperator&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Implementation class.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>
@@ -5022,7 +5022,7 @@ independent.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/flavors/sagemaker_step_operator_flavor.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SagemakerStepOperatorSettings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Settings for the Sagemaker step operator.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Settings for the Sagemaker step operator.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        instance_type: The type of the compute instance where jobs will run.</span>
@@ -5166,11 +5166,11 @@ SagemakerOrchestrator            (<a class="autorefs autorefs-internal" title="z
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/orchestrators/sagemaker_orchestrator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SagemakerOrchestrator</span><span class="p">(</span><span class="n">BaseOrchestrator</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Orchestrator responsible for running pipelines on Sagemaker.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Orchestrator responsible for running pipelines on Sagemaker.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SagemakerOrchestratorConfig</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the `SagemakerOrchestratorConfig` config.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `SagemakerOrchestratorConfig` config.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The configuration.</span>
@@ -5178,7 +5178,7 @@ SagemakerOrchestrator            (<a class="autorefs autorefs-internal" title="z
         <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">SagemakerOrchestratorConfig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">get_orchestrator_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the run id of the active orchestrator run.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the run id of the active orchestrator run.</span>
 
 <span class="sd">        Important: This needs to be a unique ID and return the same value for</span>
 <span class="sd">        all steps of a pipeline run.</span>
@@ -5200,7 +5200,7 @@ SagemakerOrchestrator            (<a class="autorefs autorefs-internal" title="z
     <span class="k">def</span> <span class="nf">prepare_pipeline_deployment</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">,</span> <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Build a Docker image and push it to the container registry.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build a Docker image and push it to the container registry.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            deployment: The pipeline deployment configuration.</span>
@@ -5214,7 +5214,7 @@ SagemakerOrchestrator            (<a class="autorefs autorefs-internal" title="z
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">settings_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseSettings&quot;</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Settings class for the Sagemaker orchestrator.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Settings class for the Sagemaker orchestrator.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The settings class.</span>
@@ -5224,7 +5224,7 @@ SagemakerOrchestrator            (<a class="autorefs autorefs-internal" title="z
     <span class="k">def</span> <span class="nf">prepare_or_run_pipeline</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">,</span> <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Prepares or runs a pipeline on Sagemaker.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Prepares or runs a pipeline on Sagemaker.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            deployment: The deployment to prepare or run.</span>
@@ -5447,7 +5447,7 @@ all steps of a pipeline run.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/orchestrators/sagemaker_orchestrator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_orchestrator_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns the run id of the active orchestrator run.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the run id of the active orchestrator run.</span>
 
 <span class="sd">    Important: This needs to be a unique ID and return the same value for</span>
 <span class="sd">    all steps of a pipeline run.</span>
@@ -5517,7 +5517,7 @@ all steps of a pipeline run.</p>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">prepare_or_run_pipeline</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">,</span> <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Prepares or runs a pipeline on Sagemaker.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Prepares or runs a pipeline on Sagemaker.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        deployment: The deployment to prepare or run.</span>
@@ -5652,7 +5652,7 @@ all steps of a pipeline run.</p>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">prepare_pipeline_deployment</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">,</span> <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Build a Docker image and push it to the container registry.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build a Docker image and push it to the container registry.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        deployment: The pipeline deployment configuration.</span>
@@ -5780,13 +5780,13 @@ AWSSecretsManager            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/secrets_managers/aws_secrets_manager.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AWSSecretsManager</span><span class="p">(</span><span class="n">BaseSecretsManager</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Class to interact with the AWS secrets manager.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class to interact with the AWS secrets manager.&quot;&quot;&quot;</span>
 
     <span class="n">CLIENT</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AWSSecretsManagerConfig</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the `AWSSecretsManagerConfig` config.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `AWSSecretsManagerConfig` config.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The configuration.</span>
@@ -5795,7 +5795,7 @@ AWSSecretsManager            (<a class="autorefs autorefs-internal" title="zenml
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">_ensure_client_connected</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">region_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Ensure that the client is connected to the AWS secrets manager.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Ensure that the client is connected to the AWS secrets manager.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            region_name: the AWS region name</span>
@@ -5810,7 +5810,7 @@ AWSSecretsManager            (<a class="autorefs autorefs-internal" title="zenml
     <span class="k">def</span> <span class="nf">_get_secret_tags</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">secret</span><span class="p">:</span> <span class="n">BaseSecretSchema</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Return a list of AWS secret tag values for a given secret.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a list of AWS secret tag values for a given secret.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            secret: the secret object</span>
@@ -5825,7 +5825,7 @@ AWSSecretsManager            (<a class="autorefs autorefs-internal" title="zenml
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">secret_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Return a list of AWS filters for the entire scope or just a scoped secret.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a list of AWS filters for the entire scope or just a scoped secret.</span>
 
 <span class="sd">        These filters can be used when querying the AWS Secrets Manager</span>
 <span class="sd">        for all secrets or for a single secret available in the configured</span>
@@ -5916,7 +5916,7 @@ AWSSecretsManager            (<a class="autorefs autorefs-internal" title="zenml
         <span class="k">return</span> <span class="n">filters</span>
 
     <span class="k">def</span> <span class="nf">_list_secrets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">secret_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;List all secrets matching a name.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;List all secrets matching a name.</span>
 
 <span class="sd">        This method lists all the secrets in the current scope without loading</span>
 <span class="sd">        their contents. An optional secret name can be supplied to filter out</span>
@@ -5985,7 +5985,7 @@ AWSSecretsManager            (<a class="autorefs autorefs-internal" title="zenml
         <span class="k">return</span> <span class="n">results</span>
 
     <span class="k">def</span> <span class="nf">register_secret</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">secret</span><span class="p">:</span> <span class="n">BaseSecretSchema</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Registers a new secret.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Registers a new secret.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            secret: the secret to register</span>
@@ -6013,7 +6013,7 @@ AWSSecretsManager            (<a class="autorefs autorefs-internal" title="zenml
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Created AWS secret: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;Name&quot;</span><span class="p">])</span>
 
     <span class="k">def</span> <span class="nf">get_secret</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">secret_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseSecretSchema</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Gets a secret.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets a secret.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            secret_name: the name of the secret to get</span>
@@ -6043,7 +6043,7 @@ AWSSecretsManager            (<a class="autorefs autorefs-internal" title="zenml
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">get_all_secret_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Get all secret keys.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all secret keys.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            A list of all secret keys</span>
@@ -6051,7 +6051,7 @@ AWSSecretsManager            (<a class="autorefs autorefs-internal" title="zenml
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_list_secrets</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">update_secret</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">secret</span><span class="p">:</span> <span class="n">BaseSecretSchema</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Update an existing secret.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update an existing secret.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            secret: the secret to update</span>
@@ -6075,7 +6075,7 @@ AWSSecretsManager            (<a class="autorefs autorefs-internal" title="zenml
         <span class="bp">self</span><span class="o">.</span><span class="n">CLIENT</span><span class="o">.</span><span class="n">put_secret_value</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">delete_secret</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">secret_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Delete an existing secret.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Delete an existing secret.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            secret_name: the name of the secret to delete</span>
@@ -6094,7 +6094,7 @@ AWSSecretsManager            (<a class="autorefs autorefs-internal" title="zenml
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">delete_all_secrets</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Delete all existing secrets.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Delete all existing secrets.</span>
 
 <span class="sd">        This method will force delete all your secrets. You will not be able to</span>
 <span class="sd">        recover them once this method is called.</span>
@@ -6178,7 +6178,7 @@ recover them once this method is called.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/secrets_managers/aws_secrets_manager.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">delete_all_secrets</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Delete all existing secrets.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Delete all existing secrets.</span>
 
 <span class="sd">    This method will force delete all your secrets. You will not be able to</span>
 <span class="sd">    recover them once this method is called.</span>
@@ -6248,7 +6248,7 @@ recover them once this method is called.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/secrets_managers/aws_secrets_manager.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">delete_secret</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">secret_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Delete an existing secret.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Delete an existing secret.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        secret_name: the name of the secret to delete</span>
@@ -6305,7 +6305,7 @@ recover them once this method is called.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/secrets_managers/aws_secrets_manager.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_all_secret_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Get all secret keys.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get all secret keys.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of all secret keys</span>
@@ -6385,7 +6385,7 @@ recover them once this method is called.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/secrets_managers/aws_secrets_manager.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_secret</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">secret_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseSecretSchema</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Gets a secret.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets a secret.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        secret_name: the name of the secret to get</span>
@@ -6472,7 +6472,7 @@ recover them once this method is called.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/secrets_managers/aws_secrets_manager.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">register_secret</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">secret</span><span class="p">:</span> <span class="n">BaseSecretSchema</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Registers a new secret.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Registers a new secret.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        secret: the secret to register</span>
@@ -6557,7 +6557,7 @@ recover them once this method is called.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/secrets_managers/aws_secrets_manager.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">update_secret</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">secret</span><span class="p">:</span> <span class="n">BaseSecretSchema</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Update an existing secret.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Update an existing secret.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        secret: the secret to update</span>
@@ -6699,7 +6699,7 @@ to run using Sagemaker's Estimator.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/step_operators/sagemaker_step_operator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SagemakerStepOperator</span><span class="p">(</span><span class="n">BaseStepOperator</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Step operator to run a step on Sagemaker.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Step operator to run a step on Sagemaker.</span>
 
 <span class="sd">    This class defines code that builds an image with the ZenML entrypoint</span>
 <span class="sd">    to run using Sagemaker&#39;s Estimator.</span>
@@ -6707,7 +6707,7 @@ to run using Sagemaker's Estimator.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SagemakerStepOperatorConfig</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the `SagemakerStepOperatorConfig` config.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `SagemakerStepOperatorConfig` config.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The configuration.</span>
@@ -6716,7 +6716,7 @@ to run using Sagemaker's Estimator.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">settings_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseSettings&quot;</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Settings class for the SageMaker step operator.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Settings class for the SageMaker step operator.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The settings class.</span>
@@ -6725,7 +6725,7 @@ to run using Sagemaker's Estimator.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">validator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">StackValidator</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Validates the stack.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validates the stack.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            A validator that checks that the stack contains a remote container</span>
@@ -6768,7 +6768,7 @@ to run using Sagemaker's Estimator.</p>
         <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">,</span>
         <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Build a Docker image and push it to the container registry.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build a Docker image and push it to the container registry.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            deployment: The pipeline deployment configuration.</span>
@@ -6796,7 +6796,7 @@ to run using Sagemaker's Estimator.</p>
         <span class="n">info</span><span class="p">:</span> <span class="s2">&quot;StepRunInfo&quot;</span><span class="p">,</span>
         <span class="n">entrypoint_command</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Launches a step on SageMaker.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Launches a step on SageMaker.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            info: Information about the step run.</span>
@@ -7020,7 +7020,7 @@ registry and a remote artifact store.</p></td>
     <span class="n">info</span><span class="p">:</span> <span class="s2">&quot;StepRunInfo&quot;</span><span class="p">,</span>
     <span class="n">entrypoint_command</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Launches a step on SageMaker.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Launches a step on SageMaker.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        info: Information about the step run.</span>
@@ -7122,7 +7122,7 @@ registry and a remote artifact store.</p></td>
     <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">,</span>
     <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Build a Docker image and push it to the container registry.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build a Docker image and push it to the container registry.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        deployment: The pipeline deployment configuration.</span>

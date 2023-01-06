@@ -1683,7 +1683,7 @@ PlotlyIntegration            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/plotly/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PlotlyIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Definition of Plotly integration for ZenML.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Definition of Plotly integration for ZenML.&quot;&quot;&quot;</span>
 
     <span class="n">NAME</span> <span class="o">=</span> <span class="n">PLOTLY</span>
     <span class="n">REQUIREMENTS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;plotly&gt;=5.4.0&quot;</span><span class="p">]</span>
@@ -1794,13 +1794,13 @@ PipelineLineageVisualizer            (<a class="autorefs autorefs-internal" titl
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/plotly/visualizers/pipeline_lineage_visualizer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PipelineLineageVisualizer</span><span class="p">(</span><span class="n">BaseVisualizer</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Visualize the lineage of runs in a pipeline using plotly.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Visualize the lineage of runs in a pipeline using plotly.&quot;&quot;&quot;</span>
 
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">visualize</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="nb">object</span><span class="p">:</span> <span class="n">PipelineView</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Figure</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Creates a pipeline lineage diagram using plotly.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Creates a pipeline lineage diagram using plotly.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            object: The pipeline view to visualize.</span>
@@ -1921,7 +1921,7 @@ PipelineLineageVisualizer            (<a class="autorefs autorefs-internal" titl
 <span class="k">def</span> <span class="nf">visualize</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="nb">object</span><span class="p">:</span> <span class="n">PipelineView</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Figure</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Creates a pipeline lineage diagram using plotly.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Creates a pipeline lineage diagram using plotly.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        object: The pipeline view to visualize.</span>

@@ -2579,7 +2579,7 @@ directories. It is heavily influenced and inspired by the <code>io</code> module
         <details class="quote">
           <summary>Source code in <code>zenml/io/fileio.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">convert_to_str</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="s2">&quot;PathType&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Converts a &quot;PathType&quot; to a str using UTF-8.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Converts a &quot;PathType&quot; to a str using UTF-8.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to convert.</span>
@@ -2663,7 +2663,7 @@ directories. It is heavily influenced and inspired by the <code>io</code> module
         <details class="quote">
           <summary>Source code in <code>zenml/io/fileio.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="n">src</span><span class="p">:</span> <span class="s2">&quot;PathType&quot;</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="s2">&quot;PathType&quot;</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Copy a file from the source to the destination.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Copy a file from the source to the destination.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        src: The path of the file to copy.</span>
@@ -2730,7 +2730,7 @@ directories. It is heavily influenced and inspired by the <code>io</code> module
         <details class="quote">
           <summary>Source code in <code>zenml/io/fileio.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">create_dir_if_not_exists</span><span class="p">(</span><span class="n">dir_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Creates directory if it does not exist.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Creates directory if it does not exist.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        dir_path: Local path in filesystem.</span>
@@ -2781,7 +2781,7 @@ directories. It is heavily influenced and inspired by the <code>io</code> module
         <details class="quote">
           <summary>Source code in <code>zenml/io/fileio.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">create_dir_recursive_if_not_exists</span><span class="p">(</span><span class="n">dir_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Creates directory recursively if it does not exist.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Creates directory recursively if it does not exist.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        dir_path: Local path in filesystem.</span>
@@ -2840,7 +2840,7 @@ directories. It is heavily influenced and inspired by the <code>io</code> module
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">create_file_if_not_exists</span><span class="p">(</span>
     <span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">file_contents</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Creates file if it does not exist.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Creates file if it does not exist.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        file_path: Local path in filesystem.</span>
@@ -2910,7 +2910,7 @@ directories. It is heavily influenced and inspired by the <code>io</code> module
         <details class="quote">
           <summary>Source code in <code>zenml/io/fileio.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">exists</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="s2">&quot;PathType&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Check whether a given path exists.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check whether a given path exists.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to check.</span>
@@ -2984,7 +2984,7 @@ directories. It is heavily influenced and inspired by the <code>io</code> module
         <details class="quote">
           <summary>Source code in <code>zenml/io/fileio.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">find_files</span><span class="p">(</span><span class="n">dir_path</span><span class="p">:</span> <span class="s2">&quot;PathType&quot;</span><span class="p">,</span> <span class="n">pattern</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Find files in a directory that match pattern.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Find files in a directory that match pattern.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        dir_path: The path to directory.</span>
@@ -3059,7 +3059,7 @@ directories. It is heavily influenced and inspired by the <code>io</code> module
         <details class="quote">
           <summary>Source code in <code>zenml/io/fileio.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_grandparent</span><span class="p">(</span><span class="n">dir_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Get grandparent of dir.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get grandparent of dir.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        dir_path: The path to directory.</span>
@@ -3127,7 +3127,7 @@ directories. It is heavily influenced and inspired by the <code>io</code> module
         <details class="quote">
           <summary>Source code in <code>zenml/io/fileio.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_parent</span><span class="p">(</span><span class="n">dir_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Get parent of dir.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get parent of dir.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        dir_path: The path to directory.</span>
@@ -3195,7 +3195,7 @@ directories. It is heavily influenced and inspired by the <code>io</code> module
         <details class="quote">
           <summary>Source code in <code>zenml/io/fileio.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">glob</span><span class="p">(</span><span class="n">pattern</span><span class="p">:</span> <span class="s2">&quot;PathType&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="s2">&quot;PathType&quot;</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Find all files matching the given pattern.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Find all files matching the given pattern.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        pattern: The pattern to match.</span>
@@ -3263,7 +3263,7 @@ directories. It is heavily influenced and inspired by the <code>io</code> module
         <details class="quote">
           <summary>Source code in <code>zenml/io/fileio.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">is_remote</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns True if path exists remotely.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns True if path exists remotely.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: Any path as a string.</span>
@@ -3331,7 +3331,7 @@ directories. It is heavily influenced and inspired by the <code>io</code> module
         <details class="quote">
           <summary>Source code in <code>zenml/io/fileio.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">is_root</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns true if path has no parent in local filesystem.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns true if path has no parent in local filesystem.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: Local path in filesystem.</span>
@@ -3399,7 +3399,7 @@ directories. It is heavily influenced and inspired by the <code>io</code> module
         <details class="quote">
           <summary>Source code in <code>zenml/io/fileio.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">isdir</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="s2">&quot;PathType&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Check whether the given path is a directory.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check whether the given path is a directory.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to check.</span>
@@ -3473,7 +3473,7 @@ directories. It is heavily influenced and inspired by the <code>io</code> module
         <details class="quote">
           <summary>Source code in <code>zenml/io/fileio.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">listdir</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">only_file_names</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Lists all files in a directory.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Lists all files in a directory.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the directory.</span>
@@ -3536,7 +3536,7 @@ directories. It is heavily influenced and inspired by the <code>io</code> module
         <details class="quote">
           <summary>Source code in <code>zenml/io/fileio.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">makedirs</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="s2">&quot;PathType&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Make a directory at the given path, recursively creating parents.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Make a directory at the given path, recursively creating parents.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the directory.</span>
@@ -3586,7 +3586,7 @@ directories. It is heavily influenced and inspired by the <code>io</code> module
         <details class="quote">
           <summary>Source code in <code>zenml/io/fileio.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">mkdir</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="s2">&quot;PathType&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Make a directory at the given path; parent directory must exist.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Make a directory at the given path; parent directory must exist.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the directory.</span>
@@ -3648,7 +3648,7 @@ directories. It is heavily influenced and inspired by the <code>io</code> module
         <details class="quote">
           <summary>Source code in <code>zenml/io/fileio.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">move</span><span class="p">(</span><span class="n">source</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">destination</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Moves dir or file from source to destination. Can be used to rename.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Moves dir or file from source to destination. Can be used to rename.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        source: Local path to copy from.</span>
@@ -3721,7 +3721,7 @@ directories. It is heavily influenced and inspired by the <code>io</code> module
         <details class="quote">
           <summary>Source code in <code>zenml/io/fileio.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="s2">&quot;PathType&quot;</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>  <span class="c1"># noqa</span>
-    <span class="sd">&quot;&quot;&quot;Opens a file.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Opens a file.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the file.</span>
@@ -3790,7 +3790,7 @@ directories. It is heavily influenced and inspired by the <code>io</code> module
         <details class="quote">
           <summary>Source code in <code>zenml/io/fileio.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">remove</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="s2">&quot;PathType&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Remove the file at the given path. Dangerous operation.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Remove the file at the given path. Dangerous operation.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the file to remove.</span>
@@ -3875,7 +3875,7 @@ the same.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/io/fileio.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">rename</span><span class="p">(</span><span class="n">src</span><span class="p">:</span> <span class="s2">&quot;PathType&quot;</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="s2">&quot;PathType&quot;</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Rename a file.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Rename a file.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        src: The path of the file to rename.</span>
@@ -3956,7 +3956,7 @@ the same.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/io/fileio.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">resolve_relative_path</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Takes relative path and resolves it absolutely.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Takes relative path and resolves it absolutely.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: Local path in filesystem.</span>
@@ -4026,7 +4026,7 @@ the same.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/io/fileio.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">rmtree</span><span class="p">(</span><span class="n">dir_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Deletes a directory recursively. Dangerous operation.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Deletes a directory recursively. Dangerous operation.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        dir_path: The path to the directory to delete.</span>
@@ -4097,7 +4097,7 @@ the same.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/io/fileio.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">stat</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="s2">&quot;PathType&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Get the stat descriptor for a given file path.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the stat descriptor for a given file path.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the file.</span>
@@ -4183,7 +4183,7 @@ and a list of files inside the current directory.</p></td>
     <span class="n">topdown</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">onerror</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="s2">&quot;PathType&quot;</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="s2">&quot;PathType&quot;</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="s2">&quot;PathType&quot;</span><span class="p">]]]:</span>
-    <span class="sd">&quot;&quot;&quot;Return an iterator that walks the contents of the given directory.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return an iterator that walks the contents of the given directory.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        top: The path of directory to walk.</span>
@@ -4263,7 +4263,7 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/filesystem.py</p>
         <details class="quote">
           <summary>Source code in <code>zenml/io/filesystem.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseFilesystem</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Abstract Filesystem base class.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Abstract Filesystem base class.</span>
 
 <span class="sd">    Design inspired by the `Filesystem` abstraction in TFX:</span>
 <span class="sd">    https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/filesystem.py</span>
@@ -4274,7 +4274,7 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/filesystem.py</p>
     <span class="nd">@staticmethod</span>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Opens a file.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Opens a file.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name: The path to the file.</span>
@@ -4287,7 +4287,7 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/filesystem.py</p>
     <span class="nd">@staticmethod</span>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">copyfile</span><span class="p">(</span><span class="n">src</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Copy a file from the source to the destination.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Copy a file from the source to the destination.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            src: The path of the file to copy.</span>
@@ -4302,7 +4302,7 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/filesystem.py</p>
     <span class="nd">@staticmethod</span>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">exists</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Check whether a given path exists.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check whether a given path exists.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            path: The path to check.</span>
@@ -4314,7 +4314,7 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/filesystem.py</p>
     <span class="nd">@staticmethod</span>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">glob</span><span class="p">(</span><span class="n">pattern</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Find all files matching the given pattern.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Find all files matching the given pattern.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            pattern: The pattern to match.</span>
@@ -4326,7 +4326,7 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/filesystem.py</p>
     <span class="nd">@staticmethod</span>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">isdir</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Check whether the given path is a directory.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check whether the given path is a directory.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            path: The path to check.</span>
@@ -4338,7 +4338,7 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/filesystem.py</p>
     <span class="nd">@staticmethod</span>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">listdir</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Lists all files in a directory.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Lists all files in a directory.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            path: The path to the directory.</span>
@@ -4350,7 +4350,7 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/filesystem.py</p>
     <span class="nd">@staticmethod</span>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">makedirs</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Make a directory at the given path, recursively creating parents.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Make a directory at the given path, recursively creating parents.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            path: Path to the directory.</span>
@@ -4359,7 +4359,7 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/filesystem.py</p>
     <span class="nd">@staticmethod</span>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">mkdir</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Make a directory at the given path; parent directory must exist.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Make a directory at the given path; parent directory must exist.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            path: Path to the directory.</span>
@@ -4368,7 +4368,7 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/filesystem.py</p>
     <span class="nd">@staticmethod</span>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">remove</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Remove the file at the given path. Dangerous operation.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove the file at the given path. Dangerous operation.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            path: The path to the file to remove.</span>
@@ -4380,7 +4380,7 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/filesystem.py</p>
     <span class="nd">@staticmethod</span>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">rename</span><span class="p">(</span><span class="n">src</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Rename a file.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Rename a file.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            src: The path of the file to rename.</span>
@@ -4397,7 +4397,7 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/filesystem.py</p>
     <span class="nd">@staticmethod</span>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">rmtree</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Deletes a directory recursively. Dangerous operation.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Deletes a directory recursively. Dangerous operation.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            path: The path to the directory to delete.</span>
@@ -4406,7 +4406,7 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/filesystem.py</p>
     <span class="nd">@staticmethod</span>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">stat</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Get the stat descriptor for a given file path.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the stat descriptor for a given file path.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            path: The path to the file.</span>
@@ -4422,7 +4422,7 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/filesystem.py</p>
         <span class="n">topdown</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">onerror</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">PathType</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]]]:</span>
-        <span class="sd">&quot;&quot;&quot;Return an iterator that walks the contents of the given directory.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return an iterator that walks the contents of the given directory.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            top: The path of directory to walk.</span>
@@ -4518,7 +4518,7 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/filesystem.py</p>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="nd">@abstractmethod</span>
 <span class="k">def</span> <span class="nf">copyfile</span><span class="p">(</span><span class="n">src</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Copy a file from the source to the destination.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Copy a file from the source to the destination.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        src: The path of the file to copy.</span>
@@ -4593,7 +4593,7 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/filesystem.py</p>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="nd">@abstractmethod</span>
 <span class="k">def</span> <span class="nf">exists</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Check whether a given path exists.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check whether a given path exists.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to check.</span>
@@ -4665,7 +4665,7 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/filesystem.py</p>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="nd">@abstractmethod</span>
 <span class="k">def</span> <span class="nf">glob</span><span class="p">(</span><span class="n">pattern</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Find all files matching the given pattern.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Find all files matching the given pattern.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        pattern: The pattern to match.</span>
@@ -4737,7 +4737,7 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/filesystem.py</p>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="nd">@abstractmethod</span>
 <span class="k">def</span> <span class="nf">isdir</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Check whether the given path is a directory.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check whether the given path is a directory.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to check.</span>
@@ -4809,7 +4809,7 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/filesystem.py</p>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="nd">@abstractmethod</span>
 <span class="k">def</span> <span class="nf">listdir</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Lists all files in a directory.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Lists all files in a directory.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the directory.</span>
@@ -4866,7 +4866,7 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/filesystem.py</p>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="nd">@abstractmethod</span>
 <span class="k">def</span> <span class="nf">makedirs</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Make a directory at the given path, recursively creating parents.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Make a directory at the given path, recursively creating parents.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: Path to the directory.</span>
@@ -4920,7 +4920,7 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/filesystem.py</p>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="nd">@abstractmethod</span>
 <span class="k">def</span> <span class="nf">mkdir</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Make a directory at the given path; parent directory must exist.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Make a directory at the given path; parent directory must exist.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: Path to the directory.</span>
@@ -4995,7 +4995,7 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/filesystem.py</p>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="nd">@abstractmethod</span>
 <span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Opens a file.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Opens a file.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: The path to the file.</span>
@@ -5068,7 +5068,7 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/filesystem.py</p>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="nd">@abstractmethod</span>
 <span class="k">def</span> <span class="nf">remove</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Remove the file at the given path. Dangerous operation.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Remove the file at the given path. Dangerous operation.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the file to remove.</span>
@@ -5155,7 +5155,7 @@ and overwrite is not set to <code>True</code>.</p></td>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="nd">@abstractmethod</span>
 <span class="k">def</span> <span class="nf">rename</span><span class="p">(</span><span class="n">src</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Rename a file.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Rename a file.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        src: The path of the file to rename.</span>
@@ -5217,7 +5217,7 @@ and overwrite is not set to <code>True</code>.</p></td>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="nd">@abstractmethod</span>
 <span class="k">def</span> <span class="nf">rmtree</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Deletes a directory recursively. Dangerous operation.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Deletes a directory recursively. Dangerous operation.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the directory to delete.</span>
@@ -5286,7 +5286,7 @@ and overwrite is not set to <code>True</code>.</p></td>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="nd">@abstractmethod</span>
 <span class="k">def</span> <span class="nf">stat</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Get the stat descriptor for a given file path.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the stat descriptor for a given file path.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the file.</span>
@@ -5376,7 +5376,7 @@ and a list of files inside the current directory.</p></td>
     <span class="n">topdown</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">onerror</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">PathType</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]]]:</span>
-    <span class="sd">&quot;&quot;&quot;Return an iterator that walks the contents of the given directory.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return an iterator that walks the contents of the given directory.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        top: The path of directory to walk.</span>
@@ -5464,15 +5464,15 @@ FileIORegistry        </code>
         <details class="quote">
           <summary>Source code in <code>zenml/io/filesystem_registry.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">FileIORegistry</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Registry of pluggable filesystem implementations.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Registry of pluggable filesystem implementations.&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Initialize the registry.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the registry.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_filesystems</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="s2">&quot;PathType&quot;</span><span class="p">,</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseFilesystem&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_registration_lock</span> <span class="o">=</span> <span class="n">Lock</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">register</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filesystem_cls</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseFilesystem&quot;</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Register a filesystem implementation.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Register a filesystem implementation.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            filesystem_cls: Subclass of `zenml.io.filesystem.Filesystem`.</span>
@@ -5494,7 +5494,7 @@ FileIORegistry        </code>
     <span class="k">def</span> <span class="nf">get_filesystem_for_scheme</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">scheme</span><span class="p">:</span> <span class="s2">&quot;PathType&quot;</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseFilesystem&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Get filesystem plugin for given scheme string.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get filesystem plugin for given scheme string.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            scheme: The scheme to get the filesystem for.</span>
@@ -5520,7 +5520,7 @@ FileIORegistry        </code>
     <span class="k">def</span> <span class="nf">get_filesystem_for_path</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="s2">&quot;PathType&quot;</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseFilesystem&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Get filesystem plugin for given path.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get filesystem plugin for given path.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            path: The path to get the filesystem for.</span>
@@ -5580,7 +5580,7 @@ FileIORegistry        </code>
         <details class="quote">
           <summary>Source code in <code>zenml/io/filesystem_registry.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Initialize the registry.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize the registry.&quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_filesystems</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="s2">&quot;PathType&quot;</span><span class="p">,</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseFilesystem&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_registration_lock</span> <span class="o">=</span> <span class="n">Lock</span><span class="p">()</span>
 </code></pre></div>
@@ -5660,7 +5660,7 @@ path.</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_filesystem_for_path</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="s2">&quot;PathType&quot;</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseFilesystem&quot;</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Get filesystem plugin for given path.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get filesystem plugin for given path.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to get the filesystem for.</span>
@@ -5762,7 +5762,7 @@ scheme.</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_filesystem_for_scheme</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">scheme</span><span class="p">:</span> <span class="s2">&quot;PathType&quot;</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseFilesystem&quot;</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Get filesystem plugin for given scheme string.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get filesystem plugin for given scheme string.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        scheme: The scheme to get the filesystem for.</span>
@@ -5828,7 +5828,7 @@ scheme.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/io/filesystem_registry.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">register</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filesystem_cls</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseFilesystem&quot;</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Register a filesystem implementation.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Register a filesystem implementation.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        filesystem_cls: Subclass of `zenml.io.filesystem.Filesystem`.</span>
@@ -5923,7 +5923,7 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/plugins/local.py</p>
         <details class="quote">
           <summary>Source code in <code>zenml/io/local_filesystem.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">LocalFilesystem</span><span class="p">(</span><span class="n">BaseFilesystem</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Filesystem that uses local file operations.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Filesystem that uses local file operations.</span>
 
 <span class="sd">    Implementation inspired by TFX:</span>
 <span class="sd">    https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/plugins/local.py</span>
@@ -5933,7 +5933,7 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/plugins/local.py</p>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Open a file at the given path.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Open a file at the given path.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name: The path to the file.</span>
@@ -5946,7 +5946,7 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/plugins/local.py</p>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">copyfile</span><span class="p">(</span><span class="n">src</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Copy a file from the source to the destination.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Copy a file from the source to the destination.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            src: The source path.</span>
@@ -5966,7 +5966,7 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/plugins/local.py</p>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">exists</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns `True` if the given path exists.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns `True` if the given path exists.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            path: The path to check.</span>
@@ -5978,7 +5978,7 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/plugins/local.py</p>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">glob</span><span class="p">(</span><span class="n">pattern</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Return the paths that match a glob pattern.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the paths that match a glob pattern.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            pattern: The glob pattern.</span>
@@ -5990,7 +5990,7 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/plugins/local.py</p>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">isdir</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns whether the given path points to a directory.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns whether the given path points to a directory.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            path: The path to check.</span>
@@ -6002,7 +6002,7 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/plugins/local.py</p>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">listdir</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns a list of files under a given directory in the filesystem.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns a list of files under a given directory in the filesystem.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            path: The path to the directory.</span>
@@ -6014,7 +6014,7 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/plugins/local.py</p>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">makedirs</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Make a directory at the given path, recursively creating parents.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Make a directory at the given path, recursively creating parents.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            path: The path to the directory.</span>
@@ -6023,7 +6023,7 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/plugins/local.py</p>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">mkdir</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Make a directory at the given path; parent directory must exist.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Make a directory at the given path; parent directory must exist.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            path: The path to the directory.</span>
@@ -6032,7 +6032,7 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/plugins/local.py</p>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">remove</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Remove the file at the given path. Dangerous operation.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove the file at the given path. Dangerous operation.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            path: The path to the file.</span>
@@ -6041,7 +6041,7 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/plugins/local.py</p>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">rename</span><span class="p">(</span><span class="n">src</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Rename source file to destination file.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Rename source file to destination file.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            src: The path of the file to rename.</span>
@@ -6062,7 +6062,7 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/plugins/local.py</p>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">rmtree</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Deletes dir recursively. Dangerous operation.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Deletes dir recursively. Dangerous operation.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            path: The path to the directory.</span>
@@ -6071,7 +6071,7 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/plugins/local.py</p>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">stat</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Return the stat descriptor for a given file path.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the stat descriptor for a given file path.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            path: The path to the file.</span>
@@ -6087,7 +6087,7 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/plugins/local.py</p>
         <span class="n">topdown</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">onerror</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">PathType</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]]]:</span>
-        <span class="sd">&quot;&quot;&quot;Return an iterator that walks the contents of the given directory.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return an iterator that walks the contents of the given directory.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            top: Path of directory to walk.</span>
@@ -6187,7 +6187,7 @@ False.</p></td>
           <summary>Source code in <code>zenml/io/local_filesystem.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span> <span class="nf">copyfile</span><span class="p">(</span><span class="n">src</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Copy a file from the source to the destination.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Copy a file from the source to the destination.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        src: The source path.</span>
@@ -6267,7 +6267,7 @@ False.</p></td>
           <summary>Source code in <code>zenml/io/local_filesystem.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span> <span class="nf">exists</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns `True` if the given path exists.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns `True` if the given path exists.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to check.</span>
@@ -6339,7 +6339,7 @@ False.</p></td>
           <summary>Source code in <code>zenml/io/local_filesystem.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span> <span class="nf">glob</span><span class="p">(</span><span class="n">pattern</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Return the paths that match a glob pattern.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the paths that match a glob pattern.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        pattern: The glob pattern.</span>
@@ -6411,7 +6411,7 @@ False.</p></td>
           <summary>Source code in <code>zenml/io/local_filesystem.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span> <span class="nf">isdir</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns whether the given path points to a directory.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns whether the given path points to a directory.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to check.</span>
@@ -6483,7 +6483,7 @@ False.</p></td>
           <summary>Source code in <code>zenml/io/local_filesystem.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span> <span class="nf">listdir</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Returns a list of files under a given directory in the filesystem.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a list of files under a given directory in the filesystem.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the directory.</span>
@@ -6540,7 +6540,7 @@ False.</p></td>
           <summary>Source code in <code>zenml/io/local_filesystem.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span> <span class="nf">makedirs</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Make a directory at the given path, recursively creating parents.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Make a directory at the given path, recursively creating parents.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the directory.</span>
@@ -6594,7 +6594,7 @@ False.</p></td>
           <summary>Source code in <code>zenml/io/local_filesystem.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span> <span class="nf">mkdir</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Make a directory at the given path; parent directory must exist.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Make a directory at the given path; parent directory must exist.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the directory.</span>
@@ -6669,7 +6669,7 @@ False.</p></td>
           <summary>Source code in <code>zenml/io/local_filesystem.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Open a file at the given path.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Open a file at the given path.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: The path to the file.</span>
@@ -6727,7 +6727,7 @@ False.</p></td>
           <summary>Source code in <code>zenml/io/local_filesystem.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span> <span class="nf">remove</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Remove the file at the given path. Dangerous operation.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Remove the file at the given path. Dangerous operation.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the file.</span>
@@ -6810,7 +6810,7 @@ False.</p></td>
           <summary>Source code in <code>zenml/io/local_filesystem.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span> <span class="nf">rename</span><span class="p">(</span><span class="n">src</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Rename source file to destination file.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Rename source file to destination file.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        src: The path of the file to rename.</span>
@@ -6876,7 +6876,7 @@ False.</p></td>
           <summary>Source code in <code>zenml/io/local_filesystem.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span> <span class="nf">rmtree</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Deletes dir recursively. Dangerous operation.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Deletes dir recursively. Dangerous operation.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the directory.</span>
@@ -6945,7 +6945,7 @@ False.</p></td>
           <summary>Source code in <code>zenml/io/local_filesystem.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span> <span class="nf">stat</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Return the stat descriptor for a given file path.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the stat descriptor for a given file path.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the file.</span>
@@ -7036,7 +7036,7 @@ directory.</p></td>
     <span class="n">topdown</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">onerror</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">PathType</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]]]:</span>
-    <span class="sd">&quot;&quot;&quot;Return an iterator that walks the contents of the given directory.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return an iterator that walks the contents of the given directory.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        top: Path of directory to walk.</span>

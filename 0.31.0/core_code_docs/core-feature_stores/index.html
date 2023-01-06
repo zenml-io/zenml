@@ -1791,11 +1791,11 @@ BaseFeatureStore            (<a class="autorefs autorefs-internal" title="zenml.
         <details class="quote">
           <summary>Source code in <code>zenml/feature_stores/base_feature_store.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseFeatureStore</span><span class="p">(</span><span class="n">StackComponent</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base class for all ZenML feature stores.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for all ZenML feature stores.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseFeatureStoreConfig</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the `BaseFeatureStoreConfig` config.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `BaseFeatureStoreConfig` config.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The configuration.</span>
@@ -1809,7 +1809,7 @@ BaseFeatureStore            (<a class="autorefs autorefs-internal" title="zenml.
         <span class="n">features</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
         <span class="n">full_feature_names</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the historical features for training or batch scoring.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the historical features for training or batch scoring.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            entity_df: The entity DataFrame or entity name.</span>
@@ -1827,7 +1827,7 @@ BaseFeatureStore            (<a class="autorefs autorefs-internal" title="zenml.
         <span class="n">features</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
         <span class="n">full_feature_names</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the latest online feature data.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the latest online feature data.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            entity_rows: The entity rows to retrieve.</span>
@@ -1959,7 +1959,7 @@ BaseFeatureStore            (<a class="autorefs autorefs-internal" title="zenml.
     <span class="n">features</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
     <span class="n">full_feature_names</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns the historical features for training or batch scoring.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the historical features for training or batch scoring.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        entity_df: The entity DataFrame or entity name.</span>
@@ -2046,7 +2046,7 @@ BaseFeatureStore            (<a class="autorefs autorefs-internal" title="zenml.
     <span class="n">features</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
     <span class="n">full_feature_names</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Returns the latest online feature data.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the latest online feature data.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        entity_rows: The entity rows to retrieve.</span>
@@ -2097,7 +2097,7 @@ BaseFeatureStoreConfig            (<a class="autorefs autorefs-internal" title="
         <details class="quote">
           <summary>Source code in <code>zenml/feature_stores/base_feature_store.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseFeatureStoreConfig</span><span class="p">(</span><span class="n">StackComponentConfig</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base config for feature stores.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base config for feature stores.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
 
@@ -2146,11 +2146,11 @@ BaseFeatureStoreFlavor            (<a class="autorefs autorefs-internal" title="
         <details class="quote">
           <summary>Source code in <code>zenml/feature_stores/base_feature_store.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseFeatureStoreFlavor</span><span class="p">(</span><span class="n">Flavor</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base class for all ZenML feature store flavors.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for all ZenML feature store flavors.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StackComponentType</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the flavor type.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the flavor type.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The flavor type.</span>
@@ -2159,7 +2159,7 @@ BaseFeatureStoreFlavor            (<a class="autorefs autorefs-internal" title="
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseFeatureStoreConfig</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Config class for this flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Config class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The config class.</span>
@@ -2169,7 +2169,7 @@ BaseFeatureStoreFlavor            (<a class="autorefs autorefs-internal" title="
     <span class="nd">@property</span>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseFeatureStore</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Implementation class.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>

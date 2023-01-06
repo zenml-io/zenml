@@ -1803,7 +1803,7 @@ TensorflowIntegration            (<a class="autorefs autorefs-internal" title="z
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/tensorflow/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">TensorflowIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Definition of Tensorflow integration for ZenML.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Definition of Tensorflow integration for ZenML.&quot;&quot;&quot;</span>
 
     <span class="n">NAME</span> <span class="o">=</span> <span class="n">TENSORFLOW</span>
     <span class="n">REQUIREMENTS</span> <span class="o">=</span> <span class="p">[</span>
@@ -1814,7 +1814,7 @@ TensorflowIntegration            (<a class="autorefs autorefs-internal" title="z
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Activates the integration.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Activates the integration.&quot;&quot;&quot;</span>
         <span class="c1"># need to import this explicitly to load the Tensorflow file IO support</span>
         <span class="c1"># for S3 and other file systems</span>
         <span class="kn">import</span> <span class="nn">tensorflow_io</span>  <span class="c1"># type: ignore [import]</span>
@@ -1858,7 +1858,7 @@ TensorflowIntegration            (<a class="autorefs autorefs-internal" title="z
           <summary>Source code in <code>zenml/integrations/tensorflow/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span> <span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Activates the integration.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Activates the integration.&quot;&quot;&quot;</span>
     <span class="c1"># need to import this explicitly to load the Tensorflow file IO support</span>
     <span class="c1"># for S3 and other file systems</span>
     <span class="kn">import</span> <span class="nn">tensorflow_io</span>  <span class="c1"># type: ignore [import]</span>
@@ -1961,13 +1961,13 @@ KerasMaterializer            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/tensorflow/materializers/keras_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">KerasMaterializer</span><span class="p">(</span><span class="n">BaseMaterializer</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Materializer to read/write Keras models.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Materializer to read/write Keras models.&quot;&quot;&quot;</span>
 
     <span class="n">ASSOCIATED_TYPES</span> <span class="o">=</span> <span class="p">(</span><span class="n">keras</span><span class="o">.</span><span class="n">Model</span><span class="p">,)</span>
     <span class="n">ASSOCIATED_ARTIFACT_TYPE</span> <span class="o">=</span> <span class="n">ArtifactType</span><span class="o">.</span><span class="n">MODEL</span>
 
     <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">keras</span><span class="o">.</span><span class="n">Model</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Reads and returns a Keras model after copying it to temporary path.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reads and returns a Keras model after copying it to temporary path.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            data_type: The type of the data to read.</span>
@@ -1992,7 +1992,7 @@ KerasMaterializer            (<a class="autorefs autorefs-internal" title="zenml
         <span class="k">return</span> <span class="n">model</span>
 
     <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">keras</span><span class="o">.</span><span class="n">Model</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Writes a keras model to the artifact store.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Writes a keras model to the artifact store.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            model: A tf.keras.Model model.</span>
@@ -2074,7 +2074,7 @@ KerasMaterializer            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/tensorflow/materializers/keras_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">keras</span><span class="o">.</span><span class="n">Model</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Reads and returns a Keras model after copying it to temporary path.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reads and returns a Keras model after copying it to temporary path.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        data_type: The type of the data to read.</span>
@@ -2141,7 +2141,7 @@ KerasMaterializer            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/tensorflow/materializers/keras_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">keras</span><span class="o">.</span><span class="n">Model</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Writes a keras model to the artifact store.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Writes a keras model to the artifact store.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        model: A tf.keras.Model model.</span>
@@ -2231,13 +2231,13 @@ TensorflowDatasetMaterializer            (<a class="autorefs autorefs-internal" 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/tensorflow/materializers/tf_dataset_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">TensorflowDatasetMaterializer</span><span class="p">(</span><span class="n">BaseMaterializer</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Materializer to read data to and from tf.data.Dataset.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Materializer to read data to and from tf.data.Dataset.&quot;&quot;&quot;</span>
 
     <span class="n">ASSOCIATED_TYPES</span> <span class="o">=</span> <span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,)</span>
     <span class="n">ASSOCIATED_ARTIFACT_TYPE</span> <span class="o">=</span> <span class="n">ArtifactType</span><span class="o">.</span><span class="n">DATA</span>
 
     <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Reads data into tf.data.Dataset.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reads data into tf.data.Dataset.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            data_type: The type of the data to read.</span>
@@ -2255,7 +2255,7 @@ TensorflowDatasetMaterializer            (<a class="autorefs autorefs-internal" 
         <span class="k">return</span> <span class="n">dataset</span>
 
     <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">tf</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">Dataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Persists a tf.data.Dataset object.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Persists a tf.data.Dataset object.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            dataset: The dataset to persist.</span>
@@ -2338,7 +2338,7 @@ TensorflowDatasetMaterializer            (<a class="autorefs autorefs-internal" 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/tensorflow/materializers/tf_dataset_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Reads data into tf.data.Dataset.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reads data into tf.data.Dataset.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        data_type: The type of the data to read.</span>
@@ -2398,7 +2398,7 @@ TensorflowDatasetMaterializer            (<a class="autorefs autorefs-internal" 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/tensorflow/materializers/tf_dataset_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">tf</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">Dataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Persists a tf.data.Dataset object.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Persists a tf.data.Dataset object.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        dataset: The dataset to persist.</span>

@@ -2191,11 +2191,11 @@ BaseArtifactStore            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/artifact_stores/base_artifact_store.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseArtifactStore</span><span class="p">(</span><span class="n">StackComponent</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base class for all ZenML artifact stores.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for all ZenML artifact stores.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseArtifactStoreConfig</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the `BaseArtifactStoreConfig` config.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `BaseArtifactStoreConfig` config.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The configuration.</span>
@@ -2204,7 +2204,7 @@ BaseArtifactStore            (<a class="autorefs autorefs-internal" title="zenml
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;The path to the artifact store.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The path to the artifact store.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The path.</span>
@@ -2214,7 +2214,7 @@ BaseArtifactStore            (<a class="autorefs autorefs-internal" title="zenml
     <span class="c1"># --- User interface ---</span>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Open a file at the given path.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Open a file at the given path.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name: The path of the file to open.</span>
@@ -2228,7 +2228,7 @@ BaseArtifactStore            (<a class="autorefs autorefs-internal" title="zenml
     <span class="k">def</span> <span class="nf">copyfile</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">src</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Copy a file from the source to the destination.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Copy a file from the source to the destination.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            src: The source path.</span>
@@ -2238,7 +2238,7 @@ BaseArtifactStore            (<a class="autorefs autorefs-internal" title="zenml
 
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Checks if a path exists.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if a path exists.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            path: The path to check.</span>
@@ -2249,7 +2249,7 @@ BaseArtifactStore            (<a class="autorefs autorefs-internal" title="zenml
 
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">glob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pattern</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Gets the paths that match a glob pattern.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets the paths that match a glob pattern.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            pattern: The glob pattern.</span>
@@ -2260,7 +2260,7 @@ BaseArtifactStore            (<a class="autorefs autorefs-internal" title="zenml
 
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">isdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns whether the given path points to a directory.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns whether the given path points to a directory.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            path: The path to check.</span>
@@ -2271,7 +2271,7 @@ BaseArtifactStore            (<a class="autorefs autorefs-internal" title="zenml
 
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">listdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns a list of files under a given directory in the filesystem.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns a list of files under a given directory in the filesystem.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            path: The path to list.</span>
@@ -2282,7 +2282,7 @@ BaseArtifactStore            (<a class="autorefs autorefs-internal" title="zenml
 
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Make a directory at the given path, recursively creating parents.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Make a directory at the given path, recursively creating parents.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            path: The path to create.</span>
@@ -2290,7 +2290,7 @@ BaseArtifactStore            (<a class="autorefs autorefs-internal" title="zenml
 
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">mkdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Make a directory at the given path; parent directory must exist.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Make a directory at the given path; parent directory must exist.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            path: The path to create.</span>
@@ -2298,7 +2298,7 @@ BaseArtifactStore            (<a class="autorefs autorefs-internal" title="zenml
 
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Remove the file at the given path. Dangerous operation.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove the file at the given path. Dangerous operation.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            path: The path to remove.</span>
@@ -2308,7 +2308,7 @@ BaseArtifactStore            (<a class="autorefs autorefs-internal" title="zenml
     <span class="k">def</span> <span class="nf">rename</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">src</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Rename source file to destination file.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Rename source file to destination file.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            src: The source path.</span>
@@ -2318,7 +2318,7 @@ BaseArtifactStore            (<a class="autorefs autorefs-internal" title="zenml
 
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">rmtree</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Deletes dir recursively. Dangerous operation.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Deletes dir recursively. Dangerous operation.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            path: The path to delete.</span>
@@ -2326,7 +2326,7 @@ BaseArtifactStore            (<a class="autorefs autorefs-internal" title="zenml
 
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">stat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Return the stat descriptor for a given file path.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the stat descriptor for a given file path.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            path: The path to check.</span>
@@ -2342,7 +2342,7 @@ BaseArtifactStore            (<a class="autorefs autorefs-internal" title="zenml
         <span class="n">topdown</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">onerror</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">PathType</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]]]:</span>
-        <span class="sd">&quot;&quot;&quot;Return an iterator that walks the contents of the given directory.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return an iterator that walks the contents of the given directory.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            top: The path to walk.</span>
@@ -2355,7 +2355,7 @@ BaseArtifactStore            (<a class="autorefs autorefs-internal" title="zenml
 
     <span class="c1"># --- Internal interface ---</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Initiate the Pydantic object and register the corresponding filesystem.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initiate the Pydantic object and register the corresponding filesystem.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            *args: The positional arguments to pass to the Pydantic object.</span>
@@ -2365,7 +2365,7 @@ BaseArtifactStore            (<a class="autorefs autorefs-internal" title="zenml
         <span class="bp">self</span><span class="o">.</span><span class="n">_register</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">_register</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Create and register a filesystem within the filesystem registry.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create and register a filesystem within the filesystem registry.&quot;&quot;&quot;</span>
         <span class="kn">from</span> <span class="nn">zenml.io.filesystem</span> <span class="kn">import</span> <span class="n">BaseFilesystem</span>
         <span class="kn">from</span> <span class="nn">zenml.io.filesystem_registry</span> <span class="kn">import</span> <span class="n">default_filesystem_registry</span>
         <span class="kn">from</span> <span class="nn">zenml.io.local_filesystem</span> <span class="kn">import</span> <span class="n">LocalFilesystem</span>
@@ -2532,7 +2532,7 @@ BaseArtifactStore            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/artifact_stores/base_artifact_store.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Initiate the Pydantic object and register the corresponding filesystem.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initiate the Pydantic object and register the corresponding filesystem.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        *args: The positional arguments to pass to the Pydantic object.</span>
@@ -2599,7 +2599,7 @@ BaseArtifactStore            (<a class="autorefs autorefs-internal" title="zenml
 <span class="k">def</span> <span class="nf">copyfile</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">src</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Copy a file from the source to the destination.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Copy a file from the source to the destination.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        src: The source path.</span>
@@ -2666,7 +2666,7 @@ BaseArtifactStore            (<a class="autorefs autorefs-internal" title="zenml
           <summary>Source code in <code>zenml/artifact_stores/base_artifact_store.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span> <span class="nf">exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Checks if a path exists.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks if a path exists.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to check.</span>
@@ -2734,7 +2734,7 @@ BaseArtifactStore            (<a class="autorefs autorefs-internal" title="zenml
           <summary>Source code in <code>zenml/artifact_stores/base_artifact_store.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span> <span class="nf">glob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pattern</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Gets the paths that match a glob pattern.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets the paths that match a glob pattern.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        pattern: The glob pattern.</span>
@@ -2802,7 +2802,7 @@ BaseArtifactStore            (<a class="autorefs autorefs-internal" title="zenml
           <summary>Source code in <code>zenml/artifact_stores/base_artifact_store.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span> <span class="nf">isdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns whether the given path points to a directory.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns whether the given path points to a directory.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to check.</span>
@@ -2870,7 +2870,7 @@ BaseArtifactStore            (<a class="autorefs autorefs-internal" title="zenml
           <summary>Source code in <code>zenml/artifact_stores/base_artifact_store.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span> <span class="nf">listdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Returns a list of files under a given directory in the filesystem.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a list of files under a given directory in the filesystem.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to list.</span>
@@ -2923,7 +2923,7 @@ BaseArtifactStore            (<a class="autorefs autorefs-internal" title="zenml
           <summary>Source code in <code>zenml/artifact_stores/base_artifact_store.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span> <span class="nf">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Make a directory at the given path, recursively creating parents.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Make a directory at the given path, recursively creating parents.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to create.</span>
@@ -2973,7 +2973,7 @@ BaseArtifactStore            (<a class="autorefs autorefs-internal" title="zenml
           <summary>Source code in <code>zenml/artifact_stores/base_artifact_store.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span> <span class="nf">mkdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Make a directory at the given path; parent directory must exist.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Make a directory at the given path; parent directory must exist.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to create.</span>
@@ -3044,7 +3044,7 @@ BaseArtifactStore            (<a class="autorefs autorefs-internal" title="zenml
           <summary>Source code in <code>zenml/artifact_stores/base_artifact_store.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Open a file at the given path.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Open a file at the given path.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: The path of the file to open.</span>
@@ -3098,7 +3098,7 @@ BaseArtifactStore            (<a class="autorefs autorefs-internal" title="zenml
           <summary>Source code in <code>zenml/artifact_stores/base_artifact_store.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span> <span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Remove the file at the given path. Dangerous operation.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Remove the file at the given path. Dangerous operation.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to remove.</span>
@@ -3162,7 +3162,7 @@ BaseArtifactStore            (<a class="autorefs autorefs-internal" title="zenml
 <span class="k">def</span> <span class="nf">rename</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">src</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Rename source file to destination file.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Rename source file to destination file.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        src: The source path.</span>
@@ -3214,7 +3214,7 @@ BaseArtifactStore            (<a class="autorefs autorefs-internal" title="zenml
           <summary>Source code in <code>zenml/artifact_stores/base_artifact_store.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span> <span class="nf">rmtree</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Deletes dir recursively. Dangerous operation.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Deletes dir recursively. Dangerous operation.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to delete.</span>
@@ -3279,7 +3279,7 @@ BaseArtifactStore            (<a class="autorefs autorefs-internal" title="zenml
           <summary>Source code in <code>zenml/artifact_stores/base_artifact_store.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span> <span class="nf">stat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Return the stat descriptor for a given file path.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the stat descriptor for a given file path.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to check.</span>
@@ -3364,7 +3364,7 @@ BaseArtifactStore            (<a class="autorefs autorefs-internal" title="zenml
     <span class="n">topdown</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">onerror</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">PathType</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]]]:</span>
-    <span class="sd">&quot;&quot;&quot;Return an iterator that walks the contents of the given directory.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return an iterator that walks the contents of the given directory.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        top: The path to walk.</span>
@@ -3415,7 +3415,7 @@ BaseArtifactStoreConfig            (<a class="autorefs autorefs-internal" title=
         <details class="quote">
           <summary>Source code in <code>zenml/artifact_stores/base_artifact_store.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseArtifactStoreConfig</span><span class="p">(</span><span class="n">StackComponentConfig</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Config class for `BaseArtifactStore`.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Config class for `BaseArtifactStore`.&quot;&quot;&quot;</span>
 
     <span class="n">path</span><span class="p">:</span> <span class="nb">str</span>
 
@@ -3423,7 +3423,7 @@ BaseArtifactStoreConfig            (<a class="autorefs autorefs-internal" title=
 
     <span class="nd">@root_validator</span><span class="p">(</span><span class="n">skip_on_failure</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">_ensure_artifact_store</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">values</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Validator function for the Artifact Stores.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validator function for the Artifact Stores.</span>
 
 <span class="sd">        Checks whether supported schemes are defined and the given path is</span>
 <span class="sd">        supported.</span>
@@ -3442,7 +3442,7 @@ BaseArtifactStoreConfig            (<a class="autorefs autorefs-internal" title=
         <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">ArtifactStoreInterfaceError</span><span class="p">(</span>
                 <span class="n">textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span>
-                    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">                    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">                    When you are working with any classes which subclass from</span>
 <span class="sd">                    zenml.artifact_store.BaseArtifactStore please make sure</span>
 <span class="sd">                    that your class has a ClassVar named `SUPPORTED_SCHEMES`</span>
@@ -3517,11 +3517,11 @@ BaseArtifactStoreFlavor            (<a class="autorefs autorefs-internal" title=
         <details class="quote">
           <summary>Source code in <code>zenml/artifact_stores/base_artifact_store.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseArtifactStoreFlavor</span><span class="p">(</span><span class="n">Flavor</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base class for artifact store flavors.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for artifact store flavors.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StackComponentType</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the flavor type.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the flavor type.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The flavor type.</span>
@@ -3530,7 +3530,7 @@ BaseArtifactStoreFlavor            (<a class="autorefs autorefs-internal" title=
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">StackComponentConfig</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Config class for this flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Config class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The config class.</span>
@@ -3540,7 +3540,7 @@ BaseArtifactStoreFlavor            (<a class="autorefs autorefs-internal" title=
     <span class="nd">@property</span>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseArtifactStore&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Implementation class.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>
@@ -3746,7 +3746,7 @@ LocalArtifactStore            (<a class="autorefs autorefs-internal" title="zenm
         <details class="quote">
           <summary>Source code in <code>zenml/artifact_stores/local_artifact_store.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">LocalArtifactStore</span><span class="p">(</span><span class="n">LocalFilesystem</span><span class="p">,</span> <span class="n">BaseArtifactStore</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Artifact Store for local artifacts.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Artifact Store for local artifacts.</span>
 
 <span class="sd">    All methods are inherited from the default `LocalFilesystem`.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -3755,7 +3755,7 @@ LocalArtifactStore            (<a class="autorefs autorefs-internal" title="zenm
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">get_default_local_path</span><span class="p">(</span><span class="n">id_</span><span class="p">:</span> <span class="s2">&quot;UUID&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the default local path for a local artifact store.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the default local path for a local artifact store.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            id_: The id of the local artifact store.</span>
@@ -3770,7 +3770,7 @@ LocalArtifactStore            (<a class="autorefs autorefs-internal" title="zenm
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the path to the local artifact store.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the path to the local artifact store.</span>
 
 <span class="sd">        If the user has not defined a path in the config, this will create a</span>
 <span class="sd">        sub-folder in the global config directory.</span>
@@ -3790,7 +3790,7 @@ LocalArtifactStore            (<a class="autorefs autorefs-internal" title="zenm
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">local_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the local path of the artifact store.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the local path of the artifact store.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The local path of the artifact store.</span>
@@ -3944,7 +3944,7 @@ sub-folder in the global config directory.</p>
           <summary>Source code in <code>zenml/artifact_stores/local_artifact_store.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span> <span class="nf">get_default_local_path</span><span class="p">(</span><span class="n">id_</span><span class="p">:</span> <span class="s2">&quot;UUID&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns the default local path for a local artifact store.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the default local path for a local artifact store.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        id_: The id of the local artifact store.</span>
@@ -4014,7 +4014,7 @@ LocalArtifactStoreConfig            (<a class="autorefs autorefs-internal" title
         <details class="quote">
           <summary>Source code in <code>zenml/artifact_stores/local_artifact_store.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">LocalArtifactStoreConfig</span><span class="p">(</span><span class="n">BaseArtifactStoreConfig</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Config class for the local artifact store.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Config class for the local artifact store.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        path: The path to the local artifact store.</span>
@@ -4026,7 +4026,7 @@ LocalArtifactStoreConfig            (<a class="autorefs autorefs-internal" title
 
     <span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;path&quot;</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">ensure_path_local</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Pydantic validator which ensures that the given path is a local path.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Pydantic validator which ensures that the given path is a local path.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            path: The path to validate.</span>
@@ -4047,7 +4047,7 @@ LocalArtifactStoreConfig            (<a class="autorefs autorefs-internal" title
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_local</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Checks if this stack component is running locally.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if this stack component is running locally.</span>
 
 <span class="sd">        This designation is used to determine if the stack component can be</span>
 <span class="sd">        shared with other users or if it is only usable on the local host.</span>
@@ -4185,7 +4185,7 @@ shared with other users or if it is only usable on the local host.</p>
           <summary>Source code in <code>zenml/artifact_stores/local_artifact_store.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;path&quot;</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">ensure_path_local</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Pydantic validator which ensures that the given path is a local path.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Pydantic validator which ensures that the given path is a local path.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to validate.</span>
@@ -4241,11 +4241,11 @@ LocalArtifactStoreFlavor            (<a class="autorefs autorefs-internal" title
         <details class="quote">
           <summary>Source code in <code>zenml/artifact_stores/local_artifact_store.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">LocalArtifactStoreFlavor</span><span class="p">(</span><span class="n">BaseArtifactStoreFlavor</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Class for the `LocalArtifactStoreFlavor`.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class for the `LocalArtifactStoreFlavor`.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the name of the artifact store flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the name of the artifact store flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            str: The name of the artifact store flavor.</span>
@@ -4254,7 +4254,7 @@ LocalArtifactStoreFlavor            (<a class="autorefs autorefs-internal" title
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">LocalArtifactStoreConfig</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Config class for this flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Config class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The config class.</span>
@@ -4263,7 +4263,7 @@ LocalArtifactStoreFlavor            (<a class="autorefs autorefs-internal" title
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">LocalArtifactStore</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Implementation class.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>

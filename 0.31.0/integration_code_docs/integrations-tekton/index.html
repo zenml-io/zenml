@@ -2125,14 +2125,14 @@ TektonIntegration            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/tekton/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">TektonIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Definition of Tekton Integration for ZenML.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Definition of Tekton Integration for ZenML.&quot;&quot;&quot;</span>
 
     <span class="n">NAME</span> <span class="o">=</span> <span class="n">TEKTON</span>
     <span class="n">REQUIREMENTS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;kfp-tekton==1.4.1&quot;</span><span class="p">]</span>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Tekton integration.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Tekton integration.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            List of stack component flavors for this integration.</span>
@@ -2193,7 +2193,7 @@ TektonIntegration            (<a class="autorefs autorefs-internal" title="zenml
           <summary>Source code in <code>zenml/integrations/tekton/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
-    <span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Tekton integration.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Tekton integration.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        List of stack component flavors for this integration.</span>
@@ -2340,7 +2340,7 @@ daemon will be skipped.</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">TektonOrchestratorConfig</span><span class="p">(</span>  <span class="c1"># type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173</span>
     <span class="n">BaseOrchestratorConfig</span><span class="p">,</span> <span class="n">TektonOrchestratorSettings</span>
 <span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Configuration for the Tekton orchestrator.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Configuration for the Tekton orchestrator.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        kubernetes_context: Name of a kubernetes context to run</span>
@@ -2359,7 +2359,7 @@ daemon will be skipped.</p></td>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_remote</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Checks if this stack component is running remotely.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if this stack component is running remotely.</span>
 
 <span class="sd">        This designation is used to determine if the stack component can be</span>
 <span class="sd">        used with a local ZenML database or if it requires a remote ZenML</span>
@@ -2462,11 +2462,11 @@ TektonOrchestratorFlavor            (<a class="autorefs autorefs-internal" title
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/tekton/flavors/tekton_orchestrator_flavor.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">TektonOrchestratorFlavor</span><span class="p">(</span><span class="n">BaseOrchestratorFlavor</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Flavor for the Tekton orchestrator.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Flavor for the Tekton orchestrator.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Name of the orchestrator flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the orchestrator flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Name of the orchestrator flavor.</span>
@@ -2475,7 +2475,7 @@ TektonOrchestratorFlavor            (<a class="autorefs autorefs-internal" title
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">TektonOrchestratorConfig</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns `TektonOrchestratorConfig` config class.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns `TektonOrchestratorConfig` config class.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">                The config class.</span>
@@ -2484,7 +2484,7 @@ TektonOrchestratorFlavor            (<a class="autorefs autorefs-internal" title
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;TektonOrchestrator&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Implementation class for this flavor.</span>
@@ -2671,7 +2671,7 @@ TektonOrchestratorSettings            (<a class="autorefs autorefs-internal" tit
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/tekton/flavors/tekton_orchestrator_flavor.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">TektonOrchestratorSettings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Settings for the Tekton orchestrator.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Settings for the Tekton orchestrator.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        pod_settings: Pod settings to apply.</span>
@@ -2806,11 +2806,11 @@ TektonOrchestrator            (<a class="autorefs autorefs-internal" title="zenm
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/tekton/orchestrators/tekton_orchestrator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">TektonOrchestrator</span><span class="p">(</span><span class="n">BaseOrchestrator</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Orchestrator responsible for running pipelines using Tekton.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Orchestrator responsible for running pipelines using Tekton.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TektonOrchestratorConfig</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the `TektonOrchestratorConfig` config.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `TektonOrchestratorConfig` config.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The configuration.</span>
@@ -2819,7 +2819,7 @@ TektonOrchestrator            (<a class="autorefs autorefs-internal" title="zenm
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">settings_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseSettings&quot;</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Settings class for the Tekton orchestrator.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Settings class for the Tekton orchestrator.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The settings class.</span>
@@ -2827,7 +2827,7 @@ TektonOrchestrator            (<a class="autorefs autorefs-internal" title="zenm
         <span class="k">return</span> <span class="n">TektonOrchestratorSettings</span>
 
     <span class="k">def</span> <span class="nf">get_kubernetes_contexts</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Get the list of configured Kubernetes contexts and the active context.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the list of configured Kubernetes contexts and the active context.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            A tuple containing the list of configured Kubernetes contexts and</span>
@@ -2844,7 +2844,7 @@ TektonOrchestrator            (<a class="autorefs autorefs-internal" title="zenm
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">validator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">StackValidator</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Ensures a stack with only remote components and a container registry.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Ensures a stack with only remote components and a container registry.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            A `StackValidator` instance.</span>
@@ -2919,7 +2919,7 @@ TektonOrchestrator            (<a class="autorefs autorefs-internal" title="zenm
         <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">,</span>
         <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Build a Docker image and push it to the container registry.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build a Docker image and push it to the container registry.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            deployment: The pipeline deployment configuration.</span>
@@ -2936,7 +2936,7 @@ TektonOrchestrator            (<a class="autorefs autorefs-internal" title="zenm
         <span class="n">container_op</span><span class="p">:</span> <span class="n">dsl</span><span class="o">.</span><span class="n">ContainerOp</span><span class="p">,</span>
         <span class="n">resource_settings</span><span class="p">:</span> <span class="s2">&quot;ResourceSettings&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Adds resource requirements to the container.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Adds resource requirements to the container.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            container_op: The container operation to configure.</span>
@@ -2962,7 +2962,7 @@ TektonOrchestrator            (<a class="autorefs autorefs-internal" title="zenm
         <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">,</span>
         <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Runs the pipeline on Tekton.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Runs the pipeline on Tekton.</span>
 
 <span class="sd">        This function first compiles the ZenML pipeline into a Tekton yaml</span>
 <span class="sd">        and then applies this configuration to run the pipeline.</span>
@@ -2991,7 +2991,7 @@ TektonOrchestrator            (<a class="autorefs autorefs-internal" title="zenm
         <span class="p">)</span>
 
         <span class="k">def</span> <span class="nf">_construct_kfp_pipeline</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="sd">&quot;&quot;&quot;Create a container_op for each step.</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Create a container_op for each step.</span>
 
 <span class="sd">            This should contain the name of the docker image and configures the</span>
 <span class="sd">            entrypoint of the docker image to run the step.</span>
@@ -3111,7 +3111,7 @@ TektonOrchestrator            (<a class="autorefs autorefs-internal" title="zenm
             <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">get_orchestrator_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the active orchestrator run id.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the active orchestrator run id.</span>
 
 <span class="sd">        Raises:</span>
 <span class="sd">            RuntimeError: If the environment variable specifying the run id</span>
@@ -3130,7 +3130,7 @@ TektonOrchestrator            (<a class="autorefs autorefs-internal" title="zenm
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">root_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns path to the root directory for all files concerning this orchestrator.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns path to the root directory for all files concerning this orchestrator.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Path to the root directory.</span>
@@ -3143,7 +3143,7 @@ TektonOrchestrator            (<a class="autorefs autorefs-internal" title="zenm
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">pipeline_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Path to a directory in which the Tekton pipeline files are stored.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Path to a directory in which the Tekton pipeline files are stored.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Path to the pipeline directory.</span>
@@ -3152,7 +3152,7 @@ TektonOrchestrator            (<a class="autorefs autorefs-internal" title="zenm
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">_pid_file_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns path to the daemon PID file.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns path to the daemon PID file.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Path to the daemon PID file.</span>
@@ -3161,7 +3161,7 @@ TektonOrchestrator            (<a class="autorefs autorefs-internal" title="zenm
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">log_file</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Path of the daemon log file.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Path of the daemon log file.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Path of the daemon log file.</span>
@@ -3170,7 +3170,7 @@ TektonOrchestrator            (<a class="autorefs autorefs-internal" title="zenm
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_provisioned</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns if a local k3d cluster for this orchestrator exists.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns if a local k3d cluster for this orchestrator exists.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            True if a local k3d cluster exists, False otherwise.</span>
@@ -3179,7 +3179,7 @@ TektonOrchestrator            (<a class="autorefs autorefs-internal" title="zenm
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_running</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Checks if the local UI daemon is running.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if the local UI daemon is running.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            True if the local UI daemon for this orchestrator is running.</span>
@@ -3195,11 +3195,11 @@ TektonOrchestrator            (<a class="autorefs autorefs-internal" title="zenm
             <span class="k">return</span> <span class="kc">True</span>
 
     <span class="k">def</span> <span class="nf">provision</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Provisions resources for the orchestrator.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Provisions resources for the orchestrator.&quot;&quot;&quot;</span>
         <span class="n">fileio</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root_directory</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">deprovision</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Deprovisions the orchestrator resources.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Deprovisions the orchestrator resources.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_running</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">suspend</span><span class="p">()</span>
 
@@ -3207,7 +3207,7 @@ TektonOrchestrator            (<a class="autorefs autorefs-internal" title="zenm
             <span class="n">fileio</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_file</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">resume</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Starts the UI forwarding daemon if necessary.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Starts the UI forwarding daemon if necessary.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_running</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Tekton UI forwarding is already running.&quot;</span><span class="p">)</span>
             <span class="k">return</span>
@@ -3215,7 +3215,7 @@ TektonOrchestrator            (<a class="autorefs autorefs-internal" title="zenm
         <span class="bp">self</span><span class="o">.</span><span class="n">start_ui_daemon</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">suspend</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Stops the UI forwarding daemon if it&#39;s running.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Stops the UI forwarding daemon if it&#39;s running.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_running</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Tekton UI forwarding not running.&quot;</span><span class="p">)</span>
             <span class="k">return</span>
@@ -3223,7 +3223,7 @@ TektonOrchestrator            (<a class="autorefs autorefs-internal" title="zenm
         <span class="bp">self</span><span class="o">.</span><span class="n">stop_ui_daemon</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">start_ui_daemon</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Starts the UI forwarding daemon if possible.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Starts the UI forwarding daemon if possible.&quot;&quot;&quot;</span>
         <span class="n">port</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">tekton_ui_port</span>
         <span class="k">if</span> <span class="p">(</span>
             <span class="n">port</span> <span class="o">==</span> <span class="n">DEFAULT_TEKTON_UI_PORT</span>
@@ -3269,7 +3269,7 @@ TektonOrchestrator            (<a class="autorefs autorefs-internal" title="zenm
             <span class="kn">from</span> <span class="nn">zenml.utils</span> <span class="kn">import</span> <span class="n">daemon</span>
 
             <span class="k">def</span> <span class="nf">_daemon_function</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="sd">&quot;&quot;&quot;Port-forwards the Tekton UI pod.&quot;&quot;&quot;</span>
+<span class="w">                </span><span class="sd">&quot;&quot;&quot;Port-forwards the Tekton UI pod.&quot;&quot;&quot;</span>
                 <span class="n">subprocess</span><span class="o">.</span><span class="n">check_call</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
 
             <span class="n">daemon</span><span class="o">.</span><span class="n">run_as_daemon</span><span class="p">(</span>
@@ -3286,7 +3286,7 @@ TektonOrchestrator            (<a class="autorefs autorefs-internal" title="zenm
             <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">stop_ui_daemon</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Stops the UI forwarding daemon if it&#39;s running.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Stops the UI forwarding daemon if it&#39;s running.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">fileio</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pid_file_path</span><span class="p">):</span>
             <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="o">==</span> <span class="s2">&quot;win32&quot;</span><span class="p">:</span>
                 <span class="c1"># Daemon functionality is not supported on Windows, so the PID</span>
@@ -3635,7 +3635,7 @@ TektonOrchestrator            (<a class="autorefs autorefs-internal" title="zenm
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/tekton/orchestrators/tekton_orchestrator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">deprovision</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Deprovisions the orchestrator resources.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Deprovisions the orchestrator resources.&quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_running</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">suspend</span><span class="p">()</span>
 
@@ -3682,7 +3682,7 @@ the active context.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/tekton/orchestrators/tekton_orchestrator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_kubernetes_contexts</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
-    <span class="sd">&quot;&quot;&quot;Get the list of configured Kubernetes contexts and the active context.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the list of configured Kubernetes contexts and the active context.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A tuple containing the list of configured Kubernetes contexts and</span>
@@ -3752,7 +3752,7 @@ is not set.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/tekton/orchestrators/tekton_orchestrator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_orchestrator_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns the active orchestrator run id.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the active orchestrator run id.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        RuntimeError: If the environment variable specifying the run id</span>
@@ -3839,7 +3839,7 @@ and then applies this configuration to run the pipeline.</p>
     <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">,</span>
     <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Runs the pipeline on Tekton.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Runs the pipeline on Tekton.</span>
 
 <span class="sd">    This function first compiles the ZenML pipeline into a Tekton yaml</span>
 <span class="sd">    and then applies this configuration to run the pipeline.</span>
@@ -3868,7 +3868,7 @@ and then applies this configuration to run the pipeline.</p>
     <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_construct_kfp_pipeline</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Create a container_op for each step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a container_op for each step.</span>
 
 <span class="sd">        This should contain the name of the docker image and configures the</span>
 <span class="sd">        entrypoint of the docker image to run the step.</span>
@@ -4040,7 +4040,7 @@ and then applies this configuration to run the pipeline.</p>
     <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">,</span>
     <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Build a Docker image and push it to the container registry.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build a Docker image and push it to the container registry.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        deployment: The pipeline deployment configuration.</span>
@@ -4076,7 +4076,7 @@ and then applies this configuration to run the pipeline.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/tekton/orchestrators/tekton_orchestrator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">provision</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Provisions resources for the orchestrator.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Provisions resources for the orchestrator.&quot;&quot;&quot;</span>
     <span class="n">fileio</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root_directory</span><span class="p">)</span>
 </code></pre></div>
         </details>
@@ -4103,7 +4103,7 @@ and then applies this configuration to run the pipeline.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/tekton/orchestrators/tekton_orchestrator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">resume</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Starts the UI forwarding daemon if necessary.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Starts the UI forwarding daemon if necessary.&quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_running</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Tekton UI forwarding is already running.&quot;</span><span class="p">)</span>
         <span class="k">return</span>
@@ -4134,7 +4134,7 @@ and then applies this configuration to run the pipeline.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/tekton/orchestrators/tekton_orchestrator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">start_ui_daemon</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Starts the UI forwarding daemon if possible.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Starts the UI forwarding daemon if possible.&quot;&quot;&quot;</span>
     <span class="n">port</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">tekton_ui_port</span>
     <span class="k">if</span> <span class="p">(</span>
         <span class="n">port</span> <span class="o">==</span> <span class="n">DEFAULT_TEKTON_UI_PORT</span>
@@ -4180,7 +4180,7 @@ and then applies this configuration to run the pipeline.</p>
         <span class="kn">from</span> <span class="nn">zenml.utils</span> <span class="kn">import</span> <span class="n">daemon</span>
 
         <span class="k">def</span> <span class="nf">_daemon_function</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="sd">&quot;&quot;&quot;Port-forwards the Tekton UI pod.&quot;&quot;&quot;</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Port-forwards the Tekton UI pod.&quot;&quot;&quot;</span>
             <span class="n">subprocess</span><span class="o">.</span><span class="n">check_call</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
 
         <span class="n">daemon</span><span class="o">.</span><span class="n">run_as_daemon</span><span class="p">(</span>
@@ -4220,7 +4220,7 @@ and then applies this configuration to run the pipeline.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/tekton/orchestrators/tekton_orchestrator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">stop_ui_daemon</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Stops the UI forwarding daemon if it&#39;s running.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Stops the UI forwarding daemon if it&#39;s running.&quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">fileio</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pid_file_path</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="o">==</span> <span class="s2">&quot;win32&quot;</span><span class="p">:</span>
             <span class="c1"># Daemon functionality is not supported on Windows, so the PID</span>
@@ -4258,7 +4258,7 @@ and then applies this configuration to run the pipeline.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/tekton/orchestrators/tekton_orchestrator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">suspend</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Stops the UI forwarding daemon if it&#39;s running.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Stops the UI forwarding daemon if it&#39;s running.&quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_running</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Tekton UI forwarding not running.&quot;</span><span class="p">)</span>
         <span class="k">return</span>

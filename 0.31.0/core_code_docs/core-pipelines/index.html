@@ -1967,7 +1967,7 @@ pipeline.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/base_pipeline.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BasePipeline</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">BasePipelineMeta</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Abstract base class for all ZenML pipelines.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Abstract base class for all ZenML pipelines.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        name: The name of this pipeline.</span>
@@ -1980,7 +1980,7 @@ pipeline.</p></td>
     <span class="n">INSTANCE_CONFIGURATION</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Initialize the BasePipeline.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the BasePipeline.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            *args: The steps to be executed by this pipeline.</span>
@@ -1999,7 +1999,7 @@ pipeline.</p></td>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;The name of the pipeline.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The name of the pipeline.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The name of the pipeline.</span>
@@ -2008,7 +2008,7 @@ pipeline.</p></td>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">enable_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;If caching is enabled for the pipeline.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;If caching is enabled for the pipeline.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            If caching is enabled for the pipeline.</span>
@@ -2017,7 +2017,7 @@ pipeline.</p></td>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">configuration</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PipelineConfiguration</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;The configuration of the pipeline.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The configuration of the pipeline.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The configuration of the pipeline.</span>
@@ -2026,7 +2026,7 @@ pipeline.</p></td>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">steps</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">BaseStep</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns a dictionary of pipeline steps.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns a dictionary of pipeline steps.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            A dictionary of pipeline steps.</span>
@@ -2040,7 +2040,7 @@ pipeline.</p></td>
         <span class="n">extra</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">merge</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Configures the pipeline.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Configures the pipeline.</span>
 
 <span class="sd">        Configuration merging example:</span>
 <span class="sd">        * `merge==True`:</span>
@@ -2077,7 +2077,7 @@ pipeline.</p></td>
         <span class="k">return</span> <span class="bp">self</span>
 
     <span class="k">def</span> <span class="nf">_apply_class_configuration</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Applies the configurations specified on the pipeline class.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Applies the configurations specified on the pipeline class.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            options: Class configurations.</span>
@@ -2087,7 +2087,7 @@ pipeline.</p></td>
         <span class="bp">self</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">settings</span><span class="o">=</span><span class="n">settings</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="n">extra</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_verify_steps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">steps</span><span class="p">:</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="o">**</span><span class="n">kw_steps</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Verifies the initialization args and kwargs of this pipeline.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Verifies the initialization args and kwargs of this pipeline.</span>
 
 <span class="sd">        This method makes sure that no missing/unexpected arguments or</span>
 <span class="sd">        arguments of a wrong type are passed when creating a pipeline. If</span>
@@ -2106,14 +2106,14 @@ pipeline.</p></td>
             <span class="k">raise</span> <span class="n">PipelineInterfaceError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;Too many input steps for pipeline &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;. &quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;This pipeline expects </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">input_step_keys</span><span class="p">)</span><span class="si">}</span><span class="s2"> step(s) &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;but got </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">steps</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">kw_steps</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;but got </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">steps</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nb">len</span><span class="p">(</span><span class="n">kw_steps</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
             <span class="p">)</span>
 
         <span class="n">combined_steps</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="n">step_ids</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
 
         <span class="k">def</span> <span class="nf">_verify_step</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">step</span><span class="p">:</span> <span class="n">BaseStep</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="sd">&quot;&quot;&quot;Verifies a single step of the pipeline.</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Verifies a single step of the pipeline.</span>
 
 <span class="sd">            Args:</span>
 <span class="sd">                key: The key of the step.</span>
@@ -2202,7 +2202,7 @@ pipeline.</p></td>
 
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">BaseStep</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Function that connects inputs and outputs of the pipeline steps.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Function that connects inputs and outputs of the pipeline steps.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            *args: The positional arguments passed to the pipeline.</span>
@@ -2218,7 +2218,7 @@ pipeline.</p></td>
         <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">,</span>
         <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the pipeline deployment metadata.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the pipeline deployment metadata.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            deployment: The pipeline deployment to track.</span>
@@ -2259,7 +2259,7 @@ pipeline.</p></td>
         <span class="n">config_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">unlisted</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Runs the pipeline on the active stack of the current repository.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Runs the pipeline on the active stack of the current repository.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            run_name: Name of the pipeline run.</span>
@@ -2389,7 +2389,7 @@ pipeline.</p></td>
         <span class="n">config</span><span class="p">:</span> <span class="n">PipelineConfigurationUpdate</span><span class="p">,</span>
         <span class="n">merge</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Applies an update to the pipeline configuration.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Applies an update to the pipeline configuration.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            config: The configuration update.</span>
@@ -2406,7 +2406,7 @@ pipeline.</p></td>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_validate_configuration</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">PipelineConfigurationUpdate</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Validates a configuration update.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validates a configuration update.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            config: The configuration update to validate.</span>
@@ -2416,7 +2416,7 @@ pipeline.</p></td>
     <span class="k">def</span> <span class="nf">with_config</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">:</span> <span class="n">T</span><span class="p">,</span> <span class="n">config_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">overwrite_step_parameters</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;DEPRECATED: Configures this pipeline using a yaml file.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;DEPRECATED: Configures this pipeline using a yaml file.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            config_file: Path to a yaml file which contains configuration</span>
@@ -2449,7 +2449,7 @@ pipeline.</p></td>
     <span class="k">def</span> <span class="nf">_read_config_steps</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">steps</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Reads and sets step parameters from a config file.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reads and sets step parameters from a config file.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            steps: Maps step names to dicts of parameter names and values.</span>
@@ -2483,7 +2483,7 @@ pipeline.</p></td>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">get_runs</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="s2">&quot;PipelineRunView&quot;</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Get all past runs from the associated PipelineView.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all past runs from the associated PipelineView.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            A list of all past PipelineRunViews.</span>
@@ -2507,7 +2507,7 @@ pipeline.</p></td>
     <span class="k">def</span> <span class="nf">write_run_configuration_template</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">stack</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;Stack&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Writes a run configuration yaml template.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Writes a run configuration yaml template.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            path: The path where the template will be written.</span>
@@ -2774,7 +2774,7 @@ pipeline.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/base_pipeline.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Initialize the BasePipeline.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize the BasePipeline.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        *args: The steps to be executed by this pipeline.</span>
@@ -2886,7 +2886,7 @@ method for an example.</p></td>
     <span class="n">extra</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">merge</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Configures the pipeline.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Configures the pipeline.</span>
 
 <span class="sd">    Configuration merging example:</span>
 <span class="sd">    * `merge==True`:</span>
@@ -2987,7 +2987,7 @@ method for an example.</p></td>
           <summary>Source code in <code>zenml/pipelines/base_pipeline.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span> <span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">BaseStep</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Function that connects inputs and outputs of the pipeline steps.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Function that connects inputs and outputs of the pipeline steps.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        *args: The positional arguments passed to the pipeline.</span>
@@ -3057,7 +3057,7 @@ of the current pipeline.</p></td>
           <summary>Source code in <code>zenml/pipelines/base_pipeline.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span> <span class="nf">get_runs</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="s2">&quot;PipelineRunView&quot;</span><span class="p">]]:</span>
-    <span class="sd">&quot;&quot;&quot;Get all past runs from the associated PipelineView.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get all past runs from the associated PipelineView.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of all past PipelineRunViews.</span>
@@ -3196,7 +3196,7 @@ to any pipeline).</p></td>
     <span class="n">config_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">unlisted</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Runs the pipeline on the active stack of the current repository.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Runs the pipeline on the active stack of the current repository.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        run_name: Name of the pipeline run.</span>
@@ -3392,7 +3392,7 @@ passed in code.</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">with_config</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">:</span> <span class="n">T</span><span class="p">,</span> <span class="n">config_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">overwrite_step_parameters</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;DEPRECATED: Configures this pipeline using a yaml file.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;DEPRECATED: Configures this pipeline using a yaml file.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        config_file: Path to a yaml file which contains configuration</span>
@@ -3474,7 +3474,7 @@ not given, the active stack will be used.</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">write_run_configuration_template</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">stack</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;Stack&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Writes a run configuration yaml template.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Writes a run configuration yaml template.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path where the template will be written.</span>
@@ -3565,12 +3565,12 @@ BasePipelineMeta            (<span title="type">type</span>)
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/base_pipeline.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BasePipelineMeta</span><span class="p">(</span><span class="nb">type</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Pipeline Metaclass responsible for validating the pipeline definition.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Pipeline Metaclass responsible for validating the pipeline definition.&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__new__</span><span class="p">(</span>
         <span class="n">mcs</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">bases</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="o">...</span><span class="p">],</span> <span class="n">dct</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BasePipelineMeta&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Saves argument names for later verification purposes.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Saves argument names for later verification purposes.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name: The name of the class.</span>
@@ -3681,7 +3681,7 @@ BasePipelineMeta            (<span title="type">type</span>)
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__new__</span><span class="p">(</span>
     <span class="n">mcs</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">bases</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="o">...</span><span class="p">],</span> <span class="n">dct</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BasePipelineMeta&quot;</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Saves argument names for later verification purposes.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Saves argument names for later verification purposes.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: The name of the class.</span>
@@ -3851,7 +3851,7 @@ ZenML BasePipeline</p></td>
     <span class="n">settings</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;SettingsOrDict&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">extra</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">BasePipeline</span><span class="p">],</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">F</span><span class="p">],</span> <span class="n">Type</span><span class="p">[</span><span class="n">BasePipeline</span><span class="p">]]]:</span>
-    <span class="sd">&quot;&quot;&quot;Outer decorator function for the creation of a ZenML pipeline.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Outer decorator function for the creation of a ZenML pipeline.</span>
 
 <span class="sd">    In order to be able to work with parameters such as &quot;name&quot;, it features a</span>
 <span class="sd">    nested decorator structure.</span>
@@ -3870,7 +3870,7 @@ ZenML BasePipeline</p></td>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">inner_decorator</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">F</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BasePipeline</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Inner decorator function for the creation of a ZenML pipeline.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Inner decorator function for the creation of a ZenML pipeline.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            func: types.FunctionType, this function will be used as the</span>
@@ -4005,7 +4005,7 @@ ZenML BasePipeline</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/run_pipeline.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">run_pipeline</span><span class="p">(</span><span class="n">python_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">config_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Runs pipeline specified by the given config YAML object.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Runs pipeline specified by the given config YAML object.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        python_file: Path to the python file that defines the pipeline.</span>
@@ -4066,7 +4066,7 @@ ZenML BasePipeline</p></td>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">materializers_config</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
                 <span class="n">correct_input</span> <span class="o">=</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">                </span><span class="si">{</span><span class="n">SourceConfigurationKeys</span><span class="o">.</span><span class="n">NAME_</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">materializers_config</span><span class="si">}</span><span class="s2"></span>
+<span class="s2">                </span><span class="si">{</span><span class="n">SourceConfigurationKeys</span><span class="o">.</span><span class="n">NAME_</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">materializers_config</span><span class="si">}</span>
 <span class="s2">                </span><span class="si">{</span><span class="n">SourceConfigurationKeys</span><span class="o">.</span><span class="n">FILE_</span><span class="si">}</span><span class="s2">: optional/filepath.py</span>
 <span class="s2">                &quot;&quot;&quot;</span>
                 <span class="p">)</span>

@@ -3559,7 +3559,7 @@ ArtifactBaseModel            (<span title="pydantic.main.BaseModel">BaseModel</s
         <details class="quote">
           <summary>Source code in <code>zenml/models/artifact_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ArtifactBaseModel</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base model for artifacts.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base model for artifacts.&quot;&quot;&quot;</span>
 
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Name of the output in the parent step.&quot;</span><span class="p">,</span>
@@ -3635,7 +3635,7 @@ ArtifactRequestModel            (<a class="autorefs autorefs-internal" title="ze
         <details class="quote">
           <summary>Source code in <code>zenml/models/artifact_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ArtifactRequestModel</span><span class="p">(</span><span class="n">ArtifactBaseModel</span><span class="p">,</span> <span class="n">ProjectScopedRequestModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Request model for artifacts.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Request model for artifacts.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
 
@@ -3686,7 +3686,7 @@ ArtifactResponseModel            (<a class="autorefs autorefs-internal" title="z
         <details class="quote">
           <summary>Source code in <code>zenml/models/artifact_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ArtifactResponseModel</span><span class="p">(</span><span class="n">ArtifactBaseModel</span><span class="p">,</span> <span class="n">ProjectScopedResponseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Response model for artifacts.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Response model for artifacts.&quot;&quot;&quot;</span>
 
     <span class="n">producer_step_run_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UUID</span><span class="p">]</span>
 </code></pre></div>
@@ -3740,7 +3740,7 @@ ArtifactUpdateModel            (<a class="autorefs autorefs-internal" title="zen
         <details class="quote">
           <summary>Source code in <code>zenml/models/artifact_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ArtifactUpdateModel</span><span class="p">(</span><span class="n">ArtifactRequestModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Update model for artifacts.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Update model for artifacts.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
 
@@ -3830,7 +3830,7 @@ BaseRequestModel            (<a class="autorefs autorefs-internal" title="zenml.
         <details class="quote">
           <summary>Source code in <code>zenml/models/base_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseRequestModel</span><span class="p">(</span><span class="n">AnalyticsTrackedModelMixin</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base request model.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base request model.</span>
 
 <span class="sd">    Used as a base class for all request models.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -3890,7 +3890,7 @@ characteristics:</p>
         <details class="quote">
           <summary>Source code in <code>zenml/models/base_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseResponseModel</span><span class="p">(</span><span class="n">AnalyticsTrackedModelMixin</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base domain model.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base domain model.</span>
 
 <span class="sd">    Used as a base class for all domain models that have the following common</span>
 <span class="sd">    characteristics:</span>
@@ -3905,7 +3905,7 @@ characteristics:</p>
     <span class="n">updated</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;Time when this resource was last updated.&quot;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Implementation of hash magic method.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation of hash magic method.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Hash of the UUID.</span>
@@ -3913,7 +3913,7 @@ characteristics:</p>
         <span class="k">return</span> <span class="nb">hash</span><span class="p">((</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">),)</span> <span class="o">+</span> <span class="nb">tuple</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">]))</span>
 
     <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Implementation of equality magic method.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation of equality magic method.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            other: The other object to compare to.</span>
@@ -3927,7 +3927,7 @@ characteristics:</p>
             <span class="k">return</span> <span class="kc">False</span>
 
     <span class="k">def</span> <span class="nf">get_analytics_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Fetches the analytics metadata for base response models.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Fetches the analytics metadata for base response models.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The analytics metadata.</span>
@@ -4008,7 +4008,7 @@ characteristics:</p>
         <details class="quote">
           <summary>Source code in <code>zenml/models/base_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Implementation of equality magic method.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Implementation of equality magic method.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        other: The other object to compare to.</span>
@@ -4063,7 +4063,7 @@ characteristics:</p>
         <details class="quote">
           <summary>Source code in <code>zenml/models/base_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Implementation of hash magic method.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Implementation of hash magic method.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Hash of the UUID.</span>
@@ -4110,7 +4110,7 @@ characteristics:</p>
         <details class="quote">
           <summary>Source code in <code>zenml/models/base_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_analytics_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Fetches the analytics metadata for base response models.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fetches the analytics metadata for base response models.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The analytics metadata.</span>
@@ -4160,7 +4160,7 @@ ProjectScopedRequestModel            (<a class="autorefs autorefs-internal" titl
         <details class="quote">
           <summary>Source code in <code>zenml/models/base_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ProjectScopedRequestModel</span><span class="p">(</span><span class="n">UserScopedRequestModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base project-scoped request domain model.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base project-scoped request domain model.</span>
 
 <span class="sd">    Used as a base class for all domain models that are project-scoped.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -4168,7 +4168,7 @@ ProjectScopedRequestModel            (<a class="autorefs autorefs-internal" titl
     <span class="n">project</span><span class="p">:</span> <span class="n">UUID</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;The project to which this resource belongs.&quot;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">get_analytics_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Fetches the analytics metadata for project scoped models.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Fetches the analytics metadata for project scoped models.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The analytics metadata.</span>
@@ -4226,7 +4226,7 @@ ProjectScopedRequestModel            (<a class="autorefs autorefs-internal" titl
         <details class="quote">
           <summary>Source code in <code>zenml/models/base_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_analytics_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Fetches the analytics metadata for project scoped models.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fetches the analytics metadata for project scoped models.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The analytics metadata.</span>
@@ -4276,7 +4276,7 @@ ProjectScopedResponseModel            (<a class="autorefs autorefs-internal" tit
         <details class="quote">
           <summary>Source code in <code>zenml/models/base_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ProjectScopedResponseModel</span><span class="p">(</span><span class="n">UserScopedResponseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base project-scoped domain model.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base project-scoped domain model.</span>
 
 <span class="sd">    Used as a base class for all domain models that are project-scoped.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -4286,7 +4286,7 @@ ProjectScopedResponseModel            (<a class="autorefs autorefs-internal" tit
     <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">get_analytics_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Fetches the analytics metadata for project scoped models.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Fetches the analytics metadata for project scoped models.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The analytics metadata.</span>
@@ -4345,7 +4345,7 @@ ProjectScopedResponseModel            (<a class="autorefs autorefs-internal" tit
         <details class="quote">
           <summary>Source code in <code>zenml/models/base_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_analytics_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Fetches the analytics metadata for project scoped models.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fetches the analytics metadata for project scoped models.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The analytics metadata.</span>
@@ -4396,7 +4396,7 @@ shareable.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/models/base_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ShareableRequestModel</span><span class="p">(</span><span class="n">ProjectScopedRequestModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base shareable project-scoped domain model.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base shareable project-scoped domain model.</span>
 
 <span class="sd">    Used as a base class for all domain models that are project-scoped and are</span>
 <span class="sd">    shareable.</span>
@@ -4411,7 +4411,7 @@ shareable.</p>
     <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">get_analytics_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Fetches the analytics metadata for project scoped models.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Fetches the analytics metadata for project scoped models.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The analytics metadata.</span>
@@ -4469,7 +4469,7 @@ shareable.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/models/base_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_analytics_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Fetches the analytics metadata for project scoped models.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fetches the analytics metadata for project scoped models.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The analytics metadata.</span>
@@ -4520,7 +4520,7 @@ shareable.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/models/base_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ShareableResponseModel</span><span class="p">(</span><span class="n">ProjectScopedResponseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base shareable project-scoped domain model.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base shareable project-scoped domain model.</span>
 
 <span class="sd">    Used as a base class for all domain models that are project-scoped and are</span>
 <span class="sd">    shareable.</span>
@@ -4534,7 +4534,7 @@ shareable.</p>
     <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">get_analytics_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Fetches the analytics metadata for project scoped models.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Fetches the analytics metadata for project scoped models.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The analytics metadata.</span>
@@ -4593,7 +4593,7 @@ shareable.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/models/base_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_analytics_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Fetches the analytics metadata for project scoped models.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fetches the analytics metadata for project scoped models.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The analytics metadata.</span>
@@ -4643,7 +4643,7 @@ UserScopedRequestModel            (<a class="autorefs autorefs-internal" title="
         <details class="quote">
           <summary>Source code in <code>zenml/models/base_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">UserScopedRequestModel</span><span class="p">(</span><span class="n">BaseRequestModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base user-owned request model.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base user-owned request model.</span>
 
 <span class="sd">    Used as a base class for all domain models that are &quot;owned&quot; by a user.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -4651,7 +4651,7 @@ UserScopedRequestModel            (<a class="autorefs autorefs-internal" title="
     <span class="n">user</span><span class="p">:</span> <span class="n">UUID</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;The id of the user that created this resource.&quot;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">get_analytics_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Fetches the analytics metadata for user scoped models.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Fetches the analytics metadata for user scoped models.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The analytics metadata.</span>
@@ -4709,7 +4709,7 @@ UserScopedRequestModel            (<a class="autorefs autorefs-internal" title="
         <details class="quote">
           <summary>Source code in <code>zenml/models/base_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_analytics_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Fetches the analytics metadata for user scoped models.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fetches the analytics metadata for user scoped models.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The analytics metadata.</span>
@@ -4759,7 +4759,7 @@ UserScopedResponseModel            (<a class="autorefs autorefs-internal" title=
         <details class="quote">
           <summary>Source code in <code>zenml/models/base_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">UserScopedResponseModel</span><span class="p">(</span><span class="n">BaseResponseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base user-owned domain model.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base user-owned domain model.</span>
 
 <span class="sd">    Used as a base class for all domain models that are &quot;owned&quot; by a user.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -4769,7 +4769,7 @@ UserScopedResponseModel            (<a class="autorefs autorefs-internal" title=
     <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">get_analytics_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Fetches the analytics metadata for user scoped models.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Fetches the analytics metadata for user scoped models.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The analytics metadata.</span>
@@ -4829,7 +4829,7 @@ UserScopedResponseModel            (<a class="autorefs autorefs-internal" title=
         <details class="quote">
           <summary>Source code in <code>zenml/models/base_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_analytics_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Fetches the analytics metadata for user scoped models.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fetches the analytics metadata for user scoped models.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The analytics metadata.</span>
@@ -4910,7 +4910,7 @@ into update models where the fields are optional and can be set to None.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/models/base_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">update_model</span><span class="p">(</span><span class="n">_cls</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">T</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Base update model.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base update model.</span>
 
 <span class="sd">    This is used as a decorator on top of request models to convert them</span>
 <span class="sd">    into update models where the fields are optional and can be set to None.</span>
@@ -4994,7 +4994,7 @@ ComponentBaseModel            (<span title="pydantic.main.BaseModel">BaseModel</
         <details class="quote">
           <summary>Source code in <code>zenml/models/component_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ComponentBaseModel</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base model for stack components.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base model for stack components.&quot;&quot;&quot;</span>
 
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="n">title</span><span class="o">=</span><span class="s2">&quot;The name of the stack component.&quot;</span><span class="p">,</span>
@@ -5066,13 +5066,13 @@ ComponentRequestModel            (<a class="autorefs autorefs-internal" title="z
         <details class="quote">
           <summary>Source code in <code>zenml/models/component_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ComponentRequestModel</span><span class="p">(</span><span class="n">ComponentBaseModel</span><span class="p">,</span> <span class="n">ShareableRequestModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Request model for stack components.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Request model for stack components.&quot;&quot;&quot;</span>
 
     <span class="n">ANALYTICS_FIELDS</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">,</span> <span class="s2">&quot;flavor&quot;</span><span class="p">]</span>
 
     <span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">name_cant_be_a_secret_reference</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Validator to ensure that the given name is not a secret reference.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validator to ensure that the given name is not a secret reference.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name: The name to validate.</span>
@@ -5177,7 +5177,7 @@ ComponentRequestModel            (<a class="autorefs autorefs-internal" title="z
           <summary>Source code in <code>zenml/models/component_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">name_cant_be_a_secret_reference</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Validator to ensure that the given name is not a secret reference.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validator to ensure that the given name is not a secret reference.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: The name to validate.</span>
@@ -5235,7 +5235,7 @@ ComponentResponseModel            (<a class="autorefs autorefs-internal" title="
         <details class="quote">
           <summary>Source code in <code>zenml/models/component_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ComponentResponseModel</span><span class="p">(</span><span class="n">ComponentBaseModel</span><span class="p">,</span> <span class="n">ShareableResponseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Response model for stack components.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Response model for stack components.&quot;&quot;&quot;</span>
 
     <span class="n">ANALYTICS_FIELDS</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">,</span> <span class="s2">&quot;flavor&quot;</span><span class="p">]</span>
 </code></pre></div>
@@ -5289,7 +5289,7 @@ ComponentUpdateModel            (<a class="autorefs autorefs-internal" title="ze
         <details class="quote">
           <summary>Source code in <code>zenml/models/component_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ComponentUpdateModel</span><span class="p">(</span><span class="n">ComponentRequestModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Update model for stack components.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Update model for stack components.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
 
@@ -5424,7 +5424,7 @@ FlavorBaseModel            (<span title="pydantic.main.BaseModel">BaseModel</spa
         <details class="quote">
           <summary>Source code in <code>zenml/models/flavor_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">FlavorBaseModel</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base model for stack component flavors.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base model for stack component flavors.&quot;&quot;&quot;</span>
 
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="n">title</span><span class="o">=</span><span class="s2">&quot;The name of the Flavor.&quot;</span><span class="p">,</span>
@@ -5498,7 +5498,7 @@ FlavorRequestModel            (<a class="autorefs autorefs-internal" title="zenm
         <details class="quote">
           <summary>Source code in <code>zenml/models/flavor_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">FlavorRequestModel</span><span class="p">(</span><span class="n">FlavorBaseModel</span><span class="p">,</span> <span class="n">ProjectScopedRequestModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Request model for stack component flavors.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Request model for stack component flavors.&quot;&quot;&quot;</span>
 
     <span class="n">ANALYTICS_FIELDS</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[</span>
         <span class="s2">&quot;type&quot;</span><span class="p">,</span>
@@ -5555,7 +5555,7 @@ FlavorResponseModel            (<a class="autorefs autorefs-internal" title="zen
         <details class="quote">
           <summary>Source code in <code>zenml/models/flavor_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">FlavorResponseModel</span><span class="p">(</span><span class="n">FlavorBaseModel</span><span class="p">,</span> <span class="n">ProjectScopedResponseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Response model for stack component flavors.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Response model for stack component flavors.&quot;&quot;&quot;</span>
 
     <span class="n">ANALYTICS_FIELDS</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[</span>
         <span class="s2">&quot;id&quot;</span><span class="p">,</span>
@@ -5650,7 +5650,7 @@ PipelineBaseModel            (<span title="pydantic.main.BaseModel">BaseModel</s
         <details class="quote">
           <summary>Source code in <code>zenml/models/pipeline_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PipelineBaseModel</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base model for pipelines.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base model for pipelines.&quot;&quot;&quot;</span>
 
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="n">title</span><span class="o">=</span><span class="s2">&quot;The name of the pipeline.&quot;</span><span class="p">,</span>
@@ -5715,7 +5715,7 @@ PipelineRequestModel            (<a class="autorefs autorefs-internal" title="ze
         <details class="quote">
           <summary>Source code in <code>zenml/models/pipeline_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PipelineRequestModel</span><span class="p">(</span><span class="n">PipelineBaseModel</span><span class="p">,</span> <span class="n">ProjectScopedRequestModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Pipeline request model.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Pipeline request model.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
 
@@ -5766,7 +5766,7 @@ PipelineResponseModel            (<a class="autorefs autorefs-internal" title="z
         <details class="quote">
           <summary>Source code in <code>zenml/models/pipeline_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PipelineResponseModel</span><span class="p">(</span><span class="n">PipelineBaseModel</span><span class="p">,</span> <span class="n">ProjectScopedResponseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Pipeline response model user, project, runs, and status hydrated.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Pipeline response model user, project, runs, and status hydrated.&quot;&quot;&quot;</span>
 
     <span class="n">runs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="s2">&quot;PipelineRunResponseModel&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="n">title</span><span class="o">=</span><span class="s2">&quot;A list of the last x Pipeline Runs.&quot;</span>
@@ -5826,7 +5826,7 @@ PipelineUpdateModel            (<a class="autorefs autorefs-internal" title="zen
         <details class="quote">
           <summary>Source code in <code>zenml/models/pipeline_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PipelineUpdateModel</span><span class="p">(</span><span class="n">PipelineRequestModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Pipeline update model.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Pipeline update model.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
 
@@ -5914,7 +5914,7 @@ PipelineRunBaseModel            (<span title="pydantic.main.BaseModel">BaseModel
         <details class="quote">
           <summary>Source code in <code>zenml/models/pipeline_run_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PipelineRunBaseModel</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base model for pipeline runs.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base model for pipeline runs.&quot;&quot;&quot;</span>
 
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="n">title</span><span class="o">=</span><span class="s2">&quot;The name of the pipeline run.&quot;</span><span class="p">,</span>
@@ -5999,7 +5999,7 @@ PipelineRunRequestModel            (<a class="autorefs autorefs-internal" title=
         <details class="quote">
           <summary>Source code in <code>zenml/models/pipeline_run_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PipelineRunRequestModel</span><span class="p">(</span><span class="n">PipelineRunBaseModel</span><span class="p">,</span> <span class="n">ProjectScopedRequestModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Pipeline run model with user, project, pipeline, and stack as UUIDs.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Pipeline run model with user, project, pipeline, and stack as UUIDs.&quot;&quot;&quot;</span>
 
     <span class="nb">id</span><span class="p">:</span> <span class="n">UUID</span>
     <span class="n">stack</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UUID</span><span class="p">]</span>  <span class="c1"># Might become None if the stack is deleted.</span>
@@ -6059,7 +6059,7 @@ PipelineRunResponseModel            (<a class="autorefs autorefs-internal" title
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PipelineRunResponseModel</span><span class="p">(</span>
     <span class="n">PipelineRunBaseModel</span><span class="p">,</span> <span class="n">ProjectScopedResponseModel</span>
 <span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Pipeline run model with user, project, pipeline, and stack hydrated.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Pipeline run model with user, project, pipeline, and stack hydrated.&quot;&quot;&quot;</span>
 
     <span class="n">pipeline</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;PipelineResponseModel&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="n">title</span><span class="o">=</span><span class="s2">&quot;The pipeline this run belongs to.&quot;</span>
@@ -6119,7 +6119,7 @@ PipelineRunUpdateModel            (<span title="pydantic.main.BaseModel">BaseMod
         <details class="quote">
           <summary>Source code in <code>zenml/models/pipeline_run_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PipelineRunUpdateModel</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Pipeline run update model.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Pipeline run update model.&quot;&quot;&quot;</span>
 
     <span class="n">status</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ExecutionStatus</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">end_time</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
@@ -6208,7 +6208,7 @@ not inside a git repo.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/models/pipeline_run_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_git_sha</span><span class="p">(</span><span class="n">clean</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Returns the current git HEAD SHA.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the current git HEAD SHA.</span>
 
 <span class="sd">    If the current working directory is not inside a git repo, this will return</span>
 <span class="sd">    `None`.</span>
@@ -6302,7 +6302,7 @@ ProjectBaseModel            (<span title="pydantic.main.BaseModel">BaseModel</sp
         <details class="quote">
           <summary>Source code in <code>zenml/models/project_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ProjectBaseModel</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base model for projects.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base model for projects.&quot;&quot;&quot;</span>
 
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="n">title</span><span class="o">=</span><span class="s2">&quot;The unique name of the project.&quot;</span><span class="p">,</span>
@@ -6365,7 +6365,7 @@ ProjectRequestModel            (<a class="autorefs autorefs-internal" title="zen
         <details class="quote">
           <summary>Source code in <code>zenml/models/project_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ProjectRequestModel</span><span class="p">(</span><span class="n">ProjectBaseModel</span><span class="p">,</span> <span class="n">BaseRequestModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Request model for projects.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Request model for projects.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
 
@@ -6416,7 +6416,7 @@ ProjectResponseModel            (<a class="autorefs autorefs-internal" title="ze
         <details class="quote">
           <summary>Source code in <code>zenml/models/project_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ProjectResponseModel</span><span class="p">(</span><span class="n">ProjectBaseModel</span><span class="p">,</span> <span class="n">BaseResponseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Response model for projects.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Response model for projects.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
 
@@ -6467,7 +6467,7 @@ ProjectUpdateModel            (<a class="autorefs autorefs-internal" title="zenm
         <details class="quote">
           <summary>Source code in <code>zenml/models/project_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ProjectUpdateModel</span><span class="p">(</span><span class="n">ProjectRequestModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Update model for projects.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Update model for projects.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
 
@@ -6555,11 +6555,11 @@ RoleAssignmentBaseModel            (<span title="pydantic.main.BaseModel">BaseMo
         <details class="quote">
           <summary>Source code in <code>zenml/models/role_assignment_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">RoleAssignmentBaseModel</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base model for role assignments.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base model for role assignments.&quot;&quot;&quot;</span>
 
     <span class="nd">@root_validator</span><span class="p">(</span><span class="n">pre</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">check_team_or_user</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">values</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Check that either a team or a user is set.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check that either a team or a user is set.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            values: The values to validate.</span>
@@ -6662,7 +6662,7 @@ RoleAssignmentBaseModel            (<span title="pydantic.main.BaseModel">BaseMo
           <summary>Source code in <code>zenml/models/role_assignment_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@root_validator</span><span class="p">(</span><span class="n">pre</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">check_team_or_user</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">values</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Check that either a team or a user is set.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check that either a team or a user is set.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        values: The values to validate.</span>
@@ -6719,7 +6719,7 @@ RoleAssignmentRequestModel            (<a class="autorefs autorefs-internal" tit
         <details class="quote">
           <summary>Source code in <code>zenml/models/role_assignment_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">RoleAssignmentRequestModel</span><span class="p">(</span><span class="n">RoleAssignmentBaseModel</span><span class="p">,</span> <span class="n">BaseRequestModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Request model for role assignments using UUIDs for all entities.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Request model for role assignments using UUIDs for all entities.&quot;&quot;&quot;</span>
 
     <span class="n">project</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UUID</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="kc">None</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;The project that the role is limited to.&quot;</span>
@@ -6786,7 +6786,7 @@ RoleAssignmentResponseModel            (<a class="autorefs autorefs-internal" ti
         <details class="quote">
           <summary>Source code in <code>zenml/models/role_assignment_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">RoleAssignmentResponseModel</span><span class="p">(</span><span class="n">RoleAssignmentBaseModel</span><span class="p">,</span> <span class="n">BaseResponseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Response model for role assignments with all entities hydrated.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Response model for role assignments with all entities hydrated.&quot;&quot;&quot;</span>
 
     <span class="n">project</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;ProjectResponseModel&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="n">title</span><span class="o">=</span><span class="s2">&quot;The project scope of this role assignment.&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span>
@@ -6891,7 +6891,7 @@ RoleBaseModel            (<span title="pydantic.main.BaseModel">BaseModel</span>
         <details class="quote">
           <summary>Source code in <code>zenml/models/role_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">RoleBaseModel</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base model for roles.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base model for roles.&quot;&quot;&quot;</span>
 
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="n">title</span><span class="o">=</span><span class="s2">&quot;The unique name of the role.&quot;</span><span class="p">,</span>
@@ -6950,7 +6950,7 @@ RoleRequestModel            (<a class="autorefs autorefs-internal" title="zenml.
         <details class="quote">
           <summary>Source code in <code>zenml/models/role_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">RoleRequestModel</span><span class="p">(</span><span class="n">RoleBaseModel</span><span class="p">,</span> <span class="n">BaseRequestModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Request model for roles.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Request model for roles.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
 
@@ -7001,7 +7001,7 @@ RoleResponseModel            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/models/role_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">RoleResponseModel</span><span class="p">(</span><span class="n">RoleBaseModel</span><span class="p">,</span> <span class="n">BaseResponseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Response model for roles.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Response model for roles.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
 
@@ -7052,7 +7052,7 @@ RoleUpdateModel            (<a class="autorefs autorefs-internal" title="zenml.m
         <details class="quote">
           <summary>Source code in <code>zenml/models/role_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">RoleUpdateModel</span><span class="p">(</span><span class="n">RoleRequestModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Update model for roles.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Update model for roles.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
 
@@ -7137,7 +7137,7 @@ ServerDatabaseType            (<a class="autorefs autorefs-internal" title="zenm
         <details class="quote">
           <summary>Source code in <code>zenml/models/server_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ServerDatabaseType</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Enum for server database types.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Enum for server database types.&quot;&quot;&quot;</span>
 
     <span class="n">SQLITE</span> <span class="o">=</span> <span class="s2">&quot;sqlite&quot;</span>
     <span class="n">MYSQL</span> <span class="o">=</span> <span class="s2">&quot;mysql&quot;</span>
@@ -7190,7 +7190,7 @@ ServerDeploymentType            (<a class="autorefs autorefs-internal" title="ze
         <details class="quote">
           <summary>Source code in <code>zenml/models/server_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ServerDeploymentType</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Enum for server deployment types.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Enum for server deployment types.&quot;&quot;&quot;</span>
 
     <span class="n">LOCAL</span> <span class="o">=</span> <span class="s2">&quot;local&quot;</span>
     <span class="n">DOCKER</span> <span class="o">=</span> <span class="s2">&quot;docker&quot;</span>
@@ -7256,7 +7256,7 @@ ServerModel            (<span title="pydantic.main.BaseModel">BaseModel</span>)
         <details class="quote">
           <summary>Source code in <code>zenml/models/server_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ServerModel</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Domain model for ZenML servers.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Domain model for ZenML servers.&quot;&quot;&quot;</span>
 
     <span class="nb">id</span><span class="p">:</span> <span class="n">UUID</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">uuid4</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;The unique server id.&quot;</span><span class="p">)</span>
 
@@ -7273,7 +7273,7 @@ ServerModel            (<span title="pydantic.main.BaseModel">BaseModel</span>)
     <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">is_local</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Return whether the server is running locally.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return whether the server is running locally.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            True if the server is running locally, False otherwise.</span>
@@ -7336,7 +7336,7 @@ ServerModel            (<span title="pydantic.main.BaseModel">BaseModel</span>)
         <details class="quote">
           <summary>Source code in <code>zenml/models/server_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">is_local</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Return whether the server is running locally.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return whether the server is running locally.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        True if the server is running locally, False otherwise.</span>
@@ -7424,7 +7424,7 @@ StackBaseModel            (<span title="pydantic.main.BaseModel">BaseModel</span
         <details class="quote">
           <summary>Source code in <code>zenml/models/stack_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StackBaseModel</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base model for stacks.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base model for stacks.&quot;&quot;&quot;</span>
 
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="n">title</span><span class="o">=</span><span class="s2">&quot;The name of the stack.&quot;</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="n">STR_FIELD_MAX_LENGTH</span>
@@ -7486,7 +7486,7 @@ StackRequestModel            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/models/stack_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StackRequestModel</span><span class="p">(</span><span class="n">StackBaseModel</span><span class="p">,</span> <span class="n">ShareableRequestModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Stack model with components, user and project as UUIDs.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Stack model with components, user and project as UUIDs.&quot;&quot;&quot;</span>
 
     <span class="n">components</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">StackComponentType</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">UUID</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="n">title</span><span class="o">=</span><span class="s2">&quot;A mapping of stack component types to the actual&quot;</span>
@@ -7495,7 +7495,7 @@ StackRequestModel            (<a class="autorefs autorefs-internal" title="zenml
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_valid</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Check if the stack is valid.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if the stack is valid.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            True if the stack is valid, False otherwise.</span>
@@ -7593,7 +7593,7 @@ StackResponseModel            (<a class="autorefs autorefs-internal" title="zenm
         <details class="quote">
           <summary>Source code in <code>zenml/models/stack_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StackResponseModel</span><span class="p">(</span><span class="n">StackBaseModel</span><span class="p">,</span> <span class="n">ShareableResponseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Stack model with Components, User and Project fully hydrated.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Stack model with Components, User and Project fully hydrated.&quot;&quot;&quot;</span>
 
     <span class="n">components</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">StackComponentType</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">ComponentResponseModel</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="n">title</span><span class="o">=</span><span class="s2">&quot;A mapping of stack component types to the actual&quot;</span>
@@ -7601,7 +7601,7 @@ StackResponseModel            (<a class="autorefs autorefs-internal" title="zenm
     <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">get_analytics_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Add the stack components to the stack analytics metadata.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add the stack components to the stack analytics metadata.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Dict of analytics metadata.</span>
@@ -7612,7 +7612,7 @@ StackResponseModel            (<a class="autorefs autorefs-internal" title="zenm
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_valid</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Check if the stack is valid.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if the stack is valid.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            True if the stack is valid, False otherwise.</span>
@@ -7623,7 +7623,7 @@ StackResponseModel            (<a class="autorefs autorefs-internal" title="zenm
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">to_yaml</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Create yaml representation of the Stack Model.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create yaml representation of the Stack Model.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The yaml representation of the Stack Model.</span>
@@ -7733,7 +7733,7 @@ StackResponseModel            (<a class="autorefs autorefs-internal" title="zenm
         <details class="quote">
           <summary>Source code in <code>zenml/models/stack_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_analytics_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Add the stack components to the stack analytics metadata.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Add the stack components to the stack analytics metadata.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Dict of analytics metadata.</span>
@@ -7781,7 +7781,7 @@ StackResponseModel            (<a class="autorefs autorefs-internal" title="zenm
         <details class="quote">
           <summary>Source code in <code>zenml/models/stack_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">to_yaml</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Create yaml representation of the Stack Model.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create yaml representation of the Stack Model.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The yaml representation of the Stack Model.</span>
@@ -7844,7 +7844,7 @@ StackUpdateModel            (<a class="autorefs autorefs-internal" title="zenml.
         <details class="quote">
           <summary>Source code in <code>zenml/models/stack_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StackUpdateModel</span><span class="p">(</span><span class="n">StackRequestModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;The update model for stacks.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The update model for stacks.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
 
@@ -7932,7 +7932,7 @@ StepRunBaseModel            (<span title="pydantic.main.BaseModel">BaseModel</sp
         <details class="quote">
           <summary>Source code in <code>zenml/models/step_run_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StepRunBaseModel</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base model for step runs.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base model for step runs.&quot;&quot;&quot;</span>
 
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="n">title</span><span class="o">=</span><span class="s2">&quot;The name of the pipeline run step.&quot;</span><span class="p">,</span>
@@ -8009,7 +8009,7 @@ StepRunRequestModel            (<a class="autorefs autorefs-internal" title="zen
         <details class="quote">
           <summary>Source code in <code>zenml/models/step_run_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StepRunRequestModel</span><span class="p">(</span><span class="n">StepRunBaseModel</span><span class="p">,</span> <span class="n">ProjectScopedRequestModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Request model for step runs.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Request model for step runs.&quot;&quot;&quot;</span>
 
     <span class="n">input_artifacts</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UUID</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="n">output_artifacts</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UUID</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
@@ -8065,7 +8065,7 @@ StepRunResponseModel            (<a class="autorefs autorefs-internal" title="ze
         <details class="quote">
           <summary>Source code in <code>zenml/models/step_run_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StepRunResponseModel</span><span class="p">(</span><span class="n">StepRunBaseModel</span><span class="p">,</span> <span class="n">ProjectScopedResponseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Response model for step runs.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Response model for step runs.&quot;&quot;&quot;</span>
 
     <span class="n">input_artifacts</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;ArtifactResponseModel&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="n">output_artifacts</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;ArtifactResponseModel&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
@@ -8121,7 +8121,7 @@ StepRunUpdateModel            (<span title="pydantic.main.BaseModel">BaseModel</
         <details class="quote">
           <summary>Source code in <code>zenml/models/step_run_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StepRunUpdateModel</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Update model for step runs.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Update model for step runs.&quot;&quot;&quot;</span>
 
     <span class="n">output_artifacts</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UUID</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="n">status</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ExecutionStatus</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
@@ -8216,7 +8216,7 @@ TeamBaseModel            (<span title="pydantic.main.BaseModel">BaseModel</span>
         <details class="quote">
           <summary>Source code in <code>zenml/models/team_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">TeamBaseModel</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base model for teams.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base model for teams.&quot;&quot;&quot;</span>
 
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="n">title</span><span class="o">=</span><span class="s2">&quot;The unique name of the team.&quot;</span><span class="p">,</span>
@@ -8273,7 +8273,7 @@ TeamRequestModel            (<a class="autorefs autorefs-internal" title="zenml.
         <details class="quote">
           <summary>Source code in <code>zenml/models/team_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">TeamRequestModel</span><span class="p">(</span><span class="n">TeamBaseModel</span><span class="p">,</span> <span class="n">BaseRequestModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Request model for teams.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Request model for teams.&quot;&quot;&quot;</span>
 
     <span class="n">users</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">UUID</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="n">title</span><span class="o">=</span><span class="s2">&quot;The list of users within this team.&quot;</span>
@@ -8329,7 +8329,7 @@ TeamResponseModel            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/models/team_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">TeamResponseModel</span><span class="p">(</span><span class="n">TeamBaseModel</span><span class="p">,</span> <span class="n">BaseResponseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Response model for teams.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Response model for teams.&quot;&quot;&quot;</span>
 
     <span class="n">users</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="s2">&quot;UserResponseModel&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="n">title</span><span class="o">=</span><span class="s2">&quot;The list of users within this team.&quot;</span>
@@ -8337,7 +8337,7 @@ TeamResponseModel            (<a class="autorefs autorefs-internal" title="zenml
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">user_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">UUID</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns a list of user IDs that are part of this team.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns a list of user IDs that are part of this team.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            A list of user IDs.</span>
@@ -8349,7 +8349,7 @@ TeamResponseModel            (<a class="autorefs autorefs-internal" title="zenml
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">user_names</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns a list names of users that are part of this team.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns a list names of users that are part of this team.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            A list of names of users.</span>
@@ -8485,7 +8485,7 @@ TeamUpdateModel            (<a class="autorefs autorefs-internal" title="zenml.m
         <details class="quote">
           <summary>Source code in <code>zenml/models/team_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">TeamUpdateModel</span><span class="p">(</span><span class="n">TeamRequestModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Update model for teams.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Update model for teams.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
 
@@ -8601,7 +8601,7 @@ JWTToken            (<span title="pydantic.main.BaseModel">BaseModel</span>)
         <details class="quote">
           <summary>Source code in <code>zenml/models/user_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">JWTToken</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Pydantic object representing a JWT token.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Pydantic object representing a JWT token.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        token_type: The type of token.</span>
@@ -8617,7 +8617,7 @@ JWTToken            (<span title="pydantic.main.BaseModel">BaseModel</span>)
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">decode</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">token_type</span><span class="p">:</span> <span class="n">JWTTokenType</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;JWTToken&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Decodes a JWT access token.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Decodes a JWT access token.</span>
 
 <span class="sd">        Decodes a JWT access token and returns a `JWTToken` object with the</span>
 <span class="sd">        information retrieved from its subject claim.</span>
@@ -8667,7 +8667,7 @@ JWTToken            (<span title="pydantic.main.BaseModel">BaseModel</span>)
             <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
 
     <span class="k">def</span> <span class="nf">encode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expire_minutes</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Creates a JWT access token.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Creates a JWT access token.</span>
 
 <span class="sd">        Generates and returns a JWT access token with the subject claim set to</span>
 <span class="sd">        contain the information in this Pydantic object.</span>
@@ -8796,7 +8796,7 @@ information retrieved from its subject claim.</p>
           <summary>Source code in <code>zenml/models/user_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span> <span class="nf">decode</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">token_type</span><span class="p">:</span> <span class="n">JWTTokenType</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;JWTToken&quot;</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Decodes a JWT access token.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Decodes a JWT access token.</span>
 
 <span class="sd">    Decodes a JWT access token and returns a `JWTToken` object with the</span>
 <span class="sd">    information retrieved from its subject claim.</span>
@@ -8906,7 +8906,7 @@ provided, the token will not be set to expire.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/models/user_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">encode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expire_minutes</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Creates a JWT access token.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Creates a JWT access token.</span>
 
 <span class="sd">    Generates and returns a JWT access token with the subject claim set to</span>
 <span class="sd">    contain the information in this Pydantic object.</span>
@@ -8974,7 +8974,7 @@ JWTTokenType            (<a class="autorefs autorefs-internal" title="zenml.util
         <details class="quote">
           <summary>Source code in <code>zenml/models/user_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">JWTTokenType</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;The type of JWT token.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The type of JWT token.&quot;&quot;&quot;</span>
 
     <span class="n">ACCESS_TOKEN</span> <span class="o">=</span> <span class="s2">&quot;access_token&quot;</span>
 </code></pre></div>
@@ -9028,7 +9028,7 @@ to authenticate the user credentials (Token, Password).</p>
         <details class="quote">
           <summary>Source code in <code>zenml/models/user_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">UserAuthModel</span><span class="p">(</span><span class="n">UserBaseModel</span><span class="p">,</span> <span class="n">BaseResponseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Authentication Model for the User.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Authentication Model for the User.</span>
 
 <span class="sd">    This model is only used server-side. The server endpoints can use this model</span>
 <span class="sd">    to authenticate the user credentials (Token, Password).</span>
@@ -9043,7 +9043,7 @@ to authenticate the user credentials (Token, Password).</p>
     <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">generate_access_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">permissions</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Generates an access token.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generates an access token.</span>
 
 <span class="sd">        Generates an access token and returns it.</span>
 
@@ -9061,7 +9061,7 @@ to authenticate the user credentials (Token, Password).</p>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">_is_hashed_secret</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">secret</span><span class="p">:</span> <span class="n">SecretStr</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Checks if a secret value is already hashed.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if a secret value is already hashed.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            secret: The secret value to check.</span>
@@ -9076,7 +9076,7 @@ to authenticate the user credentials (Token, Password).</p>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">_get_hashed_secret</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">secret</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SecretStr</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Hashes the input secret and returns the hash value.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Hashes the input secret and returns the hash value.</span>
 
 <span class="sd">        Only applied if supplied and if not already hashed.</span>
 
@@ -9094,7 +9094,7 @@ to authenticate the user credentials (Token, Password).</p>
         <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">pwd_context</span><span class="o">.</span><span class="n">hash</span><span class="p">(</span><span class="n">secret</span><span class="o">.</span><span class="n">get_secret_value</span><span class="p">()))</span>
 
     <span class="k">def</span> <span class="nf">get_password</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Get the password.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the password.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The password as a plain string, if it exists.</span>
@@ -9104,7 +9104,7 @@ to authenticate the user credentials (Token, Password).</p>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">password</span><span class="o">.</span><span class="n">get_secret_value</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">get_hashed_password</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the hashed password, if configured.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the hashed password, if configured.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The hashed password.</span>
@@ -9112,7 +9112,7 @@ to authenticate the user credentials (Token, Password).</p>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_hashed_secret</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">password</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">get_hashed_activation_token</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the hashed activation token, if configured.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the hashed activation token, if configured.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The hashed activation token.</span>
@@ -9123,7 +9123,7 @@ to authenticate the user credentials (Token, Password).</p>
     <span class="k">def</span> <span class="nf">verify_password</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span> <span class="n">plain_password</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;UserAuthModel&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Verifies a given plain password against the stored password.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Verifies a given plain password against the stored password.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            plain_password: Input password to be verified.</span>
@@ -9143,7 +9143,7 @@ to authenticate the user credentials (Token, Password).</p>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">verify_access_token</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;UserAuthModel&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Verifies an access token.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Verifies an access token.</span>
 
 <span class="sd">        Verifies an access token and returns the user that was used to generate</span>
 <span class="sd">        it if the token is valid and None otherwise.</span>
@@ -9176,7 +9176,7 @@ to authenticate the user credentials (Token, Password).</p>
     <span class="k">def</span> <span class="nf">verify_activation_token</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span> <span class="n">activation_token</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;UserAuthModel&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Verifies a given activation token against the stored token.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Verifies a given activation token against the stored token.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            activation_token: Input activation token to be verified.</span>
@@ -9269,7 +9269,7 @@ to authenticate the user credentials (Token, Password).</p>
         <details class="quote">
           <summary>Source code in <code>zenml/models/user_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">generate_access_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">permissions</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Generates an access token.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generates an access token.</span>
 
 <span class="sd">    Generates an access token and returns it.</span>
 
@@ -9324,7 +9324,7 @@ to authenticate the user credentials (Token, Password).</p>
         <details class="quote">
           <summary>Source code in <code>zenml/models/user_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_hashed_activation_token</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Returns the hashed activation token, if configured.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the hashed activation token, if configured.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The hashed activation token.</span>
@@ -9370,7 +9370,7 @@ to authenticate the user credentials (Token, Password).</p>
         <details class="quote">
           <summary>Source code in <code>zenml/models/user_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_hashed_password</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Returns the hashed password, if configured.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the hashed password, if configured.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The hashed password.</span>
@@ -9416,7 +9416,7 @@ to authenticate the user credentials (Token, Password).</p>
         <details class="quote">
           <summary>Source code in <code>zenml/models/user_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_password</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Get the password.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the password.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The password as a plain string, if it exists.</span>
@@ -9489,7 +9489,7 @@ it if the token is valid and None otherwise.</p>
           <summary>Source code in <code>zenml/models/user_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span> <span class="nf">verify_access_token</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;UserAuthModel&quot;</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Verifies an access token.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Verifies an access token.</span>
 
 <span class="sd">    Verifies an access token and returns the user that was used to generate</span>
 <span class="sd">    it if the token is valid and None otherwise.</span>
@@ -9588,7 +9588,7 @@ it if the token is valid and None otherwise.</p>
 <span class="k">def</span> <span class="nf">verify_activation_token</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span> <span class="n">activation_token</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;UserAuthModel&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Verifies a given activation token against the stored token.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Verifies a given activation token against the stored token.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        activation_token: Input activation token to be verified.</span>
@@ -9680,7 +9680,7 @@ it if the token is valid and None otherwise.</p>
 <span class="k">def</span> <span class="nf">verify_password</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span> <span class="n">plain_password</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;UserAuthModel&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Verifies a given plain password against the stored password.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Verifies a given plain password against the stored password.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        plain_password: Input password to be verified.</span>
@@ -9738,7 +9738,7 @@ UserBaseModel            (<span title="pydantic.main.BaseModel">BaseModel</span>
         <details class="quote">
           <summary>Source code in <code>zenml/models/user_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">UserBaseModel</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base model for users.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base model for users.&quot;&quot;&quot;</span>
 
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="n">title</span><span class="o">=</span><span class="s2">&quot;The unique username for the account.&quot;</span><span class="p">,</span>
@@ -9760,7 +9760,7 @@ UserBaseModel            (<span title="pydantic.main.BaseModel">BaseModel</span>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">_get_crypt_context</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;CryptContext&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the password encryption context.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the password encryption context.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The password encryption context.</span>
@@ -9846,7 +9846,7 @@ Users can also optionally set their password during creation.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/models/user_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">UserRequestModel</span><span class="p">(</span><span class="n">UserBaseModel</span><span class="p">,</span> <span class="n">BaseRequestModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Request model for users.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Request model for users.</span>
 
 <span class="sd">    This model is used to create a user. The email field is optional but is</span>
 <span class="sd">    more commonly set on the UpdateRequestModel which inherits from this model.</span>
@@ -9876,7 +9876,7 @@ Users can also optionally set their password during creation.</p>
     <span class="p">)</span>
 
     <span class="k">class</span> <span class="nc">Config</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Pydantic configuration class.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Pydantic configuration class.&quot;&quot;&quot;</span>
 
         <span class="c1"># Validate attributes when assigning them</span>
         <span class="n">validate_assignment</span> <span class="o">=</span> <span class="kc">True</span>
@@ -9886,7 +9886,7 @@ Users can also optionally set their password during creation.</p>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">_create_hashed_secret</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">secret</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Hashes the input secret and returns the hash value.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Hashes the input secret and returns the hash value.</span>
 
 <span class="sd">        Only applied if supplied and if not already hashed.</span>
 
@@ -9902,7 +9902,7 @@ Users can also optionally set their password during creation.</p>
         <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">pwd_context</span><span class="o">.</span><span class="n">hash</span><span class="p">(</span><span class="n">secret</span><span class="p">))</span>
 
     <span class="k">def</span> <span class="nf">create_hashed_password</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Hashes the password.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Hashes the password.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The hashed password.</span>
@@ -9910,7 +9910,7 @@ Users can also optionally set their password during creation.</p>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_hashed_secret</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">password</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">create_hashed_activation_token</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Hashes the activation token.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Hashes the activation token.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The hashed activation token.</span>
@@ -9918,7 +9918,7 @@ Users can also optionally set their password during creation.</p>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_hashed_secret</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">activation_token</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">generate_activation_token</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Generates and stores a new activation token.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generates and stores a new activation token.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The generated activation token.</span>
@@ -9961,7 +9961,7 @@ Config        </code>
         <details class="quote">
           <summary>Source code in <code>zenml/models/user_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Config</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Pydantic configuration class.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Pydantic configuration class.&quot;&quot;&quot;</span>
 
     <span class="c1"># Validate attributes when assigning them</span>
     <span class="n">validate_assignment</span> <span class="o">=</span> <span class="kc">True</span>
@@ -10032,7 +10032,7 @@ Config        </code>
         <details class="quote">
           <summary>Source code in <code>zenml/models/user_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">create_hashed_activation_token</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Hashes the activation token.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Hashes the activation token.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The hashed activation token.</span>
@@ -10078,7 +10078,7 @@ Config        </code>
         <details class="quote">
           <summary>Source code in <code>zenml/models/user_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">create_hashed_password</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Hashes the password.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Hashes the password.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The hashed password.</span>
@@ -10124,7 +10124,7 @@ Config        </code>
         <details class="quote">
           <summary>Source code in <code>zenml/models/user_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">generate_activation_token</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Generates and stores a new activation token.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generates and stores a new activation token.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The generated activation token.</span>
@@ -10176,7 +10176,7 @@ for use by the analytics on the client-side.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/models/user_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">UserResponseModel</span><span class="p">(</span><span class="n">UserBaseModel</span><span class="p">,</span> <span class="n">BaseResponseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Response model for users.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Response model for users.</span>
 
 <span class="sd">    This returns the activation_token (which is required for the</span>
 <span class="sd">    user-invitation-flow of the frontend. This also optionally includes the</span>
@@ -10204,7 +10204,7 @@ for use by the analytics on the client-side.</p>
     <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">generate_access_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">permissions</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Generates an access token.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generates an access token.</span>
 
 <span class="sd">        Generates an access token and returns it.</span>
 
@@ -10292,7 +10292,7 @@ for use by the analytics on the client-side.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/models/user_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">generate_access_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">permissions</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Generates an access token.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generates an access token.</span>
 
 <span class="sd">    Generates an access token and returns it.</span>
 
@@ -10348,11 +10348,11 @@ UserUpdateModel            (<a class="autorefs autorefs-internal" title="zenml.m
         <details class="quote">
           <summary>Source code in <code>zenml/models/user_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">UserUpdateModel</span><span class="p">(</span><span class="n">UserRequestModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Update model for users.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Update model for users.&quot;&quot;&quot;</span>
 
     <span class="nd">@root_validator</span>
     <span class="k">def</span> <span class="nf">user_email_updates</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">values</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Validate that the UserUpdateModel conforms to the email-opt-in-flow.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate that the UserUpdateModel conforms to the email-opt-in-flow.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            values: The values to validate.</span>
@@ -10466,7 +10466,7 @@ field was set to True.</p></td>
           <summary>Source code in <code>zenml/models/user_models.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@root_validator</span>
 <span class="k">def</span> <span class="nf">user_email_updates</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">values</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Validate that the UserUpdateModel conforms to the email-opt-in-flow.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate that the UserUpdateModel conforms to the email-opt-in-flow.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        values: The values to validate.</span>

@@ -2418,7 +2418,7 @@ BaseParameters            (<span title="pydantic.main.BaseModel">BaseModel</span
         <details class="quote">
           <summary>Source code in <code>zenml/steps/base_parameters.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseParameters</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base class to pass parameters into a step.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class to pass parameters into a step.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
 
@@ -2532,7 +2532,7 @@ this step was passed as an argument.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/base_step.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseStep</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">BaseStepMeta</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Abstract base class for all ZenML steps.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Abstract base class for all ZenML steps.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        name: The name of this step.</span>
@@ -2550,7 +2550,7 @@ this step was passed as an argument.</p></td>
     <span class="n">INSTANCE_CONFIGURATION</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
 
     <span class="k">class</span> <span class="nc">_OutputArtifact</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Internal step output artifact.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Internal step output artifact.</span>
 
 <span class="sd">        This class is used for inputs/outputs of the __call__ method of</span>
 <span class="sd">        BaseStep. It passes all the information about step outputs so downstream</span>
@@ -2568,7 +2568,7 @@ this step was passed as an argument.</p></td>
         <span class="n">materializer_source</span><span class="p">:</span> <span class="nb">str</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Initializes a step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes a step.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            *args: Positional arguments passed to the step.</span>
@@ -2616,7 +2616,7 @@ this step was passed as an argument.</p></td>
 
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">entrypoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Abstract method for core step logic.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Abstract method for core step logic.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            *args: Positional arguments passed to the step.</span>
@@ -2628,7 +2628,7 @@ this step was passed as an argument.</p></td>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">_created_by_functional_api</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns if the step class was created by the functional API.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns if the step class was created by the functional API.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            `True` if the class was created by the functional API,</span>
@@ -2640,7 +2640,7 @@ this step was passed as an argument.</p></td>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">upstream_steps</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Names of the upstream steps of this step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Names of the upstream steps of this step.</span>
 
 <span class="sd">        This property will only contain the full set of upstream steps once</span>
 <span class="sd">        it&#39;s parent pipeline `connect(...)` method was called.</span>
@@ -2651,7 +2651,7 @@ this step was passed as an argument.</p></td>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_upstream_steps</span>
 
     <span class="k">def</span> <span class="nf">after</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">:</span> <span class="s2">&quot;BaseStep&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Adds an upstream step to this step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Adds an upstream step to this step.</span>
 
 <span class="sd">        Calling this method makes sure this step only starts running once the</span>
 <span class="sd">        given step has successfully finished executing.</span>
@@ -2679,7 +2679,7 @@ this step was passed as an argument.</p></td>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">InputSpec</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Step input specifications.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Step input specifications.</span>
 
 <span class="sd">        This depends on the upstream steps in a pipeline and can therefore</span>
 <span class="sd">        only be accessed once the step has been called in a pipeline.</span>
@@ -2700,7 +2700,7 @@ this step was passed as an argument.</p></td>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">caching_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Caching parameters for this step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Caching parameters for this step.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            A dictionary containing the caching parameters</span>
@@ -2729,7 +2729,7 @@ this step was passed as an argument.</p></td>
         <span class="k">return</span> <span class="n">parameters</span>
 
     <span class="k">def</span> <span class="nf">_apply_class_configuration</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Applies the configurations specified on the step class.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Applies the configurations specified on the step class.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            options: Class configurations.</span>
@@ -2751,7 +2751,7 @@ this step was passed as an argument.</p></td>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_verify_and_apply_init_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Verifies the initialization args and kwargs of this step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Verifies the initialization args and kwargs of this step.</span>
 
 <span class="sd">        This method makes sure that there is only one parameters object passed</span>
 <span class="sd">        at initialization and that it was passed using the correct name and</span>
@@ -2807,7 +2807,7 @@ this step was passed as an argument.</p></td>
     <span class="k">def</span> <span class="nf">_validate_input_artifacts</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">artifacts</span><span class="p">:</span> <span class="n">_OutputArtifact</span><span class="p">,</span> <span class="o">**</span><span class="n">kw_artifacts</span><span class="p">:</span> <span class="n">_OutputArtifact</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">_OutputArtifact</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Verifies and prepares the input artifacts for running this step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Verifies and prepares the input artifacts for running this step.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            *artifacts: Positional input artifacts passed to</span>
@@ -2827,7 +2827,7 @@ this step was passed as an argument.</p></td>
             <span class="k">raise</span> <span class="n">StepInterfaceError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;Too many input artifacts for step &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;. &quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;This step expects </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">input_artifact_keys</span><span class="p">)</span><span class="si">}</span><span class="s2"> artifact(s) &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;but got </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">artifacts</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">kw_artifacts</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;but got </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">artifacts</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nb">len</span><span class="p">(</span><span class="n">kw_artifacts</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
             <span class="p">)</span>
 
         <span class="n">combined_artifacts</span> <span class="o">=</span> <span class="p">{}</span>
@@ -2888,7 +2888,7 @@ this step was passed as an argument.</p></td>
     <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">artifacts</span><span class="p">:</span> <span class="n">_OutputArtifact</span><span class="p">,</span> <span class="o">**</span><span class="n">kw_artifacts</span><span class="p">:</span> <span class="n">_OutputArtifact</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">_OutputArtifact</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">_OutputArtifact</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Finalizes the step input and output configuration.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Finalizes the step input and output configuration.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            *artifacts: Positional input artifacts passed to</span>
@@ -2946,7 +2946,7 @@ this step was passed as an argument.</p></td>
             <span class="n">Type</span><span class="p">[</span><span class="n">BaseMaterializer</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseMaterializer</span><span class="p">]]</span>
         <span class="p">],</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;DEPRECATED: Register materializers for step outputs.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;DEPRECATED: Register materializers for step outputs.</span>
 
 <span class="sd">        If a single materializer is passed, it will be used for all step</span>
 <span class="sd">        outputs. Otherwise, the dictionary keys specify the output names</span>
@@ -2968,7 +2968,7 @@ this step was passed as an argument.</p></td>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;The name of the step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The name of the step.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The name of the step.</span>
@@ -2977,7 +2977,7 @@ this step was passed as an argument.</p></td>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">enable_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;If caching is enabled for the step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;If caching is enabled for the step.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            If caching is enabled for the step.</span>
@@ -2986,7 +2986,7 @@ this step was passed as an argument.</p></td>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">configuration</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PartialStepConfiguration</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;The configuration of the step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The configuration of the step.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The configuration of the step.</span>
@@ -3008,7 +3008,7 @@ this step was passed as an argument.</p></td>
         <span class="n">extra</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">merge</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Configures the step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Configures the step.</span>
 
 <span class="sd">        Configuration merging example:</span>
 <span class="sd">        * `merge==True`:</span>
@@ -3111,7 +3111,7 @@ this step was passed as an argument.</p></td>
         <span class="n">config</span><span class="p">:</span> <span class="n">StepConfigurationUpdate</span><span class="p">,</span>
         <span class="n">merge</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Applies an update to the step configuration.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Applies an update to the step configuration.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            config: The configuration update.</span>
@@ -3129,7 +3129,7 @@ this step was passed as an argument.</p></td>
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_configuration</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_validate_configuration</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">StepConfigurationUpdate</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Validates a configuration update.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validates a configuration update.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            config: The configuration update to validate.</span>
@@ -3139,7 +3139,7 @@ this step was passed as an argument.</p></td>
         <span class="bp">self</span><span class="o">.</span><span class="n">_validate_outputs</span><span class="p">(</span><span class="n">outputs</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">outputs</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_validate_function_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parameters</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Validates step function parameters.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validates step function parameters.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            parameters: The parameters to validate.</span>
@@ -3166,7 +3166,7 @@ this step was passed as an argument.</p></td>
     <span class="k">def</span> <span class="nf">_validate_inputs</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">inputs</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ArtifactConfiguration</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Validates the step input configuration.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validates the step input configuration.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            inputs: The configured step inputs.</span>
@@ -3189,7 +3189,7 @@ this step was passed as an argument.</p></td>
     <span class="k">def</span> <span class="nf">_validate_outputs</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">outputs</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">PartialArtifactConfiguration</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Validates the step output configuration.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validates the step output configuration.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            outputs: The configured step outputs.</span>
@@ -3222,7 +3222,7 @@ this step was passed as an argument.</p></td>
     <span class="k">def</span> <span class="nf">_finalize_configuration</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">input_artifacts</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">_OutputArtifact</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StepConfiguration</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Finalizes the configuration after the step was called.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Finalizes the configuration after the step was called.</span>
 
 <span class="sd">        Once the step was called, we know the outputs of previous steps</span>
 <span class="sd">        and that no additional user configurations will be made. That means</span>
@@ -3298,7 +3298,7 @@ this step was passed as an argument.</p></td>
         <span class="k">return</span> <span class="n">complete_configuration</span>
 
     <span class="k">def</span> <span class="nf">_finalize_function_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Verifies and prepares the config parameters for running this step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Verifies and prepares the config parameters for running this step.</span>
 
 <span class="sd">        When the step requires config parameters, this method:</span>
 <span class="sd">            - checks if config parameters were set via a config object or file</span>
@@ -3686,7 +3686,7 @@ the <strong>call</strong> method.</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">artifacts</span><span class="p">:</span> <span class="n">_OutputArtifact</span><span class="p">,</span> <span class="o">**</span><span class="n">kw_artifacts</span><span class="p">:</span> <span class="n">_OutputArtifact</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">_OutputArtifact</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">_OutputArtifact</span><span class="p">]]:</span>
-    <span class="sd">&quot;&quot;&quot;Finalizes the step input and output configuration.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Finalizes the step input and output configuration.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        *artifacts: Positional input artifacts passed to</span>
@@ -3790,7 +3790,7 @@ the <strong>call</strong> method.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/base_step.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Initializes a step.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes a step.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        *args: Positional arguments passed to the step.</span>
@@ -3895,7 +3895,7 @@ started.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/base_step.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">after</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">:</span> <span class="s2">&quot;BaseStep&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Adds an upstream step to this step.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Adds an upstream step to this step.</span>
 
 <span class="sd">    Calling this method makes sure this step only starts running once the</span>
 <span class="sd">    given step has successfully finished executing.</span>
@@ -4082,7 +4082,7 @@ output name are configured.</p></td>
     <span class="n">extra</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">merge</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Configures the step.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Configures the step.</span>
 
 <span class="sd">    Configuration merging example:</span>
 <span class="sd">    * `merge==True`:</span>
@@ -4245,7 +4245,7 @@ output name are configured.</p></td>
           <summary>Source code in <code>zenml/steps/base_step.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span> <span class="nf">entrypoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Abstract method for core step logic.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Abstract method for core step logic.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        *args: Positional arguments passed to the step.</span>
@@ -4321,7 +4321,7 @@ for which the materializers will be used.</p>
         <span class="n">Type</span><span class="p">[</span><span class="n">BaseMaterializer</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseMaterializer</span><span class="p">]]</span>
     <span class="p">],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;DEPRECATED: Register materializers for step outputs.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;DEPRECATED: Register materializers for step outputs.</span>
 
 <span class="sd">    If a single materializer is passed, it will be used for all step</span>
 <span class="sd">    outputs. Otherwise, the dictionary keys specify the output names</span>
@@ -4382,7 +4382,7 @@ BaseStepMeta            (<span title="type">type</span>)
         <details class="quote">
           <summary>Source code in <code>zenml/steps/base_step.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseStepMeta</span><span class="p">(</span><span class="nb">type</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Metaclass for `BaseStep`.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Metaclass for `BaseStep`.</span>
 
 <span class="sd">    Checks whether everything passed in:</span>
 <span class="sd">    * Has a matching materializer,</span>
@@ -4393,7 +4393,7 @@ BaseStepMeta            (<span title="type">type</span>)
     <span class="k">def</span> <span class="fm">__new__</span><span class="p">(</span>
         <span class="n">mcs</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">bases</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="o">...</span><span class="p">],</span> <span class="n">dct</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseStepMeta&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Set up a new class with a qualified spec.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set up a new class with a qualified spec.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name: The name of the class.</span>
@@ -4601,7 +4601,7 @@ BaseStepMeta            (<span title="type">type</span>)
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__new__</span><span class="p">(</span>
     <span class="n">mcs</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">bases</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="o">...</span><span class="p">],</span> <span class="n">dct</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseStepMeta&quot;</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Set up a new class with a qualified spec.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Set up a new class with a qualified spec.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: The name of the class.</span>
@@ -4800,7 +4800,7 @@ initializing your custom step class.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/step_context.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StepContext</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Provides additional context inside a step function.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Provides additional context inside a step function.</span>
 
 <span class="sd">    This class is used to access pipelines, materializers, and artifacts</span>
 <span class="sd">    inside a step function. To use it, add a `StepContext` object</span>
@@ -4830,7 +4830,7 @@ initializing your custom step class.</p>
         <span class="n">output_materializers</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseMaterializer&quot;</span><span class="p">]],</span>
         <span class="n">output_artifact_uris</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Initializes a StepContext instance.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes a StepContext instance.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            step_name: The name of the step that this context is used in.</span>
@@ -4863,7 +4863,7 @@ initializing your custom step class.</p>
     <span class="k">def</span> <span class="nf">_get_output</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">output_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StepContextOutput</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the materializer and artifact URI for a given step output.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the materializer and artifact URI for a given step output.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            output_name: Optional name of the output for which to get the</span>
@@ -4906,7 +4906,7 @@ initializing your custom step class.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">stack</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;Stack&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the current active stack.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the current active stack.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The current active stack or None.</span>
@@ -4918,7 +4918,7 @@ initializing your custom step class.</p>
         <span class="n">output_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">custom_materializer_class</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseMaterializer&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseMaterializer&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns a materializer for a given step output.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns a materializer for a given step output.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            output_name: Optional name of the output for which to get the</span>
@@ -4941,7 +4941,7 @@ initializing your custom step class.</p>
         <span class="k">return</span> <span class="n">materializer_class</span><span class="p">(</span><span class="n">artifact_uri</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">get_output_artifact_uri</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the artifact URI for a given step output.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the artifact URI for a given step output.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            output_name: Optional name of the output for which to get the URI.</span>
@@ -5080,7 +5080,7 @@ output artifacts do not match.</p></td>
     <span class="n">output_materializers</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseMaterializer&quot;</span><span class="p">]],</span>
     <span class="n">output_artifact_uris</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
 <span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Initializes a StepContext instance.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes a StepContext instance.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        step_name: The name of the step that this context is used in.</span>
@@ -5171,7 +5171,7 @@ multiple outputs, an exception will be raised.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/step_context.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_output_artifact_uri</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns the artifact URI for a given step output.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the artifact URI for a given step output.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        output_name: Optional name of the output for which to get the URI.</span>
@@ -5259,7 +5259,7 @@ the given output.</p></td>
     <span class="n">output_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">custom_materializer_class</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseMaterializer&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseMaterializer&quot;</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns a materializer for a given step output.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a materializer for a given step output.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        output_name: Optional name of the output for which to get the</span>
@@ -5318,7 +5318,7 @@ StepContextOutput            (<span title="tuple">tuple</span>)
         <details class="quote">
           <summary>Source code in <code>zenml/steps/step_context.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StepContextOutput</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Tuple containing materializer class and URI for a step output.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Tuple containing materializer class and URI for a step output.&quot;&quot;&quot;</span>
 
     <span class="n">materializer_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseMaterializer&quot;</span><span class="p">]</span>
     <span class="n">artifact_uri</span><span class="p">:</span> <span class="nb">str</span>
@@ -5595,7 +5595,7 @@ ZenML BaseStep</p></td>
     <span class="n">settings</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;SettingsOrDict&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">extra</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">BaseStep</span><span class="p">],</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">F</span><span class="p">],</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseStep</span><span class="p">]]]:</span>
-    <span class="sd">&quot;&quot;&quot;Outer decorator function for the creation of a ZenML step.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Outer decorator function for the creation of a ZenML step.</span>
 
 <span class="sd">    In order to be able to work with parameters such as `name`, it features a</span>
 <span class="sd">    nested decorator structure.</span>
@@ -5627,7 +5627,7 @@ ZenML BaseStep</p></td>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">inner_decorator</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">F</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseStep</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Inner decorator function for the creation of a ZenML Step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Inner decorator function for the creation of a ZenML Step.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            func: types.FunctionType, this function will be used as the</span>
@@ -5739,7 +5739,7 @@ def my_step(...)
         <details class="quote">
           <summary>Source code in <code>zenml/steps/step_environment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StepEnvironment</span><span class="p">(</span><span class="n">BaseEnvironmentComponent</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Added information about a step runtime inside a step function.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Added information about a step runtime inside a step function.</span>
 
 <span class="sd">    This takes the form of an Environment component. This class can be used from</span>
 <span class="sd">    within a pipeline step implementation to access additional information about</span>
@@ -5763,7 +5763,7 @@ def my_step(...)
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">step_run_info</span><span class="p">:</span> <span class="s2">&quot;StepRunInfo&quot;</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Initialize the environment of the currently running step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the environment of the currently running step.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            step_run_info: Info about the currently running step.</span>
@@ -5773,7 +5773,7 @@ def my_step(...)
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">pipeline_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;The name of the currently running pipeline.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The name of the currently running pipeline.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The name of the currently running pipeline.</span>
@@ -5782,7 +5782,7 @@ def my_step(...)
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">run_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;The name of the current pipeline run.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The name of the current pipeline run.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The name of the current pipeline run.</span>
@@ -5791,7 +5791,7 @@ def my_step(...)
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">pipeline_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;The ID of the current pipeline run.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The ID of the current pipeline run.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The ID of the current pipeline run.</span>
@@ -5804,7 +5804,7 @@ def my_step(...)
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">step_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;The name of the currently running step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The name of the currently running step.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The name of the currently running step.</span>
@@ -5813,7 +5813,7 @@ def my_step(...)
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">step_run_info</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;StepRunInfo&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Info about the currently running step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Info about the currently running step.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Info about the currently running step.</span>
@@ -5822,7 +5822,7 @@ def my_step(...)
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">cache_enabled</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns whether cache is enabled for the step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns whether cache is enabled for the step.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            True if cache is enabled for the step, otherwise False.</span>
@@ -6118,7 +6118,7 @@ def my_step(...)
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">step_run_info</span><span class="p">:</span> <span class="s2">&quot;StepRunInfo&quot;</span><span class="p">,</span>
 <span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Initialize the environment of the currently running step.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize the environment of the currently running step.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        step_run_info: Info about the currently running step.</span>
@@ -6199,10 +6199,10 @@ Output        </code>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/step_output.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Output</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;A named tuple with a default name that cannot be overridden.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A named tuple with a default name that cannot be overridden.&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">]):</span>
-        <span class="sd">&quot;&quot;&quot;Initializes the output.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes the output.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            **kwargs: The output values.</span>
@@ -6212,7 +6212,7 @@ Output        </code>
         <span class="bp">self</span><span class="o">.</span><span class="n">outputs</span> <span class="o">=</span> <span class="n">NamedTuple</span><span class="p">(</span><span class="s2">&quot;ZenOutput&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>  <span class="c1"># type: ignore[misc]</span>
 
     <span class="k">def</span> <span class="nf">items</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">]]]:</span>
-        <span class="sd">&quot;&quot;&quot;Yields a tuple of type (output_name, output_type).</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Yields a tuple of type (output_name, output_type).</span>
 
 <span class="sd">        Yields:</span>
 <span class="sd">            A tuple of type (output_name, output_type).</span>
@@ -6272,7 +6272,7 @@ Output        </code>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/step_output.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">]):</span>
-    <span class="sd">&quot;&quot;&quot;Initializes the output.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes the output.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        **kwargs: The output values.</span>
@@ -6320,7 +6320,7 @@ Output        </code>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/step_output.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">items</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">]]]:</span>
-    <span class="sd">&quot;&quot;&quot;Yields a tuple of type (output_name, output_type).</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Yields a tuple of type (output_name, output_type).</span>
 
 <span class="sd">    Yields:</span>
 <span class="sd">        A tuple of type (output_name, output_type).</span>
@@ -6450,7 +6450,7 @@ Called within <code>Do()</code> to resolve type annotations.</p>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">parse_return_type_annotations</span><span class="p">(</span>
     <span class="n">step_annotations</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Parse the returns of a step function into a dict of resolved types.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parse the returns of a step function into a dict of resolved types.</span>
 
 <span class="sd">    Called within `BaseStepMeta.__new__()` to define `cls.OUTPUT_SIGNATURE`.</span>
 <span class="sd">    Called within `Do()` to resolve type annotations.</span>
@@ -6537,7 +6537,7 @@ concrete class <code>dict</code>.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/utils.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">resolve_type_annotation</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns the non-generic class for generic aliases of the typing module.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the non-generic class for generic aliases of the typing module.</span>
 
 <span class="sd">    If the input is no generic typing alias, the input itself is returned.</span>
 

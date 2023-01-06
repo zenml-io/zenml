@@ -2204,11 +2204,11 @@ AzureContainerRegistryFlavor            (<a class="autorefs autorefs-internal" t
         <details class="quote">
           <summary>Source code in <code>zenml/container_registries/azure_container_registry.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AzureContainerRegistryFlavor</span><span class="p">(</span><span class="n">BaseContainerRegistryFlavor</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Class for Azure Container Registry.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class for Azure Container Registry.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The name of the flavor.</span>
@@ -2334,11 +2334,11 @@ BaseContainerRegistry            (<a class="autorefs autorefs-internal" title="z
         <details class="quote">
           <summary>Source code in <code>zenml/container_registries/base_container_registry.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseContainerRegistry</span><span class="p">(</span><span class="n">AuthenticationMixin</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base class for all ZenML container registries.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for all ZenML container registries.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseContainerRegistryConfig</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the `BaseContainerRegistryConfig` config.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `BaseContainerRegistryConfig` config.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The configuration.</span>
@@ -2347,7 +2347,7 @@ BaseContainerRegistry            (<a class="autorefs autorefs-internal" title="z
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">requires_authentication</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns whether the container registry requires authentication.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns whether the container registry requires authentication.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            `True` if the container registry requires authentication,</span>
@@ -2357,7 +2357,7 @@ BaseContainerRegistry            (<a class="autorefs autorefs-internal" title="z
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Username and password to authenticate with this container registry.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Username and password to authenticate with this container registry.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Tuple with username and password if this container registry</span>
@@ -2372,7 +2372,7 @@ BaseContainerRegistry            (<a class="autorefs autorefs-internal" title="z
         <span class="k">return</span> <span class="kc">None</span>
 
     <span class="k">def</span> <span class="nf">prepare_image_push</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Preparation before an image gets pushed.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Preparation before an image gets pushed.</span>
 
 <span class="sd">        Subclasses can overwrite this to do any necessary checks or</span>
 <span class="sd">        preparations before an image gets pushed.</span>
@@ -2382,7 +2382,7 @@ BaseContainerRegistry            (<a class="autorefs autorefs-internal" title="z
 <span class="sd">        &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">push_image</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Pushes a docker image.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Pushes a docker image.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            image_name: Name of the docker image that will be pushed.</span>
@@ -2571,7 +2571,7 @@ preparations before an image gets pushed.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/container_registries/base_container_registry.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">prepare_image_push</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Preparation before an image gets pushed.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Preparation before an image gets pushed.</span>
 
 <span class="sd">    Subclasses can overwrite this to do any necessary checks or</span>
 <span class="sd">    preparations before an image gets pushed.</span>
@@ -2654,7 +2654,7 @@ container registry.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/container_registries/base_container_registry.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">push_image</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Pushes a docker image.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Pushes a docker image.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        image_name: Name of the docker image that will be pushed.</span>
@@ -2732,7 +2732,7 @@ BaseContainerRegistryConfig            (<a class="autorefs autorefs-internal" ti
         <details class="quote">
           <summary>Source code in <code>zenml/container_registries/base_container_registry.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseContainerRegistryConfig</span><span class="p">(</span><span class="n">AuthenticationConfigMixin</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base config for a container registry.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base config for a container registry.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        uri: The URI of the container registry.</span>
@@ -2742,7 +2742,7 @@ BaseContainerRegistryConfig            (<a class="autorefs autorefs-internal" ti
 
     <span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;uri&quot;</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">strip_trailing_slash</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">uri</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Removes trailing slashes from the URI.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Removes trailing slashes from the URI.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            uri: The URI to be stripped.</span>
@@ -2754,7 +2754,7 @@ BaseContainerRegistryConfig            (<a class="autorefs autorefs-internal" ti
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_local</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Checks if this stack component is running locally.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if this stack component is running locally.</span>
 
 <span class="sd">        This designation is used to determine if the stack component can be</span>
 <span class="sd">        shared with other users or if it is only usable on the local host.</span>
@@ -2877,7 +2877,7 @@ shared with other users or if it is only usable on the local host.</p>
           <summary>Source code in <code>zenml/container_registries/base_container_registry.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;uri&quot;</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">strip_trailing_slash</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">uri</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Removes trailing slashes from the URI.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Removes trailing slashes from the URI.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        uri: The URI to be stripped.</span>
@@ -2924,11 +2924,11 @@ BaseContainerRegistryFlavor            (<a class="autorefs autorefs-internal" ti
         <details class="quote">
           <summary>Source code in <code>zenml/container_registries/base_container_registry.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseContainerRegistryFlavor</span><span class="p">(</span><span class="n">Flavor</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base flavor for container registries.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base flavor for container registries.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StackComponentType</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the flavor type.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the flavor type.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The flavor type.</span>
@@ -2937,7 +2937,7 @@ BaseContainerRegistryFlavor            (<a class="autorefs autorefs-internal" ti
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseContainerRegistryConfig</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Config class for this flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Config class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The config class.</span>
@@ -2946,7 +2946,7 @@ BaseContainerRegistryFlavor            (<a class="autorefs autorefs-internal" ti
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseContainerRegistry</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Implementation class.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>
@@ -3148,11 +3148,11 @@ DefaultContainerRegistryFlavor            (<a class="autorefs autorefs-internal"
         <details class="quote">
           <summary>Source code in <code>zenml/container_registries/default_container_registry.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DefaultContainerRegistryFlavor</span><span class="p">(</span><span class="n">BaseContainerRegistryFlavor</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Class for default ZenML container registries.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class for default ZenML container registries.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The name of the flavor.</span>
@@ -3278,11 +3278,11 @@ DockerHubContainerRegistryFlavor            (<a class="autorefs autorefs-interna
         <details class="quote">
           <summary>Source code in <code>zenml/container_registries/dockerhub_container_registry.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DockerHubContainerRegistryFlavor</span><span class="p">(</span><span class="n">BaseContainerRegistryFlavor</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Class for DockerHub Container Registry.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class for DockerHub Container Registry.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The name of the flavor.</span>
@@ -3408,11 +3408,11 @@ GCPContainerRegistryFlavor            (<a class="autorefs autorefs-internal" tit
         <details class="quote">
           <summary>Source code in <code>zenml/container_registries/gcp_container_registry.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">GCPContainerRegistryFlavor</span><span class="p">(</span><span class="n">BaseContainerRegistryFlavor</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Class for GCP Container Registry.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class for GCP Container Registry.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The name of the flavor.</span>
@@ -3561,7 +3561,7 @@ Actions environment.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/container_registries/github_container_registry.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">GitHubContainerRegistryConfig</span><span class="p">(</span><span class="n">BaseContainerRegistryConfig</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Configuration for the GitHub Container Registry.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Configuration for the GitHub Container Registry.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        automatic_token_authentication: If `True`, use automatic token</span>
@@ -3620,11 +3620,11 @@ GitHubContainerRegistryFlavor            (<a class="autorefs autorefs-internal" 
         <details class="quote">
           <summary>Source code in <code>zenml/container_registries/github_container_registry.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">GitHubContainerRegistryFlavor</span><span class="p">(</span><span class="n">BaseContainerRegistryFlavor</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Class for GitHub Container Registry.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class for GitHub Container Registry.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The name of the flavor.</span>

@@ -1758,11 +1758,11 @@ BaseExperimentTracker            (<a class="autorefs autorefs-internal" title="z
         <details class="quote">
           <summary>Source code in <code>zenml/experiment_trackers/base_experiment_tracker.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseExperimentTracker</span><span class="p">(</span><span class="n">StackComponent</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base class for all ZenML experiment trackers.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for all ZenML experiment trackers.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseExperimentTrackerConfig</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the config of the experiment tracker.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the config of the experiment tracker.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The config of the experiment tracker.</span>
@@ -1854,7 +1854,7 @@ BaseExperimentTrackerConfig            (<a class="autorefs autorefs-internal" ti
         <details class="quote">
           <summary>Source code in <code>zenml/experiment_trackers/base_experiment_tracker.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseExperimentTrackerConfig</span><span class="p">(</span><span class="n">StackComponentConfig</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base config for experiment trackers.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base config for experiment trackers.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
 
@@ -1903,11 +1903,11 @@ BaseExperimentTrackerFlavor            (<a class="autorefs autorefs-internal" ti
         <details class="quote">
           <summary>Source code in <code>zenml/experiment_trackers/base_experiment_tracker.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseExperimentTrackerFlavor</span><span class="p">(</span><span class="n">Flavor</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base class for all ZenML experiment tracker flavors.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for all ZenML experiment tracker flavors.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StackComponentType</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Type of the flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Type of the flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            StackComponentType: The type of the flavor.</span>
@@ -1916,7 +1916,7 @@ BaseExperimentTrackerFlavor            (<a class="autorefs autorefs-internal" ti
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseExperimentTrackerConfig</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Config class for this flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Config class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The config class for this flavor.</span>
@@ -1926,7 +1926,7 @@ BaseExperimentTrackerFlavor            (<a class="autorefs autorefs-internal" ti
     <span class="nd">@property</span>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">StackComponent</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the implementation class for this flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the implementation class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class for this flavor.</span>

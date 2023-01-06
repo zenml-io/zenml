@@ -2246,7 +2246,7 @@ name.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/exceptions.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AlreadyExistsException</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Raises exception when the `name` already exists in the system.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raises exception when the `name` already exists in the system.</span>
 
 <span class="sd">    This happens when an action is trying to create a resource with the same</span>
 <span class="sd">    name.</span>
@@ -2258,7 +2258,7 @@ name.</p>
         <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
         <span class="n">resource_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Initializes the exception.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes the exception.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            message: Message with details of exception.</span>
@@ -2339,7 +2339,7 @@ name.</p>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
     <span class="n">resource_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
 <span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Initializes the exception.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes the exception.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        message: Message with details of exception.</span>
@@ -2387,7 +2387,7 @@ ArtifactInterfaceError            (<a class="autorefs autorefs-internal" title="
         <details class="quote">
           <summary>Source code in <code>zenml/exceptions.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ArtifactInterfaceError</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Raises exception when interacting with the Artifact interface in an unsupported way.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raises exception when interacting with the Artifact interface in an unsupported way.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
 
@@ -2418,7 +2418,7 @@ ArtifactStoreInterfaceError            (<a class="autorefs autorefs-internal" ti
         <details class="quote">
           <summary>Source code in <code>zenml/exceptions.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ArtifactStoreInterfaceError</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Raises exception when interacting with the Artifact Store interface in an unsupported way.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raises exception when interacting with the Artifact Store interface in an unsupported way.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
 
@@ -2449,7 +2449,7 @@ AuthorizationException            (<a class="autorefs autorefs-internal" title="
         <details class="quote">
           <summary>Source code in <code>zenml/exceptions.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AuthorizationException</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Raised when an authorization error occurred while trying to access a ZenML resource .&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when an authorization error occurred while trying to access a ZenML resource .&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
 
@@ -2480,10 +2480,10 @@ DoesNotExistException            (<a class="autorefs autorefs-internal" title="z
         <details class="quote">
           <summary>Source code in <code>zenml/exceptions.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DoesNotExistException</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Raises exception when the entity does not exist in the system but an action is being done that requires it to be present.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raises exception when the entity does not exist in the system but an action is being done that requires it to be present.&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Initializes the exception.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes the exception.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            message: Message with details of exception.</span>
@@ -2543,7 +2543,7 @@ DoesNotExistException            (<a class="autorefs autorefs-internal" title="z
         <details class="quote">
           <summary>Source code in <code>zenml/exceptions.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Initializes the exception.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes the exception.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        message: Message with details of exception.</span>
@@ -2587,14 +2587,14 @@ DuplicateRunNameError            (<span title="RuntimeError">RuntimeError</span>
         <details class="quote">
           <summary>Source code in <code>zenml/exceptions.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DuplicateRunNameError</span><span class="p">(</span><span class="ne">RuntimeError</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Raises exception when a run with the same name already exists.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raises exception when a run with the same name already exists.&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Unable to run a pipeline with a run name that &quot;</span>
         <span class="s2">&quot;already exists.&quot;</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Initializes the exception.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes the exception.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            message: Message with details of exception.</span>
@@ -2658,7 +2658,7 @@ DuplicateRunNameError            (<span title="RuntimeError">RuntimeError</span>
     <span class="n">message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Unable to run a pipeline with a run name that &quot;</span>
     <span class="s2">&quot;already exists.&quot;</span><span class="p">,</span>
 <span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Initializes the exception.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes the exception.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        message: Message with details of exception.</span>
@@ -2702,7 +2702,7 @@ DuplicatedConfigurationError            (<a class="autorefs autorefs-internal" t
         <details class="quote">
           <summary>Source code in <code>zenml/exceptions.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DuplicatedConfigurationError</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Raised when a configuration parameter is set twice.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when a configuration parameter is set twice.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
 
@@ -2733,7 +2733,7 @@ EntityExistsError            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/exceptions.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">EntityExistsError</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Raised when trying to register an entity that already exists.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when trying to register an entity that already exists.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
 
@@ -2764,7 +2764,7 @@ GitException            (<a class="autorefs autorefs-internal" title="zenml.exce
         <details class="quote">
           <summary>Source code in <code>zenml/exceptions.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">GitException</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Raises exception when a problem occurs in git resolution.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raises exception when a problem occurs in git resolution.&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -2772,7 +2772,7 @@ GitException            (<a class="autorefs autorefs-internal" title="zenml.exce
         <span class="s2">&quot;Please make sure that all relevant files &quot;</span>
         <span class="s2">&quot;are committed.&quot;</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Initializes the exception.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes the exception.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            message: Message with details of exception.</span>
@@ -2837,7 +2837,7 @@ GitException            (<a class="autorefs autorefs-internal" title="zenml.exce
     <span class="s2">&quot;Please make sure that all relevant files &quot;</span>
     <span class="s2">&quot;are committed.&quot;</span><span class="p">,</span>
 <span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Initializes the exception.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes the exception.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        message: Message with details of exception.</span>
@@ -2881,7 +2881,7 @@ GitNotFoundError            (<span title="ImportError">ImportError</span>)
         <details class="quote">
           <summary>Source code in <code>zenml/exceptions.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">GitNotFoundError</span><span class="p">(</span><span class="ne">ImportError</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Raised when ZenML CLI is used to interact with examples on a machine with no git installation.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when ZenML CLI is used to interact with examples on a machine with no git installation.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
 
@@ -2912,7 +2912,7 @@ IllegalOperationError            (<a class="autorefs autorefs-internal" title="z
         <details class="quote">
           <summary>Source code in <code>zenml/exceptions.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">IllegalOperationError</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Raised when an illegal operation is attempted.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when an illegal operation is attempted.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
 
@@ -2943,7 +2943,7 @@ InitializationException            (<a class="autorefs autorefs-internal" title=
         <details class="quote">
           <summary>Source code in <code>zenml/exceptions.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">InitializationException</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Raised when an error occurred during initialization of a ZenML repository.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when an error occurred during initialization of a ZenML repository.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
 
@@ -2974,7 +2974,7 @@ InputResolutionError            (<a class="autorefs autorefs-internal" title="ze
         <details class="quote">
           <summary>Source code in <code>zenml/exceptions.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">InputResolutionError</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Raised when step input resolving failed.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when step input resolving failed.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
 
@@ -3005,7 +3005,7 @@ IntegrationError            (<a class="autorefs autorefs-internal" title="zenml.
         <details class="quote">
           <summary>Source code in <code>zenml/exceptions.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">IntegrationError</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Raises exceptions when a requested integration can not be activated.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raises exceptions when a requested integration can not be activated.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
 
@@ -3036,7 +3036,7 @@ MaterializerInterfaceError            (<a class="autorefs autorefs-internal" tit
         <details class="quote">
           <summary>Source code in <code>zenml/exceptions.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">MaterializerInterfaceError</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Raises exception when interacting with the Materializer interface in an unsupported way.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raises exception when interacting with the Materializer interface in an unsupported way.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
 
@@ -3067,7 +3067,7 @@ MissingStepParameterError            (<a class="autorefs autorefs-internal" titl
         <details class="quote">
           <summary>Source code in <code>zenml/exceptions.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">MissingStepParameterError</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Raises exceptions when a step parameter is missing when running a pipeline.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raises exceptions when a step parameter is missing when running a pipeline.&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -3075,7 +3075,7 @@ MissingStepParameterError            (<a class="autorefs autorefs-internal" titl
         <span class="n">missing_parameters</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
         <span class="n">parameters_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseParameters&quot;</span><span class="p">],</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Initializes a MissingStepParameterError object.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes a MissingStepParameterError object.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            step_name: Name of the step for which one or more parameters</span>
@@ -3174,7 +3174,7 @@ the parameters are missing.</p></td>
     <span class="n">missing_parameters</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
     <span class="n">parameters_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseParameters&quot;</span><span class="p">],</span>
 <span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Initializes a MissingStepParameterError object.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes a MissingStepParameterError object.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        step_name: Name of the step for which one or more parameters</span>
@@ -3238,7 +3238,7 @@ NotAuthorizedError            (<a class="autorefs autorefs-internal" title="zenm
         <details class="quote">
           <summary>Source code in <code>zenml/exceptions.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">NotAuthorizedError</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Raised when the user does not have permission to perform an action.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when the user does not have permission to perform an action.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
 
@@ -3269,7 +3269,7 @@ PipelineConfigurationError            (<a class="autorefs autorefs-internal" tit
         <details class="quote">
           <summary>Source code in <code>zenml/exceptions.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PipelineConfigurationError</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Raises exceptions when a pipeline configuration contains invalid values.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raises exceptions when a pipeline configuration contains invalid values.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
 
@@ -3300,7 +3300,7 @@ PipelineInterfaceError            (<a class="autorefs autorefs-internal" title="
         <details class="quote">
           <summary>Source code in <code>zenml/exceptions.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PipelineInterfaceError</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Raises exception when interacting with the Pipeline interface in an unsupported way.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raises exception when interacting with the Pipeline interface in an unsupported way.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
 
@@ -3331,14 +3331,14 @@ PipelineNotSucceededException            (<a class="autorefs autorefs-internal" 
         <details class="quote">
           <summary>Source code in <code>zenml/exceptions.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PipelineNotSucceededException</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Raises exception when trying to fetch artifacts from a not succeeded pipeline.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raises exception when trying to fetch artifacts from a not succeeded pipeline.&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
         <span class="n">message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> is not yet completed successfully.&quot;</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Initializes the exception.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes the exception.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name: Name of the pipeline.</span>
@@ -3409,7 +3409,7 @@ PipelineNotSucceededException            (<a class="autorefs autorefs-internal" 
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
     <span class="n">message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> is not yet completed successfully.&quot;</span><span class="p">,</span>
 <span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Initializes the exception.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes the exception.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: Name of the pipeline.</span>
@@ -3454,7 +3454,7 @@ ProvisioningError            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/exceptions.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ProvisioningError</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Raised when an error occurs when provisioning resources for a StackComponent.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when an error occurs when provisioning resources for a StackComponent.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
 
@@ -3485,7 +3485,7 @@ SecretExistsError            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/exceptions.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SecretExistsError</span><span class="p">(</span><span class="n">EntityExistsError</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Raised when trying to register a secret with existing name.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when trying to register a secret with existing name.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
 
@@ -3516,7 +3516,7 @@ SettingsResolvingError            (<a class="autorefs autorefs-internal" title="
         <details class="quote">
           <summary>Source code in <code>zenml/exceptions.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SettingsResolvingError</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Raised when resolving settings failed.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when resolving settings failed.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
 
@@ -3547,7 +3547,7 @@ StackComponentExistsError            (<a class="autorefs autorefs-internal" titl
         <details class="quote">
           <summary>Source code in <code>zenml/exceptions.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StackComponentExistsError</span><span class="p">(</span><span class="n">EntityExistsError</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Raised when trying to register a stack component with existing name.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when trying to register a stack component with existing name.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
 
@@ -3578,7 +3578,7 @@ StackComponentInterfaceError            (<a class="autorefs autorefs-internal" t
         <details class="quote">
           <summary>Source code in <code>zenml/exceptions.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StackComponentInterfaceError</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Raises exception when interacting with the stack components in an unsupported way.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raises exception when interacting with the stack components in an unsupported way.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
 
@@ -3609,7 +3609,7 @@ StackExistsError            (<a class="autorefs autorefs-internal" title="zenml.
         <details class="quote">
           <summary>Source code in <code>zenml/exceptions.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StackExistsError</span><span class="p">(</span><span class="n">EntityExistsError</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Raised when trying to register a stack with name that already exists.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when trying to register a stack with name that already exists.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
 
@@ -3640,7 +3640,7 @@ StackValidationError            (<a class="autorefs autorefs-internal" title="ze
         <details class="quote">
           <summary>Source code in <code>zenml/exceptions.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StackValidationError</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Raised when a stack configuration is not valid.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when a stack configuration is not valid.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
 
@@ -3671,7 +3671,7 @@ StepContextError            (<a class="autorefs autorefs-internal" title="zenml.
         <details class="quote">
           <summary>Source code in <code>zenml/exceptions.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StepContextError</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Raises exception when interacting with a StepContext in an unsupported way.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raises exception when interacting with a StepContext in an unsupported way.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
 
@@ -3702,7 +3702,7 @@ StepInterfaceError            (<a class="autorefs autorefs-internal" title="zenm
         <details class="quote">
           <summary>Source code in <code>zenml/exceptions.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StepInterfaceError</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Raises exception when interacting with the Step interface in an unsupported way.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raises exception when interacting with the Step interface in an unsupported way.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
 
@@ -3733,7 +3733,7 @@ ValidationError            (<a class="autorefs autorefs-internal" title="zenml.e
         <details class="quote">
           <summary>Source code in <code>zenml/exceptions.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ValidationError</span><span class="p">(</span><span class="n">ZenMLBaseException</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Raised when the Model passed to the ZenStore.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when the Model passed to the ZenStore.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
 
@@ -3764,10 +3764,10 @@ ZenKeyError            (<span title="KeyError">KeyError</span>)
         <details class="quote">
           <summary>Source code in <code>zenml/exceptions.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ZenKeyError</span><span class="p">(</span><span class="ne">KeyError</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Specialized key error which allows error messages with line breaks.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Specialized key error which allows error messages with line breaks.&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Initialization.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialization.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            message:str, the error message</span>
@@ -3775,7 +3775,7 @@ ZenKeyError            (<span title="KeyError">KeyError</span>)
         <span class="bp">self</span><span class="o">.</span><span class="n">message</span> <span class="o">=</span> <span class="n">message</span>
 
     <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;String function.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;String function.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            the error message</span>
@@ -3835,7 +3835,7 @@ ZenKeyError            (<span title="KeyError">KeyError</span>)
         <details class="quote">
           <summary>Source code in <code>zenml/exceptions.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Initialization.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialization.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        message:str, the error message</span>
@@ -3884,7 +3884,7 @@ ZenKeyError            (<span title="KeyError">KeyError</span>)
         <details class="quote">
           <summary>Source code in <code>zenml/exceptions.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;String function.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;String function.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        the error message</span>
@@ -3928,14 +3928,14 @@ ZenMLBaseException            (<span title="Exception">Exception</span>)
         <details class="quote">
           <summary>Source code in <code>zenml/exceptions.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ZenMLBaseException</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base exception for all ZenML Exceptions.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base exception for all ZenML Exceptions.&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">message</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;The BaseException used to format messages displayed to the user.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The BaseException used to format messages displayed to the user.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            message: Message with details of exception. This message</span>
@@ -4017,7 +4017,7 @@ ZenMLBaseException            (<span title="Exception">Exception</span>)
     <span class="n">message</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;The BaseException used to format messages displayed to the user.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The BaseException used to format messages displayed to the user.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        message: Message with details of exception. This message</span>

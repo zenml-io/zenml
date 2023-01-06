@@ -1915,7 +1915,7 @@ management on remote model servers outside the coverage of a pipeline
         <details class="quote">
           <summary>Source code in <code>zenml/model_deployers/base_model_deployer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseModelDeployer</span><span class="p">(</span><span class="n">StackComponent</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base class for all ZenML model deployers.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for all ZenML model deployers.</span>
 
 <span class="sd">    The model deployer serves three major purposes:</span>
 
@@ -1954,7 +1954,7 @@ management on remote model servers outside the coverage of a pipeline
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseModelDeployerConfig</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the `BaseModelDeployerConfig` config.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `BaseModelDeployerConfig` config.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The configuration.</span>
@@ -1963,7 +1963,7 @@ management on remote model servers outside the coverage of a pipeline
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">get_active_model_deployer</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseModelDeployer&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Get the model deployer registered in the active stack.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the model deployer registered in the active stack.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The model deployer registered in the active stack.</span>
@@ -1998,7 +1998,7 @@ management on remote model servers outside the coverage of a pipeline
         <span class="n">replace</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseService</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Abstract method to deploy a model.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Abstract method to deploy a model.</span>
 
 <span class="sd">        Concrete model deployer subclasses must implement the following</span>
 <span class="sd">        functionality in this method:</span>
@@ -2030,7 +2030,7 @@ management on remote model servers outside the coverage of a pipeline
     <span class="k">def</span> <span class="nf">get_model_server_info</span><span class="p">(</span>
         <span class="n">service</span><span class="p">:</span> <span class="n">BaseService</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Give implementation specific way to extract relevant model server properties for the user.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Give implementation specific way to extract relevant model server properties for the user.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            service: Integration-specific service instance</span>
@@ -2051,7 +2051,7 @@ management on remote model servers outside the coverage of a pipeline
         <span class="n">model_uri</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">model_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">BaseService</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Abstract method to find one or more a model servers that match the given criteria.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Abstract method to find one or more a model servers that match the given criteria.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            running: If true, only running services will be returned.</span>
@@ -2080,7 +2080,7 @@ management on remote model servers outside the coverage of a pipeline
         <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT</span><span class="p">,</span>
         <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Abstract method to stop a model server.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Abstract method to stop a model server.</span>
 
 <span class="sd">        This operation should be reversible. A stopped model server should still</span>
 <span class="sd">        show up in the list of model servers returned by `find_model_server` and</span>
@@ -2100,7 +2100,7 @@ management on remote model servers outside the coverage of a pipeline
         <span class="n">uuid</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span>
         <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Abstract method to start a model server.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Abstract method to start a model server.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            uuid: UUID of the model server to start.</span>
@@ -2117,7 +2117,7 @@ management on remote model servers outside the coverage of a pipeline
         <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT</span><span class="p">,</span>
         <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Abstract method to delete a model server.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Abstract method to delete a model server.</span>
 
 <span class="sd">        This operation is irreversible. A deleted model server must no longer</span>
 <span class="sd">        show up in the list of model servers returned by `find_model_server`.</span>
@@ -2136,7 +2136,7 @@ management on remote model servers outside the coverage of a pipeline
         <span class="n">follow</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">tail</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Get the logs of a model server.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the logs of a model server.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            uuid: UUID of the model server to get the logs of.</span>
@@ -2264,7 +2264,7 @@ deprovisioning the service, without waiting for it to stop.</p></td>
     <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT</span><span class="p">,</span>
     <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Abstract method to delete a model server.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Abstract method to delete a model server.</span>
 
 <span class="sd">    This operation is irreversible. A deleted model server must no longer</span>
 <span class="sd">    show up in the list of model servers returned by `find_model_server`.</span>
@@ -2368,7 +2368,7 @@ to start serving the model.</p></td>
     <span class="n">replace</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseService</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Abstract method to deploy a model.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Abstract method to deploy a model.</span>
 
 <span class="sd">    Concrete model deployer subclasses must implement the following</span>
 <span class="sd">    functionality in this method:</span>
@@ -2512,7 +2512,7 @@ the input search criteria.</p></td>
     <span class="n">model_uri</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">model_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">BaseService</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Abstract method to find one or more a model servers that match the given criteria.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Abstract method to find one or more a model servers that match the given criteria.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        running: If true, only running services will be returned.</span>
@@ -2593,7 +2593,7 @@ active stack.</p></td>
           <summary>Source code in <code>zenml/model_deployers/base_model_deployer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span> <span class="nf">get_active_model_deployer</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseModelDeployer&quot;</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Get the model deployer registered in the active stack.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the model deployer registered in the active stack.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The model deployer registered in the active stack.</span>
@@ -2686,7 +2686,7 @@ active stack.</p></td>
 <span class="k">def</span> <span class="nf">get_model_server_info</span><span class="p">(</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">BaseService</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
-    <span class="sd">&quot;&quot;&quot;Give implementation specific way to extract relevant model server properties for the user.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Give implementation specific way to extract relevant model server properties for the user.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        service: Integration-specific service instance</span>
@@ -2785,7 +2785,7 @@ active stack.</p></td>
     <span class="n">follow</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">tail</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Get the logs of a model server.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the logs of a model server.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        uuid: UUID of the model server to get the logs of.</span>
@@ -2860,7 +2860,7 @@ active.</p></td>
     <span class="n">uuid</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span>
     <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Abstract method to start a model server.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Abstract method to start a model server.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        uuid: UUID of the model server to start.</span>
@@ -2936,7 +2936,7 @@ deprovisioning the service, without waiting for it to stop.</p></td>
     <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT</span><span class="p">,</span>
     <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Abstract method to stop a model server.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Abstract method to stop a model server.</span>
 
 <span class="sd">    This operation should be reversible. A stopped model server should still</span>
 <span class="sd">    show up in the list of model servers returned by `find_model_server` and</span>
@@ -2990,7 +2990,7 @@ BaseModelDeployerConfig            (<a class="autorefs autorefs-internal" title=
         <details class="quote">
           <summary>Source code in <code>zenml/model_deployers/base_model_deployer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseModelDeployerConfig</span><span class="p">(</span><span class="n">StackComponentConfig</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base config for all model deployers.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base config for all model deployers.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
 
@@ -3039,11 +3039,11 @@ BaseModelDeployerFlavor            (<a class="autorefs autorefs-internal" title=
         <details class="quote">
           <summary>Source code in <code>zenml/model_deployers/base_model_deployer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseModelDeployerFlavor</span><span class="p">(</span><span class="n">Flavor</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base class for model deployer flavors.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for model deployer flavors.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StackComponentType</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the flavor type.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the flavor type.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The flavor type.</span>
@@ -3052,7 +3052,7 @@ BaseModelDeployerFlavor            (<a class="autorefs autorefs-internal" title=
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseModelDeployerConfig</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns `BaseModelDeployerConfig` config class.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns `BaseModelDeployerConfig` config class.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">                The config class.</span>
@@ -3062,7 +3062,7 @@ BaseModelDeployerFlavor            (<a class="autorefs autorefs-internal" title=
     <span class="nd">@property</span>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseModelDeployer</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;The class that implements the model deployer.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The class that implements the model deployer.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
 

@@ -3014,7 +3014,7 @@ the pipeline to some remote infrastructure.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/orchestrators/base_orchestrator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseOrchestrator</span><span class="p">(</span><span class="n">StackComponent</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base class for all orchestrators.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for all orchestrators.</span>
 
 <span class="sd">    In order to implement an orchestrator you will need to subclass from this</span>
 <span class="sd">    class.</span>
@@ -3035,7 +3035,7 @@ the pipeline to some remote infrastructure.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseOrchestratorConfig</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the `BaseOrchestratorConfig` config.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `BaseOrchestratorConfig` config.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The configuration.</span>
@@ -3044,7 +3044,7 @@ the pipeline to some remote infrastructure.</p>
 
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">get_orchestrator_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the run id of the active orchestrator run.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the run id of the active orchestrator run.</span>
 
 <span class="sd">        Important: This needs to be a unique ID and return the same value for</span>
 <span class="sd">        all steps of a pipeline run.</span>
@@ -3059,7 +3059,7 @@ the pipeline to some remote infrastructure.</p>
         <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">,</span>
         <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;This method needs to be implemented by the respective orchestrator.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;This method needs to be implemented by the respective orchestrator.</span>
 
 <span class="sd">        Depending on the type of orchestrator you&#39;ll have to perform slightly</span>
 <span class="sd">        different operations.</span>
@@ -3098,7 +3098,7 @@ the pipeline to some remote infrastructure.</p>
 <span class="sd">        &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">,</span> <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Runs a pipeline on a stack.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Runs a pipeline on a stack.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            deployment: The pipeline deployment.</span>
@@ -3118,7 +3118,7 @@ the pipeline to some remote infrastructure.</p>
         <span class="k">return</span> <span class="n">result</span>
 
     <span class="k">def</span> <span class="nf">run_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">:</span> <span class="s2">&quot;Step&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Runs the given step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Runs the given step.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            step: The step to run.</span>
@@ -3135,7 +3135,7 @@ the pipeline to some remote infrastructure.</p>
     <span class="k">def</span> <span class="nf">requires_resources_in_orchestration_environment</span><span class="p">(</span>
         <span class="n">step</span><span class="p">:</span> <span class="s2">&quot;Step&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Checks if the orchestrator should run this step on special resources.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if the orchestrator should run this step on special resources.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            step: The step that will be checked.</span>
@@ -3153,7 +3153,7 @@ the pipeline to some remote infrastructure.</p>
         <span class="k">return</span> <span class="ow">not</span> <span class="n">step</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">resource_settings</span><span class="o">.</span><span class="n">empty</span>
 
     <span class="k">def</span> <span class="nf">_prepare_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Prepares a run.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Prepares a run.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            deployment: The deployment to prepare.</span>
@@ -3161,7 +3161,7 @@ the pipeline to some remote infrastructure.</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">_active_deployment</span> <span class="o">=</span> <span class="n">deployment</span>
 
     <span class="k">def</span> <span class="nf">_cleanup_run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Cleans up the active run.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Cleans up the active run.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_active_deployment</span> <span class="o">=</span> <span class="kc">None</span>
 </code></pre></div>
         </details>
@@ -3251,7 +3251,7 @@ all steps of a pipeline run.</p>
           <summary>Source code in <code>zenml/orchestrators/base_orchestrator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span> <span class="nf">get_orchestrator_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns the run id of the active orchestrator run.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the run id of the active orchestrator run.</span>
 
 <span class="sd">    Important: This needs to be a unique ID and return the same value for</span>
 <span class="sd">    all steps of a pipeline run.</span>
@@ -3350,7 +3350,7 @@ or entire pipelines (<code>zenml.entrypoints.pipeline_entrypoint_configuration.P
     <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">,</span>
     <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;This method needs to be implemented by the respective orchestrator.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;This method needs to be implemented by the respective orchestrator.</span>
 
 <span class="sd">    Depending on the type of orchestrator you&#39;ll have to perform slightly</span>
 <span class="sd">    different operations.</span>
@@ -3453,7 +3453,7 @@ environment, False otherwise.</p></td>
 <span class="k">def</span> <span class="nf">requires_resources_in_orchestration_environment</span><span class="p">(</span>
     <span class="n">step</span><span class="p">:</span> <span class="s2">&quot;Step&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Checks if the orchestrator should run this step on special resources.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks if the orchestrator should run this step on special resources.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        step: The step that will be checked.</span>
@@ -3534,7 +3534,7 @@ environment, False otherwise.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/orchestrators/base_orchestrator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">,</span> <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Runs a pipeline on a stack.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Runs a pipeline on a stack.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        deployment: The pipeline deployment.</span>
@@ -3596,7 +3596,7 @@ environment, False otherwise.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/orchestrators/base_orchestrator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">run_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">:</span> <span class="s2">&quot;Step&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Runs the given step.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Runs the given step.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        step: The step to run.</span>
@@ -3649,11 +3649,11 @@ BaseOrchestratorConfig            (<a class="autorefs autorefs-internal" title="
         <details class="quote">
           <summary>Source code in <code>zenml/orchestrators/base_orchestrator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseOrchestratorConfig</span><span class="p">(</span><span class="n">StackComponentConfig</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base orchestrator config.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base orchestrator config.&quot;&quot;&quot;</span>
 
     <span class="nd">@root_validator</span><span class="p">(</span><span class="n">pre</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">_deprecations</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">values</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Validate and/or remove deprecated fields.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate and/or remove deprecated fields.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            values: The values to validate.</span>
@@ -3720,11 +3720,11 @@ BaseOrchestratorFlavor            (<a class="autorefs autorefs-internal" title="
         <details class="quote">
           <summary>Source code in <code>zenml/orchestrators/base_orchestrator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseOrchestratorFlavor</span><span class="p">(</span><span class="n">Flavor</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base orchestrator flavor class.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base orchestrator flavor class.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StackComponentType</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the flavor type.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the flavor type.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The flavor type.</span>
@@ -3733,7 +3733,7 @@ BaseOrchestratorFlavor            (<a class="autorefs autorefs-internal" title="
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseOrchestratorConfig</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Config class for the base orchestrator flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Config class for the base orchestrator flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The config class.</span>
@@ -3743,7 +3743,7 @@ BaseOrchestratorFlavor            (<a class="autorefs autorefs-internal" title="
     <span class="nd">@property</span>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseOrchestrator&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>
@@ -4011,7 +4011,7 @@ runs are identical and can be cached.</p>
     <span class="n">artifact_store</span><span class="p">:</span> <span class="s2">&quot;BaseArtifactStore&quot;</span><span class="p">,</span>
     <span class="n">project_id</span><span class="p">:</span> <span class="s2">&quot;UUID&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Generates a cache key for a step run.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generates a cache key for a step run.</span>
 
 <span class="sd">    If the cache key is the same for two step runs, we conclude that the step</span>
 <span class="sd">    runs are identical and can be cached.</span>
@@ -4129,7 +4129,7 @@ project which has the same cache key and was successfully executed.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/orchestrators/cache_utils.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_cached_step_run</span><span class="p">(</span><span class="n">cache_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;StepRunResponseModel&quot;</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;If a given step can be cached, get the corresponding existing step run.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;If a given step can be cached, get the corresponding existing step run.</span>
 
 <span class="sd">    A step run can be cached if there is an existing step run in the same</span>
 <span class="sd">    project which has the same cache key and was successfully executed.</span>
@@ -4214,7 +4214,7 @@ NodeStatus            (<span title="enum.Enum">Enum</span>)
         <details class="quote">
           <summary>Source code in <code>zenml/orchestrators/dag_runner.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">NodeStatus</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Status of the execution of a node.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Status of the execution of a node.&quot;&quot;&quot;</span>
 
     <span class="n">WAITING</span> <span class="o">=</span> <span class="s2">&quot;Waiting&quot;</span>
     <span class="n">RUNNING</span> <span class="o">=</span> <span class="s2">&quot;Running&quot;</span>
@@ -4270,7 +4270,7 @@ string node in the DAG.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/orchestrators/dag_runner.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ThreadedDagRunner</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Multi-threaded DAG Runner.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Multi-threaded DAG Runner.</span>
 
 <span class="sd">    This class expects a DAG of strings in adjacency list representation, as</span>
 <span class="sd">    well as a custom `run_fn` as input, then calls `run_fn(node)` for each</span>
@@ -4282,7 +4282,7 @@ string node in the DAG.</p>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">dag</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">run_fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Any</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Define attributes and initialize all nodes in waiting state.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Define attributes and initialize all nodes in waiting state.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            dag: Adjacency list representation of a DAG.</span>
@@ -4298,7 +4298,7 @@ string node in the DAG.</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">_can_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Determine whether a node is ready to be run.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Determine whether a node is ready to be run.</span>
 
 <span class="sd">        This is the case if the node has not run yet and all of its upstream</span>
 <span class="sd">        node have already completed.</span>
@@ -4321,7 +4321,7 @@ string node in the DAG.</p>
         <span class="k">return</span> <span class="kc">True</span>
 
     <span class="k">def</span> <span class="nf">_run_node</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Run a single node.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run a single node.</span>
 
 <span class="sd">        Calls the user-defined run_fn, then calls `self._finish_node`.</span>
 
@@ -4332,7 +4332,7 @@ string node in the DAG.</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">_finish_node</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_run_node_in_thread</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Run a single node in a separate thread.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run a single node in a separate thread.</span>
 
 <span class="sd">        First updates the node status to running.</span>
 <span class="sd">        Then calls self._run_node() in a new thread and returns the thread.</span>
@@ -4354,7 +4354,7 @@ string node in the DAG.</p>
         <span class="k">return</span> <span class="n">thread</span>
 
     <span class="k">def</span> <span class="nf">_finish_node</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Finish a node run.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Finish a node run.</span>
 
 <span class="sd">        First updates the node status to completed.</span>
 <span class="sd">        Then starts all other nodes that can now be run and waits for them.</span>
@@ -4379,7 +4379,7 @@ string node in the DAG.</p>
             <span class="n">thread</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Call `self.run_fn` on all nodes in `self.dag`.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Call `self.run_fn` on all nodes in `self.dag`.</span>
 
 <span class="sd">        The order of execution is determined using topological sort.</span>
 <span class="sd">        Each node is run in a separate thread to enable parallelism.</span>
@@ -4469,7 +4469,7 @@ E.g.: [(1-&gt;2), (1-&gt;3), (2-&gt;4), (3-&gt;4)] should be represented as
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">dag</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">run_fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Any</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Define attributes and initialize all nodes in waiting state.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Define attributes and initialize all nodes in waiting state.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        dag: Adjacency list representation of a DAG.</span>
@@ -4510,7 +4510,7 @@ Each node is run in a separate thread to enable parallelism.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/orchestrators/dag_runner.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Call `self.run_fn` on all nodes in `self.dag`.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Call `self.run_fn` on all nodes in `self.dag`.</span>
 
 <span class="sd">    The order of execution is determined using topological sort.</span>
 <span class="sd">    Each node is run in a separate thread to enable parallelism.</span>
@@ -4606,7 +4606,7 @@ Each node is run in a separate thread to enable parallelism.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/orchestrators/dag_runner.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">reverse_dag</span><span class="p">(</span><span class="n">dag</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
-    <span class="sd">&quot;&quot;&quot;Reverse a DAG.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reverse a DAG.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        dag: Adjacency list representation of a DAG.</span>
@@ -4748,7 +4748,7 @@ current step.</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">resolve_step_inputs</span><span class="p">(</span>
     <span class="n">step</span><span class="p">:</span> <span class="s2">&quot;Step&quot;</span><span class="p">,</span> <span class="n">run_id</span><span class="p">:</span> <span class="n">UUID</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;ArtifactResponseModel&quot;</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">UUID</span><span class="p">]]:</span>
-    <span class="sd">&quot;&quot;&quot;Resolves inputs for the current step.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Resolves inputs for the current step.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        step: The step for which to resolve the inputs.</span>
@@ -4890,7 +4890,7 @@ does not support running on a schedule.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/orchestrators/local/local_orchestrator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">LocalOrchestrator</span><span class="p">(</span><span class="n">BaseOrchestrator</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Orchestrator responsible for running pipelines locally.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Orchestrator responsible for running pipelines locally.</span>
 
 <span class="sd">    This orchestrator does not allow for concurrent execution of steps and also</span>
 <span class="sd">    does not support running on a schedule.</span>
@@ -4903,7 +4903,7 @@ does not support running on a schedule.</p>
         <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">,</span>
         <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Iterates through all steps and executes them sequentially.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Iterates through all steps and executes them sequentially.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            deployment: The pipeline deployment to prepare or run.</span>
@@ -4946,7 +4946,7 @@ does not support running on a schedule.</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">_orchestrator_run_id</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="k">def</span> <span class="nf">get_orchestrator_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the active orchestrator run id.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the active orchestrator run id.</span>
 
 <span class="sd">        Raises:</span>
 <span class="sd">            RuntimeError: If no run id exists. This happens when this method</span>
@@ -5022,7 +5022,7 @@ gets called while the orchestrator is not running a pipeline.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/orchestrators/local/local_orchestrator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_orchestrator_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns the active orchestrator run id.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the active orchestrator run id.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        RuntimeError: If no run id exists. This happens when this method</span>
@@ -5089,7 +5089,7 @@ gets called while the orchestrator is not running a pipeline.</p></td>
     <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">,</span>
     <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Iterates through all steps and executes them sequentially.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Iterates through all steps and executes them sequentially.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        deployment: The pipeline deployment to prepare or run.</span>
@@ -5171,11 +5171,11 @@ LocalOrchestratorConfig            (<a class="autorefs autorefs-internal" title=
         <details class="quote">
           <summary>Source code in <code>zenml/orchestrators/local/local_orchestrator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">LocalOrchestratorConfig</span><span class="p">(</span><span class="n">BaseOrchestratorConfig</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Local orchestrator config.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Local orchestrator config.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_local</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Checks if this stack component is running locally.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if this stack component is running locally.</span>
 
 <span class="sd">        This designation is used to determine if the stack component can be</span>
 <span class="sd">        shared with other users or if it is only usable on the local host.</span>
@@ -5272,11 +5272,11 @@ LocalOrchestratorFlavor            (<a class="autorefs autorefs-internal" title=
         <details class="quote">
           <summary>Source code in <code>zenml/orchestrators/local/local_orchestrator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">LocalOrchestratorFlavor</span><span class="p">(</span><span class="n">BaseOrchestratorFlavor</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Class for the `LocalOrchestratorFlavor`.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class for the `LocalOrchestratorFlavor`.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;The flavor name.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The flavor name.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The flavor name.</span>
@@ -5285,7 +5285,7 @@ LocalOrchestratorFlavor            (<a class="autorefs autorefs-internal" title=
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseOrchestratorConfig</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Config class for the base orchestrator flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Config class for the base orchestrator flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The config class.</span>
@@ -5294,7 +5294,7 @@ LocalOrchestratorFlavor            (<a class="autorefs autorefs-internal" title=
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">LocalOrchestrator</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class for this flavor.</span>
@@ -5540,7 +5540,7 @@ does not support running on a schedule.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/orchestrators/local_docker/local_docker_orchestrator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">LocalDockerOrchestrator</span><span class="p">(</span><span class="n">BaseOrchestrator</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Orchestrator responsible for running pipelines locally using Docker.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Orchestrator responsible for running pipelines locally using Docker.</span>
 
 <span class="sd">    This orchestrator does not allow for concurrent execution of steps and also</span>
 <span class="sd">    does not support running on a schedule.</span>
@@ -5548,7 +5548,7 @@ does not support running on a schedule.</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">settings_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseSettings&quot;</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Settings class for the Local Docker orchestrator.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Settings class for the Local Docker orchestrator.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The settings class.</span>
@@ -5560,7 +5560,7 @@ does not support running on a schedule.</p>
         <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">,</span>
         <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Build a Docker image and (maybe) push it to the container registry.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build a Docker image and (maybe) push it to the container registry.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            deployment: The pipeline deployment configuration.</span>
@@ -5587,7 +5587,7 @@ does not support running on a schedule.</p>
             <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">get_orchestrator_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the active orchestrator run id.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the active orchestrator run id.</span>
 
 <span class="sd">        Raises:</span>
 <span class="sd">            RuntimeError: If the environment variable specifying the run id</span>
@@ -5609,7 +5609,7 @@ does not support running on a schedule.</p>
         <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">,</span>
         <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Sequentially runs all pipeline steps in local Docker containers.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sequentially runs all pipeline steps in local Docker containers.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            deployment: The pipeline deployment to prepare or run.</span>
@@ -5793,7 +5793,7 @@ is not set.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/orchestrators/local_docker/local_docker_orchestrator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_orchestrator_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns the active orchestrator run id.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the active orchestrator run id.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        RuntimeError: If the environment variable specifying the run id</span>
@@ -5863,7 +5863,7 @@ is not set.</p></td>
     <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">,</span>
     <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Sequentially runs all pipeline steps in local Docker containers.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Sequentially runs all pipeline steps in local Docker containers.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        deployment: The pipeline deployment to prepare or run.</span>
@@ -6000,7 +6000,7 @@ is not set.</p></td>
     <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">,</span>
     <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Build a Docker image and (maybe) push it to the container registry.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build a Docker image and (maybe) push it to the container registry.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        deployment: The pipeline deployment configuration.</span>
@@ -6068,11 +6068,11 @@ LocalDockerOrchestratorConfig            (<a class="autorefs autorefs-internal" 
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">LocalDockerOrchestratorConfig</span><span class="p">(</span>  <span class="c1"># type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173</span>
     <span class="n">BaseOrchestratorConfig</span><span class="p">,</span> <span class="n">LocalDockerOrchestratorSettings</span>
 <span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Local Docker orchestrator config.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Local Docker orchestrator config.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_local</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Checks if this stack component is running locally.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if this stack component is running locally.</span>
 
 <span class="sd">        This designation is used to determine if the stack component can be</span>
 <span class="sd">        shared with other users or if it is only usable on the local host.</span>
@@ -6169,11 +6169,11 @@ LocalDockerOrchestratorFlavor            (<a class="autorefs autorefs-internal" 
         <details class="quote">
           <summary>Source code in <code>zenml/orchestrators/local_docker/local_docker_orchestrator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">LocalDockerOrchestratorFlavor</span><span class="p">(</span><span class="n">BaseOrchestratorFlavor</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Flavor for the local Docker orchestrator.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Flavor for the local Docker orchestrator.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Name of the orchestrator flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the orchestrator flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Name of the orchestrator flavor.</span>
@@ -6182,7 +6182,7 @@ LocalDockerOrchestratorFlavor            (<a class="autorefs autorefs-internal" 
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseOrchestratorConfig</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Config class for the base orchestrator flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Config class for the base orchestrator flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The config class.</span>
@@ -6191,7 +6191,7 @@ LocalDockerOrchestratorFlavor            (<a class="autorefs autorefs-internal" 
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;LocalDockerOrchestrator&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Implementation class for this flavor.</span>
@@ -6376,7 +6376,7 @@ LocalDockerOrchestratorSettings            (<a class="autorefs autorefs-internal
         <details class="quote">
           <summary>Source code in <code>zenml/orchestrators/local_docker/local_docker_orchestrator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">LocalDockerOrchestratorSettings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Local Docker orchestrator settings.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Local Docker orchestrator settings.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        run_args: Arguments to pass to the `docker run` call.</span>
@@ -6388,7 +6388,7 @@ LocalDockerOrchestratorSettings            (<a class="autorefs autorefs-internal
     <span class="k">def</span> <span class="nf">_convert_json_string</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Converts potential JSON strings passed via the CLI to dictionaries.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Converts potential JSON strings passed via the CLI to dictionaries.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            value: The value to convert.</span>
@@ -6560,7 +6560,7 @@ LocalDockerOrchestratorSettings            (<a class="autorefs autorefs-internal
     <span class="n">step_run</span><span class="p">:</span> <span class="s2">&quot;StepRunResponseModel&quot;</span><span class="p">,</span>
     <span class="n">output_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Generates a URI for an output artifact.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generates a URI for an output artifact.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        artifact_store: The artifact store on which the artifact will be stored.</span>
@@ -6664,7 +6664,7 @@ LocalDockerOrchestratorSettings            (<a class="autorefs autorefs-internal
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">prepare_output_artifact_uris</span><span class="p">(</span>
     <span class="n">step_run</span><span class="p">:</span> <span class="s2">&quot;StepRunResponseModel&quot;</span><span class="p">,</span> <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span> <span class="n">step</span><span class="p">:</span> <span class="s2">&quot;Step&quot;</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Prepares the output artifact URIs to run the current step.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Prepares the output artifact URIs to run the current step.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        step_run: The step run for which to prepare the artifact URIs.</span>
@@ -6733,7 +6733,7 @@ LocalDockerOrchestratorSettings            (<a class="autorefs autorefs-internal
         <details class="quote">
           <summary>Source code in <code>zenml/orchestrators/output_utils.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">remove_artifact_dirs</span><span class="p">(</span><span class="n">artifact_uris</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Removes the artifact directories.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Removes the artifact directories.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        artifact_uris: URIs of the artifacts to remove the directories for.</span>
@@ -6845,7 +6845,7 @@ LocalDockerOrchestratorSettings            (<a class="autorefs autorefs-internal
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_pipeline_run_status</span><span class="p">(</span>
     <span class="n">step_statuses</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ExecutionStatus</span><span class="p">],</span> <span class="n">num_steps</span><span class="p">:</span> <span class="nb">int</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ExecutionStatus</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Gets the pipeline run status for the given step statuses.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets the pipeline run status for the given step statuses.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        step_statuses: The status of steps in this run.</span>
@@ -6924,7 +6924,7 @@ LocalDockerOrchestratorSettings            (<a class="autorefs autorefs-internal
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">publish_failed_pipeline_run</span><span class="p">(</span>
     <span class="n">pipeline_run_id</span><span class="p">:</span> <span class="s2">&quot;UUID&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;PipelineRunResponseModel&quot;</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Publishes a failed pipeline run.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Publishes a failed pipeline run.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        pipeline_run_id: The ID of the pipeline run to update.</span>
@@ -6998,7 +6998,7 @@ LocalDockerOrchestratorSettings            (<a class="autorefs autorefs-internal
         <details class="quote">
           <summary>Source code in <code>zenml/orchestrators/publish_utils.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">publish_failed_step_run</span><span class="p">(</span><span class="n">step_run_id</span><span class="p">:</span> <span class="s2">&quot;UUID&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;StepRunResponseModel&quot;</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Publishes a failed step run.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Publishes a failed step run.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        step_run_id: The ID of the step run to update.</span>
@@ -7074,7 +7074,7 @@ LocalDockerOrchestratorSettings            (<a class="autorefs autorefs-internal
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">publish_output_artifacts</span><span class="p">(</span>
     <span class="n">output_artifacts</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;ArtifactRequestModel&quot;</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;UUID&quot;</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Publishes the given output artifacts.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Publishes the given output artifacts.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        output_artifacts: The output artifacts to register.</span>
@@ -7155,7 +7155,7 @@ LocalDockerOrchestratorSettings            (<a class="autorefs autorefs-internal
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">publish_successful_step_run</span><span class="p">(</span>
     <span class="n">step_run_id</span><span class="p">:</span> <span class="s2">&quot;UUID&quot;</span><span class="p">,</span> <span class="n">output_artifact_ids</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;UUID&quot;</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;StepRunResponseModel&quot;</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Publishes a successful step run.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Publishes a successful step run.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        step_run_id: The ID of the step run to update.</span>
@@ -7216,7 +7216,7 @@ LocalDockerOrchestratorSettings            (<a class="autorefs autorefs-internal
         <details class="quote">
           <summary>Source code in <code>zenml/orchestrators/publish_utils.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">update_pipeline_run_status</span><span class="p">(</span><span class="n">pipeline_run</span><span class="p">:</span> <span class="n">PipelineRunResponseModel</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Updates the status of the current pipeline run.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Updates the status of the current pipeline run.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        pipeline_run: The model of the current pipeline run.</span>
@@ -7314,7 +7314,7 @@ two ways depending on its configuration:
         <details class="quote">
           <summary>Source code in <code>zenml/orchestrators/step_launcher.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StepLauncher</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;This class is responsible for launching a step of a ZenML pipeline.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;This class is responsible for launching a step of a ZenML pipeline.</span>
 
 <span class="sd">    This class follows these steps to launch and publish a ZenML step:</span>
 <span class="sd">    1. Publish or reuse a `PipelineRun`</span>
@@ -7336,7 +7336,7 @@ two ways depending on its configuration:
         <span class="n">step</span><span class="p">:</span> <span class="n">Step</span><span class="p">,</span>
         <span class="n">orchestrator_run_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Initializes the launcher.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes the launcher.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            deployment: The pipeline deployment.</span>
@@ -7353,7 +7353,7 @@ two ways depending on its configuration:
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">launch</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Launches the step.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Launches the step.&quot;&quot;&quot;</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Step `</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_step_name</span><span class="si">}</span><span class="s2">` has started.&quot;</span><span class="p">)</span>
 
         <span class="n">pipeline_run</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_or_reuse_run</span><span class="p">()</span>
@@ -7399,7 +7399,7 @@ two ways depending on its configuration:
             <span class="k">raise</span>
 
     <span class="k">def</span> <span class="nf">_create_or_reuse_run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PipelineRunResponseModel</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Creates a run or reuses an existing one.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Creates a run or reuses an existing one.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The created or existing run.</span>
@@ -7436,7 +7436,7 @@ two ways depending on its configuration:
     <span class="k">def</span> <span class="nf">_prepare</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">step_run</span><span class="p">:</span> <span class="n">StepRunRequestModel</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">StepRunResponseModel</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Prepares running the step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Prepares running the step.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            step_run: The step to run.</span>
@@ -7495,7 +7495,7 @@ two ways depending on its configuration:
         <span class="n">pipeline_run</span><span class="p">:</span> <span class="n">PipelineRunResponseModel</span><span class="p">,</span>
         <span class="n">step_run</span><span class="p">:</span> <span class="n">StepRunResponseModel</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Runs the current step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Runs the current step.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            pipeline_run: The model of the current pipeline run.</span>
@@ -7545,7 +7545,7 @@ two ways depending on its configuration:
         <span class="n">step_operator_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">step_run_info</span><span class="p">:</span> <span class="n">StepRunInfo</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Runs the current step with a step operator.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Runs the current step with a step operator.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            step_operator_name: The name of the step operator to use.</span>
@@ -7582,7 +7582,7 @@ two ways depending on its configuration:
         <span class="n">input_artifacts</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;ArtifactResponseModel&quot;</span><span class="p">],</span>
         <span class="n">output_artifact_uris</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Runs the current step without a step operator.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Runs the current step without a step operator.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            step_run_info: Additional information needed to run the step.</span>
@@ -7666,7 +7666,7 @@ two ways depending on its configuration:
     <span class="n">step</span><span class="p">:</span> <span class="n">Step</span><span class="p">,</span>
     <span class="n">orchestrator_run_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
 <span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Initializes the launcher.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes the launcher.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        deployment: The pipeline deployment.</span>
@@ -7706,7 +7706,7 @@ two ways depending on its configuration:
         <details class="quote">
           <summary>Source code in <code>zenml/orchestrators/step_launcher.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">launch</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Launches the step.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Launches the step.&quot;&quot;&quot;</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Step `</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_step_name</span><span class="si">}</span><span class="s2">` has started.&quot;</span><span class="p">)</span>
 
     <span class="n">pipeline_run</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_or_reuse_run</span><span class="p">()</span>
@@ -7825,10 +7825,10 @@ StepRunner        </code>
         <details class="quote">
           <summary>Source code in <code>zenml/orchestrators/step_runner.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StepRunner</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Class to run steps.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class to run steps.&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">:</span> <span class="s2">&quot;Step&quot;</span><span class="p">,</span> <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Initializes the step runner.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes the step runner.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            step: The step to run.</span>
@@ -7839,7 +7839,7 @@ StepRunner        </code>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">configuration</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StepConfiguration</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Configuration of the step to run.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Configuration of the step to run.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The step configuration.</span>
@@ -7852,7 +7852,7 @@ StepRunner        </code>
         <span class="n">output_artifact_uris</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
         <span class="n">step_run_info</span><span class="p">:</span> <span class="n">StepRunInfo</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Runs the step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Runs the step.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            input_artifacts: The input artifacts of the step.</span>
@@ -7910,7 +7910,7 @@ StepRunner        </code>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_load_step_entrypoint</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Load the step entrypoint function.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load the step entrypoint function.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The step entrypoint function.</span>
@@ -7926,7 +7926,7 @@ StepRunner        </code>
         <span class="k">return</span> <span class="n">step_instance</span><span class="o">.</span><span class="n">entrypoint</span>
 
     <span class="k">def</span> <span class="nf">_load_output_materializers</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseMaterializer</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Loads the output materializers for the step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Loads the output materializers for the step.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The step output materializers.</span>
@@ -7949,7 +7949,7 @@ StepRunner        </code>
         <span class="n">output_artifact_uris</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
         <span class="n">output_materializers</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseMaterializer</span><span class="p">]],</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Parses the inputs for a step entrypoint function.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Parses the inputs for a step entrypoint function.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            args: The arguments of the step entrypoint function.</span>
@@ -7999,7 +7999,7 @@ StepRunner        </code>
     <span class="k">def</span> <span class="nf">_load_input_artifact</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">artifact</span><span class="p">:</span> <span class="s2">&quot;ArtifactResponseModel&quot;</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Loads an input artifact.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Loads an input artifact.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            artifact: The artifact to load.</span>
@@ -8036,7 +8036,7 @@ StepRunner        </code>
         <span class="n">return_values</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
         <span class="n">output_annotations</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Validates the step function outputs.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validates the step function outputs.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            return_values: The return values of the step function.</span>
@@ -8109,7 +8109,7 @@ StepRunner        </code>
         <span class="n">output_materializers</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseMaterializer</span><span class="p">]],</span>
         <span class="n">output_artifact_uris</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ArtifactRequestModel</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Stores the output artifacts of the step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Stores the output artifacts of the step.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            output_data: The output data of the step function, mapping output</span>
@@ -8246,7 +8246,7 @@ StepRunner        </code>
         <details class="quote">
           <summary>Source code in <code>zenml/orchestrators/step_runner.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">:</span> <span class="s2">&quot;Step&quot;</span><span class="p">,</span> <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Initializes the step runner.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes the step runner.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        step: The step to run.</span>
@@ -8315,7 +8315,7 @@ StepRunner        </code>
     <span class="n">output_artifact_uris</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
     <span class="n">step_run_info</span><span class="p">:</span> <span class="n">StepRunInfo</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Runs the step.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Runs the step.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        input_artifacts: The input artifacts of the step.</span>
@@ -8529,7 +8529,7 @@ by its node id given by <code>get_node_id_fn</code>.</p></td>
     <span class="n">get_parent_nodes</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">NodeT</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">NodeT</span><span class="p">]],</span>
     <span class="n">get_child_nodes</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">NodeT</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">NodeT</span><span class="p">]],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">NodeT</span><span class="p">]]:</span>
-    <span class="sd">&quot;&quot;&quot;Sorts the DAG of nodes in topological order.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Sorts the DAG of nodes in topological order.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        nodes: A sequence of nodes.</span>
@@ -8725,7 +8725,7 @@ used to display in the orchestrator UI.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/orchestrators/utils.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_orchestrator_run_name</span><span class="p">(</span><span class="n">pipeline_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Gets an orchestrator run name.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets an orchestrator run name.</span>
 
 <span class="sd">    This run name is not the same as the ZenML run name but can instead be</span>
 <span class="sd">    used to display in the orchestrator UI.</span>
@@ -8805,7 +8805,7 @@ used to display in the orchestrator UI.</p>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_run_id_for_orchestrator_run_id</span><span class="p">(</span>
     <span class="n">orchestrator</span><span class="p">:</span> <span class="s2">&quot;BaseOrchestrator&quot;</span><span class="p">,</span> <span class="n">orchestrator_run_id</span><span class="p">:</span> <span class="nb">str</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UUID</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Generates a run ID from an orchestrator run id.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generates a run ID from an orchestrator run id.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        orchestrator: The orchestrator of the run.</span>

@@ -1738,7 +1738,7 @@ StackRecipeService            (<a class="autorefs autorefs-internal" title="zenm
         <details class="quote">
           <summary>Source code in <code>zenml/recipes/stack_recipe_service.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StackRecipeService</span><span class="p">(</span><span class="n">TerraformService</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Class to represent terraform applications.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class to represent terraform applications.&quot;&quot;&quot;</span>
 
     <span class="n">SERVICE_TYPE</span> <span class="o">=</span> <span class="n">ServiceType</span><span class="p">(</span>
         <span class="n">name</span><span class="o">=</span><span class="s2">&quot;stackrecipes&quot;</span><span class="p">,</span>
@@ -1755,7 +1755,7 @@ StackRecipeService            (<a class="autorefs autorefs-internal" title="zenm
     <span class="n">create_zen_server</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 
     <span class="k">def</span> <span class="nf">check_installation</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Checks if necessary tools are installed on the host system.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if necessary tools are installed on the host system.</span>
 
 <span class="sd">        Raises:</span>
 <span class="sd">            RuntimeError: if any required tool is not installed.</span>
@@ -1789,7 +1789,7 @@ StackRecipeService            (<a class="autorefs autorefs-internal" title="zenm
             <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_is_kubectl_installed</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Checks if kubectl is installed on the host system.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if kubectl is installed on the host system.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            True if kubectl is installed, false otherwise.</span>
@@ -1802,7 +1802,7 @@ StackRecipeService            (<a class="autorefs autorefs-internal" title="zenm
         <span class="k">return</span> <span class="kc">True</span>
 
     <span class="k">def</span> <span class="nf">_is_helm_installed</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Checks if helm is installed on the host system.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if helm is installed on the host system.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            True if helm is installed, false otherwise.</span>
@@ -1815,7 +1815,7 @@ StackRecipeService            (<a class="autorefs autorefs-internal" title="zenm
         <span class="k">return</span> <span class="kc">True</span>
 
     <span class="k">def</span> <span class="nf">_is_docker_installed</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Checks if docker is installed on the host system.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if docker is installed on the host system.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            True if docker is installed, false otherwise.</span>
@@ -1829,7 +1829,7 @@ StackRecipeService            (<a class="autorefs autorefs-internal" title="zenm
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">stack_file_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Get the path to the stack yaml file.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the path to the stack yaml file.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The path to the stack yaml file.</span>
@@ -1842,7 +1842,7 @@ StackRecipeService            (<a class="autorefs autorefs-internal" title="zenm
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">get_service</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">recipe_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;StackRecipeService&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Load and return the stack recipe service, if present.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load and return the stack recipe service, if present.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            recipe_path: The path to the directory that hosts the recipe.</span>
@@ -1881,7 +1881,7 @@ StackRecipeService            (<a class="autorefs autorefs-internal" title="zenm
             <span class="k">return</span> <span class="kc">None</span>
 
     <span class="k">def</span> <span class="nf">get_vars</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Get variables as a dictionary.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get variables as a dictionary.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            A dictionary of variables to use for the stack recipes</span>
@@ -1893,7 +1893,7 @@ StackRecipeService            (<a class="autorefs autorefs-internal" title="zenm
         <span class="k">return</span> <span class="nb">vars</span>
 
     <span class="k">def</span> <span class="nf">get_deployment_info</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Return deployment details as a YAML document.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return deployment details as a YAML document.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            A YAML document that can be passed as config to</span>
@@ -2012,7 +2012,7 @@ StackRecipeService            (<a class="autorefs autorefs-internal" title="zenm
         <details class="quote">
           <summary>Source code in <code>zenml/recipes/stack_recipe_service.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">check_installation</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Checks if necessary tools are installed on the host system.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks if necessary tools are installed on the host system.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        RuntimeError: if any required tool is not installed.</span>
@@ -2085,7 +2085,7 @@ the server deploy function.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/recipes/stack_recipe_service.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_deployment_info</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Return deployment details as a YAML document.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return deployment details as a YAML document.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A YAML document that can be passed as config to</span>
@@ -2177,7 +2177,7 @@ deployment is not found.</p></td>
           <summary>Source code in <code>zenml/recipes/stack_recipe_service.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span> <span class="nf">get_service</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">recipe_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;StackRecipeService&quot;</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Load and return the stack recipe service, if present.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load and return the stack recipe service, if present.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        recipe_path: The path to the directory that hosts the recipe.</span>
@@ -2255,7 +2255,7 @@ derived from the tfvars.json file.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/recipes/stack_recipe_service.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_vars</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Get variables as a dictionary.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get variables as a dictionary.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A dictionary of variables to use for the stack recipes</span>

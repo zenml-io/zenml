@@ -2710,7 +2710,7 @@ DeepchecksIntegration            (<a class="autorefs autorefs-internal" title="z
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/deepchecks/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DeepchecksIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Definition of [Deepchecks](https://github.com/deepchecks/deepchecks) integration for ZenML.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Definition of [Deepchecks](https://github.com/deepchecks/deepchecks) integration for ZenML.&quot;&quot;&quot;</span>
 
     <span class="n">NAME</span> <span class="o">=</span> <span class="n">DEEPCHECKS</span>
     <span class="n">REQUIREMENTS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;deepchecks[vision]==0.8.0&quot;</span><span class="p">,</span> <span class="s2">&quot;torchvision==0.14.0&quot;</span><span class="p">]</span>
@@ -2718,13 +2718,13 @@ DeepchecksIntegration            (<a class="autorefs autorefs-internal" title="z
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">activate</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Activate the Deepchecks integration.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Activate the Deepchecks integration.&quot;&quot;&quot;</span>
         <span class="kn">from</span> <span class="nn">zenml.integrations.deepchecks</span> <span class="kn">import</span> <span class="n">materializers</span>  <span class="c1"># noqa</span>
         <span class="kn">from</span> <span class="nn">zenml.integrations.deepchecks</span> <span class="kn">import</span> <span class="n">visualizers</span>  <span class="c1"># noqa</span>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Deepchecks integration.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Deepchecks integration.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            List of stack component flavors for this integration.</span>
@@ -2773,7 +2773,7 @@ DeepchecksIntegration            (<a class="autorefs autorefs-internal" title="z
           <summary>Source code in <code>zenml/integrations/deepchecks/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span> <span class="nf">activate</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Activate the Deepchecks integration.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Activate the Deepchecks integration.&quot;&quot;&quot;</span>
     <span class="kn">from</span> <span class="nn">zenml.integrations.deepchecks</span> <span class="kn">import</span> <span class="n">materializers</span>  <span class="c1"># noqa</span>
     <span class="kn">from</span> <span class="nn">zenml.integrations.deepchecks</span> <span class="kn">import</span> <span class="n">visualizers</span>  <span class="c1"># noqa</span>
 </code></pre></div>
@@ -2820,7 +2820,7 @@ DeepchecksIntegration            (<a class="autorefs autorefs-internal" title="z
           <summary>Source code in <code>zenml/integrations/deepchecks/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
-    <span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Deepchecks integration.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Deepchecks integration.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        List of stack component flavors for this integration.</span>
@@ -2929,7 +2929,7 @@ DeepchecksDataValidator            (<a class="autorefs autorefs-internal" title=
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/deepchecks/data_validators/deepchecks_data_validator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DeepchecksDataValidator</span><span class="p">(</span><span class="n">BaseDataValidator</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Deepchecks data validator stack component.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Deepchecks data validator stack component.&quot;&quot;&quot;</span>
 
     <span class="n">NAME</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Deepchecks&quot;</span>
     <span class="n">FLAVOR</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span>
@@ -2940,7 +2940,7 @@ DeepchecksDataValidator            (<a class="autorefs autorefs-internal" title=
     <span class="k">def</span> <span class="nf">_split_checks</span><span class="p">(</span>
         <span class="n">check_list</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Split a list of check identifiers in two lists, one for tabular and one for computer vision checks.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Split a list of check identifiers in two lists, one for tabular and one for computer vision checks.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            check_list: A list of check identifiers.</span>
@@ -2978,7 +2978,7 @@ DeepchecksDataValidator            (<a class="autorefs autorefs-internal" title=
         <span class="n">check_kwargs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{},</span>
         <span class="n">run_kwargs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{},</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SuiteResult</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Create and run a Deepchecks check suite corresponding to the input parameters.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create and run a Deepchecks check suite corresponding to the input parameters.</span>
 
 <span class="sd">        This method contains generic logic common to all Deepchecks data</span>
 <span class="sd">        validator methods that validates the input arguments and uses them to</span>
@@ -3182,7 +3182,7 @@ DeepchecksDataValidator            (<a class="autorefs autorefs-internal" title=
         <span class="n">run_kwargs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{},</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SuiteResult</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Run one or more Deepchecks data validation checks on a dataset.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run one or more Deepchecks data validation checks on a dataset.</span>
 
 <span class="sd">        Call this method to analyze and identify potential integrity problems</span>
 <span class="sd">        with a single dataset (e.g. missing values, conflicting labels, mixed</span>
@@ -3256,7 +3256,7 @@ DeepchecksDataValidator            (<a class="autorefs autorefs-internal" title=
         <span class="n">run_kwargs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{},</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Run one or more Deepchecks model validation checks.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run one or more Deepchecks model validation checks.</span>
 
 <span class="sd">        Call this method to perform model validation checks (e.g. confusion</span>
 <span class="sd">        matrix validation, performance reports, model error analyses, etc).</span>
@@ -3354,11 +3354,11 @@ FLAVOR            (<a class="autorefs autorefs-internal" title="zenml.data_valid
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/deepchecks/data_validators/deepchecks_data_validator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DeepchecksDataValidatorFlavor</span><span class="p">(</span><span class="n">BaseDataValidatorFlavor</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Flavor of the Deepchecks data validator.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Flavor of the Deepchecks data validator.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The name of the flavor.</span>
@@ -3367,7 +3367,7 @@ FLAVOR            (<a class="autorefs autorefs-internal" title="zenml.data_valid
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;DeepchecksDataValidator&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Implementation class.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>
@@ -3611,7 +3611,7 @@ Deepchecks Suite <code>run</code> method.</p></td>
     <span class="n">run_kwargs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{},</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SuiteResult</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Run one or more Deepchecks data validation checks on a dataset.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run one or more Deepchecks data validation checks on a dataset.</span>
 
 <span class="sd">    Call this method to analyze and identify potential integrity problems</span>
 <span class="sd">    with a single dataset (e.g. missing values, conflicting labels, mixed</span>
@@ -3815,7 +3815,7 @@ Deepchecks Suite <code>run</code> method.</p></td>
     <span class="n">run_kwargs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{},</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Run one or more Deepchecks model validation checks.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run one or more Deepchecks model validation checks.</span>
 
 <span class="sd">    Call this method to perform model validation checks (e.g. confusion</span>
 <span class="sd">    matrix validation, performance reports, model error analyses, etc).</span>
@@ -3995,11 +3995,11 @@ DeepchecksDataValidatorFlavor            (<a class="autorefs autorefs-internal" 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/deepchecks/flavors/deepchecks_data_validator_flavor.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DeepchecksDataValidatorFlavor</span><span class="p">(</span><span class="n">BaseDataValidatorFlavor</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Flavor of the Deepchecks data validator.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Flavor of the Deepchecks data validator.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The name of the flavor.</span>
@@ -4008,7 +4008,7 @@ DeepchecksDataValidatorFlavor            (<a class="autorefs autorefs-internal" 
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;DeepchecksDataValidator&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Implementation class.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>
@@ -4217,13 +4217,13 @@ DeepchecksDatasetMaterializer            (<a class="autorefs autorefs-internal" 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/deepchecks/materializers/deepchecks_dataset_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DeepchecksDatasetMaterializer</span><span class="p">(</span><span class="n">BaseMaterializer</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Materializer to read data to and from Deepchecks dataset.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Materializer to read data to and from Deepchecks dataset.&quot;&quot;&quot;</span>
 
     <span class="n">ASSOCIATED_TYPES</span> <span class="o">=</span> <span class="p">(</span><span class="n">Dataset</span><span class="p">,)</span>
     <span class="n">ASSOCIATED_ARTIFACT_TYPE</span> <span class="o">=</span> <span class="n">ArtifactType</span><span class="o">.</span><span class="n">DATA</span>
 
     <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dataset</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Reads pandas dataframes and creates deepchecks.Dataset from it.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reads pandas dataframes and creates deepchecks.Dataset from it.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            data_type: The type of the data to read.</span>
@@ -4241,7 +4241,7 @@ DeepchecksDatasetMaterializer            (<a class="autorefs autorefs-internal" 
         <span class="k">return</span> <span class="n">Dataset</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">:</span> <span class="n">Dataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Serializes pandas dataframe within a Dataset object.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Serializes pandas dataframe within a Dataset object.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            df: A deepchecks.Dataset object.</span>
@@ -4319,7 +4319,7 @@ DeepchecksDatasetMaterializer            (<a class="autorefs autorefs-internal" 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/deepchecks/materializers/deepchecks_dataset_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dataset</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Reads pandas dataframes and creates deepchecks.Dataset from it.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reads pandas dataframes and creates deepchecks.Dataset from it.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        data_type: The type of the data to read.</span>
@@ -4379,7 +4379,7 @@ DeepchecksDatasetMaterializer            (<a class="autorefs autorefs-internal" 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/deepchecks/materializers/deepchecks_dataset_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">:</span> <span class="n">Dataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Serializes pandas dataframe within a Dataset object.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Serializes pandas dataframe within a Dataset object.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        df: A deepchecks.Dataset object.</span>
@@ -4465,7 +4465,7 @@ DeepchecksResultMaterializer            (<a class="autorefs autorefs-internal" t
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/deepchecks/materializers/deepchecks_results_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DeepchecksResultMaterializer</span><span class="p">(</span><span class="n">BaseMaterializer</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Materializer to read data to and from CheckResult and SuiteResult objects.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Materializer to read data to and from CheckResult and SuiteResult objects.&quot;&quot;&quot;</span>
 
     <span class="n">ASSOCIATED_TYPES</span> <span class="o">=</span> <span class="p">(</span>
         <span class="n">CheckResult</span><span class="p">,</span>
@@ -4474,7 +4474,7 @@ DeepchecksResultMaterializer            (<a class="autorefs autorefs-internal" t
     <span class="n">ASSOCIATED_ARTIFACT_TYPE</span> <span class="o">=</span> <span class="n">ArtifactType</span><span class="o">.</span><span class="n">DATA_ANALYSIS</span>
 
     <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">CheckResult</span><span class="p">,</span> <span class="n">SuiteResult</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Reads a Deepchecks check or suite result from a serialized JSON file.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reads a Deepchecks check or suite result from a serialized JSON file.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            data_type: The type of the data to read.</span>
@@ -4498,7 +4498,7 @@ DeepchecksResultMaterializer            (<a class="autorefs autorefs-internal" t
         <span class="k">return</span> <span class="n">res</span>
 
     <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">CheckResult</span><span class="p">,</span> <span class="n">SuiteResult</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Creates a JSON serialization for a CheckResult or SuiteResult.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Creates a JSON serialization for a CheckResult or SuiteResult.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            result: A Deepchecks CheckResult or SuiteResult.</span>
@@ -4592,7 +4592,7 @@ DeepchecksResultMaterializer            (<a class="autorefs autorefs-internal" t
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/deepchecks/materializers/deepchecks_results_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">CheckResult</span><span class="p">,</span> <span class="n">SuiteResult</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Reads a Deepchecks check or suite result from a serialized JSON file.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reads a Deepchecks check or suite result from a serialized JSON file.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        data_type: The type of the data to read.</span>
@@ -4658,7 +4658,7 @@ DeepchecksResultMaterializer            (<a class="autorefs autorefs-internal" t
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/deepchecks/materializers/deepchecks_results_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">CheckResult</span><span class="p">,</span> <span class="n">SuiteResult</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Creates a JSON serialization for a CheckResult or SuiteResult.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Creates a JSON serialization for a CheckResult or SuiteResult.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        result: A Deepchecks CheckResult or SuiteResult.</span>
@@ -4784,7 +4784,7 @@ DeepchecksDataDriftCheckStep            (<a class="autorefs autorefs-internal" t
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/deepchecks/steps/deepchecks_data_drift.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DeepchecksDataDriftCheckStep</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Deepchecks data drift validator step.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Deepchecks data drift validator step.&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">entrypoint</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -4792,7 +4792,7 @@ DeepchecksDataDriftCheckStep            (<a class="autorefs autorefs-internal" t
         <span class="n">target_dataset</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
         <span class="n">params</span><span class="p">:</span> <span class="n">DeepchecksDataDriftCheckStepParameters</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SuiteResult</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Main entrypoint for the Deepchecks data drift validator step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Main entrypoint for the Deepchecks data drift validator step.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            reference_dataset: Reference dataset for the data drift check.</span>
@@ -4896,7 +4896,7 @@ Deepchecks Suite <code>run</code> method.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/deepchecks/steps/deepchecks_data_drift.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DeepchecksDataDriftCheckStepParameters</span><span class="p">(</span><span class="n">BaseParameters</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Parameter class for the Deepchecks data drift validator step.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parameter class for the Deepchecks data drift validator step.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        check_list: Optional list of DeepchecksDataDriftCheck identifiers</span>
@@ -5018,7 +5018,7 @@ Deepchecks Suite <code>run</code> method.</p></td>
     <span class="n">target_dataset</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
     <span class="n">params</span><span class="p">:</span> <span class="n">DeepchecksDataDriftCheckStepParameters</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SuiteResult</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Main entrypoint for the Deepchecks data drift validator step.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Main entrypoint for the Deepchecks data drift validator step.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        reference_dataset: Reference dataset for the data drift check.</span>
@@ -5122,7 +5122,7 @@ Deepchecks Suite <code>run</code> method.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/deepchecks/steps/deepchecks_data_drift.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DeepchecksDataDriftCheckStepParameters</span><span class="p">(</span><span class="n">BaseParameters</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Parameter class for the Deepchecks data drift validator step.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parameter class for the Deepchecks data drift validator step.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        check_list: Optional list of DeepchecksDataDriftCheck identifiers</span>
@@ -5238,7 +5238,7 @@ as a Deepchecks SuiteResult object.</p>
     <span class="n">step_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">params</span><span class="p">:</span> <span class="n">DeepchecksDataDriftCheckStepParameters</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseStep</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Shortcut function to create a new instance of the DeepchecksDataDriftCheckStep step.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Shortcut function to create a new instance of the DeepchecksDataDriftCheckStep step.</span>
 
 <span class="sd">    The returned DeepchecksDataDriftCheckStep can be used in a pipeline to</span>
 <span class="sd">    run data drift checks on two input pd.DataFrame and return the results</span>
@@ -5316,14 +5316,14 @@ DeepchecksDataIntegrityCheckStep            (<a class="autorefs autorefs-interna
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/deepchecks/steps/deepchecks_data_integrity.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DeepchecksDataIntegrityCheckStep</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Deepchecks data integrity validator step.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Deepchecks data integrity validator step.&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">entrypoint</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">dataset</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
         <span class="n">params</span><span class="p">:</span> <span class="n">DeepchecksDataIntegrityCheckStepParameters</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SuiteResult</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Main entrypoint for the Deepchecks data integrity validator step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Main entrypoint for the Deepchecks data integrity validator step.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            dataset: a Pandas DataFrame to validate</span>
@@ -5425,7 +5425,7 @@ Deepchecks Suite <code>run</code> method.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/deepchecks/steps/deepchecks_data_integrity.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DeepchecksDataIntegrityCheckStepParameters</span><span class="p">(</span><span class="n">BaseParameters</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Parameters class for the Deepchecks data integrity validator step.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parameters class for the Deepchecks data integrity validator step.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        check_list: Optional list of DeepchecksDataIntegrityCheck identifiers</span>
@@ -5540,7 +5540,7 @@ Deepchecks Suite <code>run</code> method.</p></td>
     <span class="n">dataset</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
     <span class="n">params</span><span class="p">:</span> <span class="n">DeepchecksDataIntegrityCheckStepParameters</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SuiteResult</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Main entrypoint for the Deepchecks data integrity validator step.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Main entrypoint for the Deepchecks data integrity validator step.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        dataset: a Pandas DataFrame to validate</span>
@@ -5642,7 +5642,7 @@ Deepchecks Suite <code>run</code> method.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/deepchecks/steps/deepchecks_data_integrity.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DeepchecksDataIntegrityCheckStepParameters</span><span class="p">(</span><span class="n">BaseParameters</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Parameters class for the Deepchecks data integrity validator step.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parameters class for the Deepchecks data integrity validator step.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        check_list: Optional list of DeepchecksDataIntegrityCheck identifiers</span>
@@ -5758,7 +5758,7 @@ as a Deepchecks SuiteResult object.</p>
     <span class="n">step_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">params</span><span class="p">:</span> <span class="n">DeepchecksDataIntegrityCheckStepParameters</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseStep</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Shortcut function to create a new instance of the DeepchecksDataIntegrityCheckStep step.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Shortcut function to create a new instance of the DeepchecksDataIntegrityCheckStep step.</span>
 
 <span class="sd">    The returned DeepchecksDataIntegrityCheckStep can be used in a pipeline to</span>
 <span class="sd">    run data integrity checks on an input pd.DataFrame and return the results</span>
@@ -5836,7 +5836,7 @@ DeepchecksModelDriftCheckStep            (<a class="autorefs autorefs-internal" 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/deepchecks/steps/deepchecks_model_drift.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DeepchecksModelDriftCheckStep</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Deepchecks model drift step.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Deepchecks model drift step.&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">entrypoint</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -5845,7 +5845,7 @@ DeepchecksModelDriftCheckStep            (<a class="autorefs autorefs-internal" 
         <span class="n">model</span><span class="p">:</span> <span class="n">ClassifierMixin</span><span class="p">,</span>
         <span class="n">params</span><span class="p">:</span> <span class="n">DeepchecksModelDriftCheckStepParameters</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SuiteResult</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Main entrypoint for the Deepchecks model drift step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Main entrypoint for the Deepchecks model drift step.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            reference_dataset: Reference dataset for the model drift check.</span>
@@ -5951,7 +5951,7 @@ Deepchecks Suite <code>run</code> method.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/deepchecks/steps/deepchecks_model_drift.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DeepchecksModelDriftCheckStepParameters</span><span class="p">(</span><span class="n">BaseParameters</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Parameters class for the Deepchecks model drift validator step.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parameters class for the Deepchecks model drift validator step.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        check_list: Optional list of DeepchecksModelDriftCheck identifiers</span>
@@ -6080,7 +6080,7 @@ Deepchecks Suite <code>run</code> method.</p></td>
     <span class="n">model</span><span class="p">:</span> <span class="n">ClassifierMixin</span><span class="p">,</span>
     <span class="n">params</span><span class="p">:</span> <span class="n">DeepchecksModelDriftCheckStepParameters</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SuiteResult</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Main entrypoint for the Deepchecks model drift step.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Main entrypoint for the Deepchecks model drift step.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        reference_dataset: Reference dataset for the model drift check.</span>
@@ -6186,7 +6186,7 @@ Deepchecks Suite <code>run</code> method.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/deepchecks/steps/deepchecks_model_drift.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DeepchecksModelDriftCheckStepParameters</span><span class="p">(</span><span class="n">BaseParameters</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Parameters class for the Deepchecks model drift validator step.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parameters class for the Deepchecks model drift validator step.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        check_list: Optional list of DeepchecksModelDriftCheck identifiers</span>
@@ -6303,7 +6303,7 @@ SuiteResult object.</p>
     <span class="n">step_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">params</span><span class="p">:</span> <span class="n">DeepchecksModelDriftCheckStepParameters</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseStep</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Shortcut function to create a new instance of the DeepchecksModelDriftCheckStep step.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Shortcut function to create a new instance of the DeepchecksModelDriftCheckStep step.</span>
 
 <span class="sd">    The returned DeepchecksModelDriftCheckStep can be used in a pipeline to</span>
 <span class="sd">    run model drift checks on two input pd.DataFrame datasets and an input</span>
@@ -6382,7 +6382,7 @@ DeepchecksModelValidationCheckStep            (<a class="autorefs autorefs-inter
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/deepchecks/steps/deepchecks_model_validation.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DeepchecksModelValidationCheckStep</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Deepchecks model validation step.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Deepchecks model validation step.&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">entrypoint</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -6390,7 +6390,7 @@ DeepchecksModelValidationCheckStep            (<a class="autorefs autorefs-inter
         <span class="n">model</span><span class="p">:</span> <span class="n">ClassifierMixin</span><span class="p">,</span>
         <span class="n">params</span><span class="p">:</span> <span class="n">DeepchecksModelValidationCheckStepParameters</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SuiteResult</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Main entrypoint for the Deepchecks model validation step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Main entrypoint for the Deepchecks model validation step.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            dataset: a Pandas DataFrame to use for the validation</span>
@@ -6494,7 +6494,7 @@ Deepchecks Suite <code>run</code> method.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/deepchecks/steps/deepchecks_model_validation.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DeepchecksModelValidationCheckStepParameters</span><span class="p">(</span><span class="n">BaseParameters</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Parameters class for the Deepchecks model validation validator step.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parameters class for the Deepchecks model validation validator step.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        check_list: Optional list of DeepchecksModelValidationCheck identifiers</span>
@@ -6616,7 +6616,7 @@ Deepchecks Suite <code>run</code> method.</p></td>
     <span class="n">model</span><span class="p">:</span> <span class="n">ClassifierMixin</span><span class="p">,</span>
     <span class="n">params</span><span class="p">:</span> <span class="n">DeepchecksModelValidationCheckStepParameters</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SuiteResult</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Main entrypoint for the Deepchecks model validation step.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Main entrypoint for the Deepchecks model validation step.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        dataset: a Pandas DataFrame to use for the validation</span>
@@ -6720,7 +6720,7 @@ Deepchecks Suite <code>run</code> method.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/deepchecks/steps/deepchecks_model_validation.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DeepchecksModelValidationCheckStepParameters</span><span class="p">(</span><span class="n">BaseParameters</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Parameters class for the Deepchecks model validation validator step.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parameters class for the Deepchecks model validation validator step.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        check_list: Optional list of DeepchecksModelValidationCheck identifiers</span>
@@ -6837,7 +6837,7 @@ SuiteResult object.</p>
     <span class="n">step_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">params</span><span class="p">:</span> <span class="n">DeepchecksModelValidationCheckStepParameters</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseStep</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Shortcut function to create a new instance of the DeepchecksModelValidationCheckStep step.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Shortcut function to create a new instance of the DeepchecksModelValidationCheckStep step.</span>
 
 <span class="sd">    The returned DeepchecksModelValidationCheckStep can be used in a pipeline to</span>
 <span class="sd">    run model validation checks on an input pd.DataFrame dataset and an input</span>
@@ -6934,7 +6934,7 @@ Deepchecks:</p>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/deepchecks/validation_checks.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DeepchecksDataDriftCheck</span><span class="p">(</span><span class="n">DeepchecksValidationCheck</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Categories of Deepchecks data drift checks.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Categories of Deepchecks data drift checks.</span>
 
 <span class="sd">    This list reflects the set of train-test validation checks provided by</span>
 <span class="sd">    Deepchecks:</span>
@@ -7071,7 +7071,7 @@ DeepchecksDataIntegrityCheck            (<a class="autorefs autorefs-internal" t
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/deepchecks/validation_checks.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DeepchecksDataIntegrityCheck</span><span class="p">(</span><span class="n">DeepchecksValidationCheck</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Categories of Deepchecks data integrity checks.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Categories of Deepchecks data integrity checks.</span>
 
 <span class="sd">    This list reflects the set of data integrity checks provided by Deepchecks:</span>
 
@@ -7179,7 +7179,7 @@ model as input.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/deepchecks/validation_checks.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DeepchecksModelDriftCheck</span><span class="p">(</span><span class="n">DeepchecksValidationCheck</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Categories of Deepchecks model drift checks.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Categories of Deepchecks model drift checks.</span>
 
 <span class="sd">    This list includes a subset of the model evaluation checks provided by</span>
 <span class="sd">    Deepchecks that require two datasets and a mandatory model as input:</span>
@@ -7279,7 +7279,7 @@ model as input.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/deepchecks/validation_checks.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DeepchecksModelValidationCheck</span><span class="p">(</span><span class="n">DeepchecksValidationCheck</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Categories of Deepchecks model validation checks.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Categories of Deepchecks model validation checks.</span>
 
 <span class="sd">    This list includes a subset of the model evaluation checks provided by</span>
 <span class="sd">    Deepchecks that require a single dataset and a mandatory model as input:</span>
@@ -7395,7 +7395,7 @@ Deepchecks:</p>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/deepchecks/validation_checks.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DeepchecksValidationCheck</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base class for all Deepchecks categories of validation checks.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for all Deepchecks categories of validation checks.</span>
 
 <span class="sd">    This base class defines some conventions used for all enum values used to</span>
 <span class="sd">    identify the various validation checks that can be performed with</span>
@@ -7411,7 +7411,7 @@ Deepchecks:</p>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">validate_check_name</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">check_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Validate a Deepchecks check identifier.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate a Deepchecks check identifier.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            check_name: Identifies a builtin Deepchecks check. The identifier</span>
@@ -7435,7 +7435,7 @@ Deepchecks:</p>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">is_tabular_check</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">check_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Check if a validation check is applicable to tabular data.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if a validation check is applicable to tabular data.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            check_name: Identifies a builtin Deepchecks check.</span>
@@ -7448,7 +7448,7 @@ Deepchecks:</p>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">is_vision_check</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">check_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Check if a validation check is applicable to computer vision data.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if a validation check is applicable to computer vision data.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            check_name: Identifies a builtin Deepchecks check.</span>
@@ -7462,7 +7462,7 @@ Deepchecks:</p>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">get_check_class</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">check_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseCheck</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Get the Deepchecks check class associated with an enum value or a custom check name.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the Deepchecks check class associated with an enum value or a custom check name.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            check_name: Identifies a builtin Deepchecks check. The identifier</span>
@@ -7507,7 +7507,7 @@ Deepchecks:</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">check_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseCheck</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Convert the enum value to a valid Deepchecks check class.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert the enum value to a valid Deepchecks check class.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The Deepchecks check class associated with the enum value.</span>
@@ -7612,11 +7612,11 @@ DeepchecksVisualizer            (<a class="autorefs autorefs-internal" title="ze
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/deepchecks/visualizers/deepchecks_visualizer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DeepchecksVisualizer</span><span class="p">(</span><span class="n">BaseVisualizer</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;The implementation of a Deepchecks Visualizer.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The implementation of a Deepchecks Visualizer.&quot;&quot;&quot;</span>
 
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">visualize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">object</span><span class="p">:</span> <span class="n">StepView</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Method to visualize components.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Method to visualize components.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            object: StepView fetched from run.get_step().</span>
@@ -7630,7 +7630,7 @@ DeepchecksVisualizer            (<a class="autorefs autorefs-internal" title="ze
                 <span class="bp">self</span><span class="o">.</span><span class="n">generate_report</span><span class="p">(</span><span class="n">artifact</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">generate_report</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">CheckResult</span><span class="p">,</span> <span class="n">SuiteResult</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Generate a Deepchecks Report.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate a Deepchecks Report.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            result: A SuiteResult.</span>
@@ -7701,7 +7701,7 @@ DeepchecksVisualizer            (<a class="autorefs autorefs-internal" title="ze
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/deepchecks/visualizers/deepchecks_visualizer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">generate_report</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">CheckResult</span><span class="p">,</span> <span class="n">SuiteResult</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Generate a Deepchecks Report.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate a Deepchecks Report.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        result: A SuiteResult.</span>
@@ -7778,7 +7778,7 @@ DeepchecksVisualizer            (<a class="autorefs autorefs-internal" title="ze
           <summary>Source code in <code>zenml/integrations/deepchecks/visualizers/deepchecks_visualizer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span> <span class="nf">visualize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">object</span><span class="p">:</span> <span class="n">StepView</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Method to visualize components.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Method to visualize components.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        object: StepView fetched from run.get_step().</span>

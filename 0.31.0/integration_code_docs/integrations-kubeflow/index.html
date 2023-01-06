@@ -2499,14 +2499,14 @@ KubeflowIntegration            (<a class="autorefs autorefs-internal" title="zen
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kubeflow/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">KubeflowIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Definition of Kubeflow Integration for ZenML.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Definition of Kubeflow Integration for ZenML.&quot;&quot;&quot;</span>
 
     <span class="n">NAME</span> <span class="o">=</span> <span class="n">KUBEFLOW</span>
     <span class="n">REQUIREMENTS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;kfp==1.8.16&quot;</span><span class="p">]</span>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Kubeflow integration.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Kubeflow integration.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            List of stack component flavors for this integration.</span>
@@ -2569,7 +2569,7 @@ KubeflowIntegration            (<a class="autorefs autorefs-internal" title="zen
           <summary>Source code in <code>zenml/integrations/kubeflow/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
-    <span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Kubeflow integration.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Kubeflow integration.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        List of stack component flavors for this integration.</span>
@@ -2746,7 +2746,7 @@ in the active stack is used.</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">KubeflowOrchestratorConfig</span><span class="p">(</span>  <span class="c1"># type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173</span>
     <span class="n">BaseOrchestratorConfig</span><span class="p">,</span> <span class="n">KubeflowOrchestratorSettings</span>
 <span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Configuration for the Kubeflow orchestrator.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Configuration for the Kubeflow orchestrator.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        kubeflow_pipelines_ui_port: A local port to which the KFP UI will be</span>
@@ -2789,7 +2789,7 @@ in the active stack is used.</p></td>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_remote</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Checks if this stack component is running remotely.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if this stack component is running remotely.</span>
 
 <span class="sd">        This designation is used to determine if the stack component can be</span>
 <span class="sd">        used with a local ZenML database or if it requires a remote ZenML</span>
@@ -2807,7 +2807,7 @@ in the active stack is used.</p></td>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_local</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Checks if this stack component is running locally.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if this stack component is running locally.</span>
 
 <span class="sd">        This designation is used to determine if the stack component can be</span>
 <span class="sd">        shared with other users or if it is only usable on the local host.</span>
@@ -2958,11 +2958,11 @@ KubeflowOrchestratorFlavor            (<a class="autorefs autorefs-internal" tit
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kubeflow/flavors/kubeflow_orchestrator_flavor.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">KubeflowOrchestratorFlavor</span><span class="p">(</span><span class="n">BaseOrchestratorFlavor</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Kubeflow orchestrator flavor.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Kubeflow orchestrator flavor.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The name of the flavor.</span>
@@ -2971,7 +2971,7 @@ KubeflowOrchestratorFlavor            (<a class="autorefs autorefs-internal" tit
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">KubeflowOrchestratorConfig</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns `KubeflowOrchestratorConfig` config class.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns `KubeflowOrchestratorConfig` config class.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">                The config class.</span>
@@ -2980,7 +2980,7 @@ KubeflowOrchestratorFlavor            (<a class="autorefs autorefs-internal" tit
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;KubeflowOrchestrator&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>
@@ -3213,7 +3213,7 @@ and runs.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kubeflow/flavors/kubeflow_orchestrator_flavor.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">KubeflowOrchestratorSettings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Settings for the Kubeflow orchestrator.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Settings for the Kubeflow orchestrator.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        synchronous: If `True`, running a pipeline using this orchestrator will</span>
@@ -3248,7 +3248,7 @@ and runs.</p></td>
     <span class="k">def</span> <span class="nf">_validate_and_migrate_pod_settings</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span> <span class="n">values</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Validates settings and migrates pod settings from older version.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validates settings and migrates pod settings from older version.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            values: Dict representing user-specified runtime settings.</span>
@@ -3464,11 +3464,11 @@ KubeflowOrchestrator            (<a class="autorefs autorefs-internal" title="ze
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kubeflow/orchestrators/kubeflow_orchestrator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">KubeflowOrchestrator</span><span class="p">(</span><span class="n">BaseOrchestrator</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Orchestrator responsible for running pipelines using Kubeflow.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Orchestrator responsible for running pipelines using Kubeflow.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">KubeflowOrchestratorConfig</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the `KubeflowOrchestratorConfig` config.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `KubeflowOrchestratorConfig` config.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The configuration.</span>
@@ -3477,7 +3477,7 @@ KubeflowOrchestrator            (<a class="autorefs autorefs-internal" title="ze
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_get_k3d_cluster_name</span><span class="p">(</span><span class="n">uuid</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the k3d cluster name corresponding to the orchestrator UUID.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the k3d cluster name corresponding to the orchestrator UUID.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            uuid: The UUID of the orchestrator.</span>
@@ -3491,7 +3491,7 @@ KubeflowOrchestrator            (<a class="autorefs autorefs-internal" title="ze
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_get_k3d_kubernetes_context</span><span class="p">(</span><span class="n">uuid</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Gets the k3d kubernetes context.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets the k3d kubernetes context.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            uuid: The UUID of the orchestrator.</span>
@@ -3504,7 +3504,7 @@ KubeflowOrchestrator            (<a class="autorefs autorefs-internal" title="ze
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">kubernetes_context</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Gets the kubernetes context associated with the orchestrator.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets the kubernetes context associated with the orchestrator.</span>
 
 <span class="sd">        This sets the default `kubernetes_context` value to the value that is</span>
 <span class="sd">        used to create the locally managed k3d cluster, if not explicitly set.</span>
@@ -3517,7 +3517,7 @@ KubeflowOrchestrator            (<a class="autorefs autorefs-internal" title="ze
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_k3d_kubernetes_context</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">get_kubernetes_contexts</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Get the list of configured Kubernetes contexts and the active context.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the list of configured Kubernetes contexts and the active context.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            A tuple containing the list of configured Kubernetes contexts and</span>
@@ -3534,7 +3534,7 @@ KubeflowOrchestrator            (<a class="autorefs autorefs-internal" title="ze
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">settings_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseSettings&quot;</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Settings class for the Kubeflow orchestrator.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Settings class for the Kubeflow orchestrator.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The settings class.</span>
@@ -3543,7 +3543,7 @@ KubeflowOrchestrator            (<a class="autorefs autorefs-internal" title="ze
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">validator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">StackValidator</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Validates that the stack contains a container registry.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validates that the stack contains a container registry.</span>
 
 <span class="sd">        Also check that requirements are met for local components.</span>
 
@@ -3692,7 +3692,7 @@ KubeflowOrchestrator            (<a class="autorefs autorefs-internal" title="ze
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_local</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Checks if the KFP orchestrator is running locally.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if the KFP orchestrator is running locally.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            `True` if the KFP orchestrator is running locally (i.e. in</span>
@@ -3704,7 +3704,7 @@ KubeflowOrchestrator            (<a class="autorefs autorefs-internal" title="ze
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">root_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Path to the root directory for all files concerning this orchestrator.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Path to the root directory for all files concerning this orchestrator.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Path to the root directory.</span>
@@ -3717,7 +3717,7 @@ KubeflowOrchestrator            (<a class="autorefs autorefs-internal" title="ze
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">pipeline_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns path to a directory in which the kubeflow pipeline files are stored.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns path to a directory in which the kubeflow pipeline files are stored.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Path to the pipeline directory.</span>
@@ -3729,7 +3729,7 @@ KubeflowOrchestrator            (<a class="autorefs autorefs-internal" title="ze
         <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">,</span>
         <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Build a Docker image and push it to the container registry.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build a Docker image and push it to the container registry.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            deployment: The pipeline deployment configuration.</span>
@@ -3746,7 +3746,7 @@ KubeflowOrchestrator            (<a class="autorefs autorefs-internal" title="ze
         <span class="n">container_op</span><span class="p">:</span> <span class="n">dsl</span><span class="o">.</span><span class="n">ContainerOp</span><span class="p">,</span>
         <span class="n">settings</span><span class="p">:</span> <span class="n">KubeflowOrchestratorSettings</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Makes changes in place to the configuration of the container op.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Makes changes in place to the configuration of the container op.</span>
 
 <span class="sd">        Configures persistent mounted volumes for each stack component that</span>
 <span class="sd">        writes to a local path. Adds some labels to the container_op and applies</span>
@@ -3829,7 +3829,7 @@ KubeflowOrchestrator            (<a class="autorefs autorefs-internal" title="ze
         <span class="n">container_op</span><span class="p">:</span> <span class="n">dsl</span><span class="o">.</span><span class="n">ContainerOp</span><span class="p">,</span>
         <span class="n">resource_settings</span><span class="p">:</span> <span class="s2">&quot;ResourceSettings&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Adds resource requirements to the container.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Adds resource requirements to the container.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            container_op: The kubeflow container operation to configure.</span>
@@ -3855,7 +3855,7 @@ KubeflowOrchestrator            (<a class="autorefs autorefs-internal" title="ze
         <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">,</span>
         <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Creates a kfp yaml file.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Creates a kfp yaml file.</span>
 
 <span class="sd">        This functions as an intermediary representation of the pipeline which</span>
 <span class="sd">        is then deployed to the kubeflow pipelines instance.</span>
@@ -3904,7 +3904,7 @@ KubeflowOrchestrator            (<a class="autorefs autorefs-internal" title="ze
 
         <span class="c1"># Create a callable for future compilation into a dsl.Pipeline.</span>
         <span class="k">def</span> <span class="nf">_construct_kfp_pipeline</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="sd">&quot;&quot;&quot;Create a container_op for each step.</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Create a container_op for each step.</span>
 
 <span class="sd">            This should contain the name of the docker image and configures the</span>
 <span class="sd">            entrypoint of the docker image to run the step.</span>
@@ -4005,7 +4005,7 @@ KubeflowOrchestrator            (<a class="autorefs autorefs-internal" title="ze
         <span class="n">pipeline_file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">run_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Tries to upload and run a KFP pipeline.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Tries to upload and run a KFP pipeline.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            deployment: The pipeline deployment.</span>
@@ -4106,7 +4106,7 @@ KubeflowOrchestrator            (<a class="autorefs autorefs-internal" title="ze
             <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">get_orchestrator_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the active orchestrator run id.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the active orchestrator run id.</span>
 
 <span class="sd">        Raises:</span>
 <span class="sd">            RuntimeError: If the environment variable specifying the run id</span>
@@ -4127,7 +4127,7 @@ KubeflowOrchestrator            (<a class="autorefs autorefs-internal" title="ze
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">settings</span><span class="p">:</span> <span class="n">KubeflowOrchestratorSettings</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">kfp</span><span class="o">.</span><span class="n">Client</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Creates a KFP client instance.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Creates a KFP client instance.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            settings: Settings which can be used to</span>
@@ -4168,7 +4168,7 @@ KubeflowOrchestrator            (<a class="autorefs autorefs-internal" title="ze
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">_pid_file_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns path to the daemon PID file.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns path to the daemon PID file.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Path to the daemon PID file.</span>
@@ -4177,7 +4177,7 @@ KubeflowOrchestrator            (<a class="autorefs autorefs-internal" title="ze
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">log_file</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Path of the daemon log file.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Path of the daemon log file.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Path of the daemon log file.</span>
@@ -4186,7 +4186,7 @@ KubeflowOrchestrator            (<a class="autorefs autorefs-internal" title="ze
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">_k3d_cluster_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the K3D cluster name.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the K3D cluster name.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The K3D cluster name.</span>
@@ -4194,7 +4194,7 @@ KubeflowOrchestrator            (<a class="autorefs autorefs-internal" title="ze
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_k3d_cluster_name</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_get_k3d_registry_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">port</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the K3D registry name.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the K3D registry name.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            port: Port of the registry.</span>
@@ -4206,7 +4206,7 @@ KubeflowOrchestrator            (<a class="autorefs autorefs-internal" title="ze
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">_k3d_registry_config_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the path to the K3D registry config yaml.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the path to the K3D registry config yaml.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            str: Path to the K3D registry config yaml.</span>
@@ -4214,7 +4214,7 @@ KubeflowOrchestrator            (<a class="autorefs autorefs-internal" title="ze
         <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root_directory</span><span class="p">,</span> <span class="s2">&quot;k3d_registry.yaml&quot;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_get_kfp_ui_daemon_port</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Port to use for the KFP UI daemon.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Port to use for the KFP UI daemon.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Port to use for the KFP UI daemon.</span>
@@ -4229,7 +4229,7 @@ KubeflowOrchestrator            (<a class="autorefs autorefs-internal" title="ze
         <span class="k">return</span> <span class="n">port</span>
 
     <span class="k">def</span> <span class="nf">_get_session_cookie</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">username</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">password</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Gets session cookie from username and password.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets session cookie from username and password.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            username: Username for kubeflow host.</span>
@@ -4293,7 +4293,7 @@ KubeflowOrchestrator            (<a class="autorefs autorefs-internal" title="ze
     <span class="k">def</span> <span class="nf">list_manual_setup_steps</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">container_registry_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">container_registry_path</span><span class="p">:</span> <span class="nb">str</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Logs manual steps needed to setup the Kubeflow local orchestrator.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Logs manual steps needed to setup the Kubeflow local orchestrator.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            container_registry_name: Name of the container registry.</span>
@@ -4327,7 +4327,7 @@ KubeflowOrchestrator            (<a class="autorefs autorefs-internal" title="ze
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">skip_ui_daemon_provisioning</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Whether the UI daemon provisioning should be skipped.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether the UI daemon provisioning should be skipped.</span>
 
 <span class="sd">        If a hostname is configured, the UI is already accessible using this</span>
 <span class="sd">        host and we don&#39;t need to port-forward the UI.</span>
@@ -4342,7 +4342,7 @@ KubeflowOrchestrator            (<a class="autorefs autorefs-internal" title="ze
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_provisioned</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns if a local k3d cluster for this orchestrator exists.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns if a local k3d cluster for this orchestrator exists.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            True if a local k3d cluster exists, False otherwise.</span>
@@ -4360,7 +4360,7 @@ KubeflowOrchestrator            (<a class="autorefs autorefs-internal" title="ze
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_running</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Checks if the local k3d cluster and UI daemon are both running.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if the local k3d cluster and UI daemon are both running.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            True if the local k3d cluster and UI daemon for this orchestrator are both running.</span>
@@ -4373,7 +4373,7 @@ KubeflowOrchestrator            (<a class="autorefs autorefs-internal" title="ze
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_suspended</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Checks if the local k3d cluster and UI daemon are both stopped.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if the local k3d cluster and UI daemon are both stopped.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            True if the cluster and daemon for this orchestrator are both stopped, False otherwise.</span>
@@ -4389,7 +4389,7 @@ KubeflowOrchestrator            (<a class="autorefs autorefs-internal" title="ze
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_cluster_provisioned</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns if the local k3d cluster for this orchestrator is provisioned.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns if the local k3d cluster for this orchestrator is provisioned.</span>
 
 <span class="sd">        For remote (i.e. not managed by ZenML) Kubeflow Pipelines installations,</span>
 <span class="sd">        this always returns True.</span>
@@ -4405,7 +4405,7 @@ KubeflowOrchestrator            (<a class="autorefs autorefs-internal" title="ze
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_cluster_running</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns if the local k3d cluster for this orchestrator is running.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns if the local k3d cluster for this orchestrator is running.</span>
 
 <span class="sd">        For remote (i.e. not managed by ZenML) Kubeflow Pipelines installations,</span>
 <span class="sd">        this always returns True.</span>
@@ -4421,7 +4421,7 @@ KubeflowOrchestrator            (<a class="autorefs autorefs-internal" title="ze
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_daemon_running</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns if the local Kubeflow UI daemon for this orchestrator is running.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns if the local Kubeflow UI daemon for this orchestrator is running.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            True if the daemon is running, False otherwise.</span>
@@ -4437,7 +4437,7 @@ KubeflowOrchestrator            (<a class="autorefs autorefs-internal" title="ze
             <span class="k">return</span> <span class="kc">True</span>
 
     <span class="k">def</span> <span class="nf">provision</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Provisions a local Kubeflow Pipelines deployment.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Provisions a local Kubeflow Pipelines deployment.</span>
 
 <span class="sd">        Raises:</span>
 <span class="sd">            ProvisioningError: If the provisioning fails.</span>
@@ -4533,7 +4533,7 @@ KubeflowOrchestrator            (<a class="autorefs autorefs-internal" title="ze
             <span class="bp">self</span><span class="o">.</span><span class="n">deprovision</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">deprovision</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Deprovisions a local Kubeflow Pipelines deployment.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Deprovisions a local Kubeflow Pipelines deployment.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">skip_cluster_provisioning</span><span class="p">:</span>
             <span class="k">return</span>
 
@@ -4554,7 +4554,7 @@ KubeflowOrchestrator            (<a class="autorefs autorefs-internal" title="ze
             <span class="n">fileio</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_file</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">resume</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Resumes the local k3d cluster.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Resumes the local k3d cluster.</span>
 
 <span class="sd">        Raises:</span>
 <span class="sd">            ProvisioningError: If the k3d cluster is not provisioned.</span>
@@ -4597,7 +4597,7 @@ KubeflowOrchestrator            (<a class="autorefs autorefs-internal" title="ze
             <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">suspend</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Suspends the local k3d cluster.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Suspends the local k3d cluster.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_provisioned</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Local kubeflow pipelines deployment not provisioned.&quot;</span><span class="p">)</span>
             <span class="k">return</span>
@@ -5228,7 +5228,7 @@ host and we don't need to port-forward the UI.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kubeflow/orchestrators/kubeflow_orchestrator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">deprovision</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Deprovisions a local Kubeflow Pipelines deployment.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Deprovisions a local Kubeflow Pipelines deployment.&quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">skip_cluster_provisioning</span><span class="p">:</span>
         <span class="k">return</span>
 
@@ -5288,7 +5288,7 @@ the active context.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kubeflow/orchestrators/kubeflow_orchestrator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_kubernetes_contexts</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
-    <span class="sd">&quot;&quot;&quot;Get the list of configured Kubernetes contexts and the active context.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the list of configured Kubernetes contexts and the active context.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A tuple containing the list of configured Kubernetes contexts and</span>
@@ -5358,7 +5358,7 @@ is not set.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kubeflow/orchestrators/kubeflow_orchestrator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_orchestrator_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns the active orchestrator run id.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the active orchestrator run id.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        RuntimeError: If the environment variable specifying the run id</span>
@@ -5426,7 +5426,7 @@ is not set.</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">list_manual_setup_steps</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">container_registry_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">container_registry_path</span><span class="p">:</span> <span class="nb">str</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Logs manual steps needed to setup the Kubeflow local orchestrator.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Logs manual steps needed to setup the Kubeflow local orchestrator.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        container_registry_name: Name of the container registry.</span>
@@ -5542,7 +5542,7 @@ then uploaded into the kubeflow pipelines cluster for execution.</p>
     <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">,</span>
     <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Creates a kfp yaml file.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Creates a kfp yaml file.</span>
 
 <span class="sd">    This functions as an intermediary representation of the pipeline which</span>
 <span class="sd">    is then deployed to the kubeflow pipelines instance.</span>
@@ -5591,7 +5591,7 @@ then uploaded into the kubeflow pipelines cluster for execution.</p>
 
     <span class="c1"># Create a callable for future compilation into a dsl.Pipeline.</span>
     <span class="k">def</span> <span class="nf">_construct_kfp_pipeline</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Create a container_op for each step.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a container_op for each step.</span>
 
 <span class="sd">        This should contain the name of the docker image and configures the</span>
 <span class="sd">        entrypoint of the docker image to run the step.</span>
@@ -5739,7 +5739,7 @@ then uploaded into the kubeflow pipelines cluster for execution.</p>
     <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeployment&quot;</span><span class="p">,</span>
     <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Build a Docker image and push it to the container registry.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build a Docker image and push it to the container registry.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        deployment: The pipeline deployment configuration.</span>
@@ -5790,7 +5790,7 @@ then uploaded into the kubeflow pipelines cluster for execution.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kubeflow/orchestrators/kubeflow_orchestrator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">provision</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Provisions a local Kubeflow Pipelines deployment.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Provisions a local Kubeflow Pipelines deployment.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        ProvisioningError: If the provisioning fails.</span>
@@ -5924,7 +5924,7 @@ then uploaded into the kubeflow pipelines cluster for execution.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kubeflow/orchestrators/kubeflow_orchestrator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">resume</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Resumes the local k3d cluster.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Resumes the local k3d cluster.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        ProvisioningError: If the k3d cluster is not provisioned.</span>
@@ -5990,7 +5990,7 @@ then uploaded into the kubeflow pipelines cluster for execution.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kubeflow/orchestrators/kubeflow_orchestrator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">suspend</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Suspends the local k3d cluster.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Suspends the local k3d cluster.&quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_provisioned</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Local kubeflow pipelines deployment not provisioned.&quot;</span><span class="p">)</span>
         <span class="k">return</span>
@@ -6119,7 +6119,7 @@ should be patched.</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">add_hostpath_to_kubeflow_pipelines</span><span class="p">(</span>
     <span class="n">kubernetes_context</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">local_path</span><span class="p">:</span> <span class="nb">str</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Patches the Kubeflow Pipelines deployment to mount a local folder.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Patches the Kubeflow Pipelines deployment to mount a local folder.</span>
 
 <span class="sd">    This folder serves as a hostpath for visualization purposes.</span>
 
@@ -6306,7 +6306,7 @@ should be patched.</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">check_prerequisites</span><span class="p">(</span>
     <span class="n">skip_k3d</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">skip_kubectl</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Checks prerequisites for a local kubeflow pipelines deployment.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks prerequisites for a local kubeflow pipelines deployment.</span>
 
 <span class="sd">    It makes sure they are installed.</span>
 
@@ -6383,7 +6383,7 @@ should be patched.</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">create_k3d_cluster</span><span class="p">(</span>
     <span class="n">cluster_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">registry_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">registry_config_path</span><span class="p">:</span> <span class="nb">str</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Creates a K3D cluster.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Creates a K3D cluster.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        cluster_name: Name of the cluster to create.</span>
@@ -6453,7 +6453,7 @@ should be patched.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kubeflow/orchestrators/local_deployment_utils.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">delete_k3d_cluster</span><span class="p">(</span><span class="n">cluster_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Deletes a K3D cluster with the given name.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Deletes a K3D cluster with the given name.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        cluster_name: Name of the cluster to delete.</span>
@@ -6505,7 +6505,7 @@ should be deployed.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kubeflow/orchestrators/local_deployment_utils.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">deploy_kubeflow_pipelines</span><span class="p">(</span><span class="n">kubernetes_context</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Deploys Kubeflow Pipelines.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Deploys Kubeflow Pipelines.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        kubernetes_context: The kubernetes context on which Kubeflow Pipelines</span>
@@ -6606,7 +6606,7 @@ should be deployed.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kubeflow/orchestrators/local_deployment_utils.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">k3d_cluster_exists</span><span class="p">(</span><span class="n">cluster_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Checks whether there exists a K3D cluster with the given name.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks whether there exists a K3D cluster with the given name.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        cluster_name: Name of the cluster to check.</span>
@@ -6681,7 +6681,7 @@ should be deployed.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kubeflow/orchestrators/local_deployment_utils.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">k3d_cluster_running</span><span class="p">(</span><span class="n">cluster_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Checks whether the K3D cluster with the given name is running.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks whether the K3D cluster with the given name is running.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        cluster_name: Name of the cluster to check.</span>
@@ -6759,7 +6759,7 @@ should be checked.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kubeflow/orchestrators/local_deployment_utils.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">kubeflow_pipelines_ready</span><span class="p">(</span><span class="n">kubernetes_context</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns whether all Kubeflow Pipelines pods are ready.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns whether all Kubeflow Pipelines pods are ready.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        kubernetes_context: The kubernetes context in which the pods</span>
@@ -6834,7 +6834,7 @@ should be checked.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kubeflow/orchestrators/local_deployment_utils.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">start_k3d_cluster</span><span class="p">(</span><span class="n">cluster_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Starts a K3D cluster with the given name.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Starts a K3D cluster with the given name.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        cluster_name: Name of the cluster to start.</span>
@@ -6911,7 +6911,7 @@ Kubeflow Pipelines is running.</p></td>
     <span class="n">port</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">kubernetes_context</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Starts a daemon process that forwards ports.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Starts a daemon process that forwards ports.</span>
 
 <span class="sd">    This is so the Kubeflow Pipelines UI is accessible in the browser.</span>
 
@@ -6959,7 +6959,7 @@ Kubeflow Pipelines is running.</p></td>
         <span class="kn">from</span> <span class="nn">zenml.utils</span> <span class="kn">import</span> <span class="n">daemon</span>
 
         <span class="k">def</span> <span class="nf">_daemon_function</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="sd">&quot;&quot;&quot;Port-forwards the Kubeflow Pipelines UI pod.&quot;&quot;&quot;</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Port-forwards the Kubeflow Pipelines UI pod.&quot;&quot;&quot;</span>
             <span class="n">subprocess</span><span class="o">.</span><span class="n">check_call</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
 
         <span class="n">daemon</span><span class="o">.</span><span class="n">run_as_daemon</span><span class="p">(</span>
@@ -7016,7 +7016,7 @@ Kubeflow Pipelines is running.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kubeflow/orchestrators/local_deployment_utils.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">stop_k3d_cluster</span><span class="p">(</span><span class="n">cluster_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Stops a K3D cluster with the given name.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Stops a K3D cluster with the given name.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        cluster_name: Name of the cluster to stop.</span>
@@ -7067,7 +7067,7 @@ Kubeflow Pipelines is running.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kubeflow/orchestrators/local_deployment_utils.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">stop_kfp_ui_daemon</span><span class="p">(</span><span class="n">pid_file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Stops the KFP UI daemon process if it is running.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Stops the KFP UI daemon process if it is running.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        pid_file_path: Path to the file with the daemons process ID.</span>
@@ -7129,7 +7129,7 @@ should be checked.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kubeflow/orchestrators/local_deployment_utils.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">wait_until_kubeflow_pipelines_ready</span><span class="p">(</span><span class="n">kubernetes_context</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Waits until all Kubeflow Pipelines pods are ready.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Waits until all Kubeflow Pipelines pods are ready.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        kubernetes_context: The kubernetes context in which the pods</span>
@@ -7215,7 +7215,7 @@ should be checked.</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">write_local_registry_yaml</span><span class="p">(</span>
     <span class="n">yaml_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">registry_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">registry_uri</span><span class="p">:</span> <span class="nb">str</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Writes a K3D registry config file.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Writes a K3D registry config file.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        yaml_path: Path where the config file should be written to.</span>
@@ -7325,7 +7325,7 @@ should be checked.</p></td>
     <span class="n">container_op</span><span class="p">:</span> <span class="s2">&quot;ContainerOp&quot;</span><span class="p">,</span>
     <span class="n">settings</span><span class="p">:</span> <span class="n">KubernetesPodSettings</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Applies Kubernetes Pod settings to a KFP container.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Applies Kubernetes Pod settings to a KFP container.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        container_op: The container to which to apply the settings.</span>

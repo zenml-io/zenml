@@ -2513,7 +2513,7 @@ BaseMaterializer        </code>
         <details class="quote">
           <summary>Source code in <code>zenml/materializers/base_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseMaterializer</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">BaseMaterializerMeta</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base Materializer to realize artifact data.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base Materializer to realize artifact data.&quot;&quot;&quot;</span>
 
     <span class="n">ASSOCIATED_ARTIFACT_TYPE</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">ArtifactType</span><span class="p">]</span> <span class="o">=</span> <span class="n">ArtifactType</span><span class="o">.</span><span class="n">BASE</span>
     <span class="n">ASSOCIATED_TYPES</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="o">...</span><span class="p">]]</span> <span class="o">=</span> <span class="p">()</span>
@@ -2526,7 +2526,7 @@ BaseMaterializer        </code>
         <span class="n">uri</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">artifact</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;BaseArtifact&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Initializes a materializer with the given URI.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes a materializer with the given URI.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            uri: The URI where the artifact data is stored.</span>
@@ -2555,7 +2555,7 @@ BaseMaterializer        </code>
         <span class="bp">self</span><span class="o">.</span><span class="n">artifact</span> <span class="o">=</span> <span class="n">DeprecatedArtifact</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">uri</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_can_handle_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Whether the materializer can read/write a certain type.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether the materializer can read/write a certain type.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            data_type: The type to check.</span>
@@ -2569,7 +2569,7 @@ BaseMaterializer        </code>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Write logic here to load the data of an artifact.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Write logic here to load the data of an artifact.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            data_type: What type the artifact data should be loaded as.</span>
@@ -2601,7 +2601,7 @@ BaseMaterializer        </code>
         <span class="k">return</span> <span class="kc">None</span>
 
     <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Write logic here to save the data of an artifact.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Write logic here to save the data of an artifact.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            data: The data of the artifact to save.</span>
@@ -2628,7 +2628,7 @@ BaseMaterializer        </code>
             <span class="bp">self</span><span class="o">.</span><span class="n">handle_return</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">handle_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Deprecated method to load the data of an artifact.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Deprecated method to load the data of an artifact.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            data_type: What type the artifact data should be loaded as.</span>
@@ -2648,7 +2648,7 @@ BaseMaterializer        </code>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">data_type</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">handle_return</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Deprecated method to save the data of an artifact.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Deprecated method to save the data of an artifact.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            data: The data of the artifact to save.</span>
@@ -2745,7 +2745,7 @@ BaseMaterializer        </code>
     <span class="n">uri</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">artifact</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;BaseArtifact&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Initializes a materializer with the given URI.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes a materializer with the given URI.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        uri: The URI where the artifact data is stored.</span>
@@ -2831,7 +2831,7 @@ BaseMaterializer        </code>
         <details class="quote">
           <summary>Source code in <code>zenml/materializers/base_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">handle_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Deprecated method to load the data of an artifact.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Deprecated method to load the data of an artifact.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        data_type: What type the artifact data should be loaded as.</span>
@@ -2893,7 +2893,7 @@ BaseMaterializer        </code>
         <details class="quote">
           <summary>Source code in <code>zenml/materializers/base_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">handle_return</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Deprecated method to save the data of an artifact.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Deprecated method to save the data of an artifact.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        data: The data of the artifact to save.</span>
@@ -2982,7 +2982,7 @@ BaseMaterializer        </code>
         <details class="quote">
           <summary>Source code in <code>zenml/materializers/base_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Write logic here to load the data of an artifact.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Write logic here to load the data of an artifact.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        data_type: What type the artifact data should be loaded as.</span>
@@ -3071,7 +3071,7 @@ BaseMaterializer        </code>
         <details class="quote">
           <summary>Source code in <code>zenml/materializers/base_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Write logic here to save the data of an artifact.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Write logic here to save the data of an artifact.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        data: The data of the artifact to save.</span>
@@ -3135,7 +3135,7 @@ BaseMaterializerMeta            (<span title="type">type</span>)
         <details class="quote">
           <summary>Source code in <code>zenml/materializers/base_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseMaterializerMeta</span><span class="p">(</span><span class="nb">type</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Metaclass responsible for registering different BaseMaterializer subclasses.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Metaclass responsible for registering different BaseMaterializer subclasses.</span>
 
 <span class="sd">    Materializers are used for reading/writing artifacts.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -3143,7 +3143,7 @@ BaseMaterializerMeta            (<span title="type">type</span>)
     <span class="k">def</span> <span class="fm">__new__</span><span class="p">(</span>
         <span class="n">mcs</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">bases</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="o">...</span><span class="p">],</span> <span class="n">dct</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseMaterializerMeta&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Creates a Materializer class and registers it at the `MaterializerRegistry`.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Creates a Materializer class and registers it at the `MaterializerRegistry`.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            name: The name of the class.</span>
@@ -3323,7 +3323,7 @@ BaseMaterializerMeta            (<span title="type">type</span>)
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__new__</span><span class="p">(</span>
     <span class="n">mcs</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">bases</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="o">...</span><span class="p">],</span> <span class="n">dct</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseMaterializerMeta&quot;</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Creates a Materializer class and registers it at the `MaterializerRegistry`.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Creates a Materializer class and registers it at the `MaterializerRegistry`.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: The name of the class.</span>
@@ -3441,10 +3441,10 @@ DeprecatedArtifact        </code>
         <details class="quote">
           <summary>Source code in <code>zenml/materializers/base_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DeprecatedArtifact</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Mock artifact class to support deprecated `materializer.artifact.uri`.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Mock artifact class to support deprecated `materializer.artifact.uri`.&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">uri</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Initializes the artifact.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes the artifact.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            uri: The URI of the artifact.</span>
@@ -3453,7 +3453,7 @@ DeprecatedArtifact        </code>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">uri</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns the URI of the artifact.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the URI of the artifact.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The URI of the artifact.</span>
@@ -3556,7 +3556,7 @@ DeprecatedArtifact        </code>
         <details class="quote">
           <summary>Source code in <code>zenml/materializers/base_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">uri</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Initializes the artifact.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes the artifact.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        uri: The URI of the artifact.</span>
@@ -3642,12 +3642,12 @@ BuiltInContainerMaterializer            (<a class="autorefs autorefs-internal" t
         <details class="quote">
           <summary>Source code in <code>zenml/materializers/built_in_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BuiltInContainerMaterializer</span><span class="p">(</span><span class="n">BaseMaterializer</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Handle built-in container types (dict, list, set, tuple).&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Handle built-in container types (dict, list, set, tuple).&quot;&quot;&quot;</span>
 
     <span class="n">ASSOCIATED_TYPES</span> <span class="o">=</span> <span class="p">(</span><span class="nb">dict</span><span class="p">,</span> <span class="nb">list</span><span class="p">,</span> <span class="nb">set</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">uri</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Define `self.data_path` and `self.metadata_path`.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Define `self.data_path` and `self.metadata_path`.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            uri: The URI where the artifact data is stored.</span>
@@ -3657,7 +3657,7 @@ BuiltInContainerMaterializer            (<a class="autorefs autorefs-internal" t
         <span class="bp">self</span><span class="o">.</span><span class="n">metadata_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">uri</span><span class="p">,</span> <span class="n">DEFAULT_METADATA_FILENAME</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Reads a materialized built-in container object.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reads a materialized built-in container object.</span>
 
 <span class="sd">        If the data was serialized to JSON, deserialize it.</span>
 
@@ -3713,7 +3713,7 @@ BuiltInContainerMaterializer            (<a class="autorefs autorefs-internal" t
         <span class="k">return</span> <span class="n">outputs</span>
 
     <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Materialize a built-in container object.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Materialize a built-in container object.</span>
 
 <span class="sd">        If the object can be serialized to JSON, serialize it.</span>
 
@@ -3830,7 +3830,7 @@ BuiltInContainerMaterializer            (<a class="autorefs autorefs-internal" t
         <details class="quote">
           <summary>Source code in <code>zenml/materializers/built_in_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">uri</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Define `self.data_path` and `self.metadata_path`.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Define `self.data_path` and `self.metadata_path`.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        uri: The URI where the artifact data is stored.</span>
@@ -3918,7 +3918,7 @@ BuiltInContainerMaterializer            (<a class="autorefs autorefs-internal" t
         <details class="quote">
           <summary>Source code in <code>zenml/materializers/built_in_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Reads a materialized built-in container object.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reads a materialized built-in container object.</span>
 
 <span class="sd">    If the data was serialized to JSON, deserialize it.</span>
 
@@ -4037,7 +4037,7 @@ subdirectory.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/materializers/built_in_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Materialize a built-in container object.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Materialize a built-in container object.</span>
 
 <span class="sd">    If the object can be serialized to JSON, serialize it.</span>
 
@@ -4136,13 +4136,13 @@ BuiltInMaterializer            (<a class="autorefs autorefs-internal" title="zen
         <details class="quote">
           <summary>Source code in <code>zenml/materializers/built_in_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BuiltInMaterializer</span><span class="p">(</span><span class="n">BaseMaterializer</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Handle JSON-serializable basic types (`bool`, `float`, `int`, `str`).&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Handle JSON-serializable basic types (`bool`, `float`, `int`, `str`).&quot;&quot;&quot;</span>
 
     <span class="n">ASSOCIATED_ARTIFACT_TYPE</span> <span class="o">=</span> <span class="n">ArtifactType</span><span class="o">.</span><span class="n">DATA</span>
     <span class="n">ASSOCIATED_TYPES</span> <span class="o">=</span> <span class="n">BASIC_TYPES</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">uri</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Define `self.data_path`.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Define `self.data_path`.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            uri: The URI where the artifact data is stored.</span>
@@ -4151,7 +4151,7 @@ BuiltInMaterializer            (<a class="autorefs autorefs-internal" title="zen
         <span class="bp">self</span><span class="o">.</span><span class="n">data_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">uri</span><span class="p">,</span> <span class="n">DEFAULT_FILENAME</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Reads basic primitive types from JSON.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reads basic primitive types from JSON.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            data_type: The type of the data to read.</span>
@@ -4170,7 +4170,7 @@ BuiltInMaterializer            (<a class="autorefs autorefs-internal" title="zen
         <span class="k">return</span> <span class="n">contents</span>
 
     <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Serialize a basic type to JSON.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Serialize a basic type to JSON.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            data: The data to store.</span>
@@ -4233,7 +4233,7 @@ BuiltInMaterializer            (<a class="autorefs autorefs-internal" title="zen
         <details class="quote">
           <summary>Source code in <code>zenml/materializers/built_in_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">uri</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Define `self.data_path`.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Define `self.data_path`.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        uri: The URI where the artifact data is stored.</span>
@@ -4299,7 +4299,7 @@ BuiltInMaterializer            (<a class="autorefs autorefs-internal" title="zen
         <details class="quote">
           <summary>Source code in <code>zenml/materializers/built_in_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Reads basic primitive types from JSON.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reads basic primitive types from JSON.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        data_type: The type of the data to read.</span>
@@ -4360,7 +4360,7 @@ BuiltInMaterializer            (<a class="autorefs autorefs-internal" title="zen
         <details class="quote">
           <summary>Source code in <code>zenml/materializers/built_in_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Serialize a basic type to JSON.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Serialize a basic type to JSON.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        data: The data to store.</span>
@@ -4405,13 +4405,13 @@ BytesMaterializer            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/materializers/built_in_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BytesMaterializer</span><span class="p">(</span><span class="n">BaseMaterializer</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Handle `bytes` data type, which is not JSON serializable.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Handle `bytes` data type, which is not JSON serializable.&quot;&quot;&quot;</span>
 
     <span class="n">ASSOCIATED_ARTIFACT_TYPE</span> <span class="o">=</span> <span class="n">ArtifactType</span><span class="o">.</span><span class="n">DATA</span>
     <span class="n">ASSOCIATED_TYPES</span> <span class="o">=</span> <span class="p">(</span><span class="nb">bytes</span><span class="p">,)</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">uri</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Define `self.data_path`.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Define `self.data_path`.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            uri: The URI where the artifact data is stored.</span>
@@ -4420,7 +4420,7 @@ BytesMaterializer            (<a class="autorefs autorefs-internal" title="zenml
         <span class="bp">self</span><span class="o">.</span><span class="n">data_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">uri</span><span class="p">,</span> <span class="n">DEFAULT_BYTES_FILENAME</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Reads a bytes object from file.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reads a bytes object from file.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            data_type: The type of the data to read.</span>
@@ -4433,7 +4433,7 @@ BytesMaterializer            (<a class="autorefs autorefs-internal" title="zenml
             <span class="k">return</span> <span class="n">file_</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Save a bytes object to file.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save a bytes object to file.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            data: The data to store.</span>
@@ -4497,7 +4497,7 @@ BytesMaterializer            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/materializers/built_in_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">uri</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Define `self.data_path`.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Define `self.data_path`.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        uri: The URI where the artifact data is stored.</span>
@@ -4563,7 +4563,7 @@ BytesMaterializer            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/materializers/built_in_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Reads a bytes object from file.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reads a bytes object from file.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        data_type: The type of the data to read.</span>
@@ -4618,7 +4618,7 @@ BytesMaterializer            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/materializers/built_in_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Save a bytes object to file.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Save a bytes object to file.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        data: The data to store.</span>
@@ -4712,7 +4712,7 @@ BytesMaterializer            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/materializers/built_in_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">find_materializer_registry_type</span><span class="p">(</span><span class="n">type_</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;For a given type, find the type registered in the registry.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;For a given type, find the type registered in the registry.</span>
 
 <span class="sd">    This can be either the type itself, or a superclass of the type.</span>
 
@@ -4822,7 +4822,7 @@ can be found. Any other types will cause a <code>RunTimeError</code>.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/materializers/built_in_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">find_type_by_str</span><span class="p">(</span><span class="n">type_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Get a Python type, given its string representation.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a Python type, given its string representation.</span>
 
 <span class="sd">    E.g., &quot;&lt;class &#39;int&#39;&gt;&quot; should resolve to `int`.</span>
 
@@ -4909,16 +4909,16 @@ MaterializerRegistry        </code>
         <details class="quote">
           <summary>Source code in <code>zenml/materializers/default_materializer_registry.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">MaterializerRegistry</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Matches a Python type to a default materializer.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Matches a Python type to a default materializer.&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Initialize the materializer registry.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the materializer registry.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">materializer_types</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseMaterializer&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
 
     <span class="k">def</span> <span class="nf">register_materializer_type</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="n">type_</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseMaterializer&quot;</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Registers a new materializer.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Registers a new materializer.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            key: Indicates the type of object.</span>
@@ -4937,7 +4937,7 @@ MaterializerRegistry        </code>
     <span class="k">def</span> <span class="nf">register_and_overwrite_type</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="n">type_</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseMaterializer&quot;</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Registers a new materializer and also overwrites a default if set.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Registers a new materializer and also overwrites a default if set.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            key: Indicates the type of object.</span>
@@ -4947,7 +4947,7 @@ MaterializerRegistry        </code>
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Registered materializer </span><span class="si">{</span><span class="n">type_</span><span class="si">}</span><span class="s2"> for </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseMaterializer&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Get a single materializers based on the key.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a single materializers based on the key.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            key: Indicates the type of object.</span>
@@ -4994,7 +4994,7 @@ MaterializerRegistry        </code>
     <span class="k">def</span> <span class="nf">get_materializer_types</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseMaterializer&quot;</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Get all registered materializer types.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all registered materializer types.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            A dictionary of registered materializer types.</span>
@@ -5002,7 +5002,7 @@ MaterializerRegistry        </code>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">materializer_types</span>
 
     <span class="k">def</span> <span class="nf">is_registered</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns if a materializer class is registered for the given type.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns if a materializer class is registered for the given type.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            key: Indicates the type of object.</span>
@@ -5098,7 +5098,7 @@ different default materializers</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/materializers/default_materializer_registry.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseMaterializer&quot;</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Get a single materializers based on the key.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a single materializers based on the key.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        key: Indicates the type of object.</span>
@@ -5169,7 +5169,7 @@ different default materializers</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/materializers/default_materializer_registry.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Initialize the materializer registry.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize the materializer registry.&quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">materializer_types</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseMaterializer&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
 </code></pre></div>
         </details>
@@ -5213,7 +5213,7 @@ different default materializers</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_materializer_types</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseMaterializer&quot;</span><span class="p">]]:</span>
-    <span class="sd">&quot;&quot;&quot;Get all registered materializer types.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get all registered materializer types.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A dictionary of registered materializer types.</span>
@@ -5279,7 +5279,7 @@ otherwise.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/materializers/default_materializer_registry.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">is_registered</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns if a materializer class is registered for the given type.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns if a materializer class is registered for the given type.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        key: Indicates the type of object.</span>
@@ -5341,7 +5341,7 @@ otherwise.</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">register_and_overwrite_type</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="n">type_</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseMaterializer&quot;</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Registers a new materializer and also overwrites a default if set.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Registers a new materializer and also overwrites a default if set.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        key: Indicates the type of object.</span>
@@ -5401,7 +5401,7 @@ otherwise.</p></td>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">register_materializer_type</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="n">type_</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseMaterializer&quot;</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Registers a new materializer.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Registers a new materializer.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        key: Indicates the type of object.</span>
@@ -5496,13 +5496,13 @@ NumpyMaterializer            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/materializers/numpy_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">NumpyMaterializer</span><span class="p">(</span><span class="n">BaseMaterializer</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Materializer to read data to and from pandas.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Materializer to read data to and from pandas.&quot;&quot;&quot;</span>
 
     <span class="n">ASSOCIATED_TYPES</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,)</span>
     <span class="n">ASSOCIATED_ARTIFACT_TYPE</span> <span class="o">=</span> <span class="n">ArtifactType</span><span class="o">.</span><span class="n">DATA</span>
 
     <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s2">&quot;Any&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Reads a numpy array from a `.npy` file.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reads a numpy array from a `.npy` file.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            data_type: The type of the data to read.</span>
@@ -5561,7 +5561,7 @@ NumpyMaterializer            (<a class="autorefs autorefs-internal" title="zenml
                 <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arr</span><span class="p">:</span> <span class="s2">&quot;NDArray[Any]&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Writes a np.ndarray to the artifact store as a `.npy` file.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Writes a np.ndarray to the artifact store as a `.npy` file.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            arr: The numpy array to write.</span>
@@ -5657,7 +5657,7 @@ NumpyMaterializer            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/materializers/numpy_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s2">&quot;Any&quot;</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Reads a numpy array from a `.npy` file.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reads a numpy array from a `.npy` file.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        data_type: The type of the data to read.</span>
@@ -5758,7 +5758,7 @@ NumpyMaterializer            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/materializers/numpy_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arr</span><span class="p">:</span> <span class="s2">&quot;NDArray[Any]&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Writes a np.ndarray to the artifact store as a `.npy` file.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Writes a np.ndarray to the artifact store as a `.npy` file.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        arr: The numpy array to write.</span>
@@ -5850,13 +5850,13 @@ PandasMaterializer            (<a class="autorefs autorefs-internal" title="zenm
         <details class="quote">
           <summary>Source code in <code>zenml/materializers/pandas_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PandasMaterializer</span><span class="p">(</span><span class="n">BaseMaterializer</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Materializer to read data to and from pandas.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Materializer to read data to and from pandas.&quot;&quot;&quot;</span>
 
     <span class="n">ASSOCIATED_TYPES</span> <span class="o">=</span> <span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">)</span>
     <span class="n">ASSOCIATED_ARTIFACT_TYPE</span> <span class="o">=</span> <span class="n">ArtifactType</span><span class="o">.</span><span class="n">DATA</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">uri</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Define `self.data_path`.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Define `self.data_path`.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            uri: The URI where the artifact data is stored.</span>
@@ -5880,7 +5880,7 @@ PandasMaterializer            (<a class="autorefs autorefs-internal" title="zenm
             <span class="bp">self</span><span class="o">.</span><span class="n">csv_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">uri</span><span class="p">,</span> <span class="n">CSV_FILENAME</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Reads `pd.DataFrame` or `pd.Series` from a `.parquet` or `.csv` file.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reads `pd.DataFrame` or `pd.Series` from a `.parquet` or `.csv` file.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            data_type: The type of the data to read.</span>
@@ -5912,7 +5912,7 @@ PandasMaterializer            (<a class="autorefs autorefs-internal" title="zenm
         <span class="k">def</span> <span class="nf">is_dataframe_or_series</span><span class="p">(</span>
             <span class="n">df</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">]</span>
         <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">]:</span>
-            <span class="sd">&quot;&quot;&quot;Checks if the data is a `pd.DataFrame` or `pd.Series`.</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Checks if the data is a `pd.DataFrame` or `pd.Series`.</span>
 
 <span class="sd">            Args:</span>
 <span class="sd">                df: The data to check.</span>
@@ -5932,7 +5932,7 @@ PandasMaterializer            (<a class="autorefs autorefs-internal" title="zenm
         <span class="k">return</span> <span class="n">is_dataframe_or_series</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Writes a pandas dataframe or series to the specified filename.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Writes a pandas dataframe or series to the specified filename.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            df: The pandas dataframe or series to write.</span>
@@ -6005,7 +6005,7 @@ PandasMaterializer            (<a class="autorefs autorefs-internal" title="zenm
         <details class="quote">
           <summary>Source code in <code>zenml/materializers/pandas_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">uri</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Define `self.data_path`.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Define `self.data_path`.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        uri: The URI where the artifact data is stored.</span>
@@ -6101,7 +6101,7 @@ PandasMaterializer            (<a class="autorefs autorefs-internal" title="zenm
         <details class="quote">
           <summary>Source code in <code>zenml/materializers/pandas_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Reads `pd.DataFrame` or `pd.Series` from a `.parquet` or `.csv` file.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reads `pd.DataFrame` or `pd.Series` from a `.parquet` or `.csv` file.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        data_type: The type of the data to read.</span>
@@ -6133,7 +6133,7 @@ PandasMaterializer            (<a class="autorefs autorefs-internal" title="zenm
     <span class="k">def</span> <span class="nf">is_dataframe_or_series</span><span class="p">(</span>
         <span class="n">df</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Checks if the data is a `pd.DataFrame` or `pd.Series`.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if the data is a `pd.DataFrame` or `pd.Series`.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            df: The data to check.</span>
@@ -6195,7 +6195,7 @@ PandasMaterializer            (<a class="autorefs autorefs-internal" title="zenm
         <details class="quote">
           <summary>Source code in <code>zenml/materializers/pandas_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Writes a pandas dataframe or series to the specified filename.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Writes a pandas dataframe or series to the specified filename.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        df: The pandas dataframe or series to write.</span>
@@ -6288,13 +6288,13 @@ ServiceMaterializer            (<a class="autorefs autorefs-internal" title="zen
         <details class="quote">
           <summary>Source code in <code>zenml/materializers/service_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ServiceMaterializer</span><span class="p">(</span><span class="n">BaseMaterializer</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Materializer to read/write service instances.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Materializer to read/write service instances.&quot;&quot;&quot;</span>
 
     <span class="n">ASSOCIATED_TYPES</span> <span class="o">=</span> <span class="p">(</span><span class="n">BaseService</span><span class="p">,)</span>
     <span class="n">ASSOCIATED_ARTIFACT_TYPE</span> <span class="o">=</span> <span class="n">ArtifactType</span><span class="o">.</span><span class="n">SERVICE</span>
 
     <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">BaseService</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Creates and returns a service.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Creates and returns a service.</span>
 
 <span class="sd">        This service is instantiated from the serialized service configuration</span>
 <span class="sd">        and last known status information saved as artifact.</span>
@@ -6312,7 +6312,7 @@ ServiceMaterializer            (<a class="autorefs autorefs-internal" title="zen
         <span class="k">return</span> <span class="n">service</span>
 
     <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">service</span><span class="p">:</span> <span class="n">BaseService</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Writes a ZenML service.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Writes a ZenML service.</span>
 
 <span class="sd">        The configuration and last known status of the input service instance</span>
 <span class="sd">        are serialized and saved as an artifact.</span>
@@ -6394,7 +6394,7 @@ and last known status information saved as artifact.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/materializers/service_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">BaseService</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Creates and returns a service.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Creates and returns a service.</span>
 
 <span class="sd">    This service is instantiated from the serialized service configuration</span>
 <span class="sd">    and last known status information saved as artifact.</span>
@@ -6456,7 +6456,7 @@ are serialized and saved as an artifact.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/materializers/service_materializer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">service</span><span class="p">:</span> <span class="n">BaseService</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Writes a ZenML service.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Writes a ZenML service.</span>
 
 <span class="sd">    The configuration and last known status of the input service instance</span>
 <span class="sd">    are serialized and saved as an artifact.</span>
@@ -6557,7 +6557,7 @@ def my_step(input_artifact: UnmaterializedArtifact):
         <details class="quote">
           <summary>Source code in <code>zenml/materializers/unmaterialized_artifact.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">UnmaterializedArtifact</span><span class="p">(</span><span class="n">ArtifactResponseModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Unmaterialized artifact class.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Unmaterialized artifact class.</span>
 
 <span class="sd">    Typing a step input to have this type will cause ZenML to not materialize</span>
 <span class="sd">    the artifact. This is useful for steps that need to access the artifact</span>
