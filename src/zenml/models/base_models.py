@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type, TypeVar, Union
 from uuid import UUID
 
 from pydantic import Field
@@ -91,7 +91,7 @@ class UserScopedResponseModel(BaseResponseModel):
     Used as a base class for all domain models that are "owned" by a user.
     """
 
-    user: Optional["UserResponseModel"] = Field(
+    user: Union["UserResponseModel", None] = Field(
         title="The user that created this resource.", nullable=True
     )
 
