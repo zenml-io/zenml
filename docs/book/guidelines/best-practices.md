@@ -156,5 +156,5 @@ imports that are defined relative to the project root resolve for the pipeline r
   validations that check if the stack is up)
 
 For a practical example on all of the above, please check
-out [ZenFiles](https://github.com/zenml-io/zenfiles) which are practical
+out [ZenML Projects](https://github.com/zenml-io/zenml-projects) which are practical
 end-to-end projects built using ZenML.
