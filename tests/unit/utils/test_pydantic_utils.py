@@ -33,6 +33,20 @@ def test_update_model_works():
     assert updated.b == 4
 
 
+def test_update_model_works_for_exclude_unset():
+    """Tests that updating a Pydantic model using our util function works."""
+
+    class TestModel(BaseModel):
+        a: int
+        b: Optional[int]
+
+    original = TestModel(a=1, b=2)
+    update = TestModel(a=3)
+    updated = pydantic_utils.update_model(original, update)
+    assert updated.a == 3
+    assert updated.b == 2
+
+
 def test_update_model_works_with_dict():
     """Tests that updating a Pydantic model using our util function works."""
 
