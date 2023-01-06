@@ -107,7 +107,7 @@
         <li><a href="#-first-run">First run</a></li>
         <li><a href="#-collaborate-with-zenml">Collaborate with ZenML</a></li>
         <li><a href="#-zenbytes">ZenBytes</a></li>
-        <li><a href="#-zenprojects">ZenML Projects</a></li>
+        <li><a href="#-zenml-projects">ZenML Projects</a></li>
       </ul>
     </li>
     <li>
