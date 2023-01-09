@@ -62,7 +62,7 @@ class KanikoImageBuilder(BaseImageBuilder):
             Stack validator.
         """
 
-        def _validate_remote_container_registry(
+        def _validate_remote_components(
             stack: "Stack",
         ) -> Tuple[bool, str]:
             assert stack.container_registry
@@ -76,11 +76,23 @@ class KanikoImageBuilder(BaseImageBuilder):
                     "container registry and try again."
                 )
 
+            if (
+                self.config.store_context_in_artifact_store
+                and stack.artifact_store.config.is_local
+            ):
+                return False, (
+                    "The Kaniko image builder is configured to upload the "
+                    "build context to the artifact store. This only works with "
+                    "remote artifact stores so that the Kaniko build pod is "
+                    "able to read from it. Please update your stack to include "
+                    "a remote artifact store and try again."
+                )
+
             return True, ""
 
         return StackValidator(
             required_components={StackComponentType.CONTAINER_REGISTRY},
-            custom_validation_function=_validate_remote_container_registry,
+            custom_validation_function=_validate_remote_components,
         )
 
     def build(
@@ -246,8 +258,9 @@ class KanikoImageBuilder(BaseImageBuilder):
         Returns:
             The path of the uploaded build context.
         """
-        hash_ = hashlib.sha1()
         artifact_store = Client().active_stack.artifact_store
+
+        hash_ = hashlib.sha1()
         with tempfile.NamedTemporaryFile(mode="w+b") as f:
             build_context.write_archive(f, gzip=True)
 
