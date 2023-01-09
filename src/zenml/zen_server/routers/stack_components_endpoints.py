@@ -73,20 +73,18 @@ def list_stack_components(
     components: List[ComponentResponseModel] = []
 
     # Get private stack components unless `is_shared` is set to True
-    if (
-        is_shared is None
-        or not is_shared
-        and user_name_or_id == auth_context.user.id
-    ):
-        own_components = zen_store().list_stack_components(
-            name=name,
-            user_name_or_id=auth_context.user.id,
-            project_name_or_id=project_name_or_id,
-            flavor_name=flavor_name,
-            type=type,
-            is_shared=False,
-        )
-        components += own_components
+    if is_shared is None or not is_shared:
+        # only private components of the authenticated user can be accessed
+        if user_name_or_id and user_name_or_id == auth_context.user.id:
+            own_components = zen_store().list_stack_components(
+                name=name,
+                user_name_or_id=auth_context.user.id,
+                project_name_or_id=project_name_or_id,
+                flavor_name=flavor_name,
+                type=type,
+                is_shared=False,
+            )
+            components += own_components
 
     # Get shared stacks unless `is_shared` is set to False
     if is_shared is None or is_shared:
