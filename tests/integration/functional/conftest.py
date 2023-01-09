@@ -1,4 +1,3 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -14,17 +13,27 @@
 
 import pytest
 
-from tests.integration.functional.conftest import (
-    constant_int_output_test_step,
-    int_plus_one_test_step,
-)
+from zenml.pipelines import pipeline
+from zenml.steps import step
+
+
+@step
+def constant_int_output_test_step() -> int:
+    return 7
+
+
+@step
+def int_plus_one_test_step(input: int) -> int:
+    return input + 1
 
 
 @pytest.fixture
-def clean_project_with_run(clean_project, connected_two_step_pipeline):
-    """Fixture to get a clean project with an existing pipeline run in it."""
-    connected_two_step_pipeline(
-        step_1=constant_int_output_test_step(),
-        step_2=int_plus_one_test_step(),
-    ).run()
-    return clean_project
+def connected_two_step_pipeline():
+    """Pytest fixture that returns a pipeline which takes two steps
+    `step_1` and `step_2` that are connected."""
+
+    @pipeline(name="connected_two_step_pipeline")
+    def _pipeline(step_1, step_2):
+        step_2(step_1())
+
+    return _pipeline
