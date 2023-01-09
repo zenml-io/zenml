@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from click.testing import CliRunner
 from datetime import datetime
 from typing import Generator
 from uuid import uuid4
@@ -458,3 +459,7 @@ def sample_artifact_request_model() -> ArtifactRequestModel:
         project=uuid4(),
         user=uuid4(),
     )
+
+@pytest.fixture
+def cli_runner():
+    return CliRunner()

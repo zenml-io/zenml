@@ -31,18 +31,15 @@ SERVER_START_STOP_TIMEOUT = 30
     reason="ZenServer not supported as daemon on Windows.",
 )
 @click.pass_context
-def test_server_up_down(clean_client, ctx: click.Context):
-    """Test spinning up and shutting down ZenServer."""    
+def test_server_up_down(clean_client, cli_runnner):
+    """Test spinning up and shutting down ZenServer."""
     port = scan_for_available_port(start=8003, stop=9000)
-    ctx.invoke(
-        up,
-        port=port,
-    )
+    cli_runnner.invoke(up, ["--port", port])
 
     endpoint = f"http://127.0.0.1:{port}"
     assert requests.head(endpoint + "/health").status_code == 200
 
-    ctx.invoke(down)
+    cli_runnner.invoke(down)
     deployer = ServerDeployer()
 
     assert deployer.list_servers() == []
@@ -53,14 +50,10 @@ def test_server_up_down(clean_client, ctx: click.Context):
     reason="ZenServer not supported as daemon on Windows.",
 )
 @click.pass_context
-def test_server_up_and_connect(clean_client, ctx: click.Context):
-    """Test spinning up and connecting to ZenServer."""    
+def test_server_up_and_connect(clean_client, cli_runner):
+    """Test spinning up and connecting to ZenServer."""
     port = scan_for_available_port(start=8003, stop=9000)
-    ctx.invoke(
-        up,
-        port=port,
-        connect=True,
-    )
+    cli_runner.invoke(up, ["--port", port, "--connect", True])
 
     endpoint = f"http://127.0.0.1:{port}"
 
