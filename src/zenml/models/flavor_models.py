@@ -52,9 +52,8 @@ class FlavorBaseModel(BaseModel):
         title="The name of the integration that the Flavor belongs to.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    logo_url: str = Field(
-        default="https://3376789856-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/collections%2FUoWo1UaWzv9Bv1r8FK4K%2Ficon%2F9FC5shDCotdkDPemxZZ3%2F02%20-%20Logo.png?alt=media&token=ab93a501-d807-4c49-94cd-5aa56f2434ec"
-    )
+    logo_url: Optional[str] = Field(title="Optionally, a url pointing to a png,"
+                                          "svg or jpg can be attached.")
 
 
 # -------- #

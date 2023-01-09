@@ -5,7 +5,7 @@
     "config_schema": "{\"title\": \"LocalArtifactStoreConfig\", \"description\": \"Config class for the local artifact store.\\n\\nAttributes:\\n    path: The path to the local artifact store.\", \"type\": \"object\", \"properties\": {\"path\": {\"title\": \"Path\", \"default\": \"\", \"type\": \"string\"}}, \"additionalProperties\": false}",
     "source": "zenml.artifact_stores.local_artifact_store.LocalArtifactStoreFlavor",
     "integration": "built-in",
-    "logo_url": "https://3376789856-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/collections%2FUoWo1UaWzv9Bv1r8FK4K%2Ficon%2F9FC5shDCotdkDPemxZZ3%2F02%20-%20Logo.png?alt=media&token=ab93a501-d807-4c49-94cd-5aa56f2434ec"
+    "logo_url": "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/artifact_Store/local.svg"
   },
   {
     "name": "azure",
@@ -37,7 +37,7 @@
     "config_schema": "{\"title\": \"LocalOrchestratorConfig\", \"description\": \"Local orchestrator config.\", \"type\": \"object\", \"properties\": {}, \"additionalProperties\": false}",
     "source": "zenml.orchestrators.local.local_orchestrator.LocalOrchestratorFlavor",
     "integration": "built-in",
-    "logo_url": "https://3376789856-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/collections%2FUoWo1UaWzv9Bv1r8FK4K%2Ficon%2F9FC5shDCotdkDPemxZZ3%2F02%20-%20Logo.png?alt=media&token=ab93a501-d807-4c49-94cd-5aa56f2434ec"
+    "logo_url": "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/local.png"
   },
   {
     "name": "local_docker",
@@ -45,7 +45,7 @@
     "config_schema": "{\"title\": \"LocalDockerOrchestratorConfig\", \"description\": \"Local Docker orchestrator config.\", \"type\": \"object\", \"properties\": {\"run_args\": {\"title\": \"Run Args\", \"default\": {}, \"type\": \"object\"}}, \"additionalProperties\": false}",
     "source": "zenml.orchestrators.local_docker.local_docker_orchestrator.LocalDockerOrchestratorFlavor",
     "integration": "built-in",
-    "logo_url": "https://3376789856-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/collections%2FUoWo1UaWzv9Bv1r8FK4K%2Ficon%2F9FC5shDCotdkDPemxZZ3%2F02%20-%20Logo.png?alt=media&token=ab93a501-d807-4c49-94cd-5aa56f2434ec"
+    "logo_url": "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/docker.png"
   },
   {
     "name": "airflow",
@@ -101,7 +101,7 @@
     "config_schema": "{\"title\": \"BaseContainerRegistryConfig\", \"description\": \"Base config for a container registry.\\n\\nAttributes:\\n    uri: The URI of the container registry.\", \"type\": \"object\", \"properties\": {\"authentication_secret\": {\"title\": \"Authentication Secret\", \"type\": \"string\"}, \"uri\": {\"title\": \"Uri\", \"type\": \"string\"}}, \"required\": [\"uri\"], \"additionalProperties\": false}",
     "source": "zenml.container_registries.default_container_registry.DefaultContainerRegistryFlavor",
     "integration": "built-in",
-    "logo_url": "https://3376789856-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/collections%2FUoWo1UaWzv9Bv1r8FK4K%2Ficon%2F9FC5shDCotdkDPemxZZ3%2F02%20-%20Logo.png?alt=media&token=ab93a501-d807-4c49-94cd-5aa56f2434ec"
+    "logo_url": "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/container_registry/local.svg"
   },
   {
     "name": "azure",
@@ -117,7 +117,7 @@
     "config_schema": "{\"title\": \"BaseContainerRegistryConfig\", \"description\": \"Base config for a container registry.\\n\\nAttributes:\\n    uri: The URI of the container registry.\", \"type\": \"object\", \"properties\": {\"authentication_secret\": {\"title\": \"Authentication Secret\", \"type\": \"string\"}, \"uri\": {\"title\": \"Uri\", \"type\": \"string\"}}, \"required\": [\"uri\"], \"additionalProperties\": false}",
     "source": "zenml.container_registries.dockerhub_container_registry.DockerHubContainerRegistryFlavor",
     "integration": "built-in",
-    "logo_url": "https://3376789856-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/collections%2FUoWo1UaWzv9Bv1r8FK4K%2Ficon%2F9FC5shDCotdkDPemxZZ3%2F02%20-%20Logo.png?alt=media&token=ab93a501-d807-4c49-94cd-5aa56f2434ec"
+    "logo_url": "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/container_registry/docker.png"
   },
   {
     "name": "gcp",
@@ -133,7 +133,7 @@
     "config_schema": "{\"title\": \"BaseContainerRegistryConfig\", \"description\": \"Base config for a container registry.\\n\\nAttributes:\\n    uri: The URI of the container registry.\", \"type\": \"object\", \"properties\": {\"authentication_secret\": {\"title\": \"Authentication Secret\", \"type\": \"string\"}, \"uri\": {\"title\": \"Uri\", \"type\": \"string\"}}, \"required\": [\"uri\"], \"additionalProperties\": false}",
     "source": "zenml.container_registries.github_container_registry.GitHubContainerRegistryFlavor",
     "integration": "built-in",
-    "logo_url": "https://3376789856-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/collections%2FUoWo1UaWzv9Bv1r8FK4K%2Ficon%2F9FC5shDCotdkDPemxZZ3%2F02%20-%20Logo.png?alt=media&token=ab93a501-d807-4c49-94cd-5aa56f2434ec"
+    "logo_url": "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/container_registry/github.png"
   },
   {
     "name": "aws",
@@ -149,7 +149,7 @@
     "config_schema": "{\"title\": \"LocalSecretsManagerConfig\", \"description\": \"Configuration for the local secrets manager.\\n\\nAttributes:\\n    secrets_file: The path to the secrets file.\", \"type\": \"object\", \"properties\": {\"scope\": {\"default\": \"component\", \"allOf\": [{\"$ref\": \"#/definitions/SecretsManagerScope\"}]}, \"namespace\": {\"title\": \"Namespace\", \"type\": \"string\"}, \"secrets_file\": {\"title\": \"Secrets File\", \"default\": \"\", \"type\": \"string\"}}, \"additionalProperties\": false, \"definitions\": {\"SecretsManagerScope\": {\"title\": \"SecretsManagerScope\", \"description\": \"Secrets Manager scope enum.\", \"enum\": [\"none\", \"global\", \"component\", \"namespace\"], \"type\": \"string\"}}}",
     "source": "zenml.secrets_managers.local.local_secrets_manager.LocalSecretsManagerFlavor",
     "integration": "built-in",
-    "logo_url": "https://3376789856-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/collections%2FUoWo1UaWzv9Bv1r8FK4K%2Ficon%2F9FC5shDCotdkDPemxZZ3%2F02%20-%20Logo.png?alt=media&token=ab93a501-d807-4c49-94cd-5aa56f2434ec"
+    "logo_url": "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/secrets_managers/local.svg"
   },
   {
     "name": "aws",
@@ -157,7 +157,7 @@
     "config_schema": "{\"title\": \"AWSSecretsManagerConfig\", \"description\": \"Configuration for the AWS Secrets Manager.\\n\\nAttributes:\\n    region_name: The region name of the AWS Secrets Manager.\", \"type\": \"object\", \"properties\": {\"scope\": {\"default\": \"component\", \"allOf\": [{\"$ref\": \"#/definitions/SecretsManagerScope\"}]}, \"namespace\": {\"title\": \"Namespace\", \"type\": \"string\"}, \"region_name\": {\"title\": \"Region Name\", \"type\": \"string\"}}, \"required\": [\"region_name\"], \"additionalProperties\": false, \"definitions\": {\"SecretsManagerScope\": {\"title\": \"SecretsManagerScope\", \"description\": \"Secrets Manager scope enum.\", \"enum\": [\"none\", \"global\", \"component\", \"namespace\"], \"type\": \"string\"}}}",
     "source": "zenml.integrations.aws.flavors.aws_secrets_manager_flavor.AWSSecretsManagerFlavor",
     "integration": "aws",
-    "logo_url": "https://3376789856-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/collections%2FUoWo1UaWzv9Bv1r8FK4K%2Ficon%2F9FC5shDCotdkDPemxZZ3%2F02%20-%20Logo.png?alt=media&token=ab93a501-d807-4c49-94cd-5aa56f2434ec"
+    "logo_url": "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/secrets_managers/aws.png"
   },
   {
     "name": "azure",
@@ -181,7 +181,7 @@
     "config_schema": "{\"title\": \"GitHubSecretsManagerConfig\", \"description\": \"The configuration for the GitHub Secrets Manager.\\n\\nAttributes:\\n    owner: The owner (either individual or organization) of the repository.\\n    repository: Name of the GitHub repository.\", \"type\": \"object\", \"properties\": {\"scope\": {\"default\": \"component\", \"allOf\": [{\"$ref\": \"#/definitions/SecretsManagerScope\"}]}, \"namespace\": {\"title\": \"Namespace\", \"type\": \"string\"}, \"owner\": {\"title\": \"Owner\", \"type\": \"string\"}, \"repository\": {\"title\": \"Repository\", \"type\": \"string\"}}, \"required\": [\"owner\", \"repository\"], \"additionalProperties\": false, \"definitions\": {\"SecretsManagerScope\": {\"title\": \"SecretsManagerScope\", \"description\": \"Secrets Manager scope enum.\", \"enum\": [\"none\", \"global\", \"component\", \"namespace\"], \"type\": \"string\"}}}",
     "source": "zenml.integrations.github.flavors.github_secrets_manager_flavor.GitHubSecretsManagerFlavor",
     "integration": "github",
-    "logo_url": "https://3376789856-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/collections%2FUoWo1UaWzv9Bv1r8FK4K%2Ficon%2F9FC5shDCotdkDPemxZZ3%2F02%20-%20Logo.png?alt=media&token=ab93a501-d807-4c49-94cd-5aa56f2434ec"
+    "logo_url": "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/secrets_managers/github.png"
   },
   {
     "name": "vault",
@@ -221,7 +221,7 @@
     "config_schema": "{\"title\": \"KubernetesSparkStepOperatorConfig\", \"description\": \"Config for the Kubernetes Spark step operator.\\n\\nAttributes:\\n    namespace: the namespace under which the driver and executor pods\\n        will run.\\n    service_account: the service account that will be used by various Spark\\n        components (to create and watch the pods).\", \"type\": \"object\", \"properties\": {\"deploy_mode\": {\"title\": \"Deploy Mode\", \"default\": \"cluster\", \"type\": \"string\"}, \"submit_kwargs\": {\"title\": \"Submit Kwargs\", \"type\": \"object\"}, \"master\": {\"title\": \"Master\", \"type\": \"string\"}, \"namespace\": {\"title\": \"Namespace\", \"type\": \"string\"}, \"service_account\": {\"title\": \"Service Account\", \"type\": \"string\"}}, \"required\": [\"master\"], \"additionalProperties\": false}",
     "source": "zenml.integrations.spark.flavors.spark_on_kubernetes_step_operator_flavor.KubernetesSparkStepOperatorFlavor",
     "integration": "spark",
-    "logo_url": "https://3376789856-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/collections%2FUoWo1UaWzv9Bv1r8FK4K%2Ficon%2F9FC5shDCotdkDPemxZZ3%2F02%20-%20Logo.png?alt=media&token=ab93a501-d807-4c49-94cd-5aa56f2434ec"
+    "logo_url": "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/step_operator/spark.png"
   },
   {
     "name": "bentoml",
