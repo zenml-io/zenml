@@ -447,20 +447,20 @@ def example_pipeline(step_1, step_2, step_3, step_4):
 example_pipeline(step_1(), step_2(), step_3(), step_4()).run()
 ```
 
-## Customizing Default Materializers for Custom Artifact Stores
+## Note on using Materializers for Custom Artifact Stores
 
 When creating a custom Artifact Store, you may encounter a situation where the 
-default materializers do not function properly. Specifically, the fileio.open
-method used in these materializers may not be compatible with your custom store. 
+default materializers do not function properly. Specifically, the `fileio.open`
+method used in these materializers may not be compatible with your custom store
+due to not being implemented properly.
+
 In this case, you can create a modified version of the failing materializer by 
 copying it and modifying it to copy the artifact to a local path, then opening 
-it from there.
-
-For example, consider the following implementation of a custom 
+it from there. For example, consider the following implementation of a custom 
 [PandasMaterializer](https://github.com/zenml-io/zenml/blob/main/src/zenml/materializers/pandas_materializer.py) 
 that works with a custom artifact store. In this implementation, we copy 
-the artifact to a local path because we want to use the pandas.read_csv method 
-to read it. If we were to use the fileio.open method instead, we would not need 
+the artifact to a local path because we want to use the `pandas.read_csv` method 
+to read it. If we were to use the `fileio.open` method instead, we would not need 
 to make this copy.
 
 
