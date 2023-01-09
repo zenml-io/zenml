@@ -21,7 +21,6 @@ from tests.integration.functional.conftest import (
     constant_int_output_test_step,
     int_plus_one_test_step,
 )
-from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.post_execution import get_pipeline
 
 
