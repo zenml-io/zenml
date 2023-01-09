@@ -83,7 +83,7 @@ from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.models.base_models import BaseResponseModel
 from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.utils import io_utils
-from zenml.utils.analytics_utils import AnalyticsEvent, track
+from zenml.utils.analytics_utils import AnalyticsEvent, event_handler, track
 from zenml.utils.filesync_model import FileSyncModel
 
 if TYPE_CHECKING:
@@ -355,7 +355,6 @@ class Client(metaclass=ClientMetaClass):
         return ClientConfiguration(config_path)
 
     @staticmethod
-    @track(event=AnalyticsEvent.INITIALIZE_REPO)
     def initialize(
         root: Optional[Path] = None,
     ) -> None:
@@ -369,17 +368,18 @@ class Client(metaclass=ClientMetaClass):
             InitializationException: If the root directory already contains a
                 ZenML repository.
         """
-        root = root or Path.cwd()
-        logger.debug("Initializing new repository at path %s.", root)
-        if Client.is_repository_directory(root):
-            raise InitializationException(
-                f"Found existing ZenML repository at path '{root}'."
-            )
+        with event_handler(AnalyticsEvent.INITIALIZE_REPO):
+            root = root or Path.cwd()
+            logger.debug("Initializing new repository at path %s.", root)
+            if Client.is_repository_directory(root):
+                raise InitializationException(
+                    f"Found existing ZenML repository at path '{root}'."
+                )
 
-        config_directory = str(root / REPOSITORY_DIRECTORY_NAME)
-        io_utils.create_dir_recursive_if_not_exists(config_directory)
-        # Initialize the repository configuration at the custom path
-        Client(root=root)
+            config_directory = str(root / REPOSITORY_DIRECTORY_NAME)
+            io_utils.create_dir_recursive_if_not_exists(config_directory)
+            # Initialize the repository configuration at the custom path
+            Client(root=root)
 
     @property
     def uses_local_configuration(self) -> bool:
