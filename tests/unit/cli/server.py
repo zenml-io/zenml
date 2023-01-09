@@ -15,6 +15,7 @@ import os
 import platform
 
 import click
+from zenml.cli.cli import cli
 import pytest
 import requests
 
@@ -34,12 +35,14 @@ SERVER_START_STOP_TIMEOUT = 30
 def test_server_up_down(clean_client, cli_runnner):
     """Test spinning up and shutting down ZenServer."""
     port = scan_for_available_port(start=8003, stop=9000)
-    cli_runnner.invoke(up, ["--port", port])
+    up_command = cli.commands["up"]
+    cli_runnner.invoke(up_command, ["--port", port])
 
     endpoint = f"http://127.0.0.1:{port}"
     assert requests.head(endpoint + "/health").status_code == 200
 
-    cli_runnner.invoke(down)
+    down_command = cli.commands["down"]
+    cli_runnner.invoke(down_command)
     deployer = ServerDeployer()
 
     assert deployer.list_servers() == []
@@ -53,7 +56,8 @@ def test_server_up_down(clean_client, cli_runnner):
 def test_server_up_and_connect(clean_client, cli_runner):
     """Test spinning up and connecting to ZenServer."""
     port = scan_for_available_port(start=8003, stop=9000)
-    cli_runner.invoke(up, ["--port", port, "--connect", True])
+    up_command = cli.commands["up"]
+    cli_runner.invoke(up_command, ["--port", port, "--connect", True])
 
     endpoint = f"http://127.0.0.1:{port}"
 
