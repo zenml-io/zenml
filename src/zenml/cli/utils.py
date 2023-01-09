@@ -828,7 +828,7 @@ def print_server_deployment(server: "ServerDeployment") -> None:
     console.print(rich_table)
 
 
-def describe_pydantic_object(schema_json: str) -> None:
+def describe_pydantic_object(schema_json: Dict[str, Any]) -> None:
     """Describes a Pydantic object based on the json of its schema.
 
     Args:
@@ -836,13 +836,11 @@ def describe_pydantic_object(schema_json: str) -> None:
             can be obtained through BaseModelClass.schema_json()
     """
     # Get the schema dict
-    schema = json.loads(schema_json)
-
     # Extract values with defaults
-    schema_title = schema["title"]
-    required = schema.get("required", [])
-    description = schema.get("description", "")
-    properties = schema.get("properties", {})
+    schema_title = schema_json["title"]
+    required = schema_json.get("required", [])
+    description = schema_json.get("description", "")
+    properties = schema_json.get("properties", {})
 
     # Pretty print the schema
     warning(f"Configuration class: {schema_title}\n", bold=True)
@@ -853,10 +851,12 @@ def describe_pydantic_object(schema_json: str) -> None:
     if properties:
         warning("Properties", bold=True)
         for prop, prop_schema in properties.items():
-            warning(
-                f"{prop}, {prop_schema['type']}"
-                f"{', REQUIRED' if prop in required else ''}"
-            )
+
+            if '$ref' not in prop_schema.keys():
+                warning(
+                    f"{prop}, {prop_schema['type']}"
+                    f"{', REQUIRED' if prop in required else ''}"
+                )
 
             if "description" in prop_schema:
                 declare(f"  {prop_schema['description']}", width=80)
