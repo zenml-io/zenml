@@ -20,6 +20,7 @@ import torch
 from torch.nn import Module
 
 from zenml.enums import ArtifactType
+from zenml.integrations.pytorch.utils import count_module_params
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 
@@ -86,13 +87,4 @@ class PyTorchModuleMaterializer(BaseMaterializer):
             The extracted metadata as a dictionary.
         """
         super().extract_metadata(model)
-        return {
-            "num_params": sum([param.numel() for param in model.parameters()]),
-            "num_trainable_params": sum(
-                [
-                    param.numel()
-                    for param in model.parameters()
-                    if param.requires_grad
-                ]
-            ),
-        }
+        return {**count_module_params(model)}

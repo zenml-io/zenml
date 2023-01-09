@@ -16,12 +16,14 @@
 import importlib
 import os
 from tempfile import TemporaryDirectory
-from typing import Any, Type
+from typing import Dict, Type
 
 from transformers import AutoConfig, PreTrainedModel  # type: ignore [import]
 
 from zenml.enums import ArtifactType
+from zenml.integrations.pytorch.utils import count_module_params
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.metadata.metadata_types import DType, MetadataType
 from zenml.utils import io_utils
 
 DEFAULT_PT_MODEL_DIR = "hf_pt_model"
@@ -33,7 +35,7 @@ class HFPTModelMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (PreTrainedModel,)
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
 
-    def load(self, data_type: Type[Any]) -> PreTrainedModel:
+    def load(self, data_type: Type[PreTrainedModel]) -> PreTrainedModel:
         """Reads HFModel.
 
         Args:
@@ -55,7 +57,7 @@ class HFPTModelMaterializer(BaseMaterializer):
             os.path.join(self.uri, DEFAULT_PT_MODEL_DIR)
         )
 
-    def save(self, model: Type[Any]) -> None:
+    def save(self, model: PreTrainedModel) -> None:
         """Writes a Model to the specified dir.
 
         Args:
@@ -68,3 +70,22 @@ class HFPTModelMaterializer(BaseMaterializer):
             temp_dir.name,
             os.path.join(self.uri, DEFAULT_PT_MODEL_DIR),
         )
+
+    def extract_metadata(
+        self, model: PreTrainedModel
+    ) -> Dict[str, "MetadataType"]:
+        """Extract metadata from the given `PreTrainedModel` object.
+
+        Args:
+            model: The `PreTrainedModel` object to extract metadata from.
+
+        Returns:
+            The extracted metadata as a dictionary.
+        """
+        super().extract_metadata(model)
+        module_param_metadata = count_module_params(model)
+        return {
+            **module_param_metadata,
+            "dtype": DType(str(model.dtype)),
+            "device": str(model.device),
+        }
