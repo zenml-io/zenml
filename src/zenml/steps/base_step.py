@@ -62,7 +62,6 @@ from zenml.steps.utils import (
     PARAM_OUTPUT_ARTIFACTS,
     PARAM_OUTPUT_MATERIALIZERS,
     PARAM_SETTINGS,
-    PARAM_SOURCE_CODE,
     PARAM_STEP_NAME,
     PARAM_STEP_OPERATOR,
     parse_return_type_annotations,
@@ -261,7 +260,6 @@ class BaseStep(metaclass=BaseStepMeta):
 
         kwargs = {**self.INSTANCE_CONFIGURATION, **kwargs}
         name = kwargs.pop(PARAM_STEP_NAME, None) or self.__class__.__name__
-        source_code = kwargs.pop(PARAM_SOURCE_CODE, None)
 
         # This value is only used in `BaseStep.__created_by_functional_api()`
         kwargs.pop(PARAM_CREATED_BY_FUNCTIONAL_API, None)
@@ -293,7 +291,7 @@ class BaseStep(metaclass=BaseStepMeta):
             name=name,
             enable_cache=enable_cache,
             docstring=self.__doc__,
-            source_code=source_code,
+            source_code=inspect.getsource(self.source_object),
         )
         self._apply_class_configuration(kwargs)
         self._verify_and_apply_init_params(*args, **kwargs)
@@ -383,6 +381,20 @@ class BaseStep(metaclass=BaseStepMeta):
         return self._inputs
 
     @property
+    def source_object(self) -> Any:
+        """The source object of this step.
+
+        This is either a function wrapped by the `@step` decorator or a custom
+        step class.
+
+        Returns:
+            The source object of this step.
+        """
+        if self._created_by_functional_api():
+            return self.entrypoint
+        return self.__class__
+
+    @property
     def caching_parameters(self) -> Dict[str, Any]:
         """Caching parameters for this step.
 
@@ -390,14 +402,8 @@ class BaseStep(metaclass=BaseStepMeta):
             A dictionary containing the caching parameters
         """
         parameters = {}
-
-        source_object = (
-            self.entrypoint
-            if self._created_by_functional_api()
-            else self.__class__
-        )
         parameters[STEP_SOURCE_PARAMETER_NAME] = source_utils.get_hashed_source(
-            source_object
+            self.source_object
         )
 
         for name, output in self.configuration.outputs.items():
