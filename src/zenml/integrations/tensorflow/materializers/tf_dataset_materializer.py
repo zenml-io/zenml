@@ -15,7 +15,7 @@
 
 import os
 import tempfile
-from typing import Any, Type
+from typing import TYPE_CHECKING, Any, Dict, Type
 
 import tensorflow as tf
 
@@ -23,6 +23,9 @@ from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import io_utils
+
+if TYPE_CHECKING:
+    from zenml.metadata.metadata_types import MetadataType
 
 DEFAULT_FILENAME = "saved_data"
 
@@ -67,3 +70,19 @@ class TensorflowDatasetMaterializer(BaseMaterializer):
             io_utils.copy_dir(temp_dir.name, self.uri)
         finally:
             fileio.rmtree(temp_dir.name)
+
+    def extract_metadata(
+        self, dataset: tf.data.Dataset
+    ) -> Dict[str, "MetadataType"]:
+        """Extract metadata from the given `Dataset` object.
+
+        Args:
+            dataset: The `Dataset` object to extract metadata from.
+
+        Returns:
+            The extracted metadata as a dictionary.
+        """
+        super().extract_metadata(dataset)
+        return {
+            "length": len(dataset),
+        }
