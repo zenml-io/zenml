@@ -27,19 +27,15 @@ from zenml.stack import Flavor
 AWS_SECRET_MANAGER_FLAVOR = "aws"
 AWS_CONTAINER_REGISTRY_FLAVOR = "aws"
 AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR = "sagemaker"
+AWS_SAGEMAKER_ORCHESTRATOR_FLAVOR = "sagemaker"
 
 
 class AWSIntegration(Integration):
     """Definition of AWS integration for ZenML."""
 
     NAME = AWS
-    # We need to pin protobuf to a version <=4 here, as this sagemaker release
-    # does not pin it. They fixed this in a later version, so we can probably
-    # remove this once we update the sagemaker version.
     REQUIREMENTS = [
-        "boto3==1.21.0",
-        "sagemaker==2.82.2",
-        "protobuf>=3.1,<4.0.0",
+        "sagemaker==2.117.0",
     ]
 
     @classmethod
@@ -52,6 +48,7 @@ class AWSIntegration(Integration):
         from zenml.integrations.aws.flavors import (
             AWSContainerRegistryFlavor,
             AWSSecretsManagerFlavor,
+            SagemakerOrchestratorFlavor,
             SagemakerStepOperatorFlavor,
         )
 
@@ -59,6 +56,7 @@ class AWSIntegration(Integration):
             AWSSecretsManagerFlavor,
             AWSContainerRegistryFlavor,
             SagemakerStepOperatorFlavor,
+            SagemakerOrchestratorFlavor,
         ]
 
 
