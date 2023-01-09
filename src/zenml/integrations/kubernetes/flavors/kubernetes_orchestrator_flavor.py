@@ -49,19 +49,19 @@ class KubernetesOrchestratorConfig(  # type: ignore[misc] # https://github.com/p
     """Configuration for the Kubernetes orchestrator.
 
     Attributes:
-        kubernetes_context: Optional name of a Kubernetes context to run
-            pipelines in. If not set, the current active context will be used.
-            You can find the active context by running `kubectl config
-            current-context`.
+        kubernetes_context: Name of a Kubernetes context to run pipelines in.
         kubernetes_namespace: Name of the Kubernetes namespace to be used.
             If not provided, `zenml` namespace will be used.
         skip_config_loading: If `True`, don't load the Kubernetes context and
             clients. This is only useful for unit testing.
+        skip_local_validations: If `True`, the local validations will be
+            skipped.
     """
 
-    kubernetes_context: Optional[str] = None  # TODO: Potential setting
+    kubernetes_context: str  # TODO: Potential setting
     kubernetes_namespace: str = "zenml"
     skip_config_loading: bool = False  # TODO: Remove?
+    skip_local_validations: bool = False
 
     @property
     def is_remote(self) -> bool:
@@ -74,7 +74,23 @@ class KubernetesOrchestratorConfig(  # type: ignore[misc] # https://github.com/p
         Returns:
             True if this config is for a remote component, False otherwise.
         """
-        return True
+        if not self.kubernetes_context.startswith("k3d-minimal-zenml-"):
+            return True
+        return False
+
+    @property
+    def is_local(self) -> bool:
+        """Checks if this stack component is running locally.
+
+        This designation is used to determine if the stack component can be
+        shared with other users or if it is only usable on the local host.
+
+        Returns:
+            True if this config is for a local component, False otherwise.
+        """
+        if self.kubernetes_context.startswith("k3d-minimal-zenml-"):
+            return True
+        return False
 
 
 class KubernetesOrchestratorFlavor(BaseOrchestratorFlavor):

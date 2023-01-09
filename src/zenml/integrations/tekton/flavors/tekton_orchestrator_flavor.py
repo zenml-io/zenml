@@ -24,8 +24,6 @@ if TYPE_CHECKING:
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 
-DEFAULT_TEKTON_UI_PORT = 8080
-
 
 class TektonOrchestratorSettings(BaseSettings):
     """Settings for the Tekton orchestrator.
@@ -47,15 +45,13 @@ class TektonOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydan
             pipelines in.
         kubernetes_namespace: Name of the kubernetes namespace in which the
             pods that run the pipeline steps should be running.
-        tekton_ui_port: A local port to which the Tekton UI will be forwarded.
-        skip_ui_daemon_provisioning: If `True`, provisioning the Tekton UI
-            daemon will be skipped.
+        skip_local_validations: If `True`, the local validations will be
+            skipped.
     """
 
     kubernetes_context: str  # TODO: Potential setting
     kubernetes_namespace: str = "zenml"
-    tekton_ui_port: int = DEFAULT_TEKTON_UI_PORT
-    skip_ui_daemon_provisioning: bool = False
+    skip_local_validations: bool = False
 
     @property
     def is_remote(self) -> bool:
@@ -68,7 +64,23 @@ class TektonOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydan
         Returns:
             True if this config is for a remote component, False otherwise.
         """
-        return True
+        if not self.kubernetes_context.startswith("k3d-minimal-zenml-"):
+            return True
+        return False
+
+    @property
+    def is_local(self) -> bool:
+        """Checks if this stack component is running locally.
+
+        This designation is used to determine if the stack component can be
+        shared with other users or if it is only usable on the local host.
+
+        Returns:
+            True if this config is for a local component, False otherwise.
+        """
+        if self.kubernetes_context.startswith("k3d-minimal-zenml-"):
+            return True
+        return False
 
 
 class TektonOrchestratorFlavor(BaseOrchestratorFlavor):

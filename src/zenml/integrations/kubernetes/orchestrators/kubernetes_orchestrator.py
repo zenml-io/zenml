@@ -111,6 +111,16 @@ class KubernetesOrchestrator(BaseOrchestrator):
         """
         return KubernetesOrchestratorSettings
 
+    @property
+    def is_local(self) -> bool:
+        """Checks if the Tekton orchestrator is running locally.
+
+        Returns:
+            `True` if the Tekton orchestrator is running locally (i.e. in
+            the local k3d cluster).
+        """
+        return self.config.is_local
+
     def get_kubernetes_contexts(self) -> Tuple[List[str], str]:
         """Get list of configured Kubernetes contexts and the active context.
 
@@ -158,6 +168,7 @@ class KubernetesOrchestrator(BaseOrchestrator):
 
             if not self.config.skip_config_loading:
                 contexts, active_context = self.get_kubernetes_contexts()
+
                 if self.config.kubernetes_context not in contexts:
                     return False, (
                         f"Could not find a Kubernetes context named "
@@ -187,28 +198,83 @@ class KubernetesOrchestrator(BaseOrchestrator):
                         f"{self.config.kubernetes_context}`\n"
                     )
 
-            # Check that all stack components are non-local.
-            for stack_component in stack.components.values():
-                if stack_component.local_path is not None:
+            silence_local_validations_msg = (
+                f"To silence this warning, set the "
+                f"`skip_local_validations` attribute to True in the "
+                f"orchestrator configuration by running:\n\n"
+                f"  'zenml orchestrator update {self.name} "
+                f"--skip_local_validations=True'\n"
+            )
+
+            if not self.config.skip_local_validations and not self.is_local:
+
+                # if the orchestrator is not running in a local k3d cluster,
+                # we cannot have any other local components in our stack,
+                # because we cannot mount the local path into the container.
+                # This may result in problems when running the pipeline, because
+                # the local components will not be available inside the
+                # kubernetes containers.
+
+                # go through all stack components and identify those that
+                # advertise a local path where they persist information that
+                # they need to be available when running pipelines.
+                for stack_comp in stack.components.values():
+                    if stack_comp.local_path is None:
+                        continue
                     return False, (
-                        f"The Kubernetes orchestrator currently only supports "
-                        f"remote stacks, but the '{stack_component.name}' "
-                        f"{stack_component.type.value} is a local component. "
-                        f"Please make sure to only use non-local stack "
-                        f"components with a Kubernetes orchestrator."
+                        f"The Kubernetes orchestrator is configured to run "
+                        f"pipelines in a remote Kubernetes cluster designated "
+                        f"by the '{self.config.kubernetes_context}' configuration "
+                        f"context, but the '{stack_comp.name}' "
+                        f"{stack_comp.type.value} is a local stack component "
+                        f"and will not be available in the Kubernetes pipeline "
+                        f"step.\nPlease ensure that you always use non-local "
+                        f"stack components with a remote Kubernetes orchestrator, "
+                        f"otherwise you may run into pipeline execution "
+                        f"problems. You should use a flavor of "
+                        f"{stack_comp.type.value} other than "
+                        f"'{stack_comp.flavor}'.\n"
+                        + silence_local_validations_msg
                     )
 
-            # if the orchestrator is remote, the container registry must
-            # also be remote.
-            if container_registry.config.is_local:
-                return False, (
-                    f"The Kubernetes orchestrator requires a remote container "
-                    f"registry, but the '{container_registry.name}' container "
-                    f"registry of your active stack points to a local URI "
-                    f"'{container_registry.config.uri}'. Please make sure "
-                    f"stacks with a Kubernetes orchestrator always contain "
-                    f"remote container registries."
-                )
+                # if the orchestrator is remote, the container registry must
+                # also be remote.
+                if container_registry.config.is_local:
+                    return False, (
+                        f"The Kubernetes orchestrator is configured to run "
+                        f"pipelines in a remote Kubernetes cluster designated "
+                        f"by the '{self.config.kubernetes_context}' configuration "
+                        f"context, but the '{container_registry.name}' "
+                        f"container registry URI "
+                        f"'{container_registry.config.uri}' "
+                        f"points to a local container registry. Please ensure "
+                        f"that you always use non-local stack components with "
+                        f"a remote Kubernetes orchestrator, otherwise you will "
+                        f"run into problems. You should use a flavor of "
+                        f"container registry other than "
+                        f"'{container_registry.flavor}'.\n"
+                        + silence_local_validations_msg
+                    )
+
+            if not self.config.skip_local_validations and self.is_local:
+
+                # if the orchestrator is local, the container registry must
+                # also be local.
+                if not container_registry.config.is_local:
+                    return False, (
+                        f"The Kubernetes orchestrator is configured to run "
+                        f"pipelines in a local k3d Kubernetes cluster "
+                        f"designated by the '{self.config.kubernetes_context}' "
+                        f"configuration context, but the container registry "
+                        f"URI '{container_registry.config.uri}' doesn't "
+                        f"match the expected format 'localhost:$PORT'. "
+                        f"The local Kubernetes orchestrator only works with a "
+                        f"local container registry because it cannot "
+                        f"currently authenticate to external container "
+                        f"registries. You should use a flavor of container "
+                        f"registry other than '{container_registry.flavor}'.\n"
+                        + silence_local_validations_msg
+                    )
 
             return True, ""
 
@@ -273,7 +339,10 @@ class KubernetesOrchestrator(BaseOrchestrator):
         pod_name = kube_utils.sanitize_pod_name(orchestrator_run_name)
 
         # Get Docker image name (for all pods).
+        assert stack.container_registry
         image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
+        if self.is_local and stack.container_registry.config.is_local:
+            image_name = f"{stack.container_registry.name}.{image_name}"
 
         # Build entrypoint command and args for the orchestrator pod.
         # This will internally also build the command/args for all step pods.

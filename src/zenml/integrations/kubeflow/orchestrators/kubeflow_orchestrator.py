@@ -145,19 +145,6 @@ class KubeflowOrchestrator(BaseOrchestrator):
             # this, but just in case
             assert container_registry is not None
 
-            if (
-                self.config.container_registry_name is not None
-                and container_registry.name
-                != self.config.container_registry_name
-            ):
-                return (
-                    False,
-                    f"Configured container registry component name "
-                    f"'{self.config.container_registry_name}' does not "
-                    f"match the one in the active stack: "
-                    f"'{self.config.container_registry_name}'",
-                )
-
             contexts, active_context = self.get_kubernetes_contexts()
 
             if self.kubernetes_context not in contexts:
