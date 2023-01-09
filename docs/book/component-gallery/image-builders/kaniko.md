@@ -68,46 +68,62 @@ the artifact store). For all other cases, check out the
 {% tabs %}
 {% tab title="AWS" %}
 
-https://github.com/GoogleContainerTools/kaniko#pushing-to-amazon-ecr
-
-* env: `AWS_SDK_LOAD_CONFIG=true`, `AWS_EC2_METADATA_DISABLED=true`
-
+* Add permissions to the worker node IAM role to push to ECR and read from S3 buckets.
+* Configure the image builder to set some required environment variables on the Kaniko build pod:
 ```shell
+# register a new image builder with the environment variables
 zenml image-builder register <NAME> \
     --flavor=kaniko \
     --kubernetes_context=<KUBERNETES_CONTEXT> \
     --env='[{"name": "AWS_SDK_LOAD_CONFIG", "value": "true"}, {"name": "AWS_EC2_METADATA_DISABLED", "value": "true"}]'
+
+# or update an existing one
+zenml image-builder update <NAME> \
+    --env='[{"name": "AWS_SDK_LOAD_CONFIG", "value": "true"}, {"name": "AWS_EC2_METADATA_DISABLED", "value": "true"}]'
 ```
+
+Check out [the Kaniko docs](https://github.com/GoogleContainerTools/kaniko#pushing-to-amazon-ecr) for
+more information.
 
 {% endtab %}
 
 {% tab title="GCP" %}
 
-https://github.com/GoogleContainerTools/kaniko#pushing-to-google-gcr
-
 * Enable workload identity for your cluster
-* Grant the Google service account permissions to push to your GCR registry and read from your
-GCP bucket.
+* Follow the steps described [here](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity#authenticating_to)
+to create a Google service account, Kubernetes service account as well as a IAM policy binding between them.
+* Grant the Google service account permissions to push to your GCR registry and read from your GCP bucket.
+
+Check out [the Kaniko docs](https://github.com/GoogleContainerTools/kaniko#pushing-to-google-gcr) for
+more information.
 
 {% endtab %}
 
 {% tab title="Azure" %}
 
-https://github.com/GoogleContainerTools/kaniko#pushing-to-azure-container-registry
-
-* config.json: `{ "credHelpers": { "mycr.azurecr.io": "acr-env" } }`
-
-* `kubectl create configmap docker-config --from-file=<path to config.json>`
-
-* configure managed service identity
-
+* Create a Kubernetes configmap for a Docker config that uses the Azure credentials helper:
 ```shell
+kubectl create configmap docker-config --from-literal='config.json={ "credHelpers": { "mycr.azurecr.io": "acr-env" } }'
+```
+
+* Configure managed service identity for your cluster
+* Configure the image builder to set mount the configmap in the Kaniko build pod:
+```shell
+# register a new image builder with the mounted configmap
 zenml image-builder register <NAME> \
     --flavor=kaniko \
     --kubernetes_context=<KUBERNETES_CONTEXT> \
     --volume_mounts='[{"name": "docker-config", "mountPath": "/kaniko/.docker/"}]' \
     --volumes='[{"name": "docker-config", "configMap": {"name": "docker-config"}}]'
+
+# or update an existing one
+zenml image-builder update <NAME> \
+    --volume_mounts='[{"name": "docker-config", "mountPath": "/kaniko/.docker/"}]' \
+    --volumes='[{"name": "docker-config", "configMap": {"name": "docker-config"}}]'
 ```
+
+Check out [the Kaniko docs](https://github.com/GoogleContainerTools/kaniko#pushing-to-azure-container-registry) for
+more information.
 
 {% endtab %}
 {% endtabs %}
