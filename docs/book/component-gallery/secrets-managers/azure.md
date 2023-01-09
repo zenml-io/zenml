@@ -32,7 +32,7 @@ To use the Azure secrets manager, we need:
 * The [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) 
 installed and authenticated.
 * The name of the key vault to use. You can find a list of your key vaults by 
-going to the[Azure portal](https://portal.azure.com/#home) and searching for 
+going to the [Azure portal](https://portal.azure.com/#home) and searching for 
 `key vaults`. If you don't have any key vault yet, follow the 
 * [deployment guide](#how-to-deploy-it) to create one.
 

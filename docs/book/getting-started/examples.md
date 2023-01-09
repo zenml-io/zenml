@@ -30,16 +30,16 @@ and notebooks.
 ZenBytes shares a close link to the [Practical MLOps](../advanced-guide/practical/practical-mlops.md) 
 section of the docs.
 
-## ZenFiles: See ZenML in practice
+## ZenML Projects: See ZenML in practice
 
-ZenFiles are production-grade ML use-cases powered by ZenML. They are fully
+ZenML Projects are production-grade ML use-cases powered by ZenML. They are fully
 fleshed out, end-to-end, projects that showcase ZenML's capabilities. They can
 also serve as a template from which to start similar projects.
 
-The ZenFiles project is fully maintained and can be viewed as a sister
+The ZenML Projects project is fully maintained and can be viewed as a sister
 repository of ZenML. 
 
-[Click here to go to ZenFiles](https://github.com/zenml-io/zenfiles)
+[Click here to go to ZenML Projects](https://github.com/zenml-io/zenml-projects)
 
 ## YouTube Tutorials
 
