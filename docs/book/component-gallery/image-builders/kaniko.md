@@ -51,9 +51,10 @@ check out the [API Docs](https://apidocs.zenml.io/latest/integration_code_docs/i
 The Kaniko image builder will create a Kubernetes pod which is running the build. This build
 pod needs to be able to pull from/push to certain container registries, and depending on the
 stack component configuration also needs to be able to read from the artifact store:
-* In case the parent image you use in your `DockerSettings` is stored in a private registry,
-the pod needs to be authenticated to pull from this registry.
 * The pod needs to be authenticated to push to the container registry in your active stack.
+* In case the [parent image](../../advanced-guide/pipelines/containerization.md#using-a-pre-built-parent-image)
+you use in your `DockerSettings` is stored in a private registry, the pod needs to be authenticated to pull from
+this registry.
 * If you configured your image builder to store the build context in the artifact store, the
 pod needs to be authenticated to read files from the artifact store storage.
 
