@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Pipeline configuration classes."""
+import zlib
 from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional
 
 from pydantic import root_validator
@@ -188,3 +189,25 @@ class Step(StrictBaseModel):
 
     spec: StepSpec
     config: StepConfiguration
+
+    def encode(self) -> bytes:
+        """Encodes the step into a byte string.
+
+        Returns:
+            The encoded step.
+        """
+        encoded = zlib.compress(self.json(sort_keys=True).encode())
+        return encoded
+
+    @classmethod
+    def decode(cls, encoded: bytes) -> "Step":
+        """Decodes a byte string into a step.
+
+        Args:
+            encoded: The encoded step as a byte string.
+
+        Returns:
+            The decoded step.
+        """
+        decoded = zlib.decompress(encoded).decode()
+        return cls.parse_raw(decoded)

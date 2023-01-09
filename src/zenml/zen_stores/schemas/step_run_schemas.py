@@ -92,7 +92,7 @@ class StepRunSchema(NamedSchema, table=True):
     status: ExecutionStatus
     entrypoint_name: str
     parameters: str = Field(sa_column=Column(TEXT, nullable=False))
-    step_configuration: str = Field(sa_column=Column(TEXT, nullable=False))
+    step_configuration: bytes = Field(sa_column=Column(TEXT, nullable=False))
     caching_parameters: Optional[str] = Field(
         sa_column=Column(TEXT, nullable=True)
     )
@@ -131,7 +131,6 @@ class StepRunSchema(NamedSchema, table=True):
             The step run schema.
         """
         step_config = request.step.config
-
         return cls(
             name=request.name,
             pipeline_run_id=request.pipeline_run_id,
@@ -149,7 +148,7 @@ class StepRunSchema(NamedSchema, table=True):
             parameters=json.dumps(
                 step_config.parameters, default=pydantic_encoder, sort_keys=True
             ),
-            step_configuration=request.step.json(sort_keys=True),
+            step_configuration=request.step.encode(),
             caching_parameters=json.dumps(
                 step_config.caching_parameters,
                 default=pydantic_encoder,
@@ -187,7 +186,7 @@ class StepRunSchema(NamedSchema, table=True):
             cache_key=self.cache_key,
             start_time=self.start_time,
             end_time=self.end_time,
-            step=Step.parse_raw(self.step_configuration),
+            step=Step.decode(self.step_configuration),
             status=self.status,
             created=self.created,
             updated=self.updated,
