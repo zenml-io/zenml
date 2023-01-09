@@ -1964,15 +1964,9 @@ class Client(metaclass=ClientMetaClass):
         """
         logger.debug(f"Fetching the flavors of type {component_type}.")
 
-        global_flavors = self.zen_store.list_flavors(
+        flavors = self.zen_store.list_flavors(
             component_type=component_type,
         )
-        project_scoped_flavors = self.zen_store.list_flavors(
-            project_name_or_id=self.active_project.id,
-            component_type=component_type,
-        )
-
-        flavors = global_flavors + project_scoped_flavors
 
         return flavors
 
@@ -1995,18 +1989,10 @@ class Client(metaclass=ClientMetaClass):
             f"Fetching the flavor of type {component_type} with name {name}."
         )
 
-        global_flavors = self.zen_store.list_flavors(
+        flavors = self.zen_store.list_flavors(
             component_type=component_type,
             name=name,
         )
-
-        project_scoped_flavors = self.zen_store.list_flavors(
-            project_name_or_id=self.active_project.id,
-            component_type=component_type,
-            name=name,
-        )
-
-        flavors = global_flavors + project_scoped_flavors
 
         if flavors:
             if len(flavors) > 1:

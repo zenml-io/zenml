@@ -890,12 +890,12 @@ def generate_stack_component_flavor_describe_command(
         """
         client = Client()
 
-        #with console.status(f"Describing {display_name} flavor: {name}`...\n"):
-        flavor_model = client.get_flavor_by_name_and_type(
-            name=name, component_type=component_type
-        )
+        with console.status(f"Describing {display_name} flavor: {name}`...\n"):
+            flavor_model = client.get_flavor_by_name_and_type(
+                name=name, component_type=component_type
+            )
 
-        cli_utils.describe_pydantic_object(flavor_model.config_schema)
+            cli_utils.describe_pydantic_object(flavor_model.config_schema)
 
     return describe_stack_component_flavor_command
 

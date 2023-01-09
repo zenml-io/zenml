@@ -52,8 +52,10 @@ class FlavorBaseModel(BaseModel):
         title="The name of the integration that the Flavor belongs to.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    logo_url: Optional[str] = Field(title="Optionally, a url pointing to a png,"
-                                          "svg or jpg can be attached.")
+    logo_url: Optional[str] = Field(
+        title="Optionally, a url pointing to a png,"
+        "svg or jpg can be attached."
+    )
 
 
 # -------- #

@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Utility functions for the CLI."""
 
-import json
 import os
 import subprocess
 import sys
@@ -829,7 +828,7 @@ def print_server_deployment(server: "ServerDeployment") -> None:
 
 
 def describe_pydantic_object(schema_json: Dict[str, Any]) -> None:
-    """Describes a Pydantic object based on the json of its schema.
+    """Describes a Pydantic object based on the dict-representation of its schema.
 
     Args:
         schema_json: str, represents the schema of a Pydantic object, which
@@ -852,7 +851,7 @@ def describe_pydantic_object(schema_json: Dict[str, Any]) -> None:
         warning("Properties", bold=True)
         for prop, prop_schema in properties.items():
 
-            if '$ref' not in prop_schema.keys():
+            if "$ref" not in prop_schema.keys():
                 warning(
                     f"{prop}, {prop_schema['type']}"
                     f"{', REQUIRED' if prop in required else ''}"
