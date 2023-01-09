@@ -341,6 +341,10 @@ class KanikoImageBuilder(BaseImageBuilder):
 
         Args:
             pod_name: Name of the Pod to delete.
+
+        Raises:
+            subprocess.CalledProcessError: If the kubectl call to delete
+                the Pod failed.
         """
         command = [
             "kubectl",

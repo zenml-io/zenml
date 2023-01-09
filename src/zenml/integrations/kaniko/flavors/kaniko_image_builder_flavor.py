@@ -74,10 +74,12 @@ class KanikoImageBuilderConfig(BaseImageBuilderConfig):
 
     executor_args: List[str] = []
 
-    @validator("env", "env_from", "volume_mounts", "volumes", pre=True)
+    @validator(
+        "env", "env_from", "volume_mounts", "volumes", "executor_args", pre=True
+    )
     def _convert_json_string(
-        cls, value: Union[None, str, List[Dict[str, Any]]]
-    ) -> Optional[List[Dict[str, Any]]]:
+        cls, value: Union[None, str, List[Any]]
+    ) -> Optional[List[Any]]:
         """Converts potential JSON strings passed via the CLI to lists.
 
         Args:

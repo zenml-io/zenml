@@ -127,7 +127,7 @@ class Stack:
             or (model_deployer and model_deployer.flavor != "mlflow")
         )
         if requires_image_builder and not image_builder:
-            # This is a temporary fix to include a local image builder to each
+            # This is a temporary fix to include a local image builder in each
             # stack that needs it. This mirrors the behavior in previous
             # versions and ensures we don't break all existing stacks
             from datetime import datetime
