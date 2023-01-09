@@ -23,7 +23,6 @@ from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.metadata.metadata_types import MetadataType
 from zenml.utils import io_utils
 
 if TYPE_CHECKING:

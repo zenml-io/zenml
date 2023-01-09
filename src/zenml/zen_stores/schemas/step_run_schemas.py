@@ -182,9 +182,6 @@ class StepRunSchema(NamedSchema, table=True):
         Returns:
             The created StepRunModel.
         """
-        run_metadata: Dict[str, str] = {
-            rm.key: rm.value for rm in self.run_metadata
-        }
         return StepRunResponseModel(
             id=self.id,
             name=self.name,
