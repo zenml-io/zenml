@@ -22,7 +22,11 @@ from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
 from zenml.enums import ExecutionStatus
-from zenml.models import PipelineRunResponseModel, PipelineRunUpdateModel
+from zenml.models import (
+    PipelineRunRequestModel,
+    PipelineRunResponseModel,
+    PipelineRunUpdateModel,
+)
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
@@ -91,6 +95,12 @@ class PipelineRunSchema(NamedSchema, table=True):
     pipeline_configuration: str = Field(sa_column=Column(TEXT, nullable=False))
     num_steps: Optional[int]
     zenml_version: str
+    client_environment: Optional[str] = Field(
+        sa_column=Column(TEXT, nullable=True)
+    )
+    orchestrator_environment: Optional[str] = Field(
+        sa_column=Column(TEXT, nullable=True)
+    )
     git_sha: Optional[str] = Field(nullable=True)
 
     run_metadata: List["RunMetadataSchema"] = Relationship(
@@ -102,6 +112,41 @@ class PipelineRunSchema(NamedSchema, table=True):
         sa_relationship_kwargs={"cascade": "delete"},
     )
 
+    @classmethod
+    def from_request(
+        cls, request: PipelineRunRequestModel
+    ) -> "PipelineRunSchema":
+        """Convert a `PipelineRunRequestModel` to a `PipelineRunSchema`.
+
+        Args:
+            request: The request to convert.
+
+        Returns:
+            The created `PipelineRunSchema`.
+        """
+        configuration = json.dumps(request.pipeline_configuration)
+        client_environment = json.dumps(request.client_environment)
+        orchestrator_environment = json.dumps(request.orchestrator_environment)
+
+        return cls(
+            id=request.id,
+            name=request.name,
+            orchestrator_run_id=request.orchestrator_run_id,
+            stack_id=request.stack,
+            project_id=request.project,
+            user_id=request.user,
+            pipeline_id=request.pipeline,
+            enable_cache=request.enable_cache,
+            start_time=request.start_time,
+            status=request.status,
+            pipeline_configuration=configuration,
+            num_steps=request.num_steps,
+            git_sha=request.git_sha,
+            zenml_version=request.zenml_version,
+            client_environment=client_environment,
+            orchestrator_environment=orchestrator_environment,
+        )
+
     def to_model(
         self, _block_recursion: bool = False
     ) -> PipelineRunResponseModel:
@@ -110,6 +155,17 @@ class PipelineRunSchema(NamedSchema, table=True):
         Returns:
             The created `PipelineRunResponseModel`.
         """
+        client_environment = (
+            json.loads(self.client_environment)
+            if self.client_environment
+            else {}
+        )
+        orchestrator_environment = (
+            json.loads(self.orchestrator_environment)
+            if self.orchestrator_environment
+            else {}
+        )
+
         if _block_recursion:
             return PipelineRunResponseModel(
                 id=self.id,
@@ -127,6 +183,8 @@ class PipelineRunSchema(NamedSchema, table=True):
                 num_steps=self.num_steps,
                 git_sha=self.git_sha,
                 zenml_version=self.zenml_version,
+                client_environment=client_environment,
+                orchestrator_environment=orchestrator_environment,
                 created=self.created,
                 updated=self.updated,
                 metadata=[m.to_model() for m in self.run_metadata],
@@ -153,6 +211,8 @@ class PipelineRunSchema(NamedSchema, table=True):
                 num_steps=self.num_steps,
                 git_sha=self.git_sha,
                 zenml_version=self.zenml_version,
+                client_environment=client_environment,
+                orchestrator_environment=orchestrator_environment,
                 created=self.created,
                 updated=self.updated,
                 metadata=[m.to_model() for m in self.run_metadata],

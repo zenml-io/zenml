@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ def connected_two_step_pipeline():
     """Pytest fixture that returns a pipeline which takes two steps
     `step_1` and `step_2` that are connected."""
 
-    @pipeline(name="test_pipeline")
+    @pipeline(name="connected_two_step_pipeline")
     def _pipeline(step_1, step_2):
         step_2(step_1())
 
