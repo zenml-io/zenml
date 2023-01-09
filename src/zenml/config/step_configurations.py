@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Pipeline configuration classes."""
+import json
 import zlib
 from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional
 
@@ -20,10 +21,14 @@ from pydantic import root_validator
 from zenml.config.base_settings import BaseSettings, SettingsOrDict
 from zenml.config.constants import RESOURCE_SETTINGS_KEY
 from zenml.config.strict_base_model import StrictBaseModel
+from zenml.logger import get_logger
+from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.utils import source_utils
 
 if TYPE_CHECKING:
     from zenml.config import ResourceSettings
+
+logger = get_logger(__name__)
 
 
 class PartialArtifactConfiguration(StrictBaseModel):
@@ -196,7 +201,30 @@ class Step(StrictBaseModel):
         Returns:
             The encoded step.
         """
-        encoded = zlib.compress(self.json(sort_keys=True).encode())
+        step_dict = self.dict(exclude_none=True)
+        step_json = json.dumps(step_dict, sort_keys=True)
+        encoded = zlib.compress(step_json.encode())
+
+        # If the encoded string is too long to fit into the DB, we truncate both
+        # the `docstring` and `source_code` fields to 1000 chars.
+        if len(encoded) > TEXT_FIELD_MAX_LENGTH:
+            logger.debug(
+                f"Encoded step is too long ({len(encoded)} bytes). "
+                f"Truncating `docstring` and `source_code` fields."
+            )
+            step_config = step_dict["config"]
+            if "docstring" in step_config:
+                docstring = step_config["docstring"][:1000] + "..."
+                step_config["docstring"] = docstring
+
+            if "source_code" in step_config:
+                source_code = step_config["source_code"][:1000] + "..."
+                step_config["source_code"] = source_code
+
+            step_dict["config"] = step_config
+            step_json = json.dumps(step_dict, sort_keys=True)
+            encoded = zlib.compress(step_json.encode())
+
         return encoded
 
     @classmethod
