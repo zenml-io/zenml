@@ -64,10 +64,14 @@ def list_stacks(
     stacks: List[StackResponseModel] = []
 
     # Get private stacks unless `is_shared` is set to True
-    if is_shared is None or not is_shared:
+    if (
+        is_shared is None
+        or not is_shared
+        and user_name_or_id == auth_context.user.id
+    ):
         own_stacks = zen_store().list_stacks(
             project_name_or_id=project_name_or_id,
-            user_name_or_id=user_name_or_id or auth_context.user.id,
+            user_name_or_id=auth_context.user.id,
             component_id=component_id,
             is_shared=False,
             name=name,
