@@ -14,7 +14,7 @@
 """Implementation of the PyTorch Module materializer."""
 
 import os
-from typing import Any, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, Type, cast
 
 import torch
 from torch.nn import Module
@@ -22,6 +22,9 @@ from torch.nn import Module
 from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
+
+if TYPE_CHECKING:
+    from zenml.metadata.metadata_types import MetadataType
 
 DEFAULT_FILENAME = "entire_model.pt"
 CHECKPOINT_FILENAME = "checkpoint.pt"
@@ -72,3 +75,24 @@ class PyTorchModuleMaterializer(BaseMaterializer):
                 os.path.join(self.uri, CHECKPOINT_FILENAME), "wb"
             ) as f:
                 torch.save(model.state_dict(), f)
+
+    def extract_metadata(self, model: Module) -> Dict[str, "MetadataType"]:
+        """Extract metadata from the given `Model` object.
+
+        Args:
+            model: The `Model` object to extract metadata from.
+
+        Returns:
+            The extracted metadata as a dictionary.
+        """
+        super().extract_metadata(model)
+        return {
+            "num_params": sum([param.numel() for param in model.parameters()]),
+            "num_trainable_params": sum(
+                [
+                    param.numel()
+                    for param in model.parameters()
+                    if param.requires_grad
+                ]
+            ),
+        }
