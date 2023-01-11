@@ -2768,6 +2768,30 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             return existing_schedule.to_model()
 
+    def delete_schedule(self, schedule_id: UUID) -> None:
+        """Deletes a schedule.
+
+        Args:
+            schedule_id: The ID of the schedule to delete.
+
+        Raises:
+            KeyError: if the schedule doesn't exist.
+        """
+        with Session(self.engine) as session:
+            # Check if schedule with the given ID exists
+            schedule = session.exec(
+                select(ScheduleSchema).where(ScheduleSchema.id == schedule_id)
+            ).first()
+            if schedule is None:
+                raise KeyError(
+                    f"Unable to delete schedule with ID {schedule_id}: "
+                    f"No schedule with this ID found."
+                )
+
+            # Delete the schedule
+            session.delete(schedule)
+            session.commit()
+
     # --------------
     # Pipeline runs
     # --------------

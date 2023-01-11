@@ -109,3 +109,20 @@ def update_schedule(
     return zen_store().update_schedule(
         schedule_id=schedule_id, schedule_update=schedule_update
     )
+
+
+@router.delete(
+    "/{schedule_id}",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def delete_schedule(
+    schedule_id: UUID,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+) -> None:
+    """Deletes a specific schedule using its unique id.
+
+    Args:
+        schedule_id: ID of the schedule to delete.
+    """
+    zen_store().delete_schedule(schedule_id=schedule_id)

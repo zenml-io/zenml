@@ -1270,6 +1270,17 @@ class RestZenStore(BaseZenStore):
             response_model=ScheduleResponseModel,
         )
 
+    def delete_schedule(self, schedule_id: UUID) -> None:
+        """Deletes a schedule.
+
+        Args:
+            schedule_id: The ID of the schedule to delete.
+        """
+        self._delete_resource(
+            resource_id=schedule_id,
+            route=SCHEDULES,
+        )
+
     # --------------
     # Pipeline runs
     # --------------

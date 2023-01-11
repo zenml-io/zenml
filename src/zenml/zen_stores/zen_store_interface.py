@@ -927,6 +927,17 @@ class ZenStoreInterface(ABC):
             KeyError: if the schedule doesn't exist.
         """
 
+    @abstractmethod
+    def delete_schedule(self, schedule_id: UUID) -> None:
+        """Deletes a schedule.
+
+        Args:
+            schedule_id: The ID of the schedule to delete.
+
+        Raises:
+            KeyError: if the schedule doesn't exist.
+        """
+
     # --------------
     # Pipeline runs
     # --------------
