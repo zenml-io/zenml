@@ -12,3 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Deepchecks visualizer."""
+
+from zenml.integrations.deepchecks.visualizers.deepchecks_visualizer import (
+    DeepchecksVisualizer,
+)
