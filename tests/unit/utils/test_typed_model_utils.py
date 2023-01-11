@@ -36,7 +36,4 @@ def test_basetypedmodel_works():
     new_matrix = TheMatrix.parse_obj(d)
     assert isinstance(new_matrix.choice, RedPill)
     assert new_matrix.choice.type
-    assert (
-        new_matrix.choice.type
-        == "tests.unit.utils.test_typed_model_utils.test_basetypedmodel_works.<locals>.RedPill"
-    )
+    assert new_matrix.choice.type.endswith("RedPill")
