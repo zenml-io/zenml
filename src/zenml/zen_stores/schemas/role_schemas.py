@@ -81,31 +81,19 @@ class RoleSchema(NamedSchema, table=True):
         self.updated = datetime.utcnow()
         return self
 
-    def to_model(self, _block_recursion: bool = False) -> RoleResponseModel:
+    def to_model(self) -> RoleResponseModel:
         """Convert a `RoleSchema` to a `RoleResponseModel`.
-
-        Args:
-            _block_recursion: Don't recursively fill attributes
 
         Returns:
             The converted `RoleResponseModel`.
         """
-        if _block_recursion:
-            return RoleResponseModel(
-                id=self.id,
-                name=self.name,
-                created=self.created,
-                updated=self.updated,
-                permissions={PermissionType(p.name) for p in self.permissions},
-            )
-        else:
-            return RoleResponseModel(
-                id=self.id,
-                name=self.name,
-                created=self.created,
-                updated=self.updated,
-                permissions={PermissionType(p.name) for p in self.permissions},
-            )
+        return RoleResponseModel(
+            id=self.id,
+            name=self.name,
+            created=self.created,
+            updated=self.updated,
+            permissions={PermissionType(p.name) for p in self.permissions},
+        )
 
 
 class UserRoleAssignmentSchema(BaseSchema, table=True):

@@ -99,9 +99,7 @@ class PipelineSchema(NamedSchema, table=True):
                 id=self.id,
                 name=self.name,
                 project=self.project.to_model(),
-                user=self.user.to_model(_block_recursion=True)
-                if self.user
-                else None,
+                user=self.user.to_model(True) if self.user else None,
                 runs=[r.to_model(_block_recursion=True) for r in x_runs],
                 docstring=self.docstring,
                 spec=PipelineSpec.parse_raw(self.spec),

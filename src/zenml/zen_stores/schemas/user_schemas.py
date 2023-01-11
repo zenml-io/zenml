@@ -129,10 +129,6 @@ class UserSchema(NamedSchema, table=True):
                 full_name=self.full_name,
                 created=self.created,
                 updated=self.updated,
-                roles=[
-                    ra.role.to_model(_block_recursion=True)
-                    for ra in self.assigned_roles
-                ],
             )
         else:
             return UserResponseModel(
@@ -145,8 +141,5 @@ class UserSchema(NamedSchema, table=True):
                 full_name=self.full_name,
                 created=self.created,
                 updated=self.updated,
-                roles=[
-                    ra.role.to_model(_block_recursion=True)
-                    for ra in self.assigned_roles
-                ],
+                roles=[ra.role.to_model() for ra in self.assigned_roles],
             )
