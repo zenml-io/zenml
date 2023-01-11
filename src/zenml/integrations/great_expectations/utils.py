@@ -16,11 +16,11 @@
 from typing import Optional, cast
 
 import pandas as pd
-from great_expectations.core.batch import (
-    RuntimeBatchRequest,  # type: ignore[import]
+from great_expectations.core.batch import (  # type: ignore[import]
+    RuntimeBatchRequest,
 )
-from great_expectations.data_context.data_context import (
-    BaseDataContext,  # type: ignore[import]
+from great_expectations.data_context.data_context import (  # type: ignore[import]
+    BaseDataContext,
 )
 
 from zenml.environment import Environment

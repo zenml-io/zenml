@@ -16,18 +16,18 @@
 import os
 from typing import Any, Dict, Type
 
-from great_expectations.checkpoint.types.checkpoint_result import (
-    CheckpointResult,  # type: ignore[import]
+from great_expectations.checkpoint.types.checkpoint_result import (  # type: ignore[import]
+    CheckpointResult,
 )
 from great_expectations.core import ExpectationSuite  # type: ignore[import]
-from great_expectations.core.expectation_validation_result import (
-    ExpectationSuiteValidationResult,  # type: ignore[import]
+from great_expectations.core.expectation_validation_result import (  # type: ignore[import]
+    ExpectationSuiteValidationResult,
 )
-from great_expectations.data_context.types.base import (
-    CheckpointConfig,  # type: ignore[import]
+from great_expectations.data_context.types.base import (  # type: ignore[import]
+    CheckpointConfig,
 )
-from great_expectations.data_context.types.resource_identifiers import (
-    ValidationResultIdentifier,  # type: ignore[import]
+from great_expectations.data_context.types.resource_identifiers import (  # type: ignore[import]
+    ValidationResultIdentifier,
 )
 from great_expectations.types import SerializableDictDot  # type: ignore[import]
 

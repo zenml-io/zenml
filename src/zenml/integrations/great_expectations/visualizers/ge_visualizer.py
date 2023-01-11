@@ -17,12 +17,12 @@
 from typing import Any, cast
 
 import great_expectations as ge  # type: ignore[import]
-from great_expectations.checkpoint.types.checkpoint_result import (
-    CheckpointResult,  # type: ignore[import]
+from great_expectations.checkpoint.types.checkpoint_result import (  # type: ignore[import]
+    CheckpointResult,
 )
 from great_expectations.core import ExpectationSuite  # type: ignore[import]
-from great_expectations.data_context.types.resource_identifiers import (
-    ExpectationSuiteIdentifier,  # type: ignore[import]
+from great_expectations.data_context.types.resource_identifiers import (  # type: ignore[import]
+    ExpectationSuiteIdentifier,
 )
 
 from zenml.enums import ArtifactType
