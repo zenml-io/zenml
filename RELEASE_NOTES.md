@@ -991,7 +991,7 @@ you get started with ZenML.
 
 ## Documentation / ZenBytes etc
 
-* ZenBytes update (and ZenFiles)
+* ZenBytes update (and ZenML Projects)
 * Beautification of Examples by @AlexejPenner in
   https://github.com/zenml-io/zenml/pull/491
 * Document global configuration and repository by @stefannica in
@@ -1251,7 +1251,7 @@ Behind the scenes we gave our integration testing suite a massive upgrade, fixed
 * Ignore type of any tfx proto file by @schustmi in https://github.com/zenml-io/zenml/pull/453
 * Another boyscout pr on the gh actions by @AlexejPenner in https://github.com/zenml-io/zenml/pull/455
 * Upgrade TFX to 1.6.1 by @jwwwb in https://github.com/zenml-io/zenml/pull/441
-* Added ZenFiles to README by @htahir1 in https://github.com/zenml-io/zenml/pull/457
+* Added ZenML Projects to README by @htahir1 in https://github.com/zenml-io/zenml/pull/457
 * Upgrade `rich` from 11.0 to 12.0 by @strickvl in https://github.com/zenml-io/zenml/pull/458
 * Add Kubeflow tensorboard viz and fix tensorflow file IO for cloud back-ends by @stefannica in https://github.com/zenml-io/zenml/pull/447
 * Implementing the `explain` subcommand by @bcdurak in https://github.com/zenml-io/zenml/pull/460
