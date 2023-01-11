@@ -14,6 +14,7 @@
 """Image build context."""
 
 import os
+from pathlib import Path
 from typing import IO, Dict, List, Optional, Set, Tuple, cast
 
 from zenml.io import fileio
@@ -95,16 +96,16 @@ class BuildContext:
             )
 
         for dir, _, files in fileio.walk(source):
-            dir = fileio.convert_to_str(dir)
+            dir = Path(fileio.convert_to_str(dir))
             for file_name in files:
                 file_name = fileio.convert_to_str(file_name)
-                file_source = os.path.join(dir, file_name)
-                file_destination = os.path.join(
-                    destination, os.path.relpath(dir, source), file_name
+                file_source = dir / file_name
+                file_destination = (
+                    Path(destination) / dir.relative_to(source) / file_name
                 )
 
-                with fileio.open(file_source, "r") as f:
-                    self._extra_files[file_destination] = f.read()
+                with file_source.open("r") as f:
+                    self._extra_files[str(file_destination)] = f.read()
 
     def write_archive(self, output_file: IO[bytes], gzip: bool = True) -> None:
         """Writes an archive of the build context to the given file.
