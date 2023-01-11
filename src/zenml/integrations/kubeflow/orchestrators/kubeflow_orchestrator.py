@@ -148,7 +148,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
             contexts, active_context = self.get_kubernetes_contexts()
 
             if self.kubernetes_context not in contexts:
-                if not self.is_local:
+                if not self.config.is_local:
                     return False, (
                         f"Could not find a Kubernetes context named "
                         f"'{self.kubernetes_context}' in the local Kubernetes "
@@ -185,7 +185,10 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 f"--skip_local_validations=True'\n"
             )
 
-            if not self.config.skip_local_validations and not self.is_local:
+            if (
+                not self.config.skip_local_validations
+                and not self.config.is_local
+            ):
 
                 # if the orchestrator is not running in a local k3d cluster,
                 # we cannot have any other local components in our stack,
@@ -236,7 +239,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                         + silence_local_validations_msg
                     )
 
-            if not self.config.skip_local_validations and self.is_local:
+            if not self.config.skip_local_validations and self.config.is_local:
 
                 # if the orchestrator is local, the container registry must
                 # also be local.
@@ -262,16 +265,6 @@ class KubeflowOrchestrator(BaseOrchestrator):
             required_components={StackComponentType.CONTAINER_REGISTRY},
             custom_validation_function=_validate_local_requirements,
         )
-
-    @property
-    def is_local(self) -> bool:
-        """Checks if the KFP orchestrator is running locally.
-
-        Returns:
-            `True` if the KFP orchestrator is running locally (i.e. in
-            the local k3d cluster).
-        """
-        return self.config.is_local
 
     @property
     def root_directory(self) -> str:
@@ -331,7 +324,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
         stack = Client().active_stack
 
-        if self.is_local:
+        if self.config.is_local:
             stack.check_local_paths()
 
             local_stores_path = GlobalConfiguration().local_stores_path
@@ -470,7 +463,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
         assert stack.container_registry
         image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
-        if self.is_local and stack.container_registry.config.is_local:
+        if self.config.is_local and stack.container_registry.config.is_local:
             image_name = f"{stack.container_registry.name}.{image_name}"
 
         # Create a callable for future compilation into a dsl.Pipeline.

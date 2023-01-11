@@ -109,16 +109,6 @@ class KubernetesOrchestrator(BaseOrchestrator):
         """
         return KubernetesOrchestratorSettings
 
-    @property
-    def is_local(self) -> bool:
-        """Checks if the Tekton orchestrator is running locally.
-
-        Returns:
-            `True` if the Tekton orchestrator is running locally (i.e. in
-            the local k3d cluster).
-        """
-        return self.config.is_local
-
     def get_kubernetes_contexts(self) -> Tuple[List[str], str]:
         """Get list of configured Kubernetes contexts and the active context.
 
@@ -203,7 +193,10 @@ class KubernetesOrchestrator(BaseOrchestrator):
                 f"--skip_local_validations=True'\n"
             )
 
-            if not self.config.skip_local_validations and not self.is_local:
+            if (
+                not self.config.skip_local_validations
+                and not self.config.is_local
+            ):
 
                 # if the orchestrator is not running in a local k3d cluster,
                 # we cannot have any other local components in our stack,
@@ -253,7 +246,7 @@ class KubernetesOrchestrator(BaseOrchestrator):
                         + silence_local_validations_msg
                     )
 
-            if not self.config.skip_local_validations and self.is_local:
+            if not self.config.skip_local_validations and self.config.is_local:
 
                 # if the orchestrator is local, the container registry must
                 # also be local.
@@ -338,7 +331,7 @@ class KubernetesOrchestrator(BaseOrchestrator):
         # Get Docker image name (for all pods).
         assert stack.container_registry
         image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
-        if self.is_local and stack.container_registry.config.is_local:
+        if self.config.is_local and stack.container_registry.config.is_local:
             image_name = f"{stack.container_registry.name}.{image_name}"
 
         # Build entrypoint command and args for the orchestrator pod.

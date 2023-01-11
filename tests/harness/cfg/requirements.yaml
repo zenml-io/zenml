@@ -141,7 +141,6 @@ requirements:
           # the test environment can be provisioned separately, before pytest
           # is invoked.
           skip_ui_daemon_provisioning: true
-          container_registry_name: k3d-local
     capabilities:
       synchronized: true
       kubeflow: true

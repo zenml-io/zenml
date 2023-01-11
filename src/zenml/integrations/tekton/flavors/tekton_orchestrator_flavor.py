@@ -13,7 +13,9 @@
 #  permissions and limitations under the License.
 """Tekton orchestrator flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type
+
+from pydantic import root_validator
 
 from zenml.integrations.tekton import TEKTON_ORCHESTRATOR_FLAVOR
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
@@ -23,6 +25,9 @@ if TYPE_CHECKING:
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class TektonOrchestratorSettings(BaseSettings):
@@ -52,6 +57,59 @@ class TektonOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydan
     kubernetes_context: str  # TODO: Potential setting
     kubernetes_namespace: str = "zenml"
     skip_local_validations: bool = False
+
+    @root_validator(pre=True)
+    def _validate_deprecated_attrs(
+        cls, values: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Pydantic root_validator for deprecated attributes.
+
+        This root validator is used for backwards compatibility purposes. E.g.
+        it handles attributes that are no longer available or that have become
+        mandatory in the meantime.
+
+        Args:
+            values: Values passed to the object constructor
+
+        Returns:
+            Values passed to the object constructor
+
+        Raises:
+            ValueError: If the attributes or their values are not valid.
+        """
+        provisioning_attrs = [
+            "tekton_ui_port",
+            "skip_ui_daemon_provisioning",
+        ]
+
+        provisioning_attrs_used = [
+            attr for attr in provisioning_attrs if attr in values
+        ]
+
+        msg_header = (
+            "Automatically exposing the Tekton UI TCP port locally as part of "
+            "the stack provisioning when `zenml stack up` is run has been "
+            "removed in favor of methods better suited for this "
+            "purpose, such as using an Ingress controller in the remote "
+            "cluster. \n"
+            "As a result, the following Kubernetes orchestrator configuration "
+            "attributes have been deprecated: "
+            f"{provisioning_attrs}.\n"
+        )
+
+        if provisioning_attrs_used:
+            logger.warning(
+                msg_header
+                + "To get rid of this warning, you should remove the deprecated "
+                "attributes from your orchestrator configuration (e.g. by "
+                "using the `zenml orchestrator remove-attribute <attr-name>` "
+                "CLI command)."
+            )
+            # remove deprecated attributes from values dict
+            for attr in provisioning_attrs_used:
+                del values[attr]
+
+        return values
 
     @property
     def is_remote(self) -> bool:

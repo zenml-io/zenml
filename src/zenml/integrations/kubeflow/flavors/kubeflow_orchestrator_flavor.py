@@ -155,8 +155,6 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
     """Configuration for the Kubeflow orchestrator.
 
     Attributes:
-        kubeflow_pipelines_ui_port: A local port to which the KFP UI will be
-            forwarded.
         kubeflow_hostname: The hostname to use to talk to the Kubeflow Pipelines
             API. If not set, the hostname will be derived from the Kubernetes
             API proxy.
@@ -166,26 +164,79 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
             pipelines in. If not set, will try to spin up a local K3d cluster.
         skip_local_validations: If `True`, the local validations will be
             skipped.
-        container_registry_name: The name of the container registry stack
-            component to use. If not specified, the container registry
-            in the active stack is used.
     """
 
-    kubeflow_pipelines_ui_port: int = DEFAULT_KFP_UI_PORT
     kubeflow_hostname: Optional[str] = None
     kubeflow_namespace: str = "kubeflow"
-    kubernetes_context: str
+    kubernetes_context: str  # TODO: Potential setting
     skip_local_validations: bool = False
 
-    # IMPORTANT: This is a temporary solution to allow the Kubeflow orchestrator
-    # to be provisioned as an individual component (i.e. same as running
-    # `zenml orchestrator kubeflow up`) rather than needing it to be part of the
-    # active stack (i.e. instead of running `zenml stack up`). This is required
-    # by the test framework because the way it works is that it first provisions
-    # the stack components individually, then each test gets a different stack
-    # with the components it requires.
-    # Do not use for anything else! This will be removed in the near future.
-    container_registry_name: Optional[str] = None
+    @root_validator(pre=True)
+    def _validate_deprecated_attrs(
+        cls, values: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Pydantic root_validator for deprecated attributes.
+
+        This root validator is used for backwards compatibility purposes. E.g.
+        it handles attributes that are no longer available or that have become
+        mandatory in the meantime.
+
+        Args:
+            values: Values passed to the object constructor
+
+        Returns:
+            Values passed to the object constructor
+
+        Raises:
+            ValueError: If the attributes or their values are not valid.
+        """
+        provisioning_attrs = [
+            "skip_cluster_provisioning",
+            "skip_ui_daemon_provisioning",
+        ]
+
+        provisioning_attrs_used = [
+            attr for attr in provisioning_attrs if attr in values
+        ]
+
+        msg_header = (
+            "The ability to automatically provision and manage a Kubeflow "
+            "instance running in a local K3D cluster when `zenml stack up` is "
+            "executed is no longer available in the current version of ZenML "
+            "client. Please use the `k3d-modular` ZenML stack recipe to "
+            "achieve the same results (and more). Automatically exposing the "
+            "Kubeflow UI TCP port locally as part of the stack provisioning "
+            "has also been removed in favor of methods better suited for this "
+            "purpose, such as using an Ingress controller in the remote "
+            "cluster. \n"
+            "As a result, the `kubernetes_context` attribute is no longer "
+            "optional and the following Kubeflow orchestrator configuration "
+            "attributes have been deprecated: "
+            f"{provisioning_attrs}.\n"
+        )
+
+        if provisioning_attrs_used:
+            logger.warning(
+                msg_header
+                + "To get rid of this warning, you should remove the deprecated "
+                "attributes from your orchestrator configuration (e.g. by "
+                "using the `zenml orchestrator remove-attribute <attr-name>` "
+                "CLI command)."
+            )
+            # remove deprecated attributes from values dict
+            for attr in provisioning_attrs_used:
+                del values[attr]
+
+        if not values.get("kubernetes_context"):
+            raise ValueError(
+                msg_header
+                + "Please set the `kubernetes_context` attribute to the name "
+                "of the Kubernetes config context pointing to the cluster "
+                "where Kubeflow is installed (e.g. the K3D cluster provisioned "
+                "by the `k3d-modular` ZenML stack recipe)."
+            )
+
+        return values
 
     @property
     def is_remote(self) -> bool:

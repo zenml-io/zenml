@@ -13,7 +13,9 @@
 #  permissions and limitations under the License.
 """Kubernetes orchestrator flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type
+
+from pydantic import root_validator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.kubernetes import KUBERNETES_ORCHESTRATOR_FLAVOR
@@ -59,6 +61,37 @@ class KubernetesOrchestratorConfig(  # type: ignore[misc] # https://github.com/p
     kubernetes_context: str  # TODO: Potential setting
     kubernetes_namespace: str = "zenml"
     skip_local_validations: bool = False
+
+    @root_validator(pre=True)
+    def _validate_deprecated_attrs(
+        cls, values: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Pydantic root_validator for deprecated attributes.
+
+        This root validator is used for backwards compatibility purposes. E.g.
+        it handles attributes that are no longer available or that have become
+        mandatory in the meantime.
+
+        Args:
+            values: Values passed to the object constructor
+
+        Returns:
+            Values passed to the object constructor
+
+        Raises:
+            ValueError: If the attributes or their values are not valid.
+        """
+        if not values.get("kubernetes_context"):
+            raise ValueError(
+                "An empty value is no longer allowed for the "
+                "`kubernetes_context` attribute of the Kubernetes "
+                "orchestrator, to avoid unpredictable behavior. Please set "
+                "the `kubernetes_context` attribute to the name of the "
+                "Kubernetes config context pointing to the cluster where "
+                "you would like to run pipelines."
+            )
+
+        return values
 
     @property
     def is_remote(self) -> bool:
