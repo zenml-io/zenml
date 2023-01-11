@@ -21,7 +21,7 @@ from zenml.cli.utils import error
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import LOCAL_SECRETS_FILENAME
 from zenml.exceptions import SecretExistsError
-from zenml.io.fileio import create_file_if_not_exists, remove
+from zenml.io.fileio import remove
 from zenml.logger import get_logger
 from zenml.secret import SecretSchemaClassRegistry
 from zenml.secrets_managers.base_secrets_manager import (
@@ -31,6 +31,7 @@ from zenml.secrets_managers.base_secrets_manager import (
 )
 from zenml.secrets_managers.utils import decode_secret_dict, encode_secret
 from zenml.utils import yaml_utils
+from zenml.utils.io_utils import create_file_if_not_exists
 
 if TYPE_CHECKING:
     from uuid import UUID

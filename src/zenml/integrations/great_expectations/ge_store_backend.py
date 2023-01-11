@@ -150,7 +150,7 @@ class ZenMLArtifactStoreBackend(TupleStoreBackend):  # type: ignore[misc]
             The file path where the object was stored.
         """
         filepath: str = self._build_object_path(key)
-        if not fileio.is_remote(filepath):
+        if not io_utils.is_remote(filepath):
             parent_dir = str(Path(filepath).parent)
             os.makedirs(parent_dir, exist_ok=True)
 
@@ -178,7 +178,7 @@ class ZenMLArtifactStoreBackend(TupleStoreBackend):  # type: ignore[misc]
         dest_path = self._build_object_path(dest_key)
 
         if fileio.exists(source_path):
-            if not fileio.is_remote(dest_path):
+            if not io_utils.is_remote(dest_path):
                 parent_dir = str(Path(dest_path).parent)
                 os.makedirs(parent_dir, exist_ok=True)
             fileio.rename(source_path, dest_path, overwrite=True)
@@ -229,7 +229,7 @@ class ZenMLArtifactStoreBackend(TupleStoreBackend):  # type: ignore[misc]
 
         if fileio.exists(filepath):
             fileio.remove(filepath)
-            if not fileio.is_remote(filepath):
+            if not io_utils.is_remote(filepath):
                 parent_dir = str(Path(filepath).parent)
                 self.rrmdir(self.root_path, str(parent_dir))
             return True
@@ -261,7 +261,7 @@ class ZenMLArtifactStoreBackend(TupleStoreBackend):  # type: ignore[misc]
             The URL of the object in the store.
         """
         filepath = self._build_object_path(key)
-        if not protocol and not fileio.is_remote(filepath):
+        if not protocol and not io_utils.is_remote(filepath):
             protocol = "file:"
         if protocol:
             filepath = filepath.replace(self.proto, f"{protocol}//", 1)

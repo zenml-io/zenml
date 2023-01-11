@@ -71,7 +71,7 @@ class LocalExample:
         Returns:
             List of Python files in the local example directory.
         """
-        py_in_dir = fileio.find_files(str(self.path), "*.py")
+        py_in_dir = io_utils.find_files(str(self.path), "*.py")
         py_files = []
         for file in py_in_dir:
             # Make sure only files directly in dir are considered, not files

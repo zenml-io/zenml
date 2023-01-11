@@ -52,7 +52,7 @@ class PillowImageMaterializer(BaseMaterializer):
             An Image.Image object.
         """
         super().load(data_type)
-        files = fileio.find_files(self.uri, f"{DEFAULT_IMAGE_FILENAME}.*")
+        files = io_utils.find_files(self.uri, f"{DEFAULT_IMAGE_FILENAME}.*")
         filepath = [file for file in files if not fileio.isdir(file)][0]
 
         # # FAILING OPTION 1: temporary directory

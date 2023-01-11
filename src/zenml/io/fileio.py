@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Functionality for reading, writing and managing files."""
-import fnmatch
 import os
 from pathlib import Path
 from typing import (
@@ -26,10 +25,9 @@ from typing import (
     Type,
 )
 
-from zenml.constants import REMOTE_FS_PREFIX
-from zenml.io import local_filesystem  # noqa
 from zenml.io.filesystem_registry import default_filesystem_registry
 from zenml.logger import get_logger
+from zenml.utils.io_utils import convert_to_str
 
 if TYPE_CHECKING:
     from zenml.io.filesystem import BaseFilesystem, PathType
@@ -262,145 +260,98 @@ def walk(
     return _get_filesystem(top).walk(top, topdown=topdown, onerror=onerror)
 
 
-def find_files(dir_path: "PathType", pattern: str) -> Iterable[str]:
-    """Find files in a directory that match pattern.
+# def create_dir_if_not_exists(dir_path: str) -> None:
+#     """Creates directory if it does not exist.
 
-    Args:
-        dir_path: The path to directory.
-        pattern: pattern like *.png.
-
-    Yields:
-        All matching filenames in the directory.
-    """
-    for root, _, files in walk(dir_path):
-        for basename in files:
-            if fnmatch.fnmatch(convert_to_str(basename), pattern):
-                filename = os.path.join(
-                    convert_to_str(root), convert_to_str(basename)
-                )
-                yield filename
+#     Args:
+#         dir_path: Local path in filesystem.
+#     """
+#     if not isdir(dir_path):
+#         mkdir(dir_path)
 
 
-def is_remote(path: str) -> bool:
-    """Returns True if path exists remotely.
+# def create_dir_recursive_if_not_exists(dir_path: str) -> None:
+#     """Creates directory recursively if it does not exist.
 
-    Args:
-        path: Any path as a string.
-
-    Returns:
-        True if remote path, else False.
-    """
-    return any(path.startswith(prefix) for prefix in REMOTE_FS_PREFIX)
+#     Args:
+#         dir_path: Local path in filesystem.
+#     """
+#     if not isdir(dir_path):
+#         makedirs(dir_path)
 
 
-def create_file_if_not_exists(
-    file_path: str, file_contents: str = "{}"
-) -> None:
-    """Creates file if it does not exist.
+# def resolve_relative_path(path: str) -> str:
+#     """Takes relative path and resolves it absolutely.
 
-    Args:
-        file_path: Local path in filesystem.
-        file_contents: Contents of file.
-    """
-    full_path = Path(file_path)
-    if not exists(file_path):
-        create_dir_recursive_if_not_exists(str(full_path.parent))
-        with open(str(full_path), "w") as f:
-            f.write(file_contents)
+#     Args:
+#         path: Local path in filesystem.
+
+#     Returns:
+#         Resolved path.
+#     """
+#     if is_remote(path):
+#         return path
+#     return str(Path(path).resolve())
 
 
-def create_dir_if_not_exists(dir_path: str) -> None:
-    """Creates directory if it does not exist.
+# def move(source: str, destination: str, overwrite: bool = False) -> None:
+#     """Moves dir or file from source to destination. Can be used to rename.
 
-    Args:
-        dir_path: Local path in filesystem.
-    """
-    if not isdir(dir_path):
-        mkdir(dir_path)
-
-
-def create_dir_recursive_if_not_exists(dir_path: str) -> None:
-    """Creates directory recursively if it does not exist.
-
-    Args:
-        dir_path: Local path in filesystem.
-    """
-    if not isdir(dir_path):
-        makedirs(dir_path)
+#     Args:
+#         source: Local path to copy from.
+#         destination: Local path to copy to.
+#         overwrite: boolean, if false, then throws an error before overwrite.
+#     """
+#     rename(source, destination, overwrite)
 
 
-def resolve_relative_path(path: str) -> str:
-    """Takes relative path and resolves it absolutely.
+# def get_grandparent(dir_path: str) -> str:
+#     """Get grandparent of dir.
 
-    Args:
-        path: Local path in filesystem.
+#     Args:
+#         dir_path: The path to directory.
 
-    Returns:
-        Resolved path.
-    """
-    if is_remote(path):
-        return path
-    return str(Path(path).resolve())
+#     Returns:
+#         The input paths parents parent.
 
-
-def move(source: str, destination: str, overwrite: bool = False) -> None:
-    """Moves dir or file from source to destination. Can be used to rename.
-
-    Args:
-        source: Local path to copy from.
-        destination: Local path to copy to.
-        overwrite: boolean, if false, then throws an error before overwrite.
-    """
-    rename(source, destination, overwrite)
+#     Raises:
+#         ValueError: If dir_path does not exist.
+#     """
+#     if not os.path.exists(dir_path):
+#         raise ValueError(f"Path '{dir_path}' does not exist.")
+#     return Path(dir_path).parent.parent.stem
 
 
-def get_grandparent(dir_path: str) -> str:
-    """Get grandparent of dir.
+# def get_parent(dir_path: str) -> str:
+#     """Get parent of dir.
 
-    Args:
-        dir_path: The path to directory.
+#     Args:
+#         dir_path: The path to directory.
 
-    Returns:
-        The input paths parents parent.
+#     Returns:
+#         Parent (stem) of the dir as a string.
 
-    Raises:
-        ValueError: If dir_path does not exist.
-    """
-    if not os.path.exists(dir_path):
-        raise ValueError(f"Path '{dir_path}' does not exist.")
-    return Path(dir_path).parent.parent.stem
-
-
-def get_parent(dir_path: str) -> str:
-    """Get parent of dir.
-
-    Args:
-        dir_path: The path to directory.
-
-    Returns:
-        Parent (stem) of the dir as a string.
-
-    Raises:
-        ValueError: If dir_path does not exist.
-    """
-    if not os.path.exists(dir_path):
-        raise ValueError(f"Path '{dir_path}' does not exist.")
-    return Path(dir_path).parent.stem
+#     Raises:
+#         ValueError: If dir_path does not exist.
+#     """
+#     if not os.path.exists(dir_path):
+#         raise ValueError(f"Path '{dir_path}' does not exist.")
+#     return Path(dir_path).parent.stem
 
 
-def convert_to_str(path: "PathType") -> str:
-    """Converts a "PathType" to a str using UTF-8.
+# def convert_to_str(path: "PathType") -> str:
+#     """Converts a "PathType" to a str using UTF-8.
 
-    Args:
-        path: The path to convert.
+#     Args:
+#         path: The path to convert.
 
-    Returns:
-        The path as a string.
-    """
-    if isinstance(path, str):
-        return path
-    else:
-        return path.decode("utf-8")
+#     Returns:
+#         The path as a string.
+#     """
+#     if isinstance(path, str):
+#         return path
+#     else:
+#         return path.decode("utf-8")
 
 
 __all__ = [

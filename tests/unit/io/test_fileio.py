@@ -67,7 +67,7 @@ def test_find_files_returns_generator_object_when_file_present(tmp_path):
     temp_file = os.path.join(tmp_path, TEMPORARY_FILE_NAME)
     with open(temp_file, "w"):
         assert isinstance(
-            fileio.find_files(str(tmp_path), TEMPORARY_FILE_SEARCH_PREFIX),
+            io_utils.find_files(str(tmp_path), TEMPORARY_FILE_SEARCH_PREFIX),
             GeneratorType,
         )
 
@@ -77,7 +77,9 @@ def test_find_files_when_file_present(tmp_path):
     temp_file = os.path.join(tmp_path, TEMPORARY_FILE_NAME)
     with open(temp_file, "w"):
         assert (
-            next(fileio.find_files(str(tmp_path), TEMPORARY_FILE_SEARCH_PREFIX))
+            next(
+                io_utils.find_files(str(tmp_path), TEMPORARY_FILE_SEARCH_PREFIX)
+            )
             is not None
         )
 
@@ -87,7 +89,7 @@ def test_find_files_when_file_absent(tmp_path):
     temp_file = os.path.join(tmp_path, TEMPORARY_FILE_NAME)
     with open(temp_file, "w"):
         with pytest.raises(StopIteration):
-            assert next(fileio.find_files(str(tmp_path), "abc*.*"))
+            assert next(io_utils.find_files(str(tmp_path), "abc*.*"))
 
 
 @pytest.mark.parametrize("filesystem", REMOTE_FS_PREFIX)
@@ -95,7 +97,7 @@ def test_is_remote_when_using_remote_prefix(filesystem):
     """is_remote returns True when path starts with one of
     the ZenML remote file prefixes"""
     some_random_path = os.path.join(f"{filesystem}some_directory")
-    assert fileio.is_remote(some_random_path)
+    assert io_utils.is_remote(some_random_path)
 
 
 @given(text())
@@ -103,7 +105,7 @@ def test_is_remote_when_using_non_remote_prefix(filesystem):
     """is_remote returns False when path doesn't start with
     a remote prefix"""
     some_random_path = os.path.join(f"{filesystem}some_directory")
-    assert fileio.is_remote(some_random_path) is False
+    assert io_utils.is_remote(some_random_path) is False
 
 
 def test_listdir_returns_a_list_of_file_names(tmp_path):
@@ -115,7 +117,7 @@ def test_listdir_returns_a_list_of_file_names(tmp_path):
 def test_listdir_returns_one_result_for_one_file(tmp_path):
     """list_dir should return only one result, when there is only
     one file created"""
-    fileio.create_file_if_not_exists(
+    io_utils.create_file_if_not_exists(
         os.path.join(tmp_path, TEMPORARY_FILE_NAME)
     )
     assert len(fileio.listdir(str(tmp_path))) == 1
@@ -145,7 +147,7 @@ def test_copy_moves_file_to_new_location(tmp_path) -> None:
     """Test that copy moves the file to the new location"""
     src = os.path.join(tmp_path, "test_file.txt")
     dst = os.path.join(tmp_path, "test_file2.txt")
-    fileio.create_file_if_not_exists(src)
+    io_utils.create_file_if_not_exists(src)
     assert not os.path.exists(dst)
     fileio.copy(src, dst)
     assert os.path.exists(dst)
@@ -156,8 +158,8 @@ def test_copy_raises_error_when_file_exists(tmp_path) -> None:
     the desired location"""
     src = os.path.join(tmp_path, "test_file.txt")
     dst = os.path.join(tmp_path, "test_file2.txt")
-    fileio.create_file_if_not_exists(src)
-    fileio.create_file_if_not_exists(dst)
+    io_utils.create_file_if_not_exists(src)
+    io_utils.create_file_if_not_exists(dst)
     assert os.path.exists(src)
     assert os.path.exists(dst)
     with pytest.raises(FileExistsError):
@@ -178,7 +180,7 @@ def test_file_exists_when_file_doesnt_exist(tmp_path) -> None:
 def test_remove_function(tmp_path) -> None:
     """Test that remove function actually removes a file"""
     new_file_path = os.path.join(tmp_path, "test_file.txt")
-    fileio.create_file_if_not_exists(new_file_path)
+    io_utils.create_file_if_not_exists(new_file_path)
     assert fileio.exists(new_file_path)
     fileio.remove(new_file_path)
     assert not os.path.exists(new_file_path)
@@ -218,7 +220,7 @@ def test_mkdir_function_when_parent_doesnt_exist(tmp_path) -> None:
 
 def test_rename_function(tmp_path) -> None:
     """Test that renames a file"""
-    fileio.create_file_if_not_exists(os.path.join(tmp_path, "test_file.txt"))
+    io_utils.create_file_if_not_exists(os.path.join(tmp_path, "test_file.txt"))
     fileio.rename(
         os.path.join(tmp_path, "test_file.txt"),
         os.path.join(tmp_path, "new_file.txt"),
@@ -271,17 +273,17 @@ def test_walk_returns_an_iterator(tmp_path) -> None:
 
 def test_create_file_if_not_exists(tmp_path) -> None:
     """Test that create_file_if_not_exists creates a file"""
-    fileio.create_file_if_not_exists(os.path.join(tmp_path, "new_file.txt"))
+    io_utils.create_file_if_not_exists(os.path.join(tmp_path, "new_file.txt"))
     assert os.path.exists(os.path.join(tmp_path, "new_file.txt"))
 
 
 def test_create_file_if_not_exists_does_not_overwrite(tmp_path) -> None:
     """Test that create_file_if_not_exists doesn't overwrite an existing file"""
     temporary_file = os.path.join(tmp_path, "new_file.txt")
-    fileio.create_file_if_not_exists(temporary_file)
+    io_utils.create_file_if_not_exists(temporary_file)
     with open(temporary_file, "w") as f:
         f.write("Aria is a good cat")
-    fileio.create_file_if_not_exists(temporary_file)
+    io_utils.create_file_if_not_exists(temporary_file)
     with open(temporary_file, "r") as f:
         assert f.read() == "Aria is a good cat"
 
@@ -312,7 +314,7 @@ def test_copy_dir_copies_dir_from_source_to_destination(tmp_path) -> None:
     target_dir = os.path.join(tmp_path, "test_dir_copy")
     source_file = os.path.join(source_dir, "new_file.txt")
     target_file = os.path.join(target_dir, "new_file.txt")
-    fileio.create_file_if_not_exists(source_file)
+    io_utils.create_file_if_not_exists(source_file)
     assert os.path.exists(source_file)
     assert not os.path.exists(target_dir)
     io_utils.copy_dir(source_dir, target_dir)
@@ -322,7 +324,7 @@ def test_copy_dir_copies_dir_from_source_to_destination(tmp_path) -> None:
 
 def test_move_moves_a_file_from_source_to_destination(tmp_path) -> None:
     """Test that move moves a file from source to destination"""
-    fileio.create_file_if_not_exists(os.path.join(tmp_path, "new_file.txt"))
+    io_utils.create_file_if_not_exists(os.path.join(tmp_path, "new_file.txt"))
     fileio.rename(
         os.path.join(tmp_path, "new_file.txt"),
         os.path.join(tmp_path, "new_file_moved.txt"),
@@ -333,7 +335,7 @@ def test_move_moves_a_file_from_source_to_destination(tmp_path) -> None:
 
 def test_move_moves_a_directory_from_source_to_destination(tmp_path) -> None:
     """Test that move moves a directory from source to destination"""
-    fileio.create_file_if_not_exists(
+    io_utils.create_file_if_not_exists(
         os.path.join(tmp_path, "new_folder/new_file.txt")
     )
     fileio.rename(

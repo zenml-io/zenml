@@ -41,7 +41,7 @@ def write_yaml(
     Raises:
         FileNotFoundError: if directory does not exist.
     """
-    if not fileio.is_remote(file_path):
+    if not io_utils.is_remote(file_path):
         dir_ = str(Path(file_path).parent)
         if not fileio.isdir(dir_):
             raise FileNotFoundError(f"Directory {dir_} does not exist.")
@@ -62,7 +62,7 @@ def append_yaml(file_path: str, contents: Dict[Any, Any]) -> None:
     """
     file_contents = read_yaml(file_path) or {}
     file_contents.update(contents)
-    if not fileio.is_remote(file_path):
+    if not io_utils.is_remote(file_path):
         dir_ = str(Path(file_path).parent)
         if not fileio.isdir(dir_):
             raise FileNotFoundError(f"Directory {dir_} does not exist.")
@@ -133,7 +133,7 @@ def write_json(
     Raises:
         FileNotFoundError: if directory does not exist.
     """
-    if not fileio.is_remote(file_path):
+    if not io_utils.is_remote(file_path):
         dir_ = str(Path(file_path).parent)
         if not fileio.isdir(dir_):
             # Check if it is a local path, if it doesn't exist, raise Exception.

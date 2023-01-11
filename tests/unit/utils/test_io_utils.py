@@ -79,7 +79,7 @@ def test_copy_dir_works(tmp_path):
     dir_path = os.path.join(tmp_path, "test")
     fileio.create_dir_if_not_exists(dir_path)
     file_path = os.path.join(dir_path, "test.txt")
-    fileio.create_file_if_not_exists(file_path, "some_content_about_aria")
+    io_utils.create_file_if_not_exists(file_path, "some_content_about_aria")
 
     new_dir_path = os.path.join(tmp_path, "test2")
     io_utils.copy_dir(dir_path, new_dir_path)
@@ -96,12 +96,12 @@ def test_copy_dir_overwriting_works(tmp_path):
     dir_path = os.path.join(tmp_path, "test")
     fileio.create_dir_if_not_exists(dir_path)
     file_path1 = os.path.join(dir_path, "test.txt")
-    fileio.create_file_if_not_exists(file_path1, "some_content_about_aria")
+    io_utils.create_file_if_not_exists(file_path1, "some_content_about_aria")
 
     new_dir_path = os.path.join(tmp_path, "test2")
     fileio.create_dir_if_not_exists(new_dir_path)
     file_path2 = os.path.join(new_dir_path, "test.txt")
-    fileio.create_file_if_not_exists(file_path2, "some_content_about_blupus")
+    io_utils.create_file_if_not_exists(file_path2, "some_content_about_blupus")
 
     io_utils.copy_dir(dir_path, new_dir_path, overwrite=True)
     assert os.path.exists(new_dir_path)
@@ -117,12 +117,12 @@ def test_copy_dir_throws_error_if_overwriting(tmp_path):
     dir_path = os.path.join(tmp_path, "test")
     fileio.create_dir_if_not_exists(dir_path)
     file_path1 = os.path.join(dir_path, "test.txt")
-    fileio.create_file_if_not_exists(file_path1, "some_content_about_aria")
+    io_utils.create_file_if_not_exists(file_path1, "some_content_about_aria")
 
     new_dir_path = os.path.join(tmp_path, "test2")
     fileio.create_dir_if_not_exists(new_dir_path)
     file_path2 = os.path.join(new_dir_path, "test.txt")
-    fileio.create_file_if_not_exists(file_path2, "some_content_about_blupus")
+    io_utils.create_file_if_not_exists(file_path2, "some_content_about_blupus")
 
     with pytest.raises(FileExistsError):
         io_utils.copy_dir(dir_path, new_dir_path, overwrite=False)

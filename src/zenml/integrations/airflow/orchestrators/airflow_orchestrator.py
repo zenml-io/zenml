@@ -320,7 +320,7 @@ class AirflowOrchestrator(BaseOrchestrator):
             logger.info("Writing DAG definition to `%s`.", path)
 
         dag_filename = f"{dag_config.id}.zip"
-        if fileio.is_remote(output_dir):
+        if io_utils.is_remote(output_dir):
             fileio.create_dir_recursive_if_not_exists(self.dags_directory)
             local_zip_path = os.path.join(self.dags_directory, dag_filename)
             remote_zip_path = os.path.join(output_dir, dag_filename)
