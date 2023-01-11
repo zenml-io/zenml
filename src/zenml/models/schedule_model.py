@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Model definition for pipeline run schedules."""
 
+import datetime
 from typing import ClassVar, List, Optional
 from uuid import UUID
 
@@ -22,7 +23,6 @@ from zenml.config.schedule import Schedule
 from zenml.models.base_models import (
     ProjectScopedRequestModel,
     ProjectScopedResponseModel,
-    update_model,
 )
 
 # ---- #
@@ -64,6 +64,13 @@ class ScheduleRequestModel(ScheduleBaseModel, ProjectScopedRequestModel):
 # ------ #
 
 
-@update_model
-class ScheduleUpdateModel(ScheduleRequestModel):
+class ScheduleUpdateModel(BaseModel):
     """Schedule update model."""
+
+    name: Optional[str] = None
+    active: Optional[bool] = None
+    cron_expression: Optional[str] = None
+    start_time: Optional[datetime.datetime] = None
+    end_time: Optional[datetime.datetime] = None
+    interval_second: Optional[datetime.timedelta] = None
+    catchup: Optional[bool] = None

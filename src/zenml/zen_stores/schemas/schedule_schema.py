@@ -130,17 +130,20 @@ class ScheduleSchema(NamedSchema, table=True):
         Returns:
             The updated `ScheduleSchema`.
         """
+        if model.name is not None:
+            self.name = model.name
+        if model.active is not None:
+            self.active = model.active
+        if model.cron_expression is not None:
+            self.cron_expression = model.cron_expression
+        if model.start_time is not None:
+            self.start_time = model.start_time
+        if model.end_time is not None:
+            self.end_time = model.end_time
         if model.interval_second is not None:
-            interval_second = model.interval_second.total_seconds()
-        else:
-            interval_second = None
-        self.name = model.name
-        self.active = model.active
-        self.cron_expression = model.cron_expression
-        self.start_time = model.start_time
-        self.end_time = model.end_time
-        self.interval_second = interval_second
-        self.catchup = model.catchup
+            self.interval_second = model.interval_second.total_seconds()
+        if model.catchup is not None:
+            self.catchup = model.catchup
         self.updated = datetime.now()
         return self
 
