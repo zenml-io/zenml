@@ -103,11 +103,11 @@ def delete_pipeline(pipeline_name_or_id: str, yes: bool = False) -> None:
 
 
 @pipeline.group()
-def schedules() -> None:
+def schedule() -> None:
     """Commands for pipeline run schedules."""
 
 
-@schedules.command("list", help="List all pipeline schedules.")
+@schedule.command("list", help="List all pipeline schedules.")
 @click.option("--pipeline", "-p", type=str, required=False)
 @click.option("--user", "-u", type=str, required=False)
 @click.option("--name", "-n", type=str, required=False)
@@ -142,7 +142,7 @@ def list_schedules(pipeline: str, user: str, name: str) -> None:
     )
 
 
-@schedules.command("delete", help="Delete a pipeline schedule.")
+@schedule.command("delete", help="Delete a pipeline schedule.")
 @click.argument("schedule_name_or_id", type=str, required=True)
 @click.option(
     "--yes",
