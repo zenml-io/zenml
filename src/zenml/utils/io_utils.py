@@ -22,6 +22,7 @@ import click
 
 from zenml.constants import APP_NAME, ENV_ZENML_CONFIG_PATH, REMOTE_FS_PREFIX
 from zenml.io.fileio import (
+    convert_to_str,
     copy,
     exists,
     isdir,
@@ -34,21 +35,6 @@ from zenml.io.fileio import (
 
 if TYPE_CHECKING:
     from zenml.io.filesystem import PathType
-
-
-def convert_to_str(path: "PathType") -> str:
-    """Converts a "PathType" to a str using UTF-8.
-
-    Args:
-        path: The path to convert.
-
-    Returns:
-        The path as a string.
-    """
-    if isinstance(path, str):
-        return path
-    else:
-        return path.decode("utf-8")
 
 
 def is_root(path: str) -> bool:

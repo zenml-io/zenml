@@ -33,6 +33,12 @@ TEMPORARY_FILE_SEARCH_PREFIX = "a_f*.*"
 ALPHABET = string.ascii_letters
 
 
+def test_convert_to_str_converts_to_string(tmp_path) -> None:
+    """Test that convert_to_str converts bytes to a string"""
+    assert isinstance(fileio.convert_to_str(bytes(str(tmp_path), "ascii")), str)
+    assert fileio.convert_to_str(bytes(str(tmp_path), "ascii")) == str(tmp_path)
+
+
 def test_isdir_when_true(tmp_path):
     """is_dir returns true when path refers to a directory"""
     assert fileio.isdir(str(tmp_path))

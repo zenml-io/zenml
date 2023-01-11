@@ -26,7 +26,6 @@ from typing import (
 
 from zenml.io.filesystem_registry import default_filesystem_registry
 from zenml.logger import get_logger
-from zenml.utils.io_utils import convert_to_str
 
 if TYPE_CHECKING:
     from zenml.io.filesystem import BaseFilesystem, PathType
@@ -44,6 +43,21 @@ def _get_filesystem(path: "PathType") -> Type["BaseFilesystem"]:
         The filesystem class.
     """
     return default_filesystem_registry.get_filesystem_for_path(path)
+
+
+def convert_to_str(path: "PathType") -> str:
+    """Converts a "PathType" to a str using UTF-8.
+
+    Args:
+        path: The path to convert.
+
+    Returns:
+        The path as a string.
+    """
+    if isinstance(path, str):
+        return path
+    else:
+        return path.decode("utf-8")
 
 
 def open(path: "PathType", mode: str = "r") -> Any:  # noqa
