@@ -358,7 +358,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         logger.debug(f"Writing config to {config_file}")
 
         if not fileio.exists(config_file):
-            fileio.create_dir_recursive_if_not_exists(
+            io_utils.create_dir_recursive_if_not_exists(
                 config_path or self.config_directory
             )
 

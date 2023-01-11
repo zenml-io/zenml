@@ -26,13 +26,13 @@ import psutil
 from psutil import NoSuchProcess
 from pydantic import Field
 
-from zenml.io.fileio import create_dir_recursive_if_not_exists
 from zenml.logger import get_logger
 from zenml.services.local.local_service_endpoint import (
     LocalDaemonServiceEndpoint,
 )
 from zenml.services.service import BaseService, ServiceConfig
 from zenml.services.service_status import ServiceState, ServiceStatus
+from zenml.utils.io_utils import create_dir_recursive_if_not_exists
 
 logger = get_logger(__name__)
 

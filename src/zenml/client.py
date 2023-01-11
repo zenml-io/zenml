@@ -80,6 +80,7 @@ from zenml.models import (
 )
 from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.models.base_models import BaseResponseModel
+from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler, track
 from zenml.utils.filesync_model import FileSyncModel
 
@@ -374,7 +375,7 @@ class Client(metaclass=ClientMetaClass):
                 )
 
             config_directory = str(root / REPOSITORY_DIRECTORY_NAME)
-            fileio.create_dir_recursive_if_not_exists(config_directory)
+            io_utils.create_dir_recursive_if_not_exists(config_directory)
             # Initialize the repository configuration at the custom path
             Client(root=root)
 

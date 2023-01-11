@@ -17,7 +17,6 @@ import os
 import pytest
 
 from zenml.constants import ENV_ZENML_CONFIG_PATH
-from zenml.io import fileio
 from zenml.utils import io_utils
 
 
@@ -77,7 +76,7 @@ def test_read_file_contents_as_string_raises_error_when_file_not_exists(
 def test_copy_dir_works(tmp_path):
     """Tests copying directory."""
     dir_path = os.path.join(tmp_path, "test")
-    fileio.create_dir_if_not_exists(dir_path)
+    io_utils.create_dir_if_not_exists(dir_path)
     file_path = os.path.join(dir_path, "test.txt")
     io_utils.create_file_if_not_exists(file_path, "some_content_about_aria")
 
@@ -94,12 +93,12 @@ def test_copy_dir_works(tmp_path):
 def test_copy_dir_overwriting_works(tmp_path):
     """Tests copying directory overwriting."""
     dir_path = os.path.join(tmp_path, "test")
-    fileio.create_dir_if_not_exists(dir_path)
+    io_utils.create_dir_if_not_exists(dir_path)
     file_path1 = os.path.join(dir_path, "test.txt")
     io_utils.create_file_if_not_exists(file_path1, "some_content_about_aria")
 
     new_dir_path = os.path.join(tmp_path, "test2")
-    fileio.create_dir_if_not_exists(new_dir_path)
+    io_utils.create_dir_if_not_exists(new_dir_path)
     file_path2 = os.path.join(new_dir_path, "test.txt")
     io_utils.create_file_if_not_exists(file_path2, "some_content_about_blupus")
 
@@ -115,12 +114,12 @@ def test_copy_dir_overwriting_works(tmp_path):
 def test_copy_dir_throws_error_if_overwriting(tmp_path):
     """Tests copying directory throwing error if overwriting."""
     dir_path = os.path.join(tmp_path, "test")
-    fileio.create_dir_if_not_exists(dir_path)
+    io_utils.create_dir_if_not_exists(dir_path)
     file_path1 = os.path.join(dir_path, "test.txt")
     io_utils.create_file_if_not_exists(file_path1, "some_content_about_aria")
 
     new_dir_path = os.path.join(tmp_path, "test2")
-    fileio.create_dir_if_not_exists(new_dir_path)
+    io_utils.create_dir_if_not_exists(new_dir_path)
     file_path2 = os.path.join(new_dir_path, "test.txt")
     io_utils.create_file_if_not_exists(file_path2, "some_content_about_blupus")
 

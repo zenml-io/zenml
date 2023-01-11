@@ -413,7 +413,7 @@ class GitStackRecipesHandler(object):
             stack_recipe_instance: The stack recipe to copy.
             destination_dir: The destination directory to copy the recipe to.
         """
-        fileio.create_dir_if_not_exists(destination_dir)
+        io_utils.create_dir_if_not_exists(destination_dir)
         io_utils.copy_dir(
             str(stack_recipe_instance.path_in_repo),
             destination_dir,
@@ -634,7 +634,7 @@ def pull(
     git_stack_recipes_handler.pull(branch="main", force=force)
 
     stack_recipes_dir = os.path.join(os.getcwd(), path)
-    fileio.create_dir_if_not_exists(stack_recipes_dir)
+    io_utils.create_dir_if_not_exists(stack_recipes_dir)
     try:
         stack_recipes = git_stack_recipes_handler.get_stack_recipes(
             stack_recipe_name
@@ -674,7 +674,7 @@ def pull(
                     f"Pulling stack recipe {stack_recipe_instance.name}..."
                 )
 
-                fileio.create_dir_if_not_exists(destination_dir)
+                io_utils.create_dir_if_not_exists(destination_dir)
                 git_stack_recipes_handler.copy_stack_recipe(
                     stack_recipe_instance, destination_dir
                 )

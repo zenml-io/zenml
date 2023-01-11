@@ -290,13 +290,13 @@ def test_create_file_if_not_exists_does_not_overwrite(tmp_path) -> None:
 
 def test_create_dir_if_not_exists(tmp_path) -> None:
     """Test that create_dir_if_not_exists creates a directory"""
-    fileio.create_dir_if_not_exists(os.path.join(tmp_path, "new_dir"))
+    io_utils.create_dir_if_not_exists(os.path.join(tmp_path, "new_dir"))
     assert os.path.exists(os.path.join(tmp_path, "new_dir"))
 
 
 def test_create_dir_recursive_if_not_exists(tmp_path) -> None:
     """Test that create_dir_recursive_if_not_exists creates a directory"""
-    fileio.create_dir_recursive_if_not_exists(
+    io_utils.create_dir_recursive_if_not_exists(
         os.path.join(tmp_path, "new_dir/new_dir2")
     )
     assert os.path.exists(os.path.join(tmp_path, "new_dir/new_dir2"))
@@ -305,7 +305,7 @@ def test_create_dir_recursive_if_not_exists(tmp_path) -> None:
 def test_resolve_relative_path(tmp_path) -> None:
     """Test that resolve_relative_path resolves a relative path"""
     current_working_directory = os.getcwd()
-    assert current_working_directory == fileio.resolve_relative_path(".")
+    assert current_working_directory == io_utils.resolve_relative_path(".")
 
 
 def test_copy_dir_copies_dir_from_source_to_destination(tmp_path) -> None:
@@ -325,7 +325,7 @@ def test_copy_dir_copies_dir_from_source_to_destination(tmp_path) -> None:
 def test_move_moves_a_file_from_source_to_destination(tmp_path) -> None:
     """Test that move moves a file from source to destination"""
     io_utils.create_file_if_not_exists(os.path.join(tmp_path, "new_file.txt"))
-    fileio.rename(
+    io_utils.move(
         os.path.join(tmp_path, "new_file.txt"),
         os.path.join(tmp_path, "new_file_moved.txt"),
     )
@@ -338,7 +338,7 @@ def test_move_moves_a_directory_from_source_to_destination(tmp_path) -> None:
     io_utils.create_file_if_not_exists(
         os.path.join(tmp_path, "new_folder/new_file.txt")
     )
-    fileio.rename(
+    io_utils.move(
         os.path.join(tmp_path, "new_folder"),
         os.path.join(tmp_path, "test_dir_moved"),
     )
@@ -348,10 +348,10 @@ def test_move_moves_a_directory_from_source_to_destination(tmp_path) -> None:
 
 def test_get_grandparent_gets_the_grandparent_directory(tmp_path) -> None:
     """Test that get_grandparent gets the grandparent directory"""
-    fileio.create_dir_recursive_if_not_exists(
+    io_utils.create_dir_recursive_if_not_exists(
         os.path.join(tmp_path, "new_dir/new_dir2")
     )
-    grandparent = fileio.get_grandparent(
+    grandparent = io_utils.get_grandparent(
         os.path.join(tmp_path, "new_dir/new_dir2")
     )
     assert grandparent == Path(tmp_path).stem
@@ -359,14 +359,18 @@ def test_get_grandparent_gets_the_grandparent_directory(tmp_path) -> None:
 
 def test_get_parent_gets_the_parent_directory(tmp_path) -> None:
     """Test that get_parent gets the parent directory"""
-    fileio.create_dir_recursive_if_not_exists(
+    io_utils.create_dir_recursive_if_not_exists(
         os.path.join(tmp_path, "new_dir/new_dir2")
     )
-    parent = fileio.get_parent(os.path.join(tmp_path, "new_dir/new_dir2"))
+    parent = io_utils.get_parent(os.path.join(tmp_path, "new_dir/new_dir2"))
     assert parent == "new_dir"
 
 
 def test_convert_to_str_converts_to_string(tmp_path) -> None:
     """Test that convert_to_str converts bytes to a string"""
-    assert isinstance(fileio.convert_to_str(bytes(str(tmp_path), "ascii")), str)
-    assert fileio.convert_to_str(bytes(str(tmp_path), "ascii")) == str(tmp_path)
+    assert isinstance(
+        io_utils.convert_to_str(bytes(str(tmp_path), "ascii")), str
+    )
+    assert io_utils.convert_to_str(bytes(str(tmp_path), "ascii")) == str(
+        tmp_path
+    )

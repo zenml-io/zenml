@@ -32,9 +32,9 @@ from zenml.integrations.gcp.flavors.gcp_artifact_store_flavor import (
     GCP_PATH_PREFIX,
     GCPArtifactStoreConfig,
 )
-from zenml.io.fileio import convert_to_str
 from zenml.secret.schemas import GCPSecretSchema
 from zenml.stack.authentication_mixin import AuthenticationMixin
+from zenml.utils.io_utils import convert_to_str
 
 PathType = Union[bytes, str]
 

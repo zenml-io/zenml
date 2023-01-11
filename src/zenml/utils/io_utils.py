@@ -36,6 +36,21 @@ if TYPE_CHECKING:
     from zenml.io.filesystem import PathType
 
 
+def convert_to_str(path: "PathType") -> str:
+    """Converts a "PathType" to a str using UTF-8.
+
+    Args:
+        path: The path to convert.
+
+    Returns:
+        The path as a string.
+    """
+    if isinstance(path, str):
+        return path
+    else:
+        return path.decode("utf-8")
+
+
 def get_global_config_directory() -> str:
     """Gets the global config directory for ZenML.
 
@@ -234,18 +249,3 @@ def get_parent(dir_path: str) -> str:
     if not os.path.exists(dir_path):
         raise ValueError(f"Path '{dir_path}' does not exist.")
     return Path(dir_path).parent.stem
-
-
-def convert_to_str(path: "PathType") -> str:
-    """Converts a "PathType" to a str using UTF-8.
-
-    Args:
-        path: The path to convert.
-
-    Returns:
-        The path as a string.
-    """
-    if isinstance(path, str):
-        return path
-    else:
-        return path.decode("utf-8")

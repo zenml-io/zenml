@@ -31,9 +31,9 @@ from zenml.artifact_stores import BaseArtifactStore
 from zenml.integrations.s3.flavors.s3_artifact_store_flavor import (
     S3ArtifactStoreConfig,
 )
-from zenml.io.fileio import convert_to_str
 from zenml.secret.schemas import AWSSecretSchema
 from zenml.stack.authentication_mixin import AuthenticationMixin
+from zenml.utils.io_utils import convert_to_str
 
 PathType = Union[bytes, str]
 

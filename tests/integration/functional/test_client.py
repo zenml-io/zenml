@@ -30,6 +30,7 @@ from zenml.exceptions import (
 )
 from zenml.io import fileio
 from zenml.models import ComponentResponseModel, StackResponseModel
+from zenml.utils import io_utils
 
 
 def _create_local_orchestrator(
@@ -142,7 +143,7 @@ def test_finding_repository_directory_with_explicit_path(
     """Tests that a repository can be found using an explicit path, an
     environment variable and the current working directory."""
     subdirectory_path = tmp_path / "some_other_directory"
-    fileio.create_dir_recursive_if_not_exists(str(subdirectory_path))
+    io_utils.create_dir_recursive_if_not_exists(str(subdirectory_path))
     os.chdir(str(subdirectory_path))
 
     # no repo exists and explicit path passed
