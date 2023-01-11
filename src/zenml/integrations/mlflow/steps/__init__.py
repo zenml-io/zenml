@@ -12,3 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Initialization of the MLflow standard interface steps."""
+
+from zenml.integrations.mlflow.steps.mlflow_deployer import (
+    MLFlowDeployerParameters,
+    mlflow_deployer_step,
+    mlflow_model_deployer_step,
+)

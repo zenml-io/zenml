@@ -12,3 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Initialization of the whylogs steps."""
+
+from zenml.integrations.whylogs.steps.whylogs_profiler import (
+    WhylogsProfilerParameters,
+    WhylogsProfilerStep,
+    whylogs_profiler_step,
+)

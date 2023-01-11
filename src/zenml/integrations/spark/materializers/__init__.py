@@ -12,3 +12,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Spark Materializers."""
+
+from zenml.integrations.spark.materializers.spark_dataframe_materializer import (
+    SparkDataFrameMaterializer,
+)
+from zenml.integrations.spark.materializers.spark_model_materializer import (
+    SparkModelMaterializer,
+)
