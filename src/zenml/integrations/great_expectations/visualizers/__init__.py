@@ -12,4 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-"""Great Expectations visualizers for expectation suites and validation results."""
+"""Visualizers for expectation suites and validation results."""
+
+from zenml.integrations.great_expectations.visualizers.ge_visualizer import (
+    GreatExpectationsVisualizer,
+)
