@@ -22,7 +22,7 @@ from zenml.exceptions import (
     PipelineInterfaceError,
     StackValidationError,
 )
-from zenml.pipelines import pipeline
+from zenml.pipelines import pipeline, BasePipeline
 from zenml.steps import BaseParameters, step
 from zenml.utils.yaml_utils import write_yaml
 
@@ -297,3 +297,64 @@ def test_pipeline_run_fails_when_required_step_operator_is_missing(
     assert not Client().active_stack.step_operator
     with pytest.raises(StackValidationError):
         one_step_pipeline(step_that_requires_step_operator()).run(unlisted=True)
+
+
+def test_pipeline_decorator_configuration_gets_applied_during_initialization(
+    mocker,
+):
+    """Tests that the configuration passed to the pipeline decorator gets
+    applied when creating an instance of the pipeline."""
+    config = {
+        "extra": {"key": "value"},
+        "settings": {"docker": {"target_repository": "custom_repo"}},
+    }
+
+    @pipeline(**config)
+    def p():
+        pass
+
+    mock_configure = mocker.patch.object(BasePipeline, "configure")
+    p()
+    mock_configure.assert_called_with(**config)
+
+
+def test_pipeline_configuration(empty_pipeline):
+    """Tests the pipeline configuration and overwriting/merging with existing
+    configurations."""
+    pipeline_instance = empty_pipeline()
+
+    pipeline_instance.configure(
+        enable_cache=False,
+        extra={"key": "value"},
+    )
+
+    assert pipeline_instance.configuration.enable_cache is False
+    assert pipeline_instance.configuration.extra == {"key": "value"}
+
+    # No merging
+    pipeline_instance.configure(
+        enable_cache=True,
+        extra={"key2": "value2"},
+        merge=False,
+    )
+    assert pipeline_instance.configuration.enable_cache is True
+    assert pipeline_instance.configuration.extra == {"key2": "value2"}
+
+    # With merging
+    pipeline_instance.configure(
+        enable_cache=False,
+        extra={"key3": "value3"},
+        merge=True,
+    )
+    assert pipeline_instance.configuration.enable_cache is False
+    assert pipeline_instance.configuration.extra == {
+        "key2": "value2",
+        "key3": "value3",
+    }
+
+
+def test_configure_pipeline_with_invalid_settings_key(empty_pipeline):
+    """Tests that configuring a pipeline with an invalid settings key raises an
+    error."""
+    with pytest.raises(ValueError):
+        empty_pipeline().configure(settings={"invalid_settings_key": {}})
