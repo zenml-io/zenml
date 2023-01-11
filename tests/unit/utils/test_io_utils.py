@@ -13,11 +13,21 @@
 #  permissions and limitations under the License.
 
 import os
+import string
+from pathlib import Path
+from types import GeneratorType
 
 import pytest
+from hypothesis import given
+from hypothesis.strategies import text
 
-from zenml.constants import ENV_ZENML_CONFIG_PATH
+from zenml.constants import ENV_ZENML_CONFIG_PATH, REMOTE_FS_PREFIX
+from zenml.io import fileio
 from zenml.utils import io_utils
+
+TEMPORARY_FILE_NAME = "a_file.txt"
+TEMPORARY_FILE_SEARCH_PREFIX = "a_f*.*"
+ALPHABET = string.ascii_letters
 
 
 def test_get_global_config_directory_works():
@@ -134,4 +144,170 @@ def test_copy_dir_throws_error_if_overwriting(tmp_path):
     assert (
         io_utils.read_file_contents_as_string(file_path2)
         == "some_content_about_blupus"
+    )
+
+
+def test_walk_function_returns_a_generator_object(tmp_path):
+    """Check walk function returns a generator object"""
+    assert isinstance(fileio.walk(str(tmp_path)), GeneratorType)
+
+
+def test_is_root_when_true():
+    """Check is_root returns true if path is the root"""
+    assert io_utils.is_root("/")
+
+
+def test_is_root_when_false(tmp_path):
+    """Check is_root returns false if path isn't the root"""
+    assert io_utils.is_root(tmp_path) is False
+
+
+def test_find_files_returns_generator_object_when_file_present(tmp_path):
+    """find_files returns a generator object when it finds a file"""
+    temp_file = os.path.join(tmp_path, TEMPORARY_FILE_NAME)
+    with open(temp_file, "w"):
+        assert isinstance(
+            io_utils.find_files(str(tmp_path), TEMPORARY_FILE_SEARCH_PREFIX),
+            GeneratorType,
+        )
+
+
+def test_find_files_when_file_present(tmp_path):
+    """find_files locates a file within a temporary directory"""
+    temp_file = os.path.join(tmp_path, TEMPORARY_FILE_NAME)
+    with open(temp_file, "w"):
+        assert (
+            next(
+                io_utils.find_files(str(tmp_path), TEMPORARY_FILE_SEARCH_PREFIX)
+            )
+            is not None
+        )
+
+
+def test_find_files_when_file_absent(tmp_path):
+    """find_files returns None when it doesn't find a file"""
+    temp_file = os.path.join(tmp_path, TEMPORARY_FILE_NAME)
+    with open(temp_file, "w"):
+        with pytest.raises(StopIteration):
+            assert next(io_utils.find_files(str(tmp_path), "abc*.*"))
+
+
+@pytest.mark.parametrize("filesystem", REMOTE_FS_PREFIX)
+def test_is_remote_when_using_remote_prefix(filesystem):
+    """is_remote returns True when path starts with one of
+    the ZenML remote file prefixes"""
+    some_random_path = os.path.join(f"{filesystem}some_directory")
+    assert io_utils.is_remote(some_random_path)
+
+
+@given(text())
+def test_is_remote_when_using_non_remote_prefix(filesystem):
+    """is_remote returns False when path doesn't start with
+    a remote prefix"""
+    some_random_path = os.path.join(f"{filesystem}some_directory")
+    assert io_utils.is_remote(some_random_path) is False
+
+
+def test_create_file_if_not_exists(tmp_path) -> None:
+    """Test that create_file_if_not_exists creates a file"""
+    io_utils.create_file_if_not_exists(os.path.join(tmp_path, "new_file.txt"))
+    assert os.path.exists(os.path.join(tmp_path, "new_file.txt"))
+
+
+def test_create_file_if_not_exists_does_not_overwrite(tmp_path) -> None:
+    """Test that create_file_if_not_exists doesn't overwrite an existing file"""
+    temporary_file = os.path.join(tmp_path, "new_file.txt")
+    io_utils.create_file_if_not_exists(temporary_file)
+    with open(temporary_file, "w") as f:
+        f.write("Aria is a good cat")
+    io_utils.create_file_if_not_exists(temporary_file)
+    with open(temporary_file, "r") as f:
+        assert f.read() == "Aria is a good cat"
+
+
+def test_create_dir_if_not_exists(tmp_path) -> None:
+    """Test that create_dir_if_not_exists creates a directory"""
+    io_utils.create_dir_if_not_exists(os.path.join(tmp_path, "new_dir"))
+    assert os.path.exists(os.path.join(tmp_path, "new_dir"))
+
+
+def test_create_dir_recursive_if_not_exists(tmp_path) -> None:
+    """Test that create_dir_recursive_if_not_exists creates a directory"""
+    io_utils.create_dir_recursive_if_not_exists(
+        os.path.join(tmp_path, "new_dir/new_dir2")
+    )
+    assert os.path.exists(os.path.join(tmp_path, "new_dir/new_dir2"))
+
+
+def test_resolve_relative_path(tmp_path) -> None:
+    """Test that resolve_relative_path resolves a relative path"""
+    current_working_directory = os.getcwd()
+    assert current_working_directory == io_utils.resolve_relative_path(".")
+
+
+def test_copy_dir_copies_dir_from_source_to_destination(tmp_path) -> None:
+    """Test that copy_dir copies a directory from source to destination"""
+    source_dir = os.path.join(tmp_path)
+    target_dir = os.path.join(tmp_path, "test_dir_copy")
+    source_file = os.path.join(source_dir, "new_file.txt")
+    target_file = os.path.join(target_dir, "new_file.txt")
+    io_utils.create_file_if_not_exists(source_file)
+    assert os.path.exists(source_file)
+    assert not os.path.exists(target_dir)
+    io_utils.copy_dir(source_dir, target_dir)
+    assert os.path.exists(target_dir)
+    assert os.path.exists(target_file)
+
+
+def test_move_moves_a_file_from_source_to_destination(tmp_path) -> None:
+    """Test that move moves a file from source to destination"""
+    io_utils.create_file_if_not_exists(os.path.join(tmp_path, "new_file.txt"))
+    io_utils.move(
+        os.path.join(tmp_path, "new_file.txt"),
+        os.path.join(tmp_path, "new_file_moved.txt"),
+    )
+    assert os.path.exists(os.path.join(tmp_path, "new_file_moved.txt"))
+    assert not os.path.exists(os.path.join(tmp_path, "new_file.txt"))
+
+
+def test_move_moves_a_directory_from_source_to_destination(tmp_path) -> None:
+    """Test that move moves a directory from source to destination"""
+    io_utils.create_file_if_not_exists(
+        os.path.join(tmp_path, "new_folder/new_file.txt")
+    )
+    io_utils.move(
+        os.path.join(tmp_path, "new_folder"),
+        os.path.join(tmp_path, "test_dir_moved"),
+    )
+    assert os.path.exists(os.path.join(tmp_path, "test_dir_moved"))
+    assert os.path.exists(os.path.join(tmp_path, "test_dir_moved/new_file.txt"))
+
+
+def test_get_grandparent_gets_the_grandparent_directory(tmp_path) -> None:
+    """Test that get_grandparent gets the grandparent directory"""
+    io_utils.create_dir_recursive_if_not_exists(
+        os.path.join(tmp_path, "new_dir/new_dir2")
+    )
+    grandparent = io_utils.get_grandparent(
+        os.path.join(tmp_path, "new_dir/new_dir2")
+    )
+    assert grandparent == Path(tmp_path).stem
+
+
+def test_get_parent_gets_the_parent_directory(tmp_path) -> None:
+    """Test that get_parent gets the parent directory"""
+    io_utils.create_dir_recursive_if_not_exists(
+        os.path.join(tmp_path, "new_dir/new_dir2")
+    )
+    parent = io_utils.get_parent(os.path.join(tmp_path, "new_dir/new_dir2"))
+    assert parent == "new_dir"
+
+
+def test_convert_to_str_converts_to_string(tmp_path) -> None:
+    """Test that convert_to_str converts bytes to a string"""
+    assert isinstance(
+        io_utils.convert_to_str(bytes(str(tmp_path), "ascii")), str
+    )
+    assert io_utils.convert_to_str(bytes(str(tmp_path), "ascii")) == str(
+        tmp_path
     )
