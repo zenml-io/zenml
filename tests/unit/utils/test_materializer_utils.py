@@ -165,10 +165,6 @@ def test__load_artifact(numpy_file_uri):
     # Test with valid materializer and data type and ensure that the artifact
     # is loaded correctly
     data_type = "numpy.ndarray"
-    try:
-        artifact = _load_artifact(materializer, data_type, numpy_file_uri)
-    except Exception as e:
-        assert False, f"Unexpected error: {e}"
-    else:
-        assert artifact is not None
-        assert isinstance(artifact, np.ndarray)
+    artifact = _load_artifact(materializer, data_type, numpy_file_uri)
+    assert artifact is not None
+    assert isinstance(artifact, np.ndarray)
