@@ -122,6 +122,7 @@ from zenml.zen_stores.migrations.alembic import (
 from zenml.zen_stores.schemas import (
     ArtifactSchema,
     FlavorSchema,
+    IdentitySchema,
     NamedSchema,
     PipelineRunSchema,
     PipelineSchema,
@@ -730,10 +731,25 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             Information about the store.
+
+        Raises:
+            KeyError: If the deployment ID could not be loaded from the
+                database.
         """
         model = super().get_store_info()
         sql_url = make_url(self.config.url)
         model.database_type = ServerDatabaseType(sql_url.drivername)
+
+        # Fetch the deployment ID from the database and use it to replace the one
+        # fetched from the global configuration
+        with Session(self.engine) as session:
+            identity = session.exec(select(IdentitySchema)).first()
+
+            if identity is None:
+                raise KeyError(
+                    "The deployment ID could not be loaded from the database."
+                )
+            model.id = identity.id
         return model
 
     # ------
@@ -1316,6 +1332,7 @@ class SqlZenStore(BaseZenStore):
             StackComponentExistsError: If a component with the given name and
                                        type is already owned by the user
         """
+        assert user_id
         # Check if component with the same domain key (name, type, project,
         # owner) already exists
         existing_domain_component = session.exec(
@@ -1326,6 +1343,9 @@ class SqlZenStore(BaseZenStore):
             .where(StackComponentSchema.type == component_type)
         ).first()
         if existing_domain_component is not None:
+            # Theoretically the user schema is optional, in this case there is
+            #  no way that it will be None
+            assert existing_domain_component.user
             raise StackComponentExistsError(
                 f"Unable to register '{component_type.value}' component "
                 f"with name '{name}': Found an existing "
@@ -1528,15 +1548,6 @@ class SqlZenStore(BaseZenStore):
     # Users
     # -----
 
-    @property
-    def active_user_name(self) -> str:
-        """Gets the active username.
-
-        Returns:
-            The active username.
-        """
-        return self._default_user_name
-
     @track(AnalyticsEvent.CREATED_USER)
     def create_user(self, user: UserRequestModel) -> UserResponseModel:
         """Creates a new user.
@@ -1568,19 +1579,29 @@ class SqlZenStore(BaseZenStore):
 
             return new_user.to_model()
 
-    def get_user(self, user_name_or_id: Union[str, UUID]) -> UserResponseModel:
-        """Gets a specific user.
+    def get_user(
+        self,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
+        include_private: bool = False,
+    ) -> UserResponseModel:
+        """Gets a specific user, when no id is specified the active user is returned.
+
+        Raises a KeyError in case a user with that id does not exist.
 
         Args:
             user_name_or_id: The name or ID of the user to get.
+            include_private: Whether to include private user information
 
         Returns:
             The requested user, if it was found.
         """
+        if not user_name_or_id:
+            user_name_or_id = self._default_user_name
+
         with Session(self.engine) as session:
             user = self._get_user_schema(user_name_or_id, session=session)
 
-            return user.to_model()
+            return user.to_model(include_private=include_private)
 
     def get_auth_user(self, user_name_or_id: Union[str, UUID]) -> UserAuthModel:
         """Gets the auth model to a specific user.
@@ -2820,24 +2841,8 @@ class SqlZenStore(BaseZenStore):
                         f"'{pipeline_run.name}' as unlisted run."
                     )
 
-            configuration = json.dumps(pipeline_run.pipeline_configuration)
-
-            new_run = PipelineRunSchema(
-                id=pipeline_run.id,
-                name=pipeline_run.name,
-                orchestrator_run_id=pipeline_run.orchestrator_run_id,
-                stack_id=stack_id,
-                project_id=pipeline_run.project,
-                user_id=pipeline_run.user,
-                pipeline_id=pipeline_id,
-                status=pipeline_run.status,
-                pipeline_configuration=configuration,
-                num_steps=pipeline_run.num_steps,
-                git_sha=pipeline_run.git_sha,
-                zenml_version=pipeline_run.zenml_version,
-            )
-
             # Create the pipeline run
+            new_run = PipelineRunSchema.from_request(pipeline_run)
             session.add(new_run)
             session.commit()
 
@@ -2973,6 +2978,30 @@ class SqlZenStore(BaseZenStore):
 
             session.refresh(existing_run)
             return existing_run.to_model()
+
+    def delete_run(self, run_id: UUID) -> None:
+        """Deletes a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to delete.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+        with Session(self.engine) as session:
+            # Check if pipeline run with the given ID exists
+            existing_run = session.exec(
+                select(PipelineRunSchema).where(PipelineRunSchema.id == run_id)
+            ).first()
+            if existing_run is None:
+                raise KeyError(
+                    f"Unable to delete pipeline run with ID {run_id}: "
+                    f"No pipeline run with this ID found."
+                )
+
+            # Delete the pipeline run
+            session.delete(existing_run)
+            session.commit()
 
     # ------------------
     # Pipeline run steps
@@ -3448,26 +3477,76 @@ class SqlZenStore(BaseZenStore):
 
     def list_artifacts(
         self,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
         artifact_uri: Optional[str] = None,
+        artifact_store_id: Optional[UUID] = None,
+        only_unused: bool = False,
     ) -> List[ArtifactResponseModel]:
         """Lists all artifacts.
 
         Args:
+            project_name_or_id: If specified, only artifacts from the given
+                project will be returned.
             artifact_uri: If specified, only artifacts with the given URI will
                 be returned.
+            artifact_store_id: If specified, only artifacts from the given
+                artifact store will be returned.
+            only_unused: If True, only return artifacts that are not used in
+                any runs.
 
         Returns:
             A list of all artifacts.
         """
         with Session(self.engine) as session:
             query = select(ArtifactSchema)
+            if project_name_or_id is not None:
+                project = self._get_project_schema(
+                    project_name_or_id, session=session
+                )
+                query = query.where(ArtifactSchema.project_id == project.id)
             if artifact_uri is not None:
                 query = query.where(ArtifactSchema.uri == artifact_uri)
+            if artifact_store_id is not None:
+                query = query.where(
+                    ArtifactSchema.artifact_store_id == artifact_store_id
+                )
+            if only_unused:
+                query = query.where(
+                    ArtifactSchema.id.notin_(  # type: ignore[attr-defined]
+                        select(StepRunOutputArtifactSchema.artifact_id)
+                    )
+                )
+                query = query.where(
+                    ArtifactSchema.id.notin_(  # type: ignore[attr-defined]
+                        select(StepRunInputArtifactSchema.artifact_id)
+                    )
+                )
             artifacts = session.exec(query).all()
             return [
                 self._artifact_schema_to_model(artifact)
                 for artifact in artifacts
             ]
+
+    def delete_artifact(self, artifact_id: UUID) -> None:
+        """Deletes an artifact.
+
+        Args:
+            artifact_id: The ID of the artifact to delete.
+
+        Raises:
+            KeyError: if the artifact doesn't exist.
+        """
+        with Session(self.engine) as session:
+            artifact = session.exec(
+                select(ArtifactSchema).where(ArtifactSchema.id == artifact_id)
+            ).first()
+            if artifact is None:
+                raise KeyError(
+                    f"Unable to delete artifact with ID {artifact_id}: "
+                    f"No artifact with this ID found."
+                )
+            session.delete(artifact)
+            session.commit()
 
     # =======================
     # Internal helper methods

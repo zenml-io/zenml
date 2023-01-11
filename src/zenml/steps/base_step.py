@@ -36,7 +36,6 @@ from typing import (
 from pydantic import ValidationError
 
 from zenml.artifacts.base_artifact import BaseArtifact
-from zenml.artifacts.type_registry import type_registry
 from zenml.config.step_configurations import (
     ArtifactConfiguration,
     InputSpec,
@@ -241,13 +240,11 @@ class BaseStep(metaclass=BaseStepMeta):
             step_name: Name of the step that produced this output.
             materializer_source: The source of the materializer used to
                 write the output.
-            artifact_source: The source of the artifact class of the output.
         """
 
         name: str
         step_name: str
         materializer_source: str
-        artifact_source: str
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initializes a step.
@@ -609,12 +606,10 @@ class BaseStep(metaclass=BaseStepMeta):
         returns = []
         for key in self.OUTPUT_SIGNATURE:
             materializer_source = config.outputs[key].materializer_source
-            artifact_source = config.outputs[key].artifact_source
             output_artifact = BaseStep._OutputArtifact(
                 name=key,
                 step_name=self.name,
                 materializer_source=materializer_source,
-                artifact_source=artifact_source,
             )
             returns.append(output_artifact)
 
@@ -766,25 +761,10 @@ class BaseStep(metaclass=BaseStepMeta):
                 outputs[output_name]["materializer_source"] = source
 
         if output_artifacts:
-            if not isinstance(output_artifacts, Mapping):
-                # string of artifact class to be used for all outputs
-                source = _resolve_if_necessary(output_artifacts)
-                output_artifacts = {
-                    output_name: source for output_name in allowed_output_names
-                }
-
-            for output_name, artifact in output_artifacts.items():
-                if output_name not in allowed_output_names:
-                    raise StepInterfaceError(
-                        f"Got unexpected artifact for non-existent "
-                        f"output '{output_name}' in step '{self.name}'. "
-                        f"Only artifacts for the outputs "
-                        f"{allowed_output_names} of this step can"
-                        f" be registered."
-                    )
-
-                source = _resolve_if_necessary(artifact)
-                outputs[output_name]["artifact_source"] = source
+            logger.warning(
+                "The `output_artifacts` argument has no effect and will be "
+                "removed in a future version."
+            )
 
         if isinstance(parameters, BaseParameters):
             parameters = parameters.dict()
@@ -872,11 +852,10 @@ class BaseStep(metaclass=BaseStepMeta):
 
         Raises:
             StepInterfaceError: If an input for a non-existent name is
-                configured of an input artifact source does not resolve to a
-                BaseArtifact subclass.
+                configured.
         """
         allowed_input_names = set(self.INPUT_SIGNATURE)
-        for input_name, input_ in inputs.items():
+        for input_name in inputs.keys():
             if input_name not in allowed_input_names:
                 raise StepInterfaceError(
                     f"Got unexpected artifact for non-existent "
@@ -884,15 +863,6 @@ class BaseStep(metaclass=BaseStepMeta):
                     f"Only artifacts for the inputs "
                     f"{allowed_input_names} of this step can"
                     f" be registered."
-                )
-
-            if not source_utils.validate_source_class(
-                input_.artifact_source, expected_class=BaseArtifact
-            ):
-                raise StepInterfaceError(
-                    f"Artifact source `{input_.artifact_source}` "
-                    f"for input '{input_name}' of step '{self.name}' "
-                    "does not resolve to a `BaseArtifact` subclass."
                 )
 
     def _validate_outputs(
@@ -928,39 +898,6 @@ class BaseStep(metaclass=BaseStepMeta):
                         "does not resolve to a  `BaseMaterializer` subclass."
                     )
 
-            if output.artifact_source:
-                try:
-                    artifact_class: Type[
-                        BaseArtifact
-                    ] = source_utils.load_and_validate_class(
-                        output.artifact_source, expected_class=BaseArtifact
-                    )
-                except TypeError:
-                    raise StepInterfaceError(
-                        f"Artifact source `{output.artifact_source}` "
-                        f"for output '{output_name}' of step '{self.name}' "
-                        "does not point to a  `BaseArtifact` subclass."
-                    )
-                # TODO: Can we get rid of this check? Why do we limit artifact
-                # types to registered materializers?
-                output_type = self.OUTPUT_SIGNATURE[output_name]
-                allowed_artifact_types = set(
-                    type_registry.get_artifact_type(output_type)
-                )
-
-                if artifact_class not in allowed_artifact_types:
-                    raise StepInterfaceError(
-                        f"Artifact type `{artifact_class}` for output "
-                        f"'{output_name}' of step '{self.name}' is not an "
-                        f"allowed artifact type for the defined output type "
-                        f"`{output_type}`. Allowed artifact types: "
-                        f"{allowed_artifact_types}. If you want to extend the "
-                        f"allowed artifact types, implement a custom "
-                        f"`BaseMaterializer` subclass and set its "
-                        f"`ASSOCIATED_ARTIFACT_TYPES` and `ASSOCIATED_TYPES` "
-                        f"accordingly."
-                    )
-
     def _finalize_configuration(
         self, input_artifacts: Dict[str, _OutputArtifact]
     ) -> StepConfiguration:
@@ -988,14 +925,6 @@ class BaseStep(metaclass=BaseStepMeta):
             output = self._configuration.outputs.get(
                 output_name, PartialArtifactConfiguration()
             )
-
-            if not output.artifact_source:
-                artifact_class = type_registry.get_artifact_type(output_class)[
-                    0
-                ]
-                outputs[output_name][
-                    "artifact_source"
-                ] = source_utils.resolve_class(artifact_class)
 
             if not output.materializer_source:
                 if default_materializer_registry.is_registered(output_class):
@@ -1031,7 +960,6 @@ class BaseStep(metaclass=BaseStepMeta):
         inputs = {}
         for input_name, artifact in input_artifacts.items():
             inputs[input_name] = ArtifactConfiguration(
-                artifact_source=artifact.artifact_source,
                 materializer_source=artifact.materializer_source,
             )
         self._validate_inputs(inputs)

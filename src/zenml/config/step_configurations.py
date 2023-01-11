@@ -14,6 +14,8 @@
 """Pipeline configuration classes."""
 from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional
 
+from pydantic import root_validator
+
 from zenml.config.base_settings import BaseSettings, SettingsOrDict
 from zenml.config.constants import RESOURCE_SETTINGS_KEY
 from zenml.config.strict_base_model import StrictBaseModel
@@ -26,14 +28,30 @@ if TYPE_CHECKING:
 class PartialArtifactConfiguration(StrictBaseModel):
     """Class representing a partial input/output artifact configuration."""
 
-    artifact_source: Optional[str] = None
     materializer_source: Optional[str] = None
+
+    @root_validator(pre=True)
+    def _remove_deprecated_attributes(
+        cls, values: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Removes deprecated attributes from the values dict.
+
+        Args:
+            values: The values dict used to instantiate the model.
+
+        Returns:
+            The values dict without deprecated attributes.
+        """
+        deprecated_attributes = ["artifact_source"]
+        for deprecated_attribute in deprecated_attributes:
+            if deprecated_attribute in values:
+                values.pop(deprecated_attribute)
+        return values
 
 
 class ArtifactConfiguration(PartialArtifactConfiguration):
     """Class representing a complete input/output artifact configuration."""
 
-    artifact_source: str
     materializer_source: str
 
 

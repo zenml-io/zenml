@@ -24,7 +24,7 @@ from zenml.models.base_models import (
     ShareableResponseModel,
     update_model,
 )
-from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
+from zenml.models.constants import STR_FIELD_MAX_LENGTH
 from zenml.utils import secret_utils
 
 logger = get_logger(__name__)
@@ -38,7 +38,7 @@ class ComponentBaseModel(BaseModel):
 
     name: str = Field(
         title="The name of the stack component.",
-        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+        max_length=STR_FIELD_MAX_LENGTH,
     )
     type: StackComponentType = Field(
         title="The type of the stack component.",
@@ -46,6 +46,7 @@ class ComponentBaseModel(BaseModel):
 
     flavor: str = Field(
         title="The flavor of the stack component.",
+        max_length=STR_FIELD_MAX_LENGTH,
     )
 
     configuration: Dict[str, Any] = Field(
@@ -61,14 +62,7 @@ class ComponentBaseModel(BaseModel):
 class ComponentResponseModel(ComponentBaseModel, ShareableResponseModel):
     """Response model for stack components."""
 
-    ANALYTICS_FIELDS: ClassVar[List[str]] = [
-        "id",
-        "type",
-        "flavor",
-        "project",
-        "user",
-        "is_shared",
-    ]
+    ANALYTICS_FIELDS: ClassVar[List[str]] = ["type", "flavor"]
 
 
 # ------- #
@@ -79,13 +73,7 @@ class ComponentResponseModel(ComponentBaseModel, ShareableResponseModel):
 class ComponentRequestModel(ComponentBaseModel, ShareableRequestModel):
     """Request model for stack components."""
 
-    ANALYTICS_FIELDS: ClassVar[List[str]] = [
-        "type",
-        "flavor",
-        "project",
-        "user",
-        "is_shared",
-    ]
+    ANALYTICS_FIELDS: ClassVar[List[str]] = ["type", "flavor"]
 
     @validator("name")
     def name_cant_be_a_secret_reference(cls, name: str) -> str:

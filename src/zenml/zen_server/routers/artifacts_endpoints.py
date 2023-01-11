@@ -14,7 +14,7 @@
 """Endpoint definitions for steps (and artifacts) of pipeline runs."""
 
 from asyncio.log import logger
-from typing import List, Optional
+from typing import List, Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Security
@@ -39,15 +39,24 @@ router = APIRouter(
 )
 @handle_exceptions
 def list_artifacts(
+    project_name_or_id: Optional[Union[str, UUID]] = None,
     artifact_uri: Optional[str] = None,
+    artifact_store_id: Optional[UUID] = None,
+    only_unused: bool = False,
     parent_step_id: Optional[UUID] = None,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> List[ArtifactResponseModel]:
     """Get artifacts according to query filters.
 
     Args:
+        project_name_or_id: If specified, only artifacts from the given
+            project will be returned.
         artifact_uri: If specified, only artifacts with the given URI will
             be returned.
+        artifact_store_id: If specified, only artifacts from the given
+            artifact store will be returned.
+        only_unused: If True, only return artifacts that are not used in
+            any runs.
         parent_step_id: Deprecated filter, will be ignored.
 
     Returns:
@@ -59,7 +68,12 @@ def list_artifacts(
             "outdated filter argument. If you see this message, please "
             "update your ZenML client to match the server version."
         )
-    return zen_store().list_artifacts(artifact_uri=artifact_uri)
+    return zen_store().list_artifacts(
+        project_name_or_id=project_name_or_id,
+        artifact_uri=artifact_uri,
+        artifact_store_id=artifact_store_id,
+        only_unused=only_unused,
+    )
 
 
 @router.post(
@@ -102,3 +116,20 @@ def get_artifact(
         The artifact with the given ID.
     """
     return zen_store().get_artifact(artifact_id)
+
+
+@router.delete(
+    "/{artifact_id}",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def delete_artifact(
+    artifact_id: UUID,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+) -> None:
+    """Delete an artifact by ID.
+
+    Args:
+        artifact_id: The ID of the artifact to delete.
+    """
+    zen_store().delete_artifact(artifact_id)

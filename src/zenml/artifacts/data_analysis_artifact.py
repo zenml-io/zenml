@@ -25,4 +25,4 @@ class DataAnalysisArtifact(BaseArtifact):
     detection etc.
     """
 
-    TYPE_NAME = ArtifactType.DATAANALYSIS
+    TYPE_NAME = ArtifactType.DATA_ANALYSIS

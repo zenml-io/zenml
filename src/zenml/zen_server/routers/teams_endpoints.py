@@ -42,14 +42,18 @@ router = APIRouter(
 )
 @handle_exceptions
 def list_teams(
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
+    name: Optional[str] = None,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> List[TeamResponseModel]:
     """Returns a list of all teams.
+
+    Args:
+        name: Optional name of the team to filter by.
 
     Returns:
         List of all teams.
     """
-    return zen_store().list_teams()
+    return zen_store().list_teams(name=name)
 
 
 @router.post(

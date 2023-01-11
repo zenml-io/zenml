@@ -16,6 +16,7 @@
 import datetime
 import importlib
 import os
+import platform
 import time
 import zipfile
 from typing import (
@@ -144,12 +145,6 @@ class AirflowOrchestrator(BaseOrchestrator):
     def _set_env(self) -> None:
         """Sets environment variables to configure airflow."""
         os.environ["AIRFLOW_HOME"] = self.airflow_home
-
-        if self.config.local:
-            os.environ["AIRFLOW__CORE__DAGS_FOLDER"] = self.dags_directory
-            os.environ["AIRFLOW__CORE__LOAD_EXAMPLES"] = "false"
-            # check the DAG folder every 10 seconds for new files
-            os.environ["AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL"] = "10"
 
     @property
     def validator(self) -> Optional["StackValidator"]:
@@ -386,7 +381,7 @@ class AirflowOrchestrator(BaseOrchestrator):
         if schedule:
             if schedule.cron_expression:
                 start_time = schedule.start_time or (
-                    datetime.datetime.now() - datetime.timedelta(7)
+                    datetime.datetime.utcnow() - datetime.timedelta(7)
                 )
                 return {
                     "schedule": schedule.cron_expression,
@@ -406,7 +401,7 @@ class AirflowOrchestrator(BaseOrchestrator):
             "schedule": "@once",
             # set the a start time in the past and disable catchup so airflow
             # runs the dag immediately
-            "start_date": datetime.datetime.now() - datetime.timedelta(7),
+            "start_date": datetime.datetime.utcnow() - datetime.timedelta(7),
             "catchup": False,
         }
 
@@ -513,6 +508,7 @@ class AirflowOrchestrator(BaseOrchestrator):
 
         from airflow.cli.commands.standalone_command import StandaloneCommand
 
+        self._set_server_env()
         try:
             command = StandaloneCommand()
             daemon.run_as_daemon(
@@ -544,6 +540,18 @@ class AirflowOrchestrator(BaseOrchestrator):
 
         fileio.rmtree(self.airflow_home)
         logger.info("Airflow spun down.")
+
+    def _set_server_env(self) -> None:
+        """Sets environment variables for the local Airflow server process."""
+        os.environ["AIRFLOW__CORE__DAGS_FOLDER"] = self.dags_directory
+        os.environ["AIRFLOW__CORE__LOAD_EXAMPLES"] = "false"
+        # check the DAG folder every 10 seconds for new files
+        os.environ["AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL"] = "10"
+
+        if platform.system() == "Darwin":
+            # Prevent crashes during forking on MacOS
+            # https://github.com/apache/airflow/issues/28487
+            os.environ["no_proxy"] = "*"
 
     @staticmethod
     def _check_local_server_requirements() -> None:

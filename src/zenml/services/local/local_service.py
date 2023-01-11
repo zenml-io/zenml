@@ -160,9 +160,15 @@ class LocalDaemonServiceStatus(ServiceStatus):
             try:
                 p = psutil.Process(pid)
                 cmd_line = p.cmdline()
+                config_file = self.config_file
+                if config_file is None:
+                    return pid
                 if (
                     daemon_entrypoint.__name__ not in cmd_line
-                    or self.config_file not in cmd_line
+                    or config_file not in cmd_line
+                ) and (
+                    daemon_entrypoint.__name__ not in cmd_line[0]
+                    or config_file not in cmd_line[0]
                 ):
                     logger.debug(
                         f"Process with PID {pid} is not a ZenML local daemon "

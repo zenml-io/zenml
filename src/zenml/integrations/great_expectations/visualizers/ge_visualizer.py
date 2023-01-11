@@ -25,7 +25,7 @@ from great_expectations.data_context.types.resource_identifiers import (  # type
     ExpectationSuiteIdentifier,
 )
 
-from zenml.artifacts import DataAnalysisArtifact
+from zenml.enums import ArtifactType
 from zenml.integrations.great_expectations.data_validators.ge_data_validator import (
     GreatExpectationsDataValidator,
 )
@@ -50,7 +50,7 @@ class GreatExpectationsVisualizer(BaseVisualizer):
         for artifact_view in object.outputs.values():
             # filter out anything but Great Expectations data analysis artifacts
             if (
-                artifact_view.type == DataAnalysisArtifact.__name__
+                artifact_view.type == ArtifactType.DATA_ANALYSIS
                 and artifact_view.data_type.startswith("great_expectations.")
             ):
                 artifact = artifact_view.read()

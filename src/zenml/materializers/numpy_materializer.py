@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Any, Type, cast
 
 import numpy as np
 
-from zenml.artifacts import DataArtifact
+from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -40,9 +40,9 @@ class NumpyMaterializer(BaseMaterializer):
     """Materializer to read data to and from pandas."""
 
     ASSOCIATED_TYPES = (np.ndarray,)
-    ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
 
-    def handle_input(self, data_type: Type[Any]) -> "Any":
+    def load(self, data_type: Type[Any]) -> "Any":
         """Reads a numpy array from a `.npy` file.
 
         Args:
@@ -55,9 +55,9 @@ class NumpyMaterializer(BaseMaterializer):
         Returns:
             The numpy array.
         """
-        super().handle_input(data_type)
+        super().load(data_type)
 
-        numpy_file = os.path.join(self.artifact.uri, NUMPY_FILENAME)
+        numpy_file = os.path.join(self.uri, NUMPY_FILENAME)
 
         if fileio.exists(numpy_file):
             with fileio.open(numpy_file, "rb") as f:
@@ -67,7 +67,7 @@ class NumpyMaterializer(BaseMaterializer):
                 # about either an untyped function call or an unused ignore
                 # statement
                 return cast(Any, np.load)(f, allow_pickle=True)
-        elif fileio.exists(os.path.join(self.artifact.uri, DATA_FILENAME)):
+        elif fileio.exists(os.path.join(self.uri, DATA_FILENAME)):
             logger.warning(
                 "A legacy artifact was found. "
                 "This artifact was created with an older version of "
@@ -83,11 +83,11 @@ class NumpyMaterializer(BaseMaterializer):
 
                 # Read numpy array from parquet file
                 shape_dict = yaml_utils.read_json(
-                    os.path.join(self.artifact.uri, SHAPE_FILENAME)
+                    os.path.join(self.uri, SHAPE_FILENAME)
                 )
                 shape_tuple = tuple(shape_dict.values())
                 with fileio.open(
-                    os.path.join(self.artifact.uri, DATA_FILENAME), "rb"
+                    os.path.join(self.uri, DATA_FILENAME), "rb"
                 ) as f:
                     input_stream = pa.input_stream(f)
                     data = pq.read_table(input_stream)
@@ -101,16 +101,14 @@ class NumpyMaterializer(BaseMaterializer):
                     "You can install `pyarrow` by running `pip install pyarrow`.",
                 )
 
-    def handle_return(self, arr: "NDArray[Any]") -> None:
+    def save(self, arr: "NDArray[Any]") -> None:
         """Writes a np.ndarray to the artifact store as a `.npy` file.
 
         Args:
             arr: The numpy array to write.
         """
-        super().handle_return(arr)
-        with fileio.open(
-            os.path.join(self.artifact.uri, NUMPY_FILENAME), "wb"
-        ) as f:
+        super().save(arr)
+        with fileio.open(os.path.join(self.uri, NUMPY_FILENAME), "wb") as f:
             # This function is untyped for numpy versions supporting python
             # 3.7, but typed for numpy versions installed on python 3.8+.
             # We need to cast it to any here so that numpy doesn't complain

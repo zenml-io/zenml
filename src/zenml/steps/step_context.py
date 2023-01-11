@@ -19,16 +19,15 @@ from zenml.client import Client
 from zenml.exceptions import StepContextError
 
 if TYPE_CHECKING:
-    from zenml.artifacts.base_artifact import BaseArtifact
     from zenml.materializers.base_materializer import BaseMaterializer
     from zenml.stack import Stack
 
 
 class StepContextOutput(NamedTuple):
-    """Tuple containing materializer class and artifact for a step output."""
+    """Tuple containing materializer class and URI for a step output."""
 
     materializer_class: Type["BaseMaterializer"]
-    artifact: "BaseArtifact"
+    artifact_uri: str
 
 
 class StepContext:
@@ -60,33 +59,33 @@ class StepContext:
         self,
         step_name: str,
         output_materializers: Dict[str, Type["BaseMaterializer"]],
-        output_artifacts: Dict[str, "BaseArtifact"],
+        output_artifact_uris: Dict[str, str],
     ):
         """Initializes a StepContext instance.
 
         Args:
             step_name: The name of the step that this context is used in.
             output_materializers: The output materializers of the step that
-                                  this context is used in.
-            output_artifacts: The output artifacts of the step that this
-                              context is used in.
+                this context is used in.
+            output_artifact_uris: The output artifacts of the step that this
+                context is used in.
 
         Raises:
-             StepContextError: If the keys of the output materializers and
-                               output artifacts do not match.
+            StepContextError: If the keys of the output materializers and
+                output artifacts do not match.
         """
-        if output_materializers.keys() != output_artifacts.keys():
+        if output_materializers.keys() != output_artifact_uris.keys():
             raise StepContextError(
                 f"Mismatched keys in output materializers and output "
-                f"artifacts for step '{step_name}'. Output materializer "
-                f"keys: {set(output_materializers)}, output artifact "
-                f"keys: {set(output_artifacts)}"
+                f"artifacts URIs for step '{step_name}'. Output materializer "
+                f"keys: {set(output_materializers)}, output artifact URI "
+                f"keys: {set(output_artifact_uris)}"
             )
 
         self.step_name = step_name
         self._outputs = {
             key: StepContextOutput(
-                output_materializers[key], output_artifacts[key]
+                output_materializers[key], output_artifact_uris[key]
             )
             for key in output_materializers.keys()
         }
@@ -103,12 +102,12 @@ class StepContext:
 
         Returns:
             Tuple containing the materializer and artifact URI for the
-            given output.
+                given output.
 
         Raises:
             StepContextError: If the step has no outputs, no output for
-                              the given `output_name` or if no `output_name`
-                              was given but the step has multiple outputs.
+                the given `output_name` or if no `output_name` was given but
+                the step has multiple outputs.
         """
         output_count = len(self._outputs)
         if output_count == 0:
@@ -166,11 +165,11 @@ class StepContext:
             A materializer initialized with the output artifact for
             the given output.
         """
-        materializer_class, artifact = self._get_output(output_name)
+        materializer_class, artifact_uri = self._get_output(output_name)
         # use custom materializer class if provided or fallback to default
         # materializer for output
         materializer_class = custom_materializer_class or materializer_class
-        return materializer_class(artifact)
+        return materializer_class(artifact_uri)
 
     def get_output_artifact_uri(self, output_name: Optional[str] = None) -> str:
         """Returns the artifact URI for a given step output.
@@ -184,4 +183,4 @@ class StepContext:
         Returns:
             Artifact URI for the given output.
         """
-        return self._get_output(output_name).artifact.uri
+        return self._get_output(output_name).artifact_uri

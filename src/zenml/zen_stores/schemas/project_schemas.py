@@ -103,7 +103,7 @@ class ProjectSchema(NamedSchema, table=True):
         for field, value in project_update.dict(exclude_unset=True).items():
             setattr(self, field, value)
 
-        self.updated = datetime.now()
+        self.updated = datetime.utcnow()
         return self
 
     def to_model(self) -> ProjectResponseModel:

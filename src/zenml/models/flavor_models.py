@@ -22,7 +22,7 @@ from zenml.models.base_models import (
     ProjectScopedRequestModel,
     ProjectScopedResponseModel,
 )
-from zenml.models.constants import MODEL_CONFIG_SCHEMA_MAX_LENGTH
+from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 
 # ---- #
 # BASE #
@@ -34,19 +34,20 @@ class FlavorBaseModel(BaseModel):
 
     name: str = Field(
         title="The name of the Flavor.",
+        max_length=STR_FIELD_MAX_LENGTH,
     )
-    type: StackComponentType = Field(
-        title="The type of the Flavor.",
-    )
+    type: StackComponentType = Field(title="The type of the Flavor.")
     config_schema: str = Field(
         title="The JSON schema of this flavor's corresponding configuration.",
-        max_length=MODEL_CONFIG_SCHEMA_MAX_LENGTH,
+        max_length=TEXT_FIELD_MAX_LENGTH,
     )
     source: str = Field(
-        title="The path to the module which contains this Flavor."
+        title="The path to the module which contains this Flavor.",
+        max_length=STR_FIELD_MAX_LENGTH,
     )
     integration: Optional[str] = Field(
-        title="The name of the integration that the Flavor belongs to."
+        title="The name of the integration that the Flavor belongs to.",
+        max_length=STR_FIELD_MAX_LENGTH,
     )
 
 
@@ -62,8 +63,6 @@ class FlavorResponseModel(FlavorBaseModel, ProjectScopedResponseModel):
         "id",
         "type",
         "integration",
-        "project",
-        "user",
     ]
 
 
@@ -78,6 +77,4 @@ class FlavorRequestModel(FlavorBaseModel, ProjectScopedRequestModel):
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
         "type",
         "integration",
-        "project",
-        "user",
     ]

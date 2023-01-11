@@ -221,11 +221,14 @@ def register_stack(
         if share is None:
             share = False
 
-        created_stack = client.create_stack(
-            name=stack_name,
-            components=components,
-            is_shared=share,
-        )
+        try:
+            created_stack = client.create_stack(
+                name=stack_name,
+                components=components,
+                is_shared=share,
+            )
+        except (KeyError, IllegalOperationError) as err:
+            cli_utils.error(str(err))
 
         cli_utils.declare(
             f"Stack '{created_stack.name}' successfully registered!"
@@ -401,7 +404,7 @@ def update_stack(
                 component_updates=updates,
             )
 
-        except IllegalOperationError as err:
+        except (KeyError, IllegalOperationError) as err:
             cli_utils.error(str(err))
 
         cli_utils.declare(f"Stack `{updated_stack.name}` successfully updated!")
@@ -448,7 +451,7 @@ def share_stack(
                 name_id_or_prefix=stack_name_or_id,
                 is_shared=True,
             )
-        except (IllegalOperationError, StackExistsError) as err:
+        except (KeyError, IllegalOperationError, StackExistsError) as err:
             cli_utils.error(str(err))
         cli_utils.declare(f"Stack `{updated_stack.name}` successfully shared!")
 
@@ -596,7 +599,7 @@ def remove_stack_component(
                 name_id_or_prefix=stack_name_or_id,
                 component_updates=stack_component_update,
             )
-        except IllegalOperationError as err:
+        except (KeyError, IllegalOperationError) as err:
             cli_utils.error(str(err))
         cli_utils.declare(f"Stack `{updated_stack.name}` successfully updated!")
 
@@ -666,7 +669,10 @@ def describe_stack(stack_name_or_id: Optional[str] = None) -> None:
     client = Client()
 
     with console.status("Describing stack...\n"):
-        stack_ = client.get_stack(name_id_or_prefix=stack_name_or_id)
+        try:
+            stack_ = client.get_stack(name_id_or_prefix=stack_name_or_id)
+        except KeyError as err:
+            cli_utils.error(str(err))
 
         cli_utils.print_stack_configuration(
             stack=stack_,
@@ -717,7 +723,11 @@ def set_active_stack_command(stack_name_or_id: str) -> None:
     with console.status(
         f"Setting the {scope} active stack to '{stack_name_or_id}'..."
     ):
-        client.activate_stack(stack_name_id_or_prefix=stack_name_or_id)
+        try:
+            client.activate_stack(stack_name_id_or_prefix=stack_name_or_id)
+        except KeyError as err:
+            cli_utils.error(str(err))
+
         cli_utils.declare(
             f"Active {scope} stack set to: "
             f"'{client.active_stack_model.name}'"
@@ -731,9 +741,12 @@ def get_active_stack() -> None:
 
     with console.status("Getting the active stack..."):
         client = Client()
-        cli_utils.declare(
-            f"The {scope} active stack is: '{client.active_stack_model.name}'"
-        )
+        try:
+            cli_utils.declare(
+                f"The {scope} active stack is: '{client.active_stack_model.name}'"
+            )
+        except KeyError as err:
+            cli_utils.error(str(err))
 
 
 @stack.command("up")
@@ -797,8 +810,10 @@ def export_stack(
     """
     # Get configuration of given stack
     client = Client()
-
-    stack_to_export = client.get_stack(name_id_or_prefix=stack_name_or_id)
+    try:
+        stack_to_export = client.get_stack(name_id_or_prefix=stack_name_or_id)
+    except KeyError as err:
+        cli_utils.error(str(err))
 
     # write zenml version and stack dict to YAML
     yaml_data = stack_to_export.to_yaml()
@@ -968,9 +983,12 @@ def copy_stack(
     client = Client()
 
     with console.status(f"Copying stack `{source_stack_name_or_id}`...\n"):
-        stack_to_copy = client.get_stack(
-            name_id_or_prefix=source_stack_name_or_id
-        )
+        try:
+            stack_to_copy = client.get_stack(
+                name_id_or_prefix=source_stack_name_or_id
+            )
+        except KeyError as err:
+            cli_utils.error(str(err))
 
         component_mapping: Dict[StackComponentType, Union[str, UUID]] = {}
 

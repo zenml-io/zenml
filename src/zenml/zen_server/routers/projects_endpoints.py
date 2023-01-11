@@ -67,14 +67,18 @@ router = APIRouter(
 )
 @handle_exceptions
 def list_projects(
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
+    name: Optional[str] = None,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> List[ProjectResponseModel]:
     """Lists all projects in the organization.
+
+    Args:
+        name: Optional name of the project to filter by.
 
     Returns:
         A list of projects.
     """
-    return zen_store().list_projects()
+    return zen_store().list_projects(name=name)
 
 
 @router.post(

@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2020. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -69,27 +69,37 @@ def list_pipelines() -> None:
 
 @pipeline.command("delete")
 @click.argument("pipeline_name_or_id", type=str, required=True)
-def delete_pipeline(pipeline_name_or_id: str) -> None:
+@click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    help="Don't ask for confirmation.",
+)
+def delete_pipeline(pipeline_name_or_id: str, yes: bool = False) -> None:
     """Delete a pipeline.
 
     Args:
         pipeline_name_or_id: The name or ID of the pipeline to delete.
+        yes: If set, don't ask for confirmation.
     """
     cli_utils.print_active_config()
-    confirmation = cli_utils.confirmation(
-        f"Are you sure you want to delete pipeline `{pipeline_name_or_id}`? "
-        "This will change all existing runs of this pipeline to become "
-        "unlisted."
-    )
-    if not confirmation:
-        cli_utils.declare("Pipeline deletion canceled.")
-        return
+
+    if not yes:
+        confirmation = cli_utils.confirmation(
+            f"Are you sure you want to delete pipeline "
+            f"`{pipeline_name_or_id}`? This will change all existing runs of "
+            "this pipeline to become unlisted."
+        )
+        if not confirmation:
+            cli_utils.declare("Pipeline deletion canceled.")
+            return
+
+    try:
+        Client().delete_pipeline(name_id_or_prefix=pipeline_name_or_id)
+    except KeyError as e:
+        cli_utils.error(str(e))
     else:
-        try:
-            Client().delete_pipeline(name_id_or_prefix=pipeline_name_or_id)
-            cli_utils.declare(f"Deleted pipeline '{pipeline_name_or_id}'.")
-        except KeyError as e:
-            cli_utils.error(str(e))
+        cli_utils.declare(f"Deleted pipeline '{pipeline_name_or_id}'.")
 
 
 @pipeline.group()
@@ -177,3 +187,43 @@ def list_pipeline_runs(
             return
 
         cli_utils.print_pipeline_runs_table(pipeline_runs=pipeline_runs)
+
+
+@runs.command("delete")
+@click.argument("run_name_or_id", type=str, required=True)
+@click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    help="Don't ask for confirmation.",
+)
+def delete_pipeline_run(
+    run_name_or_id: str,
+    yes: bool = False,
+) -> None:
+    """Delete a pipeline run.
+
+    Args:
+        run_name_or_id: The name or ID of the pipeline run to delete.
+        yes: If set, don't ask for confirmation.
+    """
+    cli_utils.print_active_config()
+
+    # Ask for confirmation to delete run.
+    if not yes:
+        confirmation = cli_utils.confirmation(
+            f"Are you sure you want to delete pipeline run `{run_name_or_id}`?"
+        )
+        if not confirmation:
+            cli_utils.declare("Pipeline run deletion canceled.")
+            return
+
+    # Delete run.
+    try:
+        Client().delete_pipeline_run(
+            name_id_or_prefix=run_name_or_id,
+        )
+    except KeyError as e:
+        cli_utils.error(str(e))
+    else:
+        cli_utils.declare(f"Deleted pipeline run '{run_name_or_id}'.")

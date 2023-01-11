@@ -17,11 +17,11 @@ import time
 from datetime import datetime
 from typing import TYPE_CHECKING, Dict, Tuple
 
-from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.client import Client
 from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import ExecutionStatus
+from zenml.environment import get_run_environment_dict
 from zenml.logger import get_logger
 from zenml.models.pipeline_run_models import (
     PipelineRunRequestModel,
@@ -44,6 +44,7 @@ from zenml.utils import string_utils
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
+    from zenml.models.artifact_models import ArtifactResponseModel
     from zenml.step_operators import BaseStepOperator
 
 logger = get_logger(__name__)
@@ -151,7 +152,7 @@ class StepLauncher:
                 pipeline_run_id=pipeline_run.id,
                 step=self._step,
                 status=ExecutionStatus.RUNNING,
-                start_time=datetime.now(),
+                start_time=datetime.utcnow(),
                 user=client.active_user.id,
                 project=client.active_project.id,
             )
@@ -164,7 +165,7 @@ class StepLauncher:
                     f"Failed during preparation to run step `{self._step_name}`."
                 )
                 step_run.status = ExecutionStatus.FAILED
-                step_run.end_time = datetime.now()
+                step_run.end_time = datetime.utcnow()
                 Client().zen_store.create_run_step(step_run)
                 raise
 
@@ -196,8 +197,8 @@ class StepLauncher:
             orchestrator_run_id=self._orchestrator_run_id,
         )
 
-        date = datetime.now().strftime("%Y_%m_%d")
-        time = datetime.now().strftime("%H_%M_%S_%f")
+        date = datetime.utcnow().strftime("%Y_%m_%d")
+        time = datetime.utcnow().strftime("%H_%M_%S_%f")
         run_name = self._deployment.run_name.format(date=date, time=time)
 
         logger.debug(
@@ -217,8 +218,9 @@ class StepLauncher:
             status=ExecutionStatus.RUNNING,
             pipeline_configuration=self._deployment.pipeline.dict(),
             num_steps=len(self._deployment.steps),
+            client_environment=self._deployment.client_environment,
+            orchestrator_environment=get_run_environment_dict(),
         )
-
         return client.zen_store.get_or_create_run(pipeline_run)
 
     def _prepare(
@@ -297,10 +299,8 @@ class StepLauncher:
             run_id=pipeline_run.id,
             step_run_id=step_run.id,
         )
-        input_artifacts = input_utils.prepare_input_artifacts(
-            input_artifact_models=step_run.input_artifacts,
-        )
-        output_artifacts = output_utils.prepare_output_artifacts(
+
+        output_artifact_uris = output_utils.prepare_output_artifact_uris(
             step_run=step_run, stack=self._stack, step=self._step
         )
 
@@ -315,12 +315,12 @@ class StepLauncher:
             else:
                 self._run_step_without_step_operator(
                     step_run_info=step_run_info,
-                    input_artifacts=input_artifacts,
-                    output_artifacts=output_artifacts,
+                    input_artifacts=step_run.input_artifacts,
+                    output_artifact_uris=output_artifact_uris,
                 )
         except:  # noqa: E722
             output_utils.remove_artifact_dirs(
-                artifacts=list(output_artifacts.values())
+                artifact_uris=list(output_artifact_uris.values())
             )
             raise
 
@@ -369,19 +369,19 @@ class StepLauncher:
     def _run_step_without_step_operator(
         self,
         step_run_info: StepRunInfo,
-        input_artifacts: Dict[str, BaseArtifact],
-        output_artifacts: Dict[str, BaseArtifact],
+        input_artifacts: Dict[str, "ArtifactResponseModel"],
+        output_artifact_uris: Dict[str, str],
     ) -> None:
         """Runs the current step without a step operator.
 
         Args:
             step_run_info: Additional information needed to run the step.
             input_artifacts: The input artifacts of the current step.
-            output_artifacts: The output artifacts of the current step.
+            output_artifact_uris: The output artifact URIs of the current step.
         """
         runner = StepRunner(step=self._step, stack=self._stack)
         runner.run(
             input_artifacts=input_artifacts,
-            output_artifacts=output_artifacts,
+            output_artifact_uris=output_artifact_uris,
             step_run_info=step_run_info,
         )

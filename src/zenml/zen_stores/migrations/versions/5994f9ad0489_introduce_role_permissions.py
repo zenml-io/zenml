@@ -105,14 +105,14 @@ def upgrade() -> None:
             {
                 "id": admin_id,
                 "name": "admin",
-                "created": datetime.datetime.now(),
-                "updated": datetime.datetime.now(),
+                "created": datetime.datetime.utcnow(),
+                "updated": datetime.datetime.utcnow(),
             },
             {
                 "id": guest_id,
                 "name": "guest",
-                "created": datetime.datetime.now(),
-                "updated": datetime.datetime.now(),
+                "created": datetime.datetime.utcnow(),
+                "updated": datetime.datetime.utcnow(),
             },
         ],
     )
@@ -155,8 +155,8 @@ def upgrade() -> None:
                     "id": str(uuid.uuid4()).replace("-", ""),
                     "role_id": admin_id,
                     "user_id": user_id,
-                    "created": datetime.datetime.now(),
-                    "updated": datetime.datetime.now(),
+                    "created": datetime.datetime.utcnow(),
+                    "updated": datetime.datetime.utcnow(),
                 }
             ],
         )

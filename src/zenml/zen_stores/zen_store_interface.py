@@ -405,14 +405,6 @@ class ZenStoreInterface(ABC):
     # -----
     # Users
     # -----
-    @property
-    @abstractmethod
-    def active_user_name(self) -> str:
-        """Gets the active username.
-
-        Returns:
-            The active username.
-        """
 
     @abstractmethod
     def create_user(self, user: UserRequestModel) -> UserResponseModel:
@@ -429,11 +421,16 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_user(self, user_name_or_id: Union[str, UUID]) -> UserResponseModel:
-        """Gets a specific user.
+    def get_user(
+        self,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
+        include_private: bool = False,
+    ) -> UserResponseModel:
+        """Gets a specific user, when no id is specified the active user is returned.
 
         Args:
             user_name_or_id: The name or ID of the user to get.
+            include_private: Whether to include private user information
 
         Returns:
             The requested user, if it was found.
@@ -1028,6 +1025,17 @@ class ZenStoreInterface(ABC):
             KeyError: if the pipeline run doesn't exist.
         """
 
+    @abstractmethod
+    def delete_run(self, run_id: UUID) -> None:
+        """Deletes a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to delete.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+
     # ------------------
     # Pipeline run steps
     # ------------------
@@ -1136,14 +1144,34 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_artifacts(
         self,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
         artifact_uri: Optional[str] = None,
+        artifact_store_id: Optional[UUID] = None,
+        only_unused: bool = False,
     ) -> List[ArtifactResponseModel]:
         """Lists all artifacts.
 
         Args:
+            project_name_or_id: If specified, only artifacts from the given
+                project will be returned.
             artifact_uri: If specified, only artifacts with the given URI will
                 be returned.
+            artifact_store_id: If specified, only artifacts from the given
+                artifact store will be returned.
+            only_unused: If True, only return artifacts that are not used in
+                any runs.
 
         Returns:
             A list of all artifacts.
+        """
+
+    @abstractmethod
+    def delete_artifact(self, artifact_id: UUID) -> None:
+        """Deletes an artifact.
+
+        Args:
+            artifact_id: The ID of the artifact to delete.
+
+        Raises:
+            KeyError: if the artifact doesn't exist.
         """

@@ -78,9 +78,10 @@ from zenml.models import (
     UserResponseModel,
     UserUpdateModel,
 )
+from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.models.base_models import BaseResponseModel
 from zenml.utils import io_utils
-from zenml.utils.analytics_utils import AnalyticsEvent, track
+from zenml.utils.analytics_utils import AnalyticsEvent, event_handler, track
 from zenml.utils.filesync_model import FileSyncModel
 
 if TYPE_CHECKING:
@@ -204,6 +205,8 @@ class Client(metaclass=ClientMetaClass):
     as their components.
     """
 
+    _active_user: Optional[UserResponseModel] = None
+
     def __init__(
         self,
         root: Optional[Path] = None,
@@ -282,6 +285,7 @@ class Client(metaclass=ClientMetaClass):
         self._root = self.find_repository(root, enable_warnings=enable_warnings)
 
         if not self._root:
+            self._config = None
             if enable_warnings:
                 logger.info("Running without an active repository root.")
         else:
@@ -349,7 +353,6 @@ class Client(metaclass=ClientMetaClass):
         return ClientConfiguration(config_path)
 
     @staticmethod
-    @track(event=AnalyticsEvent.INITIALIZE_REPO)
     def initialize(
         root: Optional[Path] = None,
     ) -> None:
@@ -363,17 +366,18 @@ class Client(metaclass=ClientMetaClass):
             InitializationException: If the root directory already contains a
                 ZenML repository.
         """
-        root = root or Path.cwd()
-        logger.debug("Initializing new repository at path %s.", root)
-        if Client.is_repository_directory(root):
-            raise InitializationException(
-                f"Found existing ZenML repository at path '{root}'."
-            )
+        with event_handler(AnalyticsEvent.INITIALIZE_REPO):
+            root = root or Path.cwd()
+            logger.debug("Initializing new repository at path %s.", root)
+            if Client.is_repository_directory(root):
+                raise InitializationException(
+                    f"Found existing ZenML repository at path '{root}'."
+                )
 
-        config_directory = str(root / REPOSITORY_DIRECTORY_NAME)
-        io_utils.create_dir_recursive_if_not_exists(config_directory)
-        # Initialize the repository configuration at the custom path
-        Client(root=root)
+            config_directory = str(root / REPOSITORY_DIRECTORY_NAME)
+            io_utils.create_dir_recursive_if_not_exists(config_directory)
+            # Initialize the repository configuration at the custom path
+            Client(root=root)
 
     @property
     def uses_local_configuration(self) -> bool:
@@ -534,6 +538,9 @@ class Client(metaclass=ClientMetaClass):
         )  # raises KeyError
         if self._config:
             self._config.set_active_project(project)
+            # Sanitize the client configuration to reflect the current
+            # settings
+            self._sanitize_config()
         else:
             # set the active project globally only if the client doesn't use
             # a local configuration
@@ -551,7 +558,9 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The active user.
         """
-        return self.zen_store.active_user
+        if self._active_user is None:
+            self._active_user = self.zen_store.get_user(include_private=True)
+        return self._active_user
 
     def create_user(
         self,
@@ -1004,7 +1013,6 @@ class Client(metaclass=ClientMetaClass):
                 role=role.id,
                 user=user.id,
                 project=project,
-                is_user=True,
             )
         else:
             team = self.get_team(name_id_or_prefix=user_or_team_name_or_id)
@@ -1012,7 +1020,6 @@ class Client(metaclass=ClientMetaClass):
                 role=role.id,
                 team=team.id,
                 project=project,
-                is_user=False,
             )
 
         return self.zen_store.create_role_assignment(
@@ -1877,6 +1884,8 @@ class Client(metaclass=ClientMetaClass):
             type=flavor.type,
             name=flavor.name,
             config_schema=flavor.config_schema,
+            user=self.active_user.id,
+            project=self.active_project.id,
         )
 
         return self.zen_store.create_flavor(flavor=create_flavor_request)
@@ -2148,9 +2157,9 @@ class Client(metaclass=ClientMetaClass):
         pipeline = self.get_pipeline(name_id_or_prefix=name_id_or_prefix)
         self.zen_store.delete_pipeline(pipeline_id=pipeline.id)
 
-    # -----------------
+    # ----------------------
     # - PIPELINE/STEP RUNS -
-    # -----------------
+    # ----------------------
 
     def list_runs(
         self,
@@ -2207,6 +2216,18 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix=name_id_or_prefix,
         )
 
+    def delete_pipeline_run(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+    ) -> None:
+        """Deletes a pipeline run.
+
+        Args:
+            name_id_or_prefix: Name, ID, or prefix of the pipeline run.
+        """
+        run = self.get_pipeline_run(name_id_or_prefix=name_id_or_prefix)
+        self.zen_store.delete_run(run_id=run.id)
+
     def list_run_steps(
         self,
         pipeline_run_id: Optional[UUID] = None,
@@ -2235,6 +2256,135 @@ class Client(metaclass=ClientMetaClass):
             The step run.
         """
         return self.zen_store.get_run_step(step_run_id)
+
+    # -------------
+    # - Artifacts -
+    # -------------
+
+    def list_artifacts(
+        self,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+        artifact_uri: Optional[str] = None,
+        artifact_store_id: Optional[UUID] = None,
+        only_unused: bool = False,
+    ) -> List[ArtifactResponseModel]:
+        """Get all artifacts.
+
+        Args:
+            project_name_or_id: If provided, only return artifacts for this
+                project. Otherwise, filter by the active project.
+            artifact_uri: If provided, only return artifacts with this URI.
+            artifact_store_id: If provided, only return artifacts from this
+                artifact store.
+            only_unused: If True, only return artifacts that are not used in
+                any runs.
+
+        Returns:
+            A list of artifacts.
+        """
+        return self.zen_store.list_artifacts(
+            project_name_or_id=project_name_or_id or self.active_project.id,
+            artifact_uri=artifact_uri,
+            artifact_store_id=artifact_store_id,
+            only_unused=only_unused,
+        )
+
+    def get_artifact(self, artifact_id: UUID) -> ArtifactResponseModel:
+        """Get an artifact by ID.
+
+        Args:
+            artifact_id: The ID of the artifact to get.
+
+        Returns:
+            The artifact.
+        """
+        return self.zen_store.get_artifact(artifact_id)
+
+    def delete_artifact(
+        self,
+        artifact_id: UUID,
+        delete_metadata: bool = True,
+        delete_from_artifact_store: bool = False,
+    ) -> None:
+        """Delete an artifact.
+
+        By default, this will delete only the metadata of the artifact from the
+        database, not the artifact itself.
+
+        Args:
+            artifact_id: The ID of the artifact to delete.
+            delete_metadata: If True, delete the metadata of the artifact from
+                the database.
+            delete_from_artifact_store: If True, delete the artifact itself from
+                the artifact store.
+        """
+        artifact = self.get_artifact(artifact_id=artifact_id)
+        if delete_from_artifact_store:
+            self._delete_artifact_from_artifact_store(artifact=artifact)
+        if delete_metadata:
+            self._delete_artifact_metadata(artifact=artifact)
+
+    def _delete_artifact_from_artifact_store(
+        self, artifact: ArtifactResponseModel
+    ) -> None:
+        """Delete an artifact from the artifact store.
+
+        Args:
+            artifact: The artifact to delete.
+
+        Raises:
+            Exception: If the artifact store is inaccessible.
+        """
+        from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
+        from zenml.stack.stack_component import StackComponent
+
+        if not artifact.artifact_store_id:
+            logger.warning(
+                f"Artifact '{artifact.uri}' does not have an artifact store "
+                "associated with it. Skipping deletion from artifact store."
+            )
+            return
+        try:
+            artifact_store_model = self.get_stack_component(
+                component_type=StackComponentType.ARTIFACT_STORE,
+                name_id_or_prefix=artifact.artifact_store_id,
+            )
+            artifact_store = StackComponent.from_model(artifact_store_model)
+            assert isinstance(artifact_store, BaseArtifactStore)
+            artifact_store.rmtree(artifact.uri)
+        except Exception as e:
+            logger.error(
+                f"Failed to delete artifact '{artifact.uri}' from the "
+                "artifact store. This might happen if your local client "
+                "does not have access to the artifact store or does not "
+                "have the required integrations installed. Full error: "
+                f"{e}"
+            )
+            raise e
+        else:
+            logger.info(
+                f"Deleted artifact '{artifact.uri}' from the artifact store."
+            )
+
+    def _delete_artifact_metadata(
+        self, artifact: ArtifactResponseModel
+    ) -> None:
+        """Delete the metadata of an artifact from the database.
+
+        Args:
+            artifact: The artifact to delete.
+
+        Raises:
+            ValueError: If the artifact is still used in any runs.
+        """
+        if artifact not in self.list_artifacts(only_unused=True):
+            raise ValueError(
+                "The metadata of artifacts that are used in runs cannot be "
+                "deleted. Please delete all runs that use this artifact "
+                "first."
+            )
+        self.zen_store.delete_artifact(artifact.id)
+        logger.info(f"Deleted metadata of artifact '{artifact.uri}'.")
 
     # ---- utility prefix matching get functions -----
 
@@ -2277,25 +2427,30 @@ class Client(metaclass=ClientMetaClass):
         components = self.zen_store.list_stack_components(
             name=name_id_or_prefix,
             type=component_type,
+            project_name_or_id=self.active_project.id,
         )
+        display_name = component_type.value.replace("_", " ")
 
         if len(components) > 1:
-            component_list = "\n ".join(
+            component_list = "\n".join(
                 [f"{c.name} ({c.id})" for c in components]
             )
             raise ZenKeyError(
-                f"Multiple {component_type.value} instances have been "
-                f"found for name '{name_id_or_prefix}': \n"
-                f"{component_list}.\n"
-                f"The {component_type.value} instances listed above all share "
-                f"this name. Please specify by full or partial id."
+                f"Multiple {display_name} instances have been found for "
+                f"name '{name_id_or_prefix}':\n{component_list}.\n"
+                f"Please specify by full or partial id."
             )
         elif len(components) == 1:
             return components[0]
 
         logger.debug(
-            f"No component with name '{name_id_or_prefix}' "
-            f"exists. Trying to resolve as partial_id"
+            f"No {display_name} instance with name '{name_id_or_prefix}' "
+            f"exists. Trying to resolve as partial_id..."
+        )
+
+        components = self.zen_store.list_stack_components(
+            type=component_type,
+            project_name_or_id=self.active_project.id,
         )
 
         filtered_comps = [
@@ -2308,19 +2463,19 @@ class Client(metaclass=ClientMetaClass):
                 [f"{fc.name} ({fc.id})" for fc in filtered_comps]
             )
             raise ZenKeyError(
-                f"The components listed below all share the provided "
-                f"prefix '{name_id_or_prefix}' on their ids:\n"
+                f"The {display_name} instances listed below all share the "
+                f"provided prefix '{name_id_or_prefix}' on their ids:\n"
                 f"{filtered_component_list}.\n"
-                f"Please provide more characters to uniquely identify only one "
-                f"component."
+                f"Please provide more characters to uniquely identify only "
+                f"one component."
             )
 
         elif len(filtered_comps) == 1:
             return filtered_comps[0]
 
         raise KeyError(
-            f"No component of type `{component_type}` with name or id "
-            f"prefix '{name_id_or_prefix}' exists."
+            f"No {display_name} with name or id prefix '{name_id_or_prefix}' "
+            f"exists."
         )
 
     def _get_entity_by_id_or_name_or_prefix(
@@ -2368,29 +2523,37 @@ class Client(metaclass=ClientMetaClass):
                 name=name_id_or_prefix,
             )
 
+        entity_label = list_method.__name__.replace("list_", "").replace(
+            "_", " "
+        )
+
         if len(entities) > 1:
-            entity_label = list_method.__name__.replace("list_", "")
-            entity_list = "\n ".join(
+            entity_list = "\n".join(
                 [
                     f"{getattr(entity, 'name', '')} ({entity.id})"
                     for entity in entities
                 ]
             )
             raise ZenKeyError(
-                f"Multiple {entity_label} have been "
-                f"found for name '{name_id_or_prefix}': \n"
-                f"{entity_list}.\n"
-                f"The {entity_label} listed above all share this name. Please "
-                f"specify by full or partial id."
+                f"Multiple {entity_label} have been found for name "
+                f"'{name_id_or_prefix}':\n{entity_list}.\n"
+                f"Please specify by full or partial id."
             )
 
         elif len(entities) == 1:
             return entities[0]
         else:
             logger.debug(
-                f"No {response_model} with name '{name_id_or_prefix}' "
+                f"No {entity_label} with name '{name_id_or_prefix}' "
                 f"exists. Trying to resolve as partial_id"
             )
+
+            if "project" in response_model.__fields__:
+                entities = list_method(
+                    project_name_or_id=self.active_project.id,
+                )
+            else:
+                entities = list_method()
 
             filtered_entities = [
                 entity
@@ -2398,8 +2561,7 @@ class Client(metaclass=ClientMetaClass):
                 if str(entity.id).startswith(name_id_or_prefix)
             ]
             if len(filtered_entities) > 1:
-                entity_label = list_method.__name__.replace("list_", "")
-                entity_list = "\n ".join(
+                entity_list = "\n".join(
                     [
                         f"{getattr(f_entity, 'name', '')} ({f_entity.id})"
                         for f_entity in filtered_entities
@@ -2409,7 +2571,7 @@ class Client(metaclass=ClientMetaClass):
                 raise ZenKeyError(
                     f"Multiple {entity_label} have been found that share "
                     f"the provided prefix '{name_id_or_prefix}' on their ids:\n"
-                    f"{entity_list}.\n"
+                    f"{entity_list}\n"
                     f"Please provide more characters to uniquely identify "
                     f"only one of the {entity_label}."
                 )
@@ -2418,6 +2580,6 @@ class Client(metaclass=ClientMetaClass):
                 return filtered_entities[0]
             else:
                 raise KeyError(
-                    f"No {response_model} with name or id "
-                    f"prefix '{name_id_or_prefix}' exists."
+                    f"No {entity_label} with name or id prefix "
+                    f"'{name_id_or_prefix}' exists."
                 )

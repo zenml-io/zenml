@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing pipelines."""
 
-from typing import ClassVar, List, Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -24,7 +24,7 @@ from zenml.models.base_models import (
     ProjectScopedResponseModel,
     update_model,
 )
-from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
+from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.models.pipeline_run_models import PipelineRunResponseModel
 
 # ---- #
@@ -37,10 +37,13 @@ class PipelineBaseModel(BaseModel):
 
     name: str = Field(
         title="The name of the pipeline.",
-        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+        max_length=STR_FIELD_MAX_LENGTH,
     )
 
-    docstring: Optional[str]
+    docstring: Optional[str] = Field(
+        title="The docstring of the pipeline.",
+        max_length=TEXT_FIELD_MAX_LENGTH,
+    )
     spec: PipelineSpec
 
 
@@ -51,8 +54,6 @@ class PipelineBaseModel(BaseModel):
 
 class PipelineResponseModel(PipelineBaseModel, ProjectScopedResponseModel):
     """Pipeline response model user, project, runs, and status hydrated."""
-
-    ANALYTICS_FIELDS: ClassVar[List[str]] = ["id", "project", "user"]
 
     runs: Optional[List["PipelineRunResponseModel"]] = Field(
         title="A list of the last x Pipeline Runs."
@@ -69,8 +70,6 @@ class PipelineResponseModel(PipelineBaseModel, ProjectScopedResponseModel):
 
 class PipelineRequestModel(PipelineBaseModel, ProjectScopedRequestModel):
     """Pipeline request model."""
-
-    ANALYTICS_FIELDS: ClassVar[List[str]] = ["project", "user"]
 
 
 # ------ #

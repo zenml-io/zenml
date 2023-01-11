@@ -25,7 +25,7 @@ from zenml.models.base_models import (
     ProjectScopedRequestModel,
     ProjectScopedResponseModel,
 )
-from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
+from zenml.models.constants import STR_FIELD_MAX_LENGTH
 
 if TYPE_CHECKING:
     from zenml.models.pipeline_models import PipelineResponseModel
@@ -72,10 +72,13 @@ class PipelineRunBaseModel(BaseModel):
 
     name: str = Field(
         title="The name of the pipeline run.",
-        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+        max_length=STR_FIELD_MAX_LENGTH,
     )
-
-    orchestrator_run_id: Optional[str] = None
+    orchestrator_run_id: Optional[str] = Field(
+        title="The orchestrator run ID.",
+        max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
+    )
     schedule: Optional[UUID]
     enable_cache: Optional[bool]
     start_time: Optional[datetime]
@@ -83,8 +86,28 @@ class PipelineRunBaseModel(BaseModel):
     status: ExecutionStatus
     pipeline_configuration: Dict[str, Any]
     num_steps: Optional[int]
-    zenml_version: Optional[str] = current_zenml_version
-    git_sha: Optional[str] = Field(default_factory=get_git_sha)
+    zenml_version: Optional[str] = Field(
+        title="ZenML version.",
+        default=current_zenml_version,
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    client_environment: Dict[str, str] = Field(
+        default={},
+        title=(
+            "Environment of the client that initiated this pipeline run "
+            "(OS, Python version, etc.)."
+        ),
+    )
+    orchestrator_environment: Dict[str, str] = Field(
+        default={},
+        title=(
+            "Environment of the orchestrator that executed this pipeline run "
+            "(OS, Python version, etc.)."
+        ),
+    )
+    git_sha: Optional[str] = Field(
+        default_factory=get_git_sha, max_length=STR_FIELD_MAX_LENGTH
+    )
 
 
 # -------- #

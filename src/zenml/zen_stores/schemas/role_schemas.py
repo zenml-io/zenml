@@ -75,7 +75,7 @@ class RoleSchema(NamedSchema, table=True):
         ).items():
             setattr(self, field, value)
 
-        self.updated = datetime.now()
+        self.updated = datetime.utcnow()
         return self
 
     def to_model(self) -> RoleResponseModel:
@@ -125,7 +125,7 @@ class UserRoleAssignmentSchema(BaseSchema, table=True):
     )
 
     role: RoleSchema = Relationship(back_populates="user_role_assignments")
-    user: "UserSchema" = Relationship(back_populates="assigned_roles")
+    user: Optional["UserSchema"] = Relationship(back_populates="assigned_roles")
     project: Optional["ProjectSchema"] = Relationship(
         back_populates="user_role_assignments"
     )
@@ -158,7 +158,9 @@ class UserRoleAssignmentSchema(BaseSchema, table=True):
         return RoleAssignmentResponseModel(
             id=self.id,
             project=self.project.to_model() if self.project else None,
-            user=self.user.to_model(_block_recursion=True),
+            user=self.user.to_model(_block_recursion=True)
+            if self.user
+            else None,
             role=self.role.to_model(),
             created=self.created,
             updated=self.updated,

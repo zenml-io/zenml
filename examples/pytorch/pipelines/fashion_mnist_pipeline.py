@@ -16,7 +16,10 @@ from zenml.config import DockerSettings
 from zenml.integrations.constants import PYTORCH
 from zenml.pipelines import pipeline
 
-docker_settings = DockerSettings(required_integrations=[PYTORCH])
+docker_settings = DockerSettings(
+    required_integrations=[PYTORCH],
+    requirements=["torchvision"],
+)
 
 
 @pipeline(settings={"docker": docker_settings})

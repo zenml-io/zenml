@@ -127,10 +127,14 @@ def describe_project(project_name_or_id: Optional[str] = None) -> None:
             [active_project], exclude_columns=["created", "updated"]
         )
     else:
-        project = client.get_project(project_name_or_id)
-        cli_utils.print_pydantic_models(
-            [project], exclude_columns=["created", "updated"]
-        )
+        try:
+            project_ = client.get_project(project_name_or_id)
+        except KeyError as err:
+            cli_utils.error(str(err))
+        else:
+            cli_utils.print_pydantic_models(
+                [project_], exclude_columns=["created", "updated"]
+            )
 
 
 @project.command("set", help="Set the active project.", hidden=True)

@@ -60,7 +60,7 @@ class PipelineSchema(NamedSchema, table=True):
         nullable=True,
     )
 
-    user: "UserSchema" = Relationship(back_populates="pipelines")
+    user: Optional["UserSchema"] = Relationship(back_populates="pipelines")
 
     schedules: List["ScheduleSchema"] = Relationship(
         back_populates="pipeline",
@@ -92,7 +92,7 @@ class PipelineSchema(NamedSchema, table=True):
                 id=self.id,
                 name=self.name,
                 project=self.project.to_model(),
-                user=self.user.to_model(),
+                user=self.user.to_model() if self.user else None,
                 docstring=self.docstring,
                 spec=PipelineSpec.parse_raw(self.spec),
                 created=self.created,
@@ -104,7 +104,7 @@ class PipelineSchema(NamedSchema, table=True):
                 id=self.id,
                 name=self.name,
                 project=self.project.to_model(),
-                user=self.user.to_model(),
+                user=self.user.to_model() if self.user else None,
                 runs=[r.to_model(True) for r in self.runs],
                 docstring=self.docstring,
                 spec=PipelineSpec.parse_raw(self.spec),
@@ -133,5 +133,5 @@ class PipelineSchema(NamedSchema, table=True):
         if pipeline_update.spec:
             self.spec = pipeline_update.spec.json(sort_keys=True)
 
-        self.updated = datetime.now()
+        self.updated = datetime.utcnow()
         return self

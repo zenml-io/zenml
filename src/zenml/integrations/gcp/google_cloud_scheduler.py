@@ -69,7 +69,7 @@ def create_scheduler_job(
                     http_method=HttpMethod.POST,
                     oidc_token=OidcToken(
                         service_account_email=credentials.signer_email
-                        if credentials
+                        if credentials and hasattr(credentials, "signer_email")
                         else None
                     ),
                 ),

@@ -17,9 +17,7 @@ import json
 import os
 from pathlib import Path
 from typing import Any, Dict, Optional, cast
-from uuid import UUID, uuid4
-
-from pydantic import Field
+from uuid import UUID
 
 from zenml.logger import get_logger
 from zenml.services import ServiceType, TerraformService, TerraformServiceConfig
@@ -115,7 +113,6 @@ class TerraformServerDeploymentConfig(ServerDeploymentConfig):
 
     log_level: str = "ERROR"
 
-    server_id: UUID = Field(default_factory=uuid4)
     username: str
     password: str
     helm_chart: str = get_helm_chart_path()

@@ -1,0 +1,206 @@
+# Environments couple together a deployment with an optional set of
+# requirements to be configured on the deployment. The deployment entry
+# can be a reference to a global deployment entry by name or an inline
+# deployment configuration. Same for the requirements: they can be
+# specified either inline using the same format as the global requirements
+# file or by referencing a global requirements entry by name.
+#
+# Two sets of requirements can be specified for each environment:
+# - `requirements`: these stack requirements are provisioned and used as
+#  options from which the tests can choose as they see fit. If the tests don't
+#  specify any requirements that match these stack components, they will not
+#  be included in the stacks automatically provisioned for tests by the
+#  framework.
+# - `mandatory_requirements`: these stack requirements are provisioned
+#  and they are enforced on the tests. Stacks automatically provisioned for
+#  tests by the framework are guaranteed to include stack components configured
+#  as mandatory in the environment (one of each component type).
+#
+# Other fields:
+# - `name`: the name of the environment. This is used to reference the
+#    environment in the CLI and pytest runs.
+# - `description`: a description of the environment.
+# - disabled: A boolean flag that can be used to administratively disable an
+#   environment. A disabled environment will not be checked for operational
+#   readiness and will not be usable to run tests. This is useful to temporarily
+#   disable an environment that is not operational without having to remove it
+#   from the configuration.
+# - capabilities: A list of custom capabilities that the environment supports or
+#   does not support. This is compared against the capabilities required by the
+#   tests to determine if the deployment is suitable to run the tests. A `true`
+#   value indicates that the environment supports the capability, while a
+#   `false` value indicates that it doesn't. Capabilities configured at the
+#   environment level override those configured at the deployment level or
+#   inherited from environment requirements.
+#
+environments:
+
+  - name: default
+    description: >-
+      Default deployment with local orchestrator and all local
+      components.
+    deployment: default
+    requirements:
+      - data-validators
+      - mlflow-local-tracker
+      - mlflow-local-deployer
+      - local-secrets-manager
+    capabilities:
+      synchronized: true
+
+  - name: default-docker-orchestrator
+    description: >-
+      Default deployment with docker orchestrator and all local
+      components.
+    deployment: default
+    requirements:
+      - data-validators
+      - mlflow-local-tracker
+      - mlflow-local-deployer
+      - local-secrets-manager
+    mandatory_requirements:
+      - docker-local
+
+  - name: default-kubeflow-orchestrator
+    description: >-
+      Default deployment with local kubeflow orchestrator and all local
+      components.
+    deployment: default
+    requirements:
+      - data-validators
+      - mlflow-local-tracker
+      - mlflow-local-deployer
+      - local-secrets-manager
+    mandatory_requirements:
+      - kubeflow-local
+
+  - name: default-airflow-orchestrator
+    description: >-
+      Default server deployment with airflow local orchestrator and all local
+      components.
+    deployment: default
+    requirements:
+      - data-validators
+      - mlflow-local-tracker
+      - mlflow-local-deployer
+      - local-secrets-manager
+    mandatory_requirements:
+      - airflow-local
+
+    # IMPORTANT: don't use this with pytest auto-provisioning. Running forked
+    # daemons in pytest leads to serious issues because the whole test process
+    # is forked. As a workaround, the deployment can be started separately,
+    # before pytest is invoked.
+  - name: local-server
+    description: >-
+      Local server deployment with local orchestrator and all local
+      components.
+    deployment: local-server
+    requirements:
+      - data-validators
+      - mlflow-local-tracker
+      - mlflow-local-deployer
+      - local-secrets-manager
+    capabilities:
+      synchronized: true
+
+    # IMPORTANT: don't use this with pytest auto-provisioning. Running forked
+    # daemons in pytest leads to serious issues because the whole test process
+    # is forked. As a workaround, the deployment can be started separately,
+    # before pytest is invoked.
+  - name: local-server-docker-orchestrator
+    description: >-
+      Local server deployment with docker orchestrator and all local
+      components.
+    deployment: local-server
+    requirements:
+      - data-validators
+      - mlflow-local-tracker
+      - mlflow-local-deployer
+      - local-secrets-manager
+    mandatory_requirements:
+      - docker-local
+
+    # IMPORTANT: don't use this with pytest auto-provisioning. Running forked
+    # daemons in pytest leads to serious issues because the whole test process
+    # is forked. As a workaround, the deployment can be started separately,
+    # before pytest is invoked.
+  - name: local-server-kubeflow-orchestrator
+    description: >-
+      Local server deployment with local kubeflow orchestrator and all local
+      components.
+    deployment: local-server
+    requirements:
+      - data-validators
+      - mlflow-local-tracker
+      - mlflow-local-deployer
+      - local-secrets-manager
+    mandatory_requirements:
+      - kubeflow-local
+
+    # IMPORTANT: don't use this with pytest auto-provisioning. Running forked
+    # daemons in pytest leads to serious issues because the whole test process
+    # is forked. As a workaround, the deployment can be started separately,
+    # before pytest is invoked.
+  - name: local-server-airflow-orchestrator
+    description: >-
+      Local server deployment with local airflow orchestrator and all local
+      components.
+    deployment: local-server
+    requirements:
+      - data-validators
+      - mlflow-local-tracker
+      - mlflow-local-deployer
+      - local-secrets-manager
+    mandatory_requirements:
+      - airflow-local
+
+  - name: docker-server
+    description: >-
+      Server docker-compose deployment with local orchestrator and all local
+      components.
+    deployment: docker-compose-server
+    requirements:
+      - data-validators
+      - mlflow-local-tracker
+      - mlflow-local-deployer
+      - local-secrets-manager
+
+  - name: docker-server-docker-orchestrator
+    description: >-
+      Server docker-compose deployment with docker orchestrator and all local
+      components.
+    deployment: docker-compose-server
+    requirements:
+      - data-validators
+      - mlflow-local-tracker
+      - mlflow-local-deployer
+      - local-secrets-manager
+    mandatory_requirements:
+      - docker-local
+
+  - name: docker-server-kubeflow-orchestrator
+    description: >-
+      Server docker-compose deployment with local kubeflow orchestrator and all
+      local components.
+    deployment: docker-compose-server
+    requirements:
+      - data-validators
+      - mlflow-local-tracker
+      - mlflow-local-deployer
+      - local-secrets-manager
+    mandatory_requirements:
+      - kubeflow-local
+
+  - name: docker-server-airflow-orchestrator
+    description: >-
+      Server docker-compose deployment with local airflow orchestrator and all
+      local components.
+    deployment: docker-compose-server
+    requirements:
+      - data-validators
+      - mlflow-local-tracker
+      - mlflow-local-deployer
+      - local-secrets-manager
+    mandatory_requirements:
+      - airflow-local

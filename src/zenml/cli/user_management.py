@@ -52,17 +52,21 @@ def describe_user(user_name_or_id: Optional[str] = None) -> None:
             ],
         )
     else:
-        user = client.get_user(user_name_or_id)
-        cli_utils.print_pydantic_models(
-            [user],
-            exclude_columns=[
-                "created",
-                "updated",
-                "email",
-                "email_opted_in",
-                "activation_token",
-            ],
-        )
+        try:
+            user = client.get_user(user_name_or_id)
+        except KeyError as err:
+            cli_utils.error(str(err))
+        else:
+            cli_utils.print_pydantic_models(
+                [user],
+                exclude_columns=[
+                    "created",
+                    "updated",
+                    "email",
+                    "email_opted_in",
+                    "activation_token",
+                ],
+            )
 
 
 @user.command("list")
@@ -83,7 +87,7 @@ def list_users() -> None:
             "email_opted_in",
             "activation_token",
         ],
-        is_active=lambda u: u.name == Client().zen_store.active_user_name,
+        is_active=lambda u: u.name == Client().active_user.name,
     )
 
 
@@ -109,7 +113,7 @@ def list_users() -> None:
     "--role",
     "-r",
     "initial_role",
-    help=("Give the user an initial role."),
+    help="Give the user an initial role.",
     required=False,
     type=str,
     default="admin",
@@ -263,12 +267,12 @@ def describe_team(team_name_or_id: str) -> None:
     """
     cli_utils.print_active_config()
     try:
-        team = Client().get_team(name_id_or_prefix=team_name_or_id)
+        team_ = Client().get_team(name_id_or_prefix=team_name_or_id)
     except KeyError as err:
         cli_utils.error(str(err))
     else:
         cli_utils.print_pydantic_models(
-            [team],
+            [team_],
             exclude_columns=[
                 "created",
                 "updated",
@@ -338,7 +342,7 @@ def update_team(
     """
     cli_utils.print_active_config()
     try:
-        team = Client().update_team(
+        team_ = Client().update_team(
             team_name_or_id=team_name,
             new_name=new_name,
             remove_users=remove_users,
@@ -347,7 +351,7 @@ def update_team(
     except (EntityExistsError, KeyError) as err:
         cli_utils.error(str(err))
     else:
-        cli_utils.declare(f"Updated team '{team.name}'.")
+        cli_utils.declare(f"Updated team '{team_.name}'.")
 
 
 @team.command("delete", help="Delete a team.")

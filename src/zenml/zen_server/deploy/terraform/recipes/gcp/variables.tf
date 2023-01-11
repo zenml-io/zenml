@@ -1,8 +1,3 @@
-variable "server_id" {
-  description = "Unique server ID"
-  type        = string
-}
-
 variable "username" {
   description = "Username for the default ZenML server account"
   default     = "default"

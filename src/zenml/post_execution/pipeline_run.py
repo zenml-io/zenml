@@ -14,6 +14,7 @@
 """Implementation of the post-execution pipeline run class."""
 
 from collections import OrderedDict
+from datetime import datetime
 from typing import Any, Dict, List, Optional, cast
 from uuid import UUID
 
@@ -165,6 +166,24 @@ class PipelineRunView:
         return self._model.zenml_version
 
     @property
+    def client_environment(self) -> Dict[str, str]:
+        """Environment of the client that initiated this pipeline run.
+
+        Returns:
+            The environment of the client that initiated this pipeline run.
+        """
+        return self._model.client_environment
+
+    @property
+    def orchestrator_environment(self) -> Dict[str, str]:
+        """Environment of the orchestrator that executed this pipeline run.
+
+        Returns:
+            The environment of the orchestrator that executed this pipeline run.
+        """
+        return self._model.orchestrator_environment
+
+    @property
     def git_sha(self) -> Optional[str]:
         """Git commit SHA that this pipeline run was performed on.
 
@@ -186,6 +205,15 @@ class PipelineRunView:
         # Query the run again since the status might have changed since this
         # object was created.
         return Client().get_pipeline_run(self.id).status
+
+    @property
+    def created(self) -> datetime:
+        """Returns the creation time of the pipeline run.
+
+        Returns:
+            The creation time of the pipeline run.
+        """
+        return self._model.created
 
     @property
     def steps(self) -> List[StepView]:

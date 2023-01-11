@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing roles that can be assigned to users or teams."""
 
-from typing import ClassVar, List, Set
+from typing import Set
 
 from pydantic import BaseModel, Field
 
@@ -23,7 +23,7 @@ from zenml.models.base_models import (
     BaseResponseModel,
     update_model,
 )
-from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
+from zenml.models.constants import STR_FIELD_MAX_LENGTH
 
 # ---- #
 # BASE #
@@ -35,7 +35,7 @@ class RoleBaseModel(BaseModel):
 
     name: str = Field(
         title="The unique name of the role.",
-        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+        max_length=STR_FIELD_MAX_LENGTH,
     )
     permissions: Set[PermissionType]
 
@@ -47,8 +47,6 @@ class RoleBaseModel(BaseModel):
 
 class RoleResponseModel(RoleBaseModel, BaseResponseModel):
     """Response model for roles."""
-
-    ANALYTICS_FIELDS: ClassVar[List[str]] = ["id"]
 
 
 # ------- #

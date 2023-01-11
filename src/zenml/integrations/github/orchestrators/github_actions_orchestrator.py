@@ -339,7 +339,7 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
         if schedule:
             # Add a suffix to the workflow filename so we don't overwrite
             # scheduled pipeline by future schedules or single pipeline runs.
-            datetime_string = datetime.now().strftime("%y_%m_%d_%H_%M_%S")
+            datetime_string = datetime.utcnow().strftime("%y_%m_%d_%H_%M_%S")
             workflow_name += f"-scheduled-{datetime_string}"
 
         workflow_path = os.path.join(

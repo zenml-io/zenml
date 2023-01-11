@@ -643,18 +643,6 @@ class RestZenStore(BaseZenStore):
     # Users
     # -----
 
-    @property
-    def active_user_name(self) -> str:
-        """Gets the active username.
-
-        Either the username specified in the config, or the username of the
-        currently authenticated user.
-
-        Returns:
-            The active username.
-        """
-        return self.config.username or self._get_active_user().name
-
     @track(AnalyticsEvent.CREATED_USER)
     def create_user(self, user: UserRequestModel) -> UserResponseModel:
         """Creates a new user.
@@ -671,29 +659,34 @@ class RestZenStore(BaseZenStore):
             response_model=UserResponseModel,
         )
 
-    def _get_active_user(self) -> UserResponseModel:
-        """Gets a specific user.
+    def get_user(
+        self,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
+        include_private: bool = False,
+    ) -> UserResponseModel:
+        """Gets a specific user, when no id is specified the active user is returned.
 
-        Returns:
-            The requested user, if it was found.
-        """
-        body = self.get(f"{CURRENT_USER}")
-        return UserResponseModel.parse_obj(body)
-
-    def get_user(self, user_name_or_id: Union[str, UUID]) -> UserResponseModel:
-        """Gets a specific user.
+        The `include_private` parameter is ignored here as it is handled
+        implicitly by the /current-user endpoint that is queried when no
+        user_name_or_id is set. Raises a KeyError in case a user with that id
+        does not exist.
 
         Args:
             user_name_or_id: The name or ID of the user to get.
+            include_private: Whether to include private user information
 
         Returns:
             The requested user, if it was found.
         """
-        return self._get_resource(
-            resource_id=user_name_or_id,
-            route=USERS,
-            response_model=UserResponseModel,
-        )
+        if user_name_or_id:
+            return self._get_resource(
+                resource_id=user_name_or_id,
+                route=USERS,
+                response_model=UserResponseModel,
+            )
+        else:
+            body = self.get(CURRENT_USER)
+            return UserResponseModel.parse_obj(body)
 
     def get_auth_user(
         self, user_name_or_id: Union[str, UUID]
@@ -1390,6 +1383,17 @@ class RestZenStore(BaseZenStore):
             route=RUNS,
         )
 
+    def delete_run(self, run_id: UUID) -> None:
+        """Deletes a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to delete.
+        """
+        self._delete_resource(
+            resource_id=run_id,
+            route=RUNS,
+        )
+
     # ------------------
     # Pipeline run steps
     # ------------------
@@ -1512,13 +1516,22 @@ class RestZenStore(BaseZenStore):
 
     def list_artifacts(
         self,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
         artifact_uri: Optional[str] = None,
+        artifact_store_id: Optional[UUID] = None,
+        only_unused: bool = False,
     ) -> List[ArtifactResponseModel]:
         """Lists all artifacts.
 
         Args:
+            project_name_or_id: If specified, only artifacts from the given
+                project will be returned.
             artifact_uri: If specified, only artifacts with the given URI will
                 be returned.
+            artifact_store_id: If specified, only artifacts from the given
+                artifact store will be returned.
+            only_unused: If True, only return artifacts that are not used in
+                any runs.
 
         Returns:
             A list of all artifacts.
@@ -1531,6 +1544,14 @@ class RestZenStore(BaseZenStore):
             response_model=ArtifactResponseModel,
             **filters,
         )
+
+    def delete_artifact(self, artifact_id: UUID) -> None:
+        """Deletes an artifact.
+
+        Args:
+            artifact_id: The ID of the artifact to delete.
+        """
+        self._delete_resource(resource_id=artifact_id, route=ARTIFACTS)
 
     # =======================
     # Internal helper methods
@@ -1688,10 +1709,14 @@ class RestZenStore(BaseZenStore):
                     ": ".join(response.json().get("detail", (response.text,)))
                 )
         elif response.status_code == 422:
-            msg = response.json().get("detail", response.text)
-            if isinstance(msg, list):
-                msg = msg[-1]
-            raise RuntimeError(msg)
+            response_details = response.json().get("detail", (response.text,))
+            if isinstance(response_details[0], str):
+                response_msg = ": ".join(response_details)
+            else:
+                # This is an "Unprocessable Entity" error, which has a special
+                # structure in the response.
+                response_msg = response.text
+            raise RuntimeError(response_msg)
         elif response.status_code == 500:
             raise RuntimeError(response.text)
         else:

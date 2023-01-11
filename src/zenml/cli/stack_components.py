@@ -93,11 +93,13 @@ def generate_stack_component_describe_command(
             name_id_or_prefix: Name or id of the component to describe.
         """
         client = Client()
-
-        component_ = client.get_stack_component(
-            name_id_or_prefix=name_id_or_prefix,
-            component_type=component_type,
-        )
+        try:
+            component_ = client.get_stack_component(
+                name_id_or_prefix=name_id_or_prefix,
+                component_type=component_type,
+            )
+        except KeyError as err:
+            cli_utils.error(str(err))
 
         with console.status(f"Describing component '{component_.name}'..."):
             active_component_id = None
@@ -263,11 +265,14 @@ def generate_stack_component_update_command(
         )
 
         with console.status(f"Updating {display_name}...\n"):
-            updated_component = client.update_stack_component(
-                name_id_or_prefix=name_or_id,
-                component_type=component_type,
-                configuration=parsed_args,
-            )
+            try:
+                updated_component = client.update_stack_component(
+                    name_id_or_prefix=name_or_id,
+                    component_type=component_type,
+                    configuration=parsed_args,
+                )
+            except KeyError as err:
+                cli_utils.error(str(err))
 
             cli_utils.declare(
                 f"Successfully updated {display_name} "
@@ -314,7 +319,7 @@ def generate_stack_component_share_command(
                     component_type=component_type,
                     is_shared=True,
                 )
-            except IllegalOperationError as err:
+            except (KeyError, IllegalOperationError) as err:
                 cli_utils.error(str(err))
 
             cli_utils.declare(
@@ -364,7 +369,7 @@ def generate_stack_component_remove_attribute_command(
                     component_type=component_type,
                     configuration={k: None for k in args},
                 )
-            except IllegalOperationError as err:
+            except (KeyError, IllegalOperationError) as err:
                 cli_utils.error(str(err))
 
             cli_utils.declare(
@@ -417,7 +422,7 @@ def generate_stack_component_rename_command(
                     component_type=component_type,
                     name=new_name,
                 )
-            except IllegalOperationError as err:
+            except (KeyError, IllegalOperationError) as err:
                 cli_utils.error(str(err))
 
             cli_utils.declare(
@@ -458,7 +463,7 @@ def generate_stack_component_delete_command(
                     name_id_or_prefix=name_id_or_prefix,
                     component_type=component_type,
                 )
-            except IllegalOperationError as err:
+            except (KeyError, IllegalOperationError) as err:
                 cli_utils.error(str(err))
             cli_utils.declare(f"Deleted {display_name}: {name_id_or_prefix}")
 
@@ -500,10 +505,13 @@ def generate_stack_component_copy_command(
             f"Copying {display_name} "
             f"`{source_component_name_id_or_prefix}`..\n"
         ):
-            component_to_copy = client.get_stack_component(
-                name_id_or_prefix=source_component_name_id_or_prefix,
-                component_type=component_type,
-            )
+            try:
+                component_to_copy = client.get_stack_component(
+                    name_id_or_prefix=source_component_name_id_or_prefix,
+                    component_type=component_type,
+                )
+            except KeyError as err:
+                cli_utils.error(str(err))
 
             client.create_stack_component(
                 name=target_component,
@@ -541,11 +549,13 @@ def generate_stack_component_up_command(
         with console.status(
             f"Provisioning {display_name} '{name_id_or_prefix}' locally...\n"
         ):
-
-            component_model = client.get_stack_component(
-                name_id_or_prefix=name_id_or_prefix,
-                component_type=component_type,
-            )
+            try:
+                component_model = client.get_stack_component(
+                    name_id_or_prefix=name_id_or_prefix,
+                    component_type=component_type,
+                )
+            except KeyError as err:
+                cli_utils.error(str(err))
 
             from zenml.stack import StackComponent
 
@@ -620,10 +630,13 @@ def generate_stack_component_down_command(
         with console.status(
             f"De-provisioning {display_name} '{name_id_or_prefix}' locally...\n"
         ):
-            component_model = client.get_stack_component(
-                name_id_or_prefix=name_id_or_prefix,
-                component_type=component_type,
-            )
+            try:
+                component_model = client.get_stack_component(
+                    name_id_or_prefix=name_id_or_prefix,
+                    component_type=component_type,
+                )
+            except KeyError as err:
+                cli_utils.error(str(err))
 
             from zenml.stack import StackComponent
 
@@ -704,11 +717,13 @@ def generate_stack_component_logs_command(
             f"Fetching the logs for the {display_name} "
             f"'{name_id_or_prefix}'...\n"
         ):
-
-            component_model = client.get_stack_component(
-                name_id_or_prefix=name_id_or_prefix,
-                component_type=component_type,
-            )
+            try:
+                component_model = client.get_stack_component(
+                    name_id_or_prefix=name_id_or_prefix,
+                    component_type=component_type,
+                )
+            except KeyError as err:
+                cli_utils.error(str(err))
 
             from zenml.stack import StackComponent
 

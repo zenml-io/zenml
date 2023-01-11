@@ -1032,9 +1032,18 @@ def print_pipeline_runs_table(
 
 def warn_unsupported_non_default_project() -> None:
     """Warning for unsupported non-default project."""
-    warning(
-        "Currently the concept of `project` is not supported "
-        "within the Dashboard. The Project functionality will be "
-        "completed in the coming weeks. For the time being it "
-        "is recommended to stay within the `default` project."
+    from zenml.constants import (
+        ENV_ZENML_DISABLE_PROJECT_WARNINGS,
+        handle_bool_env_var,
     )
+
+    disable_warnings = handle_bool_env_var(
+        ENV_ZENML_DISABLE_PROJECT_WARNINGS, False
+    )
+    if not disable_warnings:
+        warning(
+            "Currently the concept of `project` is not supported "
+            "within the Dashboard. The Project functionality will be "
+            "completed in the coming weeks. For the time being it "
+            "is recommended to stay within the `default` project."
+        )

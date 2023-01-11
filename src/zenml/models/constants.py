@@ -14,11 +14,20 @@
 """Constants used by ZenML domain models."""
 
 # The maximum length of a name string fields in models.
-MODEL_NAME_FIELD_MAX_LENGTH = 128
+MODEL_NAME_FIELD_MAX_LENGTH = 255
 # The maximum length of description string fields in models.
 MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH = 300
-# The maximum length of the config schema of a flavor.
-MODEL_CONFIG_SCHEMA_MAX_LENGTH = 10000
+# The maximum length of a URI string field in models.
+MODEL_URI_FIELD_MAX_LENGTH = 1000
+# The maximum length of a metadata field in models.
+MODEL_METADATA_FIELD_MAX_LENGTH = 200
+# The maximum length of a docstring field in models.
+MODEL_DOCSTRING_FIELD_MAX_LENGTH = 15000
+# The maximum length of a TEXT field in models.
+MODEL_TEXT_FIELD_MAX_LENGTH = 650000
+
+TEXT_FIELD_MAX_LENGTH = 65535
+STR_FIELD_MAX_LENGTH = 255
 
 # The maximum length of a password
 # NOTE: this should be kept under 50 characters to avoid problems with

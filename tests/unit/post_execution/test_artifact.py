@@ -53,7 +53,7 @@ def test_reading_from_an_artifact_view_uses_the_specified_materializer_and_data_
     """Tests that reading from an artifact view uses the materializer and data
     type passed during initialization."""
     mocker.patch(
-        "zenml.materializers.built_in_materializer.BuiltInMaterializer.handle_input"
+        "zenml.materializers.built_in_materializer.BuiltInMaterializer.load"
     )
     artifact = _create_artifact_view(
         materializer="zenml.materializers.built_in_materializer.BuiltInMaterializer",
@@ -72,7 +72,7 @@ def test_artifact_reading_fails_with_nonexisting_materializer(
     """Tests that reading from the artifact fails if the materializer class
     can't be imported."""
     mocker.patch(
-        "zenml.materializers.built_in_materializer.BuiltInMaterializer.handle_input"
+        "zenml.materializers.built_in_materializer.BuiltInMaterializer.load"
     )
     artifact = _create_artifact_view(
         materializer="some.nonexistent.Class",
@@ -91,7 +91,7 @@ def test_artifact_reading_fails_with_nonexisting_data_type(
     """Tests that reading from the artifact fails if the data type class
     can't be imported."""
     mocker.patch(
-        "zenml.materializers.built_in_materializer.BuiltInMaterializer.handle_input"
+        "zenml.materializers.built_in_materializer.BuiltInMaterializer.load"
     )
     artifact = _create_artifact_view(
         materializer="zenml.materializers.built_in_materializer.BuiltInMaterializer",

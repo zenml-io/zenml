@@ -18,8 +18,7 @@ from typing import Any, Type, Union
 
 import pandas as pd
 
-from zenml.artifacts import DataArtifact, SchemaArtifact, StatisticsArtifact
-from zenml.artifacts.base_artifact import BaseArtifact
+from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -36,19 +35,15 @@ class PandasMaterializer(BaseMaterializer):
     """Materializer to read data to and from pandas."""
 
     ASSOCIATED_TYPES = (pd.DataFrame, pd.Series)
-    ASSOCIATED_ARTIFACT_TYPES = (
-        DataArtifact,
-        StatisticsArtifact,
-        SchemaArtifact,
-    )
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
 
-    def __init__(self, artifact: "BaseArtifact"):
+    def __init__(self, uri: str):
         """Define `self.data_path`.
 
         Args:
-            artifact: Artifact required by `BaseMaterializer.__init__()`.
+            uri: The URI where the artifact data is stored.
         """
-        super().__init__(artifact)
+        super().__init__(uri)
         try:
             import pyarrow  # type: ignore
 
@@ -63,14 +58,10 @@ class PandasMaterializer(BaseMaterializer):
                 "to automatically store the data as a `.parquet` file instead."
             )
         finally:
-            self.parquet_path = os.path.join(
-                self.artifact.uri, PARQUET_FILENAME
-            )
-            self.csv_path = os.path.join(self.artifact.uri, CSV_FILENAME)
+            self.parquet_path = os.path.join(self.uri, PARQUET_FILENAME)
+            self.csv_path = os.path.join(self.uri, CSV_FILENAME)
 
-    def handle_input(
-        self, data_type: Type[Any]
-    ) -> Union[pd.DataFrame, pd.Series]:
+    def load(self, data_type: Type[Any]) -> Union[pd.DataFrame, pd.Series]:
         """Reads `pd.DataFrame` or `pd.Series` from a `.parquet` or `.csv` file.
 
         Args:
@@ -82,7 +73,7 @@ class PandasMaterializer(BaseMaterializer):
         Returns:
             The pandas dataframe or series.
         """
-        super().handle_input(data_type)
+        super().load(data_type)
         if fileio.exists(self.parquet_path):
             if self.pyarrow_exists:
                 with fileio.open(self.parquet_path, mode="rb") as f:
@@ -97,7 +88,7 @@ class PandasMaterializer(BaseMaterializer):
                 )
         else:
             with fileio.open(self.csv_path, mode="rb") as f:
-                df = pd.read_csv(f)
+                df = pd.read_csv(f, index_col=0, parse_dates=True)
 
         # validate the type of the data.
         def is_dataframe_or_series(
@@ -122,15 +113,16 @@ class PandasMaterializer(BaseMaterializer):
 
         return is_dataframe_or_series(df)
 
-    def handle_return(self, df: Union[pd.DataFrame, pd.Series]) -> None:
+    def save(self, df: Union[pd.DataFrame, pd.Series]) -> None:
         """Writes a pandas dataframe or series to the specified filename.
 
         Args:
             df: The pandas dataframe or series to write.
         """
-        super().handle_return(df)
+        super().save(df)
 
         if isinstance(df, pd.Series):
+
             df = df.to_frame(name="series")
 
         if self.pyarrow_exists:
@@ -138,4 +130,4 @@ class PandasMaterializer(BaseMaterializer):
                 df.to_parquet(f, compression=COMPRESSION_TYPE)
         else:
             with fileio.open(self.csv_path, mode="wb") as f:
-                df.to_csv(f, index=False)
+                df.to_csv(f, index=True)

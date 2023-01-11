@@ -17,6 +17,7 @@ from zenml.zen_stores.schemas.artifact_schemas import ArtifactSchema
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.flavor_schemas import FlavorSchema
+from zenml.zen_stores.schemas.identity_schemas import IdentitySchema
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
@@ -48,6 +49,7 @@ __all__ = [
     "BaseSchema",
     "NamedSchema",
     "FlavorSchema",
+    "IdentitySchema",
     "PipelineRunSchema",
     "PipelineSchema",
     "ProjectSchema",

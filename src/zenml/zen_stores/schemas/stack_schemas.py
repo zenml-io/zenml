@@ -81,7 +81,7 @@ class StackSchema(ShareableSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    user: "UserSchema" = Relationship(back_populates="stacks")
+    user: Optional["UserSchema"] = Relationship(back_populates="stacks")
 
     components: List["StackComponentSchema"] = Relationship(
         back_populates="stacks",
@@ -116,7 +116,7 @@ class StackSchema(ShareableSchema, table=True):
             else:
                 setattr(self, field, value)
 
-        self.updated = datetime.now()
+        self.updated = datetime.utcnow()
         return self
 
     def to_model(self) -> "StackResponseModel":
@@ -128,7 +128,7 @@ class StackSchema(ShareableSchema, table=True):
         return StackResponseModel(
             id=self.id,
             name=self.name,
-            user=self.user.to_model(),
+            user=self.user.to_model() if self.user else None,
             project=self.project.to_model(),
             is_shared=self.is_shared,
             components={c.type: [c.to_model()] for c in self.components},

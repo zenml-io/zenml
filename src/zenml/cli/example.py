@@ -46,16 +46,21 @@ SHELL_EXECUTABLE = "SHELL_EXECUTABLE"
 class LocalExample:
     """Class to encapsulate the local example that can be run from the CLI."""
 
-    def __init__(self, path: Path, name: str) -> None:
+    def __init__(
+        self, path: Path, name: str, skip_manual_check: bool = False
+    ) -> None:
         """Create a new LocalExample instance.
 
         Args:
             name: The name of the example, specifically the name of the folder
                   on git
             path: Path at which the example is installed
+            skip_manual_check: Whether to skip checking whether the example
+                can be run manually or not.
         """
         self.name = name
         self.path = path
+        self.skip_manual_check = skip_manual_check
 
     @property
     def python_files_in_dir(self) -> List[str]:
@@ -134,7 +139,7 @@ class LocalExample:
             RuntimeError: If no runner script is present in the example.
             NotImplementedError: If the examples needs manual user setup.
         """
-        if self.needs_manual_user_setup:
+        if not self.skip_manual_check and self.needs_manual_user_setup:
             raise NotImplementedError(
                 "This example currently does not support being run from the "
                 "CLI as user specific setup is required. Consult the README.md "
@@ -163,6 +168,31 @@ class LocalExample:
             True if the example exists at the given path, else False.
         """
         return fileio.exists(str(self.path)) and fileio.isdir(str(self.path))
+
+    def run_example_directly(self, *args: str) -> None:
+        """Runs the example directly without going through setup/teardown.
+
+        Args:
+            *args: Arguments to pass to the example.
+
+        Raises:
+            RuntimeError: If running the example fails.
+        """
+        with event_handler(
+            event=AnalyticsEvent.RUN_EXAMPLE,
+            metadata={"example_name": self.name},
+        ):
+
+            call = [sys.executable, self.executable_python_example, *args]
+            try:
+                subprocess.check_call(
+                    call,
+                    cwd=str(self.path),
+                    shell=click._compat.WIN,
+                    env=os.environ.copy(),
+                )
+            except Exception as e:
+                raise RuntimeError(f"Failed to run example {self.name}.") from e
 
     def run_example(
         self,

@@ -34,7 +34,6 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import StackSchema
-    from zenml.zen_stores.schemas.artifact_schemas import ArtifactSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import ScheduleSchema
@@ -67,11 +66,7 @@ class StackComponentSchema(ShareableSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    user: "UserSchema" = Relationship(back_populates="components")
-
-    artifacts: List["ArtifactSchema"] = Relationship(
-        back_populates="artifact_store",
-    )
+    user: Optional["UserSchema"] = Relationship(back_populates="components")
 
     stacks: List["StackSchema"] = Relationship(
         back_populates="components", link_model=StackCompositionSchema
@@ -101,7 +96,7 @@ class StackComponentSchema(ShareableSchema, table=True):
             else:
                 setattr(self, field, value)
 
-        self.updated = datetime.now()
+        self.updated = datetime.utcnow()
         return self
 
     def to_model(self) -> "ComponentResponseModel":
@@ -115,7 +110,7 @@ class StackComponentSchema(ShareableSchema, table=True):
             name=self.name,
             type=self.type,
             flavor=self.flavor,
-            user=self.user.to_model(),
+            user=self.user.to_model() if self.user else None,
             project=self.project.to_model(),
             is_shared=self.is_shared,
             configuration=json.loads(

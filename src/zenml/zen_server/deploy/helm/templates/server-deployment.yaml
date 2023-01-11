@@ -40,7 +40,7 @@ spec:
             - name: ZENML_LOGGING_VERBOSITY
               value: "DEBUG"
             {{- end }}
-            - name: ANALYTICS_OPT_IN
+            - name: ZENML_ANALYTICS_OPT_IN
               value: "False"
             - name: ZENML_DEFAULT_PROJECT_NAME
               value: {{ .Values.zenml.defaultProject | quote }}
@@ -66,7 +66,7 @@ spec:
             - name: ZENML_LOGGING_VERBOSITY
               value: "DEBUG"
             {{- end }}
-            - name: ANALYTICS_OPT_IN
+            - name: ZENML_ANALYTICS_OPT_IN
               value: "False"
             - name: ZENML_AUTH_TYPE
               value: {{ .Values.zenml.authType | quote }}

@@ -17,8 +17,6 @@ from typing import List, Optional, cast
 
 from pydantic import BaseModel, validator
 
-from zenml.artifacts.model_artifact import ModelArtifact
-from zenml.client import Client
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.environment import Environment
 from zenml.exceptions import DoesNotExistException
@@ -36,6 +34,7 @@ from zenml.integrations.kserve.services.kserve_deployment import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.materializers import UnmaterializedArtifact
 from zenml.steps import (
     STEP_ENVIRONMENT_NAME,
     BaseParameters,
@@ -226,7 +225,7 @@ def kserve_model_deployer_step(
     deploy_decision: bool,
     params: KServeDeployerStepParameters,
     context: StepContext,
-    model: ModelArtifact,
+    model: UnmaterializedArtifact,
 ) -> KServeDeploymentService:
     """KServe model deployer pipeline step.
 
@@ -331,7 +330,7 @@ def kserve_custom_model_deployer_step(
     deploy_decision: bool,
     params: KServeDeployerStepParameters,
     context: StepContext,
-    model: ModelArtifact,
+    model: UnmaterializedArtifact,
 ) -> KServeDeploymentService:
     """KServe custom model deployer pipeline step.
 
@@ -429,15 +428,9 @@ def kserve_custom_model_deployer_step(
     fileio.makedirs(served_model_uri)
     io_utils.copy_dir(model.uri, served_model_uri)
 
-    # Get the model artifact to extract information about the model
-    # and how it can be loaded again later in the deployment environment.
-    artifact = Client().zen_store.list_artifacts(artifact_uri=model.uri)
-    if not artifact:
-        raise DoesNotExistException(f"No artifact found at {model.uri}.")
-
     # save the model artifact metadata to the YAML file and copy it to the
     # deployment directory
-    model_metadata_file = save_model_metadata(artifact[0])
+    model_metadata_file = save_model_metadata(model)
     fileio.copy(
         model_metadata_file,
         os.path.join(served_model_uri, MODEL_METADATA_YAML_FILE_NAME),

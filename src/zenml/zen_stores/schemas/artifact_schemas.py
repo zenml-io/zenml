@@ -14,7 +14,7 @@
 """SQLModel implementation of artifact tables."""
 
 
-from typing import Optional
+from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
 from sqlmodel import Relationship
@@ -26,6 +26,12 @@ from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
+
+if TYPE_CHECKING:
+    from zenml.zen_stores.schemas.step_run_schemas import (
+        StepRunInputArtifactSchema,
+        StepRunOutputArtifactSchema,
+    )
 
 
 class ArtifactSchema(NamedSchema, table=True):
@@ -41,9 +47,6 @@ class ArtifactSchema(NamedSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    artifact_store: "StackComponentSchema" = Relationship(
-        back_populates="artifacts"
-    )
 
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -53,7 +56,7 @@ class ArtifactSchema(NamedSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    user: "UserSchema" = Relationship(back_populates="artifacts")
+    user: Optional["UserSchema"] = Relationship(back_populates="artifacts")
 
     project_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -69,6 +72,15 @@ class ArtifactSchema(NamedSchema, table=True):
     uri: str
     materializer: str
     data_type: str
+
+    input_to_step_runs: List["StepRunInputArtifactSchema"] = Relationship(
+        back_populates="artifact",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
+    output_of_step_runs: List["StepRunOutputArtifactSchema"] = Relationship(
+        back_populates="artifact",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
 
     @classmethod
     def from_request(
@@ -109,7 +121,7 @@ class ArtifactSchema(NamedSchema, table=True):
             id=self.id,
             name=self.name,
             artifact_store_id=self.artifact_store_id,
-            user=self.user.to_model(),
+            user=self.user.to_model() if self.user else None,
             project=self.project.to_model(),
             type=self.type,
             uri=self.uri,

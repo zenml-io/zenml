@@ -16,7 +16,7 @@
 from typing import Optional
 from uuid import UUID
 
-from sqlalchemy import Column, String
+from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
 from zenml.enums import StackComponentType
@@ -41,7 +41,7 @@ class FlavorSchema(NamedSchema, table=True):
 
     type: StackComponentType
     source: str
-    config_schema: str = Field(sa_column=Column(String(4096)), nullable=False)
+    config_schema: str = Field(sa_column=Column(TEXT, nullable=False))
     integration: Optional[str] = Field(default="")
 
     project_id: UUID = build_foreign_key_field(
@@ -62,7 +62,7 @@ class FlavorSchema(NamedSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    user: "UserSchema" = Relationship(back_populates="flavors")
+    user: Optional["UserSchema"] = Relationship(back_populates="flavors")
 
     def to_model(self) -> FlavorResponseModel:
         """Converts a flavor schema to a flavor model.
@@ -77,7 +77,7 @@ class FlavorSchema(NamedSchema, table=True):
             source=self.source,
             config_schema=self.config_schema,
             integration=self.integration,
-            user=self.user.to_model(),
+            user=self.user.to_model() if self.user else None,
             project=self.project.to_model(),
             created=self.created,
             updated=self.updated,

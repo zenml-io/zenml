@@ -16,7 +16,7 @@
 from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from zenml.enums import ArtifactType
 from zenml.models.base_models import (
@@ -24,6 +24,7 @@ from zenml.models.base_models import (
     ProjectScopedResponseModel,
     update_model,
 )
+from zenml.models.constants import STR_FIELD_MAX_LENGTH
 
 # ---- #
 # BASE #
@@ -33,12 +34,24 @@ from zenml.models.base_models import (
 class ArtifactBaseModel(BaseModel):
     """Base model for artifacts."""
 
-    name: str  # Name of the output in the parent step
+    name: str = Field(
+        title="Name of the output in the parent step.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+
     artifact_store_id: Optional[UUID]
     type: ArtifactType
-    uri: str
-    materializer: str
-    data_type: str
+    uri: str = Field(
+        title="URI of the artifact.", max_length=STR_FIELD_MAX_LENGTH
+    )
+    materializer: str = Field(
+        title="Materializer class to use for this artifact.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    data_type: str = Field(
+        title="Data type of the artifact.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
 
 
 # -------- #

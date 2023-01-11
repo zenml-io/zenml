@@ -25,11 +25,8 @@ from typing_extensions import Literal
 
 from zenml.integrations.evidently.data_validators import EvidentlyDataValidator
 from zenml.steps import Output
+from zenml.steps.base_parameters import BaseParameters
 from zenml.steps.base_step import BaseStep
-from zenml.steps.step_interfaces.base_drift_detection_step import (
-    BaseDriftDetectionParameters,
-    BaseDriftDetectionStep,
-)
 
 
 class EvidentlyColumnMapping(BaseModel):
@@ -88,7 +85,7 @@ class EvidentlyColumnMapping(BaseModel):
         return column_mapping
 
 
-class EvidentlyProfileParameters(BaseDriftDetectionParameters):
+class EvidentlyProfileParameters(BaseParameters):
     """Parameters class for Evidently profile steps.
 
     Attributes:
@@ -122,10 +119,10 @@ class EvidentlyProfileParameters(BaseDriftDetectionParameters):
     )
 
 
-class EvidentlyProfileStep(BaseDriftDetectionStep):
+class EvidentlyProfileStep(BaseStep):
     """Step implementation implementing an Evidently Profile Step."""
 
-    def entrypoint(  # type: ignore[override]
+    def entrypoint(
         self,
         reference_dataset: pd.DataFrame,
         comparison_dataset: pd.DataFrame,
