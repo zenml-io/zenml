@@ -28,9 +28,7 @@ from zenml.utils.yaml_utils import write_yaml
 
 
 def create_pipeline_with_param_value(param_value: int):
-    """Creates pipeline instance with a step named 'step' which has a
-    parameter named 'value'.
-    """
+    """Creates pipeline instance with a step named 'step' which has a parameter named 'value'."""
 
     class Params(BaseParameters):
         value: int
@@ -81,9 +79,7 @@ def test_initialize_pipeline_with_args_and_kwargs(
 def test_initialize_pipeline_with_too_many_args(
     unconnected_two_step_pipeline, generate_empty_steps
 ):
-    """Test that pipeline initialization fails when too many args
-    are passed.
-    """
+    """Test that pipeline initialization fails when too many args are passed."""
     with pytest.raises(PipelineInterfaceError):
         empty_step_1, empty_step_2, empty_step_3 = generate_empty_steps(3)
         unconnected_two_step_pipeline(
@@ -94,9 +90,7 @@ def test_initialize_pipeline_with_too_many_args(
 def test_initialize_pipeline_with_too_many_args_and_kwargs(
     unconnected_two_step_pipeline, generate_empty_steps
 ):
-    """Test that pipeline initialization fails when too many args
-    and kwargs are passed.
-    """
+    """Test that pipeline initialization fails when too many args and kwargs are passed."""
     with pytest.raises(PipelineInterfaceError):
         empty_step_1, empty_step_2, empty_step_3 = generate_empty_steps(3)
         unconnected_two_step_pipeline(
@@ -107,9 +101,7 @@ def test_initialize_pipeline_with_too_many_args_and_kwargs(
 def test_initialize_pipeline_with_missing_key(
     unconnected_two_step_pipeline, empty_step
 ):
-    """Test that pipeline initialization fails when an argument
-    is missing.
-    """
+    """Test that pipeline initialization fails when an argument is missing."""
     with pytest.raises(PipelineInterfaceError):
         unconnected_two_step_pipeline(step_1=empty_step())
 
@@ -117,9 +109,7 @@ def test_initialize_pipeline_with_missing_key(
 def test_initialize_pipeline_with_unexpected_key(
     unconnected_two_step_pipeline, generate_empty_steps
 ):
-    """Test that pipeline initialization fails when an argument
-    has an unexpected key.
-    """
+    """Test that pipeline initialization fails when an argument has an unexpected key."""
     with pytest.raises(PipelineInterfaceError):
         empty_step_1, empty_step_2, empty_step_3 = generate_empty_steps(3)
         unconnected_two_step_pipeline(
@@ -130,8 +120,7 @@ def test_initialize_pipeline_with_unexpected_key(
 def test_initialize_pipeline_with_repeated_args(
     unconnected_two_step_pipeline, empty_step
 ):
-    """Test that pipeline initialization fails when same step
-    object is used."""
+    """Test that pipeline initialization fails when same step object is used."""
     step_instance = empty_step()
     with pytest.raises(PipelineInterfaceError):
         unconnected_two_step_pipeline(step_instance, step_instance)
@@ -140,8 +129,7 @@ def test_initialize_pipeline_with_repeated_args(
 def test_initialize_pipeline_with_repeated_kwargs(
     unconnected_two_step_pipeline, empty_step
 ):
-    """Test that pipeline initialization fails when same step
-    object is used."""
+    """Test that pipeline initialization fails when same step object is used."""
     step_instance = empty_step()
     with pytest.raises(PipelineInterfaceError):
         unconnected_two_step_pipeline(
@@ -152,8 +140,7 @@ def test_initialize_pipeline_with_repeated_kwargs(
 def test_initialize_pipeline_with_repeated_args_and_kwargs(
     unconnected_two_step_pipeline, empty_step
 ):
-    """Test that pipeline initialization fails when same step
-    object is used."""
+    """Test that pipeline initialization fails when same step object is used."""
     step_instance = empty_step()
     with pytest.raises(PipelineInterfaceError):
         unconnected_two_step_pipeline(step_instance, step_2=step_instance)
@@ -221,9 +208,7 @@ def test_overwrite_step_parameter_with_config_yaml(tmp_path):
 
 
 def test_dont_overwrite_step_parameter_with_config_yaml(tmp_path):
-    """Test that step parameters don't get overwritten by yaml file
-    if not forced.
-    """
+    """Test that step parameters don't get overwritten by yaml file if not forced."""
     config_value = 0
     pipeline_instance = create_pipeline_with_param_value(config_value)
 
@@ -269,9 +254,7 @@ def test_yaml_configuration_allows_enabling_cache(tmp_path):
 def test_setting_pipeline_parameter_name_when_initializing_pipeline(
     one_step_pipeline, empty_step
 ):
-    """Tests that initializing a pipeline with a step sets the attribute
-    `pipeline_parameter_name` of the step.
-    """
+    """Tests that initializing a pipeline with a step sets the attribute `pipeline_parameter_name` of the step."""
     step_instance = empty_step()
     assert step_instance.pipeline_parameter_name is None
     one_step_pipeline(step_instance)
@@ -281,9 +264,7 @@ def test_setting_pipeline_parameter_name_when_initializing_pipeline(
 def test_calling_a_pipeline_twice_raises_no_exception(
     one_step_pipeline, empty_step
 ):
-    """Tests that calling one pipeline instance twice does not raise
-    any exception.
-    """
+    """Tests that calling one pipeline instance twice does not raise any exception."""
     pipeline_instance = one_step_pipeline(empty_step())
 
     with does_not_raise():
@@ -294,9 +275,7 @@ def test_calling_a_pipeline_twice_raises_no_exception(
 def test_pipeline_run_fails_when_required_step_operator_is_missing(
     one_step_pipeline,
 ):
-    """Tests that running a pipeline with a step that requires a custom step
-    operator fails if the active stack does not contain this step operator.
-    """
+    """Tests that running a pipeline with a step that requires a custom step operator fails if the active stack does not contain this step operator."""
 
     @step(step_operator="azureml")
     def step_that_requires_step_operator() -> None:
@@ -304,4 +283,6 @@ def test_pipeline_run_fails_when_required_step_operator_is_missing(
 
     assert not Client().active_stack.step_operator
     with pytest.raises(StackValidationError):
-        one_step_pipeline(step_that_requires_step_operator()).run(unlisted=True)
+        one_step_pipeline(step_that_requires_step_operator()).run(
+            unlisted=True
+        )

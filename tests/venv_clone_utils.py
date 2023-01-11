@@ -34,8 +34,7 @@
 #  permissions and limitations under the License.
 """The below code is copied from the virtualenv-clone source repo with minor
 changes to make it work for the specific usecase of zenml. All credits go to
-https://github.com/edwardgeorge for the core implementation
-.
+https://github.com/edwardgeorge for the core implementation.
 """
 
 import itertools
@@ -402,7 +401,9 @@ def _replace_symlink(filename: str, newtarget: str) -> None:
         shutil.move(tmpfn, filename)
 
 
-def fixup_syspath_items(syspath: List[str], old_dir: str, new_dir: str) -> None:
+def fixup_syspath_items(
+    syspath: List[str], old_dir: str, new_dir: str
+) -> None:
     """Replace mentions of the old venv in sys path with the new venv.
 
     Args:

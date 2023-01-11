@@ -55,9 +55,7 @@ def test_materializer_raises_an_exception_if_associated_artifact_type_wrong():
 
 
 def test_materializer_raises_an_exception_when_asked_to_read_unfamiliar_type():
-    """Tests that a materializer fails if it's asked to read the artifact to a
-    non-associated type.
-    """
+    """Tests that a materializer fails if it's asked to read the artifact to a non-associated type."""
     materializer = TestMaterializer(uri="")
 
     with pytest.raises(TypeError):
@@ -65,9 +63,7 @@ def test_materializer_raises_an_exception_when_asked_to_read_unfamiliar_type():
 
 
 def test_materializer_raises_an_exception_when_asked_to_write_unfamiliar_type():
-    """Tests that a materializer fails if it's asked to write data of a
-    non-associated type.
-    """
+    """Tests that a materializer fails if it's asked to write data of a non-associated type."""
     materializer = TestMaterializer(uri="")
 
     with pytest.raises(TypeError):

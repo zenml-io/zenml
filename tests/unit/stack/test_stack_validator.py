@@ -21,9 +21,7 @@ from zenml.stack import Stack, StackValidator
 
 
 def test_validator_with_custom_stack_validation_function(local_stack):
-    """Tests that a validator fails when its custom validation function fails
-    to validate the stack.
-    """
+    """Tests that a validator fails when its custom validation function fails to validate the stack."""
 
     def failing_validation_function(_: Stack):
         return False, "Custom error"
@@ -45,9 +43,7 @@ def test_validator_with_custom_stack_validation_function(local_stack):
 
 
 def test_validator_with_required_components(local_stack):
-    """Tests that a validator fails when one of its required components is
-    missing in the stack.
-    """
+    """Tests that a validator fails when one of its required components is missing in the stack."""
     failing_validator = StackValidator(
         required_components={StackComponentType.CONTAINER_REGISTRY}
     )

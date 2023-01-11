@@ -200,9 +200,7 @@ def empty_step():
 
 @pytest.fixture
 def generate_empty_steps():
-    """Pytest fixture that returns a function that generates multiple empty
-    steps.
-    """
+    """Pytest fixture that returns a function that generates multiple empty steps."""
 
     def _generate_empty_steps(count: int):
         output = []
@@ -222,9 +220,7 @@ def generate_empty_steps():
 
 @pytest.fixture
 def one_step_pipeline():
-    """Pytest fixture that returns a pipeline which takes a single step
-    named `step_`.
-    """
+    """Pytest fixture that returns a pipeline which takes a single step named `step_`."""
 
     @pipeline
     def _pipeline(step_):
@@ -235,9 +231,7 @@ def one_step_pipeline():
 
 @pytest.fixture
 def unconnected_two_step_pipeline():
-    """Pytest fixture that returns a pipeline which takes two steps
-    `step_1` and `step_2`. The steps are not connected to each other.
-    """
+    """Pytest fixture that returns a pipeline which takes two steps `step_1` and `step_2`. The steps are not connected to each other."""
 
     @pipeline
     def _pipeline(step_1, step_2):

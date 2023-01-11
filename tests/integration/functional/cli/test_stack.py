@@ -537,9 +537,7 @@ def test_share_stack_when_component_is_already_shared_by_other_user_fails(
 def test_create_shared_stack_when_component_is_private_fails(
     clean_project: Client,
 ) -> None:
-    """When sharing a stack all the components should also be shared, so if a
-    component is not shared this should fail.
-    """
+    """When sharing a stack all the components should also be shared, so if a component is not shared this should fail."""
     runner = CliRunner()
     register_command = cli.commands["stack"].commands["register"]
     result = runner.invoke(

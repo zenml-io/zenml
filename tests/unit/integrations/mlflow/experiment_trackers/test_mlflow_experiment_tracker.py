@@ -72,9 +72,7 @@ def test_mlflow_experiment_tracker_attributes() -> None:
 
 
 def test_mlflow_experiment_tracker_stack_validation() -> None:
-    """Tests that the MLflow experiment tracker validates that it's stack has a
-    `LocalArtifactStore` if no tracking URI is set.
-    """
+    """Tests that the MLflow experiment tracker validates that its stack has a `LocalArtifactStore` if no tracking URI is set."""
     experiment_tracker = MLFlowExperimentTracker(
         name="",
         id=uuid4(),
@@ -141,9 +139,7 @@ def test_mlflow_experiment_tracker_stack_validation() -> None:
 
 
 def test_mlflow_experiment_tracker_authentication() -> None:
-    """Tests that the MLflow experiment tracker validates the authentication
-    parameters.
-    """
+    """Tests that the MLflow experiment tracker validates the authentication parameters."""
     # should raise because no authentication parameters are set
     with pytest.raises(ValidationError):
         MLFlowExperimentTracker(

@@ -77,16 +77,12 @@ def test_get_model_class() -> None:
 
 
 def test_serializing_invalid_model() -> None:
-    """Tests that trying to serialize a non-kubernetes model raises an
-    error.
-    """
+    """Tests that trying to serialize a non-kubernetes model raises an error."""
     with pytest.raises(TypeError):
         serialize_kubernetes_model(5)
 
 
 def test_deserializing_invalid_model() -> None:
-    """Tests that trying to deserialize to a non-kubernetes model raises
-    an error.
-    """
+    """Tests that trying to deserialize to a non-kubernetes model raises an error."""
     with pytest.raises(TypeError):
         deserialize_kubernetes_model({}, "not_a_kubernetes_model_class")

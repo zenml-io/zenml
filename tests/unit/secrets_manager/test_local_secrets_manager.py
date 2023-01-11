@@ -53,9 +53,7 @@ def test_local_secrets_manager_attributes(local_secrets_manager):
 
 
 def test_local_secrets_manager_creates_file(local_secrets_manager):
-    """Tests that the initialization of the local secrets manager creates
-    a yaml file at the right location.
-    """
+    """Tests that the initialization of the local secrets manager creates a yaml file at the right location."""
     name = "test_name"
     key = "test_key"
     value = "test_value"

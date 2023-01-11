@@ -113,9 +113,7 @@ def test_environment_component_activation():
 
 
 def test_ipython_terminal_detection_when_not_installed():
-    """Tests that we detect if the Python process is running in an IPython
-    terminal when not installed.
-    """
+    """Tests that we detect if the Python process is running in an IPython terminal when not installed."""
     try:
         import IPython  # noqa
     except ImportError:

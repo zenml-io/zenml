@@ -21,9 +21,7 @@ from zenml.io import fileio
 
 
 def test_global_config_file_creation(clean_client):
-    """Tests whether a config file gets created when the global
-    config object is first instantiated.
-    """
+    """Tests whether a config file gets created when the global config object is first instantiated."""
     if fileio.exists(GlobalConfiguration()._config_file()):
         fileio.remove(GlobalConfiguration()._config_file())
 
@@ -40,9 +38,7 @@ def test_global_config_user_id_is_immutable(clean_client):
 def test_global_config_returns_value_from_environment_variable(
     mocker, clean_client
 ):
-    """Tests that global config attributes can be overwritten by environment
-    variables.
-    """
+    """Tests that global config attributes can be overwritten by environment variables."""
     config = GlobalConfiguration()
 
     os.environ["ZENML_ANALYTICS_OPT_IN"] = "true"
