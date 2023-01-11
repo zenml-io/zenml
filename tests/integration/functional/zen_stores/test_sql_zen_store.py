@@ -19,6 +19,7 @@ from typing import Dict, Union
 import pytest
 
 from zenml.config.pipeline_configurations import PipelineSpec
+from zenml.config.schedule import Schedule
 from zenml.enums import (
     ArtifactType,
     ExecutionStatus,
@@ -53,6 +54,10 @@ from zenml.models import (
     UserUpdateModel,
 )
 from zenml.models.base_models import BaseResponseModel
+from zenml.models.schedule_model import (
+    ScheduleRequestModel,
+    ScheduleUpdateModel,
+)
 from zenml.zen_stores.base_zen_store import (
     DEFAULT_ADMIN_ROLE,
     DEFAULT_GUEST_ROLE,
@@ -1125,6 +1130,121 @@ def test_deleting_nonexistent_pipeline_fails(
     """Tests deleting nonexistent pipeline fails."""
     with pytest.raises(KeyError):
         sql_store["store"].delete_pipeline(uuid.uuid4())
+
+
+# ---------
+# Schedules
+# ---------
+
+
+def test_create_schedule_succeeds(sql_store):
+    """Tests creating schedule."""
+    project_id = sql_store["default_project"].id
+    user_id = sql_store["active_user"].id
+    orchestrator_id = (
+        sql_store["default_stack"].components["orchestrator"][0].id
+    )
+    schedule = Schedule(cron_expression="*/5 * * * *")
+    schedule = ScheduleRequestModel(
+        name="arias_schedule",
+        project=project_id,
+        user=user_id,
+        pipeline_id=None,
+        orchestrator_id=orchestrator_id,
+        active=True,
+        cron_expression=schedule.cron_expression,
+        start_time=schedule.start_time,
+        end_time=schedule.end_time,
+        interval_second=schedule.interval_second,
+        catchup=schedule.catchup,
+    )
+    schedules = sql_store["store"].list_schedules()
+    assert len(schedules) == 0
+    with does_not_raise():
+        schedule = sql_store["store"].create_schedule(schedule=schedule)
+    assert schedule is not None
+    assert schedule.name == "arias_schedule"
+    schedules = sql_store["store"].list_schedules()
+    assert len(schedules) == 1
+
+
+def test_getting_schedule_succeeds(sql_store_with_scheduled_run):
+    """Tests getting schedule."""
+    schedule_id = sql_store_with_scheduled_run["schedule"].id
+    with does_not_raise():
+        schedule = sql_store_with_scheduled_run["store"].get_schedule(
+            schedule_id
+        )
+        assert schedule is not None
+        assert schedule.name == sql_store_with_scheduled_run["schedule"].name
+
+
+def test_getting_nonexistent_schedule_fails(sql_store_with_scheduled_run):
+    """Tests getting nonexistent schedule fails."""
+    with pytest.raises(KeyError):
+        sql_store_with_scheduled_run["store"].get_schedule(uuid.uuid4())
+
+
+def test_list_schedules_succeeds(sql_store_with_scheduled_run):
+    """Tests listing schedules."""
+    schedules = sql_store_with_scheduled_run["store"].list_schedules()
+    assert len(schedules) == 1
+
+
+def test_updating_schedule_succeeds(sql_store_with_scheduled_run):
+    """Tests updating schedule."""
+    schedule_id = sql_store_with_scheduled_run["schedule"].id
+    schedule_update = ScheduleUpdateModel(
+        name="blupus_schedule",
+        active=False,
+    )
+    with does_not_raise():
+        updated_schedule = sql_store_with_scheduled_run[
+            "store"
+        ].update_schedule(
+            schedule_id=schedule_id, schedule_update=schedule_update
+        )
+    assert updated_schedule is not None
+    assert updated_schedule.name == "blupus_schedule"
+    assert updated_schedule.active is False
+    assert (
+        updated_schedule.created
+        == sql_store_with_scheduled_run["schedule"].created
+    )
+    assert (
+        updated_schedule.updated
+        != sql_store_with_scheduled_run["schedule"].updated
+    )
+
+
+def test_updating_nonexistent_schedule_fails(sql_store_with_scheduled_run):
+    """Tests updating nonexistent schedule fails."""
+    schedule_update = ScheduleUpdateModel(
+        name="blupus_schedule",
+        active=False,
+    )
+    with pytest.raises(KeyError):
+        sql_store_with_scheduled_run["store"].update_schedule(
+            schedule_id=uuid.uuid4(), schedule_update=schedule_update
+        )
+
+
+def test_deleting_schedule_succeeds(sql_store_with_scheduled_run):
+    """Tests deleting schedule."""
+    schedule_id = sql_store_with_scheduled_run["schedule"].id
+    schedules = sql_store_with_scheduled_run["store"].list_schedules()
+    assert len(schedules) == 1
+    sql_store_with_scheduled_run["store"].delete_schedule(schedule_id)
+    schedules = sql_store_with_scheduled_run["store"].list_schedules()
+    assert len(schedules) == 0
+    with pytest.raises(KeyError):
+        sql_store_with_scheduled_run["store"].get_schedule(schedule_id)
+
+
+def test_deleting_nonexistent_schedule_fails(sql_store_with_scheduled_run):
+    """Tests deleting nonexistent schedule fails."""
+    with pytest.raises(KeyError):
+        sql_store_with_scheduled_run["store"].delete_schedule(uuid.uuid4())
 
 
 # --------------
