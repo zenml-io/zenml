@@ -228,9 +228,7 @@ def test_updating_non_active_stack_succeeds(clean_project) -> None:
 
 
 def test_update_stack_adding_component_succeeds(clean_project) -> None:
-    """Test stack update by adding a new component to a stack
-    succeeds.
-    """
+    """Test stack update by adding a new component to a stack succeeds."""
     # first we create and activate a non-default stack
     registered_stack = clean_project.active_stack_model
 
@@ -276,9 +274,7 @@ def test_update_stack_adding_component_succeeds(clean_project) -> None:
 
 
 def test_update_stack_adding_to_default_stack_fails(clean_project) -> None:
-    """Test stack update by adding a new component to the default stack
-    is prohibited.
-    """
+    """Test stack update by adding a new component to the default stack is prohibited."""
     # first we set the active stack to a non-default stack
     registered_stack = clean_project.active_stack_model
 
@@ -485,9 +481,7 @@ def test_share_stack_that_is_already_shared_fails(
 def test_share_stack_when_component_is_already_shared_by_other_user_fails(
     clean_project: Client,
 ) -> None:
-    """When sharing a stack all the components are also shared, so if a
-    component with the same name is already shared this should fail.
-    """
+    """When sharing a stack all the components are also shared, so if a component with the same name is already shared this should fail."""
     if clean_project.zen_store.type != StoreType.REST:
         pytest.skip("Only supported on ZenML server")
 
@@ -558,9 +552,7 @@ def test_create_shared_stack_when_component_is_private_fails(
 def test_add_private_component_to_shared_stack_fails(
     clean_project: Client,
 ) -> None:
-    """When sharing a stack all the components are also shared, so if a
-    component with the same name is already shared this should fail.
-    """
+    """When sharing a stack all the components are also shared, so if a component with the same name is already shared this should fail."""
     if clean_project.zen_store.type != StoreType.REST:
         pytest.skip("Only supported on ZenML server")
 
@@ -620,9 +612,7 @@ def test_add_private_component_to_shared_stack_fails(
 def test_share_stack_when_component_is_private_fails(
     clean_project: Client,
 ) -> None:
-    """When sharing a stack all the components are also shared, so if a
-    component with the same name is already shared this should fail.
-    """
+    """When sharing a stack all the components are also shared, so if a component with the same name is already shared this should fail."""
     # Non-shared components
     new_artifact_store = _create_local_artifact_store(clean_project)
 

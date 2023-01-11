@@ -20,9 +20,7 @@ from zenml.stack.stack_component import StackComponentConfig
 
 
 def test_local_orchestrator_attributes():
-    """Tests that the basic attributes of the local orchestrator are set
-    correctly.
-    """
+    """Tests that the basic attributes of the local orchestrator are set correctly."""
     orchestrator = LocalOrchestrator(
         name="",
         id=uuid4(),

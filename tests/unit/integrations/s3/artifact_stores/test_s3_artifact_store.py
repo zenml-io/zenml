@@ -29,9 +29,7 @@ from zenml.integrations.s3.flavors.s3_artifact_store_flavor import (
 
 
 def test_s3_artifact_store_attributes():
-    """Tests that the basic attributes of the s3 artifact store are set
-    correctly.
-    """
+    """Tests that the basic attributes of the s3 artifact store are set correctly."""
     artifact_store = S3ArtifactStore(
         name="",
         id=uuid4(),

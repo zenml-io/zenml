@@ -94,9 +94,7 @@ def sample_team_name() -> str:
 
 
 def create_sample_team() -> TeamResponseModel:
-    """Fixture to get a clean global configuration and repository for an
-    individual test.
-    """
+    """Fixture to get a clean global configuration and repository for an individual test."""
     return Client().create_team(name=sample_team_name())
 
 

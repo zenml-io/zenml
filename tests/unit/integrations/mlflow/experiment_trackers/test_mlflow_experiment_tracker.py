@@ -47,9 +47,7 @@ from zenml.stack.stack_component import StackComponentConfig
 
 
 def test_mlflow_experiment_tracker_attributes() -> None:
-    """Tests that the basic attributes of the MLflow experiment tracker are set
-    correctly.
-    """
+    """Tests that the basic attributes of the MLflow experiment tracker are set correctly."""
     experiment_tracker = MLFlowExperimentTracker(
         name="",
         id=uuid4(),
@@ -250,9 +248,7 @@ def test_mlflow_experiment_tracker_authentication() -> None:
 
 
 def test_mlflow_experiment_tracker_set_config(local_stack: Stack) -> None:
-    """Tests that the MLflow experiment tracker sets the MLflow configuration
-    correctly.
-    """
+    """Tests that the MLflow experiment tracker sets the MLflow configuration correctly."""
     local_stack._experiment_tracker = MLFlowExperimentTracker(
         name="",
         id=uuid4(),

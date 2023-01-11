@@ -24,9 +24,7 @@ from zenml.exceptions import ArtifactStoreInterfaceError
 
 
 def test_local_artifact_store_attributes():
-    """Tests that the basic attributes of the local artifact store are set
-    correctly.
-    """
+    """Tests that the basic attributes of the local artifact store are set correctly."""
     artifact_store = LocalArtifactStore(
         name="",
         id=uuid4(),
@@ -44,8 +42,7 @@ def test_local_artifact_store_attributes():
 
 def test_local_artifact_store_only_supports_local_paths():
     """Checks that a local artifact store can only be initialized with a local
-    path.
-    """
+    path."""
     with pytest.raises(ArtifactStoreInterfaceError):
         LocalArtifactStore(
             name="",

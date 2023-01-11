@@ -18,9 +18,7 @@ from zenml.utils import string_utils
 
 
 def test_get_human_readable_time_formats_correctly() -> None:
-    """Check the get_human_readable_time function formats the string
-    correctly.
-    """
+    """Check the get_human_readable_time function formats the string correctly."""
     assert string_utils.get_human_readable_time(172799) == "1d23h59m59s"
     assert string_utils.get_human_readable_time(3661) == "1h1m1s"
     assert string_utils.get_human_readable_time(3661) == "1h1m1s"
@@ -30,9 +28,7 @@ def test_get_human_readable_time_formats_correctly() -> None:
 
 
 def test_get_human_readable_filesize_formats_correctly() -> None:
-    """Check the get_human_readable_filesize function formats the string
-    correctly.
-    """
+    """Check the get_human_readable_filesize function formats the string correctly."""
     assert string_utils.get_human_readable_filesize(1023) == "1023.00 B"
     assert string_utils.get_human_readable_filesize(1024) == "1.00 KiB"
     assert (

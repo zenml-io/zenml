@@ -16,8 +16,6 @@ from zenml.enums import StackComponentType
 
 
 def test_default_container_registry_attributes():
-    """Tests that the basic attributes of the base container registry are set
-    correctly.
-    """
+    """Tests that the basic attributes of the base container registry are set correctly."""
     container_registry = DefaultContainerRegistryFlavor()
     assert container_registry.type == StackComponentType.CONTAINER_REGISTRY

@@ -47,9 +47,7 @@ def local_secrets_manager():
 
 
 def test_local_secrets_manager_attributes(local_secrets_manager):
-    """Tests that the basic attributes of the local secrets manager are set
-    correctly.
-    """
+    """Tests that the basic attributes of the local secrets manager are set correctly."""
     assert local_secrets_manager.type == StackComponentType.SECRETS_MANAGER
     assert local_secrets_manager.flavor == "default"
 
