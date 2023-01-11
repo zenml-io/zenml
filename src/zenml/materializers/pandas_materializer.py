@@ -145,40 +145,28 @@ class PandasMaterializer(BaseMaterializer):
             The extracted metadata as a dictionary.
         """
         base_metadata = super().extract_metadata(df)
+        pandas_metadata: Dict[str, "MetadataType"] = {"shape": df.shape}
 
-        def _convert_stat(stat: Any) -> Union[float, Dict[str, float]]:
-            """Converts a pandas statistic to builtin types.
-
-            If the statistic is a `pd.Series`, it is converted to a dictionary
-            of floats. Otherwise, it is converted to a float.
-
-            Args:
-                stat: The pandas statistic to convert.
-
-            Returns:
-                The statistic as a builtin type.
-            """
-            if isinstance(stat, pd.Series):
-                return {
-                    str(key): float(value)
-                    for key, value in stat.to_dict().items()
-                }
-            return float(stat.item())
-
-        dtype: Union[DType, Dict[str, DType]]
         if isinstance(df, pd.Series):
-            dtype = DType(df.dtype.type)
+            pandas_metadata["dtype"] = DType(df.dtype.type)
+            pandas_metadata["mean"] = float(df.mean().item())
+            pandas_metadata["std"] = float(df.std().item())
+            pandas_metadata["min"] = float(df.min().item())
+            pandas_metadata["max"] = float(df.max().item())
+
         else:
-            dtype = {
+            pandas_metadata["dtype"] = {
                 str(key): DType(value.type) for key, value in df.dtypes.items()
             }
+            for stat_name, stat in {
+                "mean": df.mean,
+                "std": df.std,
+                "min": df.min,
+                "max": df.max,
+            }.items():
+                pandas_metadata[stat_name] = {
+                    str(key): float(value)
+                    for key, value in stat(numeric_only=True).to_dict().items()
+                }
 
-        pandas_metadata: Dict[str, "MetadataType"] = {
-            "shape": df.shape,
-            "dtype": dtype,
-            "mean": _convert_stat(df.mean()),
-            "std": _convert_stat(df.std()),
-            "min": _convert_stat(df.min()),
-            "max": _convert_stat(df.max()),
-        }
         return {**base_metadata, **pandas_metadata}
