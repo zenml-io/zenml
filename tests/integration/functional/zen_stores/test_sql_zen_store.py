@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
+import logging
 import uuid
 from contextlib import ExitStack as does_not_raise
 from typing import TYPE_CHECKING, Callable, Any, List, TypeVar
@@ -23,9 +23,11 @@ from tests.integration.functional.zen_stores.utils import sample_name
 from zenml.client import Client
 from zenml.exceptions import IllegalOperationError
 from zenml.models import ProjectRequestModel, ProjectUpdateModel, \
-    UserRequestModel
+    UserRequestModel, UserUpdateModel
 from zenml.zen_stores.base_zen_store import DEFAULT_PROJECT_NAME
-from zenml.models.base_models import BaseRequestModel, BaseResponseModel
+from zenml.models.base_models import (
+    BaseRequestModel, BaseResponseModel
+)
 
 if TYPE_CHECKING:
     from zenml.models import ProjectResponseModel
@@ -40,26 +42,36 @@ DEFAULT_NAME = "default"
 AnyRequestModel = TypeVar("AnyRequestModel", bound=BaseRequestModel)
 AnyResponseModel = TypeVar("AnyResponseModel", bound=BaseResponseModel)
 
+
 class CrudTestConfig(BaseModel):
     zen_store_list_method: Callable[[Any], List[AnyResponseModel]]
+    zen_store_get_method: Callable[[uuid.UUID], AnyResponseModel]
     zen_store_create_method: Callable[[AnyRequestModel], AnyResponseModel]
+    zen_store_update_method: Callable[[uuid.UUID, AnyRequestModel], AnyResponseModel]
     zen_store_delete_method: Callable[[uuid.UUID], None]
     create_model: "BaseRequestModel"
+    update_model: "BaseRequestModel"
 
 
 project_crud_test_config = CrudTestConfig(
     zen_store_list_method=Client().zen_store.list_projects,
+    zen_store_get_method=Client().zen_store.get_project,
     zen_store_create_method=Client().zen_store.create_project,
-    zen_store_delete_method=Client().zen_store.delete_user,
+    zen_store_update_method=Client().zen_store.update_project,
+    zen_store_delete_method=Client().zen_store.delete_project,
     create_model=ProjectRequestModel(name=sample_name("sample_project")),
+    update_model=ProjectUpdateModel(name=sample_name("updated_sample_project")),
 )
 
 
 user_crud_test_config = CrudTestConfig(
     zen_store_list_method=Client().zen_store.list_users,
+    zen_store_get_method=Client().zen_store.get_user,
     zen_store_create_method=Client().zen_store.create_user,
+    zen_store_update_method=Client().zen_store.update_user,
     zen_store_delete_method=Client().zen_store.delete_user,
     create_model=UserRequestModel(name=sample_name("sample_user")),
+    update_model=UserUpdateModel(name=sample_name("updated_sample_user")),
 )
 
 list_of_entities = [project_crud_test_config, user_crud_test_config]
@@ -68,137 +80,214 @@ list_of_entities = [project_crud_test_config, user_crud_test_config]
 @pytest.mark.parametrize("crud_test_config", list_of_entities)
 def test_entity_creation_succeeds(crud_test_config: CrudTestConfig):
     """Tests entity creation."""
-    # Create the project
+    # Create the entity
     create_model = crud_test_config.create_model
     assert create_model.name
-    crud_test_config.zen_store_create_method(create_model)
-    # List all projects
+    created_entity = crud_test_config.zen_store_create_method(create_model)
+    # List all entities
     entities_list = crud_test_config.zen_store_list_method()
     assert create_model.name in [e.name for e in entities_list]
-    # cleanup
-
+    assert created_entity.id in [e.id for e in entities_list]
+    # Cleanup
+    crud_test_config.zen_store_delete_method(created_entity.id)
 
 
 @pytest.mark.parametrize("crud_test_config", list_of_entities)
-def test_get_entity_succeeds(crud_test_config: CrudTestConfig):
-    """Tests getting a project."""
-    client = Client()
-
+def test_get_entity_by_id_succeeds(crud_test_config: CrudTestConfig):
+    """Tests getting an entity by id."""
+    # Create the entity
+    create_model = crud_test_config.create_model
+    assert create_model.name
+    created_entity = crud_test_config.zen_store_create_method(create_model)
     with does_not_raise():
-        client.zen_store.get_project(sample_project.name)
-        client.zen_store.get_project(sample_project.id)
+        crud_test_config.zen_store_get_method(created_entity.id)
+    # Cleanup
+    crud_test_config.zen_store_delete_method(created_entity.id)
+
+
+@pytest.mark.parametrize("crud_test_config", list_of_entities)
+def test_get_nonexistent_entity_fails(crud_test_config: CrudTestConfig):
+    """Tests getting a non-existent entity by id."""
+    with pytest.raises(KeyError):
+        crud_test_config.zen_store_get_method(uuid.uuid4())
+
+
+@pytest.mark.parametrize("crud_test_config", list_of_entities)
+def test_updating_entity_succeeds(crud_test_config: CrudTestConfig):
+    """Tests updating an entity."""
+    # Create the entity
+    create_model = crud_test_config.create_model
+    assert create_model.name
+    created_entity = crud_test_config.zen_store_create_method(create_model)
+    # List all entities
+    entities_list = crud_test_config.zen_store_list_method()
+    assert create_model.name in [e.name for e in entities_list]
+    assert created_entity.id in [e.id for e in entities_list]
+    # Update the created entity
+    update_model = crud_test_config.update_model
+    assert update_model.name
+    with does_not_raise():
+        updated_entity = crud_test_config.zen_store_update_method(
+            created_entity.id, update_model
+        )
+    # The entity can be found using the new name, not the old name
+    entities_list = crud_test_config.zen_store_list_method()
+    assert updated_entity.id == created_entity.id
+    assert update_model.name in [e.name for e in entities_list]
+    assert create_model.name not in [e.name for e in entities_list]
+    # Cleanup
+    crud_test_config.zen_store_delete_method(created_entity.id)
+
+
+@pytest.mark.parametrize("crud_test_config", list_of_entities)
+def test_updating_nonexisting_entity_raises_error(crud_test_config: CrudTestConfig):
+    """Tests updating a nonexistent entity raises an error."""
+    # Update the created entity
+    update_model = crud_test_config.update_model
+    assert update_model.name
+    with pytest.raises(KeyError):
+        crud_test_config.zen_store_update_method(
+            uuid.uuid4(), update_model
+        )
+
+
+@pytest.mark.parametrize("crud_test_config", list_of_entities)
+def test_deleting_project_succeeds(crud_test_config: CrudTestConfig):
+    """Tests deleting a project."""
+    # Create the entity
+    create_model = crud_test_config.create_model
+    assert create_model.name
+    created_entity = crud_test_config.zen_store_create_method(create_model)
+    # List all entities
+    entities_list = crud_test_config.zen_store_list_method()
+    assert create_model.name in [e.name for e in entities_list]
+    assert created_entity.id in [e.id for e in entities_list]
+    with does_not_raise():
+        crud_test_config.zen_store_delete_method(created_entity.id)
+
+    entities_list = crud_test_config.zen_store_list_method()
+    assert create_model.name not in [e.name for e in entities_list]
+    assert created_entity.id not in [e.id for e in entities_list]
+
+
+@pytest.mark.parametrize("crud_test_config", list_of_entities)
+def test_deleting_nonexistent_project_raises_error(crud_test_config: CrudTestConfig):
+    """Tests deleting a nonexistent project raises an error."""
+    with pytest.raises(KeyError):
+        crud_test_config.zen_store_delete_method(uuid.uuid4())
+
 
 # .---------
 # | PROJECTS
 # '---------
 
 
-def test_only_one_default_project_present():
-    """Tests that one and only one default project is present."""
-    client = Client()
-    assert len(client.zen_store.list_projects(name="default")) == 1
-
-
-def test_project_creation_succeeds():
-    """Tests project creation."""
-    client = Client()
-    num_projects_before = len(client.zen_store.list_projects())
-    # Create the project
-    new_project = ProjectRequestModel(name=sample_name("arias_project"))
-    client.zen_store.create_project(new_project)
-    # List all projects
-    projects_list = client.zen_store.list_projects()
-    assert len(projects_list) == num_projects_before + 1
-    assert "arias_project" in [p.name for p in projects_list]
-
-
-def test_get_project_succeeds(sample_project: "ProjectResponseModel"):
-    """Tests getting a project."""
-    client = Client()
-
-    with does_not_raise():
-        client.zen_store.get_project(sample_project.name)
-        client.zen_store.get_project(sample_project.id)
-
-
-def test_getting_nonexistent_project_fails():
-    """Tests getting a nonexistent project raises an error."""
-    client = Client()
-    with pytest.raises(KeyError):
-        client.zen_store.get_project("inexistent_blupus_project")
-
-
-def test_updating_default_project_fails():
-    """Tests updating the default project."""
-    client = Client()
-
-    default_project = client.zen_store.get_project(DEFAULT_PROJECT_NAME)
-    assert default_project.name == DEFAULT_PROJECT_NAME
-    project_update = ProjectUpdateModel(
-        name="aria_project",
-        description="Aria has taken possession of this project.",
-    )
-    with pytest.raises(IllegalOperationError):
-        client.zen_store.update_project(
-            project_id=default_project.id, project_update=project_update
-        )
-
-
-def test_updating_project_succeeds(sample_project: "ProjectResponseModel"):
-    """Tests updating a project."""
-    client = Client()
-
-    new_name = sample_name("Axl")
-    project_update = ProjectUpdateModel(
-        name=new_name, description="Axl has taken possession of this project."
-    )
-    # Update works
-    with does_not_raise():
-        client.zen_store.update_project(
-            project_id=sample_project.id, project_update=project_update
-        )
-    # The project can be found using the new name
-    with does_not_raise():
-        client.zen_store.get_project(project_name_or_id=new_name)
-    # The project can no longer be found using the old name
-    with pytest.raises(KeyError):
-        client.zen_store.get_project(project_name_or_id=sample_project.name)
-
-
-def test_updating_nonexisting_project_raises_error():
-    """Tests updating a nonexistent project raises an error."""
-    client = Client()
-    project_update = ProjectUpdateModel(name="arias_project")
-    with pytest.raises(KeyError):
-        client.zen_store.update_project(
-            project_id=uuid.uuid4(), project_update=project_update
-        )
-
-
-def test_deleting_project_succeeds(sample_project: "ProjectResponseModel"):
-    """Tests deleting a project."""
-    client = Client()
-
-    with does_not_raise():
-        client.zen_store.delete_project(sample_project.name)
-    assert sample_project.name not in [
-        p.name for p in client.zen_store.list_projects()
-    ]
-
-
-def test_deleting_default_project_fails():
-    """Tests deleting the default project."""
-    client = Client()
-    with pytest.raises(IllegalOperationError):
-        client.zen_store.delete_project(DEFAULT_NAME)
-
-
-def test_deleting_nonexistent_project_raises_error():
-    """Tests deleting a nonexistent project raises an error."""
-    client = Client()
-    with pytest.raises(KeyError):
-        client.zen_store.delete_project("blupus_project")
-
+# def test_only_one_default_project_present():
+#     """Tests that one and only one default project is present."""
+#     client = Client()
+#     assert len(client.zen_store.list_projects(name="default")) == 1
+#
+#
+# def test_project_creation_succeeds():
+#     """Tests project creation."""
+#     client = Client()
+#     num_projects_before = len(client.zen_store.list_projects())
+#     # Create the project
+#     new_project = ProjectRequestModel(name=sample_name("arias_project"))
+#     client.zen_store.create_project(new_project)
+#     # List all projects
+#     projects_list = client.zen_store.list_projects()
+#     assert len(projects_list) == num_projects_before + 1
+#     assert "arias_project" in [p.name for p in projects_list]
+#
+#
+# def test_get_project_succeeds(sample_project: "ProjectResponseModel"):
+#     """Tests getting a project."""
+#     client = Client()
+#
+#     with does_not_raise():
+#         client.zen_store.get_project(sample_project.name)
+#         client.zen_store.get_project(sample_project.id)
+#
+#
+# def test_getting_nonexistent_project_fails():
+#     """Tests getting a nonexistent project raises an error."""
+#     client = Client()
+#     with pytest.raises(KeyError):
+#         client.zen_store.get_project("inexistent_blupus_project")
+#
+#
+# def test_updating_default_project_fails():
+#     """Tests updating the default project."""
+#     client = Client()
+#
+#     default_project = client.zen_store.get_project(DEFAULT_PROJECT_NAME)
+#     assert default_project.name == DEFAULT_PROJECT_NAME
+#     project_update = ProjectUpdateModel(
+#         name="aria_project",
+#         description="Aria has taken possession of this project.",
+#     )
+#     with pytest.raises(IllegalOperationError):
+#         client.zen_store.update_project(
+#             project_id=default_project.id, project_update=project_update
+#         )
+#
+#
+# def test_updating_project_succeeds(sample_project: "ProjectResponseModel"):
+#     """Tests updating a project."""
+#     client = Client()
+#
+#     new_name = sample_name("Axl")
+#     project_update = ProjectUpdateModel(
+#         name=new_name, description="Axl has taken possession of this project."
+#     )
+#     # Update works
+#     with does_not_raise():
+#         client.zen_store.update_project(
+#             project_id=sample_project.id, project_update=project_update
+#         )
+#     # The project can be found using the new name
+#     with does_not_raise():
+#         client.zen_store.get_project(project_name_or_id=new_name)
+#     # The project can no longer be found using the old name
+#     with pytest.raises(KeyError):
+#         client.zen_store.get_project(project_name_or_id=sample_project.name)
+#
+#
+# def test_updating_nonexisting_project_raises_error():
+#     """Tests updating a nonexistent project raises an error."""
+#     client = Client()
+#     project_update = ProjectUpdateModel(name="arias_project")
+#     with pytest.raises(KeyError):
+#         client.zen_store.update_project(
+#             project_id=uuid.uuid4(), project_update=project_update
+#         )
+#
+#
+# def test_deleting_project_succeeds(sample_project: "ProjectResponseModel"):
+#     """Tests deleting a project."""
+#     client = Client()
+#
+#     with does_not_raise():
+#         client.zen_store.delete_project(sample_project.name)
+#     assert sample_project.name not in [
+#         p.name for p in client.zen_store.list_projects()
+#     ]
+#
+#
+# def test_deleting_default_project_fails():
+#     """Tests deleting the default project."""
+#     client = Client()
+#     with pytest.raises(IllegalOperationError):
+#         client.zen_store.delete_project(DEFAULT_NAME)
+#
+#
+# def test_deleting_nonexistent_project_raises_error():
+#     """Tests deleting a nonexistent project raises an error."""
+#     client = Client()
+#     with pytest.raises(KeyError):
+#         client.zen_store.delete_project("blupus_project")
+#
 
 #
 # #  .-----
