@@ -13,8 +13,9 @@
 #  permissions and limitations under the License.
 from contextlib import ExitStack as does_not_raise
 
+import torch
 from torch.utils.data.dataloader import DataLoader
-from torch.utils.data.dataset import Dataset
+from torch.utils.data.dataset import TensorDataset
 
 from tests.unit.test_general import _test_materializer
 from zenml.integrations.pytorch.materializers.pytorch_dataloader_materializer import (
@@ -25,11 +26,14 @@ from zenml.integrations.pytorch.materializers.pytorch_dataloader_materializer im
 def test_pytorch_dataloader_materializer(clean_client):
     """Tests whether the steps work for the Sklearn materializer."""
     with does_not_raise():
+        dataset = TensorDataset(torch.tensor([1, 2, 3, 4, 5]))
         dataloader = _test_materializer(
-            step_output=DataLoader(Dataset(), batch_size=37, num_workers=7),
+            step_output=DataLoader(dataset, batch_size=3, num_workers=7),
             materializer_class=PyTorchDataLoaderMaterializer,
         )
 
     assert dataloader.dataset is not None
-    assert dataloader.batch_size == 37
+    assert len(dataloader.dataset) == 5
+    assert dataloader.batch_size == 3
+    assert len(dataloader) == 2
     assert dataloader.num_workers == 7
