@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Client implementation."""
+import json
 import os
 from abc import ABCMeta
 from pathlib import Path
@@ -82,6 +83,7 @@ from zenml.models import (
 )
 from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.models.base_models import BaseResponseModel
+from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler, track
 from zenml.utils.filesync_model import FileSyncModel
@@ -2443,6 +2445,12 @@ class Client(metaclass=ClientMetaClass):
 
         created_metadata_list: List[RunMetadataResponseModel] = []
         for key, value in metadata.items():
+            if len(json.dumps(value)) > TEXT_FIELD_MAX_LENGTH:
+                logger.warning(
+                    f"Metadata value for key '{key}' is too large to be "
+                    "stored in the database. Skipping."
+                )
+                continue
             run_metadata = RunMetadataRequestModel(
                 project=self.active_project.id,
                 user=self.active_user.id,

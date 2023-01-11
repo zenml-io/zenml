@@ -23,6 +23,7 @@ from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.default_materializer_registry import (
     default_materializer_registry,
 )
+from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.utils import yaml_utils
 
 if TYPE_CHECKING:
@@ -92,9 +93,12 @@ class BuiltInMaterializer(BaseMaterializer):
             The extracted metadata as a dictionary.
         """
         base_metadata = super().extract_metadata(data)
-        builtin_metadata = {
-            "string_representation": str(data),
-        }
+        builtin_metadata: Dict[str, "MetadataType"] = {}
+
+        string_representation = str(data)
+        if len(string_representation) <= TEXT_FIELD_MAX_LENGTH:
+            builtin_metadata["string_representation"] = string_representation
+
         return {**base_metadata, **builtin_metadata}
 
 
