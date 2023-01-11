@@ -21,6 +21,7 @@ import pytest
 from zenml.utils import daemon
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 @pytest.mark.skipif(
@@ -29,6 +30,12 @@ logger = logging.getLogger(__name__)
 def test_daemonize_works(tmp_path):
     """Test daemonization works."""
     tmp_pid = f"{tmp_path}/daemon.pid"
+    # create a file handler
+    handler = logging.FileHandler(f"{tmp_path}/application.log")
+    handler.setLevel(logging.DEBUG)
+
+    # add the handlers to the logger
+    logger.addHandler(handler)
 
     @daemon.daemonize(pid_file=tmp_pid)
     def our_function(period: int):
@@ -42,4 +49,14 @@ def test_daemonize_works(tmp_path):
             break
         time.sleep(1)
     else:
-        assert("Daemon process not found")
+        assert "Daemon process not found"
+
+    # check if the log file exists
+    assert (tmp_path / "application.log").exists()
+
+    time.sleep(7)
+    # read the log file
+    with open(f"{tmp_path}/application.log", "r") as f:
+        log = f.read()
+        assert "I'm a daemon" in log
+        assert "Done sleeping" in log
