@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Functionality for reading, writing and managing files."""
 import os
-from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -120,18 +119,6 @@ def isdir(path: "PathType") -> bool:
         `True` if the given path is a directory, `False` otherwise.
     """
     return _get_filesystem(path).isdir(path)
-
-
-def is_root(path: str) -> bool:
-    """Returns true if path has no parent in local filesystem.
-
-    Args:
-        path: Local path in filesystem.
-
-    Returns:
-        True if root, else False.
-    """
-    return Path(path).parent == Path(path)
 
 
 def listdir(path: str, only_file_names: bool = True) -> List[str]:

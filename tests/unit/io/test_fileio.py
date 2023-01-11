@@ -42,12 +42,12 @@ def test_walk_function_returns_a_generator_object(tmp_path):
 
 def test_is_root_when_true():
     """Check is_root returns true if path is the root"""
-    assert fileio.is_root("/")
+    assert io_utils.is_root("/")
 
 
 def test_is_root_when_false(tmp_path):
     """Check is_root returns false if path isn't the root"""
-    assert fileio.is_root(tmp_path) is False
+    assert io_utils.is_root(tmp_path) is False
 
 
 def test_is_dir_when_true(tmp_path):

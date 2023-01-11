@@ -51,6 +51,18 @@ def convert_to_str(path: "PathType") -> str:
         return path.decode("utf-8")
 
 
+def is_root(path: str) -> bool:
+    """Returns true if path has no parent in local filesystem.
+
+    Args:
+        path: Local path in filesystem.
+
+    Returns:
+        True if root, else False.
+    """
+    return Path(path).parent == Path(path)
+
+
 def get_global_config_directory() -> str:
     """Gets the global config directory for ZenML.
 

@@ -465,7 +465,7 @@ class Client(metaclass=ClientMetaClass):
             if Client.is_repository_directory(path_):
                 return path_
 
-            if not search_parent_directories or fileio.is_root(str(path_)):
+            if not search_parent_directories or io_utils.is_root(str(path_)):
                 return None
 
             return _find_repository_helper(path_.parent)
