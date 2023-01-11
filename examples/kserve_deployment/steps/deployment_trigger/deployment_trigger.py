@@ -28,7 +28,5 @@ def deployment_trigger(
     params: DeploymentTriggerParameters,
 ) -> bool:
     """Implements a simple model deployment trigger that looks at the
-    input model accuracy and decides if it is good enough to deploy
-    .
-    """
+    input model accuracy and decides if it is good enough to deploy."""
     return accuracy > params.min_accuracy

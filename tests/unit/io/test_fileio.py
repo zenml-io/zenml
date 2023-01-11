@@ -58,7 +58,8 @@ def test_is_dir_when_true(tmp_path):
 def test_is_dir_when_false(tmp_path):
     """is_dir returns false when path doesn't refer to a directory."""
     assert (
-        fileio.isdir(os.path.join(str(tmp_path) + TEMPORARY_FILE_NAME)) is False
+        fileio.isdir(os.path.join(str(tmp_path) + TEMPORARY_FILE_NAME))
+        is False
     )
 
 
@@ -78,7 +79,9 @@ def test_find_files_when_file_present(tmp_path):
     with open(temp_file, "w"):
         assert (
             next(
-                io_utils.find_files(str(tmp_path), TEMPORARY_FILE_SEARCH_PREFIX)
+                io_utils.find_files(
+                    str(tmp_path), TEMPORARY_FILE_SEARCH_PREFIX
+                )
             )
             is not None
         )
@@ -95,9 +98,7 @@ def test_find_files_when_file_absent(tmp_path):
 @pytest.mark.parametrize("filesystem", REMOTE_FS_PREFIX)
 def test_is_remote_when_using_remote_prefix(filesystem):
     """is_remote returns True when path starts with one of
-    the ZenML remote file prefixes
-    .
-    """
+    the ZenML remote file prefixes."""
     some_random_path = os.path.join(filesystem + "some_directory")
     assert io_utils.is_remote(some_random_path)
 
@@ -105,9 +106,7 @@ def test_is_remote_when_using_remote_prefix(filesystem):
 @given(text())
 def test_is_remote_when_using_non_remote_prefix(filesystem):
     """is_remote returns False when path doesn't start with
-    a remote prefix
-    .
-    """
+    a remote prefix."""
     some_random_path = os.path.join(filesystem + "some_directory")
     assert io_utils.is_remote(some_random_path) is False
 
@@ -120,9 +119,7 @@ def test_listdir_returns_a_list_of_file_names(tmp_path):
 
 def test_listdir_returns_one_result_for_one_file(tmp_path):
     """list_dir should return only one result, when there is only
-    one file created
-    .
-    """
+    one file created."""
     io_utils.create_file_if_not_exists(
         os.path.join(tmp_path, TEMPORARY_FILE_NAME)
     )
@@ -161,9 +158,7 @@ def test_copy_moves_file_to_new_location(tmp_path) -> None:
 
 def test_copy_raises_error_when_file_exists(tmp_path) -> None:
     """Test that copy raises an error when the file already exists in
-    the desired location
-    .
-    """
+    the desired location."""
     src = os.path.join(tmp_path, "test_file.txt")
     dst = os.path.join(tmp_path, "test_file2.txt")
     io_utils.create_file_if_not_exists(src)
@@ -351,7 +346,9 @@ def test_move_moves_a_directory_from_source_to_destination(tmp_path) -> None:
         os.path.join(tmp_path, "test_dir_moved"),
     )
     assert os.path.exists(os.path.join(tmp_path, "test_dir_moved"))
-    assert os.path.exists(os.path.join(tmp_path, "test_dir_moved/new_file.txt"))
+    assert os.path.exists(
+        os.path.join(tmp_path, "test_dir_moved/new_file.txt")
+    )
 
 
 def test_get_grandparent_gets_the_grandparent_directory(tmp_path) -> None:

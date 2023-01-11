@@ -131,9 +131,7 @@ def test_initialize_pipeline_with_repeated_args(
     unconnected_two_step_pipeline, empty_step
 ):
     """Test that pipeline initialization fails when same step
-    object is used
-    .
-    """
+    object is used."""
     step_instance = empty_step()
     with pytest.raises(PipelineInterfaceError):
         unconnected_two_step_pipeline(step_instance, step_instance)
@@ -143,9 +141,7 @@ def test_initialize_pipeline_with_repeated_kwargs(
     unconnected_two_step_pipeline, empty_step
 ):
     """Test that pipeline initialization fails when same step
-    object is used
-    .
-    """
+    object is used."""
     step_instance = empty_step()
     with pytest.raises(PipelineInterfaceError):
         unconnected_two_step_pipeline(
@@ -157,9 +153,7 @@ def test_initialize_pipeline_with_repeated_args_and_kwargs(
     unconnected_two_step_pipeline, empty_step
 ):
     """Test that pipeline initialization fails when same step
-    object is used
-    .
-    """
+    object is used."""
     step_instance = empty_step()
     with pytest.raises(PipelineInterfaceError):
         unconnected_two_step_pipeline(step_instance, step_2=step_instance)
@@ -310,4 +304,6 @@ def test_pipeline_run_fails_when_required_step_operator_is_missing(
 
     assert not Client().active_stack.step_operator
     with pytest.raises(StackValidationError):
-        one_step_pipeline(step_that_requires_step_operator()).run(unlisted=True)
+        one_step_pipeline(step_that_requires_step_operator()).run(
+            unlisted=True
+        )

@@ -51,9 +51,7 @@ def test_get_run_environment_dict():
 
 def test_environment_platform_info_correctness():
     """Checks that `Environment.get_system_info()` returns the correct
-    platform
-    .
-    """
+    platform."""
     system_id = platform.system()
 
     if system_id == "Darwin":

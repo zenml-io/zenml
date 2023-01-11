@@ -38,10 +38,7 @@ class PytorchTrainerParameters(BaseParameters):
 def pytorch_trainer(
     params: PytorchTrainerParameters, train_loader: DataLoader
 ) -> nn.Module:
-    """Train a neural net from scratch to recognize MNIST digits return our
-    model or the learner
-    .
-    """
+    """Train a neural net from scratch to recognize MNIST digits return our model or the learner."""
     model = Net().to(DEVICE)
     optimizer = optim.Adadelta(model.parameters(), lr=params.lr)
 

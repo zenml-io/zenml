@@ -31,10 +31,7 @@ def tf_trainer(
     x_train: np.ndarray,
     y_train: np.ndarray,
 ) -> tf.keras.Model:
-    """Train a neural net from scratch to recognize MNIST digits return our
-    model or the learner
-    .
-    """
+    """Train a neural net from scratch to recognize MNIST digits return our model or the learner."""
     model = tf.keras.Sequential(
         [
             tf.keras.layers.Flatten(input_shape=(28, 28)),

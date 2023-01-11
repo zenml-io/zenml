@@ -36,7 +36,10 @@ logger = get_logger(__name__)
 
 @step
 def importer_mnist() -> Output(
-    x_train=np.ndarray, y_train=np.ndarray, x_test=np.ndarray, y_test=np.ndarray
+    x_train=np.ndarray,
+    y_train=np.ndarray,
+    x_test=np.ndarray,
+    y_test=np.ndarray,
 ):
     """Download the MNIST data store it as an artifact."""
     (x_train, y_train), (
@@ -70,9 +73,7 @@ def tf_trainer(
     y_train: np.ndarray,
 ) -> tf.keras.Model:
     """Train a neural net from scratch to recognize MNIST digits return our
-    model or the learner
-    .
-    """
+    model or the learner."""
     model = tf.keras.Sequential(
         [
             tf.keras.layers.Flatten(input_shape=(28, 28)),
@@ -124,7 +125,10 @@ def sklearn_trainer(
 ) -> ClassifierMixin:
     """Train SVC from sklearn."""
     clf = LogisticRegression(
-        penalty=params.penalty, solver=params.solver, tol=params.tol, C=params.C
+        penalty=params.penalty,
+        solver=params.solver,
+        tol=params.tol,
+        C=params.C,
     )
     clf.fit(x_train.reshape((x_train.shape[0], -1)), y_train)
     return clf
@@ -153,9 +157,7 @@ def deployment_trigger(
     params: DeploymentTriggerParameters,
 ) -> bool:
     """Implements a simple model deployment trigger that looks at the
-    input model accuracy and decides if it is good enough to deploy
-    .
-    """
+    input model accuracy and decides if it is good enough to deploy."""
     return accuracy > params.min_accuracy
 
 
@@ -272,7 +274,9 @@ def continuous_deployment_pipeline(
 ):
     # Link all the steps artifacts together
     x_train, y_train, x_test, y_test = importer()
-    x_trained_normed, x_test_normed = normalizer(x_train=x_train, x_test=x_test)
+    x_trained_normed, x_test_normed = normalizer(
+        x_train=x_train, x_test=x_test
+    )
     model = trainer(x_train=x_trained_normed, y_train=y_train)
     accuracy = evaluator(x_test=x_test_normed, y_test=y_test, model=model)
     deployment_decision = deployment_trigger(accuracy=accuracy)

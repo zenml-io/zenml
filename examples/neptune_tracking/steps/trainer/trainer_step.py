@@ -62,9 +62,7 @@ def tf_trainer(
     y_train: np.ndarray,
 ) -> tf.keras.Model:
     """Train a neural net from scratch to recognize MNIST digits return our
-    model or the learner
-    .
-    """
+    model or the learner."""
     neptune_run = get_neptune_run()
     neptune_run["params/lr"] = params.lr
 
