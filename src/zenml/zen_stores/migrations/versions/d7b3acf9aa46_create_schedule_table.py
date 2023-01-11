@@ -1,7 +1,7 @@
 """Create Schedule Table [d7b3acf9aa46].
 
 Revision ID: d7b3acf9aa46
-Revises: 8a64fbfecda0
+Revises: 3c5a367730c2
 Create Date: 2022-11-17 22:44:16.301910
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "d7b3acf9aa46"
-down_revision = "0.30.0"
+down_revision = "3c5a367730c2"
 branch_labels = None
 depends_on = None
 
