@@ -25,12 +25,11 @@ from zenml.integrations.kubeflow.flavors.kubeflow_orchestrator_flavor import (
 from zenml.integrations.kubeflow.orchestrators import KubeflowOrchestrator
 from zenml.stack import Stack
 
-K8S_REMOTE_CONTEXT = "kubeflow_context"
-K8S_LOCAL_CONTEXT = "k3d-minimal-zenml-1234"
+K8S_CONTEXT = "kubeflow_context"
 
 
 def _get_kubeflow_orchestrator(
-    context: str, skip_local_validations: bool = False
+    local: bool = False, skip_local_validations: bool = False
 ) -> KubeflowOrchestrator:
     """Helper function to get a Kubeflow orchestrator."""
 
@@ -38,7 +37,8 @@ def _get_kubeflow_orchestrator(
         name="",
         id=uuid4(),
         config=KubeflowOrchestratorConfig(
-            kubernetes_context=context,
+            kubernetes_context=K8S_CONTEXT,
+            local=local,
             skip_local_validations=skip_local_validations,
         ),
         flavor="kubeflow",
@@ -54,13 +54,13 @@ def test_kubeflow_orchestrator_remote_stack(
     mocker, remote_artifact_store, remote_container_registry
 ) -> None:
     """Test the remote and local kubeflow orchestrator with remote stacks."""
-
-    # Test remote stack with remote orchestrator
     mocker.patch(
         "zenml.integrations.kubeflow.orchestrators.kubeflow_orchestrator.KubeflowOrchestrator.get_kubernetes_contexts",
-        return_value=([K8S_REMOTE_CONTEXT], K8S_REMOTE_CONTEXT),
+        return_value=([K8S_CONTEXT], K8S_CONTEXT),
     )
-    orchestrator = _get_kubeflow_orchestrator(K8S_REMOTE_CONTEXT)
+
+    # Test remote stack with remote orchestrator
+    orchestrator = _get_kubeflow_orchestrator()
     with does_not_raise():
         Stack(
             id=uuid4(),
@@ -71,11 +71,7 @@ def test_kubeflow_orchestrator_remote_stack(
         ).validate()
 
     # Test remote stack with local orchestrator
-    mocker.patch(
-        "zenml.integrations.kubeflow.orchestrators.kubeflow_orchestrator.KubeflowOrchestrator.get_kubernetes_contexts",
-        return_value=([K8S_LOCAL_CONTEXT], K8S_LOCAL_CONTEXT),
-    )
-    orchestrator = _get_kubeflow_orchestrator(K8S_LOCAL_CONTEXT)
+    orchestrator = _get_kubeflow_orchestrator(local=True)
     with pytest.raises(StackValidationError):
         Stack(
             id=uuid4(),
@@ -85,7 +81,7 @@ def test_kubeflow_orchestrator_remote_stack(
             container_registry=remote_container_registry,
         ).validate()
     orchestrator = _get_kubeflow_orchestrator(
-        K8S_LOCAL_CONTEXT, skip_local_validations=True
+        local=True, skip_local_validations=True
     )
     with does_not_raise():
         Stack(
@@ -101,9 +97,14 @@ def test_kubeflow_orchestrator_local_stack(
     mocker, local_artifact_store, local_container_registry
 ) -> None:
     """Test the remote and local kubeflow orchestrator with remote stacks."""
-    orchestrator = _get_kubeflow_orchestrator(K8S_LOCAL_CONTEXT)
+    mocker.patch(
+        "zenml.integrations.kubeflow.orchestrators.kubeflow_orchestrator.KubeflowOrchestrator.get_kubernetes_contexts",
+        return_value=([K8S_CONTEXT], K8S_CONTEXT),
+    )
+
+    # Test missing container registry
+    orchestrator = _get_kubeflow_orchestrator(local=True)
     with pytest.raises(StackValidationError):
-        # missing container registry
         Stack(
             id=uuid4(),
             name="",
@@ -112,11 +113,7 @@ def test_kubeflow_orchestrator_local_stack(
         ).validate()
 
     # Test local stack with remote orchestrator
-    mocker.patch(
-        "zenml.integrations.kubeflow.orchestrators.kubeflow_orchestrator.KubeflowOrchestrator.get_kubernetes_contexts",
-        return_value=([K8S_REMOTE_CONTEXT], K8S_REMOTE_CONTEXT),
-    )
-    orchestrator = _get_kubeflow_orchestrator(K8S_REMOTE_CONTEXT)
+    orchestrator = _get_kubeflow_orchestrator()
     with pytest.raises(StackValidationError):
         Stack(
             id=uuid4(),
@@ -125,9 +122,7 @@ def test_kubeflow_orchestrator_local_stack(
             artifact_store=local_artifact_store,
             container_registry=local_container_registry,
         ).validate()
-    orchestrator = _get_kubeflow_orchestrator(
-        K8S_REMOTE_CONTEXT, skip_local_validations=True
-    )
+    orchestrator = _get_kubeflow_orchestrator(skip_local_validations=True)
     with does_not_raise():
         Stack(
             id=uuid4(),
@@ -138,11 +133,7 @@ def test_kubeflow_orchestrator_local_stack(
         ).validate()
 
     # Test local stack with local orchestrator
-    mocker.patch(
-        "zenml.integrations.kubeflow.orchestrators.kubeflow_orchestrator.KubeflowOrchestrator.get_kubernetes_contexts",
-        return_value=([K8S_LOCAL_CONTEXT], K8S_LOCAL_CONTEXT),
-    )
-    orchestrator = _get_kubeflow_orchestrator(K8S_LOCAL_CONTEXT)
+    orchestrator = _get_kubeflow_orchestrator(local=True)
     with does_not_raise():
         Stack(
             id=uuid4(),

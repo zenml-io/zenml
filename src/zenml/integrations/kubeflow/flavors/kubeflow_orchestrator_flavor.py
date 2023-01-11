@@ -162,6 +162,12 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
             Pipelines is deployed. Defaults to `kubeflow`.
         kubernetes_context: Optional name of a kubernetes context to run
             pipelines in. If not set, will try to spin up a local K3d cluster.
+        local: If `True`, the orchestrator will assume it is connected to a
+            local kubernetes cluster and will perform additional validations and
+            operations to allow using the orchestrator in combination with other
+            local stack components that store data in the local filesystem
+            (i.e. it will mount the local stores directory into the pipeline
+            containers).
         skip_local_validations: If `True`, the local validations will be
             skipped.
     """
@@ -169,6 +175,7 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
     kubeflow_hostname: Optional[str] = None
     kubeflow_namespace: str = "kubeflow"
     kubernetes_context: str  # TODO: Potential setting
+    local: bool = False
     skip_local_validations: bool = False
 
     @root_validator(pre=True)
@@ -227,14 +234,25 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
             for attr in provisioning_attrs_used:
                 del values[attr]
 
-        if not values.get("kubernetes_context"):
+        context = values.get("kubernetes_context")
+        if not context:
             raise ValueError(
                 msg_header
                 + "Please set the `kubernetes_context` attribute to the name "
                 "of the Kubernetes config context pointing to the cluster "
                 "where Kubeflow is installed (e.g. the K3D cluster provisioned "
-                "by the `k3d-modular` ZenML stack recipe)."
+                "by the `k3d-modular` ZenML stack recipe) and also set the "
+                "`local` configuration flag."
             )
+
+        # TODO: remove this in a future release. kept here for backwards
+        # compatibility with old stack configs
+        elif (
+            isinstance(context, str)
+            and context.startswith("k3d-zenml-kubeflow-")
+            and "local" not in values
+        ):
+            values["local"] = True
 
         return values
 
@@ -249,12 +267,7 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
         Returns:
             True if this config is for a remote component, False otherwise.
         """
-        if (
-            self.kubernetes_context is not None
-            and not self.kubernetes_context.startswith("k3d-minimal-zenml-")
-        ):
-            return True
-        return False
+        return not self.local
 
     @property
     def is_local(self) -> bool:
@@ -266,12 +279,7 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
         Returns:
             True if this config is for a local component, False otherwise.
         """
-        if (
-            self.kubernetes_context is None
-            or self.kubernetes_context.startswith("k3d-minimal-zenml-")
-        ):
-            return True
-        return False
+        return self.local
 
 
 class KubeflowOrchestratorFlavor(BaseOrchestratorFlavor):

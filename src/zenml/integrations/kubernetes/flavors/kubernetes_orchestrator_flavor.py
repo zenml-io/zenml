@@ -54,12 +54,19 @@ class KubernetesOrchestratorConfig(  # type: ignore[misc] # https://github.com/p
         kubernetes_context: Name of a Kubernetes context to run pipelines in.
         kubernetes_namespace: Name of the Kubernetes namespace to be used.
             If not provided, `zenml` namespace will be used.
+        local: If `True`, the orchestrator will assume it is connected to a
+            local kubernetes cluster and will perform additional validations and
+            operations to allow using the orchestrator in combination with other
+            local stack components that store data in the local filesystem
+            (i.e. it will mount the local stores directory into the pipeline
+            containers).
         skip_local_validations: If `True`, the local validations will be
             skipped.
     """
 
     kubernetes_context: str  # TODO: Potential setting
     kubernetes_namespace: str = "zenml"
+    local: bool = False
     skip_local_validations: bool = False
 
     @root_validator(pre=True)
@@ -104,9 +111,7 @@ class KubernetesOrchestratorConfig(  # type: ignore[misc] # https://github.com/p
         Returns:
             True if this config is for a remote component, False otherwise.
         """
-        if not self.kubernetes_context.startswith("k3d-minimal-zenml-"):
-            return True
-        return False
+        return not self.local
 
     @property
     def is_local(self) -> bool:
@@ -118,9 +123,7 @@ class KubernetesOrchestratorConfig(  # type: ignore[misc] # https://github.com/p
         Returns:
             True if this config is for a local component, False otherwise.
         """
-        if self.kubernetes_context.startswith("k3d-minimal-zenml-"):
-            return True
-        return False
+        return self.local
 
 
 class KubernetesOrchestratorFlavor(BaseOrchestratorFlavor):
