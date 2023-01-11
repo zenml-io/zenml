@@ -17,6 +17,7 @@ from tests.integration.functional.conftest import (
     constant_int_output_test_step,
     int_plus_one_test_step,
 )
+from zenml.config.schedule import Schedule
 from zenml.environment import get_run_environment_dict
 from zenml.post_execution import get_pipeline
 
@@ -34,3 +35,17 @@ def test_pipeline_run_has_client_and_orchestrator_environment(
     test_environment = get_run_environment_dict()
     assert pipeline_run.client_environment == test_environment
     assert pipeline_run.orchestrator_environment == test_environment
+
+
+def test_scheduled_pipeline_run_has_schedule_id(
+    clean_client, connected_two_step_pipeline
+):
+    """Test that a scheduled pipeline run has a schedule ID."""
+    pipeline_instance = connected_two_step_pipeline(
+        step_1=constant_int_output_test_step(),
+        step_2=int_plus_one_test_step(),
+    )
+    schedule = Schedule(cron_expression="*/5 * * * *")
+    pipeline_instance.run(schedule=schedule)
+    pipeline_run = get_pipeline("connected_two_step_pipeline").runs[-1]
+    assert pipeline_run.schedule_id is not None
