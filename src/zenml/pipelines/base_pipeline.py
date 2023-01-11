@@ -382,6 +382,10 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 if not output.materializer_source.startswith("zenml."):
                     custom_materializer = True
 
+        stack_creator = Client().get_stack(stack.id).user
+        active_user = Client().active_user
+        own_stack = stack_creator and stack_creator.id == active_user.id
+
         stack_metadata = {
             component_type.value: component.flavor
             for component_type, component in stack.components.items()
@@ -392,6 +396,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             "total_steps": len(self.steps),
             "schedule": bool(deployment.schedule),
             "custom_materializer": custom_materializer,
+            "own_stack": own_stack,
         }
 
     def run(
