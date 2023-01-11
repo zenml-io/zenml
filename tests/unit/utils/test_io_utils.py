@@ -22,7 +22,6 @@ from hypothesis import given
 from hypothesis.strategies import text
 
 from zenml.constants import ENV_ZENML_CONFIG_PATH, REMOTE_FS_PREFIX
-from zenml.io import fileio
 from zenml.utils import io_utils
 
 TEMPORARY_FILE_NAME = "a_file.txt"
@@ -145,11 +144,6 @@ def test_copy_dir_throws_error_if_overwriting(tmp_path):
         io_utils.read_file_contents_as_string(file_path2)
         == "some_content_about_blupus"
     )
-
-
-def test_walk_function_returns_a_generator_object(tmp_path):
-    """Check walk function returns a generator object"""
-    assert isinstance(fileio.walk(str(tmp_path)), GeneratorType)
 
 
 def test_is_root_when_true():

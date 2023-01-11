@@ -17,6 +17,7 @@ import string
 from collections.abc import Iterable
 from pathlib import Path
 from tempfile import NamedTemporaryFile
+from types import GeneratorType
 
 import pytest
 from hypothesis import HealthCheck, given, settings
@@ -212,3 +213,8 @@ def test_stat_raises_error_when_file_doesnt_exist(tmp_path) -> None:
 def test_walk_returns_an_iterator(tmp_path) -> None:
     """Test that walk returns an iterator"""
     assert isinstance(fileio.walk(str(tmp_path)), Iterable)
+
+
+def test_walk_function_returns_a_generator_object(tmp_path):
+    """Check walk function returns a generator object"""
+    assert isinstance(fileio.walk(str(tmp_path)), GeneratorType)

@@ -31,6 +31,7 @@ from zenml.io.fileio import (
     mkdir,
     open,
     rename,
+    walk,
 )
 
 if TYPE_CHECKING:
