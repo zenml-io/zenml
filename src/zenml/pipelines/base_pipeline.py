@@ -530,6 +530,10 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 schedule_id = (
                     Client().zen_store.create_schedule(schedule_model).id
                 )
+                logger.info(
+                    f"Created schedule '{schedule.name}' for pipeline "
+                    f"{pipeline_deployment.pipeline.name}."
+                )
                 pipeline_deployment = pipeline_deployment.copy(
                     update={"schedule_id": schedule_id}
                 )

@@ -138,6 +138,7 @@ class PipelineRunSchema(NamedSchema, table=True):
             project_id=request.project,
             user_id=request.user,
             pipeline_id=request.pipeline,
+            schedule_id=request.schedule_id,
             enable_cache=request.enable_cache,
             start_time=request.start_time,
             status=request.status,
@@ -175,7 +176,7 @@ class PipelineRunSchema(NamedSchema, table=True):
                 stack=self.stack.to_model() if self.stack else None,
                 project=self.project.to_model(),
                 user=self.user.to_model() if self.user else None,
-                schedule=self.schedule_id,
+                schedule_id=self.schedule_id,
                 orchestrator_run_id=self.orchestrator_run_id,
                 enable_cache=self.enable_cache,
                 start_time=self.start_time,
@@ -207,7 +208,7 @@ class PipelineRunSchema(NamedSchema, table=True):
                     if self.pipeline
                     else None
                 ),
-                schedule=self.schedule_id,
+                schedule_id=self.schedule_id,
                 pipeline_configuration=json.loads(self.pipeline_configuration),
                 num_steps=self.num_steps,
                 git_sha=self.git_sha,

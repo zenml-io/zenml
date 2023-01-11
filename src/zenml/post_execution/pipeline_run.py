@@ -121,6 +121,15 @@ class PipelineRunView:
         return self._model.pipeline_configuration
 
     @property
+    def schedule_id(self) -> Optional[UUID]:
+        """Returns the ID of the schedule that triggered this pipeline run.
+
+        Returns:
+            The ID of the schedule that triggered this pipeline run.
+        """
+        return self._model.schedule_id
+
+    @property
     def settings(self) -> Dict[str, Any]:
         """Returns the pipeline settings.
 

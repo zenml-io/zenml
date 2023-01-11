@@ -79,7 +79,7 @@ class PipelineRunBaseModel(BaseModel):
         max_length=STR_FIELD_MAX_LENGTH,
         default=None,
     )
-    schedule: Optional[UUID]
+    schedule_id: Optional[UUID]
     enable_cache: Optional[bool]
     start_time: Optional[datetime]
     end_time: Optional[datetime]
