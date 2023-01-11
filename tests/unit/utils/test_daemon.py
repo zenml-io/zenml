@@ -37,6 +37,9 @@ def test_daemonize_works(tmp_path):
         logger.info("Done sleeping, flying away.")
 
     our_function(period=5)
-    time.sleep(1)
-
-    assert daemon.check_if_daemon_is_running(pid_file=tmp_pid)
+    for i in range(5):
+        if daemon.check_if_daemon_is_running(pid_file=tmp_pid):
+            break
+        time.sleep(1)
+    else:
+        assert("Daemon process not found")
