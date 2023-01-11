@@ -85,7 +85,7 @@ def main(
     """Run the Seldon example continuous deployment or inference pipeline.
     Example usage:
         `python run.py --deploy --predict --model-flavor tensorflow \
-             --min-accuracy 0.80`.
+             --min-accuracy 0.80`
     """
     deploy = config == DEPLOY or config == DEPLOY_AND_PREDICT
     predict = config == PREDICT or config == DEPLOY_AND_PREDICT
