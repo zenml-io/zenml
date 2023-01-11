@@ -203,7 +203,7 @@ exclude = [
 ]
 per-file-ignores = {}
 select = ["D", "E", "F", "I", "I001", "Q"]
-ignore = ["E501", "F401", "F403", "D403", "D407", "D213", "D203", "S101", "S104", "S105", "S106", "S107"]
+ignore = ["E501", "F401", "F403", "D301", "D403", "D407", "D213", "D203", "S101", "S104", "S105", "S106", "S107"]
 src = ["src", "test"]
 # use Python 3.7 as the minimum version for autofixing
 target-version = "py37"
