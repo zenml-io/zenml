@@ -387,7 +387,9 @@ class KubernetesOrchestrator(BaseOrchestrator):
                 args=args,
                 service_account_name=service_account_name,
                 settings=settings,
+                mount_local_stores=self.config.is_local,
             )
+
             self._k8s_batch_api.create_namespaced_cron_job(
                 body=cron_job_manifest,
                 namespace=self.config.kubernetes_namespace,
@@ -408,7 +410,9 @@ class KubernetesOrchestrator(BaseOrchestrator):
             args=args,
             service_account_name=service_account_name,
             settings=settings,
+            mount_local_stores=self.config.is_local,
         )
+
         self._k8s_core_api.create_namespaced_pod(
             namespace=self.config.kubernetes_namespace,
             body=pod_manifest,

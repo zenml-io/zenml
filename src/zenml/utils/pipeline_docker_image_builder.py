@@ -475,7 +475,9 @@ class PipelineDockerImageBuilder:
 
         for file in requirements_files:
             lines.append(f"COPY {file} .")
-            lines.append(f"RUN pip install --no-cache-dir -r {file}")
+            lines.append(
+                f"RUN pip install --default-timeout=60 --no-cache-dir -r {file}"
+            )
 
         if docker_settings.copy_files:
             lines.append("COPY . .")

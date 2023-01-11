@@ -13,11 +13,82 @@
 #  permissions and limitations under the License.
 """Utility functions for building manifests for k8s pods."""
 
+import os
+import sys
 from typing import Any, Dict, List, Optional
 
+from kubernetes import client as k8s_client
+
+from zenml.client import Client
+from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import ENV_ZENML_ENABLE_REPO_INIT_WARNINGS
+from zenml.integrations.airflow.orchestrators.dag_generator import (
+    ENV_ZENML_LOCAL_STORES_PATH,
+)
 from zenml.integrations.kubernetes.flavors import KubernetesOrchestratorSettings
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
+
+
+def add_local_stores_mount(
+    pod_spec: k8s_client.V1PodSpec,
+) -> None:
+    """Makes changes in place to the configuration of the pod spec.
+
+    Configures mounted volumes for stack components that write to a local
+    path.
+
+    Args:
+        pod_spec: The pod spec to update.
+    """
+    assert len(pod_spec.containers) == 1
+    container_spec: k8s_client.V1Container = pod_spec.containers[0]
+
+    stack = Client().active_stack
+
+    stack.check_local_paths()
+
+    local_stores_path = GlobalConfiguration().local_stores_path
+
+    host_path = k8s_client.V1HostPathVolumeSource(
+        path=local_stores_path, type="Directory"
+    )
+
+    pod_spec.volumes = pod_spec.volumes or []
+    pod_spec.volumes.append(
+        k8s_client.V1Volume(
+            name="local-stores",
+            host_path=host_path,
+        )
+    )
+    container_spec.volume_mounts = container_spec.volume_mounts or []
+    container_spec.volume_mounts.append(
+        k8s_client.V1VolumeMount(
+            name="local-stores",
+            mount_path=local_stores_path,
+        )
+    )
+
+    if sys.platform == "win32":
+        # File permissions are not checked on Windows. This if clause
+        # prevents mypy from complaining about unused 'type: ignore'
+        # statements
+        pass
+    else:
+        # Run KFP containers in the context of the local UID/GID
+        # to ensure that the artifact and metadata stores can be shared
+        # with the local pipeline runs.
+        pod_spec.security_context = k8s_client.V1SecurityContext(
+            run_as_user=os.getuid(),
+            run_as_group=os.getgid(),
+        )
+
+    container_spec.env = container_spec.env or []
+    container_spec.env.append(
+        k8s_client.V1EnvVar(
+            name=ENV_ZENML_LOCAL_STORES_PATH,
+            value=local_stores_path,
+        )
+    )
 
 
 def build_pod_manifest(
@@ -30,7 +101,8 @@ def build_pod_manifest(
     settings: KubernetesOrchestratorSettings,
     service_account_name: Optional[str] = None,
     env: Optional[Dict[str, str]] = None,
-) -> Dict[str, Any]:
+    mount_local_stores: bool = False,
+) -> k8s_client.V1Pod:
     """Build a Kubernetes pod manifest for a ZenML run or step.
 
     Args:
@@ -45,6 +117,8 @@ def build_pod_manifest(
             Can be used to assign certain roles to a pod, e.g., to allow it to
             run Kubernetes commands from within the cluster.
         env: Environment variables to set.
+        mount_local_stores: Whether to mount the local stores path inside the
+            pod.
 
     Returns:
         Pod manifest.
@@ -52,67 +126,67 @@ def build_pod_manifest(
     env = env.copy() if env else {}
     env.setdefault(ENV_ZENML_ENABLE_REPO_INIT_WARNINGS, "False")
 
-    spec: Dict[str, Any] = {
-        "restartPolicy": "Never",
-        "containers": [
-            {
-                "name": "main",
-                "image": image_name,
-                "command": command,
-                "args": args,
-                "env": [
-                    {"name": name, "value": value}
-                    for name, value in env.items()
-                ],
-            }
+    container_spec = k8s_client.V1Container(
+        name="main",
+        image=image_name,
+        command=command,
+        args=args,
+        env=[
+            k8s_client.V1EnvVar(name=name, value=value)
+            for name, value in env.items()
         ],
-    }
+    )
+
+    pod_spec = k8s_client.V1PodSpec(
+        containers=[container_spec],
+        restart_policy="Never",
+    )
 
     if service_account_name is not None:
-        spec["serviceAccountName"] = service_account_name
+        pod_spec.service_account_name = service_account_name
 
     if settings.pod_settings:
-        spec.update(add_pod_settings(settings.pod_settings))
+        add_pod_settings(pod_spec, settings.pod_settings)
 
-    manifest = {
-        "apiVersion": "v1",
-        "kind": "Pod",
-        "metadata": {
-            "name": pod_name,
-            "labels": {
-                "run": run_name,
-                "pipeline": pipeline_name,
-            },
+    pod_metadata = k8s_client.V1ObjectMeta(
+        name=pod_name,
+        labels={
+            "run": run_name,
+            "pipeline": pipeline_name,
         },
-        "spec": spec,
-    }
+    )
 
-    return manifest
+    pod_manifest = k8s_client.V1Pod(
+        kind="Pod",
+        api_version="v1",
+        metadata=pod_metadata,
+        spec=pod_spec,
+    )
+
+    if mount_local_stores:
+        add_local_stores_mount(pod_spec)
+
+    return pod_manifest
 
 
 def add_pod_settings(
+    pod_spec: k8s_client.V1PodSpec,
     settings: KubernetesPodSettings,
-) -> Dict[str, Any]:
-    """Updates `spec` fields in pod if passed in orchestrator settings.
+) -> None:
+    """Updates pod `spec` fields in place if passed in orchestrator settings.
 
     Args:
+        pod_spec: Pod spec to update.
         settings: Pod settings to apply.
-
-    Returns:
-        Dictionary with additional fields for the pod
     """
-    spec: Dict[str, Any] = {}
-
     if settings.node_selectors:
-        spec["nodeSelector"] = settings.node_selectors
+        pod_spec.node_selector = settings.node_selectors
 
     if settings.affinity:
-        spec["affinity"] = settings.affinity
+        pod_spec.affinity = settings.affinity
 
     if settings.tolerations:
-        spec["tolerations"] = settings.tolerations
-
-    return spec
+        pod_spec.tolerations = settings.tolerations
 
 
 def build_cron_job_manifest(
@@ -125,7 +199,8 @@ def build_cron_job_manifest(
     args: List[str],
     settings: KubernetesOrchestratorSettings,
     service_account_name: Optional[str] = None,
-) -> Dict[str, Any]:
+    mount_local_stores: bool = False,
+) -> k8s_client.V1beta1CronJob:
     """Create a manifest for launching a pod as scheduled CRON job.
 
     Args:
@@ -140,6 +215,8 @@ def build_cron_job_manifest(
         service_account_name: Optional name of a service account.
             Can be used to assign certain roles to a pod, e.g., to allow it to
             run Kubernetes commands from within the cluster.
+        mount_local_stores: Whether to mount the local stores path inside the
+            pod.
 
     Returns:
         CRON job manifest.
@@ -153,19 +230,30 @@ def build_cron_job_manifest(
         args=args,
         settings=settings,
         service_account_name=service_account_name,
+        mount_local_stores=mount_local_stores,
     )
-    return {
-        "apiVersion": "batch/v1beta1",
-        "kind": "CronJob",
-        "metadata": pod_manifest["metadata"],
-        "spec": {
-            "schedule": cron_expression,
-            "jobTemplate": {
-                "metadata": pod_manifest["metadata"],
-                "spec": {"template": {"spec": pod_manifest["spec"]}},
-            },
-        },
-    }
+
+    job_spec = k8s_client.V1beta1CronJobSpec(
+        schedule=cron_expression,
+        job_template=k8s_client.V1beta1JobTemplateSpec(
+            metadata=pod_manifest["metadata"],
+            spec=k8s_client.V1JobSpec(
+                template=k8s_client.V1PodTemplateSpec(
+                    metadata=pod_manifest["metadata"],
+                    spec=pod_manifest["spec"],
+                ),
+            ),
+        ),
+    )
+
+    job_manifest = k8s_client.V1beta1CronJob(
+        kind="CronJob",
+        api_version="batch/v1beta1",
+        metadata=pod_manifest["metadata"],
+        spec=job_spec,
+    )
+
+    return job_manifest
 
 
 def build_cluster_role_binding_manifest_for_service_account(
