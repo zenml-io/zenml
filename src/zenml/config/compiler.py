@@ -21,6 +21,7 @@ from zenml.config.pipeline_configurations import PipelineRunConfiguration
 from zenml.config.pipeline_deployment import PipelineDeployment
 from zenml.config.settings_resolver import SettingsResolver
 from zenml.config.step_configurations import Step, StepConfiguration, StepSpec
+from zenml.environment import get_run_environment_dict
 from zenml.exceptions import PipelineInterfaceError, StackValidationError
 from zenml.utils import pydantic_utils, settings_utils, source_utils
 
@@ -104,6 +105,7 @@ class Compiler:
             schedule=run_configuration.schedule,
             pipeline=pipeline.configuration,
             steps=steps,
+            client_environment=get_run_environment_dict(),
         )
         logger.debug("Compiled pipeline deployment: %s", deployment)
         return deployment
