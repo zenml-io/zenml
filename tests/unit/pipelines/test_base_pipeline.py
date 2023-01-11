@@ -283,6 +283,4 @@ def test_pipeline_run_fails_when_required_step_operator_is_missing(
 
     assert not Client().active_stack.step_operator
     with pytest.raises(StackValidationError):
-        one_step_pipeline(step_that_requires_step_operator()).run(
-            unlisted=True
-        )
+        one_step_pipeline(step_that_requires_step_operator()).run(unlisted=True)

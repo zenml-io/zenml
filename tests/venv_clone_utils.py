@@ -401,9 +401,7 @@ def _replace_symlink(filename: str, newtarget: str) -> None:
         shutil.move(tmpfn, filename)
 
 
-def fixup_syspath_items(
-    syspath: List[str], old_dir: str, new_dir: str
-) -> None:
+def fixup_syspath_items(syspath: List[str], old_dir: str, new_dir: str) -> None:
     """Replace mentions of the old venv in sys path with the new venv.
 
     Args:
