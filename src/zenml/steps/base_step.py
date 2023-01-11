@@ -748,15 +748,6 @@ class BaseStep(metaclass=BaseStepMeta):
                 }
 
             for output_name, materializer in output_materializers.items():
-                if output_name not in allowed_output_names:
-                    raise StepInterfaceError(
-                        f"Got unexpected materializers for non-existent "
-                        f"output '{output_name}' in step '{self.name}'. "
-                        f"Only materializers for the outputs "
-                        f"{allowed_output_names} of this step can"
-                        f" be registered."
-                    )
-
                 source = _resolve_if_necessary(materializer)
                 outputs[output_name]["materializer_source"] = source
 
@@ -882,10 +873,11 @@ class BaseStep(metaclass=BaseStepMeta):
         for output_name, output in outputs.items():
             if output_name not in allowed_output_names:
                 raise StepInterfaceError(
-                    f"Found explicit artifact type for unrecognized output "
-                    f"'{output_name}' in step '{self.name}'. Output "
-                    f"artifact types can only be specified for the outputs "
-                    f"of this step: {set(self.OUTPUT_SIGNATURE)}."
+                    f"Got unexpected materializers for non-existent "
+                    f"output '{output_name}' in step '{self.name}'. "
+                    f"Only materializers for the outputs "
+                    f"{allowed_output_names} of this step can"
+                    f" be registered."
                 )
 
             if output.materializer_source:
