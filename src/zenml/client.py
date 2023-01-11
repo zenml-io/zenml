@@ -202,7 +202,8 @@ class Client(metaclass=ClientMetaClass):
     """ZenML client class.
 
     The ZenML client manages configuration options for ZenML stacks as well
-    as their components."""
+    as their components.
+    """
 
     _active_user: Optional[UserResponseModel] = None
 
