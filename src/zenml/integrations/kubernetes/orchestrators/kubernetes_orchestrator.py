@@ -86,8 +86,6 @@ class KubernetesOrchestrator(BaseOrchestrator):
 
     def _initialize_k8s_clients(self) -> None:
         """Initialize the Kubernetes clients."""
-        if self.config.skip_config_loading:
-            return
         kube_utils.load_kube_config(context=self.config.kubernetes_context)
         self._k8s_core_api = k8s_client.CoreV1Api()
         self._k8s_batch_api = k8s_client.BatchV1beta1Api()
@@ -166,37 +164,36 @@ class KubernetesOrchestrator(BaseOrchestrator):
             # this, but just in case
             assert container_registry is not None
 
-            if not self.config.skip_config_loading:
-                contexts, active_context = self.get_kubernetes_contexts()
+            contexts, active_context = self.get_kubernetes_contexts()
 
-                if self.config.kubernetes_context not in contexts:
-                    return False, (
-                        f"Could not find a Kubernetes context named "
-                        f"'{self.config.kubernetes_context}' in the local Kubernetes "
-                        f"configuration. Please make sure that the Kubernetes "
-                        f"cluster is running and that the kubeconfig file is "
-                        f"configured correctly. To list all configured "
-                        f"contexts, run:\n\n"
-                        f"  `kubectl config get-contexts`\n"
-                    )
-                if self.config.kubernetes_context != active_context:
-                    logger.warning(
-                        f"The Kubernetes context '{self.config.kubernetes_context}' "
-                        f"configured for the Kubernetes orchestrator is not "
-                        f"the same as the active context in the local "
-                        f"Kubernetes configuration. If this is not deliberate,"
-                        f" you should update the orchestrator's "
-                        f"`kubernetes_context` field by running:\n\n"
-                        f"  `zenml orchestrator update {self.name} "
-                        f"--kubernetes_context={active_context}`\n"
-                        f"To list all configured contexts, run:\n\n"
-                        f"  `kubectl config get-contexts`\n"
-                        f"To set the active context to be the same as the one "
-                        f"configured in the Kubernetes orchestrator and "
-                        f"silence this warning, run:\n\n"
-                        f"  `kubectl config use-context "
-                        f"{self.config.kubernetes_context}`\n"
-                    )
+            if self.config.kubernetes_context not in contexts:
+                return False, (
+                    f"Could not find a Kubernetes context named "
+                    f"'{self.config.kubernetes_context}' in the local Kubernetes "
+                    f"configuration. Please make sure that the Kubernetes "
+                    f"cluster is running and that the kubeconfig file is "
+                    f"configured correctly. To list all configured "
+                    f"contexts, run:\n\n"
+                    f"  `kubectl config get-contexts`\n"
+                )
+            if self.config.kubernetes_context != active_context:
+                logger.warning(
+                    f"The Kubernetes context '{self.config.kubernetes_context}' "
+                    f"configured for the Kubernetes orchestrator is not "
+                    f"the same as the active context in the local "
+                    f"Kubernetes configuration. If this is not deliberate,"
+                    f" you should update the orchestrator's "
+                    f"`kubernetes_context` field by running:\n\n"
+                    f"  `zenml orchestrator update {self.name} "
+                    f"--kubernetes_context={active_context}`\n"
+                    f"To list all configured contexts, run:\n\n"
+                    f"  `kubectl config get-contexts`\n"
+                    f"To set the active context to be the same as the one "
+                    f"configured in the Kubernetes orchestrator and "
+                    f"silence this warning, run:\n\n"
+                    f"  `kubectl config use-context "
+                    f"{self.config.kubernetes_context}`\n"
+                )
 
             silence_local_validations_msg = (
                 f"To silence this warning, set the "

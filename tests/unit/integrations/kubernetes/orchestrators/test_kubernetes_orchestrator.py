@@ -27,13 +27,21 @@ from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import
 from zenml.integrations.kubernetes.orchestrators import KubernetesOrchestrator
 from zenml.stack import Stack
 
+K8S_REMOTE_CONTEXT = "kubernetes_context"
+K8S_LOCAL_CONTEXT = "k3d-minimal-zenml-1234"
 
-def _get_kubernetes_orchestrator() -> KubernetesOrchestrator:
+
+def _get_kubernetes_orchestrator(
+    context: str, skip_local_validations: bool = False
+) -> KubernetesOrchestrator:
     """Helper function to get a Kubernetes orchestrator."""
     return KubernetesOrchestrator(
         name="",
         id=uuid4(),
-        config=KubernetesOrchestratorConfig(skip_config_loading=True),
+        config=KubernetesOrchestratorConfig(
+            kubernetes_context=context,
+            skip_local_validations=skip_local_validations,
+        ),
         flavor="kubernetes",
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4(),
@@ -44,10 +52,46 @@ def _get_kubernetes_orchestrator() -> KubernetesOrchestrator:
 
 
 def test_kubernetes_orchestrator_remote_stack(
-    remote_artifact_store, remote_container_registry
+    mocker, remote_artifact_store, remote_container_registry
 ) -> None:
-    """Test that the kubernetes orchestrator works with remote stacks."""
-    orchestrator = _get_kubernetes_orchestrator()
+    """Test the remote and local kubernetes orchestrator with remote stacks."""
+    mocker.patch(
+        "zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator.KubernetesOrchestrator._initialize_k8s_clients",
+        return_value=(None),
+    )
+
+    # Test remote stack with remote orchestrator
+    mocker.patch(
+        "zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator.KubernetesOrchestrator.get_kubernetes_contexts",
+        return_value=([K8S_REMOTE_CONTEXT], K8S_REMOTE_CONTEXT),
+    )
+    orchestrator = _get_kubernetes_orchestrator(K8S_REMOTE_CONTEXT)
+    with does_not_raise():
+        Stack(
+            id=uuid4(),
+            name="",
+            orchestrator=orchestrator,
+            artifact_store=remote_artifact_store,
+            container_registry=remote_container_registry,
+        ).validate()
+
+    # Test remote stack with local orchestrator
+    mocker.patch(
+        "zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator.KubernetesOrchestrator.get_kubernetes_contexts",
+        return_value=([K8S_LOCAL_CONTEXT], K8S_LOCAL_CONTEXT),
+    )
+    orchestrator = _get_kubernetes_orchestrator(K8S_LOCAL_CONTEXT)
+    with pytest.raises(StackValidationError):
+        Stack(
+            id=uuid4(),
+            name="",
+            orchestrator=orchestrator,
+            artifact_store=remote_artifact_store,
+            container_registry=remote_container_registry,
+        ).validate()
+    orchestrator = _get_kubernetes_orchestrator(
+        K8S_LOCAL_CONTEXT, skip_local_validations=True
+    )
     with does_not_raise():
         Stack(
             id=uuid4(),
@@ -59,11 +103,57 @@ def test_kubernetes_orchestrator_remote_stack(
 
 
 def test_kubernetes_orchestrator_local_stack(
-    local_artifact_store, local_container_registry
+    mocker, local_artifact_store, local_container_registry
 ) -> None:
-    """Test that the kubernetes orchestrator raises an error in local stacks."""
-    orchestrator = _get_kubernetes_orchestrator()
+    """Test the remote and local kubernetes orchestrator with remote stacks."""
+    mocker.patch(
+        "zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator.KubernetesOrchestrator._initialize_k8s_clients",
+        return_value=(None),
+    )
+
+    orchestrator = _get_kubernetes_orchestrator(K8S_LOCAL_CONTEXT)
     with pytest.raises(StackValidationError):
+        # missing container registry
+        Stack(
+            id=uuid4(),
+            name="",
+            orchestrator=orchestrator,
+            artifact_store=local_artifact_store,
+        ).validate()
+
+    # Test local stack with remote orchestrator
+    mocker.patch(
+        "zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator.KubernetesOrchestrator.get_kubernetes_contexts",
+        return_value=([K8S_REMOTE_CONTEXT], K8S_REMOTE_CONTEXT),
+    )
+    orchestrator = _get_kubernetes_orchestrator(K8S_REMOTE_CONTEXT)
+    with pytest.raises(StackValidationError):
+        Stack(
+            id=uuid4(),
+            name="",
+            orchestrator=orchestrator,
+            artifact_store=local_artifact_store,
+            container_registry=local_container_registry,
+        ).validate()
+    orchestrator = _get_kubernetes_orchestrator(
+        K8S_REMOTE_CONTEXT, skip_local_validations=True
+    )
+    with does_not_raise():
+        Stack(
+            id=uuid4(),
+            name="",
+            orchestrator=orchestrator,
+            artifact_store=local_artifact_store,
+            container_registry=local_container_registry,
+        ).validate()
+
+    # Test local stack with local orchestrator
+    mocker.patch(
+        "zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator.KubernetesOrchestrator.get_kubernetes_contexts",
+        return_value=([K8S_LOCAL_CONTEXT], K8S_LOCAL_CONTEXT),
+    )
+    orchestrator = _get_kubernetes_orchestrator(K8S_LOCAL_CONTEXT)
+    with does_not_raise():
         Stack(
             id=uuid4(),
             name="",

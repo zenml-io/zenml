@@ -52,15 +52,12 @@ class KubernetesOrchestratorConfig(  # type: ignore[misc] # https://github.com/p
         kubernetes_context: Name of a Kubernetes context to run pipelines in.
         kubernetes_namespace: Name of the Kubernetes namespace to be used.
             If not provided, `zenml` namespace will be used.
-        skip_config_loading: If `True`, don't load the Kubernetes context and
-            clients. This is only useful for unit testing.
         skip_local_validations: If `True`, the local validations will be
             skipped.
     """
 
     kubernetes_context: str  # TODO: Potential setting
     kubernetes_namespace: str = "zenml"
-    skip_config_loading: bool = False  # TODO: Remove?
     skip_local_validations: bool = False
 
     @property
