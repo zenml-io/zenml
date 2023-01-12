@@ -22,7 +22,7 @@ from zenml.exceptions import (
     PipelineInterfaceError,
     StackValidationError,
 )
-from zenml.pipelines import pipeline, BasePipeline
+from zenml.pipelines import BasePipeline, pipeline
 from zenml.steps import BaseParameters, step
 from zenml.utils.yaml_utils import write_yaml
 
