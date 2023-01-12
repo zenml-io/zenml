@@ -11,68 +11,20 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import os
 from contextlib import ExitStack as does_not_raise
 from types import TracebackType
-from typing import Any, Dict, Optional, Type
+from typing import Dict, Optional, Type
+from unittest.mock import patch
 from uuid import UUID
 
 from pytest_mock import MockFixture
 
-from zenml.config.global_config import GlobalConfiguration
-from zenml.enums import StackComponentType
+from zenml.enums import StackComponentType, StoreType
 from zenml.utils.analytics_utils import (
     AnalyticsEvent,
     get_segment_key,
     track_event,
 )
-
-
-class environment_handler(object):
-    """Context manager to manipulate the environment variables during a process."""
-
-    def __init__(self, params: Optional[Dict[str, str]] = None):
-        """Initialization of the manager.
-
-         It saves the provided additional params.
-
-        Args:
-            params: The type of the analytics event
-        """
-        self.original_environment = None
-        self.params = params or {}
-
-    def __enter__(self) -> "environment_handler":
-        """Enter function of the manager.
-
-        It creates a copy of the original set of environment variables and
-        updates it with the provided params.
-
-        Returns:
-            the handler instance.
-        """
-        self.original_environment = os.environ.copy()
-        os.environ.update(self.params)
-
-        return self
-
-    def __exit__(
-        self,
-        type_: Optional[Any],
-        value: Optional[Any],
-        traceback: Optional[Any],
-    ) -> Any:
-        """Exit function of the manager.
-
-        Reverts the environmental variables back to their original state.
-
-        Args:
-            type_: The class of the exception
-            value: The instance of the exception
-            traceback: The traceback of the exception
-
-        """
-        os.environ = self.original_environment
 
 
 def event_check(
@@ -92,6 +44,8 @@ def event_check(
         ...
     """
     # Check whether the user id corresponds to the client id
+    from zenml.config.global_config import GlobalConfiguration
+
     gc = GlobalConfiguration()
     assert user_id == str(gc.user_id)
 
@@ -107,26 +61,54 @@ def event_check(
     assert "version" in metadata
     assert "event_success" in metadata
 
+    from zenml.client import Client
+
+    client = Client()
+
     if event == AnalyticsEvent.REGISTERED_STACK:
-        assert StackComponentType.ARTIFACT_STORE in metadata
-        assert StackComponentType.ORCHESTRATOR in metadata
+
+        assert "user_id" in metadata
+        assert metadata["user_id"] == str(client.active_user.id)
 
         assert "project_id" in metadata
+        assert metadata["project_id"] == str(client.active_project.id)
+
         assert "entity_id" in metadata
-        assert "user_id" in metadata
+
+        assert StackComponentType.ARTIFACT_STORE in metadata
+        assert StackComponentType.ORCHESTRATOR in metadata
         assert "is_shared" in metadata
 
     if event == AnalyticsEvent.REGISTERED_STACK_COMPONENT:
+        assert "user_id" in metadata
+        assert metadata["user_id"] == str(client.active_user.id)
+
         assert "type" in metadata
+        assert metadata["type"] in StackComponentType.__members__.values()
+
         assert "flavor" in metadata
         assert "entity_id" in metadata
-        assert "user_id" in metadata
         assert "is_shared" in metadata
 
     if event == AnalyticsEvent.RUN_PIPELINE:
         assert "store_type" in metadata
+        assert metadata["store_type"] in StoreType.__members__.values()
+
         assert "artifact_store" in metadata
+        assert (
+            metadata["artifact_store"]
+            == client.active_stack_model.components[
+                StackComponentType.ARTIFACT_STORE
+            ][0].flavor
+        )
+
         assert "orchestrator" in metadata
+        assert (
+            metadata["orchestrator"]
+            == client.active_stack_model.components[
+                StackComponentType.ORCHESTRATOR
+            ][0].flavor
+        )
 
 
 def event_context_exit(
@@ -144,38 +126,40 @@ def event_context_exit(
     """
 
 
+@patch.dict(
+    "os.environ", {"ZENML_DEBUG": "true", "ZENML_ANALYTICS_OPT_IN": "true"}
+)
 def test_analytics_event(
     mocker: MockFixture, clean_client, one_step_pipeline, empty_step
 ) -> None:
-    with environment_handler(
-        params={"ZENML_DEBUG": "true", "ZENML_ANALYTICS_OPT_IN": "true"}
-    ):
-        mocker.patch("analytics.track", new=event_check)
-        mocker.patch(
-            "zenml.utils.analytics_utils.AnalyticsContext.__exit__",
-            new=event_context_exit,
-        )
+    """Checks whether the event sent for analytics has the right properties."""
 
-        # Test zenml initialization
-        clean_client.initialize()
+    mocker.patch("analytics.track", new=event_check)
+    mocker.patch(
+        "zenml.utils.analytics_utils.AnalyticsContext.__exit__",
+        new=event_context_exit,
+    )
 
-        # Test stack and component registration
-        clean_client.create_stack_component(
-            name="new_artifact_store",
-            flavor="local",
-            component_type=StackComponentType.ARTIFACT_STORE,
-            configuration={"path": "/tmp/path/for/test"},
-        )
-        clean_client.create_stack(
-            name="new_stack",
-            components={
-                StackComponentType.ARTIFACT_STORE: "new_artifact_store",
-                StackComponentType.ORCHESTRATOR: "default",
-            },
-        )
+    # Test zenml initialization
+    clean_client.initialize()
 
-        # Test pipeline run
-        one_step_pipeline(empty_step()).run(unlisted=True)
+    # Test stack and component registration
+    clean_client.create_stack_component(
+        name="new_artifact_store",
+        flavor="local",
+        component_type=StackComponentType.ARTIFACT_STORE,
+        configuration={"path": "/tmp/path/for/test"},
+    )
+    clean_client.create_stack(
+        name="new_stack",
+        components={
+            StackComponentType.ARTIFACT_STORE: "new_artifact_store",
+            StackComponentType.ORCHESTRATOR: "default",
+        },
+    )
+
+    # Test pipeline run
+    one_step_pipeline(empty_step()).run(unlisted=True)
 
 
 def test_get_segment_key():
