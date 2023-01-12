@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for stack components."""
+from typing import List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -134,13 +135,13 @@ def deregister_stack_component(
 
 @types_router.get(
     "",
-    response_model=Page[str],
+    response_model=List[str],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_stack_component_types(
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ])
-) -> Page[str]:
+) -> List[str]:
     """Get a list of all stack component types.
 
     Returns:

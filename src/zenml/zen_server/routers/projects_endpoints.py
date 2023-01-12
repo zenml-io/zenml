@@ -334,7 +334,7 @@ def list_project_stack_components(
     Args:
         project_name_or_id: Name or ID of the project.
         component_filter_model: Filter model used for pagination, sorting,
-                                filtering
+            filtering
         auth_context: Authentication Context
 
     Returns:
@@ -414,7 +414,7 @@ def list_project_flavors(
     Args:
         project_name_or_id: Name or ID of the project.
         flavor_filter_model: Filter model used for pagination, sorting,
-                             filtering
+            filtering
 
 
     Returns:
@@ -491,7 +491,7 @@ def list_project_pipelines(
     Args:
         project_name_or_id: Name or ID of the project.
         pipeline_filter_model: Filter model used for pagination, sorting,
-                               filtering
+            filtering
 
     Returns:
         All pipelines within the project.

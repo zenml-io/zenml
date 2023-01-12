@@ -51,7 +51,7 @@ def list_pipelines(
 
     Args:
         pipeline_filter_model: Filter model used for pagination, sorting,
-                               filtering
+            filtering
 
     Returns:
         List of pipeline objects.

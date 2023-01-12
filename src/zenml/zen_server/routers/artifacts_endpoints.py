@@ -50,7 +50,7 @@ def list_artifacts(
 
     Args:
         artifact_filter_model: Filter model used for pagination, sorting,
-                               filtering
+            filtering
 
     Returns:
         The artifacts according to query filters.
