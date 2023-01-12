@@ -161,7 +161,9 @@ class AirflowOrchestrator(BaseOrchestrator):
             return None
         else:
 
-            def _validate_remote_components(stack: "Stack") -> Tuple[bool, str]:
+            def _validate_remote_components(
+                stack: "Stack",
+            ) -> Tuple[bool, str]:
                 for component in stack.components.values():
                     if not component.config.is_local:
                         continue
