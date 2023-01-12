@@ -176,7 +176,7 @@ exclude_lines = [
 ]
 
 [tool.ruff]
-line-length = 80
+line-length = 79
 # Exclude a variety of commonly ignored directories.
 exclude = [
     ".bzr",
