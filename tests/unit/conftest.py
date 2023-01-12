@@ -46,7 +46,10 @@ from zenml.pipelines import pipeline
 from zenml.post_execution.pipeline_run import PipelineRunView
 from zenml.post_execution.step import StepView
 from zenml.stack.stack import Stack
-from zenml.stack.stack_component import StackComponentConfig, StackComponentType
+from zenml.stack.stack_component import (
+    StackComponentConfig,
+    StackComponentType,
+)
 from zenml.steps import StepContext, step
 
 
