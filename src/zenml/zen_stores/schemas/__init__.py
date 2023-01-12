@@ -63,7 +63,6 @@ __all__ = [
     "StepRunOutputArtifactSchema",
     "StepRunParentsSchema",
     "StepRunSchema",
-    "ScheduleSchema",
     "TeamRoleAssignmentSchema",
     "TeamSchema",
     "TeamAssignmentSchema",

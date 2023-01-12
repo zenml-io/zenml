@@ -502,6 +502,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     update={"pipeline_id": pipeline_id}
                 )
 
+            # TODO: check whether orchestrator even support scheduling before
+            # registering the schedule
             if schedule:
                 if not schedule.name:
                     date = datetime.now().strftime("%Y_%m_%d")
