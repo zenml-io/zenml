@@ -24,6 +24,7 @@ browser.
 
 from typing import List, Type
 
+from zenml.enums import StackComponentType
 from zenml.integrations.constants import DEEPCHECKS
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor

@@ -15,6 +15,7 @@
 
 from zenml.integrations.constants import NEURAL_PROPHET
 from zenml.integrations.integration import Integration
+from zenml.utils.source_utils import import_class_by_path
 
 
 class NeuralProphetIntegration(Integration):
