@@ -347,9 +347,12 @@ class FilterBaseModel(BaseModel):
 
                 if cls.is_datatime_field(key):
                     try:
-                        datetime_value = datetime.strptime(
-                            value, FILTERING_DATETIME_FORMAT
-                        )
+                        if isinstance(value, datetime):
+                            datetime_value = value
+                        else:
+                            datetime_value = datetime.strptime(
+                                value, FILTERING_DATETIME_FORMAT
+                            )
                     except ValueError as e:
                         raise ValueError(
                             "The datetime filter only works with "
@@ -368,11 +371,11 @@ class FilterBaseModel(BaseModel):
                     ):
                         try:
                             value = UUID(value)
-                        except ValueError:
+                        except ValueError as e:
                             raise ValueError(
                                 "Invalid value passed as UUID as "
                                 "query parameter."
-                            ) from 3
+                            ) from e
                     elif operator != GenericFilterOps.EQUALS:
                         value = str(value)
 
@@ -443,9 +446,12 @@ class FilterBaseModel(BaseModel):
 
                     if self.is_datatime_field(key):
                         try:
-                            datetime_value = datetime.strptime(
-                                value, FILTERING_DATETIME_FORMAT
-                            )
+                            if isinstance(value, datetime):
+                                datetime_value = value
+                            else:
+                                datetime_value = datetime.strptime(
+                                    value, FILTERING_DATETIME_FORMAT
+                                )
                         except ValueError as e:
                             raise ValueError(
                                 "The datetime filter only works with "
