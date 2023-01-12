@@ -18,7 +18,6 @@ from uuid import UUID, uuid4
 
 import pytest
 from click.testing import CliRunner
-import zenml
 
 from zenml.cli.cli import cli
 from zenml.enums import StackComponentType
@@ -92,7 +91,6 @@ class ConcreteModelDeployer(BaseModelDeployer):
         model_type: Optional[str] = None,
     ) -> List[BaseService]:
         breakpoint()
-        pass
 
     def get_model_server_info(self, service: BaseService) -> Dict[str, Any]:
         pass
@@ -158,13 +156,16 @@ def concrete_model_deployer(
         updated=datetime.now(),
     )
 
+
 @pytest.fixture
 def mock_info():
-    return {"PREDICTION_URL": "test_url",
-            "MODEL_URI": "test_model_uri",
-            "MODEL_NAME": "test_model_name",
-            "SERVICE_PATH": "/path/to/service",
-            "DAEMON_PID": "1234"}
+    return {
+        "PREDICTION_URL": "test_url",
+        "MODEL_URI": "test_model_uri",
+        "MODEL_NAME": "test_model_name",
+        "SERVICE_PATH": "/path/to/service",
+        "DAEMON_PID": "1234",
+    }
 
 
 def test_list_models(
@@ -172,7 +173,7 @@ def test_list_models(
     concrete_service_mock,
     concrete_model_deployer,
     mock_info,
-): 
+):
     # Get the list command
     runner = CliRunner()
     list_served_models = (
@@ -180,8 +181,14 @@ def test_list_models(
     )
 
     # Patch the find_model_server method
-    mocker.patch.object(ConcreteModelDeployer, 'find_model_server', return_value=concrete_service_mock)
-    mocker.patch.object(ConcreteModelDeployer, 'get_model_server_info', return_value=mock_info)
+    mocker.patch.object(
+        ConcreteModelDeployer,
+        "find_model_server",
+        return_value=concrete_service_mock,
+    )
+    mocker.patch.object(
+        ConcreteModelDeployer, "get_model_server_info", return_value=mock_info
+    )
 
     # Run the command
     result = runner.invoke(list_served_models, obj=concrete_model_deployer)
@@ -190,13 +197,16 @@ def test_list_models(
     assert result.exit_code == 0
 
     # Patch the find_model_server method
-    mocker.patch.object(ConcreteModelDeployer, 'find_model_server', return_value=[])
+    mocker.patch.object(
+        ConcreteModelDeployer, "find_model_server", return_value=[]
+    )
 
     # Run the command
     result = runner.invoke(list_served_models, obj=concrete_model_deployer)
 
     # Check the result
     assert result.exit_code == 0
+
 
 def test_describe_model(
     mocker,
@@ -211,8 +221,14 @@ def test_describe_model(
     )
 
     # Patch the find_model_server method
-    mocker.patch.object(ConcreteModelDeployer, 'find_model_server', return_value=[concrete_service_mock[0]])
-    mocker.patch.object(ConcreteModelDeployer, 'get_model_server_info', return_value=mock_info)
+    mocker.patch.object(
+        ConcreteModelDeployer,
+        "find_model_server",
+        return_value=[concrete_service_mock[0]],
+    )
+    mocker.patch.object(
+        ConcreteModelDeployer, "get_model_server_info", return_value=mock_info
+    )
 
     # Run the command
     result = runner.invoke(
@@ -220,7 +236,7 @@ def test_describe_model(
         [str(concrete_service_mock[0].uuid)],
         obj=concrete_model_deployer,
     )
-    
+
     # Check the result
     assert result.exit_code == 0
     assert concrete_service_mock[0].uuid in result.output
@@ -233,8 +249,14 @@ def test_get_url(
     mock_info,
 ):
     # Patch the find_model_server method
-    mocker.patch.object(ConcreteModelDeployer, 'find_model_server', return_value=[concrete_service_mock[0]])
-    mocker.patch.object(ConcreteModelDeployer, 'get_model_server_info', return_value=mock_info)
+    mocker.patch.object(
+        ConcreteModelDeployer,
+        "find_model_server",
+        return_value=[concrete_service_mock[0]],
+    )
+    mocker.patch.object(
+        ConcreteModelDeployer, "get_model_server_info", return_value=mock_info
+    )
 
     # Get the list command
     get_url = (
@@ -244,10 +266,13 @@ def test_get_url(
     # Run the command
     runner = CliRunner()
     result = runner.invoke(
-        get_url, [str(concrete_service_mock[0].uuid)], obj=concrete_model_deployer
+        get_url,
+        [str(concrete_service_mock[0].uuid)],
+        obj=concrete_model_deployer,
     )
     assert result.exit_code == 0
     assert concrete_service_mock[0].endpoint.prediction_url in result.output
+
 
 def test_start_model_service(
     mocker,
@@ -256,9 +281,17 @@ def test_start_model_service(
     mock_info,
 ):
     # Patch the find_model_server method
-    mocker.patch.object(ConcreteModelDeployer, 'find_model_server', return_value=[concrete_service_mock[0]])
-    mocker.patch.object(ConcreteModelDeployer, 'get_model_server_info', return_value=mock_info)
-    mocker.patch.object(ConcreteModelDeployer, 'start_model_server', return_value=None)
+    mocker.patch.object(
+        ConcreteModelDeployer,
+        "find_model_server",
+        return_value=[concrete_service_mock[0]],
+    )
+    mocker.patch.object(
+        ConcreteModelDeployer, "get_model_server_info", return_value=mock_info
+    )
+    mocker.patch.object(
+        ConcreteModelDeployer, "start_model_server", return_value=None
+    )
 
     # Get the list command
     start_model = (
@@ -268,10 +301,13 @@ def test_start_model_service(
     # Run the command
     runner = CliRunner()
     result = runner.invoke(
-        start_model, [str(concrete_service_mock[0].uuid)], obj=concrete_model_deployer
+        start_model,
+        [str(concrete_service_mock[0].uuid)],
+        obj=concrete_model_deployer,
     )
     assert result.exit_code == 0
     assert str(concrete_service_mock[0]) in result.output
+
 
 def test_stop_model_service(
     mocker,
@@ -280,9 +316,17 @@ def test_stop_model_service(
     mock_info,
 ):
     # Patch the find_model_server method
-    mocker.patch.object(ConcreteModelDeployer, 'find_model_server', return_value=[concrete_service_mock[0]])
-    mocker.patch.object(ConcreteModelDeployer, 'get_model_server_info', return_value=mock_info)
-    mocker.patch.object(ConcreteModelDeployer, 'stop_model_server', return_value=None)
+    mocker.patch.object(
+        ConcreteModelDeployer,
+        "find_model_server",
+        return_value=[concrete_service_mock[0]],
+    )
+    mocker.patch.object(
+        ConcreteModelDeployer, "get_model_server_info", return_value=mock_info
+    )
+    mocker.patch.object(
+        ConcreteModelDeployer, "stop_model_server", return_value=None
+    )
 
     # Get the list command
     stop_model = (
@@ -292,10 +336,13 @@ def test_stop_model_service(
     # Run the command
     runner = CliRunner()
     result = runner.invoke(
-        stop_model, [str(concrete_service_mock[0].uuid)], obj=concrete_model_deployer
+        stop_model,
+        [str(concrete_service_mock[0].uuid)],
+        obj=concrete_model_deployer,
     )
     assert result.exit_code == 0
     assert str(concrete_service_mock[0]) in result.output
+
 
 def test_delete_model_service(
     mocker,
@@ -304,9 +351,17 @@ def test_delete_model_service(
     mock_info,
 ):
     # Patch the find_model_server method
-    mocker.patch.object(ConcreteModelDeployer, 'find_model_server', return_value=[concrete_service_mock[0]])
-    mocker.patch.object(ConcreteModelDeployer, 'get_model_server_info', return_value=mock_info)
-    mocker.patch.object(ConcreteModelDeployer, 'delete_model_server', return_value=None)
+    mocker.patch.object(
+        ConcreteModelDeployer,
+        "find_model_server",
+        return_value=[concrete_service_mock[0]],
+    )
+    mocker.patch.object(
+        ConcreteModelDeployer, "get_model_server_info", return_value=mock_info
+    )
+    mocker.patch.object(
+        ConcreteModelDeployer, "delete_model_server", return_value=None
+    )
 
     # Get the list command
     delete_model = (
@@ -316,10 +371,13 @@ def test_delete_model_service(
     # Run the command
     runner = CliRunner()
     result = runner.invoke(
-        delete_model, [str(concrete_service_mock[0].uuid)], obj=concrete_model_deployer
+        delete_model,
+        [str(concrete_service_mock[0].uuid)],
+        obj=concrete_model_deployer,
     )
     assert result.exit_code == 0
     assert str(concrete_service_mock[0]) in result.output
+
 
 def test_get_model_server_logs(
     mocker,
@@ -328,9 +386,17 @@ def test_get_model_server_logs(
     mock_info,
 ):
     # Patch the find_model_server method
-    mocker.patch.object(ConcreteModelDeployer, 'find_model_server', return_value=[concrete_service_mock[0]])
-    mocker.patch.object(ConcreteModelDeployer, 'get_model_server_info', return_value=mock_info)
-    mocker.patch.object(ConcreteModelDeployer, 'get_model_server_logs', return_value="")
+    mocker.patch.object(
+        ConcreteModelDeployer,
+        "find_model_server",
+        return_value=[concrete_service_mock[0]],
+    )
+    mocker.patch.object(
+        ConcreteModelDeployer, "get_model_server_info", return_value=mock_info
+    )
+    mocker.patch.object(
+        ConcreteModelDeployer, "get_model_server_logs", return_value=""
+    )
 
     # Get the list command
     get_logs = (
@@ -340,7 +406,9 @@ def test_get_model_server_logs(
     # Run the command
     runner = CliRunner()
     result = runner.invoke(
-        get_logs, [str(concrete_service_mock[0].uuid)], obj=concrete_model_deployer
+        get_logs,
+        [str(concrete_service_mock[0].uuid)],
+        obj=concrete_model_deployer,
     )
     assert result.exit_code == 0
     assert "" in result.output
