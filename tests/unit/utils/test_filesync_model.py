@@ -20,7 +20,14 @@ SOFTCAT1 = "aria"
 SOFTCAT2 = "axel"
 
 
-def test_file_sync_model(tmp_path):
+def test_file_sync_model_works(tmp_path):
+    """Test that the file sync model works as expected.
+
+    Create a test model, set a value, confirm that values are written to
+    the config file, and that the config file is updated when the value
+    is changed.
+    """
+
     class TestModel(filesync_model.FileSyncModel):
         cat_name: str = SOFTCAT1
 
@@ -36,7 +43,9 @@ def test_file_sync_model(tmp_path):
     assert updated_config_dict["cat_name"] == SOFTCAT2
 
 
-def test_missing_config_file(tmp_path):
+def test_missing_config_file():
+    """Ensure the FileSyncModel raises an error if the config file is missing."""
+
     class TestModel(filesync_model.FileSyncModel):
         cat_name: str = SOFTCAT1
 
@@ -45,6 +54,8 @@ def test_missing_config_file(tmp_path):
 
 
 def test_invalid_config_file(tmp_path):
+    """Ensure the FileSyncModel raises an error if the config file is invalid."""
+
     class TestModel(filesync_model.FileSyncModel):
         cat_name: str = SOFTCAT1
 
@@ -57,6 +68,8 @@ def test_invalid_config_file(tmp_path):
 
 
 def test_concurrent_updates(tmp_path):
+    """Ensure that concurrent updates to the same config file are handled correctly."""
+
     class TestModel(filesync_model.FileSyncModel):
         cat_name: str = SOFTCAT1
 
