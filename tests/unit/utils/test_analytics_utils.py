@@ -132,7 +132,32 @@ def event_context_exit(
 def test_analytics_event(
     mocker: MockFixture, clean_client, one_step_pipeline, empty_step
 ) -> None:
-    """Checks whether the event sent for analytics has the right properties."""
+    """Checks whether the event sent for analytics has the right properties.
+
+    This is achieved by modifying the behaviour of several functionalities
+    within the analytics process:
+
+        1 - The environmental variables are patched to set the "ZENML_DEBUG"
+            and "ZENML_ANALYTICS_OPT_IN" to true. This way, the process to send
+            analytics events is activated. ("ZENML_DEBUG" is only set as a
+            security measure.)
+        2 - The function "analytics.track" which is responsible for sending
+            the actual analytics events is also patched with a different
+            function. This way, we stop sending any actual events during the
+            test and have a platform to check the validity of the final
+            attributes which get passed to it.
+        3 - Finally, the exit function of our AnalyticsContext is also
+            patched. In a normal workflow, this context manager is responsible
+            for keeping the main thread alive by suppressing any exceptions
+            which might happen during the preparation/tracking of any events.
+            However, since we want to test the attributes, this method needs to
+            be disabled with a dummy method, so that we can catch any errors
+            that happen during the check.
+
+    Once the patches are set, we can execute any events such as `initializing
+    zenml`, `registering stacks` or `registering stack components` and check
+    the validity of the corresponding event and metadata.
+    """
 
     mocker.patch("analytics.track", new=event_check)
     mocker.patch(
