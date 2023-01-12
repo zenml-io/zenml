@@ -85,7 +85,7 @@ server = ["fastapi", "uvicorn", "python-multipart", "python-jose", "fastapi-util
 black = "^22.3.0"
 pytest = "^6.2.4"
 mypy = "^0.991"
-ruff = "^0.0.218"
+ruff = "^0.0.219"
 coverage = { extras = ["toml"], version = "^5.5" }
 pre-commit = "^2.14.0"
 autoflake = "^1.4"
