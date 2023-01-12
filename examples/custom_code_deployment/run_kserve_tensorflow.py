@@ -18,7 +18,9 @@ from kserve_tensorflow.pipelines.kserve_tensorflow_pipelines import (
     tensorflow_custom_code_pipeline,
     tensorflow_inference_pipeline,
 )
-from kserve_tensorflow.steps.deployer import kserve_tensorflow_custom_deployment
+from kserve_tensorflow.steps.deployer import (
+    kserve_tensorflow_custom_deployment,
+)
 from kserve_tensorflow.steps.deployment_trigger import (
     DeploymentTriggerParameters,
     deployment_trigger,

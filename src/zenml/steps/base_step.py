@@ -67,7 +67,12 @@ from zenml.steps.utils import (
     parse_return_type_annotations,
     resolve_type_annotation,
 )
-from zenml.utils import dict_utils, pydantic_utils, settings_utils, source_utils
+from zenml.utils import (
+    dict_utils,
+    pydantic_utils,
+    settings_utils,
+    source_utils,
+)
 
 logger = get_logger(__name__)
 if TYPE_CHECKING:

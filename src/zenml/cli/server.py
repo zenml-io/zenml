@@ -870,7 +870,9 @@ def logs(
 
     cli_utils.declare(f"Showing logs for server: {server_name}")
 
-    from zenml.zen_server.deploy.exceptions import ServerDeploymentNotFoundError
+    from zenml.zen_server.deploy.exceptions import (
+        ServerDeploymentNotFoundError,
+    )
 
     try:
         logs = deployer.get_server_logs(server_name, follow=follow, tail=tail)

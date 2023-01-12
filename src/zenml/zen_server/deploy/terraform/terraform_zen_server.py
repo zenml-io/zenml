@@ -20,7 +20,11 @@ from typing import Any, Dict, Optional, cast
 from uuid import UUID
 
 from zenml.logger import get_logger
-from zenml.services import ServiceType, TerraformService, TerraformServiceConfig
+from zenml.services import (
+    ServiceType,
+    TerraformService,
+    TerraformServiceConfig,
+)
 from zenml.utils.io_utils import get_global_config_directory
 from zenml.zen_server.deploy.deployment import ServerDeploymentConfig
 

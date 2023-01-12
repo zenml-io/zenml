@@ -30,7 +30,16 @@
 import glob
 import os
 import shutil
-from typing import Any, Callable, ClassVar, Iterable, List, Optional, Set, Tuple
+from typing import (
+    Any,
+    Callable,
+    ClassVar,
+    Iterable,
+    List,
+    Optional,
+    Set,
+    Tuple,
+)
 
 from zenml.io.filesystem import BaseFilesystem, PathType
 from zenml.io.filesystem_registry import default_filesystem_registry
