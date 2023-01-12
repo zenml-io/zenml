@@ -115,7 +115,7 @@ class ContainerService(BaseService):
     `run` method. Upon `start`, the service will spawn a container that
     ends up calling the `run` method.
 
-    Example:-
+    For example,
 
     ```python
 

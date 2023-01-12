@@ -48,7 +48,7 @@ def daemonize(
     Use this decorator to easily transform any function into a daemon
     process.
 
-    Example:-
+    For example,
 
     ```python
     import time

@@ -191,7 +191,7 @@ class LocalDaemonService(BaseService):
     `run` method. Upon `start`, the service will spawn a daemon process that
     ends up calling the `run` method.
 
-    Example:-
+    For example,
 
     ```python
 
