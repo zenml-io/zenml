@@ -306,7 +306,7 @@ module = [
 ignore_missing_imports = true
 
 [tool.black]
-line-length = 80
+line-length = 79
 include = '\.pyi?$'
 exclude = '''
 /(
