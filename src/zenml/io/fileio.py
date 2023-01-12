@@ -97,8 +97,11 @@ def copy(src: "PathType", dst: "PathType", overwrite: bool = False) -> None:
                 f"Destination file '{convert_to_str(dst)}' already exists "
                 f"and `overwrite` is false."
             )
-        contents = open(src, mode="rb").read()
-        open(dst, mode="wb").write(contents)
+        with open(src, mode="rb") as f:
+            contents = f.read()
+
+        with open(dst, mode="wb") as f:
+            f.write(contents)
 
 
 def exists(path: "PathType") -> bool:
