@@ -352,7 +352,9 @@ class Environment(metaclass=SingletonMetaClass):
         """
         if self._components.get(component.NAME) is component:
             del self._components[component.NAME]
-            logger.debug(f"Deregistered environment component {component.NAME}")
+            logger.debug(
+                f"Deregistered environment component {component.NAME}"
+            )
 
         else:
             logger.warning(

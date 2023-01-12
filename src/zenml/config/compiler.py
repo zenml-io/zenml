@@ -261,7 +261,8 @@ class Compiler:
                 settings_instance = resolver.resolve(stack=stack)
             except KeyError:
                 logger.info(
-                    "Not including stack component settings with key `%s`.", key
+                    "Not including stack component settings with key `%s`.",
+                    key,
                 )
                 continue
 

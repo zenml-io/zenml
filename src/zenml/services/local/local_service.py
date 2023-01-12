@@ -451,7 +451,9 @@ class LocalDaemonService(BaseService):
         Yields:
             A generator that can be accessed to get the service logs.
         """
-        if not self.status.log_file or not os.path.exists(self.status.log_file):
+        if not self.status.log_file or not os.path.exists(
+            self.status.log_file
+        ):
             return
 
         with open(self.status.log_file, "r") as f:

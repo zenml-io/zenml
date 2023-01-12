@@ -531,7 +531,9 @@ def destroy() -> None:
         )
 
 
-@cli.command("status", help="Show information about the current configuration.")
+@cli.command(
+    "status", help="Show information about the current configuration."
+)
 def status() -> None:
     """Show details about the current configuration."""
     gc = GlobalConfiguration()
@@ -546,7 +548,9 @@ def status() -> None:
         if gc.uses_default_store():
             cli_utils.declare(f"Using the local database ('{store_cfg.url}')")
         else:
-            cli_utils.declare(f"Connected to a ZenML server: '{store_cfg.url}'")
+            cli_utils.declare(
+                f"Connected to a ZenML server: '{store_cfg.url}'"
+            )
 
     scope = "repository" if client.uses_local_configuration else "global"
     cli_utils.declare(f"The current user is: '{client.active_user.name}'")

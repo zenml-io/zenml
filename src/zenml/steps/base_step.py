@@ -396,9 +396,9 @@ class BaseStep(metaclass=BaseStepMeta):
             if self._created_by_functional_api()
             else self.__class__
         )
-        parameters[STEP_SOURCE_PARAMETER_NAME] = source_utils.get_hashed_source(
-            source_object
-        )
+        parameters[
+            STEP_SOURCE_PARAMETER_NAME
+        ] = source_utils.get_hashed_source(source_object)
 
         for name, output in self.configuration.outputs.items():
             if output.materializer_source:
@@ -822,7 +822,9 @@ class BaseStep(metaclass=BaseStepMeta):
         self._validate_function_parameters(parameters=config.parameters)
         self._validate_outputs(outputs=config.outputs)
 
-    def _validate_function_parameters(self, parameters: Dict[str, Any]) -> None:
+    def _validate_function_parameters(
+        self, parameters: Dict[str, Any]
+    ) -> None:
         """Validates step function parameters.
 
         Args:

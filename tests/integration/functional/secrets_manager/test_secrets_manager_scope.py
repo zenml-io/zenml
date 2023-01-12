@@ -32,7 +32,9 @@ def test_scope_defaults_to_component(
     default_secrets_manager: BaseSecretsManager,
 ):
     """Tests that secrets managers are component-scoped by default."""
-    assert default_secrets_manager.config.scope == SecretsManagerScope.COMPONENT
+    assert (
+        default_secrets_manager.config.scope == SecretsManagerScope.COMPONENT
+    )
 
 
 def test_scope_namespace_required(request: pytest.FixtureRequest):

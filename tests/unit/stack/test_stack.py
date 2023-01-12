@@ -40,7 +40,9 @@ def test_initializing_a_stack_from_components(
     assert stack.container_registry is None
 
     # check that it also works with optional container registry
-    components[StackComponentType.CONTAINER_REGISTRY] = local_container_registry
+    components[
+        StackComponentType.CONTAINER_REGISTRY
+    ] = local_container_registry
 
     stack = Stack.from_components(id=uuid4(), name="", components=components)
     assert stack.container_registry is local_container_registry

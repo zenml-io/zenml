@@ -74,7 +74,9 @@ def upgrade() -> None:
         sa.Column("user_id", sqlmodel.sql.sqltypes.GUID(), nullable=True),
         sa.Column("id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
         sa.Column("type", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-        sa.Column("source", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+        sa.Column(
+            "source", sqlmodel.sql.sqltypes.AutoString(), nullable=False
+        ),
         sa.Column("name", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
         sa.Column(
             "integration", sqlmodel.sql.sqltypes.AutoString(), nullable=True
@@ -126,7 +128,9 @@ def upgrade() -> None:
         sa.Column("name", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
         sa.Column("is_shared", sa.Boolean(), nullable=False),
         sa.Column("type", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-        sa.Column("flavor", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+        sa.Column(
+            "flavor", sqlmodel.sql.sqltypes.AutoString(), nullable=False
+        ),
         sa.Column("configuration", sa.LargeBinary(), nullable=False),
         sa.Column("created", sa.DateTime(), nullable=False),
         sa.Column("updated", sa.DateTime(), nullable=False),
@@ -230,7 +234,9 @@ def upgrade() -> None:
         sa.Column(
             "zenml_version", sqlmodel.sql.sqltypes.AutoString(), nullable=False
         ),
-        sa.Column("git_sha", sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+        sa.Column(
+            "git_sha", sqlmodel.sql.sqltypes.AutoString(), nullable=True
+        ),
         sa.Column("created", sa.DateTime(), nullable=False),
         sa.Column("updated", sa.DateTime(), nullable=False),
         sa.Column("mlmd_id", sa.Integer(), nullable=True),
@@ -251,7 +257,9 @@ def upgrade() -> None:
     op.create_table(
         "stackcompositionschema",
         sa.Column("stack_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
-        sa.Column("component_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
+        sa.Column(
+            "component_id", sqlmodel.sql.sqltypes.GUID(), nullable=False
+        ),
         sa.ForeignKeyConstraint(
             ["component_id"],
             ["stackcomponentschema.id"],

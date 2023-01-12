@@ -123,7 +123,9 @@ class TerraformServerDeploymentConfig(ServerDeploymentConfig):
     zenmlserver_image_tag: str = "latest"
     zenmlinit_image_tag: str = "latest"
     namespace: str = "zenmlserver"
-    kubectl_config_path: str = os.path.join(str(Path.home()), ".kube", "config")
+    kubectl_config_path: str = os.path.join(
+        str(Path.home()), ".kube", "config"
+    )
     ingress_tls: bool = True
     ingress_tls_generate_certs: bool = True
     ingress_tls_secret_name: str = "zenml-tls-certs"

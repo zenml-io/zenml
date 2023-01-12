@@ -82,7 +82,9 @@ class DeepchecksDataValidator(BaseDataValidator):
         """
         tabular_checks = list(
             filter(
-                lambda check: DeepchecksValidationCheck.is_tabular_check(check),
+                lambda check: DeepchecksValidationCheck.is_tabular_check(
+                    check
+                ),
                 check_list,
             )
         )

@@ -277,7 +277,8 @@ class SeldonModelDeployer(BaseModelDeployer):
             # SeldonDeploymentConfig, try to create one from the ZenML secret
             # configured for the model deployer
             config.secret_name = (
-                config.secret_name or self._create_or_update_kubernetes_secret()
+                config.secret_name
+                or self._create_or_update_kubernetes_secret()
             )
 
             # if replace is True, find equivalent Seldon Core deployments

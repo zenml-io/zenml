@@ -68,7 +68,9 @@ class LocalFilesystem(BaseFilesystem):
         return open(name, mode=mode)
 
     @staticmethod
-    def copyfile(src: PathType, dst: PathType, overwrite: bool = False) -> None:
+    def copyfile(
+        src: PathType, dst: PathType, overwrite: bool = False
+    ) -> None:
         """Copy a file from the source to the destination.
 
         Args:

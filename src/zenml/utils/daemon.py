@@ -129,7 +129,9 @@ else:
         children = parent.children(recursive=False)
 
         for p in children:
-            sys.stderr.write(f"Terminating child process with PID {p.pid}...\n")
+            sys.stderr.write(
+                f"Terminating child process with PID {p.pid}...\n"
+            )
             p.terminate()
         _, alive = psutil.wait_procs(
             children, timeout=CHILD_PROCESS_WAIT_TIMEOUT

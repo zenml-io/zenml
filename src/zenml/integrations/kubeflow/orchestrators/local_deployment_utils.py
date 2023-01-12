@@ -235,7 +235,9 @@ def wait_until_kubeflow_pipelines_ready(kubernetes_context: str) -> None:
         if kubeflow_pipelines_ready(kubernetes_context=kubernetes_context):
             break
 
-        logger.info("One or more pods not ready yet, waiting for 30 seconds...")
+        logger.info(
+            "One or more pods not ready yet, waiting for 30 seconds..."
+        )
         time.sleep(30)
 
 
