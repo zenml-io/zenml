@@ -3,4 +3,4 @@ set -e
 set -x
 
 scripts/lint.sh
-scripts/docstring.sh
+scripts/check-spelling.sh
