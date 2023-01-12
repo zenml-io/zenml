@@ -76,7 +76,8 @@ def _create_local_stack(
     )
 
     artifact_store = _create_local_artifact_store(
-        client=client, artifact_store_name=artifact_store_name or _random_name()
+        client=client,
+        artifact_store_name=artifact_store_name or _random_name(),
     )
 
     return client.create_stack(

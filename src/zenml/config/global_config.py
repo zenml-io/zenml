@@ -730,7 +730,10 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         return self.active_stack_id
 
     def record_email_opt_in_out(
-        self, opted_in: bool, email: Optional[str], source: AnalyticsEventSource
+        self,
+        opted_in: bool,
+        email: Optional[str],
+        source: AnalyticsEventSource,
     ) -> None:
         """Set the email address associated with this client.
 
