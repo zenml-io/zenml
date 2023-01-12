@@ -496,7 +496,6 @@ PYxx
 PandasAnalyzer
 PandasDatasource
 PandasMaterializer
-PandasMaterializer
 Paperspace
 Parameterization
 Parameterizing
@@ -1113,6 +1112,7 @@ gserviceaccount
 gsutil
 gzip
 gzip
+gzip
 hadoop
 hardcoded
 hasattr
@@ -1163,6 +1163,7 @@ ipynb
 ir
 isdir
 isinstance
+issubclass
 issubclass
 issubclass
 istio
@@ -1244,6 +1245,7 @@ mixin
 mixins
 mkdir
 mkdocs
+mkdtemp
 mkdtemp
 mkdtemp
 mlflow
