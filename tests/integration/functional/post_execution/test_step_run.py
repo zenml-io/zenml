@@ -48,14 +48,7 @@ def test_step_run_with_too_long_source_code_is_truncated(
     """Test that the step source code gets truncated if it is too long."""
 
     random_source = "".join(random.choices(string.ascii_uppercase, k=1000000))
-
-    def mock_getsource(obj):
-        """Mock `getsource` that returns an overly long string."""
-        return random_source
-
-    getsource_mocker = mocker.MagicMock(side_effect=mock_getsource)
-    mocker.patch("inspect.getsource", getsource_mocker)
-
+    mocker.patch("zenml.steps.base_step.BaseStep.source_code", random_source)
     pipeline_instance = connected_two_step_pipeline(
         step_1=constant_int_output_test_step(),
         step_2=int_plus_one_test_step(),
@@ -66,3 +59,37 @@ def test_step_run_with_too_long_source_code_is_truncated(
     step_2 = pipeline_run.steps[1]
     assert step_1.source_code == random_source[:1000] + "..."
     assert step_2.source_code == random_source[:1000] + "..."
+
+
+def test_step_run_has_docstring(clean_client, connected_two_step_pipeline):
+    """Test that the step run has correct docstring."""
+    pipeline_instance = connected_two_step_pipeline(
+        step_1=constant_int_output_test_step(),
+        step_2=int_plus_one_test_step(),
+    )
+    pipeline_instance.run()
+    pipeline_run = get_pipeline("connected_two_step_pipeline").runs[-1]
+    step_1 = pipeline_run.steps[0]
+    step_2 = pipeline_run.steps[1]
+    assert step_1.docstring == constant_int_output_test_step.entrypoint.__doc__
+    assert step_2.docstring == int_plus_one_test_step.entrypoint.__doc__
+
+
+def test_step_run_with_too_long_docstring_is_truncated(
+    clean_client, connected_two_step_pipeline, mocker
+):
+    """Test that the step docstring gets truncated if it is too long."""
+    random_docstring = "".join(
+        random.choices(string.ascii_uppercase, k=1000000)
+    )
+    mocker.patch("zenml.steps.base_step.BaseStep.docstring", random_docstring)
+    pipeline_instance = connected_two_step_pipeline(
+        step_1=constant_int_output_test_step(),
+        step_2=int_plus_one_test_step(),
+    )
+    pipeline_instance.run()
+    pipeline_run = get_pipeline("connected_two_step_pipeline").runs[-1]
+    step_1 = pipeline_run.steps[0]
+    step_2 = pipeline_run.steps[1]
+    assert step_1.docstring == random_docstring[:1000] + "..."
+    assert step_2.docstring == random_docstring[:1000] + "..."

@@ -12,8 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Pipeline configuration classes."""
-import json
-import zlib
 from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional
 
 from pydantic import root_validator
@@ -22,7 +20,6 @@ from zenml.config.base_settings import BaseSettings, SettingsOrDict
 from zenml.config.constants import RESOURCE_SETTINGS_KEY
 from zenml.config.strict_base_model import StrictBaseModel
 from zenml.logger import get_logger
-from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.utils import source_utils
 
 if TYPE_CHECKING:
@@ -80,11 +77,27 @@ class PartialStepConfiguration(StepConfigurationUpdate):
 
     name: str
     enable_cache: bool
-    docstring: Optional[str] = None
-    source_code: Optional[str] = None
     caching_parameters: Mapping[str, Any] = {}
     inputs: Mapping[str, PartialArtifactConfiguration] = {}
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
+
+    @root_validator(pre=True)
+    def _remove_deprecated_attributes(
+        cls, values: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Removes deprecated attributes from the values dict.
+
+        Args:
+            values: The values dict used to instantiate the model.
+
+        Returns:
+            The values dict without deprecated attributes.
+        """
+        deprecated_attributes = ["docstring"]
+        for deprecated_attribute in deprecated_attributes:
+            if deprecated_attribute in values:
+                values.pop(deprecated_attribute)
+        return values
 
 
 class StepConfiguration(PartialStepConfiguration):
@@ -194,48 +207,3 @@ class Step(StrictBaseModel):
 
     spec: StepSpec
     config: StepConfiguration
-
-    def encode(self) -> bytes:
-        """Encodes the step into a byte string.
-
-        Returns:
-            The encoded step.
-        """
-        step_dict = self.dict(exclude_none=True)
-        step_json = json.dumps(step_dict, sort_keys=True)
-        encoded = zlib.compress(step_json.encode())
-
-        # If the encoded string is too long to fit into the DB, we truncate both
-        # the `docstring` and `source_code` fields to 1000 chars.
-        if len(encoded) > TEXT_FIELD_MAX_LENGTH:
-            logger.debug(
-                f"Encoded step is too long ({len(encoded)} bytes). "
-                f"Truncating `docstring` and `source_code` fields."
-            )
-            step_config = step_dict["config"]
-            if "docstring" in step_config:
-                docstring = step_config["docstring"][:1000] + "..."
-                step_config["docstring"] = docstring
-
-            if "source_code" in step_config:
-                source_code = step_config["source_code"][:1000] + "..."
-                step_config["source_code"] = source_code
-
-            step_dict["config"] = step_config
-            step_json = json.dumps(step_dict, sort_keys=True)
-            encoded = zlib.compress(step_json.encode())
-
-        return encoded
-
-    @classmethod
-    def decode(cls, encoded: bytes) -> "Step":
-        """Decodes a byte string into a step.
-
-        Args:
-            encoded: The encoded step as a byte string.
-
-        Returns:
-            The decoded step.
-        """
-        decoded = zlib.decompress(encoded).decode()
-        return cls.parse_raw(decoded)

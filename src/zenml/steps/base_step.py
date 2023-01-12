@@ -290,8 +290,6 @@ class BaseStep(metaclass=BaseStepMeta):
         self._configuration = PartialStepConfiguration(
             name=name,
             enable_cache=enable_cache,
-            docstring=self.__doc__,
-            source_code=inspect.getsource(self.source_object),
         )
         self._apply_class_configuration(kwargs)
         self._verify_and_apply_init_params(*args, **kwargs)
@@ -319,6 +317,21 @@ class BaseStep(metaclass=BaseStepMeta):
         return cls.INSTANCE_CONFIGURATION.get(
             PARAM_CREATED_BY_FUNCTIONAL_API, False
         )
+
+    @classmethod
+    def load_from_source(cls, source: str) -> "BaseStep":
+        """Loads a step from source.
+
+        Args:
+            source: The path to the step source.
+
+        Returns:
+            The loaded step.
+        """
+        step_class: Type[BaseStep] = source_utils.load_and_validate_class(
+            source, expected_class=BaseStep
+        )
+        return step_class()
 
     @property
     def upstream_steps(self) -> Set[str]:
@@ -393,6 +406,24 @@ class BaseStep(metaclass=BaseStepMeta):
         if self._created_by_functional_api():
             return self.entrypoint
         return self.__class__
+
+    @property
+    def source_code(self) -> str:
+        """The source code of this step.
+
+        Returns:
+            The source code of this step.
+        """
+        return inspect.getsource(self.source_object)
+
+    @property
+    def docstring(self) -> Optional[str]:
+        """The docstring of this step.
+
+        Returns:
+            The docstring of this step.
+        """
+        return self.__doc__
 
     @property
     def caching_parameters(self) -> Dict[str, Any]:

@@ -92,11 +92,12 @@ class StepRunSchema(NamedSchema, table=True):
     status: ExecutionStatus
     entrypoint_name: str
     parameters: str = Field(sa_column=Column(TEXT, nullable=False))
-    step_configuration: bytes = Field(sa_column=Column(TEXT, nullable=False))
+    step_configuration: str = Field(sa_column=Column(TEXT, nullable=False))
     caching_parameters: Optional[str] = Field(
         sa_column=Column(TEXT, nullable=True)
     )
     docstring: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
+    source_code: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     num_outputs: Optional[int]
 
     input_artifacts: List["StepRunInputArtifactSchema"] = Relationship(
@@ -148,13 +149,14 @@ class StepRunSchema(NamedSchema, table=True):
             parameters=json.dumps(
                 step_config.parameters, default=pydantic_encoder, sort_keys=True
             ),
-            step_configuration=request.step.encode(),
+            step_configuration=request.step.json(sort_keys=True),
             caching_parameters=json.dumps(
                 step_config.caching_parameters,
                 default=pydantic_encoder,
                 sort_keys=True,
             ),
-            docstring=step_config.docstring,
+            docstring=request.docstring,
+            source_code=request.source_code,
             num_outputs=len(step_config.outputs),
             status=request.status,
         )
@@ -186,8 +188,10 @@ class StepRunSchema(NamedSchema, table=True):
             cache_key=self.cache_key,
             start_time=self.start_time,
             end_time=self.end_time,
-            step=Step.decode(self.step_configuration),
+            step=Step.parse_raw(self.step_configuration),
             status=self.status,
+            docstring=self.docstring,
+            source_code=self.source_code,
             created=self.created,
             updated=self.updated,
             input_artifacts=input_artifacts,
