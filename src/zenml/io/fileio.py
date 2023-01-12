@@ -24,6 +24,8 @@ from typing import (
     Type,
 )
 
+# this import required for CI to get local filesystem
+from zenml.io import local_filesystem  # noqa
 from zenml.io.filesystem_registry import default_filesystem_registry
 from zenml.logger import get_logger
 
