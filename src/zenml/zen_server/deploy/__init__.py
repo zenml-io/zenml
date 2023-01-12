@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """ZenML server deployments."""
 
+# DO NOT REMOVE THIS INITIAL IMPORT. It is needed for the ZenML server to work.
+from zenml.zen_server.deploy import docker, local, terraform  # noqa
 from zenml.zen_server.deploy.deployer import ServerDeployer
 from zenml.zen_server.deploy.deployment import (
     ServerDeployment,
