@@ -76,33 +76,33 @@ class ArtifactFilterModel(ProjectScopedFilterModel):
     """Model to enable advanced filtering of all Artifacts."""
 
     name: str = Query(
-        None,
+        default=None,
         description="Name of the artifact",
     )
     uri: str = Query(
-        None,
+        default=None,
         description="Uri of the artifact",
     )
     materializer: str = Query(
-        None,
+        default=None,
         description="Materializer used to produce the artifact",
     )
     type: str = Query(
-        None,
+        default=None,
         description="Type of the artifact",
     )
     data_type: str = Query(
-        None,
+        default=None,
         description="Datatype of the artifact",
     )
     artifact_store_id: Union[UUID, str] = Query(
-        None, description="Artifact store for this artifact"
+        default=None, description="Artifact store for this artifact"
     )
     project_id: Union[UUID, str] = Query(
-        None, description="Project for this artifact"
+        default=None, description="Project for this artifact"
     )
     user_id: Union[UUID, str] = Query(
-        None, description="User that produced this artifact"
+        default=None, description="User that produced this artifact"
     )
 
 

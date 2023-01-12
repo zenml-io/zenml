@@ -61,7 +61,7 @@ class ProjectFilterModel(FilterBaseModel):
     """Model to enable advanced filtering of all Projects."""
 
     name: str = Query(
-        None,
+        default=None,
         description="Name of the project",
     )
 

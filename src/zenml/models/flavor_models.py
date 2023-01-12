@@ -78,19 +78,19 @@ class FlavorFilterModel(ProjectScopedFilterModel):
     """Model to enable advanced filtering of all Flavors."""
 
     name: str = Query(
-        None,
+        default=None,
         description="Name of the flavor",
     )
     type: str = Query(
-        None,
+        default=None,
         description="Stack Component Type of the stack flavor",
     )
     integration: str = Query(
-        None,
+        default=None,
         description="Integration associated with the flavor",
     )
     project_id: Union[UUID, str] = Query(
-        None, description="Project of the stack"
+        default=None, description="Project of the stack"
     )
     user_id: Union[UUID, str] = Query(None, description="User of the stack")
 

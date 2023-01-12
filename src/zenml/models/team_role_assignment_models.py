@@ -64,13 +64,13 @@ class TeamRoleAssignmentFilterModel(FilterBaseModel):
     """Model to enable advanced filtering of all Role Assignments."""
 
     project_id: Union[UUID, str] = Query(
-        None, description="Project of the RoleAssignment"
+        default=None, description="Project of the RoleAssignment"
     )
     team_id: Union[UUID, str] = Query(
-        None, description="Team in the RoleAssignment"
+        default=None, description="Team in the RoleAssignment"
     )
     role_id: Union[UUID, str] = Query(
-        None, description="Role in the RoleAssignment"
+        default=None, description="Role in the RoleAssignment"
     )
 
 

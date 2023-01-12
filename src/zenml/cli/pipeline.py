@@ -60,7 +60,7 @@ def list_pipelines(**kwargs) -> None:
     """List all registered pipelines."""
     cli_utils.print_active_config()
     client = Client()
-    with console.status("Listing roles...\n"):
+    with console.status("Listing pipelines...\n"):
 
         pipelines = client.list_pipelines(**kwargs)
 

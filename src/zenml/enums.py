@@ -12,8 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """ZenML enums."""
-from __future__ import annotations
-
 import logging
 from enum import Enum
 

@@ -428,23 +428,23 @@ class UserFilterModel(FilterBaseModel):
     """Model to enable advanced filtering of all Users."""
 
     name: str = Query(
-        None,
+        default=None,
         description="Name of the user",
     )
     full_name: str = Query(
-        None,
+        default=None,
         description="Full Name of the user",
     )
     email: str = Query(
-        None,
+        default=None,
         description="Full Name of the user",
     )
     active: Union[bool, str] = Query(
-        None,
+        default=None,
         description="Full Name of the user",
     )
     email_opted_in: Union[bool, str] = Query(
-        None,
+        default=None,
         description="Full Name of the user",
     )
 

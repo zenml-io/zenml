@@ -127,19 +127,19 @@ class StackFilterModel(ShareableProjectScopedFilterModel):
     """
 
     is_shared: Union[bool, str] = Query(
-        None, description="If the stack is shared or private"
+        default=None, description="If the stack is shared or private"
     )
     name: str = Query(
-        None,
+        default=None,
         description="Name of the stack",
     )
     description: str = Query(None, description="Description of the stack")
     project_id: Union[UUID, str] = Query(
-        None, description="Project of the stack"
+        default=None, description="Project of the stack"
     )
     user_id: Union[UUID, str] = Query(None, description="User of the stack")
     component_id: Union[UUID, str] = Query(
-        None, description="Component in the stack"
+        default=None, description="Component in the stack"
     )
 
 

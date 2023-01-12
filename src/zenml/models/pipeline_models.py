@@ -75,16 +75,16 @@ class PipelineFilterModel(ProjectScopedFilterModel):
     """Model to enable advanced filtering of all Projects."""
 
     name: str = Query(
-        None,
+        default=None,
         description="Name of the Pipeline",
     )
     docstring: str = Query(
-        None,
+        default=None,
         description="Docstring of the Pipeline",
     )
 
     project_id: Union[UUID, str] = Query(
-        None, description="Project of the Pipeline"
+        default=None, description="Project of the Pipeline"
     )
     user_id: Union[UUID, str] = Query(None, description="User of the Pipeline")
 

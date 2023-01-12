@@ -138,39 +138,39 @@ class PipelineRunFilterModel(ProjectScopedFilterModel):
     """Model to enable advanced filtering of all Projects."""
 
     name: str = Query(
-        None,
+        default=None,
         description="Name of the Pipeline Run",
     )
     orchestrator_run_id: str = Query(
-        None,
+        default=None,
         description="Name of the Pipeline Run within the orchestrator",
     )
 
     pipeline_id: Union[UUID, str] = Query(
-        None, description="Pipeline associated with the Pipeline"
+        default=None, description="Pipeline associated with the Pipeline"
     )
     project_id: Union[UUID, str] = Query(
-        None, description="Project of the Pipeline"
+        default=None, description="Project of the Pipeline"
     )
     user_id: Union[UUID, str] = Query(None, description="User of the Pipeline")
 
     stack_id: Union[UUID, str] = Query(
-        None, description="Stack used for the Pipeline Run"
+        default=None, description="Stack used for the Pipeline Run"
     )
 
     status: str = Query(
-        None,
+        default=None,
         description="Name of the Pipeline Run",
     )
     start_time: Union[datetime, str] = Query(
-        None, description="Start time for this run"
+        default=None, description="Start time for this run"
     )
     end_time: Union[datetime, str] = Query(
-        None, description="End time for this run"
+        default=None, description="End time for this run"
     )
 
     num_steps: int = Query(
-        None,
+        default=None,
         description="Amount of steps in the Pipeline Run",
     )
 

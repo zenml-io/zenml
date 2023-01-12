@@ -60,7 +60,7 @@ class RoleFilterModel(FilterBaseModel):
     """Model to enable advanced filtering of all Users."""
 
     name: str = Query(
-        None,
+        default=None,
         description="Name of the role",
     )
 

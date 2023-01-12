@@ -91,7 +91,7 @@ class TeamFilterModel(FilterBaseModel):
     """Model to enable advanced filtering of all Teams."""
 
     name: str = Query(
-        None,
+        default=None,
         description="Name of the team",
     )
 

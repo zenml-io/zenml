@@ -75,8 +75,6 @@ if TYPE_CHECKING:
 
 MAX_ARGUMENT_VALUE_SIZE = 10240
 
-M = TypeVar("M", bound=BaseResponseModel)
-
 
 def title(text: str) -> None:
     """Echo a title formatted string on the CLI.
@@ -188,10 +186,10 @@ def print_table(obj: List[Dict[str, Any]], **columns: table.Column) -> None:
 
 
 def print_pydantic_models(
-    models: Page[M],
+    models: Page[BaseResponseModel],
     columns: Optional[List[str]] = None,
     exclude_columns: Optional[List[str]] = None,
-    is_active: Optional[Callable[[M], bool]] = None,
+    is_active: Optional[Callable[[BaseResponseModel], bool]] = None,
 ) -> None:
     """Prints the list of Pydantic models in a table.
 
@@ -207,7 +205,7 @@ def print_pydantic_models(
     if exclude_columns is None:
         exclude_columns = list()
 
-    def __dictify(model: M) -> Dict[str, str]:
+    def __dictify(model: BaseResponseModel) -> Dict[str, str]:
         """Helper function to map over the list to turn Models into dicts.
 
         Args:
@@ -1060,7 +1058,7 @@ def warn_unsupported_non_default_project() -> None:
         )
 
 
-def print_page_info(page: Page[M]):
+def print_page_info(page: Page[BaseResponseModel]):
     """Print all information pertaining to a page to show the amount of items and pages"""
     declare(
         f"Page `({page.page}/{page.total_pages})`, `{page.total}` items "
@@ -1095,24 +1093,25 @@ def create_filter_help_text(
         )
     elif filter_model.is_uuid_field(field):
         return (
-            f"[UUID] Example: --{field}='{GenericFilterOps.STARTSWITH}:ab53ca' to "
-            f"filter for all UUIDs starting with that prefix."
+            f"[UUID] Example: --{field}='{GenericFilterOps.STARTSWITH}:ab53ca' "
+            f"to filter for all UUIDs starting with that prefix."
         )
     elif filter_model.is_int_field(field):
         return (
-            f"[INTEGER] Example: --{field}='{GenericFilterOps.STARTSWITH}:ab53ca' to "
-            f"filter for all UUIDs starting with that prefix."
+            f"[INTEGER] Example: --{field}='{GenericFilterOps.GTE}:25' to "
+            f"filter for all entities where this field has a value greater than "
+            f"or equal to the value."
         )
     elif filter_model.is_bool_field(field):
         return (
-            f"[BOOL] Example: --{field}='{GenericFilterOps.STARTSWITH}:ab53ca' to "
-            f"filter for all UUIDs starting with that prefix."
+            f"[BOOL] Example: --{field}='True' to "
+            f"filter for all instances where this field is true."
         )
     elif filter_model.is_str_field(field):
         return (
-            f"[STRING] Example: --{field}='{GenericFilterOps.CONTAINS}:example' to "
-            f"filter everything that contains the query somewhere in its "
-            f"{field}."
+            f"[STRING] Example: --{field}='{GenericFilterOps.CONTAINS}:example' "
+            f"to filter everything that contains the query string somewhere in "
+            f"its {field}."
         )
 
 

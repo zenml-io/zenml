@@ -12,8 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base domain model definitions."""
-from __future__ import annotations
-
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type, TypeVar, Union
 from uuid import UUID

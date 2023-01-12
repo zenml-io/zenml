@@ -39,7 +39,16 @@ logger = get_logger(__name__)
 
 
 class Filter(BaseModel, ABC):
-    """Filter for all fields."""
+    """Filter for all fields.
+
+    A Filter is a combination of a column, a value that the user uses to
+    filter on this column and an operation to use. The easiest example
+    would be `user equals aria` with column=`user`, value=`aria` and the
+    operation=`equals`.
+
+    All subclasses of this class will support different sets of operations.
+    This operation set is defined in the ALLOWED_OPS class variable.
+    """
 
     ALLOWED_OPS: ClassVar[List[str]] = [
         GenericFilterOps.EQUALS,
@@ -51,7 +60,7 @@ class Filter(BaseModel, ABC):
 
     @validator("operation", pre=True)
     def validate_operation(cls, op: str) -> str:
-        """Validate that the operation is a valid for the field type.
+        """Validate that the operation is a valid op for the field type.
 
         Args:
             op: The operation of this filter.
@@ -70,6 +79,9 @@ class Filter(BaseModel, ABC):
         table: Type[SQLModel],
     ) -> Union["BinaryExpression", "BooleanClauseList"]:
         """Generate the query conditions for the database.
+
+        This method converts the Filter class into an appropriate SQLmodel
+        query condition, to be used when filtering on the Database.
 
         Args:
             table: The SQLModel table to use for the query creation
@@ -171,7 +183,7 @@ class UUIDFilter(Filter):
 class NumericFilter(Filter):
     """Filter for all numeric fields."""
 
-    value: int
+    value: float
 
     ALLOWED_OPS: ClassVar[List[str]] = [
         GenericFilterOps.EQUALS,

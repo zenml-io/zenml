@@ -80,45 +80,45 @@ class StepRunFilterModel(ProjectScopedFilterModel):
     """Model to enable advanced filtering of all Artifacts."""
 
     name: str = Query(
-        None,
+        default=None,
         description="Name of the step run",
     )
     entrypoint_name: str = Query(
-        None,
+        default=None,
         description="Entrypoint name of the step run",
     )
     code_hash: str = Query(
-        None,
+        default=None,
         description="Code hash for this step run",
     )
     cache_key: str = Query(
-        None,
+        default=None,
         description="Cache key for this step run",
     )
     status: str = Query(
-        None,
+        default=None,
         description="Status of the Step Run",
     )
     start_time: Union[datetime, str] = Query(
-        None, description="Start time for this run"
+        default=None, description="Start time for this run"
     )
     end_time: Union[datetime, str] = Query(
-        None, description="End time for this run"
+        default=None, description="End time for this run"
     )
     pipeline_run_id: Union[UUID, str] = Query(
-        None, description="Pipeline run of this step run"
+        default=None, description="Pipeline run of this step run"
     )
     original_step_run_id: Union[UUID, str] = Query(
-        None, description="Original id for this step run"
+        default=None, description="Original id for this step run"
     )
     user_id: Union[UUID, str] = Query(
-        None, description="User that produced this step run"
+        default=None, description="User that produced this step run"
     )
     project_id: Union[UUID, str] = Query(
-        None, description="Project of this step run"
+        default=None, description="Project of this step run"
     )
     num_outputs: int = Query(
-        None,
+        default=None,
         description="Amount of outputs for this Step Run",
     )
 
