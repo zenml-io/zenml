@@ -66,7 +66,7 @@ def list_stacks(
     # Get private stacks unless `is_shared` is set to True
     if is_shared is None or not is_shared:
         # only private stacks of the authenticated user can be accessed
-        if not user_name_or_id or user_name_or_id == auth_context.user.id:
+        if not user_name_or_id or user_name_or_id == str(auth_context.user.id):
             own_stacks = zen_store().list_stacks(
                 project_name_or_id=project_name_or_id,
                 user_name_or_id=auth_context.user.id,
@@ -85,6 +85,7 @@ def list_stacks(
             is_shared=True,
             name=name,
         )
+
         stacks += shared_stacks
 
     return stacks
