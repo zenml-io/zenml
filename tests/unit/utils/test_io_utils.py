@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
+import platform
 import string
 from pathlib import Path
 from types import GeneratorType
@@ -38,6 +39,10 @@ def test_get_global_config_directory_works():
     assert os.path.isdir(gc_dir)
 
 
+@pytest.mark.skipif(
+    platform.system() == "Windows",
+    reason="This specific test only works on Unix systems",
+)
 def test_get_global_config_directory_works_with_env_var():
     """Tests global config directory."""
     os.environ[ENV_ZENML_CONFIG_PATH] = "/"
