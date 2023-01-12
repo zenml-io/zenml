@@ -17,6 +17,10 @@ from typing import Dict, Union
 
 import pytest
 
+from tests.integration.functional.conftest import (
+    constant_int_output_test_step,
+    int_plus_one_test_step,
+)
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import PermissionType
@@ -27,8 +31,6 @@ from zenml.models import (
     UserRequestModel,
 )
 from zenml.models.base_models import BaseResponseModel
-from zenml.pipelines import pipeline
-from zenml.steps import step
 from zenml.zen_stores.base_zen_store import BaseZenStore
 from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
 
@@ -72,28 +74,6 @@ def sql_store(
     # restore the global configuration and the client
     GlobalConfiguration._reset_instance(original_config)
     Client._reset_instance(original_client)
-
-
-@pytest.fixture
-def connected_two_step_pipeline():
-    """Pytest fixture that returns a pipeline which takes two steps
-    `step_1` and `step_2` that are connected."""
-
-    @pipeline
-    def _pipeline(step_1, step_2):
-        step_2(step_1())
-
-    return _pipeline
-
-
-@step
-def constant_int_output_test_step() -> int:
-    return 7
-
-
-@step
-def int_plus_one_test_step(input: int) -> int:
-    return input + 1
 
 
 @pytest.fixture
