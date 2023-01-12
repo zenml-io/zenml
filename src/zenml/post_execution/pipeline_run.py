@@ -155,10 +155,7 @@ class PipelineRunView:
         """
         from zenml.pipelines.base_pipeline import PARAM_ENABLE_CACHE
 
-        if PARAM_ENABLE_CACHE not in self.pipeline_configuration:
-            return None
-        enable_cache = self.pipeline_configuration[PARAM_ENABLE_CACHE]
-        return cast(bool, enable_cache)
+        return self.pipeline_configuration.get(PARAM_ENABLE_CACHE)
 
     @property
     def zenml_version(self) -> Optional[str]:

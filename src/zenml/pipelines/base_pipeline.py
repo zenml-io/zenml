@@ -477,19 +477,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 pipeline=self, stack=stack, run_configuration=run_config
             )
 
-            # Override `enable_cache` of all steps if set at run level
-            if enable_cache is not None:
-                for step_name, step_ in pipeline_deployment.steps.items():
-                    step_config = step_.config
-                    updated_step_config = pydantic_utils.update_model(
-                        original=step_config,
-                        update={"enable_cache": enable_cache},
-                    )
-                    updated_step = pydantic_utils.update_model(
-                        original=step_, update={"config": updated_step_config}
-                    )
-                    pipeline_deployment.steps[step_name] = updated_step
-
             skip_pipeline_registration = constants.handle_bool_env_var(
                 constants.ENV_ZENML_SKIP_PIPELINE_REGISTRATION, default=False
             )
