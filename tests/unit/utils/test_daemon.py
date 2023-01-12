@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import contextlib
 import logging
 import sys
 import time
@@ -43,7 +44,9 @@ def test_daemonize_works(tmp_path):
         time.sleep(period)
         logger.info("Done sleeping, flying away.")
 
-    our_function(period=5)
+    with contextlib.suppress(SystemExit):
+        our_function(period=5)
+
     for i in range(5):
         if daemon.check_if_daemon_is_running(pid_file=tmp_pid):
             break
@@ -51,10 +54,10 @@ def test_daemonize_works(tmp_path):
     else:
         assert "Daemon process not found"
 
+    time.sleep(5)
     # check if the log file exists
     assert (tmp_path / "application.log").exists()
 
-    time.sleep(7)
     # read the log file
     with open(f"{tmp_path}/application.log", "r") as f:
         log = f.read()
