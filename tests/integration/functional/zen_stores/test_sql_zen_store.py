@@ -210,7 +210,9 @@ def test_create_team(
     assert sql_store["store"].get_team(new_team.name)
 
 
-def test_get_team(sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]):
+def test_get_team(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
+):
     """Tests getting a team."""
     new_team = TeamRequestModel(name="arias_team")
     sql_store["store"].create_team(new_team)
@@ -423,7 +425,9 @@ def test_updating_user_succeeds(
 
     new_user_name = "blupus"
     user_update = UserUpdateModel(name=new_user_name)
-    sql_store["store"].update_user(user_id=new_user.id, user_update=user_update)
+    sql_store["store"].update_user(
+        user_id=new_user.id, user_update=user_update
+    )
 
     assert sql_store["store"].get_user(new_user_name) is not None
     with pytest.raises(KeyError):
@@ -636,11 +640,15 @@ def test_updating_builtin_role_fails(
     role_update = RoleUpdateModel(name="cat_feeder")
 
     with pytest.raises(IllegalOperationError):
-        sql_store["store"].update_role(role_id=role.id, role_update=role_update)
+        sql_store["store"].update_role(
+            role_id=role.id, role_update=role_update
+        )
 
     role = sql_store["store"].get_role(DEFAULT_GUEST_ROLE)
     with pytest.raises(IllegalOperationError):
-        sql_store["store"].update_role(role_id=role.id, role_update=role_update)
+        sql_store["store"].update_role(
+            role_id=role.id, role_update=role_update
+        )
 
 
 #  .----------------
@@ -1301,7 +1309,9 @@ def test_list_runs_returns_nothing_when_no_runs_exist(
     with pytest.raises(KeyError):
         sql_store["store"].list_runs(user_name_or_id=uuid.uuid4())
 
-    false_pipeline_runs = sql_store["store"].list_runs(pipeline_id=uuid.uuid4())
+    false_pipeline_runs = sql_store["store"].list_runs(
+        pipeline_id=uuid.uuid4()
+    )
     assert len(false_pipeline_runs) == 0
 
 
@@ -1467,7 +1477,9 @@ def test_create_artifact_succeeds(sql_store):
         project=sql_store["default_project"].id,
     )
     with does_not_raise():
-        created_artifact = sql_store["store"].create_artifact(artifact=artifact)
+        created_artifact = sql_store["store"].create_artifact(
+            artifact=artifact
+        )
         assert created_artifact.name == artifact_name
 
 

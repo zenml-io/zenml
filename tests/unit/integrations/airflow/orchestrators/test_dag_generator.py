@@ -17,8 +17,7 @@ from zenml.integrations.airflow.orchestrators import dag_generator
 
 
 def test_dag_generator_constants():
-    """Tests that the constants redefined in the dag generator file match the
-    actual ZenML constants."""
+    """Tests that the constants redefined in the dag generator file match the actual ZenML constants."""
     from zenml.constants import (
         ENV_ZENML_LOCAL_STORES_PATH as ORIGINAL_ENV_ZENML_LOCAL_STORES_PATH,
     )

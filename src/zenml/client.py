@@ -283,7 +283,9 @@ class Client(metaclass=ClientMetaClass):
         enable_warnings = handle_bool_env_var(
             ENV_ZENML_ENABLE_REPO_INIT_WARNINGS, True
         )
-        self._root = self.find_repository(root, enable_warnings=enable_warnings)
+        self._root = self.find_repository(
+            root, enable_warnings=enable_warnings
+        )
 
         if not self._root:
             self._config = None
@@ -616,7 +618,9 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix=name_id_or_prefix,
         )
 
-    def list_users(self, name: Optional[str] = None) -> List[UserResponseModel]:
+    def list_users(
+        self, name: Optional[str] = None
+    ) -> List[UserResponseModel]:
         """List all users.
 
         Args:
@@ -696,7 +700,9 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix=name_id_or_prefix,
         )
 
-    def list_teams(self, name: Optional[str] = None) -> List[TeamResponseModel]:
+    def list_teams(
+        self, name: Optional[str] = None
+    ) -> List[TeamResponseModel]:
         """List all teams.
 
         Args:
@@ -828,7 +834,9 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix=name_id_or_prefix,
         )
 
-    def list_roles(self, name: Optional[str] = None) -> List[RoleResponseModel]:
+    def list_roles(
+        self, name: Optional[str] = None
+    ) -> List[RoleResponseModel]:
         """Fetches roles.
 
         Args:
@@ -1413,7 +1421,9 @@ class Client(metaclass=ClientMetaClass):
         if component_updates:
             components_dict = {}
             for component_type, component_list in stack.components.items():
-                components_dict[component_type] = [c.id for c in component_list]
+                components_dict[component_type] = [
+                    c.id for c in component_list
+                ]
 
             for component_type, component_id_list in component_updates.items():
                 if component_id_list is not None:
@@ -1493,7 +1503,9 @@ class Client(metaclass=ClientMetaClass):
         )
 
     @track(event=AnalyticsEvent.SET_STACK)
-    def activate_stack(self, stack_name_id_or_prefix: Union[str, UUID]) -> None:
+    def activate_stack(
+        self, stack_name_id_or_prefix: Union[str, UUID]
+    ) -> None:
         """Sets the stack as active.
 
         Args:
@@ -1520,7 +1532,9 @@ class Client(metaclass=ClientMetaClass):
             # a local configuration
             GlobalConfiguration().set_active_stack(stack=stack)
 
-    def _validate_stack_configuration(self, stack: "StackRequestModel") -> None:
+    def _validate_stack_configuration(
+        self, stack: "StackRequestModel"
+    ) -> None:
         """Validates the configuration of a stack.
 
         Args:
@@ -1763,7 +1777,9 @@ class Client(metaclass=ClientMetaClass):
         if is_shared is not None:
             current_name = update_model.name or component.name
             existing_components = self.list_stack_components(
-                name=current_name, is_shared=True, component_type=component_type
+                name=current_name,
+                is_shared=True,
+                component_type=component_type,
             )
             if any([e.id != component.id for e in existing_components]):
                 raise EntityExistsError(
@@ -1777,7 +1793,9 @@ class Client(metaclass=ClientMetaClass):
             existing_configuration.update(configuration)
 
             existing_configuration = {
-                k: v for k, v in existing_configuration.items() if v is not None
+                k: v
+                for k, v in existing_configuration.items()
+                if v is not None
             }
 
             flavor_model = self.get_flavor_by_name_and_type(

@@ -48,7 +48,7 @@ def daemonize(
     Use this decorator to easily transform any function into a daemon
     process.
 
-    Example:
+    For example,
 
     ```python
     import time
@@ -91,7 +91,6 @@ def daemonize(
                 **kwargs: Keyword arguments to be passed to the decorated
                     function.
             """
-            # flake8: noqa: C901
             if sys.platform == "win32":
                 logger.error(
                     "Daemon functionality is currently not supported on Windows."
@@ -111,7 +110,6 @@ def daemonize(
     return inner_decorator
 
 
-# flake8: noqa: C901
 if sys.platform == "win32":
     logger.warning(
         "Daemon functionality is currently not supported on Windows."
@@ -131,7 +129,9 @@ else:
         children = parent.children(recursive=False)
 
         for p in children:
-            sys.stderr.write(f"Terminating child process with PID {p.pid}...\n")
+            sys.stderr.write(
+                f"Terminating child process with PID {p.pid}...\n"
+            )
             p.terminate()
         _, alive = psutil.wait_procs(
             children, timeout=CHILD_PROCESS_WAIT_TIMEOUT

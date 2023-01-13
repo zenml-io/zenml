@@ -259,7 +259,9 @@ class RestZenStoreConfiguration(StoreConfiguration):
     def expand_certificates(self) -> None:
         """Expands the certificates in the verify_ssl field."""
         # Load the certificate values back into the configuration
-        if isinstance(self.verify_ssl, str) and os.path.isfile(self.verify_ssl):
+        if isinstance(self.verify_ssl, str) and os.path.isfile(
+            self.verify_ssl
+        ):
             with open(self.verify_ssl, "r") as f:
                 self.verify_ssl = f.read()
 
@@ -481,7 +483,9 @@ class RestZenStore(BaseZenStore):
             response_model=ComponentResponseModel,
         )
 
-    def get_stack_component(self, component_id: UUID) -> ComponentResponseModel:
+    def get_stack_component(
+        self, component_id: UUID
+    ) -> ComponentResponseModel:
         """Get a stack component by ID.
 
         Args:
@@ -706,7 +710,9 @@ class RestZenStore(BaseZenStore):
             " to be called from the client side."
         )
 
-    def list_users(self, name: Optional[str] = None) -> List[UserResponseModel]:
+    def list_users(
+        self, name: Optional[str] = None
+    ) -> List[UserResponseModel]:
         """List all users.
 
         Args:
@@ -790,7 +796,9 @@ class RestZenStore(BaseZenStore):
             response_model=TeamResponseModel,
         )
 
-    def list_teams(self, name: Optional[str] = None) -> List[TeamResponseModel]:
+    def list_teams(
+        self, name: Optional[str] = None
+    ) -> List[TeamResponseModel]:
         """List all teams.
 
         Args:
@@ -874,7 +882,9 @@ class RestZenStore(BaseZenStore):
             response_model=RoleResponseModel,
         )
 
-    def list_roles(self, name: Optional[str] = None) -> List[RoleResponseModel]:
+    def list_roles(
+        self, name: Optional[str] = None
+    ) -> List[RoleResponseModel]:
         """List all roles.
 
         Args:
@@ -1814,7 +1824,10 @@ class RestZenStore(BaseZenStore):
         """
         logger.debug(f"Sending DELETE request to {path}...")
         return self._request(
-            "DELETE", self.url + API + VERSION_1 + path, params=params, **kwargs
+            "DELETE",
+            self.url + API + VERSION_1 + path,
+            params=params,
+            **kwargs,
         )
 
     def post(

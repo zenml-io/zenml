@@ -364,7 +364,6 @@ KeyError
 Knative
 Kubeflow
 Kubeflow's
-Kubeflow's
 KubeflowMetadataStore
 KubeflowOrchestrator
 Kubernetes
@@ -495,6 +494,7 @@ PYTHONPATH
 PYxx
 PandasAnalyzer
 PandasDatasource
+PandasMaterializer
 Paperspace
 Parameterization
 Parameterizing
@@ -880,7 +880,6 @@ bentoctl
 bentoml
 bff
 bigquery
-bigquery
 bigrams
 blogpost
 bool
@@ -1086,6 +1085,7 @@ gcp
 gcr
 gcs
 gcsfs
+gcspath
 ge
 getattr
 getattribute
@@ -1108,6 +1108,7 @@ gritty
 grpc
 gserviceaccount
 gsutil
+gzip
 hadoop
 hardcoded
 hasattr
@@ -1158,6 +1159,7 @@ ipynb
 ir
 isdir
 isinstance
+issubclass
 istio
 istioctl
 iterable
@@ -1237,6 +1239,7 @@ mixin
 mixins
 mkdir
 mkdocs
+mkdtemp
 mlflow
 mlmd
 mlops

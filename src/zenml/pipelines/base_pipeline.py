@@ -97,7 +97,9 @@ class BasePipelineMeta(type):
             The class.
         """
         dct.setdefault(INSTANCE_CONFIGURATION, {})
-        cls = cast(Type["BasePipeline"], super().__new__(mcs, name, bases, dct))
+        cls = cast(
+            Type["BasePipeline"], super().__new__(mcs, name, bases, dct)
+        )
 
         cls.STEP_SPEC = {}
 

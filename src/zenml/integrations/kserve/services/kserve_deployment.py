@@ -204,7 +204,8 @@ class KServeDeploymentService(BaseService):
         )
 
         return cast(
-            KServeModelDeployer, KServeModelDeployer.get_active_model_deployer()
+            KServeModelDeployer,
+            KServeModelDeployer.get_active_model_deployer(),
         )
 
     def _get_client(self) -> KServeClient:

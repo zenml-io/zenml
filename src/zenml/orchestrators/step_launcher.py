@@ -102,7 +102,7 @@ def _get_step_operator(
 
 
 class StepLauncher:
-    """This class is responsible for launching a step of a ZenML pipeline.
+    """A class responsible for launching a step of a ZenML pipeline.
 
     This class follows these steps to launch and publish a ZenML step:
     1. Publish or reuse a `PipelineRun`

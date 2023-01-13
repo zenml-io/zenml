@@ -50,7 +50,9 @@ from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
 from zenml.services.service import BaseService, ServiceConfig
 from zenml.stack.stack import Stack
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
-from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
+from zenml.utils.pipeline_docker_image_builder import (
+    PipelineDockerImageBuilder,
+)
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment

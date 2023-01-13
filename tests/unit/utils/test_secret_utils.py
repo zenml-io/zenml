@@ -47,8 +47,7 @@ def test_secret_reference_parsing(name, key):
 
 
 def test_secret_field():
-    """Tests that the secret field inserts the correct property into the
-    pydantic field info."""
+    """Tests that the secret field inserts the correct property into the pydantic field info."""
     field_info = secret_utils.SecretField()
     assert (
         field_info.extra[secret_utils.PYDANTIC_SENSITIVE_FIELD_MARKER] is True
@@ -62,5 +61,7 @@ def test_secret_field_detection():
         non_secret: str = Field()
         secret: str = secret_utils.SecretField()
 
-    assert secret_utils.is_secret_field(Model.__fields__["non_secret"]) is False
+    assert (
+        secret_utils.is_secret_field(Model.__fields__["non_secret"]) is False
+    )
     assert secret_utils.is_secret_field(Model.__fields__["secret"]) is True

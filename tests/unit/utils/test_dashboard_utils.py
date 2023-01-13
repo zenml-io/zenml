@@ -77,6 +77,8 @@ def test_get_run_url_works_with_mocked_server_with_runs(monkeypatch):
     )
 
     if Client().zen_store.type == "rest":
-        url = dashboard_utils.get_run_url(run_name="aria", pipeline_id="blupus")
+        url = dashboard_utils.get_run_url(
+            run_name="aria", pipeline_id="blupus"
+        )
         assert url == "https://aria_rules.com/pipelines/blupus/runs/axel/dag"
         assert isinstance(url, str)

@@ -18,7 +18,7 @@ from zenml.pipelines import pipeline
 def seq_classifier_train_eval_pipeline(
     importer, load_tokenizer, tokenization, trainer, evaluator
 ):
-    """Train and Evaluation pipeline"""
+    """Train and Evaluation pipeline."""
     datasets = importer()
     tokenizer = load_tokenizer()
     tokenized_datasets = tokenization(tokenizer=tokenizer, datasets=datasets)

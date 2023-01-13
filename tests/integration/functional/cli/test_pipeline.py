@@ -32,8 +32,7 @@ CUSTOM_OBJ_NAME = "SomeObj"
 
 
 def test_pipeline_run_single_file(clean_client, files_dir: str) -> None:
-    """Test that zenml pipeline run works as expected when the pipeline, its
-    steps and materializers are all in the same file."""
+    """Test that zenml pipeline run works as expected when the pipeline, its steps and materializers are all in the same file."""
     clean_sys_modules = sys.modules
 
     os.chdir(files_dir)
