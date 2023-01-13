@@ -1411,6 +1411,7 @@ class SqlZenStore(BaseZenStore):
         Raises:
             EntityExistsError: If a flavor with the same name and type
                 is already owned by this user in this project.
+            ValueError: In case the config_schema string exceeds the max length.
         """
         with Session(self.engine) as session:
             # Check if component with the same domain key (name, type, project,

@@ -42,16 +42,16 @@ def upgrade() -> None:
 
         batch_op.add_column(
             sa.Column(
-                "logo_url", sqlmodel.sql.sqltypes.AutoString(), nullable=True
+                "logo_url", sa.TEXT(), nullable=True
             )
         )
 
         batch_op.alter_column(
-            "project_id", existing_type=sa.VARCHAR(), nullable=True
+            "project_id", existing_type=sa.CHAR(length=32), nullable=True
         )
 
         batch_op.alter_column(
-            "user_id", existing_type=sa.VARCHAR(), nullable=True
+            "user_id", existing_type=sa.CHAR(length=32), nullable=True
         )
 
     #  will get reflected
@@ -76,9 +76,9 @@ def downgrade() -> None:
 
         # TODO: all columns that don't conform to this will need to be dropped
         batch_op.alter_column(
-            "project_id", existing_type=sa.VARCHAR(), nullable=False
+            "project_id", existing_type=sa.CHAR(length=32), nullable=False
         )
 
         batch_op.alter_column(
-            "user_id", existing_type=sa.VARCHAR(), nullable=False
+            "user_id", existing_type=sa.CHAR(length=32), nullable=False
         )

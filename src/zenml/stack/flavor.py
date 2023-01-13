@@ -12,9 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base ZenML Flavor implementation."""
-
+import json
 from abc import abstractmethod
-from typing import Optional, Type, cast
+from typing import Optional, Type, cast, Dict, Any
 
 from zenml.enums import StackComponentType
 from zenml.models import FlavorRequestModel, FlavorResponseModel
@@ -62,13 +62,13 @@ class Flavor:
         """
 
     @property
-    def config_schema(self) -> str:
+    def config_schema(self) -> Dict[str, Any]:
         """The config schema for a flavor.
 
         Returns:
             The config schema.
         """
-        return self.config_class.schema_json()
+        return json.loads(self.config_class.schema_json())
 
     @classmethod
     def from_model(cls, flavor_model: FlavorResponseModel) -> "Flavor":
