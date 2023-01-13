@@ -24,6 +24,7 @@ AmazonEKSClusterPolicy
 AmazonEKSWorkerNodePolicy
 AmazonRDS
 AmazonS
+AnalyticsContext
 Anys
 AnysCORS
 ApiException

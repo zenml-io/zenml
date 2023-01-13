@@ -627,10 +627,7 @@ class event_handler(object):
         if type_ is not None:
             self.metadata.update({"event_error_type": type_.__name__})
 
-        try:
-            if self.tracker:
-                self.tracker.track_event(self.event, self.metadata)
-            else:
-                track_event(self.event, self.metadata)
-        except Exception as e:
-            logger.debug(f"Analytics tracking failure: {e}")
+        if self.tracker:
+            self.tracker.track_event(self.event, self.metadata)
+        else:
+            track_event(self.event, self.metadata)
