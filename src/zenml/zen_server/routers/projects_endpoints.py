@@ -216,7 +216,7 @@ def list_project_stacks(
         authorize, scopes=[PermissionType.READ]
     ),
 ) -> List[StackResponseModel]:
-    """Get stacks that are part of a specific project.
+    """Get stacks that are part of a specific project for the user.
 
     # noqa: DAR401
 
