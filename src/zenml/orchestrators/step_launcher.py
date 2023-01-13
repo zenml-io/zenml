@@ -239,6 +239,7 @@ class StepLauncher:
             project=client.active_project.id,
             stack=self._deployment.stack_id,
             pipeline=self._deployment.pipeline_id,
+            schedule_id=self._deployment.schedule_id,
             enable_cache=self._deployment.pipeline.enable_cache,
             status=ExecutionStatus.RUNNING,
             pipeline_configuration=self._deployment.pipeline.dict(),

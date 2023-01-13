@@ -15,6 +15,7 @@
 
 import inspect
 from abc import abstractmethod
+from datetime import datetime
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -47,8 +48,10 @@ from zenml.config.pipeline_configurations import (
 from zenml.config.pipeline_deployment import PipelineDeployment
 from zenml.config.schedule import Schedule
 from zenml.config.step_configurations import StepConfigurationUpdate
+from zenml.enums import StackComponentType
 from zenml.exceptions import PipelineConfigurationError, PipelineInterfaceError
 from zenml.logger import get_logger
+from zenml.models.schedule_model import ScheduleRequestModel
 from zenml.stack import Stack
 from zenml.steps import BaseStep
 from zenml.steps.base_step import BaseStepMeta
@@ -504,6 +507,44 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 )
                 pipeline_deployment = pipeline_deployment.copy(
                     update={"pipeline_id": pipeline_id}
+                )
+
+            # TODO: check whether orchestrator even support scheduling before
+            # registering the schedule
+            if schedule:
+                if not schedule.name:
+                    date = datetime.now().strftime("%Y_%m_%d")
+                    time = datetime.now().strftime("%H_%M_%S_%f")
+                    schedule.name = pipeline_deployment.run_name.format(
+                        date=date, time=time
+                    )
+                    pipeline_deployment = pipeline_deployment.copy(
+                        update={"schedule": schedule}
+                    )
+                components = Client().active_stack_model.components
+                orchestrator = components[StackComponentType.ORCHESTRATOR][0]
+                schedule_model = ScheduleRequestModel(
+                    project=Client().active_project.id,
+                    user=Client().active_user.id,
+                    pipeline_id=pipeline_id,
+                    orchestrator_id=orchestrator.id,
+                    name=schedule.name,
+                    active=True,
+                    cron_expression=schedule.cron_expression,
+                    start_time=schedule.start_time,
+                    end_time=schedule.end_time,
+                    interval_second=schedule.interval_second,
+                    catchup=schedule.catchup,
+                )
+                schedule_id = (
+                    Client().zen_store.create_schedule(schedule_model).id
+                )
+                logger.info(
+                    f"Created schedule '{schedule.name}' for pipeline "
+                    f"{pipeline_deployment.pipeline.name}."
+                )
+                pipeline_deployment = pipeline_deployment.copy(
+                    update={"schedule_id": schedule_id}
                 )
 
             analytics_handler.metadata = self._get_pipeline_analytics_metadata(
