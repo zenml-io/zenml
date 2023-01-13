@@ -22,14 +22,13 @@ from zenml.utils.analytics_utils import (
 
 
 def test_get_segment_key():
-    """Checks the get_segment_key method returns a value"""
+    """Checks the get_segment_key method returns a value."""
     with does_not_raise():
         get_segment_key()
 
 
 def test_track_event_conditions():
-    """It should return true for the analytics events but false for everything
-    else."""
+    """It should return true for the analytics events but false for everything else."""
     assert track_event(AnalyticsEvent.OPT_IN_ANALYTICS)
     assert track_event(AnalyticsEvent.OPT_OUT_ANALYTICS)
     assert not track_event(AnalyticsEvent.EVENT_TEST)

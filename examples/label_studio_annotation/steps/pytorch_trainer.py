@@ -50,7 +50,7 @@ def train_model(
     num_epochs=25,
     device="cpu",
 ):
-    """Simplified version of https://pytorch.org/tutorials/beginner/transfer_learning_tutorial.html"""
+    """Simplified version of https://pytorch.org/tutorials/beginner/transfer_learning_tutorial.html."""
     for epoch in range(num_epochs):
         print(f"Epoch {epoch}/{num_epochs - 1}")
         print("-" * 10)
@@ -219,7 +219,6 @@ def pytorch_model_trainer(
     context: StepContext,
 ) -> nn.Module:
     """ZenML step which finetunes or loads a pretrained mobilenetv3 model."""
-
     # Try to load a model from a previous run, otherwise use a pretrained net
     model = _load_last_model(context=context)
     if model is None:

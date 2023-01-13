@@ -29,7 +29,10 @@ def clean_text(text: str):
 
 @step
 def importer() -> Output(
-    X_train=np.ndarray, X_test=np.ndarray, y_train=np.ndarray, y_test=np.ndarray
+    X_train=np.ndarray,
+    X_test=np.ndarray,
+    y_train=np.ndarray,
+    y_test=np.ndarray,
 ):
     train = pd.read_csv(TRAIN_PATH)
     test = pd.read_csv(TEST_PATH)

@@ -148,7 +148,9 @@ class BaseArtifactStoreConfig(StackComponentConfig):
                     """
                 )
             )
-        if not any(values["path"].startswith(i) for i in cls.SUPPORTED_SCHEMES):
+        if not any(
+            values["path"].startswith(i) for i in cls.SUPPORTED_SCHEMES
+        ):
             raise ArtifactStoreInterfaceError(
                 f"The path: '{values['path']}' you defined for your "
                 f"artifact store is not supported by the implementation of "

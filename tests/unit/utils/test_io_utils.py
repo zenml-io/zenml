@@ -177,7 +177,9 @@ def test_find_files_when_file_present(tmp_path):
     with open(temp_file, "w"):
         assert (
             next(
-                io_utils.find_files(str(tmp_path), TEMPORARY_FILE_SEARCH_PREFIX)
+                io_utils.find_files(
+                    str(tmp_path), TEMPORARY_FILE_SEARCH_PREFIX
+                )
             )
             is not None
         )
@@ -279,7 +281,9 @@ def test_move_moves_a_directory_from_source_to_destination(tmp_path) -> None:
         os.path.join(tmp_path, "test_dir_moved"),
     )
     assert os.path.exists(os.path.join(tmp_path, "test_dir_moved"))
-    assert os.path.exists(os.path.join(tmp_path, "test_dir_moved/new_file.txt"))
+    assert os.path.exists(
+        os.path.join(tmp_path, "test_dir_moved/new_file.txt")
+    )
 
 
 def test_get_grandparent_gets_the_grandparent_directory(tmp_path) -> None:

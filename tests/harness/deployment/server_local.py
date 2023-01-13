@@ -177,7 +177,11 @@ class ServerLocalTestDeployment(BaseTestDeployment):
             )
 
         server = self.server
-        if server is None or server.status is None or server.status.url is None:
+        if (
+            server is None
+            or server.status is None
+            or server.status.url is None
+        ):
             raise RuntimeError(
                 f"The '{self.config.name}' deployment is not running."
             )

@@ -22,7 +22,7 @@ from zenml.steps import step
 
 def test_materializer_with_subclassing_parameter():
     """Tests whether the steps work where one parameter subclasses one of the
-    registered types"""
+    registered types."""
 
     class MyFloatType(float):
         pass
@@ -37,7 +37,7 @@ def test_materializer_with_subclassing_parameter():
 
 def test_materializer_with_parameter_with_more_than_one_baseclass():
     """Tests if the materializer selection work where the parameter has more
-    than one baseclass, however only one of the types is registered"""
+    than one baseclass, however only one of the types is registered."""
 
     class MyOtherType:
         pass
@@ -55,7 +55,7 @@ def test_materializer_with_parameter_with_more_than_one_baseclass():
 
 def test_materializer_with_parameter_with_more_than_one_conflicting_baseclass():
     """Tests the case where the output parameter is inheriting from more than
-    one baseclass which have different default materializers"""
+    one baseclass which have different default materializers."""
 
     class MyFirstType:
         pass
@@ -103,7 +103,7 @@ class MyConflictingType(MyFirstType, MySecondType):
 def test_materializer_with_conflicting_parameter_and_explicit_materializer():
     """Tests the case where the output parameter is inheriting from more than
     one baseclass which have different default materializers but the
-    materializer is explicitly defined"""
+    materializer is explicitly defined."""
 
     @step
     def some_step() -> MyConflictingType:

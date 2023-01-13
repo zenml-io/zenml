@@ -24,7 +24,7 @@ from steps.trainers import TrainerParameters, trainer
 @click.option("--epochs", default=5, help="Number of epochs for training")
 @click.option("--lr", default=0.001, help="Learning rate for training")
 def main(epochs: int, lr: float):
-    """Run the mnist example pipeline"""
+    """Run the mnist example pipeline."""
     # Run the pipeline
     pipeline_instance = mnist_pipeline(
         importer=importer(),
