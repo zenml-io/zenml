@@ -28,7 +28,7 @@ def fashion_mnist_pipeline(
     trainer,
     evaluator,
 ):
-    """Link all the steps and artifacts together"""
+    """Link all the steps and artifacts together."""
     train_dataloader, test_dataloader = importer()
     model = trainer(train_dataloader)
     evaluator(test_dataloader=test_dataloader, model=model)

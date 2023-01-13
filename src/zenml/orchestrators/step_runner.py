@@ -351,7 +351,9 @@ class StepRunner:
         artifact_stores = client.active_stack_model.components.get(
             StackComponentType.ARTIFACT_STORE
         )
-        assert artifact_stores is not None  # Every stack has an artifact store.
+        assert (
+            artifact_stores is not None
+        )  # Every stack has an artifact store.
         artifact_store_id = artifact_stores[0].id
         output_artifacts: Dict[str, ArtifactRequestModel] = {}
         for output_name, return_value in output_data.items():

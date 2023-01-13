@@ -369,7 +369,9 @@ class UserAuthModel(UserBaseModel, BaseResponseModel):
 
         zen_store = GlobalConfiguration().zen_store
         try:
-            user = zen_store.get_auth_user(user_name_or_id=access_token.user_id)
+            user = zen_store.get_auth_user(
+                user_name_or_id=access_token.user_id
+            )
         except KeyError:
             return None
         else:

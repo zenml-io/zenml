@@ -67,7 +67,12 @@ from zenml.steps.utils import (
     parse_return_type_annotations,
     resolve_type_annotation,
 )
-from zenml.utils import dict_utils, pydantic_utils, settings_utils, source_utils
+from zenml.utils import (
+    dict_utils,
+    pydantic_utils,
+    settings_utils,
+    source_utils,
+)
 
 logger = get_logger(__name__)
 if TYPE_CHECKING:
@@ -391,9 +396,9 @@ class BaseStep(metaclass=BaseStepMeta):
             if self._created_by_functional_api()
             else self.__class__
         )
-        parameters[STEP_SOURCE_PARAMETER_NAME] = source_utils.get_hashed_source(
-            source_object
-        )
+        parameters[
+            STEP_SOURCE_PARAMETER_NAME
+        ] = source_utils.get_hashed_source(source_object)
 
         for name, output in self.configuration.outputs.items():
             if output.materializer_source:
@@ -808,7 +813,9 @@ class BaseStep(metaclass=BaseStepMeta):
         self._validate_function_parameters(parameters=config.parameters)
         self._validate_outputs(outputs=config.outputs)
 
-    def _validate_function_parameters(self, parameters: Dict[str, Any]) -> None:
+    def _validate_function_parameters(
+        self, parameters: Dict[str, Any]
+    ) -> None:
         """Validates step function parameters.
 
         Args:
