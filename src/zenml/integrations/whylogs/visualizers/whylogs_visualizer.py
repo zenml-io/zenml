@@ -62,9 +62,7 @@ class WhylogsVisualizer(BaseVisualizer):
                 A whylogs DatasetProfileView object loaded from the step view,
                 if one could be found, otherwise None.
             """
-            whylogs_artifact_datatype = (
-                f"{DatasetProfileView.__module__}.{DatasetProfileView.__name__}"
-            )
+            whylogs_artifact_datatype = f"{DatasetProfileView.__module__}.{DatasetProfileView.__name__}"
             for _, artifact_view in step_view.outputs.items():
                 # filter out anything but whylogs dataset profile artifacts
                 if artifact_view.data_type == whylogs_artifact_datatype:

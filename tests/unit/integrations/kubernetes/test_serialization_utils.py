@@ -60,7 +60,7 @@ def _create_test_models() -> List[Any]:
 
 @pytest.mark.parametrize("model", _create_test_models())
 def test_model_serialization_and_deserialization(model: Any) -> None:
-    """Tests that kubernetes models get serialized and deserialized correctly"""
+    """Tests that kubernetes models get serialized and deserialized correctly."""
     model_dict = serialize_kubernetes_model(model)
     deserialized_model = deserialize_kubernetes_model(
         model_dict, class_name=model.__class__.__name__
@@ -77,14 +77,12 @@ def test_get_model_class() -> None:
 
 
 def test_serializing_invalid_model() -> None:
-    """Tests that trying to serialize a non-kubernetes model raises an
-    error."""
+    """Tests that trying to serialize a non-kubernetes model raises an error."""
     with pytest.raises(TypeError):
         serialize_kubernetes_model(5)
 
 
 def test_deserializing_invalid_model() -> None:
-    """Tests that trying to deserialize to a non-kubernetes model raises
-    an error."""
+    """Tests that trying to deserialize to a non-kubernetes model raises an error."""
     with pytest.raises(TypeError):
         deserialize_kubernetes_model({}, "not_a_kubernetes_model_class")

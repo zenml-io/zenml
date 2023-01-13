@@ -120,7 +120,7 @@ def main(
     toleration: float,
     min_accuracy: float,
 ):
-    """Run the Seldon example continuous deployment or inference pipeline
+    """Run the Seldon example continuous deployment or inference pipeline.
 
     Example usage:
 

@@ -121,7 +121,8 @@ def register_secrets_manager_subcommands() -> None:
         will interpret the value of the field `password` as the literal string
         `@password`.
 
-        Examples:
+        Examples:-
+
         - register a secret with the name `secret_one` and configure its values
         interactively:
             zenml secrets-manager secret -manager secret register secret_one -i
@@ -152,8 +153,6 @@ def register_secrets_manager_subcommands() -> None:
                 values.
             args: Command line arguments.
         """
-        # flake8: noqa: C901
-
         # TODO [ENG-725]: Allow passing in json/dict when registering a secret
         #  as an additional option for the user on top of the interactive
 
@@ -353,7 +352,8 @@ def register_secrets_manager_subcommands() -> None:
         will interpret the value of the field `password` as the literal string
         `@password`.
         
-        Examples:
+        Examples:-
+
         - update a secret with the name `secret_one` and configure its values
         interactively:
             zenml secrets-manager secret update secret_one -i

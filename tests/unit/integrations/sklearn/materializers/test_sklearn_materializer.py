@@ -23,7 +23,6 @@ from zenml.integrations.sklearn.materializers.sklearn_materializer import (
 
 def test_sklearn_materializer(clean_client):
     """Tests whether the steps work for the Sklearn materializer."""
-
     with does_not_raise():
         model = _test_materializer(
             step_output=SVC(gamma="auto"),

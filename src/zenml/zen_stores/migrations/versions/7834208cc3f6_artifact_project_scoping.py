@@ -28,7 +28,9 @@ def upgrade() -> None:
             sa.Column("user_id", sqlmodel.sql.sqltypes.GUID(), nullable=True)
         )
         batch_op.add_column(
-            sa.Column("project_id", sqlmodel.sql.sqltypes.GUID(), nullable=True)
+            sa.Column(
+                "project_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
+            )
         )
 
     with op.batch_alter_table("step_run", schema=None) as batch_op:
@@ -36,7 +38,9 @@ def upgrade() -> None:
             sa.Column("user_id", sqlmodel.sql.sqltypes.GUID(), nullable=True)
         )
         batch_op.add_column(
-            sa.Column("project_id", sqlmodel.sql.sqltypes.GUID(), nullable=True)
+            sa.Column(
+                "project_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
+            )
         )
 
     # ------------
