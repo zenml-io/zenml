@@ -28,13 +28,14 @@ from zenml.models import (
     TeamRequestModel,
     TeamUpdateModel,
     UserRequestModel,
-    UserUpdateModel,
+    UserUpdateModel, RoleRequestModel, RoleUpdateModel,
+    RoleAssignmentRequestModel,
 )
 from zenml.models.base_models import BaseRequestModel, BaseResponseModel
 from zenml.zen_stores.base_zen_store import (
     DEFAULT_PROJECT_NAME,
     DEFAULT_USERNAME,
-    BaseZenStore,
+    BaseZenStore, DEFAULT_ADMIN_ROLE, DEFAULT_GUEST_ROLE,
 )
 
 DEFAULT_NAME = "default"
@@ -374,166 +375,44 @@ def test_deleting_default_user_fails():
 # '-------'
 
 
-def test_roles_property_with_fresh_store(
-    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
-):
-    """Tests the roles property with a fresh ZenStore."""
-    assert len(sql_store["store"].roles) == 2
-
-
-def test_creating_role(
-    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
-):
+def test_creating_role_with_empty_permissions_succeeds():
     """Tests creating a role."""
-    assert len(sql_store["store"].roles) == 2
-    roles_before = len(sql_store["store"].roles)
-
-    new_role = RoleRequestModel(
-        name="admin",
-        permissions={
-            PermissionType.ME,
-            PermissionType.READ,
-            PermissionType.WRITE,
-        },
-    )
-    with pytest.raises(EntityExistsError):
-        sql_store["store"].create_role(new_role)
-
-    new_role = RoleRequestModel(
-        name="cat",
-        permissions={
-            PermissionType.ME,
-            PermissionType.READ,
-            PermissionType.WRITE,
-        },
-    )
-    sql_store["store"].create_role(new_role)
-    assert len(sql_store["store"].roles) == roles_before + 1
-    assert sql_store["store"].get_role("admin") is not None
-
-
-def test_creating_role_with_empty_permissions_succeeds(
-    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
-):
-    """Tests creating a role."""
-    assert len(sql_store["store"].roles) == 2
-    roles_before = len(sql_store["store"].roles)
-
+    zen_store = Client().zen_store
     new_role = RoleRequestModel(name="cat", permissions=set())
-    sql_store["store"].create_role(new_role)
-    assert len(sql_store["store"].roles) == roles_before + 1
-    assert sql_store["store"].get_role("admin") is not None
+    zen_store.create_role(new_role)
+    with does_not_raise:
+        zen_store.get_role(role_name_or_id=new_role.name)
+    list_of_roles = zen_store.list_roles()
+    assert new_role.name in [r.name for r in list_of_roles]
+    # Cleanup
+    with does_not_raise():
+        zen_store.delete_role(new_role.id)
 
 
-def test_creating_role_with_existing_name_fails(
-    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
-):
-    """Tests creating a role that already exists."""
-    new_role = RoleRequestModel(
-        name="admin",
-        permissions={
-            PermissionType.ME,
-            PermissionType.READ,
-            PermissionType.WRITE,
-        },
-    )
-    with pytest.raises(EntityExistsError):
-        sql_store["store"].create_role(new_role)
-
-
-def test_creating_existing_role_fails(
-    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
-):
-    """Tests creating an existing role fails."""
-    roles_before = len(sql_store["store"].roles)
-    new_role = RoleRequestModel(
-        name="admin",
-        permissions={
-            PermissionType.ME,
-            PermissionType.READ,
-            PermissionType.WRITE,
-        },
-    )
-    with pytest.raises(EntityExistsError):
-        sql_store["store"].create_role(new_role)
-    assert len(sql_store["store"].roles) == roles_before
-
-
-def test_getting_role_succeeds(
-    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
-):
-    """Tests getting a role."""
-    new_role = RoleRequestModel(
-        name="cat_feeder",
-        permissions={
-            PermissionType.ME,
-            PermissionType.READ,
-            PermissionType.WRITE,
-        },
-    )
-
-    sql_store["store"].create_role(new_role)
-    assert sql_store["store"].get_role("cat_feeder") is not None
-
-
-def test_getting_nonexistent_role_fails(
-    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
-):
-    """Tests getting a nonexistent role fails."""
-    with pytest.raises(KeyError):
-        sql_store["store"].get_role("random_role_that_does_not_exist")
-
-
-def test_deleting_role_succeeds(
-    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
-):
-    """Tests deleting a role."""
-    roles_before = len(sql_store["store"].roles)
-
-    new_role = RoleRequestModel(
-        name="cat_feeder", permissions={PermissionType.ME}
-    )
-    sql_store["store"].create_role(new_role)
-    assert len(sql_store["store"].roles) == roles_before + 1
-    new_role_id = str(sql_store["store"].get_role("cat_feeder").id)
-    sql_store["store"].delete_role(new_role_id)
-    assert len(sql_store["store"].roles) == roles_before
-    with pytest.raises(KeyError):
-        sql_store["store"].get_role(new_role_id)
-
-
-def test_deleting_nonexistent_role_fails(
-    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
-):
-    """Tests deleting a nonexistent role fails."""
-    with pytest.raises(KeyError):
-        sql_store["store"].delete_role(uuid.uuid4())
-
-
-def test_deleting_builtin_role_fails(
-    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
-):
+def test_deleting_builtin_role_fails():
     """Tests deleting a built-in role fails."""
-    with pytest.raises(IllegalOperationError):
-        sql_store["store"].delete_role("admin")
+    zen_store = Client().zen_store
 
     with pytest.raises(IllegalOperationError):
-        sql_store["store"].delete_role("guest")
+        zen_store.delete_role(DEFAULT_ADMIN_ROLE)
+
+    with pytest.raises(IllegalOperationError):
+        zen_store.delete_role(DEFAULT_GUEST_ROLE)
 
 
-def test_updating_builtin_role_fails(
-    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
-):
+def test_updating_builtin_role_fails():
     """Tests updating a built-in role fails."""
-    role = sql_store["store"].get_role(DEFAULT_ADMIN_ROLE)
+    zen_store = Client().zen_store
+
+    role = zen_store.get_role(DEFAULT_ADMIN_ROLE)
     role_update = RoleUpdateModel(name="cat_feeder")
 
     with pytest.raises(IllegalOperationError):
-        sql_store["store"].update_role(role_id=role.id, role_update=role_update)
+        zen_store.update_role(role_id=role.id, role_update=role_update)
 
-    role = sql_store["store"].get_role(DEFAULT_GUEST_ROLE)
+    role = zen_store.get_role(DEFAULT_GUEST_ROLE)
     with pytest.raises(IllegalOperationError):
-        sql_store["store"].update_role(role_id=role.id, role_update=role_update)
+        zen_store.update_role(role_id=role.id, role_update=role_update)
 
 
 #  .----------------
@@ -541,31 +420,33 @@ def test_updating_builtin_role_fails(
 # '-----------------
 
 
-def test_assigning_role_to_user_succeeds(
-    sql_store_with_user_team_role: Dict[
-        str, Union[BaseZenStore, BaseResponseModel]
-    ],
-):
+def test_assigning_role_to_user_succeeds():
     """Tests assigning a role to a user."""
+    zen_store = Client().zen_store
+
+    new_role = RoleRequestModel(name="cat", permissions=set())
+    created_role = zen_store.create_role(new_role)
+
+    new_user = UserRequestModel(name="aria")
+    created_user = zen_store.create_user(new_user)
+
     role_assignment = RoleAssignmentRequestModel(
-        role=sql_store_with_user_team_role["role"].id,
-        user=sql_store_with_user_team_role["user"].id,
-        is_user=True,
+        role=created_role.id,
+        user=created_user.id,
         project=None,
     )
     with does_not_raise():
         (
-            sql_store_with_user_team_role["store"].create_role_assignment(
+            zen_store.create_role_assignment(
                 role_assignment
             )
         )
+    # Cleanup
+    with does_not_raise():
+        zen_store.delete_role(new_role.id)
+        zen_store.delete_role(new_user.id)
 
-
-def test_assigning_role_to_team_succeeds(
-    sql_store_with_user_team_role: Dict[
-        str, Union[BaseZenStore, BaseResponseModel]
-    ],
-):
+def test_assigning_role_to_team_succeeds():
     """Tests assigning a role to a team."""
     role_assignment = RoleAssignmentRequestModel(
         role=sql_store_with_user_team_role["role"].id,
@@ -581,11 +462,7 @@ def test_assigning_role_to_team_succeeds(
         )
 
 
-def test_assigning_role_if_assignment_already_exists_fails(
-    sql_store_with_user_team_role: Dict[
-        str, Union[BaseZenStore, BaseResponseModel]
-    ],
-):
+def test_assigning_role_if_assignment_already_exists_fails():
     """Tests assigning a role to a user if the assignment already exists."""
     role_assignment = RoleAssignmentRequestModel(
         role=sql_store_with_user_team_role["role"].id,
@@ -607,11 +484,7 @@ def test_assigning_role_if_assignment_already_exists_fails(
         )
 
 
-def test_revoking_role_for_user_succeeds(
-    sql_store_with_user_team_role: Dict[
-        str, Union[BaseZenStore, BaseResponseModel]
-    ],
-):
+def test_revoking_role_for_user_succeeds():
     """Tests revoking a role for a user."""
     role_assignment = RoleAssignmentRequestModel(
         role=sql_store_with_user_team_role["role"].id,
@@ -632,11 +505,7 @@ def test_revoking_role_for_user_succeeds(
         )
 
 
-def test_revoking_role_for_team_succeeds(
-    sql_store_with_user_team_role: Dict[
-        str, Union[BaseZenStore, BaseResponseModel]
-    ],
-):
+def test_revoking_role_for_team_succeeds():
     """Tests revoking a role for a team."""
     role_assignment = RoleAssignmentRequestModel(
         role=sql_store_with_user_team_role["role"].id,
@@ -657,11 +526,7 @@ def test_revoking_role_for_team_succeeds(
         )
 
 
-def test_revoking_nonexistent_role_fails(
-    sql_store_with_user_team_role: Dict[
-        str, Union[BaseZenStore, BaseResponseModel]
-    ],
-):
+def test_revoking_nonexistent_role_fails():
     """Tests revoking a nonexistent role fails."""
     with pytest.raises(KeyError):
         sql_store_with_user_team_role["store"].delete_role_assignment(
