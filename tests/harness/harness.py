@@ -206,7 +206,9 @@ class TestHarness(metaclass=TestHarnessMetaClass):
         self.secrets = {s.name: s for s in self.config.secrets}
         self.tests = {t.module: t for t in self.config.tests}
         self.requirements = {c.name: c for c in self.config.requirements}
-        self.environment_configs = {e.name: e for e in self.config.environments}
+        self.environment_configs = {
+            e.name: e for e in self.config.environments
+        }
 
         try:
             self.config.compile(self)
@@ -299,7 +301,9 @@ class TestHarness(metaclass=TestHarnessMetaClass):
         """
         return self.requirements.get(name)
 
-    def get_test_requirements(self, module: ModuleType) -> Optional[TestConfig]:
+    def get_test_requirements(
+        self, module: ModuleType
+    ) -> Optional[TestConfig]:
         """Returns a test requirements configuration associated with a pytest test module.
 
         Args:

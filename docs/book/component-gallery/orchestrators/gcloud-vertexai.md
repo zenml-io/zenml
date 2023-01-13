@@ -42,9 +42,9 @@ your stack.
 as part of your stack.
 * The GCP project ID and location in which you want to run your Vertex 
 AI pipelines.
-* The pipeline runner environment needs permissions to create a job in Vertex Pipelines,
+* The pipeline client environment needs permissions to create a job in Vertex Pipelines,
 e.g. the `Vertex AI User` role: https://cloud.google.com/vertex-ai/docs/general/access-control#aiplatform.user
-* To run on a schedule, the runner environment also needs permissions to create a Google Cloud
+* To run on a schedule, the client environment also needs permissions to create a Google Cloud
 Function (e.g. with the [`cloudfunctions.serviceAgent Role`](https://cloud.google.com/functions/docs/concepts/iam))
 and to create a Google Cloud Scheduler (e.g. with the
 [Cloud Scheduler Job Runner Role](https://cloud.google.com/iam/docs/understanding-roles)). Additionally, it needs
@@ -90,7 +90,7 @@ a pipeline on Vertex with a schedule:
 * Cloud Function is created that creates the Vertex Pipeline job when triggered.
 * Cloud Scheduler job is created that triggers the Cloud Function on the defined schedule.
 
-Therefore, to run on a schedule, the runner environment needs permissions to create a Google Cloud
+Therefore, to run on a schedule, the client environment needs permissions to create a Google Cloud
 Function (e.g. with the [`cloudfunctions.serviceAgent` Role](https://cloud.google.com/functions/docs/concepts/iam))
 and to create a Google Cloud Scheduler (e.g. with the
 [Cloud Scheduler Job Runner Role](https://cloud.google.com/iam/docs/understanding-roles)).

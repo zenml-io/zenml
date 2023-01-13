@@ -30,7 +30,7 @@ def sequence_evaluator(
     tokenized_datasets: DatasetDict,
     tokenizer: PreTrainedTokenizerBase,
 ) -> float:
-    """Evaluate trained model on validation set"""
+    """Evaluate trained model on validation set."""
     # Needs to recompile because we are reloading model for evaluation
     loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
     metrics = ["accuracy"]
@@ -50,7 +50,9 @@ def sequence_evaluator(
     # Calculate loss
 
     if params.dummy_run:
-        test_loss, test_acc = model.evaluate(validation_set.take(10), verbose=1)
+        test_loss, test_acc = model.evaluate(
+            validation_set.take(10), verbose=1
+        )
     else:
         test_loss, test_acc = model.evaluate(validation_set, verbose=1)
     return test_loss

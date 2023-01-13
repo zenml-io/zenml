@@ -15,7 +15,7 @@ from zenml.steps import BaseParameters, step
 
 
 class DeploymentTriggerParameters(BaseParameters):
-    """Parameters that are used to trigger the deployment"""
+    """Parameters that are used to trigger the deployment."""
 
     min_accuracy: float
 
@@ -25,7 +25,16 @@ def deployment_trigger(
     accuracy: float,
     params: DeploymentTriggerParameters,
 ) -> bool:
-    """Implements a simple model deployment trigger that looks at the
-    input model accuracy and decides if it is good enough to deploy"""
+    """Implement a simple model deployment trigger.
 
+    The trigger looks at the input model accuracy and decides if it is good
+    enough to deploy.
+
+    Args:
+        accuracy: The accuracy of the model.
+        params: The parameters for the deployment trigger.
+
+    Returns:
+        True if the model is good enough to deploy, False otherwise.
+    """
     return accuracy > params.min_accuracy

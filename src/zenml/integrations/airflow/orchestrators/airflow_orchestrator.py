@@ -44,7 +44,9 @@ from zenml.orchestrators import BaseOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 from zenml.utils import daemon, io_utils
-from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
+from zenml.utils.pipeline_docker_image_builder import (
+    PipelineDockerImageBuilder,
+)
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
@@ -161,7 +163,9 @@ class AirflowOrchestrator(BaseOrchestrator):
             return None
         else:
 
-            def _validate_remote_components(stack: "Stack") -> Tuple[bool, str]:
+            def _validate_remote_components(
+                stack: "Stack",
+            ) -> Tuple[bool, str]:
                 for component in stack.components.values():
                     if not component.config.is_local:
                         continue
@@ -452,8 +456,8 @@ class AirflowOrchestrator(BaseOrchestrator):
         if not self.config.local:
             return True
 
-        from airflow.cli.commands.standalone_command import (
-            StandaloneCommand,  # type: ignore
+        from airflow.cli.commands.standalone_command import (  # type: ignore
+            StandaloneCommand,
         )
         from airflow.jobs.triggerer_job import TriggererJob
 

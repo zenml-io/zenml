@@ -25,7 +25,9 @@ from zenml.constants import ENV_ZENML_ENABLE_REPO_INIT_WARNINGS
 from zenml.integrations.airflow.orchestrators.dag_generator import (
     ENV_ZENML_LOCAL_STORES_PATH,
 )
-from zenml.integrations.kubernetes.flavors import KubernetesOrchestratorSettings
+from zenml.integrations.kubernetes.flavors import (
+    KubernetesOrchestratorSettings,
+)
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 
 

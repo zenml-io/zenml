@@ -305,7 +305,8 @@ class PipelineDockerImageBuilder:
 
             # Leave the build context empty if we don't want to copy any files
             requires_build_context = (
-                docker_settings.copy_files or docker_settings.copy_global_config
+                docker_settings.copy_files
+                or docker_settings.copy_global_config
             )
             build_context_root = (
                 source_utils.get_source_root_path()

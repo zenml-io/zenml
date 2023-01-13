@@ -32,6 +32,24 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
+def get_run_environment_dict() -> Dict[str, str]:
+    """Returns a dictionary of the current run environment.
+
+    Everything that is returned here will be saved in the DB as
+    `pipeline_run.client_environment` and
+    `pipeline_run.orchestrator_environment` for client and orchestrator
+    respectively.
+
+    Returns:
+        A dictionary of the current run environment.
+    """
+    return {
+        "environment": get_environment(),
+        **Environment.get_system_info(),
+        "python_version": Environment.python_version(),
+    }
+
+
 def get_environment() -> str:
     """Returns a string representing the execution environment of the pipeline.
 
@@ -118,7 +136,7 @@ class Environment(metaclass=SingletonMetaClass):
         return self.has_component(STEP_ENVIRONMENT_NAME)
 
     @staticmethod
-    def get_system_info() -> Dict[str, Any]:
+    def get_system_info() -> Dict[str, str]:
         """Information about the operating system.
 
         Returns:
@@ -334,7 +352,9 @@ class Environment(metaclass=SingletonMetaClass):
         """
         if self._components.get(component.NAME) is component:
             del self._components[component.NAME]
-            logger.debug(f"Deregistered environment component {component.NAME}")
+            logger.debug(
+                f"Deregistered environment component {component.NAME}"
+            )
 
         else:
             logger.warning(

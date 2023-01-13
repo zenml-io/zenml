@@ -63,7 +63,9 @@ from zenml.orchestrators import BaseOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 from zenml.utils import io_utils
-from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
+from zenml.utils.pipeline_docker_image_builder import (
+    PipelineDockerImageBuilder,
+)
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
@@ -193,8 +195,8 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 # if the orchestrator is not running in a local k3d cluster,
                 # we cannot have any other local components in our stack,
                 # because we cannot mount the local path into the container.
-                # This may result in problems when running the pipeline, because
-                # the local components will not be available inside the
+                # This may result in problems when running the pipeline,
+                # because the local components will not be available inside the
                 # Kubeflow containers.
 
                 # go through all stack components and identify those that
@@ -212,9 +214,9 @@ class KubeflowOrchestrator(BaseOrchestrator):
                         f"{stack_comp.type.value} is a local stack component "
                         f"and will not be available in the Kubeflow pipeline "
                         f"step.\nPlease ensure that you always use non-local "
-                        f"stack components with a remote Kubeflow orchestrator, "
-                        f"otherwise you may run into pipeline execution "
-                        f"problems. You should use a flavor of "
+                        f"stack components with a remote Kubeflow "
+                        f"orchestrator, otherwise you may run into pipeline "
+                        f"execution problems. You should use a flavor of "
                         f"{stack_comp.type.value} other than "
                         f"'{stack_comp.flavor}'.\n"
                         + silence_local_validations_msg
@@ -428,7 +430,8 @@ class KubeflowOrchestrator(BaseOrchestrator):
             stack: The stack the pipeline will run on.
 
         Raises:
-            RuntimeError: If trying to run a pipeline in a notebook environment.
+            RuntimeError: If trying to run a pipeline in a notebook
+                environment.
         """
         # First check whether the code running in a notebook
         if Environment.in_notebook():

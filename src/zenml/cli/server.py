@@ -149,7 +149,6 @@ def up(
         image: A custom Docker image to use for the server, when the
             `--docker` flag is set.
     """
-    # flake8: noqa: C901
     with event_handler(
         AnalyticsEvent.ZENML_SERVER_STARTED
     ) as analytics_handler:
@@ -532,7 +531,9 @@ def destroy() -> None:
         )
 
 
-@cli.command("status", help="Show information about the current configuration.")
+@cli.command(
+    "status", help="Show information about the current configuration."
+)
 def status() -> None:
     """Show details about the current configuration."""
     gc = GlobalConfiguration()
@@ -550,7 +551,9 @@ def status() -> None:
         if gc.uses_default_store():
             cli_utils.declare(f"Using the local database ('{store_cfg.url}')")
         else:
-            cli_utils.declare(f"Connected to a ZenML server: '{store_cfg.url}'")
+            cli_utils.declare(
+                f"Connected to a ZenML server: '{store_cfg.url}'"
+            )
 
     scope = "repository" if client.uses_local_configuration else "global"
     cli_utils.declare(f"The current user is: '{client.active_user.name}'")
@@ -874,7 +877,9 @@ def logs(
 
     cli_utils.declare(f"Showing logs for server: {server_name}")
 
-    from zenml.zen_server.deploy.exceptions import ServerDeploymentNotFoundError
+    from zenml.zen_server.deploy.exceptions import (
+        ServerDeploymentNotFoundError,
+    )
 
     try:
         logs = deployer.get_server_logs(server_name, follow=follow, tail=tail)
