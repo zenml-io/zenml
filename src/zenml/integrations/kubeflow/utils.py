@@ -55,9 +55,9 @@ def apply_pod_settings(
         container_op.add_toleration(toleration)
 
     resource_requests = settings.resources.get("requests") or {}
-    for name, value in resource_requests:
+    for name, value in resource_requests.items():
         container_op.add_resource_request(name, value)
 
     resource_limits = settings.resources.get("limits") or {}
-    for name, value in resource_limits:
+    for name, value in resource_limits.items():
         container_op.add_resource_limit(name, value)
