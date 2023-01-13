@@ -97,7 +97,9 @@ class AzureMLStepOperator(BaseStepOperator):
             store.
         """
 
-        def _validate_remote_artifact_store(stack: "Stack") -> Tuple[bool, str]:
+        def _validate_remote_artifact_store(
+            stack: "Stack",
+        ) -> Tuple[bool, str]:
             if stack.artifact_store.config.is_local:
                 return False, (
                     "The AzureML step operator runs code remotely and "

@@ -61,7 +61,9 @@ class ConfigKeys:
         # Check for missing keys
         missing_keys = [k for k in required if k not in config.keys()]
         if missing_keys:
-            raise ValueError(f"Missing key(s) {missing_keys} in {cls.__name__}")
+            raise ValueError(
+                f"Missing key(s) {missing_keys} in {cls.__name__}"
+            )
 
         # Check for unknown keys
         unknown_keys = [

@@ -65,7 +65,9 @@ def upgrade() -> None:
     )
     conn = op.get_bind()
     res = conn.execute(
-        select(roleschema.c.id).where(roleschema.c.name.in_(["admin", "guest"]))
+        select(roleschema.c.id).where(
+            roleschema.c.name.in_(["admin", "guest"])
+        )
     ).fetchall()
 
     role_ids = [i[0] for i in res]

@@ -260,7 +260,6 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             ValueError: If the URL is invalid or the SQL driver is not
                 supported.
         """
-        # flake8: noqa: C901
         url = values.get("url")
         if url is None:
             return values
@@ -455,7 +454,9 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
         return config
 
-    def get_sqlmodel_config(self) -> Tuple[str, Dict[str, Any], Dict[str, Any]]:
+    def get_sqlmodel_config(
+        self,
+    ) -> Tuple[str, Dict[str, Any], Dict[str, Any]]:
         """Get the SQLModel engine configuration for the SQL ZenML store.
 
         Returns:
@@ -1101,7 +1102,9 @@ class SqlZenStore(BaseZenStore):
 
             return new_component.to_model()
 
-    def get_stack_component(self, component_id: UUID) -> ComponentResponseModel:
+    def get_stack_component(
+        self, component_id: UUID
+    ) -> ComponentResponseModel:
         """Get a stack component by ID.
 
         Args:
@@ -1171,7 +1174,9 @@ class SqlZenStore(BaseZenStore):
             if name:
                 query = query.where(StackComponentSchema.name == name)
             if is_shared is not None:
-                query = query.where(StackComponentSchema.is_shared == is_shared)
+                query = query.where(
+                    StackComponentSchema.is_shared == is_shared
+                )
 
             list_of_stack_components_in_db = session.exec(query).all()
 
@@ -1379,7 +1384,7 @@ class SqlZenStore(BaseZenStore):
             .where(StackComponentSchema.name == name)
             .where(StackComponentSchema.project_id == project_id)
             .where(StackComponentSchema.type == component_type)
-            .where(StackComponentSchema.is_shared == True)
+            .where(StackComponentSchema.is_shared is True)
         ).first()
         if existing_shared_component is not None:
             raise StackComponentExistsError(
@@ -1610,7 +1615,9 @@ class SqlZenStore(BaseZenStore):
 
             return user.to_model(include_private=include_private)
 
-    def get_auth_user(self, user_name_or_id: Union[str, UUID]) -> UserAuthModel:
+    def get_auth_user(
+        self, user_name_or_id: Union[str, UUID]
+    ) -> UserAuthModel:
         """Gets the auth model to a specific user.
 
         Args:
@@ -1633,7 +1640,9 @@ class SqlZenStore(BaseZenStore):
                 activation_token=user.activation_token,
             )
 
-    def list_users(self, name: Optional[str] = None) -> List[UserResponseModel]:
+    def list_users(
+        self, name: Optional[str] = None
+    ) -> List[UserResponseModel]:
         """List all users.
 
         Args:
@@ -1736,7 +1745,9 @@ class SqlZenStore(BaseZenStore):
             defined_users = []
             if team.users:
                 # Get the Schemas of all users mentioned
-                filters = [(UserSchema.id == user_id) for user_id in team.users]
+                filters = [
+                    (UserSchema.id == user_id) for user_id in team.users
+                ]
 
                 defined_users = session.exec(
                     select(UserSchema).where(or_(*filters))
@@ -1762,7 +1773,9 @@ class SqlZenStore(BaseZenStore):
             team = self._get_team_schema(team_name_or_id, session=session)
             return team.to_model()
 
-    def list_teams(self, name: Optional[str] = None) -> List[TeamResponseModel]:
+    def list_teams(
+        self, name: Optional[str] = None
+    ) -> List[TeamResponseModel]:
         """List all teams.
 
         Args:
@@ -1890,7 +1903,9 @@ class SqlZenStore(BaseZenStore):
             role = self._get_role_schema(role_name_or_id, session=session)
             return role.to_model()
 
-    def list_roles(self, name: Optional[str] = None) -> List[RoleResponseModel]:
+    def list_roles(
+        self, name: Optional[str] = None
+    ) -> List[RoleResponseModel]:
         """List all roles.
 
         Args:
@@ -1960,7 +1975,8 @@ class SqlZenStore(BaseZenStore):
                             select(RolePermissionSchema)
                             .where(RolePermissionSchema.name == permission)
                             .where(
-                                RolePermissionSchema.role_id == existing_role.id
+                                RolePermissionSchema.role_id
+                                == existing_role.id
                             )
                         ).one_or_none()
                         session.delete(permission_to_delete)
@@ -2056,10 +2072,14 @@ class SqlZenStore(BaseZenStore):
                 )
             if role_name_or_id is not None:
                 role = self._get_role_schema(role_name_or_id, session=session)
-                query = query.where(UserRoleAssignmentSchema.role_id == role.id)
+                query = query.where(
+                    UserRoleAssignmentSchema.role_id == role.id
+                )
             if user_name_or_id is not None:
                 user = self._get_user_schema(user_name_or_id, session=session)
-                query = query.where(UserRoleAssignmentSchema.user_id == user.id)
+                query = query.where(
+                    UserRoleAssignmentSchema.user_id == user.id
+                )
             assignments = session.exec(query).all()
             return [assignment.to_model() for assignment in assignments]
 
@@ -2092,10 +2112,14 @@ class SqlZenStore(BaseZenStore):
                 )
             if role_name_or_id is not None:
                 role = self._get_role_schema(role_name_or_id, session=session)
-                query = query.where(TeamRoleAssignmentSchema.role_id == role.id)
+                query = query.where(
+                    TeamRoleAssignmentSchema.role_id == role.id
+                )
             if team_name_or_id is not None:
                 team = self._get_team_schema(team_name_or_id, session=session)
-                query = query.where(TeamRoleAssignmentSchema.team_id == team.id)
+                query = query.where(
+                    TeamRoleAssignmentSchema.team_id == team.id
+                )
             assignments = session.exec(query).all()
             return [assignment.to_model() for assignment in assignments]
 
@@ -3195,7 +3219,8 @@ class SqlZenStore(BaseZenStore):
                     StepRunOutputArtifactSchema.name,
                 )
                 .where(
-                    ArtifactSchema.id == StepRunOutputArtifactSchema.artifact_id
+                    ArtifactSchema.id
+                    == StepRunOutputArtifactSchema.artifact_id
                 )
                 .where(StepRunOutputArtifactSchema.step_id == step_run.id)
             ).all()
@@ -3484,7 +3509,9 @@ class SqlZenStore(BaseZenStore):
                 f" UUID and no {schema_name} with this name exists."
             )
 
-        schema = session.exec(select(schema_class).where(filter_params)).first()
+        schema = session.exec(
+            select(schema_class).where(filter_params)
+        ).first()
 
         if schema is None:
             raise KeyError(error_msg)

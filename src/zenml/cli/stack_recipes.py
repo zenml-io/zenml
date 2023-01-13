@@ -489,7 +489,9 @@ def list_stack_recipes(
     help="Relative path at which you want to clean the stack_recipe(s)",
 )
 @pass_git_stack_recipes_handler
-def clean(git_stack_recipes_handler: GitStackRecipesHandler, path: str) -> None:
+def clean(
+    git_stack_recipes_handler: GitStackRecipesHandler, path: str
+) -> None:
     """Deletes the stack recipes directory from your working directory.
 
     Args:
@@ -1135,12 +1137,16 @@ def destroy(
                 stack_recipe_service.stop()
 
                 cli_utils.declare(
-                    "\n" + "Your active stack might now be invalid. Please run:"
+                    "\n"
+                    + "Your active stack might now be invalid. Please run:"
                 )
-                text = Text("zenml stack describe", style="markdown.code_block")
+                text = Text(
+                    "zenml stack describe", style="markdown.code_block"
+                )
                 cli_utils.declare(text)
                 cli_utils.declare(
-                    "\n" + "to investigate and switch to a new stack if needed."
+                    "\n"
+                    + "to investigate and switch to a new stack if needed."
                 )
 
             except python_terraform.TerraformCommandError as e:
