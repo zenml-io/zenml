@@ -99,6 +99,7 @@ class StepRunSchema(NamedSchema, table=True):
         sa_column=Column(TEXT, nullable=True)
     )
     docstring: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
+    source_code: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     num_outputs: Optional[int]
 
     input_artifacts: List["StepRunInputArtifactSchema"] = Relationship(
@@ -133,7 +134,6 @@ class StepRunSchema(NamedSchema, table=True):
             The step run schema.
         """
         step_config = request.step.config
-
         return cls(
             name=request.name,
             pipeline_run_id=request.pipeline_run_id,
@@ -159,7 +159,8 @@ class StepRunSchema(NamedSchema, table=True):
                 default=pydantic_encoder,
                 sort_keys=True,
             ),
-            docstring=step_config.docstring,
+            docstring=request.docstring,
+            source_code=request.source_code,
             num_outputs=len(step_config.outputs),
             status=request.status,
         )
@@ -193,6 +194,8 @@ class StepRunSchema(NamedSchema, table=True):
             end_time=self.end_time,
             step=Step.parse_raw(self.step_configuration),
             status=self.status,
+            docstring=self.docstring,
+            source_code=self.source_code,
             created=self.created,
             updated=self.updated,
             input_artifacts=input_artifacts,

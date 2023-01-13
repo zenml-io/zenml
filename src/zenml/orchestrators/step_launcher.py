@@ -15,7 +15,7 @@
 
 import time
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict, Tuple
+from typing import TYPE_CHECKING, Dict, Optional, Tuple
 
 from zenml.client import Client
 from zenml.config.step_configurations import Step
@@ -147,11 +147,14 @@ class StepLauncher:
         pipeline_run = self._create_or_reuse_run()
         try:
             client = Client()
+            docstring, source_code = self._get_step_docstring_and_source_code()
             step_run = StepRunRequestModel(
                 name=self._step_name,
                 pipeline_run_id=pipeline_run.id,
                 step=self._step,
                 status=ExecutionStatus.RUNNING,
+                docstring=docstring,
+                source_code=source_code,
                 start_time=datetime.utcnow(),
                 user=client.active_user.id,
                 project=client.active_project.id,
@@ -185,6 +188,28 @@ class StepLauncher:
             logger.error(f"Pipeline run `{pipeline_run.name}` failed.")
             publish_utils.publish_failed_pipeline_run(pipeline_run.id)
             raise
+
+    def _get_step_docstring_and_source_code(self) -> Tuple[Optional[str], str]:
+        """Gets the docstring and source code of the step.
+
+        If any of the two is longer than 1000 characters, it will be truncated.
+
+        Returns:
+            The docstring and source code of the step.
+        """
+        from zenml.steps.base_step import BaseStep
+
+        step_instance = BaseStep.load_from_source(self._step.spec.source)
+
+        docstring = step_instance.docstring
+        if docstring and len(docstring) > 1000:
+            docstring = docstring[:1000] + "..."
+
+        source_code = step_instance.source_code
+        if source_code and len(source_code) > 1000:
+            source_code = source_code[:1000] + "..."
+
+        return docstring, source_code
 
     def _create_or_reuse_run(self) -> PipelineRunResponseModel:
         """Creates a run or reuses an existing one.
