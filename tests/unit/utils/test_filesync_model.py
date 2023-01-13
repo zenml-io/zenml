@@ -33,7 +33,7 @@ def test_file_sync_model_works(tmp_path):
 
     config_file = str(tmp_path / "test.yaml")
     model = TestModel(config_file=config_file)
-    assert model.cat_name == "aria"
+    assert model.cat_name == SOFTCAT1
 
     config_dict = yaml_utils.read_yaml(config_file)
     assert config_dict["cat_name"] == SOFTCAT1
