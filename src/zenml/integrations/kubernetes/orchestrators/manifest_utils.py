@@ -74,7 +74,7 @@ def build_pod_manifest(
         spec["serviceAccountName"] = service_account_name
 
     if settings.pod_settings:
-        spec.update(add_pod_settings(settings.pod_settings))
+        apply_pod_settings(spec=spec, settings=settings.pod_settings)
 
     manifest = {
         "apiVersion": "v1",
@@ -92,19 +92,16 @@ def build_pod_manifest(
     return manifest
 
 
-def add_pod_settings(
+def apply_pod_settings(
+    spec: Dict[str, Any],
     settings: KubernetesPodSettings,
-) -> Dict[str, Any]:
-    """Updates `spec` fields in pod if passed in orchestrator settings.
+) -> None:
+    """Applies pod settings to the spec.
 
     Args:
+        spec: The Pod spec to apply the settings to.
         settings: Pod settings to apply.
-
-    Returns:
-        Dictionary with additional fields for the pod
     """
-    spec: Dict[str, Any] = {}
-
     if settings.node_selectors:
         spec["nodeSelector"] = settings.node_selectors
 
@@ -114,7 +111,9 @@ def add_pod_settings(
     if settings.tolerations:
         spec["tolerations"] = settings.tolerations
 
-    return spec
+    if settings.resources:
+        container_spec = spec["containers"][0]
+        container_spec["resources"] = settings.resources
 
 
 def build_cron_job_manifest(
