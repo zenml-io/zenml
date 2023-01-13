@@ -759,7 +759,8 @@ zenml pipeline schedule delete <SCHEDULE_NAME_OR_ID>
 
 Note, however, that this will only delete the reference saved in ZenML and does
 NOT stop/delete the schedule in the respective orchestrator. This still needs to
-be done manually.
+be done manually. For example, using the Airflow orchestrator you would have 
+to open the web UI to manually click to stop the schedule from executing.
 
 Each pipeline run automatically saves its artifacts in the artifact store. To
 list all artifacts that have been saved, use:
