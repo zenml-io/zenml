@@ -60,7 +60,9 @@ def test_artifact_delete_fails_if_artifact_still_used(clean_project_with_run):
     assert len(existing_artifacts) == 2
 
 
-def test_artifact_delete_fails_on_non_existing_artifact(clean_project_with_run):
+def test_artifact_delete_fails_on_non_existing_artifact(
+    clean_project_with_run,
+):
     """Test that zenml artifact delete fails if artifact does not exist."""
     runner = CliRunner()
     delete_command = cli.commands["artifact"].commands["delete"]

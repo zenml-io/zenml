@@ -27,7 +27,9 @@ def wandb_example_pipeline(
 ):
     # Link all the steps artifacts together
     x_train, y_train, x_test, y_test = importer()
-    x_trained_normed, x_test_normed = normalizer(x_train=x_train, x_test=x_test)
+    x_trained_normed, x_test_normed = normalizer(
+        x_train=x_train, x_test=x_test
+    )
     model = trainer(
         x_train=x_trained_normed, y_train=y_train, x_val=x_test, y_val=y_test
     )

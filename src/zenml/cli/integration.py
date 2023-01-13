@@ -226,7 +226,9 @@ def install(
     integrations_to_install = []
     for integration_name in integrations:
         try:
-            if force or not integration_registry.is_installed(integration_name):
+            if force or not integration_registry.is_installed(
+                integration_name
+            ):
                 requirements += (
                     integration_registry.select_integration_requirements(
                         integration_name

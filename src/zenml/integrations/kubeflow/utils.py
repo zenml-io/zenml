@@ -39,8 +39,10 @@ def apply_pod_settings(
         container_op.add_node_selector_constraint(label_name=key, value=value)
 
     if settings.affinity:
-        affinity: V1Affinity = serialization_utils.deserialize_kubernetes_model(
-            settings.affinity, "V1Affinity"
+        affinity: V1Affinity = (
+            serialization_utils.deserialize_kubernetes_model(
+                settings.affinity, "V1Affinity"
+            )
         )
         container_op.add_affinity(affinity)
 

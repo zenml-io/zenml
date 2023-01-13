@@ -22,8 +22,7 @@ from zenml.integrations.huggingface.materializers.huggingface_pt_model_materiali
 
 
 def test_huggingface_pretrained_model_materializer(clean_client):
-    """Tests whether the steps work for the Huggingface Pretrained Model
-    materializer."""
+    """Tests whether the steps work for the Huggingface Pretrained Model materializer."""
     with does_not_raise():
         model = _test_materializer(
             step_output=RobertaModel(RobertaConfig()),

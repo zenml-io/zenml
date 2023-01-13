@@ -267,8 +267,7 @@ takes in a `pandas.DataFrame` dataset, and it returns a Great Expectations
 
 ```python
 class GreatExpectationsProfilerStep(BaseStep):
-    """Standard Great Expectations profiling step implementation.
-    """
+    """Standard Great Expectations profiling step implementation."""
 
     def entrypoint(
         self,
@@ -348,8 +347,7 @@ run only after the data profiling step generates an Expectation Suite):
 ```python
 
 class GreatExpectationsValidatorStep(BaseStep):
-    """Standard Great Expectations data validation step implementation.
-    """
+    """Standard Great Expectations data validation step implementation."""
 
     def entrypoint(
         self,

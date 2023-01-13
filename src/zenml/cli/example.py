@@ -192,7 +192,9 @@ class LocalExample:
                     env=os.environ.copy(),
                 )
             except Exception as e:
-                raise RuntimeError(f"Failed to run example {self.name}.") from e
+                raise RuntimeError(
+                    f"Failed to run example {self.name}."
+                ) from e
 
     def run_example(
         self,
@@ -497,7 +499,9 @@ class GitExamplesHandler(object):
         Returns:
             Checks whether examples are on the same code version as ZenML.
         """
-        return zenml_version_installed == str(self.examples_repo.active_version)
+        return zenml_version_installed == str(
+            self.examples_repo.active_version
+        )
 
     def is_example(self, example_name: Optional[str] = None) -> bool:
         """Checks if the supplied example_name corresponds to an example.
@@ -515,7 +519,9 @@ class GitExamplesHandler(object):
 
         return False
 
-    def get_examples(self, example_name: Optional[str] = None) -> List[Example]:
+    def get_examples(
+        self, example_name: Optional[str] = None
+    ) -> List[Example]:
         """Method that allows you to get an example by name.
 
         If no example is supplied,  all examples are returned.
@@ -815,7 +821,9 @@ def pull(
                 event=AnalyticsEvent.PULL_EXAMPLE,
                 metadata={"example_name": example_.name},
             ):
-                destination_dir = os.path.join(os.getcwd(), path, example_.name)
+                destination_dir = os.path.join(
+                    os.getcwd(), path, example_.name
+                )
                 if LocalExample(
                     name=example_.name, path=Path(destination_dir)
                 ).is_present():

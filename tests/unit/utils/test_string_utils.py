@@ -18,8 +18,7 @@ from zenml.utils import string_utils
 
 
 def test_get_human_readable_time_formats_correctly() -> None:
-    """Check the get_human_readable_time function formats the string
-    correctly."""
+    """Check the get_human_readable_time function formats the string correctly."""
     assert string_utils.get_human_readable_time(172799) == "1d23h59m59s"
     assert string_utils.get_human_readable_time(3661) == "1h1m1s"
     assert string_utils.get_human_readable_time(3661) == "1h1m1s"
@@ -29,8 +28,7 @@ def test_get_human_readable_time_formats_correctly() -> None:
 
 
 def test_get_human_readable_filesize_formats_correctly() -> None:
-    """Check the get_human_readable_filesize function formats the string
-    correctly."""
+    """Check the get_human_readable_filesize function formats the string correctly."""
     assert string_utils.get_human_readable_filesize(1023) == "1023.00 B"
     assert string_utils.get_human_readable_filesize(1024) == "1.00 KiB"
     assert (
@@ -41,8 +39,8 @@ def test_get_human_readable_filesize_formats_correctly() -> None:
 
 def test_random_str_is_random() -> None:
     """Test that random_str returns a random string."""
-    l: List[str] = []
-    for i in range(10000):
+    lst: List[str] = []
+    for _ in range(10000):
         new_str = string_utils.random_str(16)
-        assert new_str not in l
-        l.append(new_str)
+        assert new_str not in lst
+        lst.append(new_str)

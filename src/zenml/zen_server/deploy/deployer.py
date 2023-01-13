@@ -411,4 +411,6 @@ class ServerDeployer(metaclass=SingletonMetaClass):
             f"Fetching logs from the '{server_name}' {provider_name} ZenML "
             f"server..."
         )
-        return provider.get_server_logs(server.config, follow=follow, tail=tail)
+        return provider.get_server_logs(
+            server.config, follow=follow, tail=tail
+        )

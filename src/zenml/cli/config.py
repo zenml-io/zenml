@@ -35,7 +35,9 @@ def is_analytics_opted_in() -> None:
     cli_utils.declare(f"Analytics opt-in: {gc.analytics_opt_in}")
 
 
-@analytics.command("opt-in", context_settings=dict(ignore_unknown_options=True))
+@analytics.command(
+    "opt-in", context_settings=dict(ignore_unknown_options=True)
+)
 @track(AnalyticsEvent.OPT_IN_ANALYTICS)
 def opt_in() -> None:
     """Opt-in to analytics."""
