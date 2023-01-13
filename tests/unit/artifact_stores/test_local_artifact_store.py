@@ -24,8 +24,7 @@ from zenml.exceptions import ArtifactStoreInterfaceError
 
 
 def test_local_artifact_store_attributes():
-    """Tests that the basic attributes of the local artifact store are set
-    correctly."""
+    """Tests that the basic attributes of the local artifact store are set correctly."""
     artifact_store = LocalArtifactStore(
         name="",
         id=uuid4(),

@@ -172,7 +172,7 @@ class GCPSecretsManager(BaseSecretsManager):
                 return f"labels.{ZENML_GROUP_KEY}:*"
 
         metadata = self._get_secret_scope_metadata(secret_name)
-        filters = [f"labels.{l}={v}" for (l, v) in metadata.items()]
+        filters = [f"labels.{label}={v}" for (label, v) in metadata.items()]
         if secret_name:
             filters.append(f"name:{secret_name}")
 

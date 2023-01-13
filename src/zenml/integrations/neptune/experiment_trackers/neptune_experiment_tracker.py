@@ -18,7 +18,9 @@ from typing import TYPE_CHECKING, Any, Optional, Type, cast
 from zenml.experiment_trackers.base_experiment_tracker import (
     BaseExperimentTracker,
 )
-from zenml.integrations.neptune.experiment_trackers.run_state import RunProvider
+from zenml.integrations.neptune.experiment_trackers.run_state import (
+    RunProvider,
+)
 from zenml.integrations.neptune.flavors import (
     NeptuneExperimentTrackerConfig,
     NeptuneExperimentTrackerSettings,

@@ -82,7 +82,9 @@ class TemplateGenerator:
             The template dictionary.
         """
         if isinstance(self.instance_or_class, BaseModel):
-            template = self._generate_template_for_model(self.instance_or_class)
+            template = self._generate_template_for_model(
+                self.instance_or_class
+            )
         else:
             template = self._generate_template_for_model_class(
                 self.instance_or_class

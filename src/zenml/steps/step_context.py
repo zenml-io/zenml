@@ -171,7 +171,9 @@ class StepContext:
         materializer_class = custom_materializer_class or materializer_class
         return materializer_class(artifact_uri)
 
-    def get_output_artifact_uri(self, output_name: Optional[str] = None) -> str:
+    def get_output_artifact_uri(
+        self, output_name: Optional[str] = None
+    ) -> str:
         """Returns the artifact URI for a given step output.
 
         Args:

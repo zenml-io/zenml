@@ -51,7 +51,7 @@ def test_get_run_environment_dict():
 
 def test_environment_platform_info_correctness():
     """Checks that `Environment.get_system_info()` returns the correct
-    platform"""
+    platform."""
     system_id = platform.system()
 
     if system_id == "Darwin":
@@ -69,7 +69,6 @@ def test_environment_is_singleton():
 
 def test_step_is_running():
     """Tests that the environment correctly reports when a step is running."""
-
     assert Environment().step_is_running is False
     step_run_info = StepRunInfo(
         config=StepConfiguration(enable_cache=True, name="step"),
@@ -114,8 +113,7 @@ def test_environment_component_activation():
 
 
 def test_ipython_terminal_detection_when_not_installed():
-    """Tests that we detect if the Python process is running in an IPython
-    terminal when not installed."""
+    """Tests that we detect if the Python process is running in an IPython terminal when not installed."""
     try:
         import IPython  # noqa
     except ImportError:
