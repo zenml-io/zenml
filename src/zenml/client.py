@@ -1762,7 +1762,9 @@ class Client(metaclass=ClientMetaClass):
         if is_shared is not None:
             current_name = update_model.name or component.name
             existing_components = self.list_stack_components(
-                name=current_name, is_shared=True, component_type=component_type
+                name=current_name,
+                is_shared=True,
+                component_type=component_type,
             )
             if any([e.id != component.id for e in existing_components]):
                 raise EntityExistsError(

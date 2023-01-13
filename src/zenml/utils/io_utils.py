@@ -22,6 +22,7 @@ import click
 
 from zenml.constants import APP_NAME, ENV_ZENML_CONFIG_PATH, REMOTE_FS_PREFIX
 from zenml.io.fileio import (
+    convert_to_str,
     copy,
     exists,
     isdir,
@@ -29,11 +30,24 @@ from zenml.io.fileio import (
     makedirs,
     mkdir,
     open,
+    rename,
     walk,
 )
 
 if TYPE_CHECKING:
     from zenml.io.filesystem import PathType
+
+
+def is_root(path: str) -> bool:
+    """Returns true if path has no parent in local filesystem.
+
+    Args:
+        path: Local path in filesystem.
+
+    Returns:
+        True if root, else False.
+    """
+    return Path(path).parent == Path(path)
 
 
 def get_global_config_directory() -> str:
@@ -54,7 +68,12 @@ def write_file_contents_as_string(file_path: str, content: str) -> None:
     Args:
         file_path: Path to file.
         content: Contents of file.
+
+    Raises:
+        ValueError: If content is not of type str.
     """
+    if not isinstance(content, str):
+        raise ValueError(f"Content must be of type str, got {type(content)}")
     with open(file_path, "w") as f:
         f.write(content)
 
@@ -77,17 +96,45 @@ def read_file_contents_as_string(file_path: str) -> str:
         return f.read()  # type: ignore[no-any-return]
 
 
+def copy_dir(
+    source_dir: str, destination_dir: str, overwrite: bool = False
+) -> None:
+    """Copies dir from source to destination.
+
+    Args:
+        source_dir: Path to copy from.
+        destination_dir: Path to copy to.
+        overwrite: Boolean. If false, function throws an error before overwrite.
+    """
+    for source_file in listdir(source_dir):
+        source_path = os.path.join(source_dir, convert_to_str(source_file))
+        destination_path = os.path.join(
+            destination_dir, convert_to_str(source_file)
+        )
+        if isdir(source_path):
+            if source_path == destination_dir:
+                # if the destination is a subdirectory of the source, we skip
+                # copying it to avoid an infinite loop.
+                continue
+            copy_dir(source_path, destination_path, overwrite)
+        else:
+            create_dir_recursive_if_not_exists(
+                os.path.dirname(destination_path)
+            )
+            copy(str(source_path), str(destination_path), overwrite)
+
+
 def find_files(dir_path: "PathType", pattern: str) -> Iterable[str]:
     """Find files in a directory that match pattern.
 
     Args:
-        dir_path: Path to directory.
+        dir_path: The path to directory.
         pattern: pattern like *.png.
 
     Yields:
-        All matching filenames if found.
+        All matching filenames in the directory.
     """
-    for root, dirs, files in walk(dir_path):
+    for root, _, files in walk(dir_path):
         for basename in files:
             if fnmatch.fnmatch(convert_to_str(basename), pattern):
                 filename = os.path.join(
@@ -158,43 +205,31 @@ def resolve_relative_path(path: str) -> str:
     return str(Path(path).resolve())
 
 
-def copy_dir(
-    source_dir: str, destination_dir: str, overwrite: bool = False
-) -> None:
-    """Copies dir from source to destination.
+def move(source: str, destination: str, overwrite: bool = False) -> None:
+    """Moves dir or file from source to destination. Can be used to rename.
 
     Args:
-        source_dir: Path to copy from.
-        destination_dir: Path to copy to.
-        overwrite: Boolean. If false, function throws an error before overwrite.
+        source: Local path to copy from.
+        destination: Local path to copy to.
+        overwrite: boolean, if false, then throws an error before overwrite.
     """
-    for source_file in listdir(source_dir):
-        source_path = os.path.join(source_dir, convert_to_str(source_file))
-        destination_path = os.path.join(
-            destination_dir, convert_to_str(source_file)
-        )
-        if isdir(source_path):
-            if source_path == destination_dir:
-                # if the destination is a subdirectory of the source, we skip
-                # copying it to avoid an infinite loop.
-                continue
-            copy_dir(source_path, destination_path, overwrite)
-        else:
-            create_dir_recursive_if_not_exists(
-                os.path.dirname(destination_path)
-            )
-            copy(str(source_path), str(destination_path), overwrite)
+    rename(source, destination, overwrite)
 
 
 def get_grandparent(dir_path: str) -> str:
     """Get grandparent of dir.
 
     Args:
-        dir_path: Path to directory.
+        dir_path: The path to directory.
 
     Returns:
-        The input path's parent's parent.
+        The input paths parents parent.
+
+    Raises:
+        ValueError: If dir_path does not exist.
     """
+    if not os.path.exists(dir_path):
+        raise ValueError(f"Path '{dir_path}' does not exist.")
     return Path(dir_path).parent.parent.stem
 
 
@@ -202,36 +237,14 @@ def get_parent(dir_path: str) -> str:
     """Get parent of dir.
 
     Args:
-        dir_path: Path to directory.
+        dir_path: The path to directory.
 
     Returns:
         Parent (stem) of the dir as a string.
+
+    Raises:
+        ValueError: If dir_path does not exist.
     """
+    if not os.path.exists(dir_path):
+        raise ValueError(f"Path '{dir_path}' does not exist.")
     return Path(dir_path).parent.stem
-
-
-def convert_to_str(path: "PathType") -> str:
-    """Converts a PathType to a str using UTF-8.
-
-    Args:
-        path: Path to convert.
-
-    Returns:
-        Converted path.
-    """
-    if isinstance(path, str):
-        return path
-    else:
-        return path.decode("utf-8")
-
-
-def is_root(path: str) -> bool:
-    """Returns true if path has no parent in local filesystem.
-
-    Args:
-        path: Local path in filesystem.
-
-    Returns:
-        True if root, else False.
-    """
-    return Path(path).parent == Path(path)
