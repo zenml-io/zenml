@@ -13,10 +13,13 @@
 #  permissions and limitations under the License.
 import os
 from contextlib import ExitStack as does_not_raise
+from unittest.mock import ANY
 
 import pytest
 
 from zenml.client import Client
+from zenml.config.compiler import Compiler
+from zenml.config.pipeline_configurations import PipelineRunConfiguration
 from zenml.exceptions import (
     PipelineConfigurationError,
     PipelineInterfaceError,
@@ -358,3 +361,77 @@ def test_configure_pipeline_with_invalid_settings_key(empty_pipeline):
     error."""
     with pytest.raises(ValueError):
         empty_pipeline().configure(settings={"invalid_settings_key": {}})
+
+
+def test_run_configuration_in_code(
+    mocker, clean_project, one_step_pipeline, empty_step
+):
+    """Tests configuring a pipeline run in code."""
+    mock_compile = mocker.patch.object(
+        Compiler, "compile", wraps=Compiler().compile
+    )
+    pipeline_instance = one_step_pipeline(empty_step())
+
+    pipeline_instance.run(
+        run_name="run_name", enable_cache=False, extra={"key": "value"}
+    )
+
+    expected_run_config = PipelineRunConfiguration(
+        run_name="run_name", enable_cache=False, extra={"key": "value"}
+    )
+    mock_compile.assert_called_once_with(
+        pipeline=ANY, stack=ANY, run_configuration=expected_run_config
+    )
+
+
+def test_run_configuration_from_file(
+    mocker, clean_project, one_step_pipeline, empty_step, tmp_path
+):
+    """Tests configuring a pipeline run from a file."""
+    mock_compile = mocker.patch.object(
+        Compiler, "compile", wraps=Compiler().compile
+    )
+    pipeline_instance = one_step_pipeline(empty_step())
+
+    config_path = tmp_path / "config.yaml"
+    expected_run_config = PipelineRunConfiguration(
+        run_name="run_name", enable_cache=False, extra={"key": "value"}
+    )
+    config_path.write_text(expected_run_config.yaml())
+
+    pipeline_instance.run(config_path=str(config_path))
+    mock_compile.assert_called_once_with(
+        pipeline=ANY, stack=ANY, run_configuration=expected_run_config
+    )
+
+
+def test_run_configuration_from_code_and_file(
+    mocker, clean_project, one_step_pipeline, empty_step, tmp_path
+):
+    """Tests merging the configuration of a pipeline run from a file and within
+    code."""
+    mock_compile = mocker.patch.object(
+        Compiler, "compile", wraps=Compiler().compile
+    )
+    pipeline_instance = one_step_pipeline(empty_step())
+
+    config_path = tmp_path / "config.yaml"
+    file_config = PipelineRunConfiguration(
+        run_name="run_name_in_file", enable_cache=False, extra={"key": "value"}
+    )
+    config_path.write_text(file_config.yaml())
+
+    pipeline_instance.run(
+        config_path=str(config_path),
+        run_name="run_name_in_code",
+        extra={"new_key": "new_value"},
+    )
+
+    expected_run_config = PipelineRunConfiguration(
+        run_name="run_name_in_code",
+        enable_cache=False,
+        extra={"key": "value", "new_key": "new_value"},
+    )
+    mock_compile.assert_called_once_with(
+        pipeline=ANY, stack=ANY, run_configuration=expected_run_config
+    )

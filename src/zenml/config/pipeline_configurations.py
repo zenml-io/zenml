@@ -12,8 +12,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Pipeline configuration classes."""
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+import json
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 
+import yaml
 from pydantic import validator
 
 from zenml.config.constants import DOCKER_SETTINGS_KEY
@@ -87,6 +89,18 @@ class PipelineRunConfiguration(StrictBaseModel):
     steps: Dict[str, StepConfigurationUpdate] = {}
     settings: Dict[str, BaseSettings] = {}
     extra: Dict[str, Any] = {}
+
+    def yaml(self, **kwargs: Any) -> str:
+        """Yaml representation of the deployment.
+
+        Args:
+            **kwargs: Kwargs to pass to the pydantic json(...) method.
+
+        Returns:
+            Yaml string representation of the deployment.
+        """
+        dict_ = json.loads(self.json(**kwargs, sort_keys=False))
+        return cast(str, yaml.dump(dict_, sort_keys=False))
 
 
 class PipelineSpec(StrictBaseModel):
