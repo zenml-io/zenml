@@ -165,6 +165,8 @@ environments:
       - mlflow-local-tracker
       - mlflow-local-deployer
       - local-secrets-manager
+    capabilities:
+      synchronized: true
 
   - name: docker-server-docker-orchestrator
     description: >-
