@@ -52,7 +52,7 @@ def daemonize(
 
     ```python
     import time
-    from zenml.utils.daemonizer import daemonize
+    from zenml.utils.daemon import daemonize
 
 
     @daemonize(log_file='/tmp/daemon.log', pid_file='/tmp/daemon.pid')
@@ -68,7 +68,7 @@ def daemonize(
     ```
 
     Args:
-        pid_file: an optional file where the PID of the daemon process will
+        pid_file: a file where the PID of the daemon process will
             be stored.
         log_file: file where stdout and stderr are redirected for the daemon
             process. If not supplied, the daemon will be silenced (i.e. have

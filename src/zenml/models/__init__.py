@@ -48,6 +48,11 @@ from zenml.models.role_models import (
     RoleResponseModel,
     RoleUpdateModel,
 )
+from zenml.models.schedule_model import (
+    ScheduleRequestModel,
+    ScheduleResponseModel,
+    ScheduleUpdateModel,
+)
 from zenml.models.stack_models import (
     StackRequestModel,
     StackResponseModel,
@@ -101,6 +106,11 @@ PipelineResponseModel.update_forward_refs(
     ProjectResponseModel=ProjectResponseModel,
 )
 
+ScheduleResponseModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    ProjectResponseModel=ProjectResponseModel,
+)
+
 PipelineRunResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
     ProjectResponseModel=ProjectResponseModel,
@@ -142,6 +152,9 @@ __all__ = [
     "RoleRequestModel",
     "RoleResponseModel",
     "RoleUpdateModel",
+    "ScheduleRequestModel",
+    "ScheduleResponseModel",
+    "ScheduleUpdateModel",
     "StackRequestModel",
     "StackResponseModel",
     "StackUpdateModel",

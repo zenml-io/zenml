@@ -19,10 +19,13 @@ from pydantic import root_validator
 from zenml.config.base_settings import BaseSettings, SettingsOrDict
 from zenml.config.constants import RESOURCE_SETTINGS_KEY
 from zenml.config.strict_base_model import StrictBaseModel
+from zenml.logger import get_logger
 from zenml.utils import source_utils
 
 if TYPE_CHECKING:
     from zenml.config import ResourceSettings
+
+logger = get_logger(__name__)
 
 
 class PartialArtifactConfiguration(StrictBaseModel):
@@ -73,10 +76,27 @@ class PartialStepConfiguration(StepConfigurationUpdate):
     """Class representing a partial step configuration."""
 
     name: str
-    docstring: Optional[str] = None
     caching_parameters: Mapping[str, Any] = {}
     inputs: Mapping[str, PartialArtifactConfiguration] = {}
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
+
+    @root_validator(pre=True)
+    def _remove_deprecated_attributes(
+        cls, values: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Removes deprecated attributes from the values dict.
+
+        Args:
+            values: The values dict used to instantiate the model.
+
+        Returns:
+            The values dict without deprecated attributes.
+        """
+        deprecated_attributes = ["docstring"]
+        for deprecated_attribute in deprecated_attributes:
+            if deprecated_attribute in values:
+                values.pop(deprecated_attribute)
+        return values
 
 
 class StepConfiguration(PartialStepConfiguration):

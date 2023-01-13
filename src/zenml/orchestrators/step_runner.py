@@ -142,11 +142,7 @@ class StepRunner:
         """
         from zenml.steps import BaseStep
 
-        step_class: Type[BaseStep] = source_utils.load_and_validate_class(
-            self._step.spec.source, expected_class=BaseStep
-        )
-
-        step_instance = step_class()
+        step_instance = BaseStep.load_from_source(self._step.spec.source)
         step_instance._configuration = self._step.config
         return step_instance.entrypoint
 
