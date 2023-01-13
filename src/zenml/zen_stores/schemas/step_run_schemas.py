@@ -54,7 +54,9 @@ class StepRunSchema(NamedSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
-    pipeline_run: "PipelineRunSchema" = Relationship(back_populates="step_runs")
+    pipeline_run: "PipelineRunSchema" = Relationship(
+        back_populates="step_runs"
+    )
     original_step_run_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
         target=__tablename__,
@@ -147,7 +149,9 @@ class StepRunSchema(NamedSchema, table=True):
             end_time=request.end_time,
             entrypoint_name=step_config.name,
             parameters=json.dumps(
-                step_config.parameters, default=pydantic_encoder, sort_keys=True
+                step_config.parameters,
+                default=pydantic_encoder,
+                sort_keys=True,
             ),
             step_configuration=request.step.json(sort_keys=True),
             caching_parameters=json.dumps(
@@ -281,7 +285,9 @@ class StepRunInputArtifactSchema(SQLModel, table=True):
         nullable=False,
         primary_key=True,
     )
-    artifact: ArtifactSchema = Relationship(back_populates="input_to_step_runs")
+    artifact: ArtifactSchema = Relationship(
+        back_populates="input_to_step_runs"
+    )
     name: str
 
 

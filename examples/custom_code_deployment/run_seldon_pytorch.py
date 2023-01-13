@@ -111,7 +111,7 @@ def main(
     min_accuracy: float,
     prediction_image_url: str,
 ):
-    """Run the custom code deployment example training/deployment or inference pipeline
+    """Run the custom code deployment example training/deployment or inference pipeline.
 
     Example usage:
 

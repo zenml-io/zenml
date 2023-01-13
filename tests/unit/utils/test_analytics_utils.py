@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -22,14 +22,13 @@ from zenml.utils.analytics_utils import (
 
 
 def test_get_segment_key():
-    """Checks the get_segment_key method returns a value"""
+    """Checks the get_segment_key method returns a value."""
     with does_not_raise():
         get_segment_key()
 
 
 def test_track_event_conditions():
-    """It should return true for the analytics events but false for everything
-    else."""
+    """It should return true for the analytics events but false for everything else."""
     assert track_event(AnalyticsEvent.OPT_IN_ANALYTICS)
     assert track_event(AnalyticsEvent.OPT_OUT_ANALYTICS)
     assert not track_event(AnalyticsEvent.EVENT_TEST)

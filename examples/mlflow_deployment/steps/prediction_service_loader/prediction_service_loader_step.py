@@ -22,7 +22,7 @@ model_deployer = mlflow_model_deployer_step
 
 
 class MLFlowDeploymentLoaderStepParameters(BaseParameters):
-    """MLflow deployment getter parameters
+    """MLflow deployment getter parameters.
 
     Attributes:
         pipeline_name: name of the pipeline that deployed the MLflow prediction
@@ -43,8 +43,7 @@ class MLFlowDeploymentLoaderStepParameters(BaseParameters):
 def prediction_service_loader(
     params: MLFlowDeploymentLoaderStepParameters,
 ) -> MLFlowDeploymentService:
-    """Get the prediction service started by the deployment pipeline"""
-
+    """Get the prediction service started by the deployment pipeline."""
     # get the MLflow model deployer stack component
     model_deployer = MLFlowModelDeployer.get_active_model_deployer()
 

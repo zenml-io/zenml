@@ -38,7 +38,9 @@ from zenml.secrets_managers import BaseSecretsManager
 from zenml.services.service import BaseService, ServiceConfig
 from zenml.stack.stack import Stack
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
-from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
+from zenml.utils.pipeline_docker_image_builder import (
+    PipelineDockerImageBuilder,
+)
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
@@ -275,7 +277,8 @@ class SeldonModelDeployer(BaseModelDeployer):
             # SeldonDeploymentConfig, try to create one from the ZenML secret
             # configured for the model deployer
             config.secret_name = (
-                config.secret_name or self._create_or_update_kubernetes_secret()
+                config.secret_name
+                or self._create_or_update_kubernetes_secret()
             )
 
             # if replace is True, find equivalent Seldon Core deployments

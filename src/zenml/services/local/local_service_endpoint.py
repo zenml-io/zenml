@@ -29,7 +29,10 @@ from zenml.services.service_monitor import (
     HTTPEndpointHealthMonitor,
     TCPEndpointHealthMonitor,
 )
-from zenml.utils.networking_utils import port_available, scan_for_available_port
+from zenml.utils.networking_utils import (
+    port_available,
+    scan_for_available_port,
+)
 
 logger = get_logger(__name__)
 

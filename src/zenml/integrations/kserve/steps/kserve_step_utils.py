@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""This module contains the utility functions used by the KServe deployer step."""
+"""Utility functions used by the KServe deployer step."""
 import os
 import tempfile
 from typing import List, Optional

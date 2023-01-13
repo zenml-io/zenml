@@ -54,7 +54,9 @@ class ZenMLArtifactStoreBackend(TupleStoreBackend):  # type: ignore[misc]
 
         client = Client()
         artifact_store = client.active_stack.artifact_store
-        self.root_path = os.path.join(artifact_store.path, "great_expectations")
+        self.root_path = os.path.join(
+            artifact_store.path, "great_expectations"
+        )
 
         # extract the protocol used in the artifact store root path
         protocols = [
