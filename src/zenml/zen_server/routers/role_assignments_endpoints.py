@@ -19,7 +19,10 @@ from fastapi import APIRouter, Security
 
 from zenml.constants import API, ROLE_ASSIGNMENTS, VERSION_1
 from zenml.enums import PermissionType
-from zenml.models import RoleAssignmentRequestModel, RoleAssignmentResponseModel
+from zenml.models import (
+    RoleAssignmentRequestModel,
+    RoleAssignmentResponseModel,
+)
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 

@@ -185,7 +185,8 @@ class SeldonDeploymentService(BaseService):
         )
 
         model_deployer = cast(
-            SeldonModelDeployer, SeldonModelDeployer.get_active_model_deployer()
+            SeldonModelDeployer,
+            SeldonModelDeployer.get_active_model_deployer(),
         )
         return model_deployer.seldon_client
 
@@ -357,7 +358,8 @@ class SeldonDeploymentService(BaseService):
             return None
         namespace = self._get_client().namespace
         model_deployer = cast(
-            SeldonModelDeployer, SeldonModelDeployer.get_active_model_deployer()
+            SeldonModelDeployer,
+            SeldonModelDeployer.get_active_model_deployer(),
         )
         return os.path.join(
             model_deployer.config.base_url,

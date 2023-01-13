@@ -20,6 +20,6 @@ from zenml.steps import step
 
 @step
 def load_tokenizer(params: HuggingfaceParameters) -> PreTrainedTokenizerBase:
-    """Load pretrained tokenizer"""
+    """Load pretrained tokenizer."""
     tokenizer = AutoTokenizer.from_pretrained(params.pretrained_model)
     return tokenizer

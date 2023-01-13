@@ -151,7 +151,9 @@ def deprecate_pydantic_attributes(
                     deprecated_attribute,
                     replacement_attribute,
                 )
-                values[replacement_attribute] = values.pop(deprecated_attribute)
+                values[replacement_attribute] = values.pop(
+                    deprecated_attribute
+                )
             elif values[deprecated_attribute] != values[replacement_attribute]:
                 raise ValueError(
                     "Got different values for deprecated attribute "

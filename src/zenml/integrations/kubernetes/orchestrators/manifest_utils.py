@@ -16,7 +16,9 @@
 from typing import Any, Dict, List, Optional
 
 from zenml.constants import ENV_ZENML_ENABLE_REPO_INIT_WARNINGS
-from zenml.integrations.kubernetes.flavors import KubernetesOrchestratorSettings
+from zenml.integrations.kubernetes.flavors import (
+    KubernetesOrchestratorSettings,
+)
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 
 

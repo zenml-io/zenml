@@ -54,7 +54,9 @@ def example_runner(examples_dir: Path) -> List[str]:
     latter option is needed for Windows compatibility.
     """
     return (
-        [os.environ[SHELL_EXECUTABLE]] if SHELL_EXECUTABLE in os.environ else []
+        [os.environ[SHELL_EXECUTABLE]]
+        if SHELL_EXECUTABLE in os.environ
+        else []
     ) + [str(examples_dir / EXAMPLES_RUN_SCRIPT)]
 
 

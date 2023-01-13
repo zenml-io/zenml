@@ -18,7 +18,7 @@ from zenml.steps import BaseParameters, step
 
 
 class TensorflowTrainerParameters(BaseParameters):
-    """Trainer params"""
+    """Trainer params."""
 
     epochs: int = 1
     lr: float = 0.001
@@ -31,7 +31,7 @@ def tf_trainer(
     x_train: np.ndarray,
     y_train: np.ndarray,
 ) -> tf.keras.Model:
-    """Train a neural net from scratch to recognize MNIST digits
+    """Train a neural net from scratch to recognize MNIST digits.
 
     Returns:
         Our model or the learner
