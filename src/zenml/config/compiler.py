@@ -23,7 +23,6 @@ from zenml.config.settings_resolver import SettingsResolver
 from zenml.config.step_configurations import (
     Step,
     StepConfiguration,
-    StepConfigurationUpdate,
     StepSpec,
 )
 from zenml.environment import get_run_environment_dict
@@ -142,9 +141,7 @@ class Compiler:
         # Override `enable_cache` of all steps if set at run level
         if config.enable_cache is not None:
             for step_ in pipeline.steps.values():
-                step_._apply_configuration(
-                    StepConfigurationUpdate(enable_cache=config.enable_cache)
-                )
+                step_.configure(enable_cache=config.enable_cache)
 
     def _apply_stack_default_settings(
         self, pipeline: "BasePipeline", stack: "Stack"
