@@ -77,7 +77,7 @@ def test_kubernetes_orchestrator_remote_stack(
 
     # Test remote stack with local orchestrator
     orchestrator = _get_kubernetes_orchestrator(local=True)
-    with pytest.raises(StackValidationError):
+    with does_not_raise():
         Stack(
             id=uuid4(),
             name="",
