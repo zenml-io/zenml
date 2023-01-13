@@ -281,7 +281,9 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_stack_component(self, component_id: UUID) -> ComponentResponseModel:
+    def get_stack_component(
+        self, component_id: UUID
+    ) -> ComponentResponseModel:
         """Get a stack component by ID.
 
         Args:
@@ -437,7 +439,9 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_auth_user(self, user_name_or_id: Union[str, UUID]) -> UserAuthModel:
+    def get_auth_user(
+        self, user_name_or_id: Union[str, UUID]
+    ) -> UserAuthModel:
         """Gets the auth model to a specific user.
 
         Args:
@@ -448,7 +452,9 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def list_users(self, name: Optional[str] = None) -> List[UserResponseModel]:
+    def list_users(
+        self, name: Optional[str] = None
+    ) -> List[UserResponseModel]:
         """List all users.
 
         Args:
@@ -516,7 +522,9 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def list_teams(self, name: Optional[str] = None) -> List[TeamResponseModel]:
+    def list_teams(
+        self, name: Optional[str] = None
+    ) -> List[TeamResponseModel]:
         """List all teams.
 
         Args:
@@ -587,7 +595,9 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def list_roles(self, name: Optional[str] = None) -> List[RoleResponseModel]:
+    def list_roles(
+        self, name: Optional[str] = None
+    ) -> List[RoleResponseModel]:
         """List all roles.
 
         Args:

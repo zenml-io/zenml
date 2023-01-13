@@ -39,7 +39,9 @@ from zenml.orchestrators.base_orchestrator import (
 )
 from zenml.stack import Stack
 from zenml.utils import string_utils
-from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
+from zenml.utils.pipeline_docker_image_builder import (
+    PipelineDockerImageBuilder,
+)
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment

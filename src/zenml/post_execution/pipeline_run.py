@@ -167,6 +167,24 @@ class PipelineRunView:
         return self._model.zenml_version
 
     @property
+    def client_environment(self) -> Dict[str, str]:
+        """Environment of the client that initiated this pipeline run.
+
+        Returns:
+            The environment of the client that initiated this pipeline run.
+        """
+        return self._model.client_environment
+
+    @property
+    def orchestrator_environment(self) -> Dict[str, str]:
+        """Environment of the orchestrator that executed this pipeline run.
+
+        Returns:
+            The environment of the orchestrator that executed this pipeline run.
+        """
+        return self._model.orchestrator_environment
+
+    @property
     def git_sha(self) -> Optional[str]:
         """Git commit SHA that this pipeline run was performed on.
 

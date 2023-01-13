@@ -26,13 +26,14 @@ from zenml.config.step_configurations import (
     StepConfigurationUpdate,
     StepSpec,
 )
+from zenml.environment import get_run_environment_dict
 from zenml.exceptions import PipelineInterfaceError, StackValidationError
 from zenml.utils import pydantic_utils, settings_utils, source_utils
 
 if TYPE_CHECKING:
     from zenml.pipelines import BasePipeline
-    from zenml.steps import BaseStep
     from zenml.stack import Stack, StackComponent
+    from zenml.steps import BaseStep
 
 from zenml.logger import get_logger
 
@@ -109,6 +110,7 @@ class Compiler:
             schedule=run_configuration.schedule,
             pipeline=pipeline.configuration,
             steps=steps,
+            client_environment=get_run_environment_dict(),
         )
         logger.debug("Compiled pipeline deployment: %s", deployment)
         return deployment
@@ -271,7 +273,8 @@ class Compiler:
                 settings_instance = resolver.resolve(stack=stack)
             except KeyError:
                 logger.info(
-                    "Not including stack component settings with key `%s`.", key
+                    "Not including stack component settings with key `%s`.",
+                    key,
                 )
                 continue
 

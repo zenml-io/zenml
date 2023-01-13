@@ -19,7 +19,10 @@ import pytest
 
 from zenml.config.compiler import Compiler
 from zenml.config.step_configurations import Step
-from zenml.orchestrators.cache_utils import generate_cache_key, is_cache_enabled
+from zenml.orchestrators.cache_utils import (
+    generate_cache_key,
+    is_cache_enabled,
+)
 from zenml.steps import Output, step
 from zenml.steps.base_step import BaseStep
 

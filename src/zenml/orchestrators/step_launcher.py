@@ -21,6 +21,7 @@ from zenml.client import Client
 from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import ExecutionStatus
+from zenml.environment import get_run_environment_dict
 from zenml.logger import get_logger
 from zenml.models.pipeline_run_models import (
     PipelineRunRequestModel,
@@ -101,7 +102,7 @@ def _get_step_operator(
 
 
 class StepLauncher:
-    """This class is responsible for launching a step of a ZenML pipeline.
+    """A class responsible for launching a step of a ZenML pipeline.
 
     This class follows these steps to launch and publish a ZenML step:
     1. Publish or reuse a `PipelineRun`
@@ -217,6 +218,8 @@ class StepLauncher:
             status=ExecutionStatus.RUNNING,
             pipeline_configuration=self._deployment.pipeline.dict(),
             num_steps=len(self._deployment.steps),
+            client_environment=self._deployment.client_environment,
+            orchestrator_environment=get_run_environment_dict(),
         )
         return client.zen_store.get_or_create_run(pipeline_run)
 

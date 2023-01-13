@@ -22,7 +22,6 @@ from zenml.materializers.pandas_materializer import PandasMaterializer
 
 def test_pandas_materializer():
     """Test the pandas materializer."""
-
     dataframe = pandas.DataFrame([0, 1, 2, 3], columns=["column_test"])
     series = pandas.Series([0, 1, 2, 3])
 
@@ -40,7 +39,6 @@ def test_pandas_materializer():
 
 def test_pandas_materializer_with_index():
     """Test the pandas Dataframe materializer with indices."""
-
     # Test with a DataFrame with a string index
     df_string_indexed = pandas.DataFrame(
         {"A": [1, 2, 3], "B": [4, 5, 6]}, index=["a", "b", "c"]

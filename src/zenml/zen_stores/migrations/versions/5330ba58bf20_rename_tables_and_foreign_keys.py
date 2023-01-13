@@ -244,7 +244,9 @@ def upgrade() -> None:
     # Drop old foreign key constraints.
     for source, target, source_column, _, _ in old_fk_constraints:
         if engine_name == "sqlite":
-            constraint_name = _fk_constraint_name(source, target, source_column)
+            constraint_name = _fk_constraint_name(
+                source, target, source_column
+            )
         elif engine_name == "mysql":
             source_table_fk_constraint_counts[source] += 1
             fk_num = source_table_fk_constraint_counts[source]
@@ -254,7 +256,9 @@ def upgrade() -> None:
         _drop_fk_constraint(source, constraint_name)
 
     # Rename tables
-    for old_table_name, new_table_name in zip(old_table_names, new_table_names):
+    for old_table_name, new_table_name in zip(
+        old_table_names, new_table_names
+    ):
         op.rename_table(old_table_name, new_table_name)
 
     # Set `project_id` to `NOT NULL` where appropriate.
@@ -300,7 +304,9 @@ def downgrade() -> None:
             )
 
     # Rename tables
-    for old_table_name, new_table_name in zip(old_table_names, new_table_names):
+    for old_table_name, new_table_name in zip(
+        old_table_names, new_table_names
+    ):
         op.rename_table(new_table_name, old_table_name)
 
     # Create old foreign key constraints

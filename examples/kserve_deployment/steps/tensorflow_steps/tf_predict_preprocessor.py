@@ -23,9 +23,7 @@ from zenml.steps import BaseParameters, step
 
 
 class TensorflowInferenceProcessorStepParameters(BaseParameters):
-    """
-    Parameters for the PyTorch inference preprocessor step.
-    """
+    """Parameters for the PyTorch inference preprocessor step."""
 
     img_url: Optional[
         str

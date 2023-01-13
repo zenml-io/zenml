@@ -21,7 +21,7 @@ logger = get_logger(__name__)
 
 
 class NeuralProphetParameters(BaseParameters):
-    """Tracks parameters for a NeuralProphet model"""
+    """Tracks parameters for a NeuralProphet model."""
 
     weekly_seasonality: int = 6
     daily_seasonality: int = 10

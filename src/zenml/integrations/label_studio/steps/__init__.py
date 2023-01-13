@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Standard steps to be used with the Label Studio annotator integration."""
+
 from zenml.integrations.label_studio.steps.label_studio_standard_steps import (
     LabelStudioDatasetRegistrationParameters,
     LabelStudioDatasetSyncParameters,
