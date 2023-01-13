@@ -54,22 +54,18 @@ on:
           # Default ZenML deployments
           - default
           - default-docker-orchestrator
-          - default-kubeflow-orchestrator
           - default-airflow-orchestrator
           # Local ZenML server deployments
           - local-server
           - local-server-docker-orchestrator
-          - local-server-kubeflow-orchestrator
           - local-server-airflow-orchestrator
           # Local ZenML docker-compose server deployments
           - docker-server
           - docker-server-docker-orchestrator
-          - docker-server-kubeflow-orchestrator
           - docker-server-airflow-orchestrator
           # AWS ZenML server deployment with local components
           - aws-local-orchestrator
           - aws-docker-orchestrator
-          - aws-kubeflow-orchestrator
           - aws-airflow-orchestrator
           # AWS ZenML server deployment with AWS cloud components
           - aws-cloud-local-orchestrator
@@ -80,7 +76,6 @@ on:
           # GCP ZenML server deployment with local components
           - gcp-local-orchestrator
           - gcp-docker-orchestrator
-          - gcp-kubeflow-orchestrator
           - gcp-airflow-orchestrator
           # GCP ZenML server deployment with GCP cloud components
           - gcp-cloud-local-orchestrator

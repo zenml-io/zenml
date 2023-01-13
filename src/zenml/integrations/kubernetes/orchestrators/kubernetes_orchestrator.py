@@ -246,26 +246,6 @@ class KubernetesOrchestrator(BaseOrchestrator):
                         + silence_local_validations_msg
                     )
 
-            if not self.config.skip_local_validations and self.config.is_local:
-
-                # if the orchestrator is local, the container registry must
-                # also be local.
-                if not container_registry.config.is_local:
-                    return False, (
-                        f"The Kubernetes orchestrator is configured to run "
-                        f"pipelines in a local k3d Kubernetes cluster "
-                        f"designated by the '{self.config.kubernetes_context}' "
-                        f"configuration context, but the container registry "
-                        f"URI '{container_registry.config.uri}' doesn't "
-                        f"match the expected format 'localhost:$PORT'. "
-                        f"The local Kubernetes orchestrator only works with a "
-                        f"local container registry because it cannot "
-                        f"currently authenticate to external container "
-                        f"registries. You should use a flavor of container "
-                        f"registry other than '{container_registry.flavor}'.\n"
-                        + silence_local_validations_msg
-                    )
-
             return True, ""
 
         return StackValidator(
@@ -331,8 +311,6 @@ class KubernetesOrchestrator(BaseOrchestrator):
         # Get Docker image name (for all pods).
         assert stack.container_registry
         image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
-        if self.config.is_local and stack.container_registry.config.is_local:
-            image_name = f"{stack.container_registry.name}.{image_name}"
 
         # Build entrypoint command and args for the orchestrator pod.
         # This will internally also build the command/args for all step pods.

@@ -35,19 +35,6 @@ environments:
     mandatory_requirements:
       - docker-local
 
-  - name: gcp-kubeflow-orchestrator
-    description: >-
-      GCP ZenML server with local kubeflow orchestrator and all
-      local components.
-    deployment: gcp-us-east4-server
-    requirements:
-      - external-data-validators
-      - mlflow-local-tracker
-      - mlflow-local-deployer
-      - local-secrets-manager
-    mandatory_requirements:
-      - kubeflow-local
-
   - name: gcp-airflow-orchestrator
     description: >-
       GCP ZenML server with local airflow orchestrator and all
