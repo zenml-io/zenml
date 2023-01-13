@@ -26,7 +26,9 @@ def upgrade() -> None:
         batch_op.add_column(
             sa.Column("start_time", sa.DateTime(), nullable=True)
         )
-        batch_op.add_column(sa.Column("end_time", sa.DateTime(), nullable=True))
+        batch_op.add_column(
+            sa.Column("end_time", sa.DateTime(), nullable=True)
+        )
 
     with op.batch_alter_table("step_run", schema=None) as batch_op:
         batch_op.add_column(
@@ -48,7 +50,9 @@ def upgrade() -> None:
         batch_op.add_column(
             sa.Column("start_time", sa.DateTime(), nullable=True)
         )
-        batch_op.add_column(sa.Column("end_time", sa.DateTime(), nullable=True))
+        batch_op.add_column(
+            sa.Column("end_time", sa.DateTime(), nullable=True)
+        )
         batch_op.add_column(
             sa.Column(
                 "original_step_run_id",

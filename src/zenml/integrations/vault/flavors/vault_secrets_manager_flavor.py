@@ -110,6 +110,8 @@ class VaultSecretsManagerFlavor(BaseSecretsManagerFlavor):
         Returns:
             The implementation class.
         """
-        from zenml.integrations.vault.secrets_manager import VaultSecretsManager
+        from zenml.integrations.vault.secrets_manager import (
+            VaultSecretsManager,
+        )
 
         return VaultSecretsManager

@@ -20,7 +20,6 @@ from zenml.post_execution.pipeline import get_pipeline
 
 def test_example(request: pytest.FixtureRequest) -> None:
     """Runs the evidently_drift_detection example."""
-
     from evidently.model_profile import Profile  # type: ignore[import]
 
     with run_example(

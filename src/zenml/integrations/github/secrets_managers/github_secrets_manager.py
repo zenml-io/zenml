@@ -193,7 +193,9 @@ class GitHubSecretsManager(BaseSecretsManager):
         from nacl.encoding import Base64Encoder
         from nacl.public import PublicKey, SealedBox
 
-        response_json = self._send_request("GET", resource="/public-key").json()
+        response_json = self._send_request(
+            "GET", resource="/public-key"
+        ).json()
         public_key = PublicKey(
             response_json["key"].encode("utf-8"), Base64Encoder
         )

@@ -31,7 +31,9 @@ def secret_loader(
             AZURE_SECRET_NAME
         )
     else:
-        retrieved_secret = context.stack.secrets_manager.get_secret(SECRET_NAME)
+        retrieved_secret = context.stack.secrets_manager.get_secret(
+            SECRET_NAME
+        )
 
     # Load specific secret value from the secret using the secret key
     print(

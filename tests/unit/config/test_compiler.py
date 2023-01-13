@@ -47,6 +47,8 @@ def test_compiler_sets_step_docstring():
 
     @step
     def step_with_docstring() -> None:
-        """docstring"""
+        """docstring."""
 
-    assert _compile_step(step_with_docstring()).config.docstring == "docstring"
+    assert (
+        _compile_step(step_with_docstring()).config.docstring == "docstring."
+    )

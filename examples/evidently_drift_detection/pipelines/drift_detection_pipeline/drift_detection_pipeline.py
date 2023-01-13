@@ -24,7 +24,7 @@ def drift_detection_pipeline(
     drift_detector,
     drift_analyzer,
 ):
-    """Links all the steps together in a pipeline"""
+    """Links all the steps together in a pipeline."""
     data = data_loader()
     reference_dataset, comparison_dataset = data_splitter(data)
     drift_report, _ = drift_detector(
