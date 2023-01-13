@@ -41,7 +41,6 @@ def seldon_prediction_service_loader(
     params: PredectionServiceLoaderStepParameters,
 ) -> SeldonDeploymentService:
     """Get the Seldon Core prediction service started by the deployment pipeline."""
-
     model_deployer = SeldonModelDeployer.get_active_model_deployer()
 
     services = model_deployer.find_model_server(

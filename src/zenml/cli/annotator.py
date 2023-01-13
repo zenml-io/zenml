@@ -100,7 +100,9 @@ def register_annotator_subcommands() -> None:
         )
         cli_utils.declare(f"Total annotation tasks: {total_task_count}")
         cli_utils.declare(f"Labeled annotation tasks: {labeled_task_count}")
-        cli_utils.declare(f"Unlabeled annotation tasks: {unlabeled_task_count}")
+        cli_utils.declare(
+            f"Unlabeled annotation tasks: {unlabeled_task_count}"
+        )
 
     @dataset.command("delete")
     @click.argument("dataset_name", type=click.STRING)
@@ -131,14 +133,18 @@ def register_annotator_subcommands() -> None:
         )
         for dataset_name in dataset_names:
             annotator.delete_dataset(dataset_name=dataset_name)
-            cli_utils.declare(f"Dataset '{dataset_name}' has now been deleted.")
+            cli_utils.declare(
+                f"Dataset '{dataset_name}' has now been deleted."
+            )
 
     @dataset.command(
         "annotate", context_settings={"ignore_unknown_options": True}
     )
     @click.argument("dataset_name", type=click.STRING)
     @click.pass_obj
-    def dataset_annotate(annotator: "BaseAnnotator", dataset_name: str) -> None:
+    def dataset_annotate(
+        annotator: "BaseAnnotator", dataset_name: str
+    ) -> None:
         """Command to launch the annotation interface for a dataset.
 
         Args:

@@ -364,7 +364,6 @@ KeyError
 Knative
 Kubeflow
 Kubeflow's
-Kubeflow's
 KubeflowMetadataStore
 KubeflowOrchestrator
 Kubernetes
@@ -881,7 +880,6 @@ bentoctl
 bentoml
 bff
 bigquery
-bigquery
 bigrams
 blogpost
 bool
@@ -1087,6 +1085,7 @@ gcp
 gcr
 gcs
 gcsfs
+gcspath
 ge
 getattr
 getattribute

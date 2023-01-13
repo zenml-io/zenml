@@ -24,7 +24,7 @@ def facets_pipeline(
     trainer,
     evaluator,
 ):
-    """Links all the steps together in a pipeline"""
+    """Links all the steps together in a pipeline."""
     train_df, test_df = importer()
     model = trainer(train_df=train_df)
     evaluator(test_df=test_df, model=model)

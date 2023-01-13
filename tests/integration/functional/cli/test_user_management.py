@@ -28,7 +28,10 @@ from tests.integration.functional.cli.test_utils import (
     user_update_command,
 )
 from zenml.client import Client
-from zenml.zen_stores.base_zen_store import DEFAULT_ADMIN_ROLE, DEFAULT_USERNAME
+from zenml.zen_stores.base_zen_store import (
+    DEFAULT_ADMIN_ROLE,
+    DEFAULT_USERNAME,
+)
 
 # ----- #
 # USERS #

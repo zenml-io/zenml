@@ -27,8 +27,8 @@ from zenml.utils import pydantic_utils, settings_utils, source_utils
 
 if TYPE_CHECKING:
     from zenml.pipelines import BasePipeline
-    from zenml.steps import BaseStep
     from zenml.stack import Stack, StackComponent
+    from zenml.steps import BaseStep
 
 from zenml.logger import get_logger
 
@@ -261,7 +261,8 @@ class Compiler:
                 settings_instance = resolver.resolve(stack=stack)
             except KeyError:
                 logger.info(
-                    "Not including stack component settings with key `%s`.", key
+                    "Not including stack component settings with key `%s`.",
+                    key,
                 )
                 continue
 

@@ -27,7 +27,7 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 class PytorchTrainerParameters(BaseParameters):
-    """Trainer params"""
+    """Trainer params."""
 
     epochs: int = 2
     lr: float = 0.01
@@ -39,8 +39,7 @@ def pytorch_trainer(
     params: PytorchTrainerParameters, train_loader: DataLoader
 ) -> nn.Module:
     """Train a neural net from scratch to recognize MNIST digits return our
-    model or the learner"""
-
+    model or the learner."""
     model = Net().to(DEVICE)
     optimizer = optim.Adadelta(model.parameters(), lr=params.lr)
 

@@ -138,7 +138,9 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         _config_path: Directory where the global config file is stored.
     """
 
-    user_id: uuid.UUID = Field(default_factory=uuid.uuid4, allow_mutation=False)
+    user_id: uuid.UUID = Field(
+        default_factory=uuid.uuid4, allow_mutation=False
+    )
     user_email: Optional[str] = None
     user_email_opt_in: Optional[bool] = None
     analytics_opt_in: bool = True
@@ -232,7 +234,9 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             # If the version parsing fails, it returns a `LegacyVersion`
             # instead. Check to make sure it's an actual `Version` object
             # which represents a valid version.
-            raise RuntimeError(f"Invalid version in global configuration: {v}.")
+            raise RuntimeError(
+                f"Invalid version in global configuration: {v}."
+            )
 
         return v
 
@@ -628,7 +632,9 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                 # particular server at least once, but no information about the
                 # user account is recorded here.
 
-                with event_handler(event=AnalyticsEvent.ZENML_SERVER_CONNECTED):
+                with event_handler(
+                    event=AnalyticsEvent.ZENML_SERVER_CONNECTED
+                ):
                     server_info = self.zen_store.get_store_info()
 
                     identify_group(
@@ -636,7 +642,9 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                         group_id=str(server_info.id),
                         group_metadata={
                             "version": server_info.version,
-                            "deployment_type": str(server_info.deployment_type),
+                            "deployment_type": str(
+                                server_info.deployment_type
+                            ),
                             "database_type": str(server_info.database_type),
                         },
                     )

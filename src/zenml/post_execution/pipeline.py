@@ -46,7 +46,9 @@ def get_pipelines() -> List["PipelineView"]:
 
 @track(event=AnalyticsEvent.GET_PIPELINE)
 def get_pipeline(
-    pipeline: Optional[Union["BasePipeline", Type["BasePipeline"], str]] = None,
+    pipeline: Optional[
+        Union["BasePipeline", Type["BasePipeline"], str]
+    ] = None,
     **kwargs: Any,
 ) -> Optional["PipelineView"]:
     """Fetches a post-execution pipeline view.
