@@ -156,14 +156,15 @@ class PipelineRunView:
         return cast(Dict[str, Any], extra)
 
     @property
-    def enable_cache(self) -> bool:
+    def enable_cache(self) -> Optional[bool]:
         """Returns whether caching is enabled for this pipeline run.
 
         Returns:
             True if caching is enabled for this pipeline run.
         """
-        enable_cache = self.pipeline_configuration["enable_cache"]
-        return cast(bool, enable_cache)
+        from zenml.pipelines.base_pipeline import PARAM_ENABLE_CACHE
+
+        return self.pipeline_configuration.get(PARAM_ENABLE_CACHE)
 
     @property
     def zenml_version(self) -> Optional[str]:

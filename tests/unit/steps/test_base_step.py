@@ -68,14 +68,34 @@ def test_define_step_with_multiple_contexts():
             pass
 
 
-def test_step_without_context_has_caching_enabled_by_default():
-    """Tests that defining a step without a context enables caching by default."""
+def test_step_has_no_enable_cache_by_default():
+    """Tests that a step has `enable_cache=None` by default."""
 
     @step
     def some_step() -> None:
         pass
 
+    assert some_step().enable_cache is None
+
+
+def test_enable_caching_for_step():
+    """Tests that caching can be explicitly enabled for a step."""
+
+    @step(enable_cache=True)
+    def some_step() -> None:
+        pass
+
     assert some_step().enable_cache is True
+
+
+def test_disable_caching_for_step():
+    """Tests that caching can be explicitly disabled for a step."""
+
+    @step(enable_cache=False)
+    def some_step() -> None:
+        pass
+
+    assert some_step().enable_cache is False
 
 
 def test_step_with_context_has_caching_disabled_by_default():

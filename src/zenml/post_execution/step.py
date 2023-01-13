@@ -172,7 +172,7 @@ class StepView:
         return self.step_configuration.extra
 
     @property
-    def enable_cache(self) -> bool:
+    def enable_cache(self) -> Optional[bool]:
         """Returns whether caching is enabled for this step.
 
         Returns:

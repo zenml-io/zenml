@@ -19,9 +19,95 @@ import pytest
 
 from zenml.config.compiler import Compiler
 from zenml.config.step_configurations import Step
-from zenml.orchestrators.cache_utils import generate_cache_key
+from zenml.orchestrators.cache_utils import (
+    generate_cache_key,
+    is_cache_enabled,
+)
 from zenml.steps import Output, step
 from zenml.steps.base_step import BaseStep
+
+
+def test_is_cache_enabled():
+    """Unit test for `is_cache_enabled()`.
+
+    Tests that:
+    - caching is enabled by default (when neither step nor pipeline set it),
+    - caching is always enabled if explicitly enabled for the step,
+    - caching is always disabled if explicitly disabled for the step,
+    - caching is set to the pipeline cache if not configured for the step.
+    """
+    # Caching is enabled by default
+    assert (
+        is_cache_enabled(step_enable_cache=None, pipeline_enable_cache=None)
+        is True
+    )
+
+    # Caching is always enabled if explicitly enabled for the step
+    assert (
+        is_cache_enabled(
+            step_enable_cache=True,
+            pipeline_enable_cache=True,
+        )
+        is True
+    )
+
+    assert (
+        is_cache_enabled(
+            step_enable_cache=True,
+            pipeline_enable_cache=False,
+        )
+        is True
+    )
+
+    assert (
+        is_cache_enabled(
+            step_enable_cache=True,
+            pipeline_enable_cache=None,
+        )
+        is True
+    )
+
+    # Caching is always disabled if explicitly disabled for the step
+    assert (
+        is_cache_enabled(
+            step_enable_cache=False,
+            pipeline_enable_cache=True,
+        )
+        is False
+    )
+
+    assert (
+        is_cache_enabled(
+            step_enable_cache=False,
+            pipeline_enable_cache=False,
+        )
+        is False
+    )
+
+    assert (
+        is_cache_enabled(
+            step_enable_cache=False,
+            pipeline_enable_cache=None,
+        )
+        is False
+    )
+
+    # Caching is set to the pipeline cache if not configured for the step
+    assert (
+        is_cache_enabled(
+            step_enable_cache=None,
+            pipeline_enable_cache=True,
+        )
+        is True
+    )
+
+    assert (
+        is_cache_enabled(
+            step_enable_cache=None,
+            pipeline_enable_cache=False,
+        )
+        is False
+    )
 
 
 def _compile_step(step: BaseStep) -> Step:

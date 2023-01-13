@@ -280,9 +280,9 @@ class StepLauncher:
         step_run.parent_step_ids = parent_step_ids
         step_run.cache_key = cache_key
 
-        cache_enabled = (
-            self._deployment.pipeline.enable_cache
-            and self._step.config.enable_cache
+        cache_enabled = cache_utils.is_cache_enabled(
+            step_enable_cache=self._step.config.enable_cache,
+            pipeline_enable_cache=self._deployment.pipeline.enable_cache,
         )
 
         execution_needed = True

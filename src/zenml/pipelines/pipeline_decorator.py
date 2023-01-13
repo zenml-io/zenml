@@ -49,7 +49,7 @@ def pipeline(_func: F) -> Type[BasePipeline]:
 def pipeline(
     *,
     name: Optional[str] = None,
-    enable_cache: bool = True,
+    enable_cache: Optional[bool] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
 ) -> Callable[[F], Type[BasePipeline]]:
@@ -60,7 +60,7 @@ def pipeline(
     _func: Optional[F] = None,
     *,
     name: Optional[str] = None,
-    enable_cache: bool = True,
+    enable_cache: Optional[bool] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
 ) -> Union[Type[BasePipeline], Callable[[F], Type[BasePipeline]]]:

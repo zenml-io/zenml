@@ -15,8 +15,10 @@ import os
 from contextlib import ExitStack as does_not_raise
 
 import pytest
+from pytest_mock import MockFixture
 
 from zenml.client import Client
+from zenml.config.pipeline_deployment import PipelineDeployment
 from zenml.exceptions import (
     PipelineConfigurationError,
     PipelineInterfaceError,
@@ -286,3 +288,69 @@ def test_pipeline_run_fails_when_required_step_operator_is_missing(
         one_step_pipeline(step_that_requires_step_operator()).run(
             unlisted=True
         )
+
+
+@step(enable_cache=True)
+def step_with_cache_enabled() -> None:
+    pass
+
+
+@step(enable_cache=False)
+def step_with_cache_disabled() -> None:
+    pass
+
+
+@pipeline(enable_cache=True)
+def pipeline_with_cache_enabled(step_1, step_2) -> None:
+    step_1()
+    step_2()
+
+
+@pipeline(enable_cache=False)
+def pipeline_with_cache_disabled(
+    step_1,
+    step_2,
+) -> None:
+    step_1()
+    step_2()
+
+
+def test_setting_enable_cache_at_run_level_overrides_all_decorator_values(
+    mocker: MockFixture,
+):
+    """Test that `pipeline.run(enable_cache=...)` overrides decorator values."""
+
+    def assert_cache_enabled(pipeline_deployment: PipelineDeployment):
+        assert pipeline_deployment.pipeline.enable_cache is True
+        for step_ in pipeline_deployment.steps.values():
+            assert step_.config.enable_cache is True
+
+    def assert_cache_disabled(pipeline_deployment: PipelineDeployment):
+        assert pipeline_deployment.pipeline.enable_cache is False
+        for step_ in pipeline_deployment.steps.values():
+            assert step_.config.enable_cache is False
+
+    cache_enabled_mock = mocker.MagicMock(side_effect=assert_cache_enabled)
+    cache_disabled_mock = mocker.MagicMock(side_effect=assert_cache_disabled)
+
+    # Test that `enable_cache=True` overrides all decorator values
+    mocker.patch(
+        "zenml.stack.stack.Stack.deploy_pipeline", new=cache_enabled_mock
+    )
+    pipeline_instance = pipeline_with_cache_disabled(
+        step_1=step_with_cache_enabled(),
+        step_2=step_with_cache_disabled(),
+    )
+    pipeline_instance.run(unlisted=True, enable_cache=True)
+    assert cache_enabled_mock.call_count == 1
+
+    # Test that `enable_cache=False` overrides all decorator values
+    mocker.patch(
+        "zenml.stack.stack.Stack.deploy_pipeline", new=cache_disabled_mock
+    )
+    pipeline_instance = pipeline_with_cache_enabled(
+        step_1=step_with_cache_enabled(),
+        step_2=step_with_cache_disabled(),
+    )
+    pipeline_instance.run(unlisted=True, enable_cache=False)
+    assert cache_disabled_mock.call_count == 1

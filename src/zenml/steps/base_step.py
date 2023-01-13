@@ -282,9 +282,6 @@ class BaseStep(metaclass=BaseStepMeta):
                     "explicitly enabled.",
                     name,
                 )
-            else:
-                # Default to cache enabled if not explicitly set
-                enable_cache = True
 
         logger.debug(
             "Step '%s': Caching %s.",
@@ -702,7 +699,7 @@ class BaseStep(metaclass=BaseStepMeta):
         return self.configuration.name
 
     @property
-    def enable_cache(self) -> bool:
+    def enable_cache(self) -> Optional[bool]:
         """If caching is enabled for the step.
 
         Returns:
