@@ -35,7 +35,7 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=ScheduleResponseModel,
+    response_model=List[ScheduleResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions

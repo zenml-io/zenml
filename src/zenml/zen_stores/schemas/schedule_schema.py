@@ -94,7 +94,9 @@ class ScheduleSchema(NamedSchema, table=True):
     )
 
     @classmethod
-    def from_create_model(cls, model: ScheduleRequestModel) -> "ScheduleSchema":
+    def from_create_model(
+        cls, model: ScheduleRequestModel
+    ) -> "ScheduleSchema":
         """Create a `ScheduleSchema` from a `ScheduleRequestModel`.
 
         Args:
@@ -121,7 +123,9 @@ class ScheduleSchema(NamedSchema, table=True):
             catchup=model.catchup,
         )
 
-    def from_update_model(self, model: ScheduleUpdateModel) -> "ScheduleSchema":
+    def from_update_model(
+        self, model: ScheduleUpdateModel
+    ) -> "ScheduleSchema":
         """Update a `ScheduleSchema` from a `ScheduleUpdateModel`.
 
         Args:

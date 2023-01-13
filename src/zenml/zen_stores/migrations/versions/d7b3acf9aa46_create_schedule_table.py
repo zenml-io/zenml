@@ -31,7 +31,9 @@ def upgrade() -> None:
         sa.Column("name", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
         sa.Column("active", sa.Boolean(), nullable=False),
         sa.Column(
-            "cron_expression", sqlmodel.sql.sqltypes.AutoString(), nullable=True
+            "cron_expression",
+            sqlmodel.sql.sqltypes.AutoString(),
+            nullable=True,
         ),
         sa.Column("start_time", sa.DateTime(), nullable=True),
         sa.Column("end_time", sa.DateTime(), nullable=True),
