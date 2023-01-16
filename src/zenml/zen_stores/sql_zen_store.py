@@ -84,6 +84,9 @@ from zenml.models import (
     RoleRequestModel,
     RoleResponseModel,
     RoleUpdateModel,
+    ScheduleRequestModel,
+    ScheduleResponseModel,
+    ScheduleUpdateModel,
     StackRequestModel,
     StackResponseModel,
     StackUpdateModel,
@@ -126,6 +129,7 @@ from zenml.zen_stores.schemas import (
     ProjectSchema,
     RolePermissionSchema,
     RoleSchema,
+    ScheduleSchema,
     StackComponentSchema,
     StackCompositionSchema,
     StackSchema,
@@ -2670,6 +2674,146 @@ class SqlZenStore(BaseZenStore):
                 )
 
             session.delete(pipeline)
+            session.commit()
+
+    # ---------
+    # Schedules
+    # ---------
+
+    def create_schedule(
+        self, schedule: ScheduleRequestModel
+    ) -> ScheduleResponseModel:
+        """Creates a new schedule.
+
+        Args:
+            schedule: The schedule to create.
+
+        Returns:
+            The newly created schedule.
+        """
+        with Session(self.engine) as session:
+            new_schedule = ScheduleSchema.from_create_model(model=schedule)
+            session.add(new_schedule)
+            session.commit()
+            return new_schedule.to_model()
+
+    def get_schedule(self, schedule_id: UUID) -> ScheduleResponseModel:
+        """Get a schedule with a given ID.
+
+        Args:
+            schedule_id: ID of the schedule.
+
+        Returns:
+            The schedule.
+
+        Raises:
+            KeyError: if the schedule does not exist.
+        """
+        with Session(self.engine) as session:
+            # Check if schedule with the given ID exists
+            schedule = session.exec(
+                select(ScheduleSchema).where(ScheduleSchema.id == schedule_id)
+            ).first()
+            if schedule is None:
+                raise KeyError(
+                    f"Unable to get schedule with ID '{schedule_id}': "
+                    "No schedule with this ID found."
+                )
+            return schedule.to_model()
+
+    def list_schedules(
+        self,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
+        pipeline_id: Optional[UUID] = None,
+        name: Optional[str] = None,
+    ) -> List[ScheduleResponseModel]:
+        """List all schedules in the project.
+
+        Args:
+            project_name_or_id: If provided, only list schedules in this project.
+            user_name_or_id: If provided, only list schedules from this user.
+            pipeline_id: If provided, only list schedules for this pipeline.
+            name: If provided, only list schedules with this name.
+
+        Returns:
+            A list of schedules.
+        """
+        with Session(self.engine) as session:
+            query = select(ScheduleSchema)
+            if project_name_or_id is not None:
+                project = self._get_project_schema(
+                    project_name_or_id, session=session
+                )
+                query = query.where(ScheduleSchema.project_id == project.id)
+            if user_name_or_id is not None:
+                user = self._get_user_schema(user_name_or_id, session=session)
+                query = query.where(ScheduleSchema.user_id == user.id)
+            if pipeline_id is not None:
+                query = query.where(ScheduleSchema.pipeline_id == pipeline_id)
+            if name:
+                query = query.where(ScheduleSchema.name == name)
+            schedules = session.exec(query).all()
+            return [schedule.to_model() for schedule in schedules]
+
+    def update_schedule(
+        self,
+        schedule_id: UUID,
+        schedule_update: ScheduleUpdateModel,
+    ) -> ScheduleResponseModel:
+        """Updates a schedule.
+
+        Args:
+            schedule_id: The ID of the schedule to be updated.
+            schedule_update: The update to be applied.
+
+        Returns:
+            The updated schedule.
+
+        Raises:
+            KeyError: if the schedule doesn't exist.
+        """
+        with Session(self.engine) as session:
+            # Check if schedule with the given ID exists
+            existing_schedule = session.exec(
+                select(ScheduleSchema).where(ScheduleSchema.id == schedule_id)
+            ).first()
+            if existing_schedule is None:
+                raise KeyError(
+                    f"Unable to update schedule with ID {schedule_id}: "
+                    f"No schedule with this ID found."
+                )
+
+            # Update the schedule
+            existing_schedule = existing_schedule.from_update_model(
+                schedule_update
+            )
+            session.add(existing_schedule)
+            session.commit()
+            return existing_schedule.to_model()
+
+    def delete_schedule(self, schedule_id: UUID) -> None:
+        """Deletes a schedule.
+
+        Args:
+            schedule_id: The ID of the schedule to delete.
+
+        Raises:
+            KeyError: if the schedule doesn't exist.
+        """
+        with Session(self.engine) as session:
+            # Check if schedule with the given ID exists
+            schedule = session.exec(
+                select(ScheduleSchema).where(ScheduleSchema.id == schedule_id)
+            ).first()
+            if schedule is None:
+                raise KeyError(
+                    f"Unable to delete schedule with ID {schedule_id}: "
+                    f"No schedule with this ID found."
+                )
+
+            # Delete the schedule
+            session.delete(schedule)
             session.commit()
 
     # --------------

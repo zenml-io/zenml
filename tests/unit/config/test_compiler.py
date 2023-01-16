@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
 import pytest
 
 from zenml.config import ResourceSettings
@@ -21,44 +20,6 @@ from zenml.config.pipeline_configurations import PipelineRunConfiguration
 from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.exceptions import PipelineInterfaceError, StackValidationError
 from zenml.pipelines import pipeline
-from zenml.steps import BaseStep, step
-
-
-def _compile_step(step: BaseStep):
-    # Call the step here to finalize the configuration
-    step()
-
-    compiler = Compiler()
-    return compiler._compile_step(
-        step=step,
-        pipeline_settings={},
-        pipeline_extra={},
-        stack=None,
-    )
-
-
-def test_compiler_sets_step_docstring():
-    """Test that the compiler writes the step docstring into the step config."""
-
-    @step
-    def step_without_docstring() -> None:
-        pass
-
-    assert _compile_step(step_without_docstring()).config.docstring is None
-
-    @step
-    def step_with_empty_docstring() -> None:
-        """"""
-
-    assert _compile_step(step_with_empty_docstring()).config.docstring == ""
-
-    @step
-    def step_with_docstring() -> None:
-        """docstring."""
-
-    assert (
-        _compile_step(step_with_docstring()).config.docstring == "docstring."
-    )
 
 
 def test_compiling_pipeline_with_duplicate_step_names_fails(

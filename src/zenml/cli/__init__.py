@@ -744,6 +744,24 @@ To delete a pipeline run, use:
 zenml pipeline runs delete <PIPELINE_RUN_NAME_OR_ID>
 ```
 
+If you run any of your pipelines with `pipeline.run(schedule=...)`, ZenML keeps
+track of the schedule and you can list all schedules via:
+
+```bash
+zenml pipeline schedule list
+```
+
+To delete a schedule, use:
+
+```bash
+zenml pipeline schedule delete <SCHEDULE_NAME_OR_ID>
+```
+
+Note, however, that this will only delete the reference saved in ZenML and does
+NOT stop/delete the schedule in the respective orchestrator. This still needs to
+be done manually. For example, using the Airflow orchestrator you would have 
+to open the web UI to manually click to stop the schedule from executing.
+
 Each pipeline run automatically saves its artifacts in the artifact store. To
 list all artifacts that have been saved, use:
 
