@@ -15,7 +15,7 @@ from typing import (
 from uuid import UUID
 
 from fastapi import Query
-from pydantic import BaseModel, Field, PrivateAttr, root_validator, validator
+from pydantic import BaseModel, PrivateAttr, root_validator, validator
 from sqlmodel import SQLModel
 
 from zenml.constants import (
@@ -165,9 +165,9 @@ class UUIDFilter(Filter):
         from sqlalchemy_utils.functions import cast_if
 
         if self.operation == GenericFilterOps.CONTAINS:
-            return cast_if(getattr(table, self.column), sqlalchemy.String).like(
-                f"%{self.value}%"
-            )
+            return cast_if(
+                getattr(table, self.column), sqlalchemy.String
+            ).like(f"%{self.value}%")
         elif self.operation == GenericFilterOps.STARTSWITH:
             return cast_if(
                 getattr(table, self.column), sqlalchemy.String
@@ -294,10 +294,12 @@ class FilterBaseModel(BaseModel):
     logical_operator: str = Query(
         LogicalOperators.AND,
         description="Which logical operator to use between all filters "
-                    "['and', 'or']"
+        "['and', 'or']",
     )
 
-    page: int = Query(PAGINATION_STARTING_PAGE, ge=1, description="Page number")
+    page: int = Query(
+        PAGINATION_STARTING_PAGE, ge=1, description="Page number"
+    )
     size: int = Query(
         PAGE_SIZE_DEFAULT, ge=1, le=PAGE_SIZE_MAXIMUM, description="Page size"
     )
@@ -467,8 +469,9 @@ class FilterBaseModel(BaseModel):
                             )
                         )
                     elif self.is_uuid_field(key):
-                        if operator == GenericFilterOps.EQUALS and not isinstance(
-                            value, UUID
+                        if (
+                            operator == GenericFilterOps.EQUALS
+                            and not isinstance(value, UUID)
                         ):
                             try:
                                 value = UUID(value)
@@ -496,7 +499,10 @@ class FilterBaseModel(BaseModel):
                             )
                         )
                     elif self.is_bool_field(key):
-                        if GenericFilterOps(operator) != GenericFilterOps.EQUALS:
+                        if (
+                            GenericFilterOps(operator)
+                            != GenericFilterOps.EQUALS
+                        ):
                             logger.warning(
                                 "Boolean filters do not support any"
                                 "operation except for equals. Defaulting"
@@ -568,7 +574,9 @@ class FilterBaseModel(BaseModel):
 
         filters = []
         for column_filter in self.list_of_filters:
-            filters.append(column_filter.generate_query_conditions(table=table))
+            filters.append(
+                column_filter.generate_query_conditions(table=table)
+            )
         if self.logical_operator == LogicalOperators.OR:
             return or_(*filters)
         elif self.logical_operator == LogicalOperators.AND:

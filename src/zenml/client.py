@@ -1875,7 +1875,9 @@ class Client(metaclass=ClientMetaClass):
                 component_filter_model.set_scope_type(
                     component_type=component_type
                 )
-                component_filter_model.set_scope_project(self.active_project.id)
+                component_filter_model.set_scope_project(
+                    self.active_project.id
+                )
                 entity = self.zen_store.list_stack_components(
                     component_filter_model=component_filter_model
                 )

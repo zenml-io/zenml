@@ -84,7 +84,9 @@ def test_filter_model_datetime_fields_accept_correct_filter_ops():
             )
             assert model_instance.list_of_filters[0]
             assert model_instance.list_of_filters[0].operation == filter_op
-            assert model_instance.list_of_filters[0].value == datetime.strptime(
+            assert model_instance.list_of_filters[
+                0
+            ].value == datetime.strptime(
                 datetime_value, FILTERING_DATETIME_FORMAT
             )
             assert model_instance.list_of_filters[0].column == "datetime_field"
