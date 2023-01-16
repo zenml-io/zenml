@@ -259,6 +259,7 @@ class PipelineDockerImageBuilder:
 
         return image_name_or_digest
 
+
     @staticmethod
     def _get_target_image_name(
         deployment: "PipelineDeployment",

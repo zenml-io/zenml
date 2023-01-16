@@ -24,6 +24,7 @@ AmazonEKSClusterPolicy
 AmazonEKSWorkerNodePolicy
 AmazonRDS
 AmazonS
+AnalyticsContext
 Anys
 AnysCORS
 ApiException
@@ -225,6 +226,7 @@ Docstring
 DoesNotExistException
 DuplicateRunNameError
 DuplicatedConfigurationError
+EBS
 ECR
 ECS
 EKS
@@ -494,6 +496,7 @@ PYTHONPATH
 PYxx
 PandasAnalyzer
 PandasDatasource
+PandasMaterializer
 Paperspace
 Parameterization
 Parameterizing
@@ -590,6 +593,8 @@ SVCTrainerStepConfig
 SageMaker
 Sagemaker
 Sagemaker's
+SagemakerOrchestrator
+SagemakerOrchestratorConfig
 SagemakerStepOperatorConfig
 Sauron
 Scatch
@@ -1075,12 +1080,14 @@ fs
 fsspec
 func
 gRPC
+gb
 gc
 gcloud
 gcp
 gcr
 gcs
 gcsfs
+gcspath
 ge
 getattr
 getattribute
@@ -1154,6 +1161,7 @@ ipynb
 ir
 isdir
 isinstance
+issubclass
 istio
 istioctl
 iterable
@@ -1233,6 +1241,7 @@ mixin
 mixins
 mkdir
 mkdocs
+mkdtemp
 mlflow
 mlmd
 mlops
@@ -1534,6 +1543,7 @@ usecases
 userguide
 usr
 utf
+util
 utils
 uuid
 uvicorn
@@ -1576,5 +1586,6 @@ zenmldocker
 zenmlexample
 zenmlregistry
 zenmlserver
+zenprojects
 zenserver
 ziph

@@ -424,7 +424,9 @@ def kserve_custom_model_deployer_step(
     ]
 
     # copy the model files to a new specific directory for the deployment
-    served_model_uri = os.path.join(context.get_output_artifact_uri(), "kserve")
+    served_model_uri = os.path.join(
+        context.get_output_artifact_uri(), "kserve"
+    )
     fileio.makedirs(served_model_uri)
     io_utils.copy_dir(model.uri, served_model_uri)
 

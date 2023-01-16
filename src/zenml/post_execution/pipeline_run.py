@@ -121,6 +121,15 @@ class PipelineRunView:
         return self._model.pipeline_configuration
 
     @property
+    def schedule_id(self) -> Optional[UUID]:
+        """Returns the ID of the schedule that triggered this pipeline run.
+
+        Returns:
+            The ID of the schedule that triggered this pipeline run.
+        """
+        return self._model.schedule_id
+
+    @property
     def settings(self) -> Dict[str, Any]:
         """Returns the pipeline settings.
 
@@ -147,14 +156,15 @@ class PipelineRunView:
         return cast(Dict[str, Any], extra)
 
     @property
-    def enable_cache(self) -> bool:
+    def enable_cache(self) -> Optional[bool]:
         """Returns whether caching is enabled for this pipeline run.
 
         Returns:
             True if caching is enabled for this pipeline run.
         """
-        enable_cache = self.pipeline_configuration["enable_cache"]
-        return cast(bool, enable_cache)
+        from zenml.pipelines.base_pipeline import PARAM_ENABLE_CACHE
+
+        return self.pipeline_configuration.get(PARAM_ENABLE_CACHE)
 
     @property
     def zenml_version(self) -> Optional[str]:
@@ -164,6 +174,24 @@ class PipelineRunView:
             The version of ZenML that this pipeline run was performed with.
         """
         return self._model.zenml_version
+
+    @property
+    def client_environment(self) -> Dict[str, str]:
+        """Environment of the client that initiated this pipeline run.
+
+        Returns:
+            The environment of the client that initiated this pipeline run.
+        """
+        return self._model.client_environment
+
+    @property
+    def orchestrator_environment(self) -> Dict[str, str]:
+        """Environment of the orchestrator that executed this pipeline run.
+
+        Returns:
+            The environment of the orchestrator that executed this pipeline run.
+        """
+        return self._model.orchestrator_environment
 
     @property
     def git_sha(self) -> Optional[str]:

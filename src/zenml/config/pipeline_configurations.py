@@ -41,7 +41,6 @@ class PipelineConfiguration(PipelineConfigurationUpdate):
     """Pipeline configuration class."""
 
     name: str
-    enable_cache: bool
 
     @validator("name")
     def ensure_pipeline_name_allowed(cls, name: str) -> str:

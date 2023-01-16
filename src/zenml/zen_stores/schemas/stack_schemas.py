@@ -27,7 +27,10 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 
 if TYPE_CHECKING:
     from zenml.models.stack_models import StackUpdateModel
-    from zenml.zen_stores.schemas import PipelineRunSchema, StackComponentSchema
+    from zenml.zen_stores.schemas import (
+        PipelineRunSchema,
+        StackComponentSchema,
+    )
 
 
 class StackCompositionSchema(SQLModel, table=True):
@@ -128,7 +131,7 @@ class StackSchema(ShareableSchema, table=True):
         return StackResponseModel(
             id=self.id,
             name=self.name,
-            user=self.user.to_model() if self.user else None,
+            user=self.user.to_model(True) if self.user else None,
             project=self.project.to_model(),
             is_shared=self.is_shared,
             components={c.type: [c.to_model()] for c in self.components},

@@ -1,0 +1,26 @@
+requirements:
+
+  # External data validators
+  - name: external-data-validators
+    stacks:
+      - name: deepchecks
+        type: data_validator
+        flavor: deepchecks
+        external: true
+      - name: evidently
+        type: data_validator
+        flavor: evidently
+        external: true
+      - name: great_expectations
+        type: data_validator
+        flavor: great_expectations
+        external: true
+      - name: whylogs
+        type: data_validator
+        flavor: whylogs
+        external: true
+    capabilities:
+      deepchecks: true
+      evidently: true
+      great_expectations: true
+      whylogs: true

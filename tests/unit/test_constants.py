@@ -18,7 +18,7 @@ from zenml.constants import handle_int_env_var
 
 
 def test_handle_int_env_var():
-    """Check handle_int_env_var in all cases"""
+    """Check handle_int_env_var in all cases."""
     env_var = "ZENML_TEST_HANDLE_INT_ENV_VAR"
 
     # check value error (when it can't be converted to int)

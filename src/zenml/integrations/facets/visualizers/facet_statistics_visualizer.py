@@ -107,13 +107,17 @@ class FacetStatisticsVisualizer(BaseVisualizer):
             EnvironmentError: If magic is True and not in a notebook.
         """
         if magic:
-            if not (Environment.in_notebook() or Environment.in_google_colab()):
+            if not (
+                Environment.in_notebook() or Environment.in_google_colab()
+            ):
                 raise EnvironmentError(
                     "The magic functions are only usable in a Jupyter notebook."
                 )
             display(HTML(html_))
         else:
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as f:
+            with tempfile.NamedTemporaryFile(
+                delete=False, suffix=".html"
+            ) as f:
                 io_utils.write_file_contents_as_string(f.name, html_)
                 url = f"file:///{f.name}"
                 logger.info("Opening %s in a new browser.." % f.name)

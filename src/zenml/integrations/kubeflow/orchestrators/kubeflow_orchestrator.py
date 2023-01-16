@@ -75,7 +75,9 @@ from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 from zenml.stack.stack_component import StackComponent
 from zenml.utils import io_utils, networking_utils
-from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
+from zenml.utils.pipeline_docker_image_builder import (
+    PipelineDockerImageBuilder,
+)
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
@@ -853,8 +855,9 @@ class KubeflowOrchestrator(BaseOrchestrator):
             Port to use for the KFP UI daemon.
         """
         port = self.config.kubeflow_pipelines_ui_port
-        if port == DEFAULT_KFP_UI_PORT and not networking_utils.port_available(
-            port
+        if (
+            port == DEFAULT_KFP_UI_PORT
+            and not networking_utils.port_available(port)
         ):
             # if the user didn't specify a specific port and the default
             # port is occupied, fallback to a random open port
@@ -981,7 +984,8 @@ class KubeflowOrchestrator(BaseOrchestrator):
             True if a local k3d cluster exists, False otherwise.
         """
         if not local_deployment_utils.check_prerequisites(
-            skip_k3d=self.config.skip_cluster_provisioning or not self.is_local,
+            skip_k3d=self.config.skip_cluster_provisioning
+            or not self.is_local,
             skip_kubectl=self.config.skip_cluster_provisioning
             and self.skip_ui_daemon_provisioning,
         ):
@@ -1017,7 +1021,9 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 self.config.skip_cluster_provisioning
                 or not self.is_cluster_running
             )
-            and (self.skip_ui_daemon_provisioning or not self.is_daemon_running)
+            and (
+                self.skip_ui_daemon_provisioning or not self.is_daemon_running
+            )
         )
 
     @property

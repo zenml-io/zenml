@@ -79,6 +79,7 @@ class PipelineRunBaseModel(BaseModel):
         max_length=STR_FIELD_MAX_LENGTH,
         default=None,
     )
+    schedule_id: Optional[UUID]
     enable_cache: Optional[bool]
     start_time: Optional[datetime]
     end_time: Optional[datetime]
@@ -89,6 +90,20 @@ class PipelineRunBaseModel(BaseModel):
         title="ZenML version.",
         default=current_zenml_version,
         max_length=STR_FIELD_MAX_LENGTH,
+    )
+    client_environment: Dict[str, str] = Field(
+        default={},
+        title=(
+            "Environment of the client that initiated this pipeline run "
+            "(OS, Python version, etc.)."
+        ),
+    )
+    orchestrator_environment: Dict[str, str] = Field(
+        default={},
+        title=(
+            "Environment of the orchestrator that executed this pipeline run "
+            "(OS, Python version, etc.)."
+        ),
     )
     git_sha: Optional[str] = Field(
         default_factory=get_git_sha, max_length=STR_FIELD_MAX_LENGTH

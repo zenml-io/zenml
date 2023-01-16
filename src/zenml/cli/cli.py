@@ -95,7 +95,9 @@ class ZenMLCLI(click.Group):
             ctx: The click context.
             formatter: The click formatter.
         """
-        commands: List[Tuple[CliCategories, str, Union[Command, TagGroup]]] = []
+        commands: List[
+            Tuple[CliCategories, str, Union[Command, TagGroup]]
+        ] = []
         for subcommand in self.list_commands(ctx):
             cmd = self.get_command(ctx, subcommand)
             # What is this, the tool lied about a command.  Ignore it

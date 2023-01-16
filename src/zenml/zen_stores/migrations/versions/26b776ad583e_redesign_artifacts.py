@@ -103,7 +103,9 @@ def upgrade() -> None:
                 == produced_artifact.producer_step_id
             ):
                 return produced_artifact
-        raise ValueError("Could not find produced artifact for cached artifact")
+        raise ValueError(
+            "Could not find produced artifact for cached artifact"
+        )
 
     # For each cached artifact, find the ID of the original produced artifact
     # and link all input artifact entries to the produced artifact.
@@ -140,7 +142,9 @@ def upgrade() -> None:
     output_artifacts = produced_output_artifacts + cached_output_artifacts
 
     if output_artifacts:
-        conn.execute(step_run_output_artifact.insert().values(output_artifacts))
+        conn.execute(
+            step_run_output_artifact.insert().values(output_artifacts)
+        )
 
     # --------------
     # Adjust columns
@@ -150,7 +154,9 @@ def upgrade() -> None:
         # Add artifact store link column
         batch_op.add_column(
             sa.Column(
-                "artifact_store_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
+                "artifact_store_id",
+                sqlmodel.sql.sqltypes.GUID(),
+                nullable=True,
             )
         )
         batch_op.create_foreign_key(

@@ -362,6 +362,10 @@ class GitStackRecipesHandler(object):
                 raise KeyError(
                     f"Stack recipe {stack_recipe_name} does not exist! "
                     f"Available Stack Recipes: {list(stack_recipe_dict)}"
+                    "If you want to deploy a custom stack recipe available "
+                    "locally, please call deploy with the `--skip-pull` flag "
+                    "and specify the path to the stack recipe directory with "
+                    "the `--path` or `-p` flag."
                 )
         else:
             return self.stack_recipes
@@ -485,7 +489,9 @@ def list_stack_recipes(
     help="Relative path at which you want to clean the stack_recipe(s)",
 )
 @pass_git_stack_recipes_handler
-def clean(git_stack_recipes_handler: GitStackRecipesHandler, path: str) -> None:
+def clean(
+    git_stack_recipes_handler: GitStackRecipesHandler, path: str
+) -> None:
     """Deletes the stack recipes directory from your working directory.
 
     Args:
@@ -694,7 +700,7 @@ def pull(
     "-p",
     type=click.STRING,
     default="zenml_stack_recipes",
-    help="Relative path at which you want to install the stack_recipe(s)",
+    help="Relative path at which local stack recipe(s) should exist",
 )
 @click.option(
     "--force",
@@ -740,6 +746,13 @@ def pull(
     is_flag=True,
     help="Don't deploy ZenML even if there's no active cloud deployment.",
 )
+@click.option(
+    "--skip-pull",
+    is_flag=True,
+    help="Skip the pulling of the stack recipe before deploying. This should be used "
+    "if you have a local copy of your recipe already. Use the `--path` or `-p` flag to "
+    "specify the directory that hosts your recipe(s).",
+)
 @pass_git_stack_recipes_handler
 @click.pass_context
 def deploy(
@@ -752,6 +765,7 @@ def deploy(
     log_level: str,
     skip_check: bool,
     no_server: bool,
+    skip_pull: bool,
     stack_name: Optional[str],
 ) -> None:
     """Run the stack_recipe at the specified relative path.
@@ -776,6 +790,8 @@ def deploy(
             recipe.
         no_server: Don't deploy ZenML even if there's no active cloud
             deployment.
+        skip_pull: Skip the pull of the stack recipe before deploying. This
+            should be used if you have a local copy of your recipe already.
     """
     with event_handler(
         event=AnalyticsEvent.RUN_STACK_RECIPE,
@@ -797,9 +813,12 @@ def deploy(
             )
 
         try:
-            _ = git_stack_recipes_handler.get_stack_recipes(stack_recipe_name)[
-                0
-            ]
+            if skip_pull:
+                pass
+            else:
+                _ = git_stack_recipes_handler.get_stack_recipes(
+                    stack_recipe_name
+                )[0]
         except KeyError as e:
             cli_utils.error(str(e))
         else:
@@ -809,12 +828,20 @@ def deploy(
             )
 
             if not local_stack_recipe.is_present():
-                ctx.invoke(
-                    pull,
-                    stack_recipe_name=stack_recipe_name,
-                    path=path,
-                    force=force,
-                )
+                if skip_pull:
+                    cli_utils.error(
+                        "You have specified the --skip-pull flag, but the "
+                        "stack recipe is not present locally at the specified "
+                        f"path. Please ensure the {stack_recipe_name} recipe is "
+                        f"present at {stack_recipe_dir} and try again."
+                    )
+                else:
+                    ctx.invoke(
+                        pull,
+                        stack_recipe_name=stack_recipe_name,
+                        path=path,
+                        force=force,
+                    )
 
             try:
                 # warn that prerequisites should be met
@@ -1110,12 +1137,16 @@ def destroy(
                 stack_recipe_service.stop()
 
                 cli_utils.declare(
-                    "\n" + "Your active stack might now be invalid. Please run:"
+                    "\n"
+                    + "Your active stack might now be invalid. Please run:"
                 )
-                text = Text("zenml stack describe", style="markdown.code_block")
+                text = Text(
+                    "zenml stack describe", style="markdown.code_block"
+                )
                 cli_utils.declare(text)
                 cli_utils.declare(
-                    "\n" + "to investigate and switch to a new stack if needed."
+                    "\n"
+                    + "to investigate and switch to a new stack if needed."
                 )
 
             except python_terraform.TerraformCommandError as e:

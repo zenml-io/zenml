@@ -92,7 +92,7 @@ def main(
     momentum: float,
     min_accuracy: float,
 ):
-    """Run the KServe-Pytorch example training/deployment or inference pipeline
+    """Run the KServe-Pytorch example training/deployment or inference pipeline.
 
     Example usage:
 

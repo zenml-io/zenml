@@ -43,7 +43,9 @@ from zenml.orchestrators import BaseOrchestrator
 from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
 from zenml.stack import Stack
 from zenml.utils import yaml_utils
-from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
+from zenml.utils.pipeline_docker_image_builder import (
+    PipelineDockerImageBuilder,
+)
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
@@ -100,7 +102,9 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
                 remote_url.startswith(prefix)
                 for prefix in GITHUB_REMOTE_URL_PREFIXES
             )
-            if not (is_github_repo or self.config.skip_github_repository_check):
+            if not (
+                is_github_repo or self.config.skip_github_repository_check
+            ):
                 raise RuntimeError(
                     f"The remote URL '{remote_url}' of your git repo "
                     f"({self._git_repo.git_dir}) is not pointing to a GitHub "
