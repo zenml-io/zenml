@@ -226,7 +226,8 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
 
         config = SqlZenStoreConfiguration(
-            type=StoreType.SQL, url=SqlZenStoreConfiguration.get_local_url(path)
+            type=StoreType.SQL,
+            url=SqlZenStoreConfiguration.get_local_url(path),
         )
         return config
 
@@ -336,7 +337,9 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
                     "Resetting the active stack to default.",
                     config_name,
                 )
-                active_stack = self._get_or_create_default_stack(active_project)
+                active_stack = self._get_or_create_default_stack(
+                    active_project
+                )
             else:
                 if active_stack.project.id != active_project.id:
                     logger.warning(

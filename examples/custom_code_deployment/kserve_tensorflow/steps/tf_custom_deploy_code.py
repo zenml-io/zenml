@@ -33,13 +33,12 @@ def pre_process(input: np.ndarray) -> np.ndarray:
     Returns:
         np.ndarray: The pre processed input
     """
-
     input = input / 255.0
     return input[None, :, :]
 
 
 def post_process(prediction: np.ndarray) -> str:
-    """Pre process the data
+    """Pre process the data.
 
     Args:
         prediction (np.ndarray): The input array to post process
@@ -47,7 +46,6 @@ def post_process(prediction: np.ndarray) -> str:
     Returns:
         str: The processed data, in this case the predicted digit.
     """
-
     classes = [str(i) for i in range(10)]
     prediction = tf.nn.softmax(prediction, axis=-1)
     maxindex = np.argmax(prediction.numpy())

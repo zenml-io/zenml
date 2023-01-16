@@ -93,6 +93,9 @@ from zenml.models import (
     RoleResponseModel,
     RoleUpdateModel,
     StackFilterModel,
+    ScheduleRequestModel,
+    ScheduleResponseModel,
+    ScheduleUpdateModel,
     StackRequestModel,
     StackResponseModel,
     StackUpdateModel,
@@ -146,6 +149,7 @@ from zenml.zen_stores.schemas import (
     ProjectSchema,
     RolePermissionSchema,
     RoleSchema,
+    ScheduleSchema,
     StackComponentSchema,
     StackSchema,
     StepRunInputArtifactSchema,
@@ -284,7 +288,6 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             ValueError: If the URL is invalid or the SQL driver is not
                 supported.
         """
-        # flake8: noqa: C901
         url = values.get("url")
         if url is None:
             return values
@@ -479,7 +482,9 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
         return config
 
-    def get_sqlmodel_config(self) -> Tuple[str, Dict[str, Any], Dict[str, Any]]:
+    def get_sqlmodel_config(
+        self,
+    ) -> Tuple[str, Dict[str, Any], Dict[str, Any]]:
         """Get the SQLModel engine configuration for the SQL ZenML store.
 
         Returns:
@@ -1161,7 +1166,9 @@ class SqlZenStore(BaseZenStore):
 
             return new_component.to_model()
 
-    def get_stack_component(self, component_id: UUID) -> ComponentResponseModel:
+    def get_stack_component(
+        self, component_id: UUID
+    ) -> ComponentResponseModel:
         """Get a stack component by ID.
 
         Args:
@@ -1413,7 +1420,7 @@ class SqlZenStore(BaseZenStore):
             .where(StackComponentSchema.name == name)
             .where(StackComponentSchema.project_id == project_id)
             .where(StackComponentSchema.type == component_type)
-            .where(StackComponentSchema.is_shared == True)
+            .where(StackComponentSchema.is_shared is True)
         ).first()
         if existing_shared_component is not None:
             raise StackComponentExistsError(
@@ -1616,7 +1623,9 @@ class SqlZenStore(BaseZenStore):
 
             return user.to_model(include_private=include_private)
 
-    def get_auth_user(self, user_name_or_id: Union[str, UUID]) -> UserAuthModel:
+    def get_auth_user(
+        self, user_name_or_id: Union[str, UUID]
+    ) -> UserAuthModel:
         """Gets the auth model to a specific user.
 
         Args:
@@ -1748,7 +1757,9 @@ class SqlZenStore(BaseZenStore):
             defined_users = []
             if team.users:
                 # Get the Schemas of all users mentioned
-                filters = [(UserSchema.id == user_id) for user_id in team.users]
+                filters = [
+                    (UserSchema.id == user_id) for user_id in team.users
+                ]
 
                 defined_users = session.exec(
                     select(UserSchema).where(or_(*filters))
@@ -1982,7 +1993,8 @@ class SqlZenStore(BaseZenStore):
                             select(RolePermissionSchema)
                             .where(RolePermissionSchema.name == permission)
                             .where(
-                                RolePermissionSchema.role_id == existing_role.id
+                                RolePermissionSchema.role_id
+                                == existing_role.id
                             )
                         ).one_or_none()
                         session.delete(permission_to_delete)
@@ -2595,6 +2607,146 @@ class SqlZenStore(BaseZenStore):
             session.delete(pipeline)
             session.commit()
 
+    # ---------
+    # Schedules
+    # ---------
+
+    def create_schedule(
+        self, schedule: ScheduleRequestModel
+    ) -> ScheduleResponseModel:
+        """Creates a new schedule.
+
+        Args:
+            schedule: The schedule to create.
+
+        Returns:
+            The newly created schedule.
+        """
+        with Session(self.engine) as session:
+            new_schedule = ScheduleSchema.from_create_model(model=schedule)
+            session.add(new_schedule)
+            session.commit()
+            return new_schedule.to_model()
+
+    def get_schedule(self, schedule_id: UUID) -> ScheduleResponseModel:
+        """Get a schedule with a given ID.
+
+        Args:
+            schedule_id: ID of the schedule.
+
+        Returns:
+            The schedule.
+
+        Raises:
+            KeyError: if the schedule does not exist.
+        """
+        with Session(self.engine) as session:
+            # Check if schedule with the given ID exists
+            schedule = session.exec(
+                select(ScheduleSchema).where(ScheduleSchema.id == schedule_id)
+            ).first()
+            if schedule is None:
+                raise KeyError(
+                    f"Unable to get schedule with ID '{schedule_id}': "
+                    "No schedule with this ID found."
+                )
+            return schedule.to_model()
+
+    def list_schedules(
+        self,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
+        pipeline_id: Optional[UUID] = None,
+        name: Optional[str] = None,
+    ) -> List[ScheduleResponseModel]:
+        """List all schedules in the project.
+
+        Args:
+            project_name_or_id: If provided, only list schedules in this project.
+            user_name_or_id: If provided, only list schedules from this user.
+            pipeline_id: If provided, only list schedules for this pipeline.
+            name: If provided, only list schedules with this name.
+
+        Returns:
+            A list of schedules.
+        """
+        with Session(self.engine) as session:
+            query = select(ScheduleSchema)
+            if project_name_or_id is not None:
+                project = self._get_project_schema(
+                    project_name_or_id, session=session
+                )
+                query = query.where(ScheduleSchema.project_id == project.id)
+            if user_name_or_id is not None:
+                user = self._get_user_schema(user_name_or_id, session=session)
+                query = query.where(ScheduleSchema.user_id == user.id)
+            if pipeline_id is not None:
+                query = query.where(ScheduleSchema.pipeline_id == pipeline_id)
+            if name:
+                query = query.where(ScheduleSchema.name == name)
+            schedules = session.exec(query).all()
+            return [schedule.to_model() for schedule in schedules]
+
+    def update_schedule(
+        self,
+        schedule_id: UUID,
+        schedule_update: ScheduleUpdateModel,
+    ) -> ScheduleResponseModel:
+        """Updates a schedule.
+
+        Args:
+            schedule_id: The ID of the schedule to be updated.
+            schedule_update: The update to be applied.
+
+        Returns:
+            The updated schedule.
+
+        Raises:
+            KeyError: if the schedule doesn't exist.
+        """
+        with Session(self.engine) as session:
+            # Check if schedule with the given ID exists
+            existing_schedule = session.exec(
+                select(ScheduleSchema).where(ScheduleSchema.id == schedule_id)
+            ).first()
+            if existing_schedule is None:
+                raise KeyError(
+                    f"Unable to update schedule with ID {schedule_id}: "
+                    f"No schedule with this ID found."
+                )
+
+            # Update the schedule
+            existing_schedule = existing_schedule.from_update_model(
+                schedule_update
+            )
+            session.add(existing_schedule)
+            session.commit()
+            return existing_schedule.to_model()
+
+    def delete_schedule(self, schedule_id: UUID) -> None:
+        """Deletes a schedule.
+
+        Args:
+            schedule_id: The ID of the schedule to delete.
+
+        Raises:
+            KeyError: if the schedule doesn't exist.
+        """
+        with Session(self.engine) as session:
+            # Check if schedule with the given ID exists
+            schedule = session.exec(
+                select(ScheduleSchema).where(ScheduleSchema.id == schedule_id)
+            ).first()
+            if schedule is None:
+                raise KeyError(
+                    f"Unable to delete schedule with ID {schedule_id}: "
+                    f"No schedule with this ID found."
+                )
+
+            # Delete the schedule
+            session.delete(schedule)
+            session.commit()
+
     # --------------
     # Pipeline runs
     # --------------
@@ -3099,7 +3251,8 @@ class SqlZenStore(BaseZenStore):
                     StepRunOutputArtifactSchema.name,
                 )
                 .where(
-                    ArtifactSchema.id == StepRunOutputArtifactSchema.artifact_id
+                    ArtifactSchema.id
+                    == StepRunOutputArtifactSchema.artifact_id
                 )
                 .where(StepRunOutputArtifactSchema.step_id == step_run.id)
             ).all()
@@ -3349,7 +3502,9 @@ class SqlZenStore(BaseZenStore):
                 f" UUID and no {schema_name} with this name exists."
             )
 
-        schema = session.exec(select(schema_class).where(filter_params)).first()
+        schema = session.exec(
+            select(schema_class).where(filter_params)
+        ).first()
 
         if schema is None:
             raise KeyError(error_msg)

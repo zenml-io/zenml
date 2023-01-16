@@ -110,6 +110,80 @@ def delete_pipeline(pipeline_name_or_id: str, yes: bool = False) -> None:
 
 
 @pipeline.group()
+def schedule() -> None:
+    """Commands for pipeline run schedules."""
+
+
+@schedule.command("list", help="List all pipeline schedules.")
+@click.option("--pipeline", "-p", type=str, required=False)
+@click.option("--user", "-u", type=str, required=False)
+@click.option("--name", "-n", type=str, required=False)
+def list_schedules(pipeline: str, user: str, name: str) -> None:
+    """List all pipeline schedules.
+
+    Args:
+        pipeline: Filter by pipeline name or ID.
+        user: Filter by user name or ID.
+        name: Filter by schedule name.
+    """
+    cli_utils.print_active_config()
+    client = Client()
+
+    pipeline_id = None
+    if pipeline:
+        pipeline_id = client.get_pipeline(name_id_or_prefix=pipeline).id
+
+    schedules = client.list_schedules(
+        user_name_or_id=user,
+        pipeline_id=pipeline_id,
+        name=name,
+    )
+
+    if not schedules:
+        cli_utils.declare("No schedules registered.")
+        return
+
+    cli_utils.print_pydantic_models(
+        schedules,
+        exclude_columns=["id", "created", "updated", "user", "project"],
+    )
+
+
+@schedule.command("delete", help="Delete a pipeline schedule.")
+@click.argument("schedule_name_or_id", type=str, required=True)
+@click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    help="Don't ask for confirmation.",
+)
+def delete_schedule(schedule_name_or_id: str, yes: bool = False) -> None:
+    """Delete a pipeline schedule.
+
+    Args:
+        schedule_name_or_id: The name or ID of the schedule to delete.
+        yes: If set, don't ask for confirmation.
+    """
+    cli_utils.print_active_config()
+
+    if not yes:
+        confirmation = cli_utils.confirmation(
+            f"Are you sure you want to delete schedule "
+            f"`{schedule_name_or_id}`?"
+        )
+        if not confirmation:
+            cli_utils.declare("Schedule deletion canceled.")
+            return
+
+    try:
+        Client().delete_schedule(name_id_or_prefix=schedule_name_or_id)
+    except KeyError as e:
+        cli_utils.error(str(e))
+    else:
+        cli_utils.declare(f"Deleted schedule '{schedule_name_or_id}'.")
+
+
+@pipeline.group()
 def runs() -> None:
     """Commands for pipeline runs."""
 

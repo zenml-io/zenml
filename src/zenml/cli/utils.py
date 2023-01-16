@@ -167,7 +167,9 @@ def print_table(obj: List[Dict[str, Any]], **columns: table.Column) -> None:
         if isinstance(col_name, str):
             rich_table.add_column(str(col_name), overflow="fold")
         else:
-            rich_table.add_column(str(col_name.header).upper(), overflow="fold")
+            rich_table.add_column(
+                str(col_name.header).upper(), overflow="fold"
+            )
     for dict_ in obj:
         values = []
         for key in column_keys:

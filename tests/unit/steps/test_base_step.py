@@ -28,8 +28,7 @@ from zenml.utils import source_utils
 
 
 def test_step_decorator_creates_class_in_same_module_as_decorated_function():
-    """Tests that the `BaseStep` subclass created by our step decorator
-    creates the class in the same module as the decorated function."""
+    """Tests that the `BaseStep` subclass created by our step decorator creates the class in the same module as the decorated function."""
 
     @step
     def some_step() -> None:
@@ -39,8 +38,7 @@ def test_step_decorator_creates_class_in_same_module_as_decorated_function():
 
 
 def test_define_step_with_shared_input_and_output_name():
-    """Tests that defining a step with a shared input and output name does not
-    raise a StepInterfaceError."""
+    """Tests that defining a step with a shared input and output name does not raise a StepInterfaceError."""
     with does_not_raise():
 
         @step
@@ -49,8 +47,7 @@ def test_define_step_with_shared_input_and_output_name():
 
 
 def test_define_step_with_multiple_parameter_classes():
-    """Tests that defining a step with multiple parameter classes raises
-    a StepInterfaceError."""
+    """Tests that defining a step with multiple parameter classes raises a StepInterfaceError."""
     with pytest.raises(StepInterfaceError):
 
         @step
@@ -61,8 +58,7 @@ def test_define_step_with_multiple_parameter_classes():
 
 
 def test_define_step_with_multiple_contexts():
-    """Tests that defining a step with multiple contexts raises
-    a StepInterfaceError."""
+    """Tests that defining a step with multiple contexts raises a StepInterfaceError."""
     with pytest.raises(StepInterfaceError):
 
         @step
@@ -72,20 +68,38 @@ def test_define_step_with_multiple_contexts():
             pass
 
 
-def test_step_without_context_has_caching_enabled_by_default():
-    """Tests that defining a step without a context enables caching by
-    default."""
+def test_step_has_no_enable_cache_by_default():
+    """Tests that a step has `enable_cache=None` by default."""
 
     @step
+    def some_step() -> None:
+        pass
+
+    assert some_step().enable_cache is None
+
+
+def test_enable_caching_for_step():
+    """Tests that caching can be explicitly enabled for a step."""
+
+    @step(enable_cache=True)
     def some_step() -> None:
         pass
 
     assert some_step().enable_cache is True
 
 
+def test_disable_caching_for_step():
+    """Tests that caching can be explicitly disabled for a step."""
+
+    @step(enable_cache=False)
+    def some_step() -> None:
+        pass
+
+    assert some_step().enable_cache is False
+
+
 def test_step_with_context_has_caching_disabled_by_default():
-    """Tests that defining a step with a context disables caching by
-    default."""
+    """Tests that defining a step with a context disables caching by default."""
 
     @step
     def some_step(context: StepContext) -> None:
@@ -95,8 +109,7 @@ def test_step_with_context_has_caching_disabled_by_default():
 
 
 def test_enable_caching_for_step_with_context():
-    """Tests that caching can be explicitly enabled for a step with a
-    context."""
+    """Tests that caching can be explicitly enabled for a step with a context."""
 
     @step(enable_cache=True)
     def some_step(context: StepContext) -> None:
@@ -106,8 +119,7 @@ def test_enable_caching_for_step_with_context():
 
 
 def test_define_step_without_input_annotation():
-    """Tests that defining a step with a missing input annotation raises
-    a StepInterfaceError."""
+    """Tests that defining a step with a missing input annotation raises a StepInterfaceError."""
     with pytest.raises(StepInterfaceError):
 
         @step
@@ -116,8 +128,7 @@ def test_define_step_without_input_annotation():
 
 
 def test_define_step_without_return_annotation():
-    """Tests that defining a step with a missing return annotation raises
-    a StepInterfaceError."""
+    """Tests that defining a step with a missing return annotation raises a StepInterfaceError."""
     with pytest.raises(StepInterfaceError):
 
         @step
@@ -126,8 +137,7 @@ def test_define_step_without_return_annotation():
 
 
 def test_define_step_with_variable_args():
-    """Tests that defining a step with variable arguments raises
-    a StepInterfaceError."""
+    """Tests that defining a step with variable arguments raises a StepInterfaceError."""
     with pytest.raises(StepInterfaceError):
 
         @step
@@ -136,8 +146,7 @@ def test_define_step_with_variable_args():
 
 
 def test_define_step_with_variable_kwargs():
-    """Tests that defining a step with variable keyword arguments raises
-    a StepInterfaceError."""
+    """Tests that defining a step with variable keyword arguments raises a StepInterfaceError."""
     with pytest.raises(StepInterfaceError):
 
         @step
@@ -146,8 +155,7 @@ def test_define_step_with_variable_kwargs():
 
 
 def test_define_step_with_keyword_only_arguments():
-    """Tests that keyword-only arguments get included in the input signature
-    or a step."""
+    """Tests that keyword-only arguments get included in the input signature or a step."""
 
     @step
     def some_step(some_argument: int, *, keyword_only_argument: int) -> None:
@@ -157,8 +165,7 @@ def test_define_step_with_keyword_only_arguments():
 
 
 def test_initialize_step_with_unexpected_config():
-    """Tests that passing a config to a step that was defined without
-    config raises an Exception."""
+    """Tests that passing a config to a step that was defined without config raises an Exception."""
 
     @step
     def step_without_params() -> None:
@@ -169,8 +176,7 @@ def test_initialize_step_with_unexpected_config():
 
 
 def test_initialize_step_with_params():
-    """Tests that a step can only be initialized with it's defined
-    parameter class."""
+    """Tests that a step can only be initialized with it's defined parameter class."""
 
     class StepParams(BaseParameters):
         pass
@@ -213,8 +219,7 @@ def test_initialize_step_with_params():
 
 
 def test_enabling_a_custom_step_operator_for_a_step():
-    """Tests that step operators are disabled by default and can be enabled
-    using the step decorator."""
+    """Tests that step operators are disabled by default and can be enabled using the step decorator."""
 
     @step
     def step_without_step_operator() -> None:
@@ -232,8 +237,7 @@ def test_enabling_a_custom_step_operator_for_a_step():
 
 
 def test_pipeline_parameter_name_is_empty_when_initializing_a_step():
-    """Tests that the `pipeline_parameter_name` attribute is `None` when
-    a step is initialized."""
+    """Tests that the `pipeline_parameter_name` attribute is `None` when a step is initialized."""
 
     @step
     def some_step() -> None:
@@ -243,8 +247,7 @@ def test_pipeline_parameter_name_is_empty_when_initializing_a_step():
 
 
 def test_configure_step_with_wrong_materializer_class():
-    """Tests that passing a random class as a materializer raises a
-    StepInterfaceError."""
+    """Tests that passing a random class as a materializer raises a StepInterfaceError."""
 
     @step
     def some_step() -> Output(some_output=int):
@@ -255,8 +258,7 @@ def test_configure_step_with_wrong_materializer_class():
 
 
 def test_configure_step_with_wrong_materializer_key():
-    """Tests that passing a materializer for a non-existent argument raises a
-    StepInterfaceError."""
+    """Tests that passing a materializer for a non-existent argument raises a StepInterfaceError."""
 
     @step
     def some_step() -> Output(some_output=int):
@@ -268,8 +270,7 @@ def test_configure_step_with_wrong_materializer_key():
 
 
 def test_configure_step_with_wrong_materializer_class_in_dict():
-    """Tests that passing a wrong class as materializer for a specific output
-    raises a StepInterfaceError."""
+    """Tests that passing a wrong class as materializer for a specific output raises a StepInterfaceError."""
 
     @step
     def some_step() -> Output(some_output=int):
@@ -281,8 +282,7 @@ def test_configure_step_with_wrong_materializer_class_in_dict():
 
 
 def test_setting_a_materializer_for_a_step_with_multiple_outputs():
-    """Tests that setting a materializer for a step with multiple outputs
-    sets the materializer for all the outputs."""
+    """Tests that setting a materializer for a step with multiple outputs sets the materializer for all the outputs."""
 
     @step
     def some_step() -> Output(some_output=int, some_other_output=str):
@@ -305,9 +305,7 @@ def test_setting_a_materializer_for_a_step_with_multiple_outputs():
 
 
 def test_overwriting_step_materializers():
-    """Tests that calling `with_return_materializers` multiple times allows
-    overwriting of the step materializers."""
-
+    """Tests that calling `with_return_materializers` multiple times allows overwriting of the step materializers."""
     base_materializer_source = source_utils.resolve_class(BaseMaterializer)
     builtin_materializer_source = source_utils.resolve_class(
         BuiltInMaterializer
@@ -389,8 +387,7 @@ def test_call_step_with_args_and_kwargs(
 def test_call_step_with_too_many_args(
     int_step_output, step_with_two_int_inputs
 ):
-    """Test that calling a step fails when too many args
-    are passed."""
+    """Test that calling a step fails when too many args are passed."""
     with pytest.raises(StepInterfaceError):
         step_with_two_int_inputs()(
             int_step_output, int_step_output, int_step_output
@@ -400,8 +397,7 @@ def test_call_step_with_too_many_args(
 def test_call_step_with_too_many_args_and_kwargs(
     int_step_output, step_with_two_int_inputs
 ):
-    """Test that calling a step fails when too many args
-    and kwargs are passed."""
+    """Test that calling a step fails when too many args and kwargs are passed."""
     with pytest.raises(StepInterfaceError):
         step_with_two_int_inputs()(
             int_step_output, input_1=int_step_output, input_2=int_step_output
@@ -409,8 +405,7 @@ def test_call_step_with_too_many_args_and_kwargs(
 
 
 def test_call_step_with_missing_key(int_step_output, step_with_two_int_inputs):
-    """Test that calling a step fails when an argument
-    is missing."""
+    """Test that calling a step fails when an argument is missing."""
     with pytest.raises(StepInterfaceError):
         step_with_two_int_inputs()(input_1=int_step_output)
 
@@ -418,8 +413,7 @@ def test_call_step_with_missing_key(int_step_output, step_with_two_int_inputs):
 def test_call_step_with_unexpected_key(
     int_step_output, step_with_two_int_inputs
 ):
-    """Test that calling a step fails when an argument
-    has an unexpected key."""
+    """Test that calling a step fails when an argument has an unexpected key."""
     with pytest.raises(StepInterfaceError):
         step_with_two_int_inputs()(
             input_1=int_step_output,
@@ -445,8 +439,7 @@ def test_call_step_with_wrong_kwarg_type(
 
 
 def test_call_step_with_missing_materializer_for_type():
-    """Tests that calling a step with an output without registered
-    materializer raises a StepInterfaceError."""
+    """Tests that calling a step with an output without registered materializer raises a StepInterfaceError."""
 
     class MyTypeWithoutMaterializer:
         pass
@@ -468,8 +461,7 @@ class MyTypeMaterializer(BaseMaterializer):
 
 
 def test_call_step_with_default_materializer_registered():
-    """Tests that calling a step with a registered default materializer for the
-    output works."""
+    """Tests that calling a step with a registered default materializer for the output works."""
 
     @step
     def some_step() -> MyType:
@@ -480,8 +472,7 @@ def test_call_step_with_default_materializer_registered():
 
 
 def test_step_uses_config_class_default_values_if_no_config_is_passed():
-    """Tests that a step falls back to the param class default values if
-    no params object is passed at initialization."""
+    """Tests that a step falls back to the param class default values if no params object is passed at initialization."""
 
     class ParamsWithDefaultValues(BaseParameters):
         some_parameter: int = 1
@@ -498,8 +489,7 @@ def test_step_uses_config_class_default_values_if_no_config_is_passed():
 
 
 def test_step_fails_if_config_parameter_value_is_missing():
-    """Tests that a step fails if no config object is passed at
-    initialization and the config class misses some default values."""
+    """Tests that a step fails if no config object is passed at initialization and the config class misses some default values."""
 
     class ParamsWithoutDefaultValues(BaseParameters):
         some_parameter: int
@@ -516,8 +506,7 @@ def test_step_fails_if_config_parameter_value_is_missing():
 
 
 def test_step_config_allows_none_as_default_value():
-    """Tests that `None` is allowed as a default value for a
-    step config field."""
+    """Tests that `None` is allowed as a default value for a step config field."""
 
     class ParamsWithNoneDefaultValue(BaseParameters):
         some_parameter: Optional[int] = None
@@ -555,8 +544,7 @@ def environment_test_step_1() -> None:
 
 
 def test_step_sets_global_execution_status_on_environment(one_step_pipeline):
-    """Tests that the `Environment.step_is_running` value is set to
-    True during step execution."""
+    """Tests that the `Environment.step_is_running` value is set to True during step execution."""
     assert Environment().step_is_running is False
     one_step_pipeline(environment_test_step_1()).run(unlisted=True)
     assert Environment().step_is_running is False
@@ -570,9 +558,7 @@ def environment_test_step_2() -> None:
 def test_step_resets_global_execution_status_even_if_the_step_crashes(
     one_step_pipeline,
 ):
-    """Tests that the `Environment.step_is_running` value is set to
-    False after step execution even if the step crashes."""
-
+    """Tests that the `Environment.step_is_running` value is set to False after step execution even if the step crashes."""
     assert Environment().step_is_running is False
     with pytest.raises(RuntimeError):
         one_step_pipeline(environment_test_step_2()).run(unlisted=True)
@@ -606,8 +592,7 @@ def test_returning_an_object_of_the_wrong_type_raises_an_error(
     step_class,
     one_step_pipeline,
 ):
-    """Tests that returning an object of a type that wasn't specified (either
-    directly or as part of the `Output` tuple annotation) raises an error."""
+    """Tests that returning an object of a type that wasn't specified (either directly or as part of the `Output` tuple annotation) raises an error."""
     pipeline_ = one_step_pipeline(step_class())
 
     with pytest.raises(StepInterfaceError):
@@ -664,9 +649,7 @@ def wrong_num_outputs_step_7() -> Output(a=list, b=int):
 def test_returning_wrong_amount_of_objects_raises_an_error(
     step_class, one_step_pipeline
 ):
-    """Tests that returning a different amount of objects than defined (either
-    directly or as part of the `Output` tuple annotation) raises an error."""
-
+    """Tests that returning a different amount of objects than defined (either directly or as part of the `Output` tuple annotation) raises an error."""
     pipeline_ = one_step_pipeline(step_class())
 
     with pytest.raises(StepInterfaceError):
@@ -847,7 +830,10 @@ def test_upstream_step_computation():
 
     assert s1.upstream_steps == {"upstream_test_step_2"}
     assert not s2.upstream_steps
-    assert s3.upstream_steps == {"upstream_test_step_1", "upstream_test_step_2"}
+    assert s3.upstream_steps == {
+        "upstream_test_step_1",
+        "upstream_test_step_2",
+    }
 
 
 class ParamTestBaseClass(BaseModel):
@@ -868,10 +854,11 @@ def parametrized_step(params: ParamTestClass) -> None:
 
 
 def test_base_parameter_subclasses_as_attribute():
-    """Tests that parameter class attributes which are unset (for example due
-    to being set on a subclass) still get serialized so the params can be
-    reconstructed."""
+    """Tests that parameter class attributes which are unset.
 
+    For example (for example due to being set on a subclass) still get
+    serialized so the params can be reconstructed.
+    """
     step_instance = parametrized_step(ParamTestClass())
     assert step_instance.configuration.parameters == {
         "attribute": {"key": "value"}
@@ -884,9 +871,7 @@ def step_with_two_letter_string_output() -> Output(a=str, b=str):
 
 
 def test_string_outputs_do_not_get_split(one_step_pipeline):
-    """Tests that a step which outputs a N-character string is not allowed if
-    the output annotations require N string outputs.
-    """
+    """Tests that a step which outputs a N-character string is not allowed if the output annotations require N string outputs."""
     pipeline_ = one_step_pipeline(step_with_two_letter_string_output())
 
     with pytest.raises(StepInterfaceError):

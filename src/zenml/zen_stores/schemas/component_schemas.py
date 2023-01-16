@@ -35,6 +35,9 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import StackSchema
 
+if TYPE_CHECKING:
+    from zenml.zen_stores.schemas import ScheduleSchema
+
 
 class StackComponentSchema(ShareableSchema, table=True):
     """SQL Model for stack components."""
@@ -67,6 +70,9 @@ class StackComponentSchema(ShareableSchema, table=True):
 
     stacks: List["StackSchema"] = Relationship(
         back_populates="components", link_model=StackCompositionSchema
+    )
+    schedules: List["ScheduleSchema"] = Relationship(
+        back_populates="orchestrator",
     )
 
     def update(

@@ -26,8 +26,8 @@ from zenml.models.base_models import (
     ProjectScopedRequestModel,
     ProjectScopedResponseModel,
 )
-from zenml.models.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.filter_models import ProjectScopedFilterModel
+from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 
 if TYPE_CHECKING:
     from zenml.models import ArtifactResponseModel
@@ -54,6 +54,16 @@ class StepRunBaseModel(BaseModel):
         title="The cache key of the step run.",
         default=None,
         max_length=STR_FIELD_MAX_LENGTH,
+    )
+    docstring: Optional[str] = Field(
+        title="The docstring of the step function or class.",
+        default=None,
+        max_length=TEXT_FIELD_MAX_LENGTH,
+    )
+    source_code: Optional[str] = Field(
+        title="The source code of the step function or class.",
+        default=None,
+        max_length=TEXT_FIELD_MAX_LENGTH,
     )
     start_time: Optional[datetime] = None
     end_time: Optional[datetime] = None

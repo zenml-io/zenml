@@ -23,6 +23,7 @@ from zenml.constants import (
     PIPELINES,
     PROJECTS,
     RUNS,
+    SCHEDULES,
     STACK_COMPONENTS,
     STACKS,
     STATISTICS,
@@ -49,6 +50,8 @@ from zenml.models import (
     ProjectRequestModel,
     ProjectResponseModel,
     ProjectUpdateModel,
+    ScheduleRequestModel,
+    ScheduleResponseModel,
     StackFilterModel,
     StackRequestModel,
     StackResponseModel,
@@ -250,7 +253,7 @@ def list_project_stacks(
         authorize, scopes=[PermissionType.READ]
     ),
 ) -> Page[StackResponseModel]:
-    """Get stacks that are part of a specific project.
+    """Get stacks that are part of a specific project for the user.
 
     # noqa: DAR401
 
@@ -573,6 +576,49 @@ def list_runs(
     runs_filter_model.project_id = project.id
 
     return zen_store().list_runs(runs_filter_model=runs_filter_model)
+
+
+@router.post(
+    "/{project_name_or_id}" + SCHEDULES,
+    response_model=ScheduleResponseModel,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_schedule(
+    project_name_or_id: Union[str, UUID],
+    schedule: ScheduleRequestModel,
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
+) -> ScheduleResponseModel:
+    """Creates a schedule.
+
+    Args:
+        project_name_or_id: Name or ID of the project.
+        schedule: Schedule to create.
+        auth_context: Authentication context.
+
+    Returns:
+        The created schedule.
+
+    Raises:
+        IllegalOperationError: If the project or user specified in the schedule
+            does not match the current project or authenticated user.
+    """
+    project = zen_store().get_project(project_name_or_id)
+
+    if schedule.project != project.id:
+        raise IllegalOperationError(
+            "Creating pipeline runs outside of the project scope "
+            f"of this endpoint `{project_name_or_id}` is "
+            f"not supported."
+        )
+    if schedule.user != auth_context.user.id:
+        raise IllegalOperationError(
+            "Creating pipeline runs for a user other than yourself "
+            "is not supported."
+        )
+    return zen_store().create_schedule(schedule=schedule)
 
 
 @router.post(

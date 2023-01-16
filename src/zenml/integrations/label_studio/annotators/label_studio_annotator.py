@@ -460,7 +460,9 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
         # TODO: check we are already connected
         dataset_id = int(dataset.get_params()["id"])
         if params.storage_type == "azure":
-            storage_sources = self._get_azure_import_storage_sources(dataset_id)
+            storage_sources = self._get_azure_import_storage_sources(
+                dataset_id
+            )
         elif params.storage_type == "gcs":
             storage_sources = self._get_gcs_import_storage_sources(dataset_id)
         elif params.storage_type == "s3":
@@ -560,7 +562,10 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
                 **storage_connection_args,
             )
         elif params.storage_type == "s3":
-            if not params.aws_access_key_id or not params.aws_secret_access_key:
+            if (
+                not params.aws_access_key_id
+                or not params.aws_secret_access_key
+            ):
                 logger.warning(
                     "Authentication credentials for S3 aren't fully provided."
                     "Please update the storage synchronization settings in the "

@@ -244,7 +244,9 @@ def register_stack(
         client.activate_stack(created_stack.id)
 
         scope = "repository" if client.uses_local_configuration else "global"
-        cli_utils.declare(f"Active {scope} stack set to:'{created_stack.name}'")
+        cli_utils.declare(
+            f"Active {scope} stack set to:'{created_stack.name}'"
+        )
 
 
 @stack.command(
@@ -413,7 +415,9 @@ def update_stack(
         except (KeyError, IllegalOperationError) as err:
             cli_utils.error(str(err))
 
-        cli_utils.declare(f"Stack `{updated_stack.name}` successfully updated!")
+        cli_utils.declare(
+            f"Stack `{updated_stack.name}` successfully updated!"
+        )
 
 
 @stack.command(
@@ -607,7 +611,9 @@ def remove_stack_component(
             )
         except (KeyError, IllegalOperationError) as err:
             cli_utils.error(str(err))
-        cli_utils.declare(f"Stack `{updated_stack.name}` successfully updated!")
+        cli_utils.declare(
+            f"Stack `{updated_stack.name}` successfully updated!"
+        )
 
 
 @stack.command("rename", help="Rename a stack.")
@@ -915,7 +921,9 @@ def import_stack(
         if filename is None:
             filename = stack_name + ".yaml"
         data = read_yaml(filename)
-        cli_utils.declare(f"Using '{filename}' to import '{stack_name}' stack.")
+        cli_utils.declare(
+            f"Using '{filename}' to import '{stack_name}' stack."
+        )
 
     # assert zenml version is the same if force is false
     if data["zenml_version"] != zenml.__version__:
@@ -1091,7 +1099,9 @@ def register_secrets(
             else:
                 value = None
                 while not value:
-                    value = getpass.getpass(f"Value for secret `{name}.{key}`:")
+                    value = getpass.getpass(
+                        f"Value for secret `{name}.{key}`:"
+                    )
                 value = cli_utils.expand_argument_value_from_file(
                     name=key, value=value
                 )

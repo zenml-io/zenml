@@ -333,7 +333,8 @@ def generate_stack_component_share_command(
                 cli_utils.error(str(err))
 
             cli_utils.declare(
-                f"Successfully shared {display_name} " f"`{name_id_or_prefix}`."
+                f"Successfully shared {display_name} "
+                f"`{name_id_or_prefix}`."
             )
 
     return share_stack_component_command
@@ -977,7 +978,9 @@ def register_single_stack_component_cli_commands(
     )(get_command)
 
     # zenml stack-component describe
-    describe_command = generate_stack_component_describe_command(component_type)
+    describe_command = generate_stack_component_describe_command(
+        component_type
+    )
     command_group.command(
         "describe",
         help=f"Show details about the (active) {singular_display_name}.",
@@ -990,7 +993,9 @@ def register_single_stack_component_cli_commands(
     )(list_command)
 
     # zenml stack-component register
-    register_command = generate_stack_component_register_command(component_type)
+    register_command = generate_stack_component_register_command(
+        component_type
+    )
     context_settings = {"ignore_unknown_options": True}
     command_group.command(
         "register",

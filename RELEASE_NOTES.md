@@ -1,4 +1,52 @@
 <!-- markdown-link-check-disable -->
+
+# 0.31.1
+
+This release includes several bug fixes and new additions under the hood such as 
+testing for various internal utility functions. This should help keep ZenML more 
+stable over time. Additionally, we added the ability to customize default 
+materializers for custom artifact stores, and the ability to track system info 
+and the Python version of pipeline runs (both where pipelines are initially 
+executed as well as wherever they eventually run). We added better support for 
+pipeline scheduling (particularly from within the CLI) and tracking of the 
+source code of steps. The release also includes the addition of information 
+about whether the pipeline is running on a stack created by the active user, and
+the ability to specify Kubernetes container resource requests and limits. 
+Finally, we addressed issues with caching such that caching is enabled for steps
+that have explicit enable_cache=True specified (even when pipelines have it 
+turned off).
+
+
+## What's Changed
+* Test for `enum_utils` by @strickvl in https://github.com/zenml-io/zenml/pull/1209
+* Add missing space in Azure docs by @strickvl in https://github.com/zenml-io/zenml/pull/1218
+* Test for `dashboard_utils` by @strickvl in https://github.com/zenml-io/zenml/pull/1202
+* Cloud version gets love by @htahir1 in https://github.com/zenml-io/zenml/pull/1219
+* ZenFiles to ZenML Projects by @htahir1 in https://github.com/zenml-io/zenml/pull/1220
+* Track System Info and Python Version of Pipeline Runs by @fa9r in https://github.com/zenml-io/zenml/pull/1215
+* Tests for `pydantic_utils` by @strickvl in https://github.com/zenml-io/zenml/pull/1207
+* Customizing Default Materializers for Custom Artifact Stores by @safoinme in https://github.com/zenml-io/zenml/pull/1224
+* Test `typed_model` utilities by @strickvl in https://github.com/zenml-io/zenml/pull/1208
+* Enable Airflow<2.4 by @schustmi in https://github.com/zenml-io/zenml/pull/1222
+* Fix `alembic_start` migration if tables exist by @fa9r in https://github.com/zenml-io/zenml/pull/1214
+* Tests for `network_utils` by @strickvl in https://github.com/zenml-io/zenml/pull/1201
+* Tests for `io_utils` and removal of duplicate code by @strickvl in https://github.com/zenml-io/zenml/pull/1199
+* Use `ruff` to replace our linting suite by @strickvl in https://github.com/zenml-io/zenml/pull/1211
+* Test `materializer` utilities by @safoinme in https://github.com/zenml-io/zenml/pull/1221
+* Add information whether pipeline is running on a stack created by the active user by @schustmi in https://github.com/zenml-io/zenml/pull/1229
+* Test `daemon` util functions by @strickvl in https://github.com/zenml-io/zenml/pull/1210
+* Test `filesync_model` utils by @strickvl in https://github.com/zenml-io/zenml/pull/1230
+* Track Source Code of Steps by @fa9r in https://github.com/zenml-io/zenml/pull/1216
+* Track Pipeline Run Schedules by @fa9r in https://github.com/zenml-io/zenml/pull/1227
+* Tests for analytics by @bcdurak in https://github.com/zenml-io/zenml/pull/1228
+* Allow specifying Kubernetes container resource requests and limits by @schustmi in https://github.com/zenml-io/zenml/pull/1223
+* Enable cache for all steps that have explicit `enable_cache=True` by @fa9r in https://github.com/zenml-io/zenml/pull/1217
+* Make shared stacks visible again by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1225
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.31.0...0.31.1
+
+
 # 0.31.0
 
 The highlights of this release are:

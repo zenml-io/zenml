@@ -286,7 +286,9 @@ def delete_user(
 def email_opt_in_response(
     user_name_or_id: Union[str, UUID],
     user_response: UserUpdateModel,
-    auth_context: AuthContext = Security(authorize, scopes=[PermissionType.ME]),
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.ME]
+    ),
 ) -> UserResponseModel:
     """Sets the response of the user to the email prompt.
 
@@ -310,7 +312,9 @@ def email_opt_in_response(
             email_opted_in=user_response.email_opted_in,
         )
 
-        return zen_store().update_user(user_id=user.id, user_update=user_update)
+        return zen_store().update_user(
+            user_id=user.id, user_update=user_update
+        )
     else:
         raise NotAuthorizedError(
             "Users can not opt in on behalf of another " "user."
@@ -370,7 +374,9 @@ def get_current_user(
 @handle_exceptions
 def update_myself(
     user: UserUpdateModel,
-    auth_context: AuthContext = Security(authorize, scopes=[PermissionType.ME]),
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.ME]
+    ),
 ) -> UserResponseModel:
     """Updates a specific user.
 

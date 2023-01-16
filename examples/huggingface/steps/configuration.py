@@ -15,7 +15,7 @@ from zenml.steps import BaseParameters
 
 
 class HuggingfaceParameters(BaseParameters):
-    """Parameters for the token-classification"""
+    """Parameters for the token-classification."""
 
     pretrained_model = "distilbert-base-uncased"
     batch_size = 16
