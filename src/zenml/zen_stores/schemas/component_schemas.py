@@ -99,7 +99,9 @@ class StackComponentSchema(ShareableSchema, table=True):
         self.updated = datetime.utcnow()
         return self
 
-    def to_model(self) -> "ComponentResponseModel":
+    def to_model(
+        self,
+    ) -> "ComponentResponseModel":
         """Creates a `ComponentModel` from an instance of a `StackSchema`.
 
         Returns:
@@ -110,7 +112,7 @@ class StackComponentSchema(ShareableSchema, table=True):
             name=self.name,
             type=self.type,
             flavor=self.flavor,
-            user=self.user.to_model() if self.user else None,
+            user=self.user.to_model(True) if self.user else None,
             project=self.project.to_model(),
             is_shared=self.is_shared,
             configuration=json.loads(

@@ -155,6 +155,9 @@ class PipelineRunSchema(NamedSchema, table=True):
     ) -> PipelineRunResponseModel:
         """Convert a `PipelineRunSchema` to a `PipelineRunResponseModel`.
 
+        Args:
+            _block_recursion: If other models should be recursively filled
+
         Returns:
             The created `PipelineRunResponseModel`.
         """
@@ -175,7 +178,7 @@ class PipelineRunSchema(NamedSchema, table=True):
                 name=self.name,
                 stack=self.stack.to_model() if self.stack else None,
                 project=self.project.to_model(),
-                user=self.user.to_model() if self.user else None,
+                user=self.user.to_model(True) if self.user else None,
                 schedule_id=self.schedule_id,
                 orchestrator_run_id=self.orchestrator_run_id,
                 enable_cache=self.enable_cache,
@@ -197,16 +200,14 @@ class PipelineRunSchema(NamedSchema, table=True):
                 name=self.name,
                 stack=self.stack.to_model() if self.stack else None,
                 project=self.project.to_model(),
-                user=self.user.to_model() if self.user else None,
+                user=self.user.to_model(True) if self.user else None,
                 orchestrator_run_id=self.orchestrator_run_id,
                 enable_cache=self.enable_cache,
                 start_time=self.start_time,
                 end_time=self.end_time,
                 status=self.status,
                 pipeline=(
-                    self.pipeline.to_model(not _block_recursion)
-                    if self.pipeline
-                    else None
+                    self.pipeline.to_model(False) if self.pipeline else None
                 ),
                 schedule_id=self.schedule_id,
                 pipeline_configuration=json.loads(self.pipeline_configuration),

@@ -89,7 +89,7 @@ class RoleSchema(NamedSchema, table=True):
             name=self.name,
             created=self.created,
             updated=self.updated,
-            permissions=[PermissionType(p.name) for p in self.permissions],
+            permissions={PermissionType(p.name) for p in self.permissions},
         )
 
 
@@ -233,7 +233,7 @@ class TeamRoleAssignmentSchema(BaseSchema, table=True):
         return RoleAssignmentResponseModel(
             id=self.id,
             project=self.project.to_model() if self.project else None,
-            user=self.team.to_model(_block_recursion=True),
+            team=self.team.to_model(_block_recursion=True),
             role=self.role.to_model(),
             created=self.created,
             updated=self.updated,

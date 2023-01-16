@@ -131,7 +131,7 @@ class StackSchema(ShareableSchema, table=True):
         return StackResponseModel(
             id=self.id,
             name=self.name,
-            user=self.user.to_model() if self.user else None,
+            user=self.user.to_model(True) if self.user else None,
             project=self.project.to_model(),
             is_shared=self.is_shared,
             components={c.type: [c.to_model()] for c in self.components},
