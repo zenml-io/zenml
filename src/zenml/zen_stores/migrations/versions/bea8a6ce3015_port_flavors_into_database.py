@@ -1,7 +1,7 @@
 """Port flavors into database. [bea8a6ce3015].
 
 Revision ID: bea8a6ce3015
-Revises: 248dfd320b68
+Revises: 0.31.1
 Create Date: 2022-12-20 11:20:30.731406
 
 """
@@ -16,7 +16,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "bea8a6ce3015"
-down_revision = "248dfd320b68"
+down_revision = "0.31.1"
 branch_labels = None
 depends_on = None
 
