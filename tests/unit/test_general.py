@@ -23,7 +23,7 @@ from zenml.materializers.default_materializer_registry import (
 )
 
 
-def test_handle_int_env_var():
+def test_debug_mode_enabled_for_tests():
     """Checks that the ZENML_DEBUG is set in the tests."""
     assert os.environ[ENV_ZENML_DEBUG] == "true"
 
