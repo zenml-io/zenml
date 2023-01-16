@@ -91,13 +91,13 @@ class PipelineRunConfiguration(StrictBaseModel):
     extra: Dict[str, Any] = {}
 
     def yaml(self, **kwargs: Any) -> str:
-        """Yaml representation of the deployment.
+        """Yaml representation of the run configuration.
 
         Args:
             **kwargs: Kwargs to pass to the pydantic json(...) method.
 
         Returns:
-            Yaml string representation of the deployment.
+            Yaml string representation of the run configuration.
         """
         dict_ = json.loads(self.json(**kwargs, sort_keys=False))
         return cast(str, yaml.dump(dict_, sort_keys=False))
