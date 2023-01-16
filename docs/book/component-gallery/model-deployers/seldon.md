@@ -157,11 +157,15 @@ INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/c
 
 ## How do you use it?
 
-For registering the model deployer, we need the URL of the Istio Ingress Gateway deployed on the Kubernetes cluster. We can get this URL by running the following command:
+For registering the model deployer, we need the URL of the Istio Ingress Gateway deployed on the Kubernetes cluster. We can get this URL by running the following command (assuming that the service name is `istio-ingressgateway`, deployed in the `istio-system` namespace):
 
 ```bash
-INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+# For GKE clusters, the host is the GKE cluster IP address.
+export INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+# For EKS clusters, the host is the EKS cluster IP hostname.
+export INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 ```
+
 Now register the model deployer:
 
 ```bash
