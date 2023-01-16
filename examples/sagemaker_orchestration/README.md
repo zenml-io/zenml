@@ -69,7 +69,7 @@ up with AWS.
 pip install "zenml[server]"
 
 # install ZenML integrations
-zenml integration install aws s3
+zenml integration install aws pytorch s3
 
 # pull example
 zenml example pull sagemaker_orchestration
