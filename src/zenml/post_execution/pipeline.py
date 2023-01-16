@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -13,17 +13,16 @@
 #  permissions and limitations under the License.
 """Implementation of the post-execution pipeline."""
 
-from typing import TYPE_CHECKING, Any, List, Optional, Type, Union
-from uuid import UUID
+from typing import TYPE_CHECKING, Any, List, Optional, Type, Union, cast
 
 from zenml.client import Client
 from zenml.logger import get_apidocs_link, get_logger
-from zenml.models import PipelineResponseModel
+from zenml.models.pipeline_models import PipelineResponseModel
+from zenml.post_execution.base_view import BaseView
 from zenml.post_execution.pipeline_run import PipelineRunView
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 
 if TYPE_CHECKING:
-    from zenml.config.pipeline_configurations import PipelineSpec
     from zenml.pipelines.base_pipeline import BasePipeline
 
 logger = get_logger(__name__)
@@ -134,61 +133,20 @@ def get_pipeline(
         return None
 
 
-class PipelineView:
+class PipelineView(BaseView):
     """Post-execution pipeline class."""
 
-    def __init__(self, model: PipelineResponseModel):
-        """Initializes a post-execution pipeline object.
-
-        In most cases `PipelineView` objects should not be created manually
-        but retrieved using the `get_pipelines()` utility from
-        `zenml.post_execution` instead.
-
-        Args:
-            model: The model to initialize this pipeline view from.
-        """
-        self._model = model
+    MODEL_CLASS = PipelineResponseModel
+    REPR_KEYS = ["id", "name"]
 
     @property
-    def id(self) -> UUID:
-        """Returns the ID of this pipeline.
+    def model(self) -> PipelineResponseModel:
+        """Returns the underlying `PipelineResponseModel`.
 
         Returns:
-            The ID of this pipeline.
+            The underlying `PipelineResponseModel`.
         """
-        assert self._model.id is not None
-        return self._model.id
-
-    @property
-    def name(self) -> str:
-        """Returns the name of the pipeline.
-
-        Returns:
-            The name of the pipeline.
-        """
-        return self._model.name
-
-    @property
-    def docstring(self) -> Optional[str]:
-        """Returns the docstring of the pipeline.
-
-        Returns:
-            The docstring of the pipeline.
-        """
-        return self._model.docstring
-
-    @property
-    def spec(self) -> "PipelineSpec":
-        """Returns the spec of the pipeline.
-
-        The pipeline spec contains the source paths of all steps, as well as
-        each of their upstream step names. This is primarily used to compare
-        whether two pipelines are the same.
-
-        Returns:
-            The spec of the pipeline.
-        """
-        return self._model.spec
+        return cast(PipelineResponseModel, self._model)
 
     @property
     def runs(self) -> List["PipelineRunView"]:
@@ -205,7 +163,7 @@ class PipelineView:
         active_project_id = Client().active_project.id
         runs = Client().zen_store.list_runs(
             project_name_or_id=active_project_id,
-            pipeline_id=self._model.id,
+            pipeline_id=self.model.id,
         )
         return [PipelineRunView(run) for run in runs]
 
@@ -239,28 +197,3 @@ class PipelineView:
             )
 
         return orig_pipeline_run
-
-    def __repr__(self) -> str:
-        """Returns a string representation of this pipeline.
-
-        Returns:
-            A string representation of this pipeline.
-        """
-        return (
-            f"{self.__class__.__qualname__}(id={self.id}, "
-            f"name='{self.name}')"
-        )
-
-    def __eq__(self, other: Any) -> bool:
-        """Returns whether the other object is referring to the same pipeline.
-
-        Args:
-            other: The other object to compare to.
-
-        Returns:
-            True if the other object is referring to the same pipeline,
-            False otherwise.
-        """
-        if isinstance(other, PipelineView):
-            return self.id == other.id
-        return NotImplemented
