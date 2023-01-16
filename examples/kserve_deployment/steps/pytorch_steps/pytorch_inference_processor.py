@@ -21,8 +21,7 @@ from zenml.steps import BaseParameters, step
 
 class PyTorchInferenceProcessorStepParameters(BaseParameters):
     """
-    Configuration for the PyTorch inference preprocessor step.
-    """
+    Configuration for the PyTorch inference preprocessor step."""
 
     img_url: Optional[
         str
@@ -41,7 +40,6 @@ def pytorch_inference_processor(
     Returns:
         The request body includes a base64 coded image for the inference request.
     """
-
     img = urlopen(params.img_url).read()
     image_64_encode = base64.b64encode(img)
     bytes_array = image_64_encode.decode("utf-8")

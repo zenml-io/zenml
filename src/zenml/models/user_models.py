@@ -24,6 +24,7 @@ from pydantic import BaseModel, Field, SecretStr, root_validator
 from zenml.config.global_config import GlobalConfiguration
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
+from zenml.models import RoleResponseModel
 from zenml.models.base_models import (
     BaseRequestModel,
     BaseResponseModel,
@@ -209,6 +210,9 @@ class UserResponseModel(UserBaseModel, BaseResponseModel):
     teams: Optional[List["TeamResponseModel"]] = Field(
         title="The list of teams for this user."
     )
+    roles: Optional[List["RoleResponseModel"]] = Field(
+        title="The list of teams for this user."
+    )
     email: Optional[str] = Field(
         default="",
         title="The email address associated with the account.",
@@ -369,7 +373,9 @@ class UserAuthModel(UserBaseModel, BaseResponseModel):
 
         zen_store = GlobalConfiguration().zen_store
         try:
-            user = zen_store.get_auth_user(user_name_or_id=access_token.user_id)
+            user = zen_store.get_auth_user(
+                user_name_or_id=access_token.user_id
+            )
         except KeyError:
             return None
         else:

@@ -108,16 +108,19 @@ changing step definitions or you have an external API state change in your
 function that ZenML does not detect.
 
 There are multiple ways to take control of when and where caching is used:
-- [Disabling caching for the entire pipeline](#disabling-caching-for-the-entire-pipeline):
-Do this if you want to turn off all caching (not recommended).
-- [Disabling caching for individual steps](#disabling-caching-for-individual-steps):
-This is required for certain steps that depend on external input.
-- [Dynamically disabling caching for a pipeline run](#dynamically-disabling-caching-for-a-pipeline-run):
-This is useful to force a complete rerun of a pipeline.
+- [Configuring caching for the entire pipeline](#disabling-caching-for-the-entire-pipeline):
+Do this if you want to configure caching for all steps of a pipeline.
+- [Configuring caching for individual steps](#disabling-caching-for-individual-steps):
+Do this to configure caching for individual steps. This is, e.g., useful to 
+disable caching for steps that depend on external input.
+- [Dynamically configuring caching for a pipeline run](#dynamically-disabling-caching-for-a-pipeline-run):
+Do this if you want to change the caching behaviour at runtime. This is, e.g.,
+useful to force a complete rerun of a pipeline.
 
-#### Disabling caching for the entire pipeline
+#### Configuring caching for the entire pipeline
 
-On a pipeline level the caching policy can be set as a parameter within the decorator. 
+On a pipeline level, the caching policy can be set as a parameter within the
+`@pipeline` decorator as shown below:
 
 ```python
 @pipeline(enable_cache=False)
@@ -125,15 +128,13 @@ def first_pipeline(....):
     """Pipeline with cache disabled"""
 ```
 
-{% hint style="info" %}
-If caching is explicitly turned off on a pipeline level, all steps are run 
-without caching, even if caching is set to `True` for single steps.
-{% endhint %}
+The setting above will disable caching for all steps in the pipeline, unless a 
+step explicitly sets `enable_cache=True` (see below).
 
-#### Disabling caching for individual steps
+#### Configuring caching for individual steps
 
-Caching can also be explicitly turned off at a step level. You might want to turn off caching for steps that take 
-external input (like fetching data from an API or File IO).
+Caching can also be explicitly configured at a step level via a parameter of the
+`@step` decorator:
 
 ```python
 @step(enable_cache=False)
@@ -142,19 +143,28 @@ def import_data_from_api(...):
     ...
 ```
 
+The code above turns caching off for this step only. This is very useful in
+practice since you might want to turn off caching for certain steps that take 
+external input (like fetching data from an API or File IO) without affecting the
+overall pipeline caching behaviour.
+
 {% hint style="info" %}
 You can get a graphical visualization of which steps were cached using
 the [ZenML Dashboard](./pipelines.md).
 {% endhint %}
 
-#### Dynamically disabling caching for a pipeline run
+#### Dynamically configuring caching for a pipeline run
 
-Sometimes you want to have control over caching at runtime instead of defaulting to the backed in configurations of 
-your pipeline and its steps. ZenML offers a way to override all caching settings of the pipeline at runtime.
+Sometimes you want to have control over caching at runtime instead of defaulting
+to the hard-coded pipeline and step decorator settings.
+ZenML offers a way to override all caching settings at runtime:
 
 ```python
 first_pipeline(step_1=..., step_2=...).run(enable_cache=False)
 ```
+
+The code above disables caching for all steps of your pipeline, no matter what
+you have configured in the `@step` or `@parameter` decorators.
 
 ### Code Example
 

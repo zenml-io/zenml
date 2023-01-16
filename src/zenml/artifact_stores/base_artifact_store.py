@@ -33,6 +33,7 @@ from pydantic import root_validator
 
 from zenml.enums import StackComponentType
 from zenml.exceptions import ArtifactStoreInterfaceError
+from zenml.io import fileio
 from zenml.stack import Flavor, StackComponent, StackComponentConfig
 from zenml.utils import io_utils
 
@@ -53,7 +54,7 @@ def _sanitize_potential_path(potential_path: Any) -> Any:
         path.
     """
     if isinstance(potential_path, bytes):
-        path = io_utils.convert_to_str(potential_path)
+        path = fileio.convert_to_str(potential_path)
     elif isinstance(potential_path, str):
         path = potential_path
     else:
@@ -147,7 +148,9 @@ class BaseArtifactStoreConfig(StackComponentConfig):
                     """
                 )
             )
-        if not any(values["path"].startswith(i) for i in cls.SUPPORTED_SCHEMES):
+        if not any(
+            values["path"].startswith(i) for i in cls.SUPPORTED_SCHEMES
+        ):
             raise ArtifactStoreInterfaceError(
                 f"The path: '{values['path']}' you defined for your "
                 f"artifact store is not supported by the implementation of "

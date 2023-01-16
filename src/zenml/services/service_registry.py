@@ -111,7 +111,9 @@ class ServiceRegistry(metaclass=SingletonMetaClass):
         """
         service_type = service.SERVICE_TYPE
         if service_type not in self.service_types:
-            raise TypeError(f"Service type `{service_type}` is not registered.")
+            raise TypeError(
+                f"Service type `{service_type}` is not registered."
+            )
 
         if service.uuid not in self.services:
             self.services[service.uuid] = service

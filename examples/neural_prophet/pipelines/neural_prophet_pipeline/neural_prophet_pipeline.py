@@ -24,7 +24,7 @@ def neural_prophet_pipeline(
     trainer,
     predictor,
 ):
-    """Links all the steps together in a pipeline"""
+    """Links all the steps together in a pipeline."""
     df_train, df_test = data_loader()
     m = trainer(df_train, df_test)
     predictor(m, df_train)

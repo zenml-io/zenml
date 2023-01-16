@@ -24,6 +24,5 @@ def prevalidator(
 ) -> bool:
     """
     This step is necessary to make sure that the validation step is only run
-    after the profiler step has finished.
-    """
+    after the profiler step has finished."""
     return True

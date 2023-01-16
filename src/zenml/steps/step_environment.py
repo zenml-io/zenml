@@ -115,8 +115,10 @@ class StepEnvironment(BaseEnvironmentComponent):
         Returns:
             True if cache is enabled for the step, otherwise False.
         """
-        cache_enabled = (
-            self._step_run_info.pipeline.enable_cache
-            and self._step_run_info.config.enable_cache
+        from zenml.orchestrators import cache_utils
+
+        cache_enabled = cache_utils.is_cache_enabled(
+            step_enable_cache=self._step_run_info.config.enable_cache,
+            pipeline_enable_cache=self._step_run_info.pipeline.enable_cache,
         )
         return cache_enabled

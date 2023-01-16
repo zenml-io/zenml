@@ -24,6 +24,7 @@ from zenml.constants import (
     PROJECTS,
     ROLES,
     RUNS,
+    SCHEDULES,
     STACK_COMPONENTS,
     STACKS,
     STATISTICS,
@@ -44,6 +45,8 @@ from zenml.models import (
     ProjectResponseModel,
     ProjectUpdateModel,
     RoleAssignmentResponseModel,
+    ScheduleRequestModel,
+    ScheduleResponseModel,
     StackRequestModel,
     StackResponseModel,
 )
@@ -216,7 +219,7 @@ def list_project_stacks(
         authorize, scopes=[PermissionType.READ]
     ),
 ) -> List[StackResponseModel]:
-    """Get stacks that are part of a specific project.
+    """Get stacks that are part of a specific project for the user.
 
     # noqa: DAR401
 
@@ -231,18 +234,26 @@ def list_project_stacks(
     Returns:
         All stacks part of the specified project.
     """
-    stacks = zen_store().list_stacks(
-        project_name_or_id=project_name_or_id,
-        user_name_or_id=user_name_or_id or auth_context.user.id,
-        component_id=component_id,
-        is_shared=False,
-        name=name,
-    )
-    # In case the user didn't explicitly filter for is shared == False
+    stacks: List[StackResponseModel] = []
+
+    # Get private stacks unless `is_shared` is set to True
+    if is_shared is None or not is_shared:
+        # only private stacks of the authenticated user can be accessed
+        if not user_name_or_id or user_name_or_id == str(auth_context.user.id):
+            own_stacks = zen_store().list_stacks(
+                project_name_or_id=project_name_or_id,
+                user_name_or_id=auth_context.user.id,
+                component_id=component_id,
+                is_shared=False,
+                name=name,
+            )
+            stacks += own_stacks
+
+    # Get shared stacks unless `is_shared` is set to False
     if is_shared is None or is_shared:
         shared_stacks = zen_store().list_stacks(
             project_name_or_id=project_name_or_id,
-            user_name_or_id=user_name_or_id or auth_context.user.id,
+            user_name_or_id=user_name_or_id,
             component_id=component_id,
             is_shared=True,
             name=name,
@@ -329,15 +340,23 @@ def list_project_stack_components(
     Returns:
         All stack components part of the specified project.
     """
-    components = zen_store().list_stack_components(
-        name=name,
-        user_name_or_id=user_name_or_id or auth_context.user.id,
-        project_name_or_id=project_name_or_id,
-        flavor_name=flavor_name,
-        type=type,
-        is_shared=False,
-    )
-    # In case the user didn't explicitly filter for is shared == False
+    components: List[ComponentResponseModel] = []
+
+    # Get private stack components unless `is_shared` is set to True
+    if is_shared is None or not is_shared:
+        # only private components of the authenticated user can be accessed
+        if not user_name_or_id or user_name_or_id == str(auth_context.user.id):
+            own_components = zen_store().list_stack_components(
+                name=name,
+                user_name_or_id=auth_context.user.id,
+                project_name_or_id=project_name_or_id,
+                flavor_name=flavor_name,
+                type=type,
+                is_shared=False,
+            )
+            components += own_components
+
+    # Get shared stacks unless `is_shared` is set to False
     if is_shared is None or is_shared:
         shared_components = zen_store().list_stack_components(
             project_name_or_id=project_name_or_id,
@@ -347,8 +366,8 @@ def list_project_stack_components(
             type=type,
             is_shared=True,
         )
-
         components += shared_components
+
     return components
 
 
@@ -599,6 +618,49 @@ def list_runs(
         pipeline_id=pipeline_id,
         unlisted=unlisted,
     )
+
+
+@router.post(
+    "/{project_name_or_id}" + SCHEDULES,
+    response_model=ScheduleResponseModel,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_schedule(
+    project_name_or_id: Union[str, UUID],
+    schedule: ScheduleRequestModel,
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
+) -> ScheduleResponseModel:
+    """Creates a schedule.
+
+    Args:
+        project_name_or_id: Name or ID of the project.
+        schedule: Schedule to create.
+        auth_context: Authentication context.
+
+    Returns:
+        The created schedule.
+
+    Raises:
+        IllegalOperationError: If the project or user specified in the schedule
+            does not match the current project or authenticated user.
+    """
+    project = zen_store().get_project(project_name_or_id)
+
+    if schedule.project != project.id:
+        raise IllegalOperationError(
+            "Creating pipeline runs outside of the project scope "
+            f"of this endpoint `{project_name_or_id}` is "
+            f"not supported."
+        )
+    if schedule.user != auth_context.user.id:
+        raise IllegalOperationError(
+            "Creating pipeline runs for a user other than yourself "
+            "is not supported."
+        )
+    return zen_store().create_schedule(schedule=schedule)
 
 
 @router.post(

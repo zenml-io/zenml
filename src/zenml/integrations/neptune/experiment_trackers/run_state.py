@@ -115,7 +115,7 @@ class RunProvider(metaclass=SingletonMetaClass):
 
     @property
     def active_run(self) -> neptune.metadata_containers.Run:
-        """initializes a new neptune run every time it is called.
+        """Initializes a new neptune run every time it is called.
 
         The run is closed and the active run state is set to stopped
         after each step is completed.
