@@ -223,6 +223,9 @@ class UserResponseModel(UserBaseModel, BaseResponseModel):
     roles: Optional[List["RoleResponseModel"]] = Field(
         title="The list of teams for this user."
     )
+    roles: Optional[List["RoleResponseModel"]] = Field(
+        title="The list of teams for this user."
+    )
     email: Optional[str] = Field(
         default="",
         title="The email address associated with the account.",

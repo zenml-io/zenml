@@ -92,6 +92,7 @@ class PipelineSchema(NamedSchema, table=True):
                 id=self.id,
                 name=self.name,
                 project=self.project.to_model(),
+                user=self.user.to_model(True) if self.user else None,
                 docstring=self.docstring,
                 spec=PipelineSpec.parse_raw(self.spec),
                 created=self.created,
