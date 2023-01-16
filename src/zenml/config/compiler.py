@@ -20,7 +20,11 @@ from zenml.config.base_settings import BaseSettings, ConfigurationLevel
 from zenml.config.pipeline_configurations import PipelineRunConfiguration
 from zenml.config.pipeline_deployment import PipelineDeployment
 from zenml.config.settings_resolver import SettingsResolver
-from zenml.config.step_configurations import Step, StepConfiguration, StepSpec
+from zenml.config.step_configurations import (
+    Step,
+    StepConfiguration,
+    StepSpec,
+)
 from zenml.environment import get_run_environment_dict
 from zenml.exceptions import PipelineInterfaceError, StackValidationError
 from zenml.utils import pydantic_utils, settings_utils, source_utils
@@ -133,6 +137,11 @@ class Compiler:
             if step_name not in pipeline.steps:
                 raise KeyError(f"No step with name {step_name}.")
             pipeline.steps[step_name]._apply_configuration(step_config)
+
+        # Override `enable_cache` of all steps if set at run level
+        if config.enable_cache is not None:
+            for step_ in pipeline.steps.values():
+                step_.configure(enable_cache=config.enable_cache)
 
     def _apply_stack_default_settings(
         self, pipeline: "BasePipeline", stack: "Stack"

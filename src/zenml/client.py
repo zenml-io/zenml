@@ -81,6 +81,7 @@ from zenml.models import (
 )
 from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.models.base_models import BaseResponseModel
+from zenml.models.schedule_model import ScheduleResponseModel
 from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler, track
@@ -2155,9 +2156,71 @@ class Client(metaclass=ClientMetaClass):
         pipeline = self.get_pipeline(name_id_or_prefix=name_id_or_prefix)
         self.zen_store.delete_pipeline(pipeline_id=pipeline.id)
 
-    # ----------------------
-    # - PIPELINE/STEP RUNS -
-    # ----------------------
+    # -------------
+    # - SCHEDULES -
+    # -------------
+
+    def list_schedules(
+        self,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
+        pipeline_id: Optional[UUID] = None,
+        name: Optional[str] = None,
+    ) -> List[ScheduleResponseModel]:
+        """List schedules.
+
+        Args:
+            project_name_or_id: If provided, only list schedules in this project.
+            user_name_or_id: If provided, only list schedules from this user.
+            pipeline_id: If provided, only list schedules for this pipeline.
+            name: If provided, only list schedules with this name.
+
+        Returns:
+            A list of schedules.
+        """
+        return self.zen_store.list_schedules(
+            project_name_or_id=project_name_or_id or self.active_project.id,
+            user_name_or_id=user_name_or_id,
+            pipeline_id=pipeline_id,
+            name=name,
+        )
+
+    def get_schedule(
+        self, name_id_or_prefix: Union[str, UUID]
+    ) -> ScheduleResponseModel:
+        """Get a schedule by name, id or prefix.
+
+        Args:
+            name_id_or_prefix: The name, id or prefix of the schedule.
+
+        Returns:
+            The schedule.
+        """
+        return self._get_entity_by_id_or_name_or_prefix(
+            response_model=ScheduleResponseModel,
+            get_method=self.zen_store.get_schedule,
+            list_method=self.zen_store.list_schedules,
+            name_id_or_prefix=name_id_or_prefix,
+        )
+
+    def delete_schedule(self, name_id_or_prefix: Union[str, UUID]) -> None:
+        """Delete a schedule.
+
+        Args:
+            name_id_or_prefix: The name, id or prefix id of the schedule
+                to delete.
+        """
+        schedule = self.get_schedule(name_id_or_prefix=name_id_or_prefix)
+        logger.warning(
+            f"Deleting schedule '{name_id_or_prefix}'... This will only delete "
+            "the reference of the schedule from ZenML. Please make sure to "
+            "manually stop/delete this schedule in your orchestrator as well!"
+        )
+        self.zen_store.delete_schedule(schedule_id=schedule.id)
+
+    # -----------------
+    # - PIPELINE RUNS -
+    # -----------------
 
     def list_runs(
         self,
@@ -2225,6 +2288,10 @@ class Client(metaclass=ClientMetaClass):
         """
         run = self.get_pipeline_run(name_id_or_prefix=name_id_or_prefix)
         self.zen_store.delete_run(run_id=run.id)
+
+    # -------------
+    # - STEP RUNS -
+    # -------------
 
     def list_run_steps(
         self,
