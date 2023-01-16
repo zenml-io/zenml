@@ -157,8 +157,7 @@ INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/c
 
 ## How do you use it?
 
-For registering the model deployer, we need to pass the `--secret` that we have already defined before.
-Next, the `--base_url` is the URL of the Istio Ingress Gateway. We can get this URL by running the following command:
+For registering the model deployer, we need the URL of the Istio Ingress Gateway deployed on the Kubernetes cluster. We can get this URL by running the following command:
 
 ```bash
 INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
