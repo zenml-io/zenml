@@ -31,17 +31,17 @@ To handle the relevant permissions, you will need to create an IAM role that
 has access to the relevant parts of your AWS account. You can do this directly
 in the AWS console, or using the AWS CLI.
 
-![Create a role](assets/sagemaker/sagemaker0.png)
+![Create a role](assets/sagemaker0.png)
 
 When creating the role, make sure to add Sagemaker-specific permissions:
 
-![Add permissions](assets/sagemaker/sagemaker1.png)
+![Add permissions](assets/sagemaker1.png)
 
 Once you've created the role, you will need to add permissions to allow access
 to your secrets in the AWS Secrets Manager. You can do this by attaching a
 `SecretsManagerReadWrite` policy to the role:
 
-![Add secrets manager permissions](assets/sagemaker/sagemaker2.png)
+![Add secrets manager permissions](assets/sagemaker2.png)
 
 ## 🥞 Create a Sagemaker stack
 
@@ -69,7 +69,7 @@ up with AWS.
 pip install "zenml[server]"
 
 # install ZenML integrations
-zenml integration install aws s3
+zenml integration install aws pytorch s3
 
 # pull example
 zenml example pull sagemaker_orchestration
@@ -110,13 +110,13 @@ the cloud! To access the Sagemaker Pipelines UI, you will have to launch
 Sagemaker Studio via the AWS Sagemaker UI. Make sure that you are launching it
 from within your desired AWS region.
 
-![Sagemaker Studio launch](assets/sagemaker/sagemaker3.png)
+![Sagemaker Studio launch](assets/sagemaker3.png)
 
 Once the Studio UI is launched, click on the 'Pipeline' button on the left-hand
 side and from there you can view the pipelines that have been launched via
 ZenML:
 
-![Sagemaker Studio Pipelines](assets/sagemaker/sagemaker4.png)
+![Sagemaker Studio Pipelines](assets/sagemaker4.png)
 
 ### 💻 Specifying per-step resources
 
