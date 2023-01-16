@@ -80,7 +80,7 @@ class Filter(BaseModel, ABC):
     ) -> Union["BinaryExpression", "BooleanClauseList"]:
         """Generate the query conditions for the database.
 
-        This method converts the Filter class into an appropriate SQLmodel
+        This method converts the Filter class into an appropriate SQLModel
         query condition, to be used when filtering on the Database.
 
         Args:

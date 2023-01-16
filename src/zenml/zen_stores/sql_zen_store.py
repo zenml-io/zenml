@@ -623,7 +623,7 @@ class SqlZenStore(BaseZenStore):
         table: Type[AnySchema],
         filter_model: FilterBaseModel,
     ) -> Page[B]:
-        """Given a query, return aPage instance with a list of filtered Models.
+        """Given a query, return a Page instance with a list of filtered Models.
 
         Args:
             session: The SQLModel Session

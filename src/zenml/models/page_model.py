@@ -35,7 +35,7 @@
 #  permissions and limitations under the License.
 """Model implementation for easy pagination for Lists of ZenML Domain Models.
 
-The code contained within this file has been heavily inspired by the
+The code contained within this file has been inspired by the
 fastapi-pagination library: https://github.com/uriyyo/fastapi-pagination
 """
 from __future__ import annotations
@@ -52,7 +52,7 @@ B = TypeVar("B", bound=BaseResponseModel)
 
 
 class Page(GenericModel, Generic[B]):
-    """Return Model for List Models to accomodate pagination."""
+    """Return Model for List Models to accommodate pagination."""
 
     page: conint(ge=1)  # type: ignore
     size: conint(ge=1)  # type: ignore
