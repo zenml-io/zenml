@@ -459,7 +459,3 @@ def sample_artifact_request_model() -> ArtifactRequestModel:
         project=uuid4(),
         user=uuid4(),
     )
-
-@pytest.fixture
-def cli_runner():
-    return CliRunner()
