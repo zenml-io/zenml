@@ -21,13 +21,11 @@ from fastapi import Query
 from pydantic import BaseModel
 
 from zenml.config.schedule import Schedule
-from zenml.models import FilterBaseModel
 from zenml.models.base_models import (
     ProjectScopedRequestModel,
     ProjectScopedResponseModel,
 )
 from zenml.models.filter_models import ShareableProjectScopedFilterModel
-
 
 # ---- #
 # BASE #
@@ -66,11 +64,14 @@ class ScheduleFilterModel(ShareableProjectScopedFilterModel):
         default=None, description="Project scope of the schedule."
     )
     user_id: Union[UUID, str] = Query(
-        None, description="User that created the schedule")
+        None, description="User that created the schedule"
+    )
     pipeline_id: Union[UUID, str] = Query(
-        None, description="Pipeline that the schedule is attached to.")
+        None, description="Pipeline that the schedule is attached to."
+    )
     orchestrator_id: Union[UUID, str] = Query(
-        None, description="Orchestrator that the schedule is attached to.")
+        None, description="Orchestrator that the schedule is attached to."
+    )
     active: bool = Query(
         default=None,
         description="If the schedule is active",
@@ -88,12 +89,13 @@ class ScheduleFilterModel(ShareableProjectScopedFilterModel):
     catchup: bool = Query(
         default=None,
         description="Whether or not the schedule is set to catchup past missed "
-                    "events",
+        "events",
     )
     name: str = Query(
         default=None,
         description="Name of the schedule",
     )
+
 
 # ------- #
 # REQUEST #

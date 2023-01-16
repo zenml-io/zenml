@@ -278,7 +278,6 @@ def assignment() -> None:
 @list_options(UserRoleAssignmentFilterModel)
 def list_role_assignments(**kwargs) -> None:
     """List all user role assignments that fulfill the filter requirements."""
-
     cli_utils.print_active_config()
     client = Client()
     with console.status("Listing roles...\n"):

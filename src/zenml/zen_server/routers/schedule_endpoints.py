@@ -12,17 +12,17 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for pipeline run schedules."""
-from typing import List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Security, Depends
+from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, SCHEDULES, VERSION_1
 from zenml.enums import PermissionType
 from zenml.models.page_model import Page
 from zenml.models.schedule_model import (
+    ScheduleFilterModel,
     ScheduleResponseModel,
-    ScheduleUpdateModel, ScheduleFilterModel,
+    ScheduleUpdateModel,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
@@ -54,7 +54,8 @@ def list_schedules(
         List of schedule objects.
     """
     return zen_store().list_schedules(
-        schedule_filter_model=schedule_filter_model)
+        schedule_filter_model=schedule_filter_model
+    )
 
 
 @router.get(

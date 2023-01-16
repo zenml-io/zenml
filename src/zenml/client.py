@@ -102,8 +102,10 @@ from zenml.models import (
 from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.models.base_models import BaseResponseModel
 from zenml.models.page_model import Page
-from zenml.models.schedule_model import ScheduleResponseModel, \
-    ScheduleFilterModel
+from zenml.models.schedule_model import (
+    ScheduleFilterModel,
+    ScheduleResponseModel,
+)
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler, track
 from zenml.utils.filesync_model import FileSyncModel
@@ -933,6 +935,7 @@ class Client(metaclass=ClientMetaClass):
             sort_by: The column to sort by
             page: The page of items
             size: The maximum size of all pages
+            logical_operator: The logical operator to use between column filters
             id: Use the id of roles to filter by.
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
@@ -1137,6 +1140,7 @@ class Client(metaclass=ClientMetaClass):
             project_id: The id of the project to filter by.
             user_id: The id of the user to filter by.
             role_id: The id of the role to filter by.
+
         Returns:
             The Team
         """
@@ -1243,6 +1247,7 @@ class Client(metaclass=ClientMetaClass):
             project_id: The id of the project to filter by.
             team_id: The id of the team to filter by.
             role_id: The id of the role to filter by.
+
         Returns:
             The Team
         """
@@ -2466,6 +2471,7 @@ class Client(metaclass=ClientMetaClass):
             project_id: The id of the project to filter by.
             user_id: The  id of the user to filter by.
             name: The name of the stack to filter by.
+
         Returns:
             A page with Pipeline fitting the filter description
         """
@@ -2540,10 +2546,11 @@ class Client(metaclass=ClientMetaClass):
             project_id=project_id,
             user_id=user_id,
             pipeline_id=pipeline_id,
-            name=name
+            name=name,
         )
         return self.zen_store.list_schedules(
-            schedule_filter_model=schedule_filter_model)
+            schedule_filter_model=schedule_filter_model
+        )
 
     def get_schedule(
         self, name_id_or_prefix: Union[str, UUID]
@@ -2617,10 +2624,10 @@ class Client(metaclass=ClientMetaClass):
             start_time: The start_time for the pipeline run
             end_time: The end_time for the pipeline run
             num_steps: The number of steps for the pipeline run
+
         Returns:
             A page with Pipeline Runs fitting the filter description
         """
-
         runs_filter_model = PipelineRunFilterModel(
             sort_by=sort_by,
             page=page,

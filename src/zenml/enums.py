@@ -155,7 +155,7 @@ class PermissionType(StrEnum):
 
 
 class GenericFilterOps(StrEnum):
-    """Ops for all filters for string values on list methods"""
+    """Ops for all filters for string values on list methods."""
 
     EQUALS = "equals"
     CONTAINS = "contains"
@@ -168,7 +168,7 @@ class GenericFilterOps(StrEnum):
 
 
 class LogicalOperators(StrEnum):
-    """Logical Ops to use to combine filters on list methods"""
+    """Logical Ops to use to combine filters on list methods."""
 
     OR = "or"
     AND = "and"

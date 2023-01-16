@@ -26,6 +26,7 @@ from zenml.models import (
     StepRunResponseModel,
     StepRunUpdateModel,
 )
+from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
@@ -38,25 +39,25 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=List[StepRunResponseModel],
+    response_model=Page[StepRunResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_run_steps(
-    runs_filter_model: StepRunFilterModel = Depends(),
+    step_run_filter_model: StepRunFilterModel = Depends(),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> List[StepRunResponseModel]:
+) -> Page[StepRunResponseModel]:
     """Get run steps according to query filters.
 
     Args:
-        runs_filter_model: Filter model used for pagination, sorting,
+        step_run_filter_model: Filter model used for pagination, sorting,
                                    filtering
 
     Returns:
         The run steps according to query filters.
     """
-
-    return zen_store().list_runs(runs_filter_model=runs_filter_model)
+    return zen_store().list_run_steps(
+        step_run_filter_model=step_run_filter_model)
 
 
 @router.post(

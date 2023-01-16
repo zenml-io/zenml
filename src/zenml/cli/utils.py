@@ -1061,7 +1061,7 @@ def warn_unsupported_non_default_project() -> None:
 
 
 def print_page_info(page: Page[BaseResponseModel]):
-    """Print all information pertaining to a page to show the amount of items and pages"""
+    """Print all information pertaining to a page to show the amount of items and pages."""
     declare(
         f"Page `({page.page}/{page.total_pages})`, `{page.total}` items "
         f"found for the applied filters."
@@ -1083,8 +1083,7 @@ def create_filter_help_text(
     Returns:
         The help text.
     """
-
-    if filter_model.is_datatime_field(field):
+    if filter_model.is_datetime_field(field):
         return (
             f"[DATETIME] The following datetime format is supported: "
             f"'{FILTERING_DATETIME_FORMAT}'. Make sure to keep it in "
@@ -1129,7 +1128,7 @@ def create_data_type_help_text(
     Returns:
         The help text.
     """
-    if filter_model.is_datatime_field(field):
+    if filter_model.is_datetime_field(field):
         return (
             f"[DATETIME] supported filter operators: "
             f"{[str(op) for op in NumericFilter.ALLOWED_OPS]}"

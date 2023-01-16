@@ -59,7 +59,7 @@ from zenml.models.schedule_model import (
     ScheduleRequestModel,
     ScheduleResponseModel,
     ScheduleUpdateModel,
-    ScheduleFilterModel
+    ScheduleFilterModel,
 )
 from zenml.models.stack_models import (
     StackFilterModel,

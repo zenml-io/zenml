@@ -1,3 +1,17 @@
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+"""Base filter model definitions."""
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -92,6 +106,7 @@ class Filter(BaseModel, ABC):
 
 
 class BoolFilter(Filter):
+    """Filter for all Boolean fields."""
     def generate_query_conditions(
         self,
         table: Type[SQLModel],
@@ -218,6 +233,7 @@ class NumericFilter(Filter):
 
 
 class DatetimeFilter(Filter):
+    """Filter for all Boolean fields."""
 
     value: datetime
 
@@ -331,7 +347,6 @@ class FilterBaseModel(BaseModel):
     @root_validator(pre=True)
     def filter_ops(cls, values: List[Any]) -> List[Any]:
         """Parse incoming filters to ensure all filters are legal."""
-
         for key, value in values.items():
             if key in cls.FILTER_EXCLUDE_FIELDS:
                 pass
@@ -347,7 +362,7 @@ class FilterBaseModel(BaseModel):
                         value = split_value[1]
                         operator = GenericFilterOps(split_value[0])
 
-                if cls.is_datatime_field(key):
+                if cls.is_datetime_field(key):
                     try:
                         if isinstance(value, datetime):
                             datetime_value = value
@@ -427,6 +442,7 @@ class FilterBaseModel(BaseModel):
 
     @property
     def list_of_filters(self) -> List[Filter]:
+        """Converts the class variables into a list of usable Filter Models."""
         list_of_filters: List[Filter] = []
 
         for key in self.__fields__:
@@ -446,7 +462,7 @@ class FilterBaseModel(BaseModel):
                             value = split_value[1]
                             operator = GenericFilterOps(split_value[0])
 
-                    if self.is_datatime_field(key):
+                    if self.is_datetime_field(key):
                         try:
                             if isinstance(value, datetime):
                                 datetime_value = value
@@ -539,23 +555,28 @@ class FilterBaseModel(BaseModel):
         return list_of_filters
 
     @classmethod
-    def is_datatime_field(cls, k: str) -> bool:
+    def is_datetime_field(cls, k: str) -> bool:
+        """Checks if it's a datetime field."""
         return issubclass(datetime, get_args(cls.__fields__[k].type_))
 
     @classmethod
     def is_uuid_field(cls, k: str) -> bool:
+        """Checks if it's a uuid field."""
         return issubclass(UUID, get_args(cls.__fields__[k].type_))
 
     @classmethod
     def is_int_field(cls, k: str) -> bool:
+        """Checks if it's a int field."""
         return issubclass(int, get_args(cls.__fields__[k].type_))
 
     @classmethod
     def is_bool_field(cls, k: str) -> bool:
+        """Checks if it's a bool field."""
         return issubclass(bool, get_args(cls.__fields__[k].type_))
 
     @classmethod
     def is_str_field(cls, k: str) -> bool:
+        """Checks if it's a string field."""
         return (
             issubclass(str, get_args(cls.__fields__[k].type_))
             or cls.__fields__[k].type_ == str

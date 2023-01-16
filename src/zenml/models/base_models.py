@@ -48,7 +48,7 @@ class BaseResponseModel(AnalyticsTrackedModelMixin):
     )
 
     class Config:
-        """Allow extras on Response Models"""
+        """Allow extras on Response Models."""
 
         extra = "allow"
 

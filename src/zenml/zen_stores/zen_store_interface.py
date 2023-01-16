@@ -70,7 +70,10 @@ from zenml.models import (
     UserUpdateModel,
 )
 from zenml.models.page_model import Page
-from zenml.models.schedule_model import ScheduleUpdateModel, ScheduleFilterModel
+from zenml.models.schedule_model import (
+    ScheduleFilterModel,
+    ScheduleUpdateModel,
+)
 from zenml.models.server_models import ServerModel
 
 

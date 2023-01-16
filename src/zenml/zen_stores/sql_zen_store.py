@@ -162,7 +162,6 @@ from zenml.zen_stores.schemas import (
     UserRoleAssignmentSchema,
     UserSchema,
 )
-from zenml.zen_stores.schemas.base_schemas import BaseSchema
 
 AnyNamedSchema = TypeVar("AnyNamedSchema", bound=NamedSchema)
 AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -635,7 +634,6 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The Domain Model representation of the DB resource
         """
-
         # Filtering
         filters = filter_model.generate_filter(table=table)
 
