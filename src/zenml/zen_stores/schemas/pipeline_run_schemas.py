@@ -176,7 +176,9 @@ class PipelineRunSchema(NamedSchema, table=True):
             return PipelineRunResponseModel(
                 id=self.id,
                 name=self.name,
+                stack=self.stack.to_model() if self.stack else None,
                 project=self.project.to_model(),
+                user=self.user.to_model(True) if self.user else None,
                 schedule_id=self.schedule_id,
                 orchestrator_run_id=self.orchestrator_run_id,
                 enable_cache=self.enable_cache,
