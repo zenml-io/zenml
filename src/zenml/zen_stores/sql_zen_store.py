@@ -120,6 +120,7 @@ from zenml.models import (
 )
 from zenml.models.base_models import BaseResponseModel
 from zenml.models.page_model import Page
+from zenml.models.schedule_model import ScheduleFilterModel
 from zenml.models.server_models import ServerDatabaseType, ServerModel
 from zenml.utils import uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
@@ -2653,39 +2654,27 @@ class SqlZenStore(BaseZenStore):
             return schedule.to_model()
 
     def list_schedules(
-        self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
-        pipeline_id: Optional[UUID] = None,
-        name: Optional[str] = None,
-    ) -> List[ScheduleResponseModel]:
+        self, schedule_filter_model: ScheduleFilterModel
+    ) -> Page[ScheduleResponseModel]:
         """List all schedules in the project.
 
         Args:
-            project_name_or_id: If provided, only list schedules in this project.
-            user_name_or_id: If provided, only list schedules from this user.
-            pipeline_id: If provided, only list schedules for this pipeline.
-            name: If provided, only list schedules with this name.
+            schedule_filter_model: All filter parameters including pagination
+                params
 
         Returns:
             A list of schedules.
         """
         with Session(self.engine) as session:
+            # Manually create the query and add any custom clauses
             query = select(ScheduleSchema)
-            if project_name_or_id is not None:
-                project = self._get_project_schema(
-                    project_name_or_id, session=session
-                )
-                query = query.where(ScheduleSchema.project_id == project.id)
-            if user_name_or_id is not None:
-                user = self._get_user_schema(user_name_or_id, session=session)
-                query = query.where(ScheduleSchema.user_id == user.id)
-            if pipeline_id is not None:
-                query = query.where(ScheduleSchema.pipeline_id == pipeline_id)
-            if name:
-                query = query.where(ScheduleSchema.name == name)
-            schedules = session.exec(query).all()
-            return [schedule.to_model() for schedule in schedules]
+
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=ScheduleSchema,
+                filter_model=schedule_filter_model,
+            )
 
     def update_schedule(
         self,

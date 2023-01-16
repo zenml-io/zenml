@@ -132,9 +132,12 @@ def list_schedules(pipeline: str, user: str, name: str) -> None:
     pipeline_id = None
     if pipeline:
         pipeline_id = client.get_pipeline(name_id_or_prefix=pipeline).id
+    user_id = None
+    if user:
+        user_id = client.get_user(name_id_or_prefix=user).id
 
     schedules = client.list_schedules(
-        user_name_or_id=user,
+        user_id=user_id,
         pipeline_id=pipeline_id,
         name=name,
     )

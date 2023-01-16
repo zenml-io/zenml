@@ -102,7 +102,8 @@ from zenml.models import (
 from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.models.base_models import BaseResponseModel
 from zenml.models.page_model import Page
-from zenml.models.schedule_model import ScheduleResponseModel
+from zenml.models.schedule_model import ScheduleResponseModel, \
+    ScheduleFilterModel
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler, track
 from zenml.utils.filesync_model import FileSyncModel
@@ -2519,28 +2520,30 @@ class Client(metaclass=ClientMetaClass):
 
     def list_schedules(
         self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
-        pipeline_id: Optional[UUID] = None,
+        project_id: Optional[Union[str, UUID]] = None,
+        user_id: Optional[Union[str, UUID]] = None,
+        pipeline_id: Optional[Union[str, UUID]] = None,
         name: Optional[str] = None,
-    ) -> List[ScheduleResponseModel]:
+    ) -> Page[ScheduleResponseModel]:
         """List schedules.
 
         Args:
-            project_name_or_id: If provided, only list schedules in this project.
-            user_name_or_id: If provided, only list schedules from this user.
+            project_id: If provided, only list schedules in this project.
+            user_id: If provided, only list schedules from this user.
             pipeline_id: If provided, only list schedules for this pipeline.
             name: If provided, only list schedules with this name.
 
         Returns:
             A list of schedules.
         """
-        return self.zen_store.list_schedules(
-            project_name_or_id=project_name_or_id or self.active_project.id,
-            user_name_or_id=user_name_or_id,
+        schedule_filter_model = ScheduleFilterModel(
+            project_id=project_id,
+            user_id=user_id,
             pipeline_id=pipeline_id,
-            name=name,
+            name=name
         )
+        return self.zen_store.list_schedules(
+            schedule_filter_model=schedule_filter_model)
 
     def get_schedule(
         self, name_id_or_prefix: Union[str, UUID]
@@ -2554,9 +2557,8 @@ class Client(metaclass=ClientMetaClass):
             The schedule.
         """
         return self._get_entity_by_id_or_name_or_prefix(
-            response_model=ScheduleResponseModel,
             get_method=self.zen_store.get_schedule,
-            list_method=self.zen_store.list_schedules,
+            list_method=self.list_schedules,
             name_id_or_prefix=name_id_or_prefix,
         )
 

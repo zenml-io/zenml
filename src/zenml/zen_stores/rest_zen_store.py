@@ -129,6 +129,7 @@ from zenml.models.base_models import (
     ProjectScopedResponseModel,
 )
 from zenml.models.page_model import Page
+from zenml.models.schedule_model import ScheduleFilterModel
 from zenml.models.server_models import ServerModel
 from zenml.models.team_models import TeamUpdateModel
 from zenml.utils.analytics_utils import AnalyticsEvent, track
@@ -1261,29 +1262,21 @@ class RestZenStore(BaseZenStore):
         )
 
     def list_schedules(
-        self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
-        pipeline_id: Optional[UUID] = None,
-        name: Optional[str] = None,
-    ) -> List[ScheduleResponseModel]:
+        self, schedule_filter_model: ScheduleFilterModel
+    ) -> Page[ScheduleResponseModel]:
         """List all schedules in the project.
 
         Args:
-            project_name_or_id: If provided, only list schedules in this project.
-            user_name_or_id: If provided, only list schedules from this user.
-            pipeline_id: If provided, only list schedules for this pipeline.
-            name: If provided, only list schedules with this name.
+            schedule_filter_model: All filter parameters including pagination
+                params
 
         Returns:
             A list of schedules.
         """
-        filters = locals()
-        filters.pop("self")
-        return self._list_resources(
+        return self._list_paginated_resources(
             route=SCHEDULES,
             response_model=ScheduleResponseModel,
-            **filters,
+            list_model=schedule_filter_model,
         )
 
     def update_schedule(

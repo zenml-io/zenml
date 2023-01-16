@@ -59,6 +59,7 @@ from zenml.models.schedule_model import (
     ScheduleRequestModel,
     ScheduleResponseModel,
     ScheduleUpdateModel,
+    ScheduleFilterModel
 )
 from zenml.models.stack_models import (
     StackFilterModel,
@@ -195,6 +196,7 @@ __all__ = [
     "ScheduleRequestModel",
     "ScheduleResponseModel",
     "ScheduleUpdateModel",
+    "ScheduleFilterModel",
     "StackRequestModel",
     "StackResponseModel",
     "StackUpdateModel",
