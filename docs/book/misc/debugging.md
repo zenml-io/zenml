@@ -180,7 +180,7 @@ For example:
 
 ```shell
 ╭─────────────────────────────── Traceback (most recent call last) ────────────────────────────────╮
-│ /home/dnth/Documents/zenfiles/nba-pipeline/run_pipeline.py:24 in <module>                        │
+│ /home/dnth/Documents/zenml-projects/nba-pipeline/run_pipeline.py:24 in <module>                        │
 │                                                                                                  │
 │    21 │   reference_data_splitter,                                                               │
 │    22 │   TrainingSplitConfig,                                                                   │
@@ -190,7 +190,7 @@ For example:
 │    26 from steps.importer import (                                                               │
 │    27 │   import_season_schedule,                                                                │
 │                                                                                                  │
-│ /home/dnth/Documents/zenfiles/nba-pipeline/steps/trainer.py:24 in <module>                       │
+│ /home/dnth/Documents/zenml-projects/nba-pipeline/steps/trainer.py:24 in <module>                       │
 │                                                                                                  │
 │   21 │   max_depth: int = 10000                                                                  │
 │   22 │   target_col: str = "FG3M"                                                                │
@@ -223,4 +223,5 @@ Read more about registering stacks [here](https://docs.zenml.io/starter-guide/st
 Our recommended, and tested approach is to install via `Rosetta`.
 
 But a community member recently discovered a way to install ZenML on Apple Silicon without Rosetta.
-Join the conversation [here](https://open.crowd.dev/zenml/for-what-its-worth-i-was-able-to-successfully-install?q=&p=1).
+Join the conversation
+[here](https://open.crowd.dev/zenml/for-what-its-worth-i-was-able-to-successfully-install?q=&p=1).
