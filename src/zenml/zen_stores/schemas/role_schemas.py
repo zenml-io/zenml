@@ -125,7 +125,9 @@ class UserRoleAssignmentSchema(BaseSchema, table=True):
     )
 
     role: RoleSchema = Relationship(back_populates="user_role_assignments")
-    user: Optional["UserSchema"] = Relationship(back_populates="assigned_roles")
+    user: Optional["UserSchema"] = Relationship(
+        back_populates="assigned_roles"
+    )
     project: Optional["ProjectSchema"] = Relationship(
         back_populates="user_role_assignments"
     )

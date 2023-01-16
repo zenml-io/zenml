@@ -30,6 +30,7 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 if TYPE_CHECKING:
     from zenml.models import PipelineUpdateModel
     from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
+    from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
 
 
 class PipelineSchema(NamedSchema, table=True):
@@ -61,9 +62,11 @@ class PipelineSchema(NamedSchema, table=True):
 
     user: Optional["UserSchema"] = Relationship(back_populates="pipelines")
 
-    runs: List["PipelineRunSchema"] = Relationship(
+    schedules: List["ScheduleSchema"] = Relationship(
         back_populates="pipeline",
-        sa_relationship_kwargs={"order_by": "asc(PipelineRunSchema.created)"},
+    )
+    runs: List["PipelineRunSchema"] = Relationship(
+        back_populates="pipeline", sa_relationship_kwargs={"cascade": "delete"}
     )
 
     def to_model(

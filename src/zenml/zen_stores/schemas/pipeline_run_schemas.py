@@ -27,6 +27,7 @@ from zenml.models.pipeline_run_models import PipelineRunRequestModel
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
+from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.stack_schemas import StackSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
@@ -60,6 +61,16 @@ class PipelineRunSchema(NamedSchema, table=True):
         nullable=True,
     )
     pipeline: "PipelineSchema" = Relationship(back_populates="runs")
+
+    schedule_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=ScheduleSchema.__tablename__,
+        source_column="schedule_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+    schedule: ScheduleSchema = Relationship(back_populates="runs")
 
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -127,6 +138,7 @@ class PipelineRunSchema(NamedSchema, table=True):
             project_id=request.project,
             user_id=request.user,
             pipeline_id=request.pipeline,
+            schedule_id=request.schedule_id,
             enable_cache=request.enable_cache,
             start_time=request.start_time,
             status=request.status,
@@ -165,6 +177,7 @@ class PipelineRunSchema(NamedSchema, table=True):
                 id=self.id,
                 name=self.name,
                 project=self.project.to_model(),
+                schedule_id=self.schedule_id,
                 orchestrator_run_id=self.orchestrator_run_id,
                 enable_cache=self.enable_cache,
                 start_time=self.start_time,
@@ -194,6 +207,7 @@ class PipelineRunSchema(NamedSchema, table=True):
                 pipeline=(
                     self.pipeline.to_model(False) if self.pipeline else None
                 ),
+                schedule_id=self.schedule_id,
                 pipeline_configuration=json.loads(self.pipeline_configuration),
                 num_steps=self.num_steps,
                 git_sha=self.git_sha,

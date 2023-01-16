@@ -46,7 +46,10 @@ from zenml.pipelines import pipeline
 from zenml.post_execution.pipeline_run import PipelineRunView
 from zenml.post_execution.step import StepView
 from zenml.stack.stack import Stack
-from zenml.stack.stack_component import StackComponentConfig, StackComponentType
+from zenml.stack.stack_component import (
+    StackComponentConfig,
+    StackComponentType,
+)
 from zenml.steps import StepContext, step
 
 
@@ -200,8 +203,7 @@ def empty_step():
 
 @pytest.fixture
 def generate_empty_steps():
-    """Pytest fixture that returns a function that generates multiple empty
-    steps."""
+    """Pytest fixture that returns a function that generates multiple empty steps."""
 
     def _generate_empty_steps(count: int):
         output = []
@@ -221,8 +223,7 @@ def generate_empty_steps():
 
 @pytest.fixture
 def one_step_pipeline():
-    """Pytest fixture that returns a pipeline which takes a single step
-    named `step_`."""
+    """Pytest fixture that returns a pipeline which takes a single step named `step_`."""
 
     @pipeline
     def _pipeline(step_):
@@ -233,8 +234,7 @@ def one_step_pipeline():
 
 @pytest.fixture
 def unconnected_two_step_pipeline():
-    """Pytest fixture that returns a pipeline which takes two steps
-    `step_1` and `step_2`. The steps are not connected to each other."""
+    """Pytest fixture that returns a pipeline which takes two steps `step_1` and `step_2`. The steps are not connected to each other."""
 
     @pipeline
     def _pipeline(step_1, step_2):
@@ -302,7 +302,7 @@ def step_context_with_two_outputs():
 
 @pytest.fixture
 def sample_user_model() -> UserResponseModel:
-    """Return a sample user model for testing purposes"""
+    """Return a sample user model for testing purposes."""
     return UserResponseModel(
         id=uuid4(),
         name="axl",
@@ -313,7 +313,7 @@ def sample_user_model() -> UserResponseModel:
 
 @pytest.fixture
 def sample_project_model() -> ProjectResponseModel:
-    """Return a sample project model for testing purposes"""
+    """Return a sample project model for testing purposes."""
     return ProjectResponseModel(
         id=uuid4(),
         name="axl",
@@ -326,7 +326,7 @@ def sample_project_model() -> ProjectResponseModel:
 def sample_step_model(
     sample_project_model, sample_user_model
 ) -> StepRunResponseModel:
-    """Return a sample step model for testing purposes"""
+    """Return a sample step model for testing purposes."""
     step = Step.parse_obj(
         {
             "spec": {"source": "", "upstream_steps": [], "inputs": {}},
@@ -349,7 +349,7 @@ def sample_step_model(
 
 @pytest.fixture
 def sample_step_request_model() -> StepRunRequestModel:
-    """Return a sample step model for testing purposes"""
+    """Return a sample step model for testing purposes."""
     step = Step.parse_obj(
         {
             "spec": {"source": "", "upstream_steps": [], "inputs": {}},
@@ -370,7 +370,7 @@ def sample_step_request_model() -> StepRunRequestModel:
 
 @pytest.fixture
 def sample_step_view(sample_step_model) -> StepView:
-    """Return a sample step view for testing purposes"""
+    """Return a sample step view for testing purposes."""
     return StepView(sample_step_model)
 
 
@@ -379,7 +379,7 @@ def sample_pipeline_run_model(
     sample_user_model: UserResponseModel,
     sample_project_model: ProjectResponseModel,
 ) -> PipelineRunResponseModel:
-    """Return sample pipeline run view for testing purposes"""
+    """Return sample pipeline run view for testing purposes."""
     return PipelineRunResponseModel(
         id=uuid4(),
         name="sample_run_name",
@@ -395,7 +395,7 @@ def sample_pipeline_run_model(
 
 @pytest.fixture
 def sample_pipeline_run_request_model() -> PipelineRunRequestModel:
-    """Return sample pipeline run view for testing purposes"""
+    """Return sample pipeline run view for testing purposes."""
     return PipelineRunRequestModel(
         id=uuid4(),
         name="sample_run_name",
@@ -411,7 +411,7 @@ def sample_pipeline_run_request_model() -> PipelineRunRequestModel:
 def sample_pipeline_run_view(
     sample_step_view, sample_pipeline_run_model
 ) -> PipelineRunView:
-    """Return sample pipeline run view for testing purposes"""
+    """Return sample pipeline run view for testing purposes."""
     sample_pipeline_run_view = PipelineRunView(sample_pipeline_run_model)
     setattr(
         sample_pipeline_run_view,
@@ -425,7 +425,7 @@ def sample_pipeline_run_view(
 def sample_artifact_model(
     sample_project_model, sample_user_model
 ) -> ArtifactResponseModel:
-    """Return a sample artifact model for testing purposes"""
+    """Return a sample artifact model for testing purposes."""
     return ArtifactResponseModel(
         id=uuid4(),
         name="sample_artifact",
@@ -445,7 +445,7 @@ def sample_artifact_model(
 
 @pytest.fixture
 def sample_artifact_request_model() -> ArtifactRequestModel:
-    """Return a sample artifact model for testing purposes"""
+    """Return a sample artifact model for testing purposes."""
     return ArtifactRequestModel(
         name="sample_artifact",
         uri="sample_uri",

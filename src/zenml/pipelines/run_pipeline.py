@@ -199,7 +199,9 @@ def _load_class_from_module(
         )
 
 
-def _get_module_attribute(module: types.ModuleType, attribute_name: str) -> Any:
+def _get_module_attribute(
+    module: types.ModuleType, attribute_name: str
+) -> Any:
     """Gets an attribute from a module.
 
     Args:

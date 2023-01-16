@@ -344,7 +344,9 @@ def setup_test_stack_session(
     harness = TestHarness()
 
     if check_requirements:
-        check_test_requirements(request, environment=environment, client=client)
+        check_test_requirements(
+            request, environment=environment, client=client
+        )
 
     if clean_repo:
         if not tmp_path_factory:

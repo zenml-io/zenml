@@ -20,5 +20,5 @@ def data_splitter(
     input_df: pd.DataFrame,
 ) -> Output(reference_dataset=pd.DataFrame, comparison_dataset=pd.DataFrame):
     """Splits the dataset into two subsets, the reference dataset and the
-    comparison dataset"""
+    comparison dataset."""
     return input_df[100:], input_df[:100]

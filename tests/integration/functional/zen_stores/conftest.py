@@ -23,6 +23,7 @@ from tests.integration.functional.conftest import (
 )
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
+from zenml.config.schedule import Schedule
 from zenml.enums import PermissionType
 from zenml.models import (
     ProjectRequestModel,
@@ -100,6 +101,33 @@ def sql_store_with_run(
         }
     )
 
+    yield sql_store
+
+
+@pytest.fixture
+def sql_store_with_scheduled_run(
+    sql_store,
+    connected_two_step_pipeline,
+) -> Dict[str, Union[BaseZenStore, BaseResponseModel]]:
+    pipeline_instance = connected_two_step_pipeline(
+        step_1=constant_int_output_test_step(),
+        step_2=int_plus_one_test_step(),
+    )
+    schedule = Schedule(cron_expression="*/5 * * * *")
+    pipeline_instance.run(unlisted=True, schedule=schedule)
+    store = sql_store["store"]
+    schedule = store.list_schedules()[0]
+    pipeline_run = store.list_runs()[0]
+    pipeline_step = store.list_run_steps()[1]
+    artifact = store.list_artifacts()[0]
+    sql_store.update(
+        {
+            "schedule": schedule,
+            "pipeline_run": pipeline_run,
+            "step": pipeline_step,
+            "artifact": artifact,
+        }
+    )
     yield sql_store
 
 
