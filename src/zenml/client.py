@@ -81,8 +81,8 @@ from zenml.models import (
 )
 from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.models.base_models import BaseResponseModel
-from zenml.models.schedule_model import ScheduleResponseModel
 from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
+from zenml.models.schedule_model import ScheduleResponseModel
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler, track
 from zenml.utils.filesync_model import FileSyncModel

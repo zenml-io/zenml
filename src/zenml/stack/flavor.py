@@ -14,7 +14,7 @@
 """Base ZenML Flavor implementation."""
 import json
 from abc import abstractmethod
-from typing import Optional, Type, cast, Dict, Any
+from typing import Any, Dict, Optional, Type, cast
 
 from zenml.enums import StackComponentType
 from zenml.models import FlavorRequestModel, FlavorResponseModel

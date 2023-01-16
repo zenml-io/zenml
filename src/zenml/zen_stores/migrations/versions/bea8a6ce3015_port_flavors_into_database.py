@@ -11,7 +11,6 @@ from datetime import datetime
 from typing import Any, Dict, List
 
 import sqlalchemy as sa
-import sqlmodel
 from alembic import op
 
 # revision identifiers, used by Alembic.
@@ -40,11 +39,7 @@ def upgrade() -> None:
     """Upgrade database schema and/or data, creating a new revision."""
     with op.batch_alter_table("flavor", schema=None) as batch_op:
 
-        batch_op.add_column(
-            sa.Column(
-                "logo_url", sa.TEXT(), nullable=True
-            )
-        )
+        batch_op.add_column(sa.Column("logo_url", sa.TEXT(), nullable=True))
 
         batch_op.alter_column(
             "project_id", existing_type=sa.CHAR(length=32), nullable=True
