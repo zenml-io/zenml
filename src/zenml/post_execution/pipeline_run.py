@@ -22,7 +22,7 @@ from uuid import UUID
 from zenml.client import Client
 from zenml.enums import ExecutionStatus
 from zenml.logger import get_apidocs_link, get_logger
-from zenml.models import PipelineRunResponseModel, StepRunFilterModel
+from zenml.models import PipelineRunResponseModel
 from zenml.post_execution.step import StepView
 
 logger = get_logger(__name__)

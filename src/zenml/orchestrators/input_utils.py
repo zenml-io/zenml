@@ -44,8 +44,9 @@ def resolve_step_inputs(
     """
     current_run_steps = {
         run_step.step.config.name: run_step
-        for run_step in Client().zen_store.list_run_steps(
-            StepRunFilterModel(pipeline_run_id=run_id)).items
+        for run_step in Client()
+        .zen_store.list_run_steps(StepRunFilterModel(pipeline_run_id=run_id))
+        .items
     }
 
     input_artifacts: Dict[str, "ArtifactResponseModel"] = {}

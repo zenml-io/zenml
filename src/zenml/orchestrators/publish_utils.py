@@ -25,7 +25,7 @@ from zenml.models.pipeline_run_models import (
 )
 from zenml.models.step_run_models import (
     StepRunResponseModel,
-    StepRunUpdateModel, StepRunFilterModel,
+    StepRunUpdateModel,
 )
 
 if TYPE_CHECKING:
