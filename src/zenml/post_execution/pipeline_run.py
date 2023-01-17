@@ -15,13 +15,14 @@
 
 from collections import OrderedDict
 from datetime import datetime
+from functools import partial
 from typing import Any, Dict, List, Optional, cast
 from uuid import UUID
 
 from zenml.client import Client
 from zenml.enums import ExecutionStatus
 from zenml.logger import get_apidocs_link, get_logger
-from zenml.models import PipelineRunResponseModel
+from zenml.models import PipelineRunResponseModel, StepRunFilterModel
 from zenml.post_execution.step import StepView
 
 logger = get_logger(__name__)
@@ -318,7 +319,11 @@ class PipelineRunView:
             return
 
         assert self._model.id is not None
-        steps = Client().zen_store.list_run_steps(self._model.id)
+        client = Client()
+        steps = client.depaginate(
+            partial(client.list_run_steps, pipeline_run_id=self._model.id)
+        )
+
         self._steps = {step.name: StepView(step) for step in steps}
 
     def __repr__(self) -> str:

@@ -97,9 +97,10 @@ from zenml.models import (
     UserRoleAssignmentFilterModel,
     UserRoleAssignmentRequestModel,
     UserRoleAssignmentResponseModel,
-    UserUpdateModel,
+    UserUpdateModel, FilterBaseModel,
 )
-from zenml.models.artifact_models import ArtifactResponseModel
+from zenml.models.artifact_models import ArtifactResponseModel, \
+    ArtifactFilterModel
 from zenml.models.base_models import BaseResponseModel
 from zenml.models.page_model import Page
 from zenml.models.schedule_model import (
@@ -2059,7 +2060,7 @@ class Client(metaclass=ClientMetaClass):
                 is_shared=shared_status,
                 type=component_type,
             )
-            if existing_components:
+            if existing_components.total > 0:
                 raise EntityExistsError(
                     f"There are already existing "
                     f"{'shared' if shared_status else 'unshared'} components "
@@ -2071,8 +2072,8 @@ class Client(metaclass=ClientMetaClass):
             current_name = update_model.name or component.name
             existing_components = self.list_stack_components(
                 name=current_name, is_shared=is_shared, type=component_type
-            ).items
-            if any([e.id != component.id for e in existing_components]):
+            )
+            if any([e.id != component.id for e in existing_components.items]):
                 raise EntityExistsError(
                     f"There are already existing shared components with "
                     f"the name '{current_name}'"
@@ -2599,6 +2600,7 @@ class Client(metaclass=ClientMetaClass):
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
         project_id: Optional[Union[str, UUID]] = None,
+        pipeline_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[Union[str, UUID]] = None,
         status: Optional[str] = None,
@@ -2617,6 +2619,7 @@ class Client(metaclass=ClientMetaClass):
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
             project_id: The id of the project to filter by.
+            pipeline_id: The id of the pipeline to filter by.
             user_id: The  id of the user to filter by.
             stack_id: The  id of the user to filter by.
             name: The name of the stack to filter by.
@@ -2638,6 +2641,7 @@ class Client(metaclass=ClientMetaClass):
             updated=updated,
             name=name,
             project_id=project_id,
+            pipeline_id=pipeline_id,
             user_id=user_id,
             stack_id=stack_id,
             status=status,
@@ -2773,29 +2777,24 @@ class Client(metaclass=ClientMetaClass):
     def list_artifacts(
         self,
         project_name_or_id: Optional[Union[str, UUID]] = None,
-        artifact_uri: Optional[str] = None,
         artifact_store_id: Optional[UUID] = None,
-        only_unused: bool = False,
-    ) -> List[ArtifactResponseModel]:
+    ) -> Page[ArtifactResponseModel]:
         """Get all artifacts.
 
         Args:
             project_name_or_id: If provided, only return artifacts for this
                 project. Otherwise, filter by the active project.
-            artifact_uri: If provided, only return artifacts with this URI.
             artifact_store_id: If provided, only return artifacts from this
                 artifact store.
-            only_unused: If True, only return artifacts that are not used in
-                any runs.
 
         Returns:
             A list of artifacts.
         """
         return self.zen_store.list_artifacts(
-            project_name_or_id=project_name_or_id or self.active_project.id,
-            artifact_uri=artifact_uri,
-            artifact_store_id=artifact_store_id,
-            only_unused=only_unused,
+            ArtifactFilterModel(
+                project_id=project_name_or_id or self.active_project.id,
+                artifact_store_id=artifact_store_id,
+            )
         )
 
     def get_artifact(self, artifact_id: UUID) -> ArtifactResponseModel:
@@ -2941,3 +2940,23 @@ class Client(metaclass=ClientMetaClass):
                     f"Please provide more characters to uniquely identify "
                     f"only one of the {entity_label}s."
                 )
+
+    def depaginate(
+            self,
+            list_method: Callable[..., Page[AnyResponseModel]],
+    ):
+        """Depaginate the results from a client method that returns pages.
+
+        Args:
+            list_method: The list method to wrap around.
+
+        Returns:
+            A list of the corresponding Response Model.
+        """
+        page = list_method()
+        items = page.items
+        while page.page < page.total_pages:
+            page = list_method(page=page.page + 1)
+            items += page.items
+
+        return items

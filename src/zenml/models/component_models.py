@@ -123,7 +123,7 @@ class ComponentFilterModel(ShareableProjectScopedFilterModel):
 
     def _scope_filter(
         self, table: Type["SQLModel"]
-    ) -> Optional[Union["BinaryExpression", "BooleanClauseList"]]:
+    ) -> Optional[Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]]:
         """A Stack Components can also be scoped by type to narrow by type.
 
         The resulting filter from this method will be the union of the scoping

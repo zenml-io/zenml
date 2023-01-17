@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for steps (and artifacts) of pipeline runs."""
 
-from typing import Any, Dict, List
+from typing import Any, Dict
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -57,7 +57,8 @@ def list_run_steps(
         The run steps according to query filters.
     """
     return zen_store().list_run_steps(
-        step_run_filter_model=step_run_filter_model)
+        step_run_filter_model=step_run_filter_model
+    )
 
 
 @router.post(
