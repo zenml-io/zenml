@@ -121,43 +121,26 @@ class ComponentFilterModel(ShareableProjectScopedFilterModel):
         """Set the type of component on which to perform the filtering to scope the response."""
         self._scope_type = component_type
 
-    def _scope_filter(
+    def generate_filter(
         self, table: Type["SQLModel"]
     ) -> Optional[Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]]:
-        """A Stack Components can also be scoped by type to narrow by type.
+        """Generate the filter for the query.
 
-        The resulting filter from this method will be the union of the scoping
-        filter with the user provided filters.
+        Stack components can be scoped by type to narrow the search.
 
         Args:
             table: The Table that is being queried from.
 
         Returns:
-            A list of all scope filters that will be conjuncted with the other
-                filters
+            The filter expression for the query.
         """
         from sqlalchemy import and_
-        from sqlmodel import or_
 
-        scope_filter = []
-        if self._scope_user:
-            scope_filter.append(
-                or_(
-                    getattr(table, "user_id") == self._scope_user,
-                    getattr(table, "is_shared") is True,
-                )
-            )
-        if self._scope_project:
-            scope_filter.append(
-                getattr(table, "project_id") == self._scope_project
-            )
+        base_filter = super().generate_filter(table)
         if self._scope_type:
-            scope_filter.append(getattr(table, "type") == self._scope_type)
-
-        if scope_filter:
-            return and_(*scope_filter)
-        else:
-            return None
+            type_filter = getattr(table, "type") == self._scope_type
+            return and_(base_filter, type_filter)
+        return base_filter
 
 
 # ------- #

@@ -309,7 +309,7 @@ class DatetimeFilter(Filter):
 
 
 class FilterBaseModel(BaseModel):
-    """Class to unify all filter, paginate and sort request parameters in one place.
+    """Class to unify all filter, paginate and sort request parameters.
 
     This Model allows fine-grained filtering, sorting and pagination of
     resources.
@@ -621,9 +621,17 @@ class FilterBaseModel(BaseModel):
         """Returns the offset needed for the query on the data persistence layer."""
         return self.size * (self.page - 1)
 
-    def _base_filter(
+    def generate_filter(
         self, table: Type[SQLModel]
     ) -> Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]:
+        """Generate the filter for the query.
+
+        Args:
+            table: The Table that is being queried from.
+
+        Returns:
+            The filter expression for the query.
+        """
         from sqlalchemy import and_
         from sqlmodel import or_
 
@@ -639,24 +647,6 @@ class FilterBaseModel(BaseModel):
         else:
             raise RuntimeError("No valid logical operator was supplied.")
 
-    def _scope_filter(
-        self, table: Type[SQLModel]
-    ) -> Optional[Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]]:
-        return None
-
-    def generate_filter(
-        self, table: Type[SQLModel]
-    ) -> Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]:
-        """Concatenate all filters together with the chosen operator."""
-        from sqlalchemy import and_
-
-        user_created_filter = self._base_filter(table=table)
-        scope_filter = self._scope_filter(table=table)
-        if scope_filter is not None:
-            return and_(user_created_filter, scope_filter)
-        else:
-            return user_created_filter
-
 
 class ProjectScopedFilterModel(FilterBaseModel):
     """Model to enable advanced scoping with project."""
@@ -667,24 +657,29 @@ class ProjectScopedFilterModel(FilterBaseModel):
         """Set the project to scope this response."""
         self._scope_project = project_id
 
-    def _scope_filter(
+    def generate_filter(
         self, table: Type["SQLModel"]
     ) -> Optional[Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]]:
-        """Scope by project.
+        """Generate the filter for the query.
+
+        Many resources are scoped by project, in which case only the resources
+        belonging to the active project should be returned.
 
         Args:
             table: The Table that is being queried from.
 
         Returns:
-            A list of all scope filters that will be conjuncted with the other
-                filters
+            The filter expression for the query.
         """
+        from sqlalchemy import and_
+
+        base_filter = super().generate_filter(table)
         if self._scope_project:
-            return (
+            project_filter = (
                 getattr(table, "project_id") == self._scope_project
-            )  # type:ignore[no-any-return]
-        else:
-            return None
+            )
+            return and_(base_filter, project_filter)
+        return base_filter
 
 
 class ShareableProjectScopedFilterModel(ProjectScopedFilterModel):
@@ -696,38 +691,28 @@ class ShareableProjectScopedFilterModel(ProjectScopedFilterModel):
         """Set the user that is performing the filtering to scope the response."""
         self._scope_user = user_id
 
-    def _scope_filter(
+    def generate_filter(
         self, table: Type["SQLModel"]
     ) -> Optional[Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]]:
-        """A User is only allowed to list the stacks that either belong to them or that are shared.
+        """Generate the filter for the query.
 
-        The resulting filter from this method will be the union of the scoping
-        filter (owned by user OR shared) with the user provided filters.
+        A user is only allowed to list the resources that either belong to them
+        or that are shared.
 
         Args:
             table: The Table that is being queried from.
 
         Returns:
-            A list of all scope filters that will be conjuncted with the other
-                filters
+            The filter expression for the query.
         """
         from sqlalchemy import and_
         from sqlmodel import or_
 
-        scope_filter = []
+        base_filter = super().generate_filter(table)
         if self._scope_user:
-            scope_filter.append(
-                or_(
-                    getattr(table, "user_id") == self._scope_user,
-                    getattr(table, "is_shared") is True,
-                )
+            user_filter = or_(
+                getattr(table, "user_id") == self._scope_user,
+                getattr(table, "is_shared") is True,
             )
-        if self._scope_project:
-            scope_filter.append(
-                getattr(table, "project_id") == self._scope_project
-            )
-
-        if scope_filter:
-            return and_(*scope_filter)
-        else:
-            return None
+            return and_(base_filter, user_filter)
+        return base_filter
