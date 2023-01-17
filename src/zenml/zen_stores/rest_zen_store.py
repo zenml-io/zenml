@@ -147,6 +147,7 @@ class RestZenStoreConfiguration(StoreConfiguration):
     Attributes:
         username: The username to use to connect to the Zen server.
         password: The password to use to connect to the Zen server.
+        analytics_opt_in: Whether to opt in to analytics.
         verify_ssl: Either a boolean, in which case it controls whether we
             verify the server's TLS certificate, or a string, in which case it
             must be a path to a CA bundle to use or the CA bundle value itself.
@@ -157,6 +158,7 @@ class RestZenStoreConfiguration(StoreConfiguration):
     username: Optional[str] = None
     password: Optional[str] = None
     api_token: Optional[str] = None
+    analytics_opt_in: Optional[bool] = None
     verify_ssl: Union[bool, str] = True
     http_timeout: int = DEFAULT_HTTP_TIMEOUT
 
@@ -338,8 +340,12 @@ class RestZenStore(BaseZenStore):
 
     def _initialize(self) -> None:
         """Initialize the REST store."""
+        store_info = self.get_store_info()
         client_version = zenml.__version__
-        server_version = self.get_store_info().version
+        server_version = store_info.version
+
+        # add analytics opt-in status to config
+        self.config.analytics_opt_in = store_info.analytics_opt_in
 
         if not DISABLE_CLIENT_SERVER_MISMATCH_WARNING and (
             server_version != client_version
