@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Model definition for pipeline run schedules."""
 
-import datetime
+from datetime import datetime
 from typing import ClassVar, List, Optional, Union
 from uuid import UUID
 
