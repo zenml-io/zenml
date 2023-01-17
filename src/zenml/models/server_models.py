@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Model definitions for ZenML servers."""
 
+from typing import Optional
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
@@ -56,6 +57,10 @@ class ServerModel(BaseModel):
     database_type: ServerDatabaseType = Field(
         ServerDatabaseType.OTHER,
         title="The database type that the server is using.",
+    )
+    analytics_opt_in: Optional[bool] = Field(
+        False,
+        title="Whether the server is opted in to analytics collection.",
     )
 
     def is_local(self) -> bool:
