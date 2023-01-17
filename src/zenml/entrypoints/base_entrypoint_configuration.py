@@ -139,7 +139,7 @@ class BaseEntrypointConfiguration(ABC):
         for option_name in cls.get_entrypoint_options():
             if option_name == ENTRYPOINT_CONFIG_SOURCE_OPTION:
                 # This option is already used by
-                # `zenml.entrypoints.step_entrypoint` to read which config
+                # `zenml.entrypoints.entrypoint` to read which config
                 # class to use
                 continue
             parser.add_argument(f"--{option_name}", required=True)
