@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Client implementation."""
-import json
 import os
 from abc import ABCMeta
 from pathlib import Path
@@ -1912,7 +1911,7 @@ class Client(metaclass=ClientMetaClass):
             source=source,
             type=flavor.type,
             name=flavor.name,
-            config_schema=json.loads(flavor.config_schema),
+            config_schema=flavor.config_schema,
             integration="custom",
             user=self.active_user.id,
             project=self.active_project.id,

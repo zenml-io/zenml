@@ -134,8 +134,8 @@ AnyProjestRequestModel = TypeVar(
 )
 
 AnyResponseModel = TypeVar("AnyResponseModel", bound=BaseResponseModel)
-AnyProjestResponseModel = TypeVar(
-    "AnyProjestResponseModel", bound=ProjectScopedResponseModel
+AnyProjectResponseModel = TypeVar(
+    "AnyProjectResponseModel", bound=ProjectScopedResponseModel
 )
 
 DEFAULT_HTTP_TIMEOUT = 30
@@ -1909,10 +1909,10 @@ class RestZenStore(BaseZenStore):
     def _create_project_scoped_resource(
         self,
         resource: ProjectScopedRequestModel,
-        response_model: Type[AnyProjestResponseModel],
+        response_model: Type[AnyResponseModel],
         route: str,
         params: Optional[Dict[str, Any]] = None,
-    ) -> AnyProjestResponseModel:
+    ) -> AnyResponseModel:
         """Create a new project scoped resource.
 
         Args:

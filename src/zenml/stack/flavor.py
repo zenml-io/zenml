@@ -68,7 +68,10 @@ class Flavor:
         Returns:
             The config schema.
         """
-        return json.loads(self.config_class.schema_json())
+        config_schema: Dict[str, Any] = json.loads(
+            self.config_class.schema_json()
+        )
+        return config_schema
 
     @classmethod
     def from_model(cls, flavor_model: FlavorResponseModel) -> "Flavor":

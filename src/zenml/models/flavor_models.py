@@ -14,13 +14,12 @@
 """Models representing stack component flavors."""
 
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
-from uuid import UUID
 
 from pydantic import BaseModel, Field
 
 from zenml.enums import StackComponentType
 from zenml.models.base_models import (
-    UserScopedRequestModel,
+    ProjectScopedRequestModel,
     UserScopedResponseModel,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
@@ -82,14 +81,10 @@ class FlavorResponseModel(FlavorBaseModel, UserScopedResponseModel):
 # ------- #
 
 
-class FlavorRequestModel(FlavorBaseModel, UserScopedRequestModel):
+class FlavorRequestModel(FlavorBaseModel, ProjectScopedRequestModel):
     """Request model for stack component flavors."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
         "type",
         "integration",
     ]
-
-    project: Optional[UUID] = Field(
-        title="The project to which this resource belongs."
-    )
