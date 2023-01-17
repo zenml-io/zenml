@@ -212,54 +212,7 @@ class UUIDFilter(Filter):
 class NumericFilter(Filter):
     """Filter for all numeric fields."""
 
-    value: float
-
-    ALLOWED_OPS: ClassVar[List[str]] = [
-        GenericFilterOps.EQUALS,
-        GenericFilterOps.GT,
-        GenericFilterOps.GTE,
-        GenericFilterOps.LT,
-        GenericFilterOps.LTE,
-    ]
-
-    def generate_query_conditions(
-        self,
-        table: Type[SQLModel],
-    ) -> Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]:
-        """Generate the query conditions for the database.
-
-        Args:
-            table: The SQLModel table to use for the query creation
-
-        Returns:
-            A list of conditions that will be combined using the `and` operation
-        """
-        if self.operation == GenericFilterOps.GTE:
-            return (
-                getattr(table, self.column) >= self.value
-            )  # type:ignore[no-any-return]
-        elif self.operation == GenericFilterOps.GT:
-            return (
-                getattr(table, self.column) > self.value
-            )  # type:ignore[no-any-return]
-        elif self.operation == GenericFilterOps.LTE:
-            return (
-                getattr(table, self.column) <= self.value
-            )  # type:ignore[no-any-return]
-        elif self.operation == GenericFilterOps.LT:
-            return (
-                getattr(table, self.column) < self.value
-            )  # type:ignore[no-any-return]
-        else:
-            return (
-                getattr(table, self.column) == self.value
-            )  # type:ignore[no-any-return]
-
-
-class DatetimeFilter(Filter):
-    """Filter for all Boolean fields."""
-
-    value: datetime
+    value: Union[float, datetime]
 
     ALLOWED_OPS: ClassVar[List[str]] = [
         GenericFilterOps.EQUALS,
@@ -314,7 +267,7 @@ class FilterBaseModel(BaseModel):
     This Model allows fine-grained filtering, sorting and pagination of
     resources.
 
-    Usage for a given Child of this class:
+    Usage example for subclasses of this class:
     ```
     ResourceListModel(
         name="contains:default",
@@ -357,12 +310,6 @@ class FilterBaseModel(BaseModel):
     id: Union[UUID, str] = Query(None, description="Id for this resource")
     created: Union[datetime, str] = Query(None, description="Created")
     updated: Union[datetime, str] = Query(None, description="Updated")
-
-    class Config:
-        """Configure all Filter Models."""
-
-        extras = False
-        fields = {"list_of_filters": {"exclude": True}}
 
     @validator("sort_by", pre=True)
     def sort_column(cls, v: str) -> str:
@@ -411,7 +358,7 @@ class FilterBaseModel(BaseModel):
                             "expected: `{supported_format}`"
                         ) from e
 
-                    DatetimeFilter(
+                    NumericFilter(
                         operation=GenericFilterOps(operator),
                         column=key,
                         value=datetime_value,
@@ -512,7 +459,7 @@ class FilterBaseModel(BaseModel):
                             ) from e
 
                         list_of_filters.append(
-                            DatetimeFilter(
+                            NumericFilter(
                                 operation=GenericFilterOps(operator),
                                 column=key,
                                 value=datetime_value,

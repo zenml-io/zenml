@@ -23,7 +23,6 @@ from zenml.constants import FILTERING_DATETIME_FORMAT
 from zenml.enums import GenericFilterOps
 from zenml.models import FilterBaseModel
 from zenml.models.filter_models import (
-    DatetimeFilter,
     NumericFilter,
     StrFilter,
     UUIDFilter,
@@ -77,7 +76,7 @@ def test_filter_model_sort_by_for_non_filter_fields_fails(
 def test_filter_model_datetime_fields_accept_correct_filter_ops():
     """Test that the flavor base model fails with long names."""
     for filter_op in GenericFilterOps.values():
-        if filter_op in DatetimeFilter.ALLOWED_OPS:
+        if filter_op in NumericFilter.ALLOWED_OPS:
             datetime_value = "22-12-12 08:00:00"
             model_instance = TestFilterModel(
                 datetime_field=f"{filter_op}:{datetime_value}"
