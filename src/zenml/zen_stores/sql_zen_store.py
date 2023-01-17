@@ -751,6 +751,9 @@ class SqlZenStore(BaseZenStore):
                     "The deployment ID could not be loaded from the database."
                 )
             model.id = identity.id
+
+        # get the analytics opt-in status from global config
+        model.analytics_opt_in = GlobalConfiguration().analytics_opt_in
         return model
 
     # ------
