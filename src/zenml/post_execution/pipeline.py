@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the post-execution pipeline."""
-from functools import partial
 from typing import TYPE_CHECKING, Any, List, Optional, Type, Union
 from uuid import UUID
 
@@ -193,9 +192,15 @@ class PipelineView:
     @property
     def num_runs(self) -> int:
         active_project_id = Client().active_project.id
-        return Client().zen_store.list_runs(PipelineRunFilterModel(
-            project_id=active_project_id, pipeline_id=self._model.id
-        )).total
+        return (
+            Client()
+            .zen_store.list_runs(
+                PipelineRunFilterModel(
+                    project_id=active_project_id, pipeline_id=self._model.id
+                )
+            )
+            .total
+        )
 
     @property
     def runs(self) -> List["PipelineRunView"]:
@@ -212,10 +217,8 @@ class PipelineView:
         active_project_id = Client().active_project.id
 
         runs = Client().list_runs(
-                project_id=active_project_id,
-                pipeline_id=self._model.id,
-                size=50
-            )
+            project_id=active_project_id, pipeline_id=self._model.id, size=50
+        )
 
         return [PipelineRunView(run) for run in runs.items]
 

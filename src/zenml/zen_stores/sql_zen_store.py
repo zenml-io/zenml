@@ -23,6 +23,7 @@ from contextvars import ContextVar
 from pathlib import Path, PurePath
 from typing import (
     Any,
+    Callable,
     ClassVar,
     Dict,
     List,
@@ -622,6 +623,9 @@ class SqlZenStore(BaseZenStore):
         query: Union[Select[AnySchema], SelectOfScalar[AnySchema]],
         table: Type[AnySchema],
         filter_model: FilterBaseModel,
+        custom_schema_to_model_conversion: Optional[
+            Callable[[AnySchema], B]
+        ] = None,
     ) -> Page[B]:
         """Given a query, return a Page instance with a list of filtered Models.
 
@@ -630,6 +634,10 @@ class SqlZenStore(BaseZenStore):
             query: The query to execute
             table: The table to select from
             filter_model: The filter to use, including pagination and sorting
+            custom_schema_to_model_conversion: Callable to convert the schema
+                into a model. This is used if the Model contains additional
+                data that is not explicitly stored as a field or relationship
+                on the model
 
         Returns:
             The Domain Model representation of the DB resource
@@ -663,7 +671,12 @@ class SqlZenStore(BaseZenStore):
         )
 
         # Convert this page of items from schemas to models
-        items: List[B] = [i.to_model() for i in item_schemas]
+        if custom_schema_to_model_conversion:
+            items: List[B] = [
+                custom_schema_to_model_conversion(i) for i in item_schemas
+            ]
+        else:
+            items: List[B] = [i.to_model() for i in item_schemas]
 
         return Page(
             total=total,
@@ -3253,6 +3266,7 @@ class SqlZenStore(BaseZenStore):
                 query=query,
                 table=StepRunSchema,
                 filter_model=step_run_filter_model,
+                custom_schema_to_model_conversion=self._run_step_schema_to_model,
             )
 
     def update_run_step(
@@ -3391,11 +3405,23 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             query = select(ArtifactSchema)
+            if artifact_filter_model.only_unused:
+                query = query.where(
+                    ArtifactSchema.id.notin_(  # type: ignore[attr-defined]
+                        select(StepRunOutputArtifactSchema.artifact_id)
+                    )
+                )
+                query = query.where(
+                    ArtifactSchema.id.notin_(  # type: ignore[attr-defined]
+                        select(StepRunInputArtifactSchema.artifact_id)
+                    )
+                )
             return self.filter_and_paginate(
                 session=session,
                 query=query,
                 table=ArtifactSchema,
                 filter_model=artifact_filter_model,
+                custom_schema_to_model_conversion=self._artifact_schema_to_model,
             )
 
     def delete_artifact(self, artifact_id: UUID) -> None:

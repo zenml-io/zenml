@@ -104,6 +104,9 @@ class ArtifactFilterModel(ProjectScopedFilterModel):
     user_id: Union[UUID, str] = Query(
         default=None, description="User that produced this artifact"
     )
+    only_unused: bool = Query(
+        default=False, description="Filter only for unused artifacts"
+    )
 
 
 # ------- #

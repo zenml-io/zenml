@@ -25,8 +25,7 @@ if TYPE_CHECKING:
 
     from zenml.artifact_stores import BaseArtifactStore
     from zenml.config.step_configurations import Step
-    from zenml.models.step_run_models import StepRunResponseModel, \
-    StepRunFilterModel
+    from zenml.models.step_run_models import StepRunResponseModel
 
 logger = get_logger(__name__)
 
@@ -132,13 +131,17 @@ def get_cached_step_run(cache_key: str) -> Optional["StepRunResponseModel"]:
     Returns:
         The existing step run if the step can be cached, otherwise None.
     """
-    cache_candidates = Client().list_run_steps(
-                project_id=Client().active_project.id,
-                cache_key=cache_key,
-                status=ExecutionStatus.COMPLETED,
-                sort_by="created",
-                size=1
-    ).items
+    cache_candidates = (
+        Client()
+        .list_run_steps(
+            project_id=Client().active_project.id,
+            cache_key=cache_key,
+            status=ExecutionStatus.COMPLETED,
+            sort_by="created",
+            size=1,
+        )
+        .items
+    )
 
     if cache_candidates:
         return cache_candidates[-1]

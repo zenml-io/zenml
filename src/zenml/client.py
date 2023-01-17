@@ -97,10 +97,12 @@ from zenml.models import (
     UserRoleAssignmentFilterModel,
     UserRoleAssignmentRequestModel,
     UserRoleAssignmentResponseModel,
-    UserUpdateModel, FilterBaseModel,
+    UserUpdateModel,
 )
-from zenml.models.artifact_models import ArtifactResponseModel, \
-    ArtifactFilterModel
+from zenml.models.artifact_models import (
+    ArtifactFilterModel,
+    ArtifactResponseModel,
+)
 from zenml.models.base_models import BaseResponseModel
 from zenml.models.page_model import Page
 from zenml.models.schedule_model import (
@@ -2778,6 +2780,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         project_name_or_id: Optional[Union[str, UUID]] = None,
         artifact_store_id: Optional[UUID] = None,
+        only_unused: bool = False,
     ) -> Page[ArtifactResponseModel]:
         """Get all artifacts.
 
@@ -2786,6 +2789,8 @@ class Client(metaclass=ClientMetaClass):
                 project. Otherwise, filter by the active project.
             artifact_store_id: If provided, only return artifacts from this
                 artifact store.
+            only_unused: If True, only return artifacts that are not used in
+                any runs.
 
         Returns:
             A list of artifacts.
@@ -2794,6 +2799,7 @@ class Client(metaclass=ClientMetaClass):
             ArtifactFilterModel(
                 project_id=project_name_or_id or self.active_project.id,
                 artifact_store_id=artifact_store_id,
+                only_unused=only_unused,
             )
         )
 
@@ -2942,8 +2948,8 @@ class Client(metaclass=ClientMetaClass):
                 )
 
     def depaginate(
-            self,
-            list_method: Callable[..., Page[AnyResponseModel]],
+        self,
+        list_method: Callable[..., Page[AnyResponseModel]],
     ):
         """Depaginate the results from a client method that returns pages.
 
