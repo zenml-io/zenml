@@ -918,15 +918,13 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             stack_filter_model: All filter parameters including pagination
-                                params
+                params.
 
         Returns:
             A list of all stacks matching the filter criteria.
         """
         with Session(self.engine) as session:
-            # Manually create the query and add any custom clauses
             query = select(StackSchema)
-
             return self.filter_and_paginate(
                 session=session,
                 query=query,
@@ -1199,16 +1197,14 @@ class SqlZenStore(BaseZenStore):
         """List all stack components matching the given filter criteria.
 
         Args:
-            component_filter_model: All filter parameters including
-                                    pagination params
+            component_filter_model: All filter parameters including pagination
+                params.
 
         Returns:
             A list of all stack components matching the filter criteria.
         """
         with Session(self.engine) as session:
-            # Manually create the query and add any custom clauses
             query = select(StackComponentSchema)
-
             paged_components = self.filter_and_paginate(
                 session=session,
                 query=query,
@@ -1515,9 +1511,7 @@ class SqlZenStore(BaseZenStore):
             List of all the stack component flavors matching the given criteria.
         """
         with Session(self.engine) as session:
-            # Manually create the query and add any custom clauses
             query = select(FlavorSchema)
-
             return self.filter_and_paginate(
                 session=session,
                 query=query,
@@ -1653,15 +1647,14 @@ class SqlZenStore(BaseZenStore):
         """List all users.
 
         Args:
-            user_filter_model: All filter parameters including pagination params
+            user_filter_model: All filter parameters including pagination
+                params.
 
         Returns:
             A list of all users.
         """
         with Session(self.engine) as session:
-            # Manually create the query and add any custom clauses
             query = select(UserSchema)
-
             paged_user = self.filter_and_paginate(
                 session=session,
                 query=query,
@@ -1790,15 +1783,14 @@ class SqlZenStore(BaseZenStore):
         """List all teams matching the given filter criteria.
 
         Args:
-            team_filter_model: All filter parameters including pagination params
+            team_filter_model: All filter parameters including pagination
+                params.
 
         Returns:
             A list of all teams matching the filter criteria.
         """
         with Session(self.engine) as session:
-            # Manually create the query and add any custom clauses
             query = select(TeamSchema)
-
             return self.filter_and_paginate(
                 session=session,
                 query=query,
@@ -1923,15 +1915,14 @@ class SqlZenStore(BaseZenStore):
         """List all roles matching the given filter criteria.
 
         Args:
-            role_filter_model: All filter parameters including pagination params
+            role_filter_model: All filter parameters including pagination
+                params.
 
         Returns:
             A list of all roles matching the filter criteria.
         """
         with Session(self.engine) as session:
-            # Manually create the query and add any custom clauses
             query = select(RoleSchema)
-
             return self.filter_and_paginate(
                 session=session,
                 query=query,
@@ -2067,15 +2058,13 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             user_role_assignment_filter_model: All filter parameters including
-                                          pagination params
+                pagination params.
 
         Returns:
             A list of all roles assignments matching the filter criteria.
         """
         with Session(self.engine) as session:
-            # Manually create the query and add any custom clauses
             query = select(UserRoleAssignmentSchema)
-
             return self.filter_and_paginate(
                 session=session,
                 query=query,
@@ -2284,15 +2273,13 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             team_role_assignment_filter_model: All filter parameters including
-                                          pagination params
+                pagination params.
 
         Returns:
             A list of all roles assignments matching the filter criteria.
         """
         with Session(self.engine) as session:
-            # Manually create the query and add any custom clauses
             query = select(UserRoleAssignmentSchema)
-
             return self.filter_and_paginate(
                 session=session,
                 query=query,
@@ -2364,15 +2351,13 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             project_filter_model: All filter parameters including pagination
-                                  params
+                params.
 
         Returns:
             A list of all project matching the filter criteria.
         """
         with Session(self.engine) as session:
-            # Manually create the query and add any custom clauses
             query = select(ProjectSchema)
-
             return self.filter_and_paginate(
                 session=session,
                 query=query,
@@ -2529,15 +2514,13 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             pipeline_filter_model: All filter parameters including pagination
-                                   params
+                params.
 
         Returns:
             A list of all pipelines matching the filter criteria.
         """
         with Session(self.engine) as session:
-            # Manually create the query and add any custom clauses
             query = select(PipelineSchema)
-
             return self.filter_and_paginate(
                 session=session,
                 query=query,
@@ -2664,9 +2647,7 @@ class SqlZenStore(BaseZenStore):
             A list of schedules.
         """
         with Session(self.engine) as session:
-            # Manually create the query and add any custom clauses
             query = select(ScheduleSchema)
-
             return self.filter_and_paginate(
                 session=session,
                 query=query,
@@ -2863,15 +2844,13 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             runs_filter_model: All filter parameters including pagination
-                               params
+                params.
 
         Returns:
             A list of all pipeline runs matching the filter criteria.
         """
         with Session(self.engine) as session:
-            # Manually create the query and add any custom clauses
             query = select(PipelineRunSchema)
-
             return self.filter_and_paginate(
                 session=session,
                 query=query,
@@ -3262,15 +3241,13 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             step_run_filter_model: All filter parameters including pagination
-                                params
+                params.
 
         Returns:
             A list of all step runs matching the filter criteria.
         """
         with Session(self.engine) as session:
-            # Manually create the query and add any custom clauses
             query = select(StepRunSchema)
-
             return self.filter_and_paginate(
                 session=session,
                 query=query,
@@ -3407,15 +3384,13 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             artifact_filter_model: All filter parameters including pagination
-                                params
+                params.
 
         Returns:
             A list of all artifacts matching the filter criteria.
         """
         with Session(self.engine) as session:
-            # Manually create the query and add any custom clauses
             query = select(ArtifactSchema)
-
             return self.filter_and_paginate(
                 session=session,
                 query=query,

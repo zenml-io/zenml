@@ -107,6 +107,7 @@ class Filter(BaseModel, ABC):
 
 class BoolFilter(Filter):
     """Filter for all Boolean fields."""
+
     def generate_query_conditions(
         self,
         table: Type[SQLModel],

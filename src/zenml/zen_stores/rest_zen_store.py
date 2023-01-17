@@ -423,7 +423,7 @@ class RestZenStore(BaseZenStore):
 
         Args:
             stack_filter_model: All filter parameters including pagination
-                                params
+                params.
 
         Returns:
             A list of all stacks matching the filter criteria.
@@ -512,8 +512,8 @@ class RestZenStore(BaseZenStore):
         """List all stack components matching the given filter criteria.
 
         Args:
-            component_filter_model: All filter parameters including
-                                    pagination params
+            component_filter_model: All filter parameters including pagination
+                params.
 
         Returns:
             A list of all stack components matching the filter criteria.
@@ -697,7 +697,8 @@ class RestZenStore(BaseZenStore):
         """List all users.
 
         Args:
-            user_filter_model: All filter parameters including pagination params
+            user_filter_model: All filter parameters including pagination
+                params.
 
         Returns:
             A list of all users.
@@ -781,7 +782,8 @@ class RestZenStore(BaseZenStore):
         """List all teams matching the given filter criteria.
 
         Args:
-            team_filter_model: All filter parameters including pagination params
+            team_filter_model: All filter parameters including pagination
+                params.
 
         Returns:
             A list of all teams matching the filter criteria.
@@ -865,7 +867,8 @@ class RestZenStore(BaseZenStore):
         """List all roles matching the given filter criteria.
 
         Args:
-            role_filter_model: All filter parameters including pagination params
+            role_filter_model: All filter parameters including pagination
+                params.
 
         Returns:
             A list of all roles matching the filter criteria.
@@ -919,7 +922,7 @@ class RestZenStore(BaseZenStore):
 
         Args:
             user_role_assignment_filter_model: All filter parameters including
-                                          pagination params
+                pagination params.
 
         Returns:
             A list of all roles assignments matching the filter criteria.
@@ -1038,7 +1041,7 @@ class RestZenStore(BaseZenStore):
 
         Args:
             team_role_assignment_filter_model: All filter parameters including
-                                          pagination params
+                pagination params.
 
         Returns:
             A list of all roles assignments matching the filter criteria.
@@ -1095,7 +1098,7 @@ class RestZenStore(BaseZenStore):
 
         Args:
             project_filter_model: All filter parameters including pagination
-                                  params
+                params.
 
         Returns:
             A list of all project matching the filter criteria.
@@ -1182,7 +1185,7 @@ class RestZenStore(BaseZenStore):
 
         Args:
             pipeline_filter_model: All filter parameters including pagination
-                                   params
+                params.
 
         Returns:
             A list of all pipelines matching the filter criteria.
@@ -1377,7 +1380,7 @@ class RestZenStore(BaseZenStore):
 
         Args:
             runs_filter_model: All filter parameters including pagination
-                               params
+                params.
 
         Returns:
             A list of all pipeline runs matching the filter criteria.
@@ -1462,7 +1465,7 @@ class RestZenStore(BaseZenStore):
 
         Args:
             step_run_filter_model: All filter parameters including pagination
-                                params
+                params.
 
         Returns:
             A list of all step runs matching the filter criteria.
@@ -1537,7 +1540,7 @@ class RestZenStore(BaseZenStore):
 
         Args:
             artifact_filter_model: All filter parameters including pagination
-                                params
+                params.
 
         Returns:
             A list of all artifacts matching the filter criteria.
