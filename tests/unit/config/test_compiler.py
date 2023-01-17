@@ -104,6 +104,20 @@ def test_pipeline_and_steps_dont_get_modified_during_compilation(
     assert pipeline_instance.enable_cache is True
 
 
+def test_compiling_pipeline_with_invalid_run_configuration(empty_pipeline):
+    """Tests that compiling with a run configuration containing invalid steps
+    fails."""
+    run_config = PipelineRunConfiguration(
+        steps={
+            "non_existent_step": StepConfigurationUpdate(enable_cache=False)
+        }
+    )
+    with pytest.raises(KeyError):
+        Compiler()._apply_run_configuration(
+            pipeline=empty_pipeline(), config=run_config
+        )
+
+
 def test_default_run_name():
     """Tests the default run name value."""
     assert (
