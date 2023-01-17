@@ -23,7 +23,7 @@ from zenml.materializers import BuiltInMaterializer
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.pipelines import pipeline
-from zenml.steps import BaseParameters, Output, StepContext, step
+from zenml.steps import BaseParameters, BaseStep, Output, StepContext, step
 from zenml.utils import source_utils
 
 
@@ -876,3 +876,151 @@ def test_string_outputs_do_not_get_split(one_step_pipeline):
 
     with pytest.raises(StepInterfaceError):
         pipeline_.run(unlisted=True)
+
+
+def test_step_decorator_configuration_gets_applied_during_initialization(
+    mocker,
+):
+    """Tests that the configuration passed to the step decorator gets applied
+    when creating an instance of the step."""
+    config = {
+        "experiment_tracker": "e",
+        "step_operator": "s",
+        "extra": {"key": "value"},
+        "settings": {"docker": {"target_repository": "custom_repo"}},
+        "output_artifacts": None,
+        "output_materializers": None,
+    }
+
+    @step(**config)
+    def s() -> None:
+        pass
+
+    mock_configure = mocker.patch.object(BaseStep, "configure")
+    s()
+    mock_configure.assert_called_with(**config)
+
+
+def test_step_configuration(empty_step):
+    """Tests the step configuration and overwriting/merging with existing
+    configurations."""
+    step_instance = empty_step()
+    step_instance.configure(
+        name="name",
+        enable_cache=False,
+        experiment_tracker="experiment_tracker",
+        step_operator="step_operator",
+        extra={"key": "value"},
+    )
+
+    assert step_instance.configuration.name == "name"
+    assert step_instance.configuration.enable_cache is False
+    assert (
+        step_instance.configuration.experiment_tracker == "experiment_tracker"
+    )
+    assert step_instance.configuration.step_operator == "step_operator"
+    assert step_instance.configuration.extra == {"key": "value"}
+
+    # No merging
+    step_instance.configure(
+        name="name2",
+        enable_cache=True,
+        experiment_tracker="experiment_tracker2",
+        step_operator="step_operator2",
+        extra={"key2": "value2"},
+        merge=False,
+    )
+    assert step_instance.configuration.name == "name2"
+    assert step_instance.configuration.enable_cache is True
+    assert (
+        step_instance.configuration.experiment_tracker == "experiment_tracker2"
+    )
+    assert step_instance.configuration.step_operator == "step_operator2"
+    assert step_instance.configuration.extra == {"key2": "value2"}
+
+    # With merging
+    step_instance.configure(
+        name="name3",
+        enable_cache=False,
+        experiment_tracker="experiment_tracker3",
+        step_operator="step_operator3",
+        extra={"key3": "value3"},
+        merge=True,
+    )
+    assert step_instance.configuration.name == "name3"
+    assert step_instance.configuration.enable_cache is False
+    assert (
+        step_instance.configuration.experiment_tracker == "experiment_tracker3"
+    )
+    assert step_instance.configuration.step_operator == "step_operator3"
+    assert step_instance.configuration.extra == {
+        "key2": "value2",
+        "key3": "value3",
+    }
+
+
+def test_configure_step_with_invalid_settings_key(empty_step):
+    """Tests that configuring a step with an invalid settings key raises an
+    error."""
+    with pytest.raises(ValueError):
+        empty_step().configure(settings={"invalid_settings_key": {}})
+
+
+def test_configure_step_with_invalid_materializer_key_or_source():
+    """Tests that configuring a step with an invalid materializer key or source
+    raises an error."""
+
+    @step
+    def s() -> int:
+        return 0
+
+    step_instance = s()
+    with pytest.raises(StepInterfaceError):
+        step_instance.configure(
+            output_materializers={"not_an_output_key": BuiltInMaterializer}
+        )
+
+    with pytest.raises(StepInterfaceError):
+        step_instance.configure(
+            output_materializers={"output": "not_a_materializer_source"}
+        )
+
+    with does_not_raise():
+        step_instance.configure(
+            output_materializers={"output": BuiltInMaterializer}
+        )
+        step_instance.configure(
+            output_materializers={
+                "output": "zenml.materializers.built_in_materializer.BuiltInMaterializer"
+            }
+        )
+
+
+def test_configure_step_with_invalid_parameters():
+    """Tests that configuring a step with an invalid parameter key raises an
+    error."""
+
+    @step
+    def step_without_parameters() -> None:
+        pass
+
+    with pytest.raises(StepInterfaceError):
+        step_without_parameters().configure(parameters={"key": "value"})
+
+    class StepParams(BaseParameters):
+        key: int
+
+    @step
+    def step_with_parameters(params: StepParams) -> None:
+        pass
+
+    # Missing key
+    with pytest.raises(StepInterfaceError):
+        step_with_parameters().configure(parameters={"invalid_key": 1})
+
+    # Wrong type
+    with pytest.raises(StepInterfaceError):
+        step_with_parameters().configure(parameters={"key": "not_an_int"})
+
+    with does_not_raise():
+        step_with_parameters().configure(parameters={"key": 1})
