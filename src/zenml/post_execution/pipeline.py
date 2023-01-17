@@ -191,6 +191,7 @@ class PipelineView:
 
     @property
     def num_runs(self) -> int:
+        """Number of runs for this pipeline."""
         active_project_id = Client().active_project.id
         return (
             Client()

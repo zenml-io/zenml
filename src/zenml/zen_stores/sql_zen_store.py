@@ -676,7 +676,9 @@ class SqlZenStore(BaseZenStore):
                 custom_schema_to_model_conversion(i) for i in item_schemas
             ]
         else:
-            items: List[B] = [i.to_model() for i in item_schemas]
+            items = [
+                i.to_model() for i in item_schemas
+            ]  # type:ignore[attr-defined]
 
         return Page(
             total=total,

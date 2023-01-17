@@ -13,13 +13,13 @@
 #  permissions and limitations under the License.
 """Functionality to administer users of the ZenML CLI and server."""
 
-from typing import List, Optional
+from typing import Any, List, Optional
 
 import click
 
-from zenml.cli import list_options
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
+from zenml.cli.utils import list_options
 from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories, StoreType
@@ -74,7 +74,7 @@ def describe_user(user_name_or_id: Optional[str] = None) -> None:
 
 @user.command("list")
 @list_options(UserFilterModel)
-def list_users(**kwargs) -> None:
+def list_users(**kwargs: Any) -> None:
     """List all users."""
     cli_utils.print_active_config()
     client = Client()
@@ -250,7 +250,7 @@ def team() -> None:
 
 @team.command("list")
 @list_options(TeamFilterModel)
-def list_teams(**kwargs) -> None:
+def list_teams(**kwargs: Any) -> None:
     """List all teams that fulfill the filter requirements."""
     cli_utils.print_active_config()
     client = Client()

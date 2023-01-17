@@ -12,8 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """CLI functionality to interact with artifacts."""
-
-
+from functools import partial
 from uuid import UUID
 
 import click
@@ -141,7 +140,9 @@ def prune_artifacts(
     """
     cli_utils.print_active_config()
 
-    unused_artifacts = Client().list_artifacts(only_unused=True)
+    unused_artifacts = Client().depaginate(
+        partial(list_artifacts, only_unused=True)
+    )
 
     if not unused_artifacts:
         cli_utils.declare("No unused artifacts found.")

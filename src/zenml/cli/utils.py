@@ -1060,7 +1060,7 @@ def warn_unsupported_non_default_project() -> None:
         )
 
 
-def print_page_info(page: Page[BaseResponseModel]):
+def print_page_info(page: Page[BaseResponseModel]) -> None:
     """Print all information pertaining to a page to show the amount of items and pages."""
     declare(
         f"Page `({page.page}/{page.total_pages})`, `{page.total}` items "
@@ -1157,10 +1157,21 @@ def create_data_type_help_text(
         return f"{field}"
 
 
-def list_options(filter_model: Type[FilterBaseModel]) -> F:
-    """Create a decorator to generate the correct list of parameters to use for filtering."""
+def list_options(filter_model: Type[FilterBaseModel]) -> Callable[[F], F]:
+    """Create a decorator to generate the correct list of parameters to use for filtering.
 
-    def inner_decorator(func: Callable) -> Callable:
+    The Outer decorator (list_options) is the responsible for creating the inner
+    decorator. This is necessary so that the type of FilterModel ccn be passed
+    in as a parameter.
+
+    Based on the filter model, the inner decorator extracts all the click
+    options that should be added to the decorated function (wrapper).
+
+    Args:
+        filter_model: The filter model based on which to decorate the function
+    """
+
+    def inner_decorator(func: F) -> F:
 
         options = list()
         data_type_descriptors = set()
@@ -1180,7 +1191,7 @@ def list_options(filter_model: Type[FilterBaseModel]) -> F:
                     create_data_type_help_text(filter_model, k)
                 )
 
-        def wrapper(function: Callable) -> Callable:
+        def wrapper(function: F) -> F:
             for option in reversed(options):
                 function = option(function)
             return function

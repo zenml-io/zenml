@@ -121,9 +121,9 @@ class BoolFilter(Filter):
         Returns:
             A list of conditions that will be combined using the `and` operation
         """
-        return (
+        return (  # type:ignore[no-any-return]
             getattr(table, self.column) == self.value
-        )  # type:ignore[no-any-return]
+        )
 
 
 class StrFilter(Filter):
@@ -149,21 +149,21 @@ class StrFilter(Filter):
             A list of conditions that will be combined using the `and` operation
         """
         if self.operation == GenericFilterOps.CONTAINS:
-            return getattr(table, self.column).like(
-                f"%{self.value}%"
-            )  # type:ignore[no-any-return]
+            return getattr(  # type:ignore[no-any-return]
+                table, self.column
+            ).like(f"%{self.value}%")
         elif self.operation == GenericFilterOps.STARTSWITH:
-            return getattr(table, self.column).startswith(
-                f"%{self.value}%"
-            )  # type:ignore[no-any-return]
+            return getattr(  # type:ignore[no-any-return]
+                table, self.column
+            ).startswith(f"%{self.value}%")
         elif self.operation == GenericFilterOps.CONTAINS:
-            return getattr(table, self.column).endswith(
-                f"%{self.value}%"
-            )  # type:ignore[no-any-return]
+            return getattr(  # type:ignore[no-any-return]
+                table, self.column
+            ).endswith(f"%{self.value}%")
         else:
-            return (
+            return (  # type:ignore[no-any-return]
                 getattr(table, self.column) == self.value
-            )  # type:ignore[no-any-return]
+            )
 
 
 class UUIDFilter(Filter):
@@ -235,25 +235,25 @@ class NumericFilter(Filter):
             A list of conditions that will be combined using the `and` operation
         """
         if self.operation == GenericFilterOps.GTE:
-            return (
+            return (  # type:ignore[no-any-return]
                 getattr(table, self.column) >= self.value
-            )  # type:ignore[no-any-return]
+            )
         elif self.operation == GenericFilterOps.GT:
-            return (
+            return (  # type:ignore[no-any-return]
                 getattr(table, self.column) > self.value
-            )  # type:ignore[no-any-return]
+            )
         elif self.operation == GenericFilterOps.LTE:
-            return (
+            return (  # type:ignore[no-any-return]
                 getattr(table, self.column) <= self.value
-            )  # type:ignore[no-any-return]
+            )
         elif self.operation == GenericFilterOps.LT:
-            return (
+            return (  # type:ignore[no-any-return]
                 getattr(table, self.column) < self.value
-            )  # type:ignore[no-any-return]
+            )
         else:
-            return (
+            return (  # type:ignore[no-any-return]
                 getattr(table, self.column) == self.value
-            )  # type:ignore[no-any-return]
+            )
 
 
 class DatetimeFilter(Filter):
@@ -282,25 +282,25 @@ class DatetimeFilter(Filter):
             A list of conditions that will be combined using the `and` operation
         """
         if self.operation == GenericFilterOps.GTE:
-            return (
+            return (  # type:ignore[no-any-return]
                 getattr(table, self.column) >= self.value
-            )  # type:ignore[no-any-return]
+            )
         elif self.operation == GenericFilterOps.GT:
-            return (
+            return (  # type:ignore[no-any-return]
                 getattr(table, self.column) > self.value
-            )  # type:ignore[no-any-return]
+            )
         elif self.operation == GenericFilterOps.LTE:
-            return (
+            return (  # type:ignore[no-any-return]
                 getattr(table, self.column) <= self.value
-            )  # type:ignore[no-any-return]
+            )
         elif self.operation == GenericFilterOps.LT:
-            return (
+            return (  # type:ignore[no-any-return]
                 getattr(table, self.column) < self.value
-            )  # type:ignore[no-any-return]
+            )
         else:
-            return (
+            return (  # type:ignore[no-any-return]
                 getattr(table, self.column) == self.value
-            )  # type:ignore[no-any-return]
+            )
 
 
 # ---------------- #
@@ -680,9 +680,9 @@ class ProjectScopedFilterModel(FilterBaseModel):
                 filters
         """
         if self._scope_project:
-            return (
+            return (  # type:ignore[no-any-return]
                 getattr(table, "project_id") == self._scope_project
-            )  # type:ignore[no-any-return]
+            )
         else:
             return None
 

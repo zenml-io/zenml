@@ -15,7 +15,7 @@
 
 import time
 from importlib import import_module
-from typing import Callable, List, Optional
+from typing import Any, Callable, List, Optional
 
 import click
 from rich.markdown import Markdown
@@ -135,7 +135,7 @@ def generate_stack_component_list_command(
     """
 
     @list_options(ComponentFilterModel)
-    def list_stack_components_command(**kwargs) -> None:
+    def list_stack_components_command(**kwargs: Any) -> None:
         """Prints a table of stack components."""
         client = Client()
         with console.status(f"Listing {component_type.plural}..."):

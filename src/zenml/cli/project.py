@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Functionality to administer projects of the ZenML CLI and server."""
 
-from typing import Optional
+from typing import Any, Optional
 
 import click
 
@@ -34,7 +34,7 @@ def project() -> None:
 
 @project.command("list", hidden=True)
 @list_options(ProjectFilterModel)
-def list_projects(**kwargs) -> None:
+def list_projects(**kwargs: Any) -> None:
     """List all projects."""
     warn_unsupported_non_default_project()
     cli_utils.print_active_config()
