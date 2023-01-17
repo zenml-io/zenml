@@ -96,7 +96,7 @@ class PipelineRunConfiguration(StrictBaseModel):
             **kwargs: Kwargs to pass to the pydantic json(...) method.
 
         Returns:
-            Yaml string representation of the run configuration.
+            Yaml string representation of the run configuration (with unsorted keys).
         """
         dict_ = json.loads(self.json(**kwargs, sort_keys=False))
         return cast(str, yaml.dump(dict_, sort_keys=False))
