@@ -58,7 +58,9 @@ class SeldonModelDeployerConfig(BaseModelDeployerConfig):
     kubernetes_namespace: Optional[str]
     base_url: str  # TODO: unused?
     secret: Optional[str]
-    kubernetes_secret_name: Optional[str]
+    kubernetes_secret_name: Optional[
+        str
+    ]  # TODO: Add full documenation section on this
 
 
 class SeldonModelDeployerFlavor(BaseModelDeployerFlavor):
