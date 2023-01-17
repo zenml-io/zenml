@@ -35,7 +35,6 @@ from zenml.models import (
     ProjectRequestModel,
     ProjectResponseModel,
     RoleAssignmentRequestModel,
-    RoleAssignmentResponseModel,
     RoleRequestModel,
     RoleResponseModel,
     StackRequestModel,
@@ -77,7 +76,6 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
 
     config: StoreConfiguration
     track_analytics: bool = True
-    _active_user: Optional[UserResponseModel] = None
 
     TYPE: ClassVar[StoreType]
     CONFIG_TYPE: ClassVar[Type[StoreConfiguration]]
@@ -225,7 +223,8 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
 
         config = SqlZenStoreConfiguration(
-            type=StoreType.SQL, url=SqlZenStoreConfiguration.get_local_url(path)
+            type=StoreType.SQL,
+            url=SqlZenStoreConfiguration.get_local_url(path),
         )
         return config
 
@@ -335,7 +334,9 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
                     "Resetting the active stack to default.",
                     config_name,
                 )
-                active_stack = self._get_or_create_default_stack(active_project)
+                active_stack = self._get_or_create_default_stack(
+                    active_project
+                )
             else:
                 if active_stack.project.id != active_project.id:
                     logger.warning(
@@ -348,7 +349,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
                     )
                 elif not active_stack.is_shared and (
                     not active_stack.user
-                    or (active_stack.user.id != self.active_user.id)
+                    or (active_stack.user.id != self.get_user().id)
                 ):
                     logger.warning(
                         "The current %s active stack is not shared and not "
@@ -397,12 +398,12 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         try:
             return self._get_default_stack(
                 project_name_or_id=project.id,
-                user_name_or_id=self.active_user.id,
+                user_name_or_id=self.get_user().id,
             )
         except KeyError:
             return self._create_default_stack(  # type: ignore[no-any-return]
                 project_name_or_id=project.id,
-                user_name_or_id=self.active_user.id,
+                user_name_or_id=self.get_user().id,
             )
 
     def _get_or_create_default_project(self) -> "ProjectResponseModel":
@@ -529,11 +530,11 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         return self.create_role(
             RoleRequestModel(
                 name=DEFAULT_ADMIN_ROLE,
-                permissions=[
+                permissions={
                     PermissionType.READ.value,
                     PermissionType.WRITE.value,
                     PermissionType.ME.value,
-                ],
+                },
             )
         )
 
@@ -557,36 +558,16 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         return self.create_role(
             RoleRequestModel(
                 name=DEFAULT_GUEST_ROLE,
-                permissions=[
+                permissions={
                     PermissionType.READ.value,
                     PermissionType.ME.value,
-                ],
+                },
             )
         )
 
     # -----
     # Users
     # -----
-
-    @property
-    def active_user(self) -> UserResponseModel:
-        """The active user.
-
-        Returns:
-            The active user.
-        """
-        if self._active_user is None:
-            self._active_user = self.get_user(self.active_user_name)
-        return self._active_user
-
-    @property
-    def users(self) -> List[UserResponseModel]:
-        """All existing users.
-
-        Returns:
-            A list of all existing users.
-        """
-        return self.list_users()
 
     @property
     def _default_user_name(self) -> str:
@@ -638,7 +619,6 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
                 role=self._admin_role.id,
                 user=new_user.id,
                 project=None,
-                is_user=True,
             )
         )
         return new_user
@@ -655,15 +635,6 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
             A list of all existing roles.
         """
         return self.list_roles()
-
-    @property
-    def role_assignments(self) -> List[RoleAssignmentResponseModel]:
-        """All role assignments.
-
-        Returns:
-            A list of all role assignments.
-        """
-        return self.list_role_assignments(user_name_or_id=self.active_user_name)
 
     # --------
     # Projects

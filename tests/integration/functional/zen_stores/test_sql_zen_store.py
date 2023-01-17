@@ -19,7 +19,13 @@ from typing import Dict, Union
 import pytest
 
 from zenml.config.pipeline_configurations import PipelineSpec
-from zenml.enums import ExecutionStatus, PermissionType, StackComponentType
+from zenml.config.schedule import Schedule
+from zenml.enums import (
+    ArtifactType,
+    ExecutionStatus,
+    PermissionType,
+    StackComponentType,
+)
 from zenml.exceptions import (
     EntityExistsError,
     IllegalOperationError,
@@ -27,10 +33,12 @@ from zenml.exceptions import (
     StackExistsError,
 )
 from zenml.models import (
+    ArtifactRequestModel,
     ComponentRequestModel,
     ComponentUpdateModel,
     FlavorRequestModel,
     PipelineRequestModel,
+    PipelineRunUpdateModel,
     PipelineUpdateModel,
     ProjectRequestModel,
     ProjectUpdateModel,
@@ -39,12 +47,17 @@ from zenml.models import (
     RoleUpdateModel,
     StackRequestModel,
     StackUpdateModel,
+    StepRunUpdateModel,
     TeamRequestModel,
+    TeamUpdateModel,
     UserRequestModel,
     UserUpdateModel,
 )
 from zenml.models.base_models import BaseResponseModel
-from zenml.models.team_models import TeamUpdateModel
+from zenml.models.schedule_model import (
+    ScheduleRequestModel,
+    ScheduleUpdateModel,
+)
 from zenml.zen_stores.base_zen_store import (
     DEFAULT_ADMIN_ROLE,
     DEFAULT_GUEST_ROLE,
@@ -197,7 +210,9 @@ def test_create_team(
     assert sql_store["store"].get_team(new_team.name)
 
 
-def test_get_team(sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]):
+def test_get_team(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
+):
     """Tests getting a team."""
     new_team = TeamRequestModel(name="arias_team")
     sql_store["store"].create_team(new_team)
@@ -341,41 +356,31 @@ def test_getting_team_for_user(
 def test_active_user_property(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
 ):
-    """Tests the active user property."""
-    active_user = sql_store["store"].active_user
+    """Tests the active user can be queried with .get_user()."""
+    active_user = sql_store["store"].get_user()
     assert active_user is not None
     assert active_user == sql_store["active_user"]
-
-
-def test_active_user_name_property(
-    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
-):
-    """Tests the active user name property."""
-    active_user_name = sql_store["store"].active_user_name
-    assert active_user_name is not None
-    assert active_user_name == sql_store["active_user"].name
-    assert active_user_name == DEFAULT_NAME
 
 
 def test_users_property(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
 ):
     """Tests the users property."""
-    assert len(sql_store["store"].users) == 1
-    assert sql_store["store"].users[0].name == DEFAULT_NAME
+    assert len(sql_store["store"].list_users()) == 1
+    assert sql_store["store"].list_users()[0].name == DEFAULT_NAME
     assert sql_store["active_user"].name == DEFAULT_NAME
-    assert sql_store["store"].users[0] == sql_store["store"].active_user
-    assert sql_store["store"].users[0] == sql_store["active_user"]
+    assert sql_store["store"].list_users()[0] == sql_store["store"].get_user()
+    assert sql_store["store"].list_users()[0] == sql_store["active_user"]
 
 
 def test_creating_user_succeeds(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
 ):
     """Tests creating a user."""
-    assert len(sql_store["store"].users) == 1
+    assert len(sql_store["store"].list_users()) == 1
     new_user = UserRequestModel(name="aria")
     sql_store["store"].create_user(new_user)
-    assert len(sql_store["store"].users) == 2
+    assert len(sql_store["store"].list_users()) == 2
     assert sql_store["store"].get_user("aria") is not None
 
 
@@ -407,7 +412,7 @@ def test_getting_user_by_name_and_id_succeeds(
     user_by_name = sql_store["store"].get_user("aria")
     user_by_id = sql_store["store"].get_user(new_user_id)
     assert user_by_id == user_by_name
-    assert len(sql_store["store"].users) == 2
+    assert len(sql_store["store"].list_users()) == 2
 
 
 def test_updating_user_succeeds(
@@ -420,7 +425,9 @@ def test_updating_user_succeeds(
 
     new_user_name = "blupus"
     user_update = UserUpdateModel(name=new_user_name)
-    sql_store["store"].update_user(user_id=new_user.id, user_update=user_update)
+    sql_store["store"].update_user(
+        user_id=new_user.id, user_update=user_update
+    )
 
     assert sql_store["store"].get_user(new_user_name) is not None
     with pytest.raises(KeyError):
@@ -460,9 +467,9 @@ def test_deleting_user_succeeds(
     new_user = UserRequestModel(name="aria")
     sql_store["store"].create_user(new_user)
     new_user_id = sql_store["store"].get_user("aria").id
-    assert len(sql_store["store"].users) == 2
+    assert len(sql_store["store"].list_users()) == 2
     sql_store["store"].delete_user(new_user_id)
-    assert len(sql_store["store"].users) == 1
+    assert len(sql_store["store"].list_users()) == 1
 
 
 def test_deleting_default_user_fails(
@@ -633,11 +640,15 @@ def test_updating_builtin_role_fails(
     role_update = RoleUpdateModel(name="cat_feeder")
 
     with pytest.raises(IllegalOperationError):
-        sql_store["store"].update_role(role_id=role.id, role_update=role_update)
+        sql_store["store"].update_role(
+            role_id=role.id, role_update=role_update
+        )
 
     role = sql_store["store"].get_role(DEFAULT_GUEST_ROLE)
     with pytest.raises(IllegalOperationError):
-        sql_store["store"].update_role(role_id=role.id, role_update=role_update)
+        sql_store["store"].update_role(
+            role_id=role.id, role_update=role_update
+        )
 
 
 #  .----------------
@@ -1129,6 +1140,121 @@ def test_deleting_nonexistent_pipeline_fails(
         sql_store["store"].delete_pipeline(uuid.uuid4())
 
 
+# ---------
+# Schedules
+# ---------
+
+
+def test_create_schedule_succeeds(sql_store):
+    """Tests creating schedule."""
+    project_id = sql_store["default_project"].id
+    user_id = sql_store["active_user"].id
+    orchestrator_id = (
+        sql_store["default_stack"].components["orchestrator"][0].id
+    )
+    schedule = Schedule(cron_expression="*/5 * * * *")
+    schedule = ScheduleRequestModel(
+        name="arias_schedule",
+        project=project_id,
+        user=user_id,
+        pipeline_id=None,
+        orchestrator_id=orchestrator_id,
+        active=True,
+        cron_expression=schedule.cron_expression,
+        start_time=schedule.start_time,
+        end_time=schedule.end_time,
+        interval_second=schedule.interval_second,
+        catchup=schedule.catchup,
+    )
+    schedules = sql_store["store"].list_schedules()
+    assert len(schedules) == 0
+    with does_not_raise():
+        schedule = sql_store["store"].create_schedule(schedule=schedule)
+    assert schedule is not None
+    assert schedule.name == "arias_schedule"
+    schedules = sql_store["store"].list_schedules()
+    assert len(schedules) == 1
+
+
+def test_getting_schedule_succeeds(sql_store_with_scheduled_run):
+    """Tests getting schedule."""
+    schedule_id = sql_store_with_scheduled_run["schedule"].id
+    with does_not_raise():
+        schedule = sql_store_with_scheduled_run["store"].get_schedule(
+            schedule_id
+        )
+        assert schedule is not None
+        assert schedule.name == sql_store_with_scheduled_run["schedule"].name
+
+
+def test_getting_nonexistent_schedule_fails(sql_store_with_scheduled_run):
+    """Tests getting nonexistent schedule fails."""
+    with pytest.raises(KeyError):
+        sql_store_with_scheduled_run["store"].get_schedule(uuid.uuid4())
+
+
+def test_list_schedules_succeeds(sql_store_with_scheduled_run):
+    """Tests listing schedules."""
+    schedules = sql_store_with_scheduled_run["store"].list_schedules()
+    assert len(schedules) == 1
+
+
+def test_updating_schedule_succeeds(sql_store_with_scheduled_run):
+    """Tests updating schedule."""
+    schedule_id = sql_store_with_scheduled_run["schedule"].id
+    schedule_update = ScheduleUpdateModel(
+        name="blupus_schedule",
+        active=False,
+    )
+    with does_not_raise():
+        updated_schedule = sql_store_with_scheduled_run[
+            "store"
+        ].update_schedule(
+            schedule_id=schedule_id, schedule_update=schedule_update
+        )
+    assert updated_schedule is not None
+    assert updated_schedule.name == "blupus_schedule"
+    assert updated_schedule.active is False
+    assert (
+        updated_schedule.created
+        == sql_store_with_scheduled_run["schedule"].created
+    )
+    assert (
+        updated_schedule.updated
+        != sql_store_with_scheduled_run["schedule"].updated
+    )
+
+
+def test_updating_nonexistent_schedule_fails(sql_store_with_scheduled_run):
+    """Tests updating nonexistent schedule fails."""
+    schedule_update = ScheduleUpdateModel(
+        name="blupus_schedule",
+        active=False,
+    )
+    with pytest.raises(KeyError):
+        sql_store_with_scheduled_run["store"].update_schedule(
+            schedule_id=uuid.uuid4(), schedule_update=schedule_update
+        )
+
+
+def test_deleting_schedule_succeeds(sql_store_with_scheduled_run):
+    """Tests deleting schedule."""
+    schedule_id = sql_store_with_scheduled_run["schedule"].id
+    schedules = sql_store_with_scheduled_run["store"].list_schedules()
+    assert len(schedules) == 1
+    sql_store_with_scheduled_run["store"].delete_schedule(schedule_id)
+    schedules = sql_store_with_scheduled_run["store"].list_schedules()
+    assert len(schedules) == 0
+    with pytest.raises(KeyError):
+        sql_store_with_scheduled_run["store"].get_schedule(schedule_id)
+
+
+def test_deleting_nonexistent_schedule_fails(sql_store_with_scheduled_run):
+    """Tests deleting nonexistent schedule fails."""
+    with pytest.raises(KeyError):
+        sql_store_with_scheduled_run["store"].delete_schedule(uuid.uuid4())
+
+
 # --------------
 # Pipeline runs
 # --------------
@@ -1183,7 +1309,9 @@ def test_list_runs_returns_nothing_when_no_runs_exist(
     with pytest.raises(KeyError):
         sql_store["store"].list_runs(user_name_or_id=uuid.uuid4())
 
-    false_pipeline_runs = sql_store["store"].list_runs(pipeline_id=uuid.uuid4())
+    false_pipeline_runs = sql_store["store"].list_runs(
+        pipeline_id=uuid.uuid4()
+    )
     assert len(false_pipeline_runs) == 0
 
 
@@ -1194,6 +1322,49 @@ def test_list_runs_is_ordered(sql_store_with_runs):
     assert all(
         runs[i].created <= runs[i + 1].created for i in range(len(runs) - 1)
     )
+
+
+def test_update_run_succeeds(sql_store_with_run):
+    """Tests updating run."""
+    run_id = sql_store_with_run["pipeline_run"].id
+    run = sql_store_with_run["store"].get_run(run_id)
+    assert run.status == ExecutionStatus.COMPLETED
+    run_update = PipelineRunUpdateModel(
+        status=ExecutionStatus.FAILED,
+    )
+    sql_store_with_run["store"].update_run(run_id, run_update)
+    run = sql_store_with_run["store"].get_run(run_id)
+    assert run.status == ExecutionStatus.FAILED
+
+
+def test_update_nonexistent_run_fails(sql_store):
+    """Tests updating nonexistent run fails."""
+    with pytest.raises(KeyError):
+        sql_store["store"].update_run(uuid.uuid4(), PipelineRunUpdateModel())
+
+
+def test_deleting_run_succeeds(sql_store_with_run):
+    """Tests deleting run."""
+    assert len(sql_store_with_run["store"].list_runs()) == 1
+    run_id = sql_store_with_run["pipeline_run"].id
+    sql_store_with_run["store"].delete_run(run_id)
+    assert len(sql_store_with_run["store"].list_runs()) == 0
+    with pytest.raises(KeyError):
+        sql_store_with_run["store"].get_run(run_id)
+
+
+def test_deleting_nonexistent_run_fails(sql_store):
+    """Tests deleting nonexistent run fails."""
+    with pytest.raises(KeyError):
+        sql_store["store"].delete_run(uuid.uuid4())
+
+
+def test_deleting_run_deletes_steps(sql_store_with_run):
+    """Tests deleting run deletes its steps."""
+    assert len(sql_store_with_run["store"].list_run_steps()) == 2
+    run_id = sql_store_with_run["pipeline_run"].id
+    sql_store_with_run["store"].delete_run(run_id)
+    assert len(sql_store_with_run["store"].list_run_steps()) == 0
 
 
 # ------------------
@@ -1266,6 +1437,100 @@ def test_list_run_steps_succeeds(
     )
     assert len(run_steps) == 2
     assert run_steps[1] == sql_store_with_run["step"]
+
+
+def test_update_run_step_succeeds(sql_store_with_run):
+    """Tests updating run step."""
+    step_run = sql_store_with_run["step"]
+    store = sql_store_with_run["store"]
+    step_run = store.get_run_step(step_run_id=step_run.id)
+    assert step_run.status == ExecutionStatus.COMPLETED
+    run_update = StepRunUpdateModel(status=ExecutionStatus.FAILED)
+    updated_run = store.update_run_step(step_run.id, run_update)
+    assert updated_run.status == ExecutionStatus.FAILED
+    step_run = store.get_run_step(step_run_id=step_run.id)
+    assert step_run.status == ExecutionStatus.FAILED
+
+
+def test_update_run_step_fails_when_step_does_not_exist(sql_store):
+    """Tests updating run step fails when step does not exist."""
+    run_update = StepRunUpdateModel(status=ExecutionStatus.FAILED)
+    with pytest.raises(KeyError):
+        sql_store["store"].update_run_step(uuid.uuid4(), run_update)
+
+
+# ---------
+# Artifacts
+# ---------
+
+
+def test_create_artifact_succeeds(sql_store):
+    """Tests creating artifact."""
+    artifact_name = "test_artifact"
+    artifact = ArtifactRequestModel(
+        name=artifact_name,
+        type=ArtifactType.DATA,
+        uri="",
+        materializer="",
+        data_type="",
+        user=sql_store["active_user"].id,
+        project=sql_store["default_project"].id,
+    )
+    with does_not_raise():
+        created_artifact = sql_store["store"].create_artifact(
+            artifact=artifact
+        )
+        assert created_artifact.name == artifact_name
+
+
+def get_artifact_succeeds(sql_store_with_run):
+    """Tests getting artifact."""
+    artifact = sql_store_with_run["store"].get_artifact(
+        artifact_id=sql_store_with_run["artifact"].id
+    )
+    assert artifact is not None
+    assert artifact == sql_store_with_run["artifact"]
+
+
+def test_get_artifact_fails_when_artifact_does_not_exist(sql_store):
+    """Tests getting artifact fails when artifact does not exist."""
+    with pytest.raises(KeyError):
+        sql_store["store"].get_artifact(artifact_id=uuid.uuid4())
+
+
+def test_list_artifacts_succeeds(sql_store_with_run):
+    """Tests listing artifacts."""
+    artifacts = sql_store_with_run["store"].list_artifacts()
+    assert len(artifacts) == 2
+    assert artifacts[0] == sql_store_with_run["artifact"]
+
+
+def test_list_unused_artifacts(sql_store_with_run):
+    """Tests listing with `unused=True` only returns unused artifacts."""
+    artifacts = sql_store_with_run["store"].list_artifacts()
+    assert len(artifacts) == 2
+    artifacts = sql_store_with_run["store"].list_artifacts(only_unused=True)
+    assert len(artifacts) == 0
+    run_id = sql_store_with_run["pipeline_run"].id
+    sql_store_with_run["store"].delete_run(run_id)
+    artifacts = sql_store_with_run["store"].list_artifacts(only_unused=True)
+    assert len(artifacts) == 2
+
+
+def test_delete_artifact_succeeds(sql_store_with_run):
+    """Tests deleting artifact."""
+    artifact_id = sql_store_with_run["artifact"].id
+    assert len(sql_store_with_run["store"].list_artifacts()) == 2
+    sql_store_with_run["store"].delete_artifact(artifact_id=artifact_id)
+    assert len(sql_store_with_run["store"].list_artifacts()) == 1
+    with pytest.raises(KeyError):
+        sql_store_with_run["store"].get_artifact(artifact_id=artifact_id)
+
+
+def test_delete_artifact_fails_when_artifact_does_not_exist(sql_store):
+    """Tests deleting artifact fails when artifact does not exist."""
+    with pytest.raises(KeyError):
+        sql_store["store"].delete_artifact(artifact_id=uuid.uuid4())
 
 
 # ----------------

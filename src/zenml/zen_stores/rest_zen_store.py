@@ -50,6 +50,7 @@ from zenml.constants import (
     ROLE_ASSIGNMENTS,
     ROLES,
     RUNS,
+    SCHEDULES,
     STACK_COMPONENTS,
     STACKS,
     STEPS,
@@ -90,6 +91,9 @@ from zenml.models import (
     RoleRequestModel,
     RoleResponseModel,
     RoleUpdateModel,
+    ScheduleRequestModel,
+    ScheduleResponseModel,
+    ScheduleUpdateModel,
     StackRequestModel,
     StackResponseModel,
     StackUpdateModel,
@@ -255,7 +259,9 @@ class RestZenStoreConfiguration(StoreConfiguration):
     def expand_certificates(self) -> None:
         """Expands the certificates in the verify_ssl field."""
         # Load the certificate values back into the configuration
-        if isinstance(self.verify_ssl, str) and os.path.isfile(self.verify_ssl):
+        if isinstance(self.verify_ssl, str) and os.path.isfile(
+            self.verify_ssl
+        ):
             with open(self.verify_ssl, "r") as f:
                 self.verify_ssl = f.read()
 
@@ -477,7 +483,9 @@ class RestZenStore(BaseZenStore):
             response_model=ComponentResponseModel,
         )
 
-    def get_stack_component(self, component_id: UUID) -> ComponentResponseModel:
+    def get_stack_component(
+        self, component_id: UUID
+    ) -> ComponentResponseModel:
         """Get a stack component by ID.
 
         Args:
@@ -639,18 +647,6 @@ class RestZenStore(BaseZenStore):
     # Users
     # -----
 
-    @property
-    def active_user_name(self) -> str:
-        """Gets the active username.
-
-        Either the username specified in the config, or the username of the
-        currently authenticated user.
-
-        Returns:
-            The active username.
-        """
-        return self.config.username or self._get_active_user().name
-
     @track(AnalyticsEvent.CREATED_USER)
     def create_user(self, user: UserRequestModel) -> UserResponseModel:
         """Creates a new user.
@@ -667,29 +663,34 @@ class RestZenStore(BaseZenStore):
             response_model=UserResponseModel,
         )
 
-    def _get_active_user(self) -> UserResponseModel:
-        """Gets a specific user.
+    def get_user(
+        self,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
+        include_private: bool = False,
+    ) -> UserResponseModel:
+        """Gets a specific user, when no id is specified the active user is returned.
 
-        Returns:
-            The requested user, if it was found.
-        """
-        body = self.get(f"{CURRENT_USER}")
-        return UserResponseModel.parse_obj(body)
-
-    def get_user(self, user_name_or_id: Union[str, UUID]) -> UserResponseModel:
-        """Gets a specific user.
+        The `include_private` parameter is ignored here as it is handled
+        implicitly by the /current-user endpoint that is queried when no
+        user_name_or_id is set. Raises a KeyError in case a user with that id
+        does not exist.
 
         Args:
             user_name_or_id: The name or ID of the user to get.
+            include_private: Whether to include private user information
 
         Returns:
             The requested user, if it was found.
         """
-        return self._get_resource(
-            resource_id=user_name_or_id,
-            route=USERS,
-            response_model=UserResponseModel,
-        )
+        if user_name_or_id:
+            return self._get_resource(
+                resource_id=user_name_or_id,
+                route=USERS,
+                response_model=UserResponseModel,
+            )
+        else:
+            body = self.get(CURRENT_USER)
+            return UserResponseModel.parse_obj(body)
 
     def get_auth_user(
         self, user_name_or_id: Union[str, UUID]
@@ -709,7 +710,9 @@ class RestZenStore(BaseZenStore):
             " to be called from the client side."
         )
 
-    def list_users(self, name: Optional[str] = None) -> List[UserResponseModel]:
+    def list_users(
+        self, name: Optional[str] = None
+    ) -> List[UserResponseModel]:
         """List all users.
 
         Args:
@@ -793,7 +796,9 @@ class RestZenStore(BaseZenStore):
             response_model=TeamResponseModel,
         )
 
-    def list_teams(self, name: Optional[str] = None) -> List[TeamResponseModel]:
+    def list_teams(
+        self, name: Optional[str] = None
+    ) -> List[TeamResponseModel]:
         """List all teams.
 
         Args:
@@ -877,7 +882,9 @@ class RestZenStore(BaseZenStore):
             response_model=RoleResponseModel,
         )
 
-    def list_roles(self, name: Optional[str] = None) -> List[RoleResponseModel]:
+    def list_roles(
+        self, name: Optional[str] = None
+    ) -> List[RoleResponseModel]:
         """List all roles.
 
         Args:
@@ -1190,6 +1197,100 @@ class RestZenStore(BaseZenStore):
             route=PIPELINES,
         )
 
+    # ---------
+    # Schedules
+    # ---------
+
+    def create_schedule(
+        self, schedule: ScheduleRequestModel
+    ) -> ScheduleResponseModel:
+        """Creates a new schedule.
+
+        Args:
+            schedule: The schedule to create.
+
+        Returns:
+            The newly created schedule.
+        """
+        return self._create_project_scoped_resource(
+            resource=schedule,
+            route=SCHEDULES,
+            response_model=ScheduleResponseModel,
+        )
+
+    def get_schedule(self, schedule_id: UUID) -> ScheduleResponseModel:
+        """Get a schedule with a given ID.
+
+        Args:
+            schedule_id: ID of the schedule.
+
+        Returns:
+            The schedule.
+        """
+        return self._get_resource(
+            resource_id=schedule_id,
+            route=SCHEDULES,
+            response_model=ScheduleResponseModel,
+        )
+
+    def list_schedules(
+        self,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
+        pipeline_id: Optional[UUID] = None,
+        name: Optional[str] = None,
+    ) -> List[ScheduleResponseModel]:
+        """List all schedules in the project.
+
+        Args:
+            project_name_or_id: If provided, only list schedules in this project.
+            user_name_or_id: If provided, only list schedules from this user.
+            pipeline_id: If provided, only list schedules for this pipeline.
+            name: If provided, only list schedules with this name.
+
+        Returns:
+            A list of schedules.
+        """
+        filters = locals()
+        filters.pop("self")
+        return self._list_resources(
+            route=SCHEDULES,
+            response_model=ScheduleResponseModel,
+            **filters,
+        )
+
+    def update_schedule(
+        self,
+        schedule_id: UUID,
+        schedule_update: ScheduleUpdateModel,
+    ) -> ScheduleResponseModel:
+        """Updates a schedule.
+
+        Args:
+            schedule_id: The ID of the schedule to be updated.
+            schedule_update: The update to be applied.
+
+        Returns:
+            The updated schedule.
+        """
+        return self._update_resource(
+            resource_id=schedule_id,
+            resource_update=schedule_update,
+            route=SCHEDULES,
+            response_model=ScheduleResponseModel,
+        )
+
+    def delete_schedule(self, schedule_id: UUID) -> None:
+        """Deletes a schedule.
+
+        Args:
+            schedule_id: The ID of the schedule to delete.
+        """
+        self._delete_resource(
+            resource_id=schedule_id,
+            route=SCHEDULES,
+        )
+
     # --------------
     # Pipeline runs
     # --------------
@@ -1300,6 +1401,17 @@ class RestZenStore(BaseZenStore):
             resource_id=run_id,
             resource_update=run_update,
             response_model=PipelineRunResponseModel,
+            route=RUNS,
+        )
+
+    def delete_run(self, run_id: UUID) -> None:
+        """Deletes a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to delete.
+        """
+        self._delete_resource(
+            resource_id=run_id,
             route=RUNS,
         )
 
@@ -1425,13 +1537,22 @@ class RestZenStore(BaseZenStore):
 
     def list_artifacts(
         self,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
         artifact_uri: Optional[str] = None,
+        artifact_store_id: Optional[UUID] = None,
+        only_unused: bool = False,
     ) -> List[ArtifactResponseModel]:
         """Lists all artifacts.
 
         Args:
+            project_name_or_id: If specified, only artifacts from the given
+                project will be returned.
             artifact_uri: If specified, only artifacts with the given URI will
                 be returned.
+            artifact_store_id: If specified, only artifacts from the given
+                artifact store will be returned.
+            only_unused: If True, only return artifacts that are not used in
+                any runs.
 
         Returns:
             A list of all artifacts.
@@ -1444,6 +1565,14 @@ class RestZenStore(BaseZenStore):
             response_model=ArtifactResponseModel,
             **filters,
         )
+
+    def delete_artifact(self, artifact_id: UUID) -> None:
+        """Deletes an artifact.
+
+        Args:
+            artifact_id: The ID of the artifact to delete.
+        """
+        self._delete_resource(resource_id=artifact_id, route=ARTIFACTS)
 
     # =======================
     # Internal helper methods
@@ -1695,7 +1824,10 @@ class RestZenStore(BaseZenStore):
         """
         logger.debug(f"Sending DELETE request to {path}...")
         return self._request(
-            "DELETE", self.url + API + VERSION_1 + path, params=params, **kwargs
+            "DELETE",
+            self.url + API + VERSION_1 + path,
+            params=params,
+            **kwargs,
         )
 
     def post(

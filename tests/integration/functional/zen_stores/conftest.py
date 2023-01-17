@@ -17,8 +17,13 @@ from typing import Dict, Union
 
 import pytest
 
+from tests.integration.functional.conftest import (
+    constant_int_output_test_step,
+    int_plus_one_test_step,
+)
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
+from zenml.config.schedule import Schedule
 from zenml.enums import PermissionType
 from zenml.models import (
     ProjectRequestModel,
@@ -27,8 +32,6 @@ from zenml.models import (
     UserRequestModel,
 )
 from zenml.models.base_models import BaseResponseModel
-from zenml.pipelines import pipeline
-from zenml.steps import step
 from zenml.zen_stores.base_zen_store import BaseZenStore
 from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
 
@@ -37,16 +40,28 @@ from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
 def sql_store(
     module_clean_client: Client,
 ) -> Dict[str, Union[BaseZenStore, BaseResponseModel]]:
+
+    original_config = GlobalConfiguration.get_instance()
+    original_client = Client.get_instance()
+
+    GlobalConfiguration._reset_instance()
+    Client._reset_instance()
+
     temp_dir = tempfile.TemporaryDirectory(suffix="_zenml_sql_test")
-    GlobalConfiguration().set_store(
+    gc = GlobalConfiguration()
+    gc.analytics_opt_in = False
+    gc.set_store(
         config=SqlZenStoreConfiguration(
             url=f"sqlite:///{Path(temp_dir.name) / 'store.db'}"
         ),
         track_analytics=False,
     )
-    store = GlobalConfiguration().zen_store
+    client = Client()
+    _ = client.zen_store
+
+    store = gc.zen_store
     default_project = store._default_project
-    active_user = store.active_user
+    active_user = store.get_user()
     default_stack = store._get_default_stack(
         project_name_or_id=default_project.id, user_name_or_id=active_user.id
     )
@@ -57,27 +72,9 @@ def sql_store(
         "active_user": active_user,
     }
 
-
-@pytest.fixture
-def connected_two_step_pipeline():
-    """Pytest fixture that returns a pipeline which takes two steps
-    `step_1` and `step_2` that are connected."""
-
-    @pipeline
-    def _pipeline(step_1, step_2):
-        step_2(step_1())
-
-    return _pipeline
-
-
-@step
-def constant_int_output_test_step() -> int:
-    return 7
-
-
-@step
-def int_plus_one_test_step(input: int) -> int:
-    return input + 1
+    # restore the global configuration and the client
+    GlobalConfiguration._reset_instance(original_config)
+    Client._reset_instance(original_client)
 
 
 @pytest.fixture
@@ -94,14 +91,43 @@ def sql_store_with_run(
 
     store = sql_store["store"]
     pipeline_run = store.list_runs()[0]
-    pipeline_step = store.list_run_steps(pipeline_run.id)[1]
+    pipeline_step = store.list_run_steps()[1]
+    artifact = store.list_artifacts()[0]
     sql_store.update(
         {
             "pipeline_run": pipeline_run,
             "step": pipeline_step,
+            "artifact": artifact,
         }
     )
 
+    yield sql_store
+
+
+@pytest.fixture
+def sql_store_with_scheduled_run(
+    sql_store,
+    connected_two_step_pipeline,
+) -> Dict[str, Union[BaseZenStore, BaseResponseModel]]:
+    pipeline_instance = connected_two_step_pipeline(
+        step_1=constant_int_output_test_step(),
+        step_2=int_plus_one_test_step(),
+    )
+    schedule = Schedule(cron_expression="*/5 * * * *")
+    pipeline_instance.run(unlisted=True, schedule=schedule)
+    store = sql_store["store"]
+    schedule = store.list_schedules()[0]
+    pipeline_run = store.list_runs()[0]
+    pipeline_step = store.list_run_steps()[1]
+    artifact = store.list_artifacts()[0]
+    sql_store.update(
+        {
+            "schedule": schedule,
+            "pipeline_run": pipeline_run,
+            "step": pipeline_step,
+            "artifact": artifact,
+        }
+    )
     yield sql_store
 
 

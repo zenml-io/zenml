@@ -58,7 +58,9 @@ def stack_with_mock_components(mocker):
 @pytest.fixture
 def failing_stack_validator():
     """Returns a stack validator instance that always fails."""
-    return StackValidator(custom_validation_function=lambda _: (False, "Error"))
+    return StackValidator(
+        custom_validation_function=lambda _: (False, "Error")
+    )
 
 
 @pytest.fixture

@@ -27,7 +27,9 @@ def convert_annotations(
     image_urls, labels = [], []
     for annotation in label_studio_annotations:
         image_url = annotation["data"]["image"]
-        label = annotation["annotations"][0]["result"][0]["value"]["choices"][0]
+        label = annotation["annotations"][0]["result"][0]["value"]["choices"][
+            0
+        ]
         image_urls.append(image_url)
         labels.append(label)
     return image_urls, labels

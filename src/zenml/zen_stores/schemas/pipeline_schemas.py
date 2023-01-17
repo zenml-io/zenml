@@ -30,6 +30,7 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 if TYPE_CHECKING:
     from zenml.models import PipelineUpdateModel
     from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
+    from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
 
 
 class PipelineSchema(NamedSchema, table=True):
@@ -59,11 +60,13 @@ class PipelineSchema(NamedSchema, table=True):
         nullable=True,
     )
 
-    user: "UserSchema" = Relationship(back_populates="pipelines")
+    user: Optional["UserSchema"] = Relationship(back_populates="pipelines")
 
-    runs: List["PipelineRunSchema"] = Relationship(
+    schedules: List["ScheduleSchema"] = Relationship(
         back_populates="pipeline",
-        sa_relationship_kwargs={"order_by": "asc(PipelineRunSchema.created)"},
+    )
+    runs: List["PipelineRunSchema"] = Relationship(
+        back_populates="pipeline", sa_relationship_kwargs={"cascade": "delete"}
     )
 
     def to_model(
@@ -89,7 +92,7 @@ class PipelineSchema(NamedSchema, table=True):
                 id=self.id,
                 name=self.name,
                 project=self.project.to_model(),
-                user=self.user.to_model(),
+                user=self.user.to_model(True) if self.user else None,
                 docstring=self.docstring,
                 spec=PipelineSpec.parse_raw(self.spec),
                 created=self.created,
@@ -101,8 +104,8 @@ class PipelineSchema(NamedSchema, table=True):
                 id=self.id,
                 name=self.name,
                 project=self.project.to_model(),
-                user=self.user.to_model(),
-                runs=[r.to_model(True) for r in self.runs],
+                user=self.user.to_model(True) if self.user else None,
+                runs=[r.to_model(_block_recursion=True) for r in x_runs],
                 docstring=self.docstring,
                 spec=PipelineSpec.parse_raw(self.spec),
                 created=self.created,

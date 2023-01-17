@@ -24,7 +24,9 @@ from zenml.container_registries.base_container_registry import (
 from zenml.integrations.aws import AWS_CONTAINER_REGISTRY_FLAVOR
 
 if TYPE_CHECKING:
-    from zenml.integrations.aws.container_registries import AWSContainerRegistry
+    from zenml.integrations.aws.container_registries import (
+        AWSContainerRegistry,
+    )
 
 
 class AWSContainerRegistryConfig(BaseContainerRegistryConfig):

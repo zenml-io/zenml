@@ -21,6 +21,7 @@ from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.client import Client
 from zenml.config.step_configurations import StepConfiguration
 from zenml.config.step_run_info import StepRunInfo
+from zenml.enums import StackComponentType
 from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -141,11 +142,7 @@ class StepRunner:
         """
         from zenml.steps import BaseStep
 
-        step_class: Type[BaseStep] = source_utils.load_and_validate_class(
-            self._step.spec.source, expected_class=BaseStep
-        )
-
-        step_instance = step_class()
+        step_instance = BaseStep.load_from_source(self._step.spec.source)
         step_instance._configuration = self._step.config
         return step_instance.entrypoint
 
@@ -347,6 +344,13 @@ class StepRunner:
         client = Client()
         active_user_id = client.active_user.id
         active_project_id = client.active_project.id
+        artifact_stores = client.active_stack_model.components.get(
+            StackComponentType.ARTIFACT_STORE
+        )
+        assert (
+            artifact_stores is not None
+        )  # Every stack has an artifact store.
+        artifact_store_id = artifact_stores[0].id
         output_artifacts: Dict[str, ArtifactRequestModel] = {}
         for output_name, return_value in output_data.items():
             materializer_class = output_materializers[output_name]
@@ -362,6 +366,7 @@ class StepRunner:
                 data_type=source_utils.resolve_class(type(return_value)),
                 user=active_user_id,
                 project=active_project_id,
+                artifact_store_id=artifact_store_id,
             )
             output_artifacts[output_name] = output_artifact
             materializer_class(uri).save(return_value)

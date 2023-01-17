@@ -78,9 +78,11 @@ from zenml.models import (
     UserResponseModel,
     UserUpdateModel,
 )
+from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.models.base_models import BaseResponseModel
+from zenml.models.schedule_model import ScheduleResponseModel
 from zenml.utils import io_utils
-from zenml.utils.analytics_utils import AnalyticsEvent, track
+from zenml.utils.analytics_utils import AnalyticsEvent, event_handler, track
 from zenml.utils.filesync_model import FileSyncModel
 
 if TYPE_CHECKING:
@@ -204,6 +206,8 @@ class Client(metaclass=ClientMetaClass):
     as their components.
     """
 
+    _active_user: Optional[UserResponseModel] = None
+
     def __init__(
         self,
         root: Optional[Path] = None,
@@ -279,7 +283,9 @@ class Client(metaclass=ClientMetaClass):
         enable_warnings = handle_bool_env_var(
             ENV_ZENML_ENABLE_REPO_INIT_WARNINGS, True
         )
-        self._root = self.find_repository(root, enable_warnings=enable_warnings)
+        self._root = self.find_repository(
+            root, enable_warnings=enable_warnings
+        )
 
         if not self._root:
             self._config = None
@@ -350,7 +356,6 @@ class Client(metaclass=ClientMetaClass):
         return ClientConfiguration(config_path)
 
     @staticmethod
-    @track(event=AnalyticsEvent.INITIALIZE_REPO)
     def initialize(
         root: Optional[Path] = None,
     ) -> None:
@@ -364,17 +369,18 @@ class Client(metaclass=ClientMetaClass):
             InitializationException: If the root directory already contains a
                 ZenML repository.
         """
-        root = root or Path.cwd()
-        logger.debug("Initializing new repository at path %s.", root)
-        if Client.is_repository_directory(root):
-            raise InitializationException(
-                f"Found existing ZenML repository at path '{root}'."
-            )
+        with event_handler(AnalyticsEvent.INITIALIZE_REPO):
+            root = root or Path.cwd()
+            logger.debug("Initializing new repository at path %s.", root)
+            if Client.is_repository_directory(root):
+                raise InitializationException(
+                    f"Found existing ZenML repository at path '{root}'."
+                )
 
-        config_directory = str(root / REPOSITORY_DIRECTORY_NAME)
-        io_utils.create_dir_recursive_if_not_exists(config_directory)
-        # Initialize the repository configuration at the custom path
-        Client(root=root)
+            config_directory = str(root / REPOSITORY_DIRECTORY_NAME)
+            io_utils.create_dir_recursive_if_not_exists(config_directory)
+            # Initialize the repository configuration at the custom path
+            Client(root=root)
 
     @property
     def uses_local_configuration(self) -> bool:
@@ -555,7 +561,9 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The active user.
         """
-        return self.zen_store.active_user
+        if self._active_user is None:
+            self._active_user = self.zen_store.get_user(include_private=True)
+        return self._active_user
 
     def create_user(
         self,
@@ -610,7 +618,9 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix=name_id_or_prefix,
         )
 
-    def list_users(self, name: Optional[str] = None) -> List[UserResponseModel]:
+    def list_users(
+        self, name: Optional[str] = None
+    ) -> List[UserResponseModel]:
         """List all users.
 
         Args:
@@ -690,7 +700,9 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix=name_id_or_prefix,
         )
 
-    def list_teams(self, name: Optional[str] = None) -> List[TeamResponseModel]:
+    def list_teams(
+        self, name: Optional[str] = None
+    ) -> List[TeamResponseModel]:
         """List all teams.
 
         Args:
@@ -822,7 +834,9 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix=name_id_or_prefix,
         )
 
-    def list_roles(self, name: Optional[str] = None) -> List[RoleResponseModel]:
+    def list_roles(
+        self, name: Optional[str] = None
+    ) -> List[RoleResponseModel]:
         """Fetches roles.
 
         Args:
@@ -1008,7 +1022,6 @@ class Client(metaclass=ClientMetaClass):
                 role=role.id,
                 user=user.id,
                 project=project,
-                is_user=True,
             )
         else:
             team = self.get_team(name_id_or_prefix=user_or_team_name_or_id)
@@ -1016,7 +1029,6 @@ class Client(metaclass=ClientMetaClass):
                 role=role.id,
                 team=team.id,
                 project=project,
-                is_user=False,
             )
 
         return self.zen_store.create_role_assignment(
@@ -1409,7 +1421,9 @@ class Client(metaclass=ClientMetaClass):
         if component_updates:
             components_dict = {}
             for component_type, component_list in stack.components.items():
-                components_dict[component_type] = [c.id for c in component_list]
+                components_dict[component_type] = [
+                    c.id for c in component_list
+                ]
 
             for component_type, component_id_list in component_updates.items():
                 if component_id_list is not None:
@@ -1489,7 +1503,9 @@ class Client(metaclass=ClientMetaClass):
         )
 
     @track(event=AnalyticsEvent.SET_STACK)
-    def activate_stack(self, stack_name_id_or_prefix: Union[str, UUID]) -> None:
+    def activate_stack(
+        self, stack_name_id_or_prefix: Union[str, UUID]
+    ) -> None:
         """Sets the stack as active.
 
         Args:
@@ -1516,7 +1532,9 @@ class Client(metaclass=ClientMetaClass):
             # a local configuration
             GlobalConfiguration().set_active_stack(stack=stack)
 
-    def _validate_stack_configuration(self, stack: "StackRequestModel") -> None:
+    def _validate_stack_configuration(
+        self, stack: "StackRequestModel"
+    ) -> None:
         """Validates the configuration of a stack.
 
         Args:
@@ -1759,7 +1777,9 @@ class Client(metaclass=ClientMetaClass):
         if is_shared is not None:
             current_name = update_model.name or component.name
             existing_components = self.list_stack_components(
-                name=current_name, is_shared=True, component_type=component_type
+                name=current_name,
+                is_shared=True,
+                component_type=component_type,
             )
             if any([e.id != component.id for e in existing_components]):
                 raise EntityExistsError(
@@ -1773,7 +1793,9 @@ class Client(metaclass=ClientMetaClass):
             existing_configuration.update(configuration)
 
             existing_configuration = {
-                k: v for k, v in existing_configuration.items() if v is not None
+                k: v
+                for k, v in existing_configuration.items()
+                if v is not None
             }
 
             flavor_model = self.get_flavor_by_name_and_type(
@@ -1881,6 +1903,8 @@ class Client(metaclass=ClientMetaClass):
             type=flavor.type,
             name=flavor.name,
             config_schema=flavor.config_schema,
+            user=self.active_user.id,
+            project=self.active_project.id,
         )
 
         return self.zen_store.create_flavor(flavor=create_flavor_request)
@@ -2152,8 +2176,70 @@ class Client(metaclass=ClientMetaClass):
         pipeline = self.get_pipeline(name_id_or_prefix=name_id_or_prefix)
         self.zen_store.delete_pipeline(pipeline_id=pipeline.id)
 
+    # -------------
+    # - SCHEDULES -
+    # -------------
+
+    def list_schedules(
+        self,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
+        pipeline_id: Optional[UUID] = None,
+        name: Optional[str] = None,
+    ) -> List[ScheduleResponseModel]:
+        """List schedules.
+
+        Args:
+            project_name_or_id: If provided, only list schedules in this project.
+            user_name_or_id: If provided, only list schedules from this user.
+            pipeline_id: If provided, only list schedules for this pipeline.
+            name: If provided, only list schedules with this name.
+
+        Returns:
+            A list of schedules.
+        """
+        return self.zen_store.list_schedules(
+            project_name_or_id=project_name_or_id or self.active_project.id,
+            user_name_or_id=user_name_or_id,
+            pipeline_id=pipeline_id,
+            name=name,
+        )
+
+    def get_schedule(
+        self, name_id_or_prefix: Union[str, UUID]
+    ) -> ScheduleResponseModel:
+        """Get a schedule by name, id or prefix.
+
+        Args:
+            name_id_or_prefix: The name, id or prefix of the schedule.
+
+        Returns:
+            The schedule.
+        """
+        return self._get_entity_by_id_or_name_or_prefix(
+            response_model=ScheduleResponseModel,
+            get_method=self.zen_store.get_schedule,
+            list_method=self.zen_store.list_schedules,
+            name_id_or_prefix=name_id_or_prefix,
+        )
+
+    def delete_schedule(self, name_id_or_prefix: Union[str, UUID]) -> None:
+        """Delete a schedule.
+
+        Args:
+            name_id_or_prefix: The name, id or prefix id of the schedule
+                to delete.
+        """
+        schedule = self.get_schedule(name_id_or_prefix=name_id_or_prefix)
+        logger.warning(
+            f"Deleting schedule '{name_id_or_prefix}'... This will only delete "
+            "the reference of the schedule from ZenML. Please make sure to "
+            "manually stop/delete this schedule in your orchestrator as well!"
+        )
+        self.zen_store.delete_schedule(schedule_id=schedule.id)
+
     # -----------------
-    # - PIPELINE/STEP RUNS -
+    # - PIPELINE RUNS -
     # -----------------
 
     def list_runs(
@@ -2211,6 +2297,22 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix=name_id_or_prefix,
         )
 
+    def delete_pipeline_run(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+    ) -> None:
+        """Deletes a pipeline run.
+
+        Args:
+            name_id_or_prefix: Name, ID, or prefix of the pipeline run.
+        """
+        run = self.get_pipeline_run(name_id_or_prefix=name_id_or_prefix)
+        self.zen_store.delete_run(run_id=run.id)
+
+    # -------------
+    # - STEP RUNS -
+    # -------------
+
     def list_run_steps(
         self,
         pipeline_run_id: Optional[UUID] = None,
@@ -2239,6 +2341,135 @@ class Client(metaclass=ClientMetaClass):
             The step run.
         """
         return self.zen_store.get_run_step(step_run_id)
+
+    # -------------
+    # - Artifacts -
+    # -------------
+
+    def list_artifacts(
+        self,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+        artifact_uri: Optional[str] = None,
+        artifact_store_id: Optional[UUID] = None,
+        only_unused: bool = False,
+    ) -> List[ArtifactResponseModel]:
+        """Get all artifacts.
+
+        Args:
+            project_name_or_id: If provided, only return artifacts for this
+                project. Otherwise, filter by the active project.
+            artifact_uri: If provided, only return artifacts with this URI.
+            artifact_store_id: If provided, only return artifacts from this
+                artifact store.
+            only_unused: If True, only return artifacts that are not used in
+                any runs.
+
+        Returns:
+            A list of artifacts.
+        """
+        return self.zen_store.list_artifacts(
+            project_name_or_id=project_name_or_id or self.active_project.id,
+            artifact_uri=artifact_uri,
+            artifact_store_id=artifact_store_id,
+            only_unused=only_unused,
+        )
+
+    def get_artifact(self, artifact_id: UUID) -> ArtifactResponseModel:
+        """Get an artifact by ID.
+
+        Args:
+            artifact_id: The ID of the artifact to get.
+
+        Returns:
+            The artifact.
+        """
+        return self.zen_store.get_artifact(artifact_id)
+
+    def delete_artifact(
+        self,
+        artifact_id: UUID,
+        delete_metadata: bool = True,
+        delete_from_artifact_store: bool = False,
+    ) -> None:
+        """Delete an artifact.
+
+        By default, this will delete only the metadata of the artifact from the
+        database, not the artifact itself.
+
+        Args:
+            artifact_id: The ID of the artifact to delete.
+            delete_metadata: If True, delete the metadata of the artifact from
+                the database.
+            delete_from_artifact_store: If True, delete the artifact itself from
+                the artifact store.
+        """
+        artifact = self.get_artifact(artifact_id=artifact_id)
+        if delete_from_artifact_store:
+            self._delete_artifact_from_artifact_store(artifact=artifact)
+        if delete_metadata:
+            self._delete_artifact_metadata(artifact=artifact)
+
+    def _delete_artifact_from_artifact_store(
+        self, artifact: ArtifactResponseModel
+    ) -> None:
+        """Delete an artifact from the artifact store.
+
+        Args:
+            artifact: The artifact to delete.
+
+        Raises:
+            Exception: If the artifact store is inaccessible.
+        """
+        from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
+        from zenml.stack.stack_component import StackComponent
+
+        if not artifact.artifact_store_id:
+            logger.warning(
+                f"Artifact '{artifact.uri}' does not have an artifact store "
+                "associated with it. Skipping deletion from artifact store."
+            )
+            return
+        try:
+            artifact_store_model = self.get_stack_component(
+                component_type=StackComponentType.ARTIFACT_STORE,
+                name_id_or_prefix=artifact.artifact_store_id,
+            )
+            artifact_store = StackComponent.from_model(artifact_store_model)
+            assert isinstance(artifact_store, BaseArtifactStore)
+            artifact_store.rmtree(artifact.uri)
+        except Exception as e:
+            logger.error(
+                f"Failed to delete artifact '{artifact.uri}' from the "
+                "artifact store. This might happen if your local client "
+                "does not have access to the artifact store or does not "
+                "have the required integrations installed. Full error: "
+                f"{e}"
+            )
+            raise e
+        else:
+            logger.info(
+                f"Deleted artifact '{artifact.uri}' from the artifact store."
+            )
+
+    def _delete_artifact_metadata(
+        self, artifact: ArtifactResponseModel
+    ) -> None:
+        """Delete the metadata of an artifact from the database.
+
+        Args:
+            artifact: The artifact to delete.
+
+        Raises:
+            ValueError: If the artifact is still used in any runs.
+        """
+        if artifact not in self.list_artifacts(only_unused=True):
+            raise ValueError(
+                "The metadata of artifacts that are used in runs cannot be "
+                "deleted. Please delete all runs that use this artifact "
+                "first."
+            )
+        self.zen_store.delete_artifact(artifact.id)
+        logger.info(f"Deleted metadata of artifact '{artifact.uri}'.")
 
     # ---- utility prefix matching get functions -----
 

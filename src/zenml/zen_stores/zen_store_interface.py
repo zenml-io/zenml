@@ -39,6 +39,8 @@ from zenml.models import (
     RoleRequestModel,
     RoleResponseModel,
     RoleUpdateModel,
+    ScheduleRequestModel,
+    ScheduleResponseModel,
     StackRequestModel,
     StackResponseModel,
     StackUpdateModel,
@@ -53,6 +55,7 @@ from zenml.models import (
     UserResponseModel,
     UserUpdateModel,
 )
+from zenml.models.schedule_model import ScheduleUpdateModel
 from zenml.models.server_models import ServerModel
 
 
@@ -281,7 +284,9 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_stack_component(self, component_id: UUID) -> ComponentResponseModel:
+    def get_stack_component(
+        self, component_id: UUID
+    ) -> ComponentResponseModel:
         """Get a stack component by ID.
 
         Args:
@@ -402,14 +407,6 @@ class ZenStoreInterface(ABC):
     # -----
     # Users
     # -----
-    @property
-    @abstractmethod
-    def active_user_name(self) -> str:
-        """Gets the active username.
-
-        Returns:
-            The active username.
-        """
 
     @abstractmethod
     def create_user(self, user: UserRequestModel) -> UserResponseModel:
@@ -426,11 +423,16 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_user(self, user_name_or_id: Union[str, UUID]) -> UserResponseModel:
-        """Gets a specific user.
+    def get_user(
+        self,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
+        include_private: bool = False,
+    ) -> UserResponseModel:
+        """Gets a specific user, when no id is specified the active user is returned.
 
         Args:
             user_name_or_id: The name or ID of the user to get.
+            include_private: Whether to include private user information
 
         Returns:
             The requested user, if it was found.
@@ -440,7 +442,9 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_auth_user(self, user_name_or_id: Union[str, UUID]) -> UserAuthModel:
+    def get_auth_user(
+        self, user_name_or_id: Union[str, UUID]
+    ) -> UserAuthModel:
         """Gets the auth model to a specific user.
 
         Args:
@@ -451,7 +455,9 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def list_users(self, name: Optional[str] = None) -> List[UserResponseModel]:
+    def list_users(
+        self, name: Optional[str] = None
+    ) -> List[UserResponseModel]:
         """List all users.
 
         Args:
@@ -519,7 +525,9 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def list_teams(self, name: Optional[str] = None) -> List[TeamResponseModel]:
+    def list_teams(
+        self, name: Optional[str] = None
+    ) -> List[TeamResponseModel]:
         """List all teams.
 
         Args:
@@ -590,7 +598,9 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def list_roles(self, name: Optional[str] = None) -> List[RoleResponseModel]:
+    def list_roles(
+        self, name: Optional[str] = None
+    ) -> List[RoleResponseModel]:
         """List all roles.
 
         Args:
@@ -772,6 +782,7 @@ class ZenStoreInterface(ABC):
     # ---------
     # Pipelines
     # ---------
+
     @abstractmethod
     def create_pipeline(
         self,
@@ -854,6 +865,87 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: if the pipeline doesn't exist.
+        """
+
+    # ---------
+    # Schedules
+    # ---------
+
+    @abstractmethod
+    def create_schedule(
+        self, schedule: ScheduleRequestModel
+    ) -> ScheduleResponseModel:
+        """Creates a new schedule.
+
+        Args:
+            schedule: The schedule to create.
+
+        Returns:
+            The newly created schedule.
+        """
+
+    @abstractmethod
+    def get_schedule(self, schedule_id: UUID) -> ScheduleResponseModel:
+        """Get a schedule with a given ID.
+
+        Args:
+            schedule_id: ID of the schedule.
+
+        Returns:
+            The schedule.
+
+        Raises:
+            KeyError: if the schedule does not exist.
+        """
+
+    @abstractmethod
+    def list_schedules(
+        self,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
+        pipeline_id: Optional[UUID] = None,
+        name: Optional[str] = None,
+    ) -> List[ScheduleResponseModel]:
+        """List all schedules in the project.
+
+        Args:
+            project_name_or_id: If provided, only list schedules in this project.
+            user_name_or_id: If provided, only list schedules from this user.
+            pipeline_id: If provided, only list schedules for this pipeline.
+            name: If provided, only list schedules with this name.
+
+        Returns:
+            A list of schedules.
+        """
+
+    @abstractmethod
+    def update_schedule(
+        self,
+        schedule_id: UUID,
+        schedule_update: ScheduleUpdateModel,
+    ) -> ScheduleResponseModel:
+        """Updates a schedule.
+
+        Args:
+            schedule_id: The ID of the schedule to be updated.
+            schedule_update: The update to be applied.
+
+        Returns:
+            The updated schedule.
+
+        Raises:
+            KeyError: if the schedule doesn't exist.
+        """
+
+    @abstractmethod
+    def delete_schedule(self, schedule_id: UUID) -> None:
+        """Deletes a schedule.
+
+        Args:
+            schedule_id: The ID of the schedule to delete.
+
+        Raises:
+            KeyError: if the schedule doesn't exist.
         """
 
     # --------------
@@ -949,6 +1041,17 @@ class ZenStoreInterface(ABC):
 
         Returns:
             The updated pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+
+    @abstractmethod
+    def delete_run(self, run_id: UUID) -> None:
+        """Deletes a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to delete.
 
         Raises:
             KeyError: if the pipeline run doesn't exist.
@@ -1062,14 +1165,34 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_artifacts(
         self,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
         artifact_uri: Optional[str] = None,
+        artifact_store_id: Optional[UUID] = None,
+        only_unused: bool = False,
     ) -> List[ArtifactResponseModel]:
         """Lists all artifacts.
 
         Args:
+            project_name_or_id: If specified, only artifacts from the given
+                project will be returned.
             artifact_uri: If specified, only artifacts with the given URI will
                 be returned.
+            artifact_store_id: If specified, only artifacts from the given
+                artifact store will be returned.
+            only_unused: If True, only return artifacts that are not used in
+                any runs.
 
         Returns:
             A list of all artifacts.
+        """
+
+    @abstractmethod
+    def delete_artifact(self, artifact_id: UUID) -> None:
+        """Deletes an artifact.
+
+        Args:
+            artifact_id: The ID of the artifact to delete.
+
+        Raises:
+            KeyError: if the artifact doesn't exist.
         """

@@ -16,6 +16,7 @@
 import datetime
 import importlib
 import os
+import platform
 import time
 import zipfile
 from typing import (
@@ -43,7 +44,9 @@ from zenml.orchestrators import BaseOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 from zenml.utils import daemon, io_utils
-from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
+from zenml.utils.pipeline_docker_image_builder import (
+    PipelineDockerImageBuilder,
+)
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
@@ -145,12 +148,6 @@ class AirflowOrchestrator(BaseOrchestrator):
         """Sets environment variables to configure airflow."""
         os.environ["AIRFLOW_HOME"] = self.airflow_home
 
-        if self.config.local:
-            os.environ["AIRFLOW__CORE__DAGS_FOLDER"] = self.dags_directory
-            os.environ["AIRFLOW__CORE__LOAD_EXAMPLES"] = "false"
-            # check the DAG folder every 10 seconds for new files
-            os.environ["AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL"] = "10"
-
     @property
     def validator(self) -> Optional["StackValidator"]:
         """Validates the stack.
@@ -166,7 +163,9 @@ class AirflowOrchestrator(BaseOrchestrator):
             return None
         else:
 
-            def _validate_remote_components(stack: "Stack") -> Tuple[bool, str]:
+            def _validate_remote_components(
+                stack: "Stack",
+            ) -> Tuple[bool, str]:
                 for component in stack.components.values():
                     if not component.config.is_local:
                         continue
@@ -457,8 +456,8 @@ class AirflowOrchestrator(BaseOrchestrator):
         if not self.config.local:
             return True
 
-        from airflow.cli.commands.standalone_command import (
-            StandaloneCommand,  # type: ignore
+        from airflow.cli.commands.standalone_command import (  # type: ignore
+            StandaloneCommand,
         )
         from airflow.jobs.triggerer_job import TriggererJob
 
@@ -513,6 +512,7 @@ class AirflowOrchestrator(BaseOrchestrator):
 
         from airflow.cli.commands.standalone_command import StandaloneCommand
 
+        self._set_server_env()
         try:
             command = StandaloneCommand()
             daemon.run_as_daemon(
@@ -544,6 +544,18 @@ class AirflowOrchestrator(BaseOrchestrator):
 
         fileio.rmtree(self.airflow_home)
         logger.info("Airflow spun down.")
+
+    def _set_server_env(self) -> None:
+        """Sets environment variables for the local Airflow server process."""
+        os.environ["AIRFLOW__CORE__DAGS_FOLDER"] = self.dags_directory
+        os.environ["AIRFLOW__CORE__LOAD_EXAMPLES"] = "false"
+        # check the DAG folder every 10 seconds for new files
+        os.environ["AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL"] = "10"
+
+        if platform.system() == "Darwin":
+            # Prevent crashes during forking on MacOS
+            # https://github.com/apache/airflow/issues/28487
+            os.environ["no_proxy"] = "*"
 
     @staticmethod
     def _check_local_server_requirements() -> None:

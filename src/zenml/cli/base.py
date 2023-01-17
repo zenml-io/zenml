@@ -164,7 +164,9 @@ def clean(ctx: click.Context, yes: bool = False, local: bool = False) -> None:
         local_zen_repo_config = Path.cwd() / REPOSITORY_DIRECTORY_NAME
         if fileio.exists(str(local_zen_repo_config)):
             fileio.rmtree(str(local_zen_repo_config))
-            declare(f"Deleted local ZenML config from {local_zen_repo_config}.")
+            declare(
+                f"Deleted local ZenML config from {local_zen_repo_config}."
+            )
 
         # delete the zen store and all other files and directories used by ZenML
         # to persist information locally (e.g. artifacts)
@@ -268,7 +270,9 @@ def go() -> None:
                     ipynb_files.append(os.path.join(dirpath, filename))
 
         ipynb_files.sort()
-        console.print(zenml_go_notebook_tutorial_message(ipynb_files), width=80)
+        console.print(
+            zenml_go_notebook_tutorial_message(ipynb_files), width=80
+        )
         input("Press ENTER to continue...")
     notebook_path = os.path.join(zenml_tutorial_path, "notebooks")
     subprocess.check_call(["jupyter", "notebook"], cwd=notebook_path)
@@ -299,7 +303,9 @@ def _prompt_email() -> bool:
 
             # For now, hard-code to ZENML GO as the source
             GlobalConfiguration().record_email_opt_in_out(
-                opted_in=True, email=email, source=AnalyticsEventSource.ZENML_GO
+                opted_in=True,
+                email=email,
+                source=AnalyticsEventSource.ZENML_GO,
             )
 
             # Add consent and email to user model

@@ -24,7 +24,9 @@ def test_basic_type_materialization():
         (int, 0),
         (str, ""),
     ]:
-        result = _test_materializer(step_output_type=type_, step_output=example)
+        result = _test_materializer(
+            step_output_type=type_, step_output=example
+        )
         assert result == example
 
 
@@ -45,7 +47,9 @@ def test_empty_dict_list_tuple_materialization():
         (list, []),
         (tuple, ()),
     ]:
-        result = _test_materializer(step_output_type=type_, step_output=example)
+        result = _test_materializer(
+            step_output_type=type_, step_output=example
+        )
         assert result == example
 
 
@@ -121,5 +125,7 @@ def test_none_values():
         (tuple, (1, "a", None)),
         (dict, {"key": None}),
     ]:
-        result = _test_materializer(step_output_type=type_, step_output=example)
+        result = _test_materializer(
+            step_output_type=type_, step_output=example
+        )
         assert result == example

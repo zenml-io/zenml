@@ -54,7 +54,9 @@ def example_runner(examples_dir: Path) -> List[str]:
     latter option is needed for Windows compatibility.
     """
     return (
-        [os.environ[SHELL_EXECUTABLE]] if SHELL_EXECUTABLE in os.environ else []
+        [os.environ[SHELL_EXECUTABLE]]
+        if SHELL_EXECUTABLE in os.environ
+        else []
     ) + [str(examples_dir / EXAMPLES_RUN_SCRIPT)]
 
 
@@ -67,7 +69,7 @@ def run_example(
     run_count: Optional[int] = None,
     step_count: Optional[int] = None,
 ) -> Generator[Tuple[LocalExample, List[PipelineRunView]], None, None]:
-    """Runs the given examples and validates they ran correctly.
+    """Runs the given example and validates it ran correctly.
 
     Args:
         request: The pytest request object.
@@ -82,7 +84,6 @@ def run_example(
         The example and the pipeline runs that were executed and validated.
     """
     from zenml.client import Client
-    from zenml.container_registries import BaseContainerRegistry
     from zenml.enums import StackComponentType
 
     # Root directory of all checked out examples
@@ -96,7 +97,7 @@ def run_example(
     now = datetime.utcnow()
 
     # Run the example
-    example = LocalExample(name=name, path=dst_dir)
+    example = LocalExample(name=name, path=dst_dir, skip_manual_check=True)
     example.run_example_directly(*args)
 
     runs: List[PipelineRunView] = []
@@ -121,23 +122,13 @@ def run_example(
             container_registry = active_stack.components[
                 StackComponentType.CONTAINER_REGISTRY
             ][0]
-            assert isinstance(container_registry, BaseContainerRegistry)
-            image_name = f"{container_registry.config.uri}:{pipeline_name}"
-        elif (
-            active_stack.components[StackComponentType.ORCHESTRATOR][0].flavor
-            == "local_docker"
-        ):
-            image_name = f"zenml:{pipeline_name}"
+            image_name = f"{container_registry.configuration['uri']}/zenml:{pipeline_name}"
         else:
-            # TODO: add support for other orchestrators or step operators that
-            #  don't use a container registry (Airflow ?)
-
-            # We only need to clean up Docker resources if we're using a
-            # container registry or the local_docker orchestrator (which
-            # is the only component that doesn't use a container registry but
-            # still builds Docker images locally that we can clean up to
-            # save space).
-            return
+            # For orchestrators that don't need a container registry (e.g. local
+            # Docker orchestrator and local Airflow orchestrator) and for step
+            # operators, we leverage the default convention used to name the
+            # image `zenml:<pipeline_name>`.
+            image_name = f"zenml:{pipeline_name}"
 
         try:
             from docker.client import DockerClient
@@ -151,6 +142,10 @@ def run_example(
             pass
         else:
             try:
+                # If the image is not present on the local machine, the build
+                # phase either failed or we don't even have an orchestrator that
+                # builds a container image. Either way, we don't need to clean
+                # up any Docker resources.
                 pipeline_image = docker_client.images.get(image_name)
                 docker_client.containers.prune()
                 docker_client.volumes.prune()
@@ -255,7 +250,7 @@ def wait_and_validate_pipeline_run(
             if len(runs) >= run_no:
                 # We have at least `run_no` runs completed or failed
                 break
-            if wait_start <= 0:
+            if wait_finish <= 0:
                 raise AssertionError(
                     f"Timed out waiting for {run_no} pipeline runs to be "
                     f"completed or failed"
