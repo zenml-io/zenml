@@ -24,7 +24,7 @@ from typing import (
     Optional,
     Type,
     Union,
-    get_args,
+    get_args, Dict,
 )
 from uuid import UUID
 
@@ -91,7 +91,7 @@ class Filter(BaseModel, ABC):
     def generate_query_conditions(
         self,
         table: Type[SQLModel],
-    ) -> Union["BinaryExpression", "BooleanClauseList"]:
+    ) -> Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]:
         """Generate the query conditions for the database.
 
         This method converts the Filter class into an appropriate SQLModel
@@ -111,7 +111,7 @@ class BoolFilter(Filter):
     def generate_query_conditions(
         self,
         table: Type[SQLModel],
-    ) -> Union["BinaryExpression", "BooleanClauseList"]:
+    ) -> Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]:
         """Generate the query conditions for the database.
 
         Args:
@@ -120,7 +120,7 @@ class BoolFilter(Filter):
         Returns:
             A list of conditions that will be combined using the `and` operation
         """
-        return getattr(table, self.column) == self.value
+        return getattr(table, self.column) == self.value  # type:ignore[no-any-return]
 
 
 class StrFilter(Filter):
@@ -136,7 +136,7 @@ class StrFilter(Filter):
     def generate_query_conditions(
         self,
         table: Type[SQLModel],
-    ) -> Union["BinaryExpression", "BooleanClauseList"]:
+    ) -> Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]:
         """Generate the query conditions for the database.
 
         Args:
@@ -146,13 +146,13 @@ class StrFilter(Filter):
             A list of conditions that will be combined using the `and` operation
         """
         if self.operation == GenericFilterOps.CONTAINS:
-            return getattr(table, self.column).like(f"%{self.value}%")
+            return getattr(table, self.column).like(f"%{self.value}%")  # type:ignore[no-any-return]
         elif self.operation == GenericFilterOps.STARTSWITH:
-            return getattr(table, self.column).startswith(f"%{self.value}%")
+            return getattr(table, self.column).startswith(f"%{self.value}%")  # type:ignore[no-any-return]
         elif self.operation == GenericFilterOps.CONTAINS:
-            return getattr(table, self.column).endswith(f"%{self.value}%")
+            return getattr(table, self.column).endswith(f"%{self.value}%")  # type:ignore[no-any-return]
         else:
-            return getattr(table, self.column) == self.value
+            return getattr(table, self.column) == self.value  # type:ignore[no-any-return]
 
 
 class UUIDFilter(Filter):
@@ -168,7 +168,7 @@ class UUIDFilter(Filter):
     def generate_query_conditions(
         self,
         table: Type[SQLModel],
-    ) -> Union["BinaryExpression", "BooleanClauseList"]:
+    ) -> Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]:
         """Generate the query conditions for the database.
 
         Args:
@@ -181,19 +181,21 @@ class UUIDFilter(Filter):
         from sqlalchemy_utils.functions import cast_if
 
         if self.operation == GenericFilterOps.CONTAINS:
-            return cast_if(
+            return cast_if(  # type:ignore[no-any-return]
                 getattr(table, self.column), sqlalchemy.String
             ).like(f"%{self.value}%")
         elif self.operation == GenericFilterOps.STARTSWITH:
-            return cast_if(
+            return cast_if(  # type:ignore[no-any-return]
                 getattr(table, self.column), sqlalchemy.String
             ).startswith(f"%{self.value}%")
         elif self.operation == GenericFilterOps.CONTAINS:
-            return cast_if(
+            return cast_if(  # type:ignore[no-any-return]
                 getattr(table, self.column), sqlalchemy.String
             ).endswith(f"%{self.value}%")
         else:
-            return getattr(table, self.column) == self.value
+            return (  # type:ignore[no-any-return]
+                    getattr(table, self.column) == self.value
+            )
 
 
 class NumericFilter(Filter):
@@ -212,7 +214,7 @@ class NumericFilter(Filter):
     def generate_query_conditions(
         self,
         table: Type[SQLModel],
-    ) -> Union["BinaryExpression", "BooleanClauseList"]:
+    ) -> Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]:
         """Generate the query conditions for the database.
 
         Args:
@@ -222,15 +224,15 @@ class NumericFilter(Filter):
             A list of conditions that will be combined using the `and` operation
         """
         if self.operation == GenericFilterOps.GTE:
-            return getattr(table, self.column) >= self.value
+            return getattr(table, self.column) >= self.value  # type:ignore[no-any-return]
         elif self.operation == GenericFilterOps.GT:
-            return getattr(table, self.column) > self.value
+            return getattr(table, self.column) > self.value  # type:ignore[no-any-return]
         elif self.operation == GenericFilterOps.LTE:
-            return getattr(table, self.column) <= self.value
+            return getattr(table, self.column) <= self.value  # type:ignore[no-any-return]
         elif self.operation == GenericFilterOps.LT:
-            return getattr(table, self.column) < self.value
+            return getattr(table, self.column) < self.value  # type:ignore[no-any-return]
         else:
-            return getattr(table, self.column) == self.value
+            return getattr(table, self.column) == self.value  # type:ignore[no-any-return]
 
 
 class DatetimeFilter(Filter):
@@ -249,7 +251,7 @@ class DatetimeFilter(Filter):
     def generate_query_conditions(
         self,
         table: Type[SQLModel],
-    ) -> Union["BinaryExpression", "BooleanClauseList"]:
+    ) -> Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]:
         """Generate the query conditions for the database.
 
         Args:
@@ -259,15 +261,15 @@ class DatetimeFilter(Filter):
             A list of conditions that will be combined using the `and` operation
         """
         if self.operation == GenericFilterOps.GTE:
-            return getattr(table, self.column) >= self.value
+            return getattr(table, self.column) >= self.value  # type:ignore[no-any-return]
         elif self.operation == GenericFilterOps.GT:
-            return getattr(table, self.column) > self.value
+            return getattr(table, self.column) > self.value  # type:ignore[no-any-return]
         elif self.operation == GenericFilterOps.LTE:
-            return getattr(table, self.column) <= self.value
+            return getattr(table, self.column) <= self.value  # type:ignore[no-any-return]
         elif self.operation == GenericFilterOps.LT:
-            return getattr(table, self.column) < self.value
+            return getattr(table, self.column) < self.value  # type:ignore[no-any-return]
         else:
-            return getattr(table, self.column) == self.value
+            return getattr(table, self.column) == self.value  # type:ignore[no-any-return]
 
 
 # ---------------- #
@@ -346,7 +348,7 @@ class FilterBaseModel(BaseModel):
             )
 
     @root_validator(pre=True)
-    def filter_ops(cls, values: List[Any]) -> List[Any]:
+    def filter_ops(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Parse incoming filters to ensure all filters are legal."""
         for key, value in values.items():
             if key in cls.FILTER_EXCLUDE_FIELDS:
@@ -492,11 +494,11 @@ class FilterBaseModel(BaseModel):
                         ):
                             try:
                                 value = UUID(value)
-                            except ValueError:
+                            except ValueError as e:
                                 raise ValueError(
                                     "Invalid value passed as UUID as "
                                     "query parameter."
-                                ) from 3
+                                ) from e
                         elif operator != GenericFilterOps.EQUALS:
                             value = str(value)
 
@@ -590,7 +592,7 @@ class FilterBaseModel(BaseModel):
 
     def _base_filter(
         self, table: Type[SQLModel]
-    ) -> Union["BinaryExpression", "BooleanClauseList"]:
+    ) -> Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]:
         from sqlalchemy import and_
         from sqlmodel import or_
 
@@ -608,12 +610,12 @@ class FilterBaseModel(BaseModel):
 
     def _scope_filter(
         self, table: Type[SQLModel]
-    ) -> Optional[Union["BinaryExpression", "BooleanClauseList"]]:
+    ) -> Optional[Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]]:
         return None
 
     def generate_filter(
         self, table: Type[SQLModel]
-    ) -> Union["BinaryExpression", "BooleanClauseList"]:
+    ) -> Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]:
         """Concatenate all filters together with the chosen operator."""
         from sqlalchemy import and_
 
@@ -636,7 +638,7 @@ class ProjectScopedFilterModel(FilterBaseModel):
 
     def _scope_filter(
         self, table: Type["SQLModel"]
-    ) -> Optional[Union["BinaryExpression", "BooleanClauseList"]]:
+    ) -> Optional[Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]]:
         """Scope by project.
 
         Args:
@@ -647,7 +649,7 @@ class ProjectScopedFilterModel(FilterBaseModel):
                 filters
         """
         if self._scope_project:
-            return getattr(table, "project_id") == self._scope_project
+            return getattr(table, "project_id") == self._scope_project  # type:ignore[no-any-return]
         else:
             return None
 
@@ -663,7 +665,7 @@ class ShareableProjectScopedFilterModel(ProjectScopedFilterModel):
 
     def _scope_filter(
         self, table: Type["SQLModel"]
-    ) -> Optional[Union["BinaryExpression", "BooleanClauseList"]]:
+    ) -> Optional[Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]]:
         """A User is only allowed to list the stacks that either belong to them or that are shared.
 
         The resulting filter from this method will be the union of the scoping

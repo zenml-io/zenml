@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the post-execution pipeline."""
-
+from functools import partial
 from typing import TYPE_CHECKING, Any, List, Optional, Type, Union
 from uuid import UUID
 
@@ -191,8 +191,15 @@ class PipelineView:
         return self._model.spec
 
     @property
+    def num_runs(self) -> int:
+        active_project_id = Client().active_project.id
+        return Client().zen_store.list_runs(PipelineRunFilterModel(
+            project_id=active_project_id, pipeline_id=self._model.id
+        )).total
+
+    @property
     def runs(self) -> List["PipelineRunView"]:
-        """Returns all stored runs of this pipeline.
+        """Returns the last 50 stored runs of this pipeline.
 
         The runs are returned in chronological order, so the latest
         run will be the last element in this list.
@@ -203,11 +210,13 @@ class PipelineView:
         # Do not cache runs as new runs might appear during this objects
         # lifecycle
         active_project_id = Client().active_project.id
-        runs = Client().zen_store.list_runs(
-            PipelineRunFilterModel(
-                project_id=active_project_id, pipeline_id=self._model.id
+
+        runs = Client().list_runs(
+                project_id=active_project_id,
+                pipeline_id=self._model.id,
+                size=50
             )
-        )
+
         return [PipelineRunView(run) for run in runs.items]
 
     def get_run_for_completed_step(self, step_name: str) -> "PipelineRunView":

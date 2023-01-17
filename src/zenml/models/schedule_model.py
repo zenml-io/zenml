@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Model definition for pipeline run schedules."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import ClassVar, List, Optional, Union
 from uuid import UUID
 
@@ -117,7 +117,7 @@ class ScheduleUpdateModel(BaseModel):
     name: Optional[str] = None
     active: Optional[bool] = None
     cron_expression: Optional[str] = None
-    start_time: Optional[datetime.datetime] = None
-    end_time: Optional[datetime.datetime] = None
-    interval_second: Optional[datetime.timedelta] = None
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+    interval_second: Optional[timedelta] = None
     catchup: Optional[bool] = None
