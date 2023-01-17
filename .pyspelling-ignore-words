@@ -603,6 +603,7 @@ Scikit-Learn
 SecondStep
 SecondStepConfig
 SecretExistsError
+SecretReferenceMixin
 SecretSchema
 SecretSchemas
 SecretsManager
@@ -1585,5 +1586,6 @@ zenmldocker
 zenmlexample
 zenmlregistry
 zenmlserver
+zenprojects
 zenserver
 ziph
