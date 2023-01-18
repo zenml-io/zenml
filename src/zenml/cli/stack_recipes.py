@@ -688,6 +688,16 @@ def pull(
                     f"in the file: {os.path.join(destination_dir, 'locals.tf')} "
                     "before you run the deploy command."
                 )
+        # also copy the modules folder from the repo (if it exists)
+        # this is a temporary fix until we have a proper module registry
+        modules_dir = os.path.join(
+            git_stack_recipes_handler.stack_recipes_dir, "modules"
+        )
+        if os.path.exists(modules_dir):
+            cli_utils.declare("Copying modules folder...")
+            io_utils.copy_dir(
+                modules_dir, os.path.join(stack_recipes_dir, "modules"), True
+            )
 
 
 @stack_recipe.command(
