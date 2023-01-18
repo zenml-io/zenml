@@ -157,6 +157,11 @@ class KanikoImageBuilder(BaseImageBuilder):
     ) -> Dict[str, Any]:
         """Generates Kubernetes spec overrides for the Kaniko build Pod.
 
+        These values are used to override the default specification of the
+        Kubernetes pod that is running the Kaniko build. This can be used to
+        specify arguments for the Kaniko executor as well as providing
+        environment variables and/or volume mounts.
+
         Args:
             pod_name: Name of the pod.
             image_name: Name of the image that should be built.
@@ -273,7 +278,9 @@ class KanikoImageBuilder(BaseImageBuilder):
             filename = f"{hash_.hexdigest()}.tar.gz"
             filepath = f"{artifact_store.path}/kaniko-contexts/{filename}"
             if not fileio.exists(filepath):
-                logger.info("Uploading Kaniko build context to `%s`.", filepath)
+                logger.info(
+                    "Uploading Kaniko build context to `%s`.", filepath
+                )
                 fileio.copy(f.name, filepath)
             else:
                 logger.info("Build context already exists, not uploading.")

@@ -133,7 +133,9 @@ class PipelineDockerImageBuilder:
                     "image, ignoring the parent image."
                 )
 
-            push = not image_builder.config.is_local or not requires_zenml_build
+            push = (
+                not image_builder.config.is_local or not requires_zenml_build
+            )
 
             if requires_zenml_build:
                 # We will build an additional image on top of this one later
@@ -247,7 +249,8 @@ class PipelineDockerImageBuilder:
                         ),
                     )
                     build_context.add_directory(
-                        source=tmpdir, destination=DOCKER_IMAGE_ZENML_CONFIG_DIR
+                        source=tmpdir,
+                        destination=DOCKER_IMAGE_ZENML_CONFIG_DIR,
                     )
 
             image_name_or_digest = image_builder.build(
@@ -258,7 +261,6 @@ class PipelineDockerImageBuilder:
             )
 
         return image_name_or_digest
-
 
     @staticmethod
     def _get_target_image_name(
@@ -372,7 +374,8 @@ class PipelineDockerImageBuilder:
 
         if user_requirements:
             build_context.add_file(
-                source=user_requirements, destination=".zenml_user_requirements"
+                source=user_requirements,
+                destination=".zenml_user_requirements",
             )
             requirements_file_names.append(".zenml_user_requirements")
 

@@ -25,7 +25,11 @@ logger = get_logger(__name__)
 
 
 class BuildContext:
-    """Image build context."""
+    """Image build context.
+
+    This class is responsible for creating an archive of the files needed to
+    build a container image.
+    """
 
     def __init__(
         self,
