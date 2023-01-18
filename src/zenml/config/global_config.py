@@ -130,6 +130,8 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         user_email: Email address associated with this client.
         user_email_opt_in: Whether the user has opted in to email communication.
         analytics_opt_in: If a user agreed to sending analytics or not.
+        override_client_analytics_opt_in: Whether the server should override
+            the client's analytics opt-in setting using this value.
         version: Version of ZenML that was last used to create or update the
             global config.
         store: Store configuration.
@@ -145,6 +147,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
     user_email: Optional[str] = None
     user_email_opt_in: Optional[bool] = None
     analytics_opt_in: bool = True
+    override_client_analytics_opt_in: Optional[bool] = None
     version: Optional[str]
     store: Optional[StoreConfiguration]
     active_stack_id: Optional[uuid.UUID]
