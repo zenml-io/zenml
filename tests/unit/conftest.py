@@ -50,6 +50,7 @@ from zenml.stack.stack_component import (
     StackComponentConfig,
     StackComponentType,
 )
+from zenml.step_operators import BaseStepOperator, BaseStepOperatorConfig
 from zenml.steps import StepContext, step
 
 
@@ -183,6 +184,25 @@ def remote_container_registry():
         config=BaseContainerRegistryConfig(uri="gcr.io/my-project"),
         flavor="default",
         type=StackComponentType.CONTAINER_REGISTRY,
+        user=uuid4(),
+        project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+
+
+@pytest.fixture
+def sample_step_operator():
+    class StubStepOperator(BaseStepOperator):
+        def launch(self, info, entrypoint_command) -> None:
+            pass
+
+    return StubStepOperator(
+        name="",
+        id=uuid4(),
+        config=BaseStepOperatorConfig(),
+        flavor="stub",
+        type=StackComponentType.STEP_OPERATOR,
         user=uuid4(),
         project=uuid4(),
         created=datetime.now(),
