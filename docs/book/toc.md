@@ -10,6 +10,7 @@
   * [One Click Deployment using CLI](./getting-started/deploying-zenml/cli.md)
   * [Deploying with Docker](./getting-started/deploying-zenml/docker.md)
   * [Deploying with Helm](./getting-started/deploying-zenml/helm.md)
+  * [Troubleshooting your server](./getting-started/deploying-zenml/troubleshooting.md)
 * [Architecture Diagrams](getting-started/architecture-diagrams.md)
 * [Examples](./getting-started/examples.md)
 
