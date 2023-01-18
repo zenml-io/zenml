@@ -604,6 +604,7 @@ Scikit-Learn
 SecondStep
 SecondStepConfig
 SecretExistsError
+SecretReferenceMixin
 SecretSchema
 SecretSchemas
 SecretsManager
