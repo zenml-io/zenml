@@ -187,11 +187,14 @@ def print_table(obj: List[Dict[str, Any]], **columns: table.Column) -> None:
     console.print(rich_table)
 
 
+T = TypeVar("T", bound=BaseResponseModel)
+
+
 def print_pydantic_models(
-    models: Page[BaseResponseModel],
+    models: Union[Page[T], List[T]],
     columns: Optional[List[str]] = None,
     exclude_columns: Optional[List[str]] = None,
-    is_active: Optional[Callable[[BaseResponseModel], bool]] = None,
+    is_active: Optional[Callable[[T], bool]] = None,
 ) -> None:
     """Prints the list of Pydantic models in a table.
 
@@ -1060,7 +1063,7 @@ def warn_unsupported_non_default_project() -> None:
         )
 
 
-def print_page_info(page: Page[BaseResponseModel]) -> None:
+def print_page_info(page: Page[T]) -> None:
     """Print all information pertaining to a page to show the amount of items and pages."""
     declare(
         f"Page `({page.page}/{page.total_pages})`, `{page.total}` items "
@@ -1114,6 +1117,8 @@ def create_filter_help_text(
             f"to filter everything that contains the query string somewhere in "
             f"its {field}."
         )
+    else:
+        return ""
 
 
 def create_data_type_help_text(
@@ -1206,14 +1211,14 @@ def list_options(filter_model: Type[FilterBaseModel]) -> Callable[[F], F]:
         )
 
         if data_type_descriptors:
-            data_type_descriptors = "\n\n".join(data_type_descriptors)
+            joined_data_type_descriptors = "\n\n".join(data_type_descriptors)
 
             func.__doc__ = (
                 f"{func.__doc__} \n\n"
                 f"\b Each datatype supports a specific "
                 f"set of filter operations, here are the relevant "
                 f"ones for the parameters of this command: \n\n"
-                f"{data_type_descriptors}"
+                f"{joined_data_type_descriptors}"
             )
 
         return wrapper(func)

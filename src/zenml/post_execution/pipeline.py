@@ -37,10 +37,8 @@ def get_pipelines() -> List["PipelineView"]:
     """
     # TODO: [server] handle the active stack correctly
     client = Client()
-    pipelines = client.zen_store.list_pipelines(
-        project_name_or_id=client.active_project.id
-    )
-    return [PipelineView(model) for model in pipelines]
+    pipelines = client.list_pipelines(project_id=client.active_project.id)
+    return [PipelineView(model) for model in pipelines.items]
 
 
 @track(event=AnalyticsEvent.GET_PIPELINE)
@@ -120,10 +118,10 @@ def get_pipeline(
 
     pipeline_models = client.list_pipelines(
         name=pipeline_name,
-        project_name_or_id=active_project_id,
+        project_id=active_project_id,
     )
     if pipeline_models.total == 1:
-        return PipelineView(pipeline_models[0])
+        return PipelineView(pipeline_models.items[0])
     elif pipeline_models.total > 1:
         raise RuntimeError(
             f"Pipeline_name `{pipeline_name}` not unique within Project "

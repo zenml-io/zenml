@@ -43,23 +43,23 @@ def get_run(name: str) -> "PipelineRunView":
     """
     client = Client()
     active_project_id = client.active_project.id
-    runs = client.zen_store.list_runs(
+    runs = client.list_runs(
         name=name,
-        project_name_or_id=active_project_id,
+        project_id=active_project_id,
     )
 
     # TODO: [server] this error handling could be improved
     if not runs:
         raise KeyError(f"No run with name '{name}' exists.")
-    elif len(runs) > 1:
+    elif runs.total:
         raise RuntimeError(
             f"Multiple runs have been found for name  '{name}'.", runs
         )
-    return PipelineRunView(runs[0])
+    return PipelineRunView(runs.items[0])
 
 
 def get_unlisted_runs() -> List["PipelineRunView"]:
-    """Fetches post-execution views of all unlisted runs.
+    """Fetches post-execution views the most recent 50 unlisted runs.
 
     Unlisted runs are runs that are not associated with any pipeline.
 
@@ -67,11 +67,10 @@ def get_unlisted_runs() -> List["PipelineRunView"]:
         A list of post-execution run views.
     """
     client = Client()
-    runs = client.zen_store.list_runs(
-        project_name_or_id=client.active_project.id,
-        unlisted=True,
+    runs = client.list_runs(
+        project_id=client.active_project.id, unlisted=True, size=50
     )
-    return [PipelineRunView(model) for model in runs]
+    return [PipelineRunView(model) for model in runs.items]
 
 
 class PipelineRunView:
