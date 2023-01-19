@@ -324,18 +324,12 @@ class Compiler:
             configuration_level=ConfigurationLevel.STEP,
             stack=stack,
         )
-
-        merged_settings = {
-            **pipeline_settings,
-            **step_settings,
-        }
-        merged_extras = {**pipeline_extra, **step.configuration.extra}
+        step_extra = step.configuration.extra
 
         step.configure(
-            settings=merged_settings,
-            extra=merged_extras,
-            merge=False,
+            settings=pipeline_settings, extra=pipeline_extra, merge=False
         )
+        step.configure(settings=step_settings, extra=step_extra, merge=True)
 
         complete_step_configuration = StepConfiguration(
             **step.configuration.dict()

@@ -104,6 +104,7 @@ from zenml.models import (
     StepRunRequestModel,
     StepRunResponseModel,
     StepRunUpdateModel,
+    TeamFilterModel,
     TeamRequestModel,
     TeamResponseModel,
     TeamRoleAssignmentFilterModel,
@@ -676,7 +677,7 @@ class SqlZenStore(BaseZenStore):
                 custom_schema_to_model_conversion(i) for i in item_schemas
             ]
         else:
-            items: List[B] = [i.to_model() for i in item_schemas]
+            items = [i.to_model() for i in item_schemas]
 
         return Page(
             total=total,
@@ -1218,7 +1219,9 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             query = select(StackComponentSchema)
-            paged_components = self.filter_and_paginate(
+            paged_components: Page[
+                ComponentResponseModel
+            ] = self.filter_and_paginate(
                 session=session,
                 query=query,
                 table=StackComponentSchema,
@@ -1668,7 +1671,7 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             query = select(UserSchema)
-            paged_user = self.filter_and_paginate(
+            paged_user: Page[UserResponseModel] = self.filter_and_paginate(
                 session=session,
                 query=query,
                 table=UserSchema,
@@ -1791,7 +1794,7 @@ class SqlZenStore(BaseZenStore):
             return team.to_model()
 
     def list_teams(
-        self, team_filter_model: StackFilterModel
+        self, team_filter_model: TeamFilterModel
     ) -> Page[TeamResponseModel]:
         """List all teams matching the given filter criteria.
 
@@ -2160,6 +2163,12 @@ class SqlZenStore(BaseZenStore):
 
             if user_role:
                 return user_role.to_model()
+            else:
+                raise KeyError(
+                    f"Unable to get user role assignment with ID "
+                    f"'{user_role_assignment_id}': No user role assignment "
+                    f"with this ID found."
+                )
 
     def delete_user_role_assignment(
         self, user_role_assignment_id: UUID
@@ -2259,6 +2268,12 @@ class SqlZenStore(BaseZenStore):
 
             if team_role:
                 return team_role.to_model()
+            else:
+                raise KeyError(
+                    f"Unable to get team role assignment with ID "
+                    f"'{team_role_assignment_id}': No team role assignment "
+                    f"with this ID found."
+                )
 
     def delete_team_role_assignment(
         self, team_role_assignment_id: UUID
@@ -2292,7 +2307,7 @@ class SqlZenStore(BaseZenStore):
             A list of all roles assignments matching the filter criteria.
         """
         with Session(self.engine) as session:
-            query = select(UserRoleAssignmentSchema)
+            query = select(TeamRoleAssignmentSchema)
             return self.filter_and_paginate(
                 session=session,
                 query=query,

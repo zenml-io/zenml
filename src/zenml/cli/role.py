@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Functionality to administer roles of the ZenML CLI and server."""
 
-from typing import List, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
 import click
 
@@ -34,7 +34,7 @@ def role() -> None:
 
 @role.command("list")
 @list_options(RoleFilterModel)
-def list_roles(**kwargs) -> None:
+def list_roles(**kwargs: Any) -> None:
     """List all roles that fulfill the filter requirements."""
     cli_utils.print_active_config()
     client = Client()
@@ -276,7 +276,7 @@ def assignment() -> None:
 
 @assignment.command("list")
 @list_options(UserRoleAssignmentFilterModel)
-def list_role_assignments(**kwargs) -> None:
+def list_role_assignments(**kwargs: Any) -> None:
     """List all user role assignments that fulfill the filter requirements."""
     cli_utils.print_active_config()
     client = Client()

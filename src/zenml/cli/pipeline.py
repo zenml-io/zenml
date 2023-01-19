@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """CLI functionality to interact with pipelines."""
-
+from typing import Any
 
 import click
 
@@ -56,7 +56,7 @@ def cli_pipeline_run(python_file: str, config_path: str) -> None:
 
 @pipeline.command("list", help="List all registered pipelines.")
 @list_options(PipelineFilterModel)
-def list_pipelines(**kwargs) -> None:
+def list_pipelines(**kwargs: Any) -> None:
     """List all registered pipelines."""
     cli_utils.print_active_config()
     client = Client()
@@ -193,7 +193,7 @@ def runs() -> None:
 
 @runs.command("list", help="List all registered pipeline runs.")
 @list_options(PipelineRunFilterModel)
-def list_pipeline_runs(**kwargs) -> None:
+def list_pipeline_runs(**kwargs: Any) -> None:
     """List all registered pipeline runs for the filter."""
     cli_utils.print_active_config()
 

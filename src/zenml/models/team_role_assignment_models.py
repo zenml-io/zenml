@@ -87,8 +87,6 @@ class TeamRoleAssignmentRequestModel(
     project: Optional[UUID] = Field(
         None, title="The project that the role is limited to."
     )
-    team: Optional[UUID] = Field(
-        None, title="The user that the role is assigned to."
-    )
+    team: UUID = Field(None, title="The user that the role is assigned to.")
 
     role: UUID = Field(title="The role.")

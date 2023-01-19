@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for pipeline runs."""
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -32,6 +32,7 @@ from zenml.models import (
     PipelineRunFilterModel,
     PipelineRunResponseModel,
     PipelineRunUpdateModel,
+    StepRunFilterModel,
     StepRunResponseModel,
 )
 from zenml.models.page_model import Page
@@ -157,23 +158,24 @@ def get_run_dag(
 
 @router.get(
     "/{run_id}" + STEPS,
-    response_model=List[StepRunResponseModel],
+    response_model=Page[StepRunResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_run_steps(
-    run_id: UUID,
+    step_run_filter_model: StepRunFilterModel = Depends(),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> List[StepRunResponseModel]:
+) -> Page[StepRunResponseModel]:
     """Get all steps for a given pipeline run.
 
     Args:
-        run_id: ID of the pipeline run to use to get the DAG.
+        step_run_filter_model: Filter model used for pagination, sorting,
+            filtering
 
     Returns:
         The steps for a given pipeline run.
     """
-    return zen_store().list_run_steps(run_id)
+    return zen_store().list_run_steps(step_run_filter_model)
 
 
 @router.get(

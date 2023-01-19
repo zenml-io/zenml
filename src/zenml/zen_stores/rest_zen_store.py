@@ -131,7 +131,7 @@ from zenml.models.base_models import (
 from zenml.models.page_model import Page
 from zenml.models.schedule_model import ScheduleFilterModel
 from zenml.models.server_models import ServerModel
-from zenml.models.team_models import TeamUpdateModel
+from zenml.models.team_models import TeamFilterModel, TeamUpdateModel
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.networking_utils import (
     replace_localhost_with_internal_hostname,
@@ -777,7 +777,7 @@ class RestZenStore(BaseZenStore):
         )
 
     def list_teams(
-        self, team_filter_model: StackFilterModel
+        self, team_filter_model: TeamFilterModel
     ) -> Page[TeamResponseModel]:
         """List all teams matching the given filter criteria.
 
@@ -1962,7 +1962,7 @@ class RestZenStore(BaseZenStore):
                 f"Bad API Response. Expected list, got {type(body)}"
             )
         # The initial page of items will be of type BaseResponseModel
-        page_of_items = Page.parse_obj(body)
+        page_of_items: Page[AnyResponseModel] = Page.parse_obj(body)
         # So these items will be parsed into their correct types like here
         page_of_items.items = [
             response_model.parse_obj(generic_item)

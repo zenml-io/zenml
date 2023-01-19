@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for teams and team membership."""
-from typing import Optional, Union
+from typing import Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -20,11 +20,12 @@ from fastapi import APIRouter, Depends, Security
 from zenml.constants import API, ROLES, TEAMS, VERSION_1
 from zenml.enums import PermissionType
 from zenml.models import (
-    FilterBaseModel,
+    TeamFilterModel,
     TeamRequestModel,
     TeamResponseModel,
+    TeamRoleAssignmentFilterModel,
+    TeamRoleAssignmentResponseModel,
     TeamUpdateModel,
-    UserRoleAssignmentResponseModel,
 )
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
@@ -44,18 +45,18 @@ router = APIRouter(
 )
 @handle_exceptions
 def list_teams(
-    params: FilterBaseModel = Depends(),
+    team_filter_model: TeamFilterModel = Depends(),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[TeamResponseModel]:
     """Returns a list of all teams.
 
     Args:
-        params: Parameters for pagination (page and size)
+        team_filter_model: All filter parameters including pagination params.
 
     Returns:
         List of all teams.
     """
-    return zen_store().list_teams(params)
+    return zen_store().list_teams(team_filter_model)
 
 
 @router.post(
@@ -146,29 +147,23 @@ def delete_team(
 
 @router.get(
     "/{team_name_or_id}" + ROLES,
-    response_model=Page[UserRoleAssignmentResponseModel],
+    response_model=Page[TeamRoleAssignmentResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def get_role_assignments_for_team(
-    team_name_or_id: Union[str, UUID],
-    project_name_or_id: Optional[Union[str, UUID]] = None,
-    params: FilterBaseModel = Depends(),
+def list_role_assignments_for_team(
+    team_role_assignment_filter_model: TeamRoleAssignmentFilterModel = Depends(),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[UserRoleAssignmentResponseModel]:
+) -> Page[TeamRoleAssignmentResponseModel]:
     """Returns a list of all roles that are assigned to a team.
 
     Args:
-        team_name_or_id: Name or ID of the team.
-        project_name_or_id: If provided, only list roles that are limited to
-            the given project.
-        params: Parameters for pagination (page and size)
+        team_role_assignment_filter_model: All filter parameters including
+            pagination params.
 
     Returns:
         A list of all roles that are assigned to a team.
     """
-    return zen_store().list_user_role_assignments(
-        team_name_or_id=team_name_or_id,
-        project_name_or_id=project_name_or_id,
-        params=params,
+    return zen_store().list_team_role_assignments(
+        team_role_assignment_filter_model
     )

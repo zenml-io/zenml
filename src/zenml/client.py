@@ -2891,7 +2891,9 @@ class Client(metaclass=ClientMetaClass):
         Raises:
             ValueError: If the artifact is still used in any runs.
         """
-        if artifact not in self.list_artifacts(only_unused=True):
+        if artifact not in self.list_artifacts(
+            only_unused=True,
+        ):
             raise ValueError(
                 "The metadata of artifacts that are used in runs cannot be "
                 "deleted. Please delete all runs that use this artifact "
@@ -2950,7 +2952,7 @@ class Client(metaclass=ClientMetaClass):
     def depaginate(
         self,
         list_method: Callable[..., Page[AnyResponseModel]],
-    ):
+    ) -> List[AnyResponseModel]:
         """Depaginate the results from a client method that returns pages.
 
         Args:
@@ -2960,9 +2962,9 @@ class Client(metaclass=ClientMetaClass):
             A list of the corresponding Response Model.
         """
         page = list_method()
-        items = page.items
+        items = list(page.items)
         while page.page < page.total_pages:
             page = list_method(page=page.page + 1)
-            items += page.items
+            items += list(page.items)
 
         return items

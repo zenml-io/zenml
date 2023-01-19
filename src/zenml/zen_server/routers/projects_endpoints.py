@@ -423,8 +423,9 @@ def list_project_flavors(
     Returns:
         All stack components of a certain type that are part of a project.
     """
-    project = zen_store().get_project(project_name_or_id)
-    flavor_filter_model.project_id = project.id
+    if project_name_or_id:
+        project = zen_store().get_project(project_name_or_id)
+        flavor_filter_model.project_id = project.id
     return zen_store().list_flavors(flavor_filter_model=flavor_filter_model)
 
 

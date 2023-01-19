@@ -96,10 +96,10 @@ class StackRequirement(BaseTestConfigModel):
             The stack component or None if no component was found.
         """
         components = client.list_stack_components(
-            user_name_or_id=client.active_user.id,
+            user_id=client.active_user.id,
             name=self.name or None,
-            component_type=self.type,
-            flavor_name=self.flavor,
+            type=self.type,
+            flavor=self.flavor,
         )
 
         mandatory_components: List[UUID] = []

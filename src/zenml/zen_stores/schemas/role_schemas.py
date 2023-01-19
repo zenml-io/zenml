@@ -24,6 +24,7 @@ from zenml.models import (
     RoleRequestModel,
     RoleResponseModel,
     RoleUpdateModel,
+    TeamRoleAssignmentRequestModel,
     TeamRoleAssignmentResponseModel,
     UserRoleAssignmentRequestModel,
 )
@@ -210,7 +211,7 @@ class TeamRoleAssignmentSchema(BaseSchema, table=True):
 
     @classmethod
     def from_request(
-        cls, role_assignment: UserRoleAssignmentRequestModel
+        cls, role_assignment: TeamRoleAssignmentRequestModel
     ) -> "TeamRoleAssignmentSchema":
         """Create a `TeamRoleAssignmentSchema` from a `RoleAssignmentRequestModel`.
 

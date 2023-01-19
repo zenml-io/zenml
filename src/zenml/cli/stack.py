@@ -647,7 +647,7 @@ def rename_stack(
 
 @stack.command("list")
 @list_options(StackFilterModel)
-def list_stacks(**kwargs) -> None:
+def list_stacks(**kwargs: Any) -> None:
     """List all stacks that fulfill the filter requirements."""
     client = Client()
     with console.status("Listing stacks...\n"):
