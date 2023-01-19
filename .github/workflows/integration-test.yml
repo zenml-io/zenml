@@ -77,6 +77,7 @@ on:
           - aws-cloud-kubeflow-orchestrator
           - aws-cloud-kubernetes-orchestrator
           - aws-cloud-tekton-orchestrator
+          - aws-cloud-sagemaker-orchestrator
           # GCP ZenML server deployment with local components
           - gcp-local-orchestrator
           - gcp-docker-orchestrator
