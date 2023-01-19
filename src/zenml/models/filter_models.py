@@ -65,9 +65,7 @@ class Filter(BaseModel, ABC):
     This operation set is defined in the ALLOWED_OPS class variable.
     """
 
-    ALLOWED_OPS: ClassVar[List[str]] = [
-        GenericFilterOps.EQUALS,
-    ]
+    ALLOWED_OPS: ClassVar[List[str]] = []
 
     operation: GenericFilterOps
     column: str
@@ -88,7 +86,6 @@ class Filter(BaseModel, ABC):
         else:
             return op
 
-    @abstractmethod
     def generate_query_conditions(
         self,
         table: Type[SQLModel],
@@ -104,26 +101,41 @@ class Filter(BaseModel, ABC):
         Returns:
             A list of conditions that will be combined using the `and` operation
         """
+        column = getattr(table, self.column)
+        conditions = self.generate_query_conditions_from_column(column)
+        return conditions  # type:ignore[no-any-return]
+
+    @abstractmethod
+    def generate_query_conditions_from_column(self, column: Any) -> Any:
+        """Generate query conditions given the corresponding database column.
+
+        This method should be overridden by subclasses to define how each
+        supported operation in `self.ALLOWED_OPS` can be used to filter the
+        given column by `self.value`.
+
+        Args:
+            column: The column of an SQLModel table on which to filter.
+
+        Returns:
+            A list of query conditions.
+        """
 
 
 class BoolFilter(Filter):
     """Filter for all Boolean fields."""
 
-    def generate_query_conditions(
-        self,
-        table: Type[SQLModel],
-    ) -> Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]:
-        """Generate the query conditions for the database.
+    ALLOWED_OPS: ClassVar[List[str]] = [GenericFilterOps.EQUALS]
+
+    def generate_query_conditions_from_column(self, column: Any) -> Any:
+        """Generate query conditions for a boolean column.
 
         Args:
-            table: The SQLModel table to use for the query creation
+            column: The boolean column of an SQLModel table on which to filter.
 
         Returns:
-            A list of conditions that will be combined using the `and` operation
+            A list of query conditions.
         """
-        return (  # type:ignore[no-any-return]
-            getattr(table, self.column) == self.value
-        )
+        return column == self.value
 
 
 class StrFilter(Filter):
@@ -136,77 +148,42 @@ class StrFilter(Filter):
         GenericFilterOps.ENDSWITH,
     ]
 
-    def generate_query_conditions(
-        self,
-        table: Type[SQLModel],
-    ) -> Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]:
-        """Generate the query conditions for the database.
+    def generate_query_conditions_from_column(self, column: Any) -> Any:
+        """Generate query conditions for a string column.
 
         Args:
-            table: The SQLModel table to use for the query creation
+            column: The string column of an SQLModel table on which to filter.
 
         Returns:
-            A list of conditions that will be combined using the `and` operation
+            A list of query conditions.
         """
         if self.operation == GenericFilterOps.CONTAINS:
-            return getattr(  # type:ignore[no-any-return]
-                table, self.column
-            ).like(f"%{self.value}%")
-        elif self.operation == GenericFilterOps.STARTSWITH:
-            return getattr(  # type:ignore[no-any-return]
-                table, self.column
-            ).startswith(f"%{self.value}%")
-        elif self.operation == GenericFilterOps.CONTAINS:
-            return getattr(  # type:ignore[no-any-return]
-                table, self.column
-            ).endswith(f"%{self.value}%")
-        else:
-            return (  # type:ignore[no-any-return]
-                getattr(table, self.column) == self.value
-            )
+            return column.like(f"%{self.value}%")
+        if self.operation == GenericFilterOps.STARTSWITH:
+            return column.startswith(f"%{self.value}%")
+        if self.operation == GenericFilterOps.CONTAINS:
+            return column.endswith(f"%{self.value}%")
+        return column == self.value
 
 
-class UUIDFilter(Filter):
+class UUIDFilter(StrFilter):
     """Filter for all uuid fields which are mostly treated like strings."""
 
-    ALLOWED_OPS: ClassVar[List[str]] = [
-        GenericFilterOps.EQUALS,
-        GenericFilterOps.STARTSWITH,
-        GenericFilterOps.CONTAINS,
-        GenericFilterOps.ENDSWITH,
-    ]
-
-    def generate_query_conditions(
-        self,
-        table: Type[SQLModel],
-    ) -> Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]:
-        """Generate the query conditions for the database.
+    def generate_query_conditions_from_column(self, column: Any) -> Any:
+        """Generate query conditions for a UUID column.
 
         Args:
-            table: The SQLModel table to use for the query creation
+            column: The UUID column of an SQLModel table on which to filter.
 
         Returns:
-            A list of conditions that will be combined using the `and` operation
+            A list of query conditions.
         """
         import sqlalchemy
         from sqlalchemy_utils.functions import cast_if
 
-        if self.operation == GenericFilterOps.CONTAINS:
-            return cast_if(  # type:ignore[no-any-return]
-                getattr(table, self.column), sqlalchemy.String
-            ).like(f"%{self.value}%")
-        elif self.operation == GenericFilterOps.STARTSWITH:
-            return cast_if(  # type:ignore[no-any-return]
-                getattr(table, self.column), sqlalchemy.String
-            ).startswith(f"%{self.value}%")
-        elif self.operation == GenericFilterOps.CONTAINS:
-            return cast_if(  # type:ignore[no-any-return]
-                getattr(table, self.column), sqlalchemy.String
-            ).endswith(f"%{self.value}%")
-        else:
-            return (  # type:ignore[no-any-return]
-                getattr(table, self.column) == self.value
-            )
+        return super().generate_query_conditions_from_column(
+            column=cast_if(column, sqlalchemy.String)
+        )
 
 
 class NumericFilter(Filter):
@@ -222,38 +199,24 @@ class NumericFilter(Filter):
         GenericFilterOps.LTE,
     ]
 
-    def generate_query_conditions(
-        self,
-        table: Type[SQLModel],
-    ) -> Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]:
-        """Generate the query conditions for the database.
+    def generate_query_conditions_from_column(self, column: Any) -> Any:
+        """Generate query conditions for a UUID column.
 
         Args:
-            table: The SQLModel table to use for the query creation
+            column: The UUID column of an SQLModel table on which to filter.
 
         Returns:
-            A list of conditions that will be combined using the `and` operation
+            A list of query conditions.
         """
         if self.operation == GenericFilterOps.GTE:
-            return (  # type:ignore[no-any-return]
-                getattr(table, self.column) >= self.value
-            )
-        elif self.operation == GenericFilterOps.GT:
-            return (  # type:ignore[no-any-return]
-                getattr(table, self.column) > self.value
-            )
-        elif self.operation == GenericFilterOps.LTE:
-            return (  # type:ignore[no-any-return]
-                getattr(table, self.column) <= self.value
-            )
-        elif self.operation == GenericFilterOps.LT:
-            return (  # type:ignore[no-any-return]
-                getattr(table, self.column) < self.value
-            )
-        else:
-            return (  # type:ignore[no-any-return]
-                getattr(table, self.column) == self.value
-            )
+            return column >= self.value
+        if self.operation == GenericFilterOps.GT:
+            return column > self.value
+        if self.operation == GenericFilterOps.LTE:
+            return column <= self.value
+        if self.operation == GenericFilterOps.LT:
+            return column < self.value
+        return column == self.value
 
 
 # ---------------- #
