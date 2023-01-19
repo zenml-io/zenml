@@ -118,7 +118,7 @@ zenml stack register gcp_tekton_stack \
 
 ### 🏁 See the Tekton Pipelines UI locally
 
-To get the Tektopn Pipelines UI endpoint, we can use the following command:
+To get the Tekton Pipelines UI endpoint, we can use the following command:
 
 ```bash
 kubectl get ingress -n tekton-pipelines  -o jsonpath='{.items[0].spec.rules[0].host}'

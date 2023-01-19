@@ -130,7 +130,7 @@ To use the Kubeflow orchestrator, we need:
 When using the Kubeflow orchestrator locally, you'll additionally need:
 * [K3D](https://k3d.io/v5.2.1/#installation) installed to spin up a local 
 Kubernetes cluster.
-* [Terrafom](https://www.terraform.io/downloads.html) installed to set up the
+* [Terraform](https://www.terraform.io/downloads.html) installed to set up the
 Kubernetes cluster with various deployments.
 
 To allow users to try out the Kubeflow orchestrator locally, we've created a

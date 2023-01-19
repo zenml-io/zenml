@@ -17,7 +17,7 @@ information on daemons.
 {% hint style="warning" %}
 As we move towards a more efficient and scalable stack and stack components 
 management, it has become clear that the current provision and deprovision 
-commands are not sufficient to allow more modularity when using diffenet stack
+commands are not sufficient to allow more modularity when using different stack
 components and tools. Therefore, we are deprecating the `zenml stack up` and
 `zenml stack down` commands in favor of the new `zenml stack recipe pull` and
 `zenml stack recipe deploy` commands. The new commands with the ZenML stack

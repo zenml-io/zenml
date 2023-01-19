@@ -60,7 +60,7 @@ class SeldonModelDeployerConfig(BaseModelDeployerConfig):
     secret: Optional[str]
     kubernetes_secret_name: Optional[
         str
-    ]  # TODO: Add full documenation section on this
+    ]  # TODO: Add full documentation section on this
 
 
 class SeldonModelDeployerFlavor(BaseModelDeployerFlavor):

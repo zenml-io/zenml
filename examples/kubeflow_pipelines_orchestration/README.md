@@ -26,7 +26,7 @@ to deploy Kubeflow Pipelines
 your pipeline in Kubernetes pods (**Note**: the local Kubeflow Pipelines
 deployment requires more than 2 GB of RAM, so if you're using Docker Desktop
 make sure to update the resource limits in the preferences)
-* [Terrafom](https://www.terraform.io/downloads.html) to deploy a local Kubernetes
+* [Terraform](https://www.terraform.io/downloads.html) to deploy a local Kubernetes
 cluster using K3D and install Kubeflow Pipelines on it.
 
 
