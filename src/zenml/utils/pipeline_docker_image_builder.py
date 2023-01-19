@@ -18,7 +18,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import PurePosixPath
-from typing import TYPE_CHECKING, List, Optional, Sequence
+from typing import TYPE_CHECKING, List, Optional, Sequence, Tuple
 
 import zenml
 from zenml.config import DockerSettings
@@ -296,8 +296,9 @@ class PipelineDockerImageBuilder:
 
         return target_image_name
 
-    @staticmethod
+    @classmethod
     def _add_requirements_files(
+        cls,
         docker_settings: DockerSettings,
         build_context: "BuildContext",
         stack: "Stack",
@@ -310,10 +311,6 @@ class PipelineDockerImageBuilder:
             build_context: Build context to add the requirements files to.
             stack: The stack on which the pipeline will run.
 
-        Raises:
-            RuntimeError: If the command to export the local python packages
-                failed.
-
         Returns:
             Name of the requirements files in the build context.
             The files will be in the following order:
@@ -322,6 +319,38 @@ class PipelineDockerImageBuilder:
             - Requirements defined by user-defined and/or stack integrations
         """
         requirements_file_names = []
+        requirements_files = cls._gather_requirements_files(
+            docker_settings=docker_settings, stack=stack
+        )
+        for filename, file_content in requirements_files:
+            build_context.add_file(source=file_content, destination=filename)
+            requirements_file_names.append(filename)
+
+        return requirements_file_names
+
+    @staticmethod
+    def _gather_requirements_files(
+        docker_settings: DockerSettings, stack: "Stack"
+    ) -> List[Tuple[str, str]]:
+        """Gathers and/or generates pip requirements files.
+
+        Args:
+            docker_settings: Docker settings that specifies which
+                requirements to install.
+            stack: The stack on which the pipeline will run.
+
+        Raises:
+            RuntimeError: If the command to export the local python packages
+                failed.
+
+        Returns:
+            List of tuples (filename, file_content) of all requirements files.
+            The files will be in the following order:
+            - Packages installed in the local Python environment
+            - User-defined requirements
+            - Requirements defined by user-defined and/or stack integrations
+        """
+        requirements_files = []
         logger.info("Gathering requirements for Docker build:")
 
         # Generate requirements file for the local environment if configured
@@ -347,11 +376,9 @@ class PipelineDockerImageBuilder:
                     "Unable to export local python packages."
                 ) from e
 
-            build_context.add_file(
-                source=local_requirements,
-                destination=".zenml_local_requirements",
+            requirements_files.append(
+                (".zenml_local_requirements", local_requirements)
             )
-            requirements_file_names.append(".zenml_local_requirements")
             logger.info("\t- Including python packages from local environment")
 
         # Generate/Read requirements file for user-defined requirements
@@ -373,11 +400,9 @@ class PipelineDockerImageBuilder:
             user_requirements = None
 
         if user_requirements:
-            build_context.add_file(
-                source=user_requirements,
-                destination=".zenml_user_requirements",
+            requirements_files.append(
+                (".zenml_user_requirements", user_requirements)
             )
-            requirements_file_names.append(".zenml_user_requirements")
 
         # Generate requirements file for all required integrations
         integration_requirements = set(
@@ -397,18 +422,18 @@ class PipelineDockerImageBuilder:
             integration_requirements_file = "\n".join(
                 integration_requirements_list
             )
-            build_context.add_file(
-                source=integration_requirements_file,
-                destination=".zenml_integration_requirements",
+            requirements_files.append(
+                (
+                    ".zenml_integration_requirements",
+                    integration_requirements_file,
+                )
             )
-            requirements_file_names.append(".zenml_integration_requirements")
-
             logger.info(
                 "\t- Including integration requirements: %s",
                 ", ".join(f"`{r}`" for r in integration_requirements_list),
             )
 
-        return requirements_file_names
+        return requirements_files
 
     @staticmethod
     def _generate_zenml_pipeline_dockerfile(
