@@ -178,3 +178,64 @@ tests:
           - type: step_operator
       - capabilities:
           synchronized: true
+
+  - module: tests.integration.examples.test_quickstart
+    requirements:
+      - integrations:
+          - sklearn
+          - dash
+          - mlflow
+          - evidently
+          - facets
+        stacks:
+          - type: experiment_tracker
+            flavor: mlflow
+          - type: model_deployer
+            flavor: mlflow
+          - type: data_validator
+            flavor: evidently
+      - capabilities:
+          synchronized: true
+
+  - module: tests.integration.examples.test_huggingface
+    requirements:
+      - integrations:
+          - huggingface
+          - tensorflow
+      - capabilities:
+          synchronized: true
+
+  - module: tests.integration.examples.test_lightgbm
+    requirements:
+      - integrations:
+          - lightgbm
+      - capabilities:
+          synchronized: true
+
+  - module: tests.integration.examples.test_scipy
+    requirements:
+      - integrations:
+          - sklearn
+      - capabilities:
+          synchronized: true
+
+  - module: tests.integration.examples.test_facets_visualize_statistics
+    requirements:
+      - integrations:
+          - facets
+          - tensorflow
+      - capabilities:
+          synchronized: true
+
+  - module: tests.integration.examples.test_mlflow_deployment
+    requirements:
+      - integrations:
+          - tensorflow
+          - mlflow
+        stacks:
+          - type: experiment_tracker
+            flavor: mlflow
+          - type: model_deployer
+            flavor: mlflow
+      - capabilities:
+          synchronized: true
