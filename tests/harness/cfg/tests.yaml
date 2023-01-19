@@ -78,14 +78,6 @@ tests:
       - capabilities:
           synchronized: true
 
-  - module: tests.integration.examples.test_facets_visualize_statistics
-    requirements:
-      - integrations:
-          - facets
-          - tensorflow
-      - capabilities:
-          synchronized: true
-
   - module: tests.integration.examples.test_great_expectations_data_validation
     requirements:
       - integrations:
@@ -108,13 +100,6 @@ tests:
     requirements:
       - integrations:
           - sklearn
-      - capabilities:
-          synchronized: true
-
-  - module: tests.integration.examples.test_lightgbm
-    requirements:
-      - integrations:
-          - lightgbm
       - capabilities:
           synchronized: true
 
@@ -267,7 +252,7 @@ tests:
       - capabilities:
           synchronized: true
 
-  - module: tests.integration.examples.neptune_tracking
+  - module: tests.integration.examples.test_neptune_tracking
     requirements:
       - integrations:
           - tensorflow
