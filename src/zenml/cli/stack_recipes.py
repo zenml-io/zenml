@@ -18,7 +18,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import click
 from rich.text import Text
@@ -763,6 +763,12 @@ def pull(
     "if you have a local copy of your recipe already. Use the `--path` or `-p` flag to "
     "specify the directory that hosts your recipe(s).",
 )
+@click.option(
+    "--install",
+    "-i",
+    "enabled_services",
+    multiple=True,
+)
 @pass_git_stack_recipes_handler
 @click.pass_context
 def deploy(
@@ -777,6 +783,7 @@ def deploy(
     no_server: bool,
     skip_pull: bool,
     stack_name: Optional[str],
+    enabled_services: Tuple[str],
 ) -> None:
     """Run the stack_recipe at the specified relative path.
 
@@ -802,6 +809,8 @@ def deploy(
             deployment.
         skip_pull: Skip the pull of the stack recipe before deploying. This
             should be used if you have a local copy of your recipe already.
+        enabled_services: A list of services to install. Choose from mlflow, seldon, 
+            kserve, kubeflow, tekton.
     """
     with event_handler(
         event=AnalyticsEvent.RUN_STACK_RECIPE,
@@ -914,7 +923,8 @@ def deploy(
                         )
                     else:
                         stack_recipe_service = StackRecipeService(
-                            config=terraform_config
+                            config=terraform_config,
+                            enabled_services=enabled_services,
                         )
 
                     # start the service (the init and apply operation)
