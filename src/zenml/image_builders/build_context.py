@@ -105,7 +105,9 @@ class BuildContext:
                 file_name = fileio.convert_to_str(file_name)
                 file_source = dir_path / file_name
                 file_destination = (
-                    Path(destination) / dir_path.relative_to(source) / file_name
+                    Path(destination)
+                    / dir_path.relative_to(source)
+                    / file_name
                 )
 
                 with file_source.open("r") as f:
