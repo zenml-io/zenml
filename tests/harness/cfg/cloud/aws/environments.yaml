@@ -15,6 +15,9 @@ environments:
     deployment: aws-us-east-1-server
     requirements:
       - external-data-validators
+      - external-neptune-experiment-tracker
+      - external-wandb-experiment-tracker
+      - external-slack-alerter
       - mlflow-local-tracker
       - mlflow-local-deployer
       - local-secrets-manager
@@ -28,6 +31,9 @@ environments:
     deployment: aws-us-east-1-server
     requirements:
       - external-data-validators
+      - external-neptune-experiment-tracker
+      - external-wandb-experiment-tracker
+      - external-slack-alerter
       - mlflow-local-tracker
       - mlflow-local-deployer
       - local-secrets-manager
@@ -41,6 +47,9 @@ environments:
     deployment: aws-us-east-1-server
     requirements:
       - external-data-validators
+      - external-neptune-experiment-tracker
+      - external-wandb-experiment-tracker
+      - external-slack-alerter
       - mlflow-local-tracker
       - mlflow-local-deployer
       - local-secrets-manager
@@ -54,6 +63,9 @@ environments:
     deployment: aws-us-east-1-server
     requirements:
       - external-data-validators
+      - external-neptune-experiment-tracker
+      - external-wandb-experiment-tracker
+      - external-slack-alerter
       - mlflow-local-tracker
       - mlflow-local-deployer
       - local-secrets-manager
@@ -68,6 +80,9 @@ environments:
     deployment: aws-us-east-1-server
     requirements:
       - external-data-validators
+      - external-neptune-experiment-tracker
+      - external-wandb-experiment-tracker
+      - external-slack-alerter
       - aws-us-east-1-sagemaker
       - aws-us-east-1-mlflow
       - aws-us-east-1-seldon
@@ -86,6 +101,9 @@ environments:
     deployment: aws-us-east-1-server
     requirements:
       - external-data-validators
+      - external-neptune-experiment-tracker
+      - external-wandb-experiment-tracker
+      - external-slack-alerter
       - aws-us-east-1-mlflow
       - aws-us-east-1-seldon
       - aws-us-east-1-kserve
@@ -103,6 +121,9 @@ environments:
     deployment: aws-us-east-1-server
     requirements:
       - external-data-validators
+      - external-neptune-experiment-tracker
+      - external-wandb-experiment-tracker
+      - external-slack-alerter
       - aws-us-east-1-sagemaker
       - aws-us-east-1-mlflow
       - aws-us-east-1-seldon
@@ -120,6 +141,9 @@ environments:
     deployment: aws-us-east-1-server
     requirements:
       - external-data-validators
+      - external-neptune-experiment-tracker
+      - external-wandb-experiment-tracker
+      - external-slack-alerter
       - aws-us-east-1-sagemaker
       - aws-us-east-1-mlflow
       - aws-us-east-1-seldon
@@ -137,6 +161,9 @@ environments:
     deployment: aws-us-east-1-server
     requirements:
       - external-data-validators
+      - external-neptune-experiment-tracker
+      - external-wandb-experiment-tracker
+      - external-slack-alerter
       - aws-us-east-1-sagemaker
       - aws-us-east-1-mlflow
       - aws-us-east-1-seldon

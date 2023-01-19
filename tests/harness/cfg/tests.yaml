@@ -239,3 +239,41 @@ tests:
             flavor: mlflow
       - capabilities:
           synchronized: true
+
+  - module: tests.integration.examples.test_slack_alert
+    requirements:
+      - integrations:
+          - sklearn
+          - mlflow
+          - slack
+        stacks:
+          - type: experiment_tracker
+            flavor: mlflow
+          - type: model_deployer
+            flavor: mlflow
+          - type: alerter
+            flavor: slack
+      - capabilities:
+          synchronized: true
+
+  - module: tests.integration.examples.test_wandb_tracking
+    requirements:
+      - integrations:
+          - tensorflow
+          - wandb
+        stacks:
+          - type: experiment_tracker
+            flavor: wandb
+      - capabilities:
+          synchronized: true
+
+  - module: tests.integration.examples.neptune_tracking
+    requirements:
+      - integrations:
+          - tensorflow
+          - neptune
+        stacks:
+          - type: experiment_tracker
+            flavor: neptune
+      - capabilities:
+          synchronized: true

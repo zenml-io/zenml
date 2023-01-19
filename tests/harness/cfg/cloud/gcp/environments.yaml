@@ -16,6 +16,9 @@ environments:
     deployment: gcp-us-east4-server
     requirements:
       - external-data-validators
+      - external-neptune-experiment-tracker
+      - external-wandb-experiment-tracker
+      - external-slack-alerter
       - mlflow-local-tracker
       - mlflow-local-deployer
       - local-secrets-manager
@@ -29,6 +32,9 @@ environments:
     deployment: gcp-us-east4-server
     requirements:
       - external-data-validators
+      - external-neptune-experiment-tracker
+      - external-wandb-experiment-tracker
+      - external-slack-alerter
       - mlflow-local-tracker
       - mlflow-local-deployer
       - local-secrets-manager
@@ -42,6 +48,9 @@ environments:
     deployment: gcp-us-east4-server
     requirements:
       - external-data-validators
+      - external-neptune-experiment-tracker
+      - external-wandb-experiment-tracker
+      - external-slack-alerter
       - mlflow-local-tracker
       - mlflow-local-deployer
       - local-secrets-manager
@@ -55,6 +64,9 @@ environments:
     deployment: gcp-us-east4-server
     requirements:
       - external-data-validators
+      - external-neptune-experiment-tracker
+      - external-wandb-experiment-tracker
+      - external-slack-alerter
       - mlflow-local-tracker
       - mlflow-local-deployer
       - local-secrets-manager
@@ -69,6 +81,9 @@ environments:
     deployment: gcp-us-east4-server
     requirements:
       - external-data-validators
+      - external-neptune-experiment-tracker
+      - external-wandb-experiment-tracker
+      - external-slack-alerter
       - gcp-us-east4-vertex-ai-op
       - gcp-us-east4-mlflow
       - gcp-us-east4-seldon
@@ -87,6 +102,9 @@ environments:
     deployment: gcp-us-east4-server
     requirements:
       - external-data-validators
+      - external-neptune-experiment-tracker
+      - external-wandb-experiment-tracker
+      - external-slack-alerter
       - gcp-us-east4-mlflow
       - gcp-us-east4-seldon
       - gcp-us-east4-kserve
@@ -104,6 +122,9 @@ environments:
     deployment: gcp-us-east4-server
     requirements:
       - external-data-validators
+      - external-neptune-experiment-tracker
+      - external-wandb-experiment-tracker
+      - external-slack-alerter
       - gcp-us-east4-vertex-ai-op
       - gcp-us-east4-mlflow
       - gcp-us-east4-seldon
@@ -121,6 +142,9 @@ environments:
     deployment: gcp-us-east4-server
     requirements:
       - external-data-validators
+      - external-neptune-experiment-tracker
+      - external-wandb-experiment-tracker
+      - external-slack-alerter
       - gcp-us-east4-vertex-ai-op
       - gcp-us-east4-mlflow
       - gcp-us-east4-seldon
@@ -138,6 +162,9 @@ environments:
     deployment: gcp-us-east4-server
     requirements:
       - external-data-validators
+      - external-neptune-experiment-tracker
+      - external-wandb-experiment-tracker
+      - external-slack-alerter
       - gcp-us-east4-vertex-ai-op
       - gcp-us-east4-mlflow
       - gcp-us-east4-seldon
@@ -155,6 +182,9 @@ environments:
     deployment: gcp-us-east4-server
     requirements:
       - external-data-validators
+      - external-neptune-experiment-tracker
+      - external-wandb-experiment-tracker
+      - external-slack-alerter
       - gcp-us-east4-vertex-ai-op
       - gcp-us-east4-mlflow
       - gcp-us-east4-seldon
