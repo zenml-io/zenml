@@ -111,7 +111,7 @@ class BuildContext:
                 )
 
                 with file_source.open("r") as f:
-                    self._extra_files[str(file_destination)] = f.read()
+                    self._extra_files[file_destination.as_posix()] = f.read()
 
     def write_archive(self, output_file: IO[bytes], gzip: bool = True) -> None:
         """Writes an archive of the build context to the given file.
