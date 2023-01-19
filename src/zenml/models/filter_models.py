@@ -22,6 +22,7 @@ from typing import (
     ClassVar,
     Dict,
     List,
+    Tuple,
     Type,
     Union,
     get_args,
@@ -389,113 +390,115 @@ class FilterBaseModel(BaseModel):
         list_of_filters: List[Filter] = []
 
         for key in self.__fields__:
+
+            # Ignore excluded filters
             if key in self.FILTER_EXCLUDE_FIELDS:
-                pass
-            else:
-                value = getattr(self, key)
-                if value:
-                    operator = GenericFilterOps.EQUALS
+                continue
 
-                    if isinstance(value, str):
-                        split_value = value.split(":", 1)
-                        if (
-                            len(split_value) == 2
-                            and split_value[0] in GenericFilterOps.values()
-                        ):
-                            value = split_value[1]
-                            operator = GenericFilterOps(split_value[0])
+            # Skip filtering for None values
+            value = getattr(self, key)
+            if value is None:
+                continue
 
-                    if self.is_datetime_field(key):
-                        try:
-                            if isinstance(value, datetime):
-                                datetime_value = value
-                            else:
-                                datetime_value = datetime.strptime(
-                                    value, FILTERING_DATETIME_FORMAT
-                                )
-                        except ValueError as e:
-                            raise ValueError(
-                                "The datetime filter only works with "
-                                "value in the following format is "
-                                "expected: `{supported_format}`"
-                            ) from e
+            # Determine the operator and filter value
+            value, operator = self._resolve_operator(value)
 
-                        list_of_filters.append(
-                            NumericFilter(
-                                operation=GenericFilterOps(operator),
-                                column=key,
-                                value=datetime_value,
-                            )
-                        )
-                    elif self.is_uuid_field(key):
-                        if (
-                            operator == GenericFilterOps.EQUALS
-                            and not isinstance(value, UUID)
-                        ):
-                            try:
-                                value = UUID(value)
-                            except ValueError as e:
-                                raise ValueError(
-                                    "Invalid value passed as UUID as "
-                                    "query parameter."
-                                ) from e
-                        elif operator != GenericFilterOps.EQUALS:
-                            value = str(value)
+            # Define the filter
+            filter = self._define_filter(
+                column=key, value=value, operator=operator
+            )
+            list_of_filters.append(filter)
 
-                        list_of_filters.append(
-                            UUIDFilter(
-                                operation=GenericFilterOps(operator),
-                                column=key,
-                                value=value,
-                            )
-                        )
-                    elif self.is_int_field(key):
-                        list_of_filters.append(
-                            NumericFilter(
-                                operation=GenericFilterOps(operator),
-                                column=key,
-                                value=int(value),
-                            )
-                        )
-                    elif self.is_bool_field(key):
-                        if (
-                            GenericFilterOps(operator)
-                            != GenericFilterOps.EQUALS
-                        ):
-                            logger.warning(
-                                "Boolean filters do not support any"
-                                "operation except for equals. Defaulting"
-                                "to an `equals` comparison"
-                            )
-                        list_of_filters.append(
-                            BoolFilter(
-                                operation=GenericFilterOps.EQUALS,
-                                column=key,
-                                value=bool(value),
-                            )
-                        )
-                    elif self.is_str_field(key):
-                        list_of_filters.append(
-                            StrFilter(
-                                operation=GenericFilterOps(operator),
-                                column=key,
-                                value=value,
-                            )
-                        )
-                    else:
-                        logger.warning(
-                            "The Datatype "
-                            f"{self.__fields__[key]}.type_ might "
-                            "not be supported for filtering "
-                        )
-                        list_of_filters.append(
-                            StrFilter(
-                                operation=GenericFilterOps(operator),
-                                column=key,
-                                value=str(value),
-                            )
-                        )
         return list_of_filters
+
+    def _resolve_operator(self, value: Any) -> Tuple[Any, GenericFilterOps]:
+        """Determine the operator and filter value from a user-provided value.
+
+        If the user-provided value is a string of the form "operator:value",
+        then the operator is extracted and the value is returned. Otherwise,
+        `GenericFilterOps.EQUALS` is used as default operator and the value
+        is returned as-is.
+
+        Args:
+            value: The user-provided value.
+
+        Returns:
+            A tuple of the filter value and the operator.
+        """
+        operator = GenericFilterOps.EQUALS  # Default operator
+        if isinstance(value, str):
+            split_value = value.split(":", 1)
+            if (
+                len(split_value) == 2
+                and split_value[0] in GenericFilterOps.values()
+            ):
+                value = split_value[1]
+                operator = GenericFilterOps(split_value[0])
+        return value, operator
+
+    def _define_filter(
+        self, column: str, value: Any, operator: GenericFilterOps
+    ) -> Filter:
+        """Define a filter for a given column.
+
+        Args:
+            column: The column to filter on.
+            value: The value by which to filter.
+            operator: The operator to use for filtering.
+
+        Returns:
+            A Filter object.
+        """
+        # Create datetime filters
+        if self.is_datetime_field(column):
+            return self._define_datetime_filter(
+                column=column,
+                value=value,
+                operator=operator,
+            )
+
+        # Create UUID filters
+        if self.is_uuid_field(column):
+            return self._define_uuid_filter(
+                column=column,
+                value=value,
+                operator=operator,
+            )
+
+        # Create int filters
+        if self.is_int_field(column):
+            return NumericFilter(
+                operation=GenericFilterOps(operator),
+                column=column,
+                value=int(value),
+            )
+
+        # Create bool filters
+        if self.is_bool_field(column):
+            return self._define_bool_filter(
+                column=column,
+                value=value,
+                operator=operator,
+            )
+
+        # Create str filters
+        if self.is_str_field(column):
+            return StrFilter(
+                operation=GenericFilterOps(operator),
+                column=column,
+                value=value,
+            )
+
+        # Handle unsupported datatypes
+        logger.warning(
+            f"The Datatype {self.__fields__[column].type_} might not be "
+            "supported for filtering. Defaulting to a string filter."
+        )
+        return StrFilter(
+            operation=GenericFilterOps(operator),
+            column=column,
+            value=str(value),
+        )
 
     @classmethod
     def is_datetime_field(cls, k: str) -> bool:
@@ -523,6 +526,102 @@ class FilterBaseModel(BaseModel):
         return (
             issubclass(str, get_args(cls.__fields__[k].type_))
             or cls.__fields__[k].type_ == str
+        )
+
+    @staticmethod
+    def _define_datetime_filter(
+        column: str, value: Any, operator: GenericFilterOps
+    ) -> NumericFilter:
+        """Define a datetime filter for a given column.
+
+        Args:
+            column: The column to filter on.
+            value: The datetime value by which to filter.
+            operator: The operator to use for filtering.
+
+        Returns:
+            A Filter object.
+
+        Raises:
+            ValueError: If the value is not a valid datetime.
+        """
+        try:
+            if isinstance(value, datetime):
+                datetime_value = value
+            else:
+                datetime_value = datetime.strptime(
+                    value, FILTERING_DATETIME_FORMAT
+                )
+        except ValueError as e:
+            raise ValueError(
+                "The datetime filter only works with "
+                "value in the following format is "
+                "expected: `{supported_format}`"
+            ) from e
+        datetime_filter = NumericFilter(
+            operation=GenericFilterOps(operator),
+            column=column,
+            value=datetime_value,
+        )
+        return datetime_filter
+
+    @staticmethod
+    def _define_uuid_filter(
+        column: str, value: Any, operator: GenericFilterOps
+    ) -> UUIDFilter:
+        """Define a UUID filter for a given column.
+
+        Args:
+            column: The column to filter on.
+            value: The UUID value by which to filter.
+            operator: The operator to use for filtering.
+
+        Returns:
+            A Filter object.
+
+        Raises:
+            ValueError: If the value is not a valid UUID.
+        """
+        if operator == GenericFilterOps.EQUALS and not isinstance(value, UUID):
+            try:
+                value = UUID(value)
+            except ValueError as e:
+                raise ValueError(
+                    "Invalid value passed as UUID query parameter."
+                ) from e
+        elif operator != GenericFilterOps.EQUALS:
+            value = str(value)
+        uuid_filter = UUIDFilter(
+            operation=GenericFilterOps(operator),
+            column=column,
+            value=value,
+        )
+        return uuid_filter
+
+    @staticmethod
+    def _define_bool_filter(
+        column: str, value: Any, operator: GenericFilterOps
+    ) -> BoolFilter:
+        """Define a bool filter for a given column.
+
+        Args:
+            column: The column to filter on.
+            value: The bool value by which to filter.
+            operator: The operator to use for filtering.
+
+        Returns:
+            A Filter object.
+        """
+        if GenericFilterOps(operator) != GenericFilterOps.EQUALS:
+            logger.warning(
+                "Boolean filters do not support any"
+                "operation except for equals. Defaulting"
+                "to an `equals` comparison."
+            )
+        return BoolFilter(
+            operation=GenericFilterOps.EQUALS,
+            column=column,
+            value=bool(value),
         )
 
     @property
