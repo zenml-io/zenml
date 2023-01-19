@@ -100,12 +100,12 @@ class BuildContext:
             )
 
         for dir, _, files in fileio.walk(source):
-            dir = Path(fileio.convert_to_str(dir))
+            dir_path = Path(fileio.convert_to_str(dir))
             for file_name in files:
                 file_name = fileio.convert_to_str(file_name)
-                file_source = dir / file_name
+                file_source = dir_path / file_name
                 file_destination = (
-                    Path(destination) / dir.relative_to(source) / file_name
+                    Path(destination) / dir_path.relative_to(source) / file_name
                 )
 
                 with file_source.open("r") as f:
