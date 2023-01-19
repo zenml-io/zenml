@@ -115,6 +115,7 @@ class KanikoImageBuilder(BaseImageBuilder):
 
         Raises:
             RuntimeError: If no container registry is passed.
+            RuntimeError: If the upload to the artifact store has failed.
         """
         self._check_prerequisites()
         if not container_registry:
@@ -130,7 +131,17 @@ class KanikoImageBuilder(BaseImageBuilder):
             pod_name,
         )
         if self.config.store_context_in_artifact_store:
-            kaniko_context = self._upload_build_context(build_context)
+            try:
+                kaniko_context = self._upload_build_context(build_context)
+            except Exception:
+                raise RuntimeError(
+                    "Uploading the Kaniko build context to the artifact store "
+                    "failed. Please make sure you have permissions to write "
+                    "to the artifact store or update the Kaniko image builder "
+                    "to stream the build context using stdin by running:\n"
+                    f"  `zenml image-builder update {self.name}` "
+                    "--store_context_in_artifact_store=False`"
+                )
         else:
             kaniko_context = "tar://stdin"
 
