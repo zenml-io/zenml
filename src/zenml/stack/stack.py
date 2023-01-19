@@ -676,6 +676,17 @@ class Stack:
                     f"is not currently running. Please run the following "
                     f"command to provision and start the component:\n\n"
                     f"    `zenml stack up`\n"
+                    f"It is worth noting that the provision command will "
+                    f" be deprecated in the future. ZenML will no longer "
+                    f"be responsible for provisioning infrastructure, "
+                    f"or port-forwarding directly. Instead of managing "
+                    f"the state of the components, ZenML will be utilizing "
+                    f"the already running stack or stack components directly. "
+                    f"Additionally, we are also providing a variety of "
+                    f" deployment recipes for popular Kubernetes-based "
+                    f"integrations such as Kubeflow, Tekton, and Seldon etc."
+                    f"Check out https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes"
+                    f"for more information."
                 )
 
         if self.requires_remote_server and Client().zen_store.is_local_store():

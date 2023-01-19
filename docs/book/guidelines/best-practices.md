@@ -152,8 +152,6 @@ imports that are defined relative to the project root resolve for the pipeline r
 ## Tips
 
 * Use `zenml GROUP explain` to explain what everything is
-* Run `zenml stack up` after switching stacks (but this is also enforced by
-  validations that check if the stack is up)
 
 For a practical example on all of the above, please check
 out [ZenML Projects](https://github.com/zenml-io/zenml-projects) which are practical
