@@ -94,6 +94,16 @@ class ComponentFilterModel(ShareableProjectScopedFilterModel):
     scoping.
     """
 
+    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *ShareableProjectScopedFilterModel.FILTER_EXCLUDE_FIELDS,
+        "_scope_type",
+    ]
+    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *ShareableProjectScopedFilterModel.CLI_EXCLUDE_FIELDS,
+        "_scope_type",
+    ]
+    _scope_type: str = PrivateAttr(None)
+
     is_shared: Union[bool, str] = Query(
         default=None, description="If the stack is shared or private"
     )
@@ -113,8 +123,6 @@ class ComponentFilterModel(ShareableProjectScopedFilterModel):
         default=None, description="Project of the stack"
     )
     user_id: Union[UUID, str] = Query(None, description="User of the stack")
-
-    _scope_type: str = PrivateAttr(None)
 
     def set_scope_type(self, component_type: str) -> None:
         """Set the type of component on which to perform the filtering to scope the response."""

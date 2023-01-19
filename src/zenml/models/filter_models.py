@@ -243,18 +243,16 @@ class FilterBaseModel(BaseModel):
     ```
     """
 
+    # List of fields that cannot be used as filters.
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         "sort_by",
-        "_scope_user",
-        "_scope_project",
         "page",
         "size",
         "logical_operator",
     ]
-    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        "_scope_user",
-        "_scope_project",
-    ]
+
+    # List of fields that are not even mentioned as options in the CLI.
+    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = []
 
     sort_by: str = Query("created", description="Which column to sort by.")
     logical_operator: str = Query(
@@ -262,7 +260,6 @@ class FilterBaseModel(BaseModel):
         description="Which logical operator to use between all filters "
         "['and', 'or']",
     )
-
     page: int = Query(
         PAGINATION_STARTING_PAGE, ge=1, description="Page number"
     )
@@ -584,6 +581,14 @@ class FilterBaseModel(BaseModel):
 class ProjectScopedFilterModel(FilterBaseModel):
     """Model to enable advanced scoping with project."""
 
+    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *FilterBaseModel.FILTER_EXCLUDE_FIELDS,
+        "_scope_project",
+    ]
+    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *FilterBaseModel.CLI_EXCLUDE_FIELDS,
+        "_scope_project",
+    ]
     _scope_project: UUID = PrivateAttr(None)
 
     def set_scope_project(self, project_id: UUID) -> None:
@@ -618,6 +623,14 @@ class ProjectScopedFilterModel(FilterBaseModel):
 class ShareableProjectScopedFilterModel(ProjectScopedFilterModel):
     """Model to enable advanced scoping with project and user scoped shareable things."""
 
+    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *ProjectScopedFilterModel.FILTER_EXCLUDE_FIELDS,
+        "_scope_user",
+    ]
+    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *ProjectScopedFilterModel.CLI_EXCLUDE_FIELDS,
+        "_scope_user",
+    ]
     _scope_user: UUID = PrivateAttr(None)
 
     def set_scope_user(self, user_id: UUID) -> None:
