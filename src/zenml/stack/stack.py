@@ -28,7 +28,11 @@ from typing import (
 from uuid import UUID
 
 from zenml.client import Client
-from zenml.constants import ENV_ZENML_SECRET_VALIDATION_LEVEL
+from zenml.constants import (
+    ENV_ZENML_SECRET_VALIDATION_LEVEL,
+    ENV_ZENML_SKIP_IMAGE_BUILDER_DEFAULT,
+    handle_bool_env_var,
+)
 from zenml.enums import SecretValidationLevel, StackComponentType
 from zenml.exceptions import ProvisioningError, StackValidationError
 from zenml.logger import get_logger
@@ -126,7 +130,14 @@ class Stack:
             or step_operator
             or (model_deployer and model_deployer.flavor != "mlflow")
         )
-        if requires_image_builder and not image_builder:
+        skip_default_image_builder = handle_bool_env_var(
+            ENV_ZENML_SKIP_IMAGE_BUILDER_DEFAULT, default=False
+        )
+        if (
+            requires_image_builder
+            and not skip_default_image_builder
+            and not image_builder
+        ):
             # This is a temporary fix to include a local image builder in each
             # stack that needs it. This mirrors the behavior in previous
             # versions and ensures we don't break all existing stacks

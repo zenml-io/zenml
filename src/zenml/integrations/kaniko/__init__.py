@@ -25,7 +25,7 @@ class KanikoIntegration(Integration):
     """Definition of the Kaniko integration for ZenML."""
 
     NAME = KANIKO
-    REQUIREMENTS = ["kubernetes==18.20.0"]
+    REQUIREMENTS = []
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
