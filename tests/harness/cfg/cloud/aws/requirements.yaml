@@ -17,7 +17,7 @@ requirements:
         flavor: aws
         external: true
 
-  - name: aws-us-east-1-sagemaker
+  - name: aws-us-east-1-sagemaker-op
     description: >-
       AWS environment in the us-east-1 region that provides a Sagemaker step
       operator.
@@ -26,6 +26,18 @@ requirements:
     stacks:
       - name: aws-us-east-1-sagemaker
         type: step_operator
+        flavor: sagemaker
+        containerized: true
+        external: true
+
+  - name: aws-us-east-1-sagemaker-orch
+    description: >-
+      AWS environment in the us-east-1 region that provides a Sagemaker orchestrator.
+    system_tools:
+      - docker
+    stacks:
+      - name: aws-us-east-1-sagemaker
+        type: orchestrator
         flavor: sagemaker
         containerized: true
         external: true
