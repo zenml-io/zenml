@@ -22,7 +22,6 @@ from typing import (
     ClassVar,
     Dict,
     List,
-    Optional,
     Type,
     Union,
     get_args,
@@ -569,7 +568,7 @@ class ProjectScopedFilterModel(FilterBaseModel):
 
     def generate_filter(
         self, table: Type["SQLModel"]
-    ) -> Optional[Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]]:
+    ) -> Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]:
         """Generate the filter for the query.
 
         Many resources are scoped by project, in which case only the resources
@@ -603,7 +602,7 @@ class ShareableProjectScopedFilterModel(ProjectScopedFilterModel):
 
     def generate_filter(
         self, table: Type["SQLModel"]
-    ) -> Optional[Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]]:
+    ) -> Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]:
         """Generate the filter for the query.
 
         A user is only allowed to list the resources that either belong to them

@@ -19,7 +19,6 @@ from typing import (
     ClassVar,
     Dict,
     List,
-    Optional,
     Type,
     Union,
 )
@@ -123,7 +122,7 @@ class ComponentFilterModel(ShareableProjectScopedFilterModel):
 
     def generate_filter(
         self, table: Type["SQLModel"]
-    ) -> Optional[Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]]:
+    ) -> Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]:
         """Generate the filter for the query.
 
         Stack components can be scoped by type to narrow the search.
