@@ -106,39 +106,31 @@ python run.py --stop-tensorboard
 
 ## 🏃️ Run the same pipeline on a local Kubeflow Pipelines deployment
 
-### 🥞 Create a local Kubeflow Pipelines Stack
+## 📄 Infrastructure Requirements (Pre-requisites)
 
-Now with all the installation and initialization out of the way, all that's left
-to do is configuring our ZenML [stack](https://docs.zenml.io/getting-started/core-concepts). For
-this example, the stack we create consists of the following four parts:
-* The **local artifact store** stores step outputs on your hard disk.
-* The docker images that are created to run your pipeline are stored in a local
-docker **container registry**.
-* The **Kubeflow orchestrator** is responsible for running your ZenML pipeline
-in Kubeflow Pipelines.
+You don't need to set up any infrastructure to run your pipelines with Kubeflow, locally. However, you need the following tools installed:
+  * Docker must be installed on your local machine.
+  * Install k3d by running `curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash`.
 
-```bash
-# Make sure to create the local registry on port 5000 for it to work 
-zenml container-registry register local_registry --flavor=default --uri=localhost:5000 
-zenml orchestrator register local_kubeflow_orchestrator --flavor=kubeflow
-zenml stack register local_kubeflow_stack \
-    -a default \
-    -o local_kubeflow_orchestrator \
-    -c local_registry \
-    --set
-```
+## Create a local Kubeflow Stack
 
-### 🏁 Start up Kubeflow Pipelines locally
+To get a stack with Kubeflow and potential other components, you can make use of ZenML's Stack Recipes that are a set of terraform based modules that take care of setting up a cluster with Kubeflow among other things.
 
-ZenML takes care of setting up and configuring the local Kubeflow Pipelines
-deployment. All we need to do is run:
+Run the following command to deploy the local Kubeflow Pipelines stack:
 
 ```bash
-zenml stack up
+zenml stack recipe deploy k3d-modular
 ```
+>**Note**:
+> This recipe comes with MLflow, Kubeflow and Minio enabled by default. If you want any other components like KServe, Seldon or Tekton, you can specify that using the `--install/-i` flag.
 
-When the setup is finished, you should see a local URL which you can access in
-your browser and take a look at the Kubeflow Pipelines UI.
+This will deploy a local Kubernetes cluster with Kubeflow installed. 
+It also generate a stack YAML file that you can import as a ZenML stack by running 
+
+```bash
+zenml stack import -f <path-to-stack-yaml>
+```
+Once the stack is set, you can then simply proceed to running your pipelines.
 
 ### ▶️ Run the pipeline
 We can now run the pipeline by simply executing the python script:
