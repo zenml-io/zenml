@@ -69,7 +69,8 @@ the artifact store). For all other cases, check out the
 {% tabs %}
 {% tab title="AWS" %}
 
-* Add permissions to the worker node IAM role to push to ECR and read from S3 buckets.
+* Add permissions to push to ECR by attaching the `EC2InstanceProfileForImageBuilderECRContainerBuilds` policy to your
+[EKS node IAM role](https://docs.aws.amazon.com/eks/latest/userguide/create-node-role.html).
 * Configure the image builder to set some required environment variables on the Kaniko build pod:
 ```shell
 # register a new image builder with the environment variables
@@ -90,10 +91,24 @@ more information.
 
 {% tab title="GCP" %}
 
-* Enable workload identity for your cluster
+* [Enable workload identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity#enable_on_cluster) for your cluster
 * Follow the steps described [here](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity#authenticating_to)
 to create a Google service account, Kubernetes service account as well as a IAM policy binding between them.
 * Grant the Google service account permissions to push to your GCR registry and read from your GCP bucket.
+* Configure the image builder to run in the correct namespace and use the correct service account:
+```shell
+# register a new image builder with namespace and service account
+zenml image-builder register <NAME> \
+    --flavor=kaniko \
+    --kubernetes_context=<KUBERNETES_CONTEXT> \
+    --kubernetes_namespace=<KUBERNETES_NAMESPACE> \
+    --service_account_name=<KUBERNETES_SERVICE_ACCOUNT_NAME>
+
+# or update an existing one
+zenml image-builder update <NAME> \
+    --kubernetes_namespace=<KUBERNETES_NAMESPACE> \
+    --service_account_name=<KUBERNETES_SERVICE_ACCOUNT_NAME>
+```
 
 Check out [the Kaniko docs](https://github.com/GoogleContainerTools/kaniko#pushing-to-google-gcr) for
 more information.
@@ -106,9 +121,9 @@ more information.
 ```shell
 kubectl create configmap docker-config --from-literal='config.json={ "credHelpers": { "mycr.azurecr.io": "acr-env" } }'
 ```
-
-* Configure managed service identity for your cluster
-* Configure the image builder to set mount the configmap in the Kaniko build pod:
+* Follow [these steps](https://learn.microsoft.com/en-us/azure/aks/use-managed-identity) to configure your
+cluster to use a managed identity
+* Configure the image builder to mount the configmap in the Kaniko build pod:
 ```shell
 # register a new image builder with the mounted configmap
 zenml image-builder register <NAME> \

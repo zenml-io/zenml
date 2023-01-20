@@ -51,6 +51,7 @@ class KanikoImageBuilderConfig(BaseImageBuilderConfig):
         env_from: `envFrom` section of the Kubernetes container spec.
         volume_mounts: `volumeMounts` section of the Kubernetes container spec.
         volumes: `volumes` section of the Kubernetes pod spec.
+        service_account_name: Name of the Kubernetes service account to use.
         store_context_in_artifact_store: If `True`, the build context will be
             stored in the artifact store. If `False`, the build context will be
             streamed over stdin of the `kubectl` process that runs the build.
@@ -69,6 +70,7 @@ class KanikoImageBuilderConfig(BaseImageBuilderConfig):
     env_from: List[Dict[str, Any]] = []
     volume_mounts: List[Dict[str, Any]] = []
     volumes: List[Dict[str, Any]] = []
+    service_account_name: Optional[str] = None
 
     store_context_in_artifact_store: bool = False
 
