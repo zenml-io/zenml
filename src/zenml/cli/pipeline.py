@@ -24,6 +24,7 @@ from zenml.console import console
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
 from zenml.models import PipelineFilterModel, PipelineRunFilterModel
+from zenml.models.schedule_model import ScheduleFilterModel
 
 logger = get_logger(__name__)
 
@@ -115,10 +116,8 @@ def schedule() -> None:
 
 
 @schedule.command("list", help="List all pipeline schedules.")
-@click.option("--pipeline", "-p", type=str, required=False)
-@click.option("--user", "-u", type=str, required=False)
-@click.option("--name", "-n", type=str, required=False)
-def list_schedules(pipeline: str, user: str, name: str) -> None:
+@list_options(ScheduleFilterModel)
+def list_schedules(**kwargs: Any) -> None:
     """List all pipeline schedules.
 
     Args:
@@ -129,21 +128,10 @@ def list_schedules(pipeline: str, user: str, name: str) -> None:
     cli_utils.print_active_config()
     client = Client()
 
-    pipeline_id = None
-    if pipeline:
-        pipeline_id = client.get_pipeline(name_id_or_prefix=pipeline).id
-    user_id = None
-    if user:
-        user_id = client.get_user(name_id_or_prefix=user).id
-
-    schedules = client.list_schedules(
-        user_id=user_id,
-        pipeline_id=pipeline_id,
-        name=name,
-    )
+    schedules = client.list_schedules(**kwargs)
 
     if not schedules:
-        cli_utils.declare("No schedules registered.")
+        cli_utils.declare("No schedules found for this filter.")
         return
 
     cli_utils.print_pydantic_models(
@@ -205,7 +193,7 @@ def list_pipeline_runs(**kwargs: Any) -> None:
         cli_utils.error(str(err))
     else:
         if not pipeline_runs.items:
-            cli_utils.declare("No pipeline runs registered.")
+            cli_utils.declare("No pipeline runs found for this filter.")
             return
 
         cli_utils.print_pipeline_runs_table(pipeline_runs=pipeline_runs.items)

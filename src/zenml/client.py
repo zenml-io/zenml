@@ -2528,27 +2528,69 @@ class Client(metaclass=ClientMetaClass):
 
     def list_schedules(
         self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        name: Optional[str] = None,
         project_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
         pipeline_id: Optional[Union[str, UUID]] = None,
-        name: Optional[str] = None,
+        orchestrator_id: Optional[Union[str, UUID]] = None,
+        active: Optional[Union[str, bool]] = None,
+        cron_expression: Optional[str] = None,
+        start_time: Optional[Union[datetime, str]] = None,
+        end_time: Optional[Union[datetime, str]] = None,
+        interval_second: Optional[int] = None,
+        catchup: Optional[Union[str, bool]] = None,
     ) -> Page[ScheduleResponseModel]:
         """List schedules.
 
         Args:
-            project_id: If provided, only list schedules in this project.
-            user_id: If provided, only list schedules from this user.
-            pipeline_id: If provided, only list schedules for this pipeline.
-            name: If provided, only list schedules with this name.
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            id: Use the id of stacks to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            name: The name of the stack to filter by.
+            project_id: The id of the project to filter by.
+            user_id: The  id of the user to filter by.
+            pipeline_id: The id of the pipeline to filter by.
+            orchestrator_id: The id of the orchestrator to filter by.
+            active: Use to filter by active status.
+            cron_expression: Use to filter by cron expression.
+            start_time: Use to filter by start time.
+            end_time: Use to filter by end time.
+            interval_second: Use to filter by interval second.
+            catchup: Use to filter by catchup.
 
         Returns:
             A list of schedules.
         """
         schedule_filter_model = ScheduleFilterModel(
+            sort_by=sort_by,
+            page=page,
+            size=size,
+            logical_operator=logical_operator,
+            id=id,
+            created=created,
+            updated=updated,
+            name=name,
             project_id=project_id,
             user_id=user_id,
             pipeline_id=pipeline_id,
-            name=name,
+            orchestrator_id=orchestrator_id,
+            active=active,
+            cron_expression=cron_expression,
+            start_time=start_time,
+            end_time=end_time,
+            interval_second=interval_second,
+            catchup=catchup,
         )
         return self.zen_store.list_schedules(
             schedule_filter_model=schedule_filter_model
