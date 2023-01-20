@@ -17,6 +17,7 @@ import logging
 import platform
 import shutil
 from enum import Enum
+from functools import partial
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 from uuid import UUID
 
@@ -95,11 +96,14 @@ class StackRequirement(BaseTestConfigModel):
         Returns:
             The stack component or None if no component was found.
         """
-        components = client.list_stack_components(
-            user_id=client.active_user.id,
-            name=self.name or None,
-            type=self.type,
-            flavor=self.flavor,
+        components = client.depaginate(
+            partial(
+                client.list_stack_components,
+                user_id=client.active_user.id,
+                name=self.name or None,
+                type=self.type,
+                flavor=self.flavor,
+            )
         )
 
         mandatory_components: List[UUID] = []
