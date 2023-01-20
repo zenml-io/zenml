@@ -42,8 +42,8 @@ from __future__ import annotations
 
 from typing import Generic, Sequence, TypeVar
 
+from pydantic import Field
 from pydantic.generics import GenericModel
-from pydantic.types import conint
 
 from zenml.models.base_models import BaseResponseModel
 from zenml.models.filter_models import BaseFilterModel
@@ -54,10 +54,10 @@ B = TypeVar("B", bound=BaseResponseModel)
 class Page(GenericModel, Generic[B]):
     """Return Model for List Models to accommodate pagination."""
 
-    page: conint(ge=1)  # type: ignore
-    size: conint(ge=1)  # type: ignore
-    total_pages: conint(ge=0)  # type: ignore
-    total: conint(ge=0)  # type: ignore
+    page: int = Field(ge=1)
+    size: int = Field(ge=1)
+    total_pages: int = Field(ge=0)
+    total: int = Field(ge=0)
     items: Sequence[B]
 
     __params_type__ = BaseFilterModel
