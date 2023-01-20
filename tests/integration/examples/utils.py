@@ -64,7 +64,7 @@ def example_runner(examples_dir: Path) -> List[str]:
 def run_example(
     request: pytest.FixtureRequest,
     name: str,
-    *args: str,
+    example_args: Optional[List[str]] = None,
     pipeline_name: Optional[str] = None,
     run_count: Optional[int] = None,
     step_count: Optional[int] = None,
@@ -74,7 +74,7 @@ def run_example(
     Args:
         request: The pytest request object.
         name: The name (=directory name) of the example.
-        *args: Additional arguments to pass to the example
+        example_args: Additional arguments to pass to the example
         pipeline_name: Validate that a pipeline with this name was registered.
         run_count: Validate that this many pipeline runs were executed during
             the example run.
@@ -98,7 +98,8 @@ def run_example(
 
     # Run the example
     example = LocalExample(name=name, path=dst_dir, skip_manual_check=True)
-    example.run_example_directly(*args)
+    example_args = example_args or []
+    example.run_example_directly(*example_args)
 
     runs: List[PipelineRunView] = []
     if pipeline_name:
