@@ -671,19 +671,23 @@ class SqlZenStore(BaseZenStore):
             .all()
         )
 
-        # Convert this page of items from schemas to models
+        # Convert this page of items from schemas to models.
         items: List[B] = []
         for schema in item_schemas:
+            # If a custom conversion function is provided, use it.
             if custom_schema_to_model_conversion:
                 items.append(custom_schema_to_model_conversion(schema))
-            else:
-                to_model = getattr(schema, "to_model", None)
-                if callable(to_model):
-                    items.append(to_model())
-                raise RuntimeError(
-                    f"Cannot convert schema `{schema.__class__.__name__}` to "
-                    "model since it does not have a `to_model` method."
-                )
+                continue
+            # Otherwise, try to use the `to_model` method of the schema.
+            to_model = getattr(schema, "to_model", None)
+            if callable(to_model):
+                items.append(to_model())
+                continue
+            # If neither of the above work, raise an error.
+            raise RuntimeError(
+                f"Cannot convert schema `{schema.__class__.__name__}` to model "
+                "since it does not have a `to_model` method."
+            )
 
         return Page(
             total=total,

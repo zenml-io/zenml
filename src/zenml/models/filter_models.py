@@ -161,7 +161,7 @@ class StrFilter(Filter):
             return column.like(f"%{self.value}%")
         if self.operation == GenericFilterOps.STARTSWITH:
             return column.startswith(f"%{self.value}%")
-        if self.operation == GenericFilterOps.CONTAINS:
+        if self.operation == GenericFilterOps.ENDSWITH:
             return column.endswith(f"%{self.value}%")
         return column == self.value
 
@@ -181,6 +181,11 @@ class UUIDFilter(StrFilter):
         import sqlalchemy
         from sqlalchemy_utils.functions import cast_if
 
+        # For equality checks, compare the UUID directly
+        if self.operation == GenericFilterOps.EQUALS:
+            return column == self.value
+
+        # For all other operations, cast and handle the column as string
         return super().generate_query_conditions_from_column(
             column=cast_if(column, sqlalchemy.String)
         )
