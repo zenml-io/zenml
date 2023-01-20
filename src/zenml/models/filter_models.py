@@ -430,7 +430,6 @@ class BaseFilterModel(BaseModel):
     @classmethod
     def is_datetime_field(cls, k: str) -> bool:
         """Checks if it's a datetime field."""
-        breakpoint()
         return issubclass(datetime, get_args(cls.__fields__[k].type_))
 
     @classmethod
