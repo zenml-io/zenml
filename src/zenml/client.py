@@ -2306,9 +2306,9 @@ class Client(metaclass=ClientMetaClass):
         custom_flavors = self.list_custom_flavors(
             project_id=self.active_project.id,
             type=component_type,
-        ).items
+        )
 
-        return zenml_flavors + custom_flavors
+        return zenml_flavors + list(custom_flavors.items)
 
     def get_flavor_by_name_and_type(
         self, name: str, component_type: "StackComponentType"
@@ -2611,6 +2611,7 @@ class Client(metaclass=ClientMetaClass):
         start_time: Optional[Union[datetime, str]] = None,
         end_time: Optional[Union[datetime, str]] = None,
         num_steps: Optional[Union[int, str]] = None,
+        unlisted: Optional[bool] = None,
     ) -> Page[PipelineRunResponseModel]:
         """List all pipeline runs.
 
@@ -2619,7 +2620,7 @@ class Client(metaclass=ClientMetaClass):
             page: The page of items
             size: The maximum size of all pages
             logical_operator: Which logical operator to use [and, or]
-            id: Use the id of stacks to filter by.
+            id: The id of the runs to filter by.
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
             project_id: The id of the project to filter by.
@@ -2633,6 +2634,7 @@ class Client(metaclass=ClientMetaClass):
             start_time: The start_time for the pipeline run
             end_time: The end_time for the pipeline run
             num_steps: The number of steps for the pipeline run
+            unlisted: If the runs should be unlisted or not.
 
         Returns:
             A page with Pipeline Runs fitting the filter description
@@ -2656,6 +2658,7 @@ class Client(metaclass=ClientMetaClass):
             start_time=start_time,
             end_time=end_time,
             num_steps=num_steps,
+            unlisted=unlisted,
         )
         runs_filter_model.set_scope_project(self.active_project.id)
         return self.zen_store.list_runs(runs_filter_model=runs_filter_model)

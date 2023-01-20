@@ -14,7 +14,17 @@
 """Models representing pipeline runs."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, Optional, Union, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Type,
+    Union,
+    cast,
+)
 from uuid import UUID
 
 from fastapi import Query
@@ -30,6 +40,9 @@ from zenml.models.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.filter_models import ProjectScopedFilterModel
 
 if TYPE_CHECKING:
+    from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
+    from sqlmodel import SQLModel
+
     from zenml.models.pipeline_models import PipelineResponseModel
     from zenml.models.stack_models import StackResponseModel
 
@@ -138,6 +151,11 @@ class PipelineRunResponseModel(
 class PipelineRunFilterModel(ProjectScopedFilterModel):
     """Model to enable advanced filtering of all Projects."""
 
+    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *ProjectScopedFilterModel.FILTER_EXCLUDE_FIELDS,
+        "unlisted",
+    ]
+
     name: str = Query(
         default=None,
         description="Name of the Pipeline Run",
@@ -177,6 +195,36 @@ class PipelineRunFilterModel(ProjectScopedFilterModel):
         default=None,
         description="Amount of steps in the Pipeline Run",
     )
+
+    unlisted: Optional[bool] = None
+
+    def generate_filter(
+        self, table: Type["SQLModel"]
+    ) -> Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]:
+        """Generate the filter for the query.
+
+        Args:
+            table: The Table that is being queried from.
+
+        Returns:
+            The filter expression for the query.
+        """
+        from sqlalchemy import and_
+
+        base_filter = super().generate_filter(table)
+
+        if self.unlisted is not None:
+            if self.unlisted is True:
+                unlisted_filter = getattr(table, "pipeline_id").is_(None)
+            else:
+                unlisted_filter = getattr(table, "pipeline_id").is_not(None)
+
+            # TODO: make this right
+            # This needs to be an AND right now to work with the project
+            # scoping of the superclass
+            return and_(base_filter, unlisted_filter)
+
+        return base_filter
 
 
 # ------- #
