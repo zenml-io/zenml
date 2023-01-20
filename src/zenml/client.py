@@ -1330,7 +1330,7 @@ class Client(metaclass=ClientMetaClass):
             return self.active_project
         return self._get_entity_by_id_or_name_or_prefix(
             get_method=self.zen_store.get_project,
-            list_method=self.zen_store.list_projects,
+            list_method=self.list_projects,
             name_id_or_prefix=name_id_or_prefix,
         )
 
@@ -2217,7 +2217,7 @@ class Client(metaclass=ClientMetaClass):
         """
         return self._get_entity_by_id_or_name_or_prefix(
             get_method=self.zen_store.get_flavor,
-            list_method=self.zen_store.list_flavors,
+            list_method=self.list_custom_flavors,
             name_id_or_prefix=name_id_or_prefix,
         )
 
@@ -2592,6 +2592,7 @@ class Client(metaclass=ClientMetaClass):
             interval_second=interval_second,
             catchup=catchup,
         )
+        schedule_filter_model.set_scope_project(self.active_project.id)
         return self.zen_store.list_schedules(
             schedule_filter_model=schedule_filter_model
         )
@@ -2853,26 +2854,26 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A list of artifacts.
         """
-        return self.zen_store.list_artifacts(
-            ArtifactFilterModel(
-                sort_by=sort_by,
-                page=page,
-                size=size,
-                logical_operator=logical_operator,
-                id=id,
-                created=created,
-                updated=updated,
-                name=name,
-                artifact_store_id=artifact_store_id,
-                type=type,
-                data_type=data_type,
-                uri=uri,
-                materializer=materializer,
-                project_id=project_id,
-                user_id=user_id,
-                only_unused=only_unused,
-            )
+        artifact_filter_model = ArtifactFilterModel(
+            sort_by=sort_by,
+            page=page,
+            size=size,
+            logical_operator=logical_operator,
+            id=id,
+            created=created,
+            updated=updated,
+            name=name,
+            artifact_store_id=artifact_store_id,
+            type=type,
+            data_type=data_type,
+            uri=uri,
+            materializer=materializer,
+            project_id=project_id,
+            user_id=user_id,
+            only_unused=only_unused,
         )
+        artifact_filter_model.set_scope_project(self.active_project.id)
+        return self.zen_store.list_artifacts(artifact_filter_model)
 
     def get_artifact(self, artifact_id: UUID) -> ArtifactResponseModel:
         """Get an artifact by ID.
@@ -2997,8 +2998,10 @@ class Client(metaclass=ClientMetaClass):
             ZenKeyError: If there is more than one entity with that name
                 or id prefix.
         """
+        from zenml.utils.uuid_utils import is_valid_uuid
+
         # First interpret as full UUID
-        if isinstance(name_id_or_prefix, UUID):
+        if is_valid_uuid(name_id_or_prefix):
             return get_method(name_id_or_prefix)
 
         # If not a UUID, try to find by name or id prefix

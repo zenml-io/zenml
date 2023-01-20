@@ -232,13 +232,18 @@ def revoke_role(
     """
     cli_utils.print_active_config()
     client = Client()
+
+    role = client.get_role(name_id_or_prefix=role_name_or_id)
+    project = client.get_project(name_id_or_prefix=project_name_or_id)
+
     # Revoke the role from users
     for user_name_or_id in user_names_or_ids:
+        user = client.get_user(name_id_or_prefix=user_name_or_id)
         try:
             user_role_assignments = client.list_user_role_assignment(
-                role_id=role_name_or_id,
-                user_id=user_name_or_id,
-                project_id=project_name_or_id,
+                role_id=role.id,
+                user_id=user.id,
+                project_id=project.id,
             )
             for user_role_assignment in user_role_assignments.items:
                 Client().delete_user_role_assignment(user_role_assignment.id)
@@ -252,11 +257,12 @@ def revoke_role(
 
     # Revoke the role from teams
     for team_name_or_id in team_names_or_ids:
+        team = client.get_team(name_id_or_prefix=team_name_or_id)
         try:
             team_role_assignments = client.list_team_role_assignment(
-                role_id=role_name_or_id,
-                team_id=team_name_or_id,
-                project_id=project_name_or_id,
+                role_id=role.id,
+                team_id=team.id,
+                project_id=project.id,
             )
             for team_role_assignment in team_role_assignments.items:
                 Client().delete_user_role_assignment(team_role_assignment.id)
