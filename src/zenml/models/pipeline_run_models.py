@@ -158,6 +158,9 @@ class PipelineRunFilterModel(ProjectScopedFilterModel):
     stack_id: Union[UUID, str] = Query(
         default=None, description="Stack used for the Pipeline Run"
     )
+    schedule_id: Union[UUID, str] = Query(
+        default=None, description="Schedule that triggered the Pipeline Run"
+    )
 
     status: str = Query(
         default=None,
