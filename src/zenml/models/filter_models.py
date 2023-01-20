@@ -25,12 +25,12 @@ from typing import (
     Tuple,
     Type,
     Union,
-    get_args,
 )
 from uuid import UUID
 
 from fastapi import Query
 from pydantic import BaseModel, PrivateAttr, root_validator, validator
+from pydantic.typing import get_args
 from sqlmodel import SQLModel
 
 from zenml.constants import (
@@ -430,6 +430,7 @@ class BaseFilterModel(BaseModel):
     @classmethod
     def is_datetime_field(cls, k: str) -> bool:
         """Checks if it's a datetime field."""
+        breakpoint()
         return issubclass(datetime, get_args(cls.__fields__[k].type_))
 
     @classmethod
