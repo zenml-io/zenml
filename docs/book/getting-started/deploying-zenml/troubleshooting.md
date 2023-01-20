@@ -57,7 +57,8 @@ server, you can check the logs with the command:
     ```shell
     docker compose -p zenml logs -f
     ```
-
+{% endtab %}
+{% endtabs %}
 
 ## Fixing database connection problems
 
