@@ -25,7 +25,7 @@ from zenml.models.base_models import (
     update_model,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
-from zenml.models.filter_models import FilterBaseModel
+from zenml.models.filter_models import BaseFilterModel
 
 # ---- #
 # BASE #
@@ -56,7 +56,7 @@ class RoleResponseModel(RoleBaseModel, BaseResponseModel):
 # ------ #
 
 
-class RoleFilterModel(FilterBaseModel):
+class RoleFilterModel(BaseFilterModel):
     """Model to enable advanced filtering of all Users."""
 
     name: str = Query(

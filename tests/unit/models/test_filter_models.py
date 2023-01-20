@@ -22,15 +22,15 @@ from pydantic.error_wrappers import ValidationError
 from zenml.constants import FILTERING_DATETIME_FORMAT
 from zenml.enums import GenericFilterOps
 from zenml.models.filter_models import (
+    BaseFilterModel,
     Filter,
-    FilterBaseModel,
     NumericFilter,
     StrFilter,
     UUIDFilter,
 )
 
 
-class TestFilterModel(FilterBaseModel):
+class TestFilterModel(BaseFilterModel):
 
     uuid_field: Optional[Union[UUID, str]]
     datetime_field: Optional[Union[datetime, str]]
@@ -86,14 +86,14 @@ def _test_filter_model(
 def test_filter_model_page_not_int_gte1_fails(wrong_page_value: Any):
     """Test that the filter model page field enforces int >= 1"""
     with pytest.raises(ValidationError):
-        FilterBaseModel(page=wrong_page_value)
+        BaseFilterModel(page=wrong_page_value)
 
 
 @pytest.mark.parametrize("wrong_page_value", [0, -4, 0.21, "catfood"])
 def test_filter_model_size_not_int_gte1_fails(wrong_page_value: Any):
     """Test that the filter model size field enforces int >= 1"""
     with pytest.raises(ValidationError):
-        FilterBaseModel(size=wrong_page_value)
+        BaseFilterModel(size=wrong_page_value)
 
 
 @pytest.mark.parametrize(
@@ -103,7 +103,7 @@ def test_filter_model_sort_by_for_existing_field_succeeds(
     correct_sortable_column: Any,
 ):
     """Test that the filter model sort_by field enforces valid filter fields"""
-    filter_model = FilterBaseModel(sort_by=correct_sortable_column)
+    filter_model = BaseFilterModel(sort_by=correct_sortable_column)
     assert filter_model.sort_by == correct_sortable_column
 
 
@@ -115,7 +115,7 @@ def test_filter_model_sort_by_for_non_filter_fields_fails(
 ):
     """Test that the filter model sort_by field enforces valid filter fields"""
     with pytest.raises(ValidationError):
-        FilterBaseModel(sort_by=incorrect_sortable_column)
+        BaseFilterModel(sort_by=incorrect_sortable_column)
 
 
 def test_datetime_filter_model():

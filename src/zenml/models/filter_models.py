@@ -229,7 +229,7 @@ class NumericFilter(Filter):
 # -----------------#
 
 
-class FilterBaseModel(BaseModel):
+class BaseFilterModel(BaseModel):
     """Class to unify all filter, paginate and sort request parameters.
 
     This Model allows fine-grained filtering, sorting and pagination of
@@ -583,15 +583,15 @@ class FilterBaseModel(BaseModel):
             raise RuntimeError("No valid logical operator was supplied.")
 
 
-class ProjectScopedFilterModel(FilterBaseModel):
+class ProjectScopedFilterModel(BaseFilterModel):
     """Model to enable advanced scoping with project."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *FilterBaseModel.FILTER_EXCLUDE_FIELDS,
+        *BaseFilterModel.FILTER_EXCLUDE_FIELDS,
         "_scope_project",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *FilterBaseModel.CLI_EXCLUDE_FIELDS,
+        *BaseFilterModel.CLI_EXCLUDE_FIELDS,
         "_scope_project",
     ]
     _scope_project: UUID = PrivateAttr(None)

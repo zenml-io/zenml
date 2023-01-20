@@ -25,7 +25,7 @@ from zenml.models.base_models import (
     update_model,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
-from zenml.models.filter_models import FilterBaseModel
+from zenml.models.filter_models import BaseFilterModel
 
 if TYPE_CHECKING:
     from zenml.models.user_models import UserResponseModel
@@ -87,7 +87,7 @@ class TeamResponseModel(TeamBaseModel, BaseResponseModel):
 # ------ #
 
 
-class TeamFilterModel(FilterBaseModel):
+class TeamFilterModel(BaseFilterModel):
     """Model to enable advanced filtering of all Teams."""
 
     name: str = Query(

@@ -23,7 +23,7 @@ from zenml.models.base_models import (
     update_model,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
-from zenml.models.filter_models import FilterBaseModel
+from zenml.models.filter_models import BaseFilterModel
 
 
 # ---- #
@@ -57,7 +57,7 @@ class ProjectResponseModel(ProjectBaseModel, BaseResponseModel):
 # ------ #
 
 
-class ProjectFilterModel(FilterBaseModel):
+class ProjectFilterModel(BaseFilterModel):
     """Model to enable advanced filtering of all Projects."""
 
     name: str = Query(

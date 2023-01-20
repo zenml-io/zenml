@@ -46,7 +46,7 @@ from pydantic.generics import GenericModel
 from pydantic.types import conint
 
 from zenml.models.base_models import BaseResponseModel
-from zenml.models.filter_models import FilterBaseModel
+from zenml.models.filter_models import BaseFilterModel
 
 B = TypeVar("B", bound=BaseResponseModel)
 
@@ -60,4 +60,4 @@ class Page(GenericModel, Generic[B]):
     total: conint(ge=0)  # type: ignore
     items: Sequence[B]
 
-    __params_type__ = FilterBaseModel
+    __params_type__ = BaseFilterModel

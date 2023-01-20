@@ -69,11 +69,11 @@ from zenml.models import (
     ArtifactFilterModel,
     ArtifactRequestModel,
     ArtifactResponseModel,
+    BaseFilterModel,
     ComponentFilterModel,
     ComponentRequestModel,
     ComponentResponseModel,
     ComponentUpdateModel,
-    FilterBaseModel,
     FlavorFilterModel,
     FlavorRequestModel,
     FlavorResponseModel,
@@ -169,7 +169,7 @@ AnyNamedSchema = TypeVar("AnyNamedSchema", bound=NamedSchema)
 AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 B = TypeVar("B", bound=BaseResponseModel)
 
-params_value: ContextVar[FilterBaseModel] = ContextVar("params_value")
+params_value: ContextVar[BaseFilterModel] = ContextVar("params_value")
 
 
 # Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
@@ -623,7 +623,7 @@ class SqlZenStore(BaseZenStore):
         session: Session,
         query: Union[Select[AnySchema], SelectOfScalar[AnySchema]],
         table: Type[AnySchema],
-        filter_model: FilterBaseModel,
+        filter_model: BaseFilterModel,
         custom_schema_to_model_conversion: Optional[
             Callable[[AnySchema], B]
         ] = None,

@@ -44,7 +44,7 @@ from zenml.console import console, zenml_style_defaults
 from zenml.constants import FILTERING_DATETIME_FORMAT, IS_DEBUG_ENV
 from zenml.enums import GenericFilterOps, StackComponentType, StoreType
 from zenml.logger import get_logger
-from zenml.models import FilterBaseModel
+from zenml.models import BaseFilterModel
 from zenml.models.base_models import BaseResponseModel
 from zenml.models.filter_models import (
     BoolFilter,
@@ -1075,7 +1075,7 @@ F = TypeVar("F", bound=Callable[..., None])
 
 
 def create_filter_help_text(
-    filter_model: Type[FilterBaseModel], field: str
+    filter_model: Type[BaseFilterModel], field: str
 ) -> str:
     """Create the help text used in the click option help text.
 
@@ -1122,7 +1122,7 @@ def create_filter_help_text(
 
 
 def create_data_type_help_text(
-    filter_model: Type[FilterBaseModel], field: str
+    filter_model: Type[BaseFilterModel], field: str
 ) -> str:
     """Create a general help text for a fields datatype.
 
@@ -1162,7 +1162,7 @@ def create_data_type_help_text(
         return f"{field}"
 
 
-def list_options(filter_model: Type[FilterBaseModel]) -> Callable[[F], F]:
+def list_options(filter_model: Type[BaseFilterModel]) -> Callable[[F], F]:
     """Create a decorator to generate the correct list of parameters to use for filtering.
 
     The Outer decorator (list_options) is the responsible for creating the inner

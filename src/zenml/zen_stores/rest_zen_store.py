@@ -74,11 +74,11 @@ from zenml.models import (
     ArtifactFilterModel,
     ArtifactRequestModel,
     ArtifactResponseModel,
+    BaseFilterModel,
     ComponentFilterModel,
     ComponentRequestModel,
     ComponentResponseModel,
     ComponentUpdateModel,
-    FilterBaseModel,
     FlavorFilterModel,
     FlavorRequestModel,
     FlavorResponseModel,
@@ -431,7 +431,7 @@ class RestZenStore(BaseZenStore):
         return self._list_paginated_resources(
             route=STACKS,
             response_model=StackResponseModel,
-            list_model=stack_filter_model,
+            filter_model=stack_filter_model,
         )
 
     @track(AnalyticsEvent.UPDATED_STACK)
@@ -521,7 +521,7 @@ class RestZenStore(BaseZenStore):
         return self._list_paginated_resources(
             route=STACK_COMPONENTS,
             response_model=ComponentResponseModel,
-            list_model=component_filter_model,
+            filter_model=component_filter_model,
         )
 
     @track(AnalyticsEvent.UPDATED_STACK_COMPONENT)
@@ -609,7 +609,7 @@ class RestZenStore(BaseZenStore):
         return self._list_paginated_resources(
             route=FLAVORS,
             response_model=FlavorResponseModel,
-            list_model=flavor_filter_model,
+            filter_model=flavor_filter_model,
         )
 
     @track(AnalyticsEvent.DELETED_FLAVOR)
@@ -706,7 +706,7 @@ class RestZenStore(BaseZenStore):
         return self._list_paginated_resources(
             route=USERS,
             response_model=UserResponseModel,
-            list_model=user_filter_model,
+            filter_model=user_filter_model,
         )
 
     @track(AnalyticsEvent.UPDATED_USER)
@@ -791,7 +791,7 @@ class RestZenStore(BaseZenStore):
         return self._list_paginated_resources(
             route=TEAMS,
             response_model=TeamResponseModel,
-            list_model=team_filter_model,
+            filter_model=team_filter_model,
         )
 
     @track(AnalyticsEvent.UPDATED_TEAM)
@@ -876,7 +876,7 @@ class RestZenStore(BaseZenStore):
         return self._list_paginated_resources(
             route=ROLES,
             response_model=RoleResponseModel,
-            list_model=role_filter_model,
+            filter_model=role_filter_model,
         )
 
     @track(AnalyticsEvent.UPDATED_ROLE)
@@ -930,7 +930,7 @@ class RestZenStore(BaseZenStore):
         return self._list_paginated_resources(
             route=USER_ROLE_ASSIGNMENTS,
             response_model=UserRoleAssignmentResponseModel,
-            list_model=user_role_assignment_filter_model,
+            filter_model=user_role_assignment_filter_model,
         )
 
     def get_user_role_assignment(
@@ -1049,7 +1049,7 @@ class RestZenStore(BaseZenStore):
         return self._list_paginated_resources(
             route=TEAM_ROLE_ASSIGNMENTS,
             response_model=TeamRoleAssignmentResponseModel,
-            list_model=team_role_assignment_filter_model,
+            filter_model=team_role_assignment_filter_model,
         )
 
     # --------
@@ -1106,7 +1106,7 @@ class RestZenStore(BaseZenStore):
         return self._list_paginated_resources(
             route=PROJECTS,
             response_model=ProjectResponseModel,
-            list_model=project_filter_model,
+            filter_model=project_filter_model,
         )
 
     @track(AnalyticsEvent.UPDATED_PROJECT)
@@ -1193,7 +1193,7 @@ class RestZenStore(BaseZenStore):
         return self._list_paginated_resources(
             route=PIPELINES,
             response_model=PipelineResponseModel,
-            list_model=pipeline_filter_model,
+            filter_model=pipeline_filter_model,
         )
 
     @track(AnalyticsEvent.UPDATE_PIPELINE)
@@ -1279,7 +1279,7 @@ class RestZenStore(BaseZenStore):
         return self._list_paginated_resources(
             route=SCHEDULES,
             response_model=ScheduleResponseModel,
-            list_model=schedule_filter_model,
+            filter_model=schedule_filter_model,
         )
 
     def update_schedule(
@@ -1388,7 +1388,7 @@ class RestZenStore(BaseZenStore):
         return self._list_paginated_resources(
             route=RUNS,
             response_model=PipelineRunResponseModel,
-            list_model=runs_filter_model,
+            filter_model=runs_filter_model,
         )
 
     def update_run(
@@ -1473,7 +1473,7 @@ class RestZenStore(BaseZenStore):
         return self._list_paginated_resources(
             route=STEPS,
             response_model=StepRunResponseModel,
-            list_model=step_run_filter_model,
+            filter_model=step_run_filter_model,
         )
 
     def update_run_step(
@@ -1548,7 +1548,7 @@ class RestZenStore(BaseZenStore):
         return self._list_paginated_resources(
             route=ARTIFACTS,
             response_model=ArtifactResponseModel,
-            list_model=artifact_filter_model,
+            filter_model=artifact_filter_model,
         )
 
     def delete_artifact(self, artifact_id: UUID) -> None:
@@ -1940,14 +1940,14 @@ class RestZenStore(BaseZenStore):
         self,
         route: str,
         response_model: Type[AnyResponseModel],
-        list_model: FilterBaseModel,
+        filter_model: BaseFilterModel,
     ) -> Page[AnyResponseModel]:
         """Retrieve a list of resources filtered by some criteria.
 
         Args:
             route: The resource REST API route to use.
             response_model: Model to use to serialize the response body.
-            list_model: The list model to use for the list query.
+            filter_model: The filter model to use for the list query.
 
         Returns:
             List of retrieved resources matching the filter criteria.
@@ -1956,7 +1956,9 @@ class RestZenStore(BaseZenStore):
             ValueError: If the value returned by the server is not a list.
         """
         # leave out filter params that are not supplied
-        body = self.get(f"{route}", params=list_model.dict(exclude_none=True))
+        body = self.get(
+            f"{route}", params=filter_model.dict(exclude_none=True)
+        )
         if not isinstance(body, dict):
             raise ValueError(
                 f"Bad API Response. Expected list, got {type(body)}"

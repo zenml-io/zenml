@@ -19,7 +19,7 @@ from uuid import UUID
 from fastapi import Query
 from pydantic import BaseModel, Field
 
-from zenml.models import FilterBaseModel
+from zenml.models import BaseFilterModel
 from zenml.models.base_models import BaseRequestModel, BaseResponseModel
 
 if TYPE_CHECKING:
@@ -60,7 +60,7 @@ class TeamRoleAssignmentResponseModel(
 # ------ #
 
 
-class TeamRoleAssignmentFilterModel(FilterBaseModel):
+class TeamRoleAssignmentFilterModel(BaseFilterModel):
     """Model to enable advanced filtering of all Role Assignments."""
 
     project_id: Union[UUID, str] = Query(
