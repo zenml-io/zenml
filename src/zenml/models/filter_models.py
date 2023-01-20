@@ -481,9 +481,8 @@ class BaseFilterModel(BaseModel):
                 )
         except ValueError as e:
             raise ValueError(
-                "The datetime filter only works with "
-                "value in the following format is "
-                "expected: `{supported_format}`"
+                "The datetime filter only works with values in the following "
+                f"format: {FILTERING_DATETIME_FORMAT}"
             ) from e
         datetime_filter = NumericFilter(
             operation=GenericFilterOps(operator),

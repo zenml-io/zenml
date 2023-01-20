@@ -43,7 +43,7 @@ from __future__ import annotations
 from typing import Generic, Sequence, TypeVar
 
 from pydantic.generics import GenericModel
-from pydantic.types import conint
+from pydantic.types import NonNegativeInt, PositiveInt
 
 from zenml.models.base_models import BaseResponseModel
 from zenml.models.filter_models import BaseFilterModel
@@ -54,10 +54,13 @@ B = TypeVar("B", bound=BaseResponseModel)
 class Page(GenericModel, Generic[B]):
     """Return Model for List Models to accommodate pagination."""
 
-    page: conint(ge=1)  # type: ignore
-    size: conint(ge=1)  # type: ignore
-    total_pages: conint(ge=0)  # type: ignore
-    total: conint(ge=0)  # type: ignore
+    page: PositiveInt
+
+    # TODO: this should be called max_size or max_items instead, and size should
+    # return the actual size of the page (len(self.items))
+    size: PositiveInt
+    total_pages: NonNegativeInt
+    total: NonNegativeInt
     items: Sequence[B]
 
     __params_type__ = BaseFilterModel
@@ -69,3 +72,7 @@ class Page(GenericModel, Generic[B]):
     def __getitem__(self, index: int) -> B:
         """Return the item at the given index."""
         return self.items[index]
+
+    def __contains__(self, item: B) -> bool:
+        """Returns whether the page contains a specific item."""
+        return item in self.items

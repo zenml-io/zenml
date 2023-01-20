@@ -210,7 +210,7 @@ def print_pydantic_models(
     if exclude_columns is None:
         exclude_columns = list()
 
-    def __dictify(model: BaseResponseModel) -> Dict[str, str]:
+    def __dictify(model: T) -> Dict[str, str]:
         """Helper function to map over the list to turn Models into dicts.
 
         Args:
@@ -1178,7 +1178,7 @@ def list_options(filter_model: Type[BaseFilterModel]) -> Callable[[F], F]:
 
     def inner_decorator(func: F) -> F:
 
-        options = list()
+        options = []
         data_type_descriptors = set()
         for k, v in filter_model.__fields__.items():
             if k not in filter_model.CLI_EXCLUDE_FIELDS:
