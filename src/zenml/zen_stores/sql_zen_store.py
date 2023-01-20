@@ -638,7 +638,7 @@ class SqlZenStore(BaseZenStore):
             custom_schema_to_model_conversion: Callable to convert the schema
                 into a model. This is used if the Model contains additional
                 data that is not explicitly stored as a field or relationship
-                on the model
+                on the model.
 
         Returns:
             The Domain Model representation of the DB resource
@@ -649,15 +649,15 @@ class SqlZenStore(BaseZenStore):
         if filters is not None:
             query = query.where(filters)
 
-        # Sorting
-        query = query.order_by(getattr(table, filter_model.sort_by))
-
         # Get the total amount of items in the database for a given query
         total = session.scalar(
-            select(func.count("*")).select_from(
-                query.order_by(None).options(noload("*")).subquery()
+            select([func.count("*")]).select_from(
+                query.options(noload("*")).subquery()
             )
         )
+
+        # Sorting
+        query = query.order_by(getattr(table, filter_model.sort_by))
 
         # Get the total amount of pages in the database for a given query
         total_pages = math.ceil(total / filter_model.size)
@@ -672,12 +672,18 @@ class SqlZenStore(BaseZenStore):
         )
 
         # Convert this page of items from schemas to models
-        if custom_schema_to_model_conversion:
-            items: List[B] = [
-                custom_schema_to_model_conversion(i) for i in item_schemas
-            ]
-        else:
-            items = [i.to_model() for i in item_schemas]
+        items: List[B] = []
+        for schema in item_schemas:
+            if custom_schema_to_model_conversion:
+                items.append(custom_schema_to_model_conversion(schema))
+            else:
+                to_model = getattr(schema, "to_model", None)
+                if callable(to_model):
+                    items.append(to_model())
+                raise RuntimeError(
+                    f"Cannot convert schema `{schema.__class__.__name__}` to "
+                    "model since it does not have a `to_model` method."
+                )
 
         return Page(
             total=total,

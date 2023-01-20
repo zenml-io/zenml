@@ -1166,7 +1166,7 @@ def list_options(filter_model: Type[FilterBaseModel]) -> Callable[[F], F]:
     """Create a decorator to generate the correct list of parameters to use for filtering.
 
     The Outer decorator (list_options) is the responsible for creating the inner
-    decorator. This is necessary so that the type of FilterModel ccn be passed
+    decorator. This is necessary so that the type of FilterModel can be passed
     in as a parameter.
 
     Based on the filter model, the inner decorator extracts all the click

@@ -2929,25 +2929,43 @@ class Client(metaclass=ClientMetaClass):
         # First interpret as full UUID
         if isinstance(name_id_or_prefix, UUID):
             return get_method(name_id_or_prefix)
-        else:
-            entity_label = get_method.__name__.replace("get_", "") + "s"
 
-            entity = list_method(
-                logical_operator=LogicalOperators.OR,
-                name=f"contains:{name_id_or_prefix}",
-                id=f"startswith:{name_id_or_prefix}",
+        # If not a UUID, try to find by name or id prefix
+        entity_label = get_method.__name__.replace("get_", "") + "s"
+        entity = list_method(
+            logical_operator=LogicalOperators.OR,
+            name=f"contains:{name_id_or_prefix}",
+            id=f"startswith:{name_id_or_prefix}",
+        )
+
+        # If no entity is found, raise an error.
+        if entity.total == 0:
+            raise KeyError(
+                f"No {entity_label} have been found that have either a name "
+                f"or an id prefix that matches the provided string "
+                f"'{name_id_or_prefix}'."
             )
-            if entity.total == 1:
-                return entity.items[0]
+
+        # If only a single entity is found, return it
+        if entity.total == 1:
+            return entity.items[0]
+
+        # If more than one entity is found, raise an error.
+        ambiguous_entities: List[str] = []
+        for model in entity.items:
+            model_name = getattr(model, "name", None)
+            if model_name:
+                ambiguous_entities.append(f"{model_name}: {model.id}")
             else:
-                raise ZenKeyError(
-                    f"{entity.total} {entity_label} have been found that have "
-                    f"either a name or an id prefix that matches the provided "
-                    f"string '{name_id_or_prefix}':\n"
-                    f"{[f'{m.name}: {m.id}' for m in entity.items]}.\n"
-                    f"Please provide more characters to uniquely identify "
-                    f"only one of the {entity_label}s."
-                )
+                ambiguous_entities.append(str(model.id))
+        raise ZenKeyError(
+            f"{entity.total} {entity_label} have been found that have "
+            f"either a name or an id prefix that matches the provided "
+            f"string '{name_id_or_prefix}':\n"
+            f"{ambiguous_entities}.\n"
+            f"Please provide more characters to uniquely identify "
+            f"only one of the {entity_label}s."
+        )
 
     def depaginate(
         self,
