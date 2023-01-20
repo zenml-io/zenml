@@ -509,15 +509,19 @@ class BaseFilterModel(BaseModel):
         Raises:
             ValueError: If the value is not a valid UUID.
         """
+        # For equality checks, ensure that the value is a valid UUID.
         if operator == GenericFilterOps.EQUALS and not isinstance(value, UUID):
             try:
-                value = UUID(value)
+                UUID(value)
             except ValueError as e:
                 raise ValueError(
                     "Invalid value passed as UUID query parameter."
                 ) from e
-        elif operator != GenericFilterOps.EQUALS:
-            value = str(value)
+
+        # Cast the value to string for further comparisons.
+        value = str(value)
+
+        # Generate the filter.
         uuid_filter = UUIDFilter(
             operation=GenericFilterOps(operator),
             column=column,

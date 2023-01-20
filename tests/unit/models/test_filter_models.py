@@ -30,7 +30,8 @@ from zenml.models.filter_models import (
 )
 
 
-class TestFilterModel(BaseFilterModel):
+class SomeFilterModel(BaseFilterModel):
+    """Test custom filter model with all supported field types."""
 
     uuid_field: Optional[Union[UUID, str]]
     datetime_field: Optional[Union[datetime, str]]
@@ -42,7 +43,7 @@ def _test_filter_model(
     filter_field: str,
     filter_class: Type[Filter],
     filter_value: Any,
-    expected_value: Optional[Any],
+    expected_value: Optional[Any] = None,
 ) -> None:
     """Test filter model creation.
 
@@ -69,11 +70,11 @@ def _test_filter_model(
         # Fail if incompatible filter operations are used.
         if filter_op not in filter_class.ALLOWED_OPS:
             with pytest.raises(ValueError):
-                model_instance = TestFilterModel(**filter_kwargs)
+                model_instance = SomeFilterModel(**filter_kwargs)
             return
 
         # Succeed and correctly set filter attributes for compatible operations.
-        model_instance = TestFilterModel(**filter_kwargs)
+        model_instance = SomeFilterModel(**filter_kwargs)
         assert len(model_instance.list_of_filters) == 1
         model_filter = model_instance.list_of_filters[0]
         assert isinstance(model_filter, filter_class)
@@ -120,7 +121,7 @@ def test_filter_model_sort_by_for_non_filter_fields_fails(
 
 def test_datetime_filter_model():
     """Test Filter model creation for datetime fields."""
-    filter_value = "22-12-12 08:00:00"
+    filter_value = "2022-12-12 08:00:00"
     expected_value = datetime.strptime(filter_value, FILTERING_DATETIME_FORMAT)
     _test_filter_model(
         filter_field="datetime_field",
@@ -138,10 +139,10 @@ def test_datetime_filter_model_fails_for_wrong_formats(
 ):
     """Test that filter model creation fails for incorrect datetime formats."""
     with pytest.raises(ValueError):
-        TestFilterModel(datetime_field=false_format_datetime)
+        SomeFilterModel(datetime_field=false_format_datetime)
     for filter_op in GenericFilterOps.values():
         with pytest.raises(ValueError):
-            TestFilterModel(
+            SomeFilterModel(
                 datetime_field=f"{filter_op}:{false_format_datetime}"
             )
 
@@ -162,6 +163,7 @@ def test_uuid_filter_model():
         filter_field="uuid_field",
         filter_class=UUIDFilter,
         filter_value=filter_value,
+        expected_value=str(filter_value),
     )
 
 
@@ -169,7 +171,7 @@ def test_uuid_filter_model_fails_for_invalid_uuids_on_equality():
     """Test filtering for equality with invalid UUID fails."""
     with pytest.raises(ValueError):
         uuid_value = "a92k34"
-        TestFilterModel(uuid_field=f"{GenericFilterOps.EQUALS}:{uuid_value}")
+        SomeFilterModel(uuid_field=f"{GenericFilterOps.EQUALS}:{uuid_value}")
 
 
 def test_uuid_filter_model_succeeds_for_invalid_uuid_on_non_equality():
@@ -178,7 +180,7 @@ def test_uuid_filter_model_succeeds_for_invalid_uuid_on_non_equality():
     for filter_op in UUIDFilter.ALLOWED_OPS:
         if filter_op == GenericFilterOps.EQUALS:
             continue
-        filter_model = TestFilterModel(
+        filter_model = SomeFilterModel(
             uuid_field=f"{filter_op}:{filter_value}"
         )
         assert len(filter_model.list_of_filters) == 1
