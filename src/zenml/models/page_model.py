@@ -61,3 +61,11 @@ class Page(GenericModel, Generic[B]):
     items: Sequence[B]
 
     __params_type__ = BaseFilterModel
+
+    def __len__(self) -> int:
+        """Return the length of the page."""
+        return len(self.items)
+
+    def __getitem__(self, index: int) -> B:
+        """Return the item at the given index."""
+        return self.items[index]
