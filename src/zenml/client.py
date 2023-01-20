@@ -15,6 +15,7 @@
 import os
 from abc import ABCMeta
 from datetime import datetime
+from functools import partial
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -42,6 +43,7 @@ from zenml.constants import (
     handle_bool_env_var,
 )
 from zenml.enums import (
+    ArtifactType,
     LogicalOperators,
     PermissionType,
     StackComponentType,
@@ -2784,27 +2786,48 @@ class Client(metaclass=ClientMetaClass):
 
     def list_artifacts(
         self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        artifact_store_id: Optional[UUID] = None,
-        only_unused: bool = False,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.OR,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        name: Optional[str] = None,
+        artifact_store_id: Optional[Union[str, UUID]] = None,
+        type: Optional[ArtifactType] = None,
+        data_type: Optional[str] = None,
+        uri: Optional[str] = None,
+        materializer: Optional[str] = None,
+        project_id: Optional[Union[str, UUID]] = None,
+        user_id: Optional[Union[str, UUID]] = None,
+        only_unused: Optional[bool] = False,
     ) -> Page[ArtifactResponseModel]:
         """Get all artifacts.
 
         Args:
-            project_name_or_id: If provided, only return artifacts for this
-                project. Otherwise, filter by the active project.
-            artifact_store_id: If provided, only return artifacts from this
-                artifact store.
-            only_unused: If True, only return artifacts that are not used in
-                any runs.
+            **filter_kwargs: The filter arguments.
 
         Returns:
             A list of artifacts.
         """
         return self.zen_store.list_artifacts(
             ArtifactFilterModel(
-                project_id=project_name_or_id or self.active_project.id,
+                sort_by=sort_by,
+                page=page,
+                size=size,
+                logical_operator=logical_operator,
+                id=id,
+                created=created,
+                updated=updated,
+                name=name,
                 artifact_store_id=artifact_store_id,
+                type=type,
+                data_type=data_type,
+                uri=uri,
+                materializer=materializer,
+                project_id=project_id,
+                user_id=user_id,
                 only_unused=only_unused,
             )
         )
@@ -2897,8 +2920,8 @@ class Client(metaclass=ClientMetaClass):
         Raises:
             ValueError: If the artifact is still used in any runs.
         """
-        if artifact not in self.list_artifacts(
-            only_unused=True,
+        if artifact not in self.depaginate(
+            partial(self.list_artifacts, only_unused=True)
         ):
             raise ValueError(
                 "The metadata of artifacts that are used in runs cannot be "

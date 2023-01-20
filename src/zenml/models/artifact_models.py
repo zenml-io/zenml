@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing artifacts."""
 
-from typing import Optional, Union
+from typing import ClassVar, List, Optional, Union
 from uuid import UUID
 
 from fastapi import Query
@@ -74,6 +74,11 @@ class ArtifactResponseModel(ArtifactBaseModel, ProjectScopedResponseModel):
 
 class ArtifactFilterModel(ProjectScopedFilterModel):
     """Model to enable advanced filtering of all Artifacts."""
+
+    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *ProjectScopedFilterModel.FILTER_EXCLUDE_FIELDS,
+        "only_unused",
+    ]
 
     name: str = Query(
         default=None,
