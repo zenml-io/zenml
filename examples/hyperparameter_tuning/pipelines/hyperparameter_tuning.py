@@ -3,7 +3,11 @@ from typing import Any, List, Type
 
 from dynamic_pipelines.dynamic_pipeline import DynamicPipeline
 from steps.data.split_data import split_data as split_data_step
-from steps.evaluation.compare_scores import CompareScoreParams, compare_score
+from steps.evaluation.compare_scores import (
+    CompareScoreParams,
+    ReduceType,
+    compare_score,
+)
 from steps.evaluation.evaluation_parameters import EvaluationParams
 
 from zenml.steps import BaseParameters, BaseStep
@@ -26,6 +30,20 @@ class HyperParameterTuning(DynamicPipeline):
         hyperparameters_conf_list: List[BaseParameters],
         **kwargs: Any,
     ) -> None:
+        """
+
+        Args:
+            load_data_step: the type of step that loads the data.
+            train_and_predict_step: the type of step that preforms training over the
+                train data and returns the predictions over the test data, based on model
+                parameters provided as steps parameters.
+            train_and_predict_best_model_step: the type of step that preforms training over the
+                train data and returns the predictions over the test data, based on model
+                parameters provided as input to the step.
+            evaluate_step: the type of step that evaluates a model.
+            hyperparameters_conf_list: a list of `BaseParameters`, which will be given as input
+                to the model's constructor.
+        """
         self.load_data_step = load_data_step()
         self.split_test = split_data_step().configure(name="split_train_test")
         self.tuning_steps = [
@@ -48,7 +66,7 @@ class HyperParameterTuning(DynamicPipeline):
 
         self.compare_scores = compare_score(
             CompareScoreParams(
-                reduce_max=True,
+                reduce=ReduceType.MAX,
                 output_steps_names=[
                     steps[-1].name for steps in self.tuning_steps
                 ],
@@ -71,6 +89,12 @@ class HyperParameterTuning(DynamicPipeline):
         )
 
     def connect(self, **kwargs: BaseStep) -> None:
+        """
+        The method connects the input and outputs of the hyperparameter tuning pipeline.
+
+        Args:
+            **kwargs: the step instances of the pipeline.
+        """
         X, y = self.load_data_step()
         X_train_val, X_test, y_train_val, y_test = self.split_test(X, y)
         for split_validation, train_and_predict, evaluate in self.tuning_steps:

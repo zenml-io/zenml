@@ -85,9 +85,7 @@ class OutputParameters(BaseParameters):
     @classmethod
     def as_output(cls) -> Output:
         """
-        Converts the concrete class into a ZenML Output object, so that, the user will not have to specify the same
-        parameters to create both the OutputParameters object for the gather step and the ZenML Output object for the
-        return type of the steps to be gathered.
+        Converts the concrete class into a ZenML Output object.
         Returns:
             A ZenML Output object with the same fields and type values as the concrete class.
         """
