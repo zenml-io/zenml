@@ -24,7 +24,7 @@ class OutputParameters(BaseParameters):
     """
     A base class for a parameters class to extract the output parameters and value of a step.
     The attributes of the inheriting concrete class should be equal to the output fields of a step.
-    These output values of steps with these output fields, can be extracted using the method of this class.
+    These output values of steps with these output fields can be extracted using the method of this class.
     """
 
     @staticmethod
@@ -32,7 +32,7 @@ class OutputParameters(BaseParameters):
         gather_steps_params: GatherStepsParameters,
     ) -> List[dict]:
         """
-        Extract output of steps compatible to the parameters of gather_steps_params.
+        Extract the output of steps compatible with the parameters of gather_steps_params.
         Args:
             gather_steps_params: The parameters object, to filter the relevant steps.
 
@@ -71,7 +71,7 @@ class OutputParameters(BaseParameters):
         cls: Type[OP], gather_steps_params: GatherStepsParameters
     ) -> List[OP]:
         """
-        Extract output of steps compatible to the parameters of gather_steps_params, and generates an instance of
+        Extract the output of steps compatible with the parameters of gather_steps_params, and generates an instance of
         the concrete output class given by cls. The assumption is that the concrete class's constructor accepts all the
         entries of the output dictionaries of the requested steps.
         Args:

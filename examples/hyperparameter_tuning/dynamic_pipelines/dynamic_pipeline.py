@@ -35,8 +35,8 @@ class DynamicPipeline(BasePipeline):
         cls: Type[DP], pipeline_name: str, **kwargs: Any
     ) -> Type[DP]:
         """
-        Generates a new type of pipeline the directly inherits from the current dynamic pipeline.
-        This is useful to create multiple dynamic pipelines based on dynamic pipeline class.
+        Generates a new type of pipeline that directly inherits from the current dynamic pipeline.
+        This is useful to create multiple dynamic pipelines based on the dynamic pipeline class.
         Args:
             pipeline_name: The name of the new pipeline instance.
             **kwargs: dictionary for the type constructor.

@@ -1,9 +1,8 @@
 # Hyperparameter Tuning Pipeline
 
-This example demonstrates hyperparameter tuning pipeline using a "dynamic" pipeline concept. Dynamic pipelines do not 
-necessarily have a fixed number of steps, allowing the user to define pipelines with a configurable amount of branches
-splits. Hyperparameter tuning pipelines should be applicable for a configurable amount of hyperparameter comparisons,
-otherwise, we would have to create a dedicated pipeline template for each number of comparisons.
+This example demonstrates the concept of a dynamic pipeline in ZenML. Dynamic pipelines do not necessarily have a fixed number of steps, but allow the user to define pipelines with a configurable amount of steps with splitting branches. The example shown here illustrates one such application of a dynamic pipeline, namely creating a pipeline that performs a grid search hyperparameter tuning all within one pipeline and on the orchestrator level.
+
+Note, that this is not always the ideal way to perform hyperparameter tuning, however, it does illustrate one of the potential use-cases of using dynamic pipelines.
 
 ## Dynamic Pipelines
 
@@ -99,7 +98,7 @@ Notice that some names of the step instances are changed (using the `configure` 
 with the same name in ZenML pipelines is not possible.
 
 The `connect` method utilizes the parameters defined in the pipeline constructor to connect the steps
-together, without having to rely on the step list or dictionary given as the method arguments. For instance, in 
+together, without having to rely on the step list or dictionary given as the method arguments. For instance, in the
 `HyperParameterTuning` pipeline, the `connect` method uses the list of tuples of steps, containing the split_validation,
 train and evaluate steps for each hyperparameter configuration. 
 
@@ -136,7 +135,7 @@ names). In the `HyperParameterTuning` pipeline, `CompareScoreParams` inherits fr
 contains both the parameters for the comparison of scores and the parameters to gather step outputs.
 * `OutputParameters` - classes that inherit from this class will define the output parameters of a step. This class
 implements the `gather` method which receives a `GatherStepsParameters` object. The method will gather all the output
-values of the steps compatible to the `GatherStepsParameters` object, and return them as a collection of outputs of the 
+values of the steps compatible with the `GatherStepsParameters` object, and return them as a collection of outputs of the 
 concrete class inheriting from `OutputParameters`. For example, in the `HyperParameterTuning` pipeline,
 `EvaluationOutputParams` defines all the output parameters expected from an evaluation step (e.g. calc_accuracy step).
 The prefix of the evaluation steps will be passed to `CompareScoreParams`, so that, the `gather` method will return
@@ -149,12 +148,12 @@ Once a ZenML pipeline is initialized the pipeline class can only define pipeline
 and types in the class field `STEP_SPEC`. Therefore, the dynamic pipeline class cannot be reused for a pipeline with
 a different number of steps. In order to create multiple hyperparameter tuning pipelines, the class method 
 `as_template_of` (implemented in `DynamicPipeline` class) can be used. It will generate a new pipeline 
-class that inherits from the dynamic pipeline, allowing us to define multiple pipeline templates, for different number
+class that inherits from the dynamic pipeline, allowing us to define multiple pipeline templates, for a different number
 of steps, sharing the same logic. 
 
 In the hyperparameter tuning example, there are two different pipeline templates both inheriting
 from `HyperParameterTuning` class. One of them loads iris data and the other loads breast cancer data.
-They also have different number of hyperparameter configurations to compare, meaning they have a
+They also have a different number of hyperparameter configurations to compare, meaning they have a
 different number of steps.
 
 ```python
