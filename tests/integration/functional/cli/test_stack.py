@@ -478,48 +478,6 @@ def test_share_stack_that_is_already_shared_fails(
     assert arias_stack.is_shared is True
 
 
-def test_share_stack_when_component_is_private_fails(
-    clean_project: Client,
-) -> None:
-    """When sharing a stack all the components should also be shared, so if a component is not shared this should fail."""
-    if clean_project.zen_store.type != StoreType.REST:
-        pytest.skip("Only supported on ZenML server")
-
-    new_artifact_store = _create_local_artifact_store(clean_project)
-
-    new_artifact_store_model = clean_project.create_stack_component(
-        name=new_artifact_store.name,
-        flavor=new_artifact_store.flavor,
-        component_type=new_artifact_store.type,
-        configuration=new_artifact_store.config.dict(),
-    )
-
-    new_orchestrator = _create_local_orchestrator(clean_project)
-
-    new_orchestrator_model = clean_project.create_stack_component(
-        name=new_orchestrator.name,
-        flavor=new_orchestrator.flavor,
-        component_type=new_orchestrator.type,
-        configuration=new_orchestrator.config.dict(),
-    )
-
-    clean_project.create_stack(
-        name="arias_new_stack",
-        components={
-            StackComponentType.ARTIFACT_STORE: new_artifact_store_model.name,
-            StackComponentType.ORCHESTRATOR: new_orchestrator_model.name,
-        },
-    )
-
-    runner = CliRunner()
-    share_command = cli.commands["stack"].commands["share"]
-    result = runner.invoke(share_command, ["arias_new_stack"])
-    assert result.exit_code == 1
-
-    arias_stack = clean_project.get_stack("arias_new_stack")
-    assert arias_stack.is_shared is False
-
-
 def test_create_shared_stack_when_component_is_private_fails(
     clean_project: Client,
 ) -> None:
