@@ -13,7 +13,17 @@
 #  permissions and limitations under the License.
 """Models representing stack components."""
 
-from typing import Any, ClassVar, Dict, List
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Type,
+    Union,
+)
+from uuid import UUID
 
 from pydantic import BaseModel, Field, validator
 
@@ -25,7 +35,12 @@ from zenml.models.base_models import (
     update_model,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
+from zenml.models.filter_models import ShareableProjectScopedFilterModel
 from zenml.utils import secret_utils
+
+if TYPE_CHECKING:
+    from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
+    from sqlmodel import SQLModel
 
 logger = get_logger(__name__)
 
@@ -63,6 +78,79 @@ class ComponentResponseModel(ComponentBaseModel, ShareableResponseModel):
     """Response model for stack components."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = ["type", "flavor"]
+
+
+# ------ #
+# FILTER #
+# ------ #
+
+
+class ComponentFilterModel(ShareableProjectScopedFilterModel):
+    """Model to enable advanced filtering of all ComponentModels.
+
+    The Component Model needs additional scoping. As such the `_scope_user`
+    field can be set to the user that is doing the filtering. The
+    `generate_filter()` method of the baseclass is overwritten to include the
+    scoping.
+    """
+
+    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *ShareableProjectScopedFilterModel.FILTER_EXCLUDE_FIELDS,
+        "scope_type",
+    ]
+    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *ShareableProjectScopedFilterModel.CLI_EXCLUDE_FIELDS,
+        "scope_type",
+    ]
+    scope_type: Optional[str] = Field(
+        None,
+        description="The type to scope this query to.",
+    )
+
+    is_shared: Union[bool, str] = Field(
+        default=None, description="If the stack is shared or private"
+    )
+    name: str = Field(
+        default=None,
+        description="Name of the stack component",
+    )
+    flavor: str = Field(
+        default=None,
+        description="Flavor of the stack component",
+    )
+    type: str = Field(
+        default=None,
+        description="Type of the stack component",
+    )
+    project_id: Union[UUID, str] = Field(
+        default=None, description="Project of the stack"
+    )
+    user_id: Union[UUID, str] = Field(None, description="User of the stack")
+
+    def set_scope_type(self, component_type: str) -> None:
+        """Set the type of component on which to perform the filtering to scope the response."""
+        self.scope_type = component_type
+
+    def generate_filter(
+        self, table: Type["SQLModel"]
+    ) -> Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]:
+        """Generate the filter for the query.
+
+        Stack components can be scoped by type to narrow the search.
+
+        Args:
+            table: The Table that is being queried from.
+
+        Returns:
+            The filter expression for the query.
+        """
+        from sqlalchemy import and_
+
+        base_filter = super().generate_filter(table)
+        if self.scope_type:
+            type_filter = getattr(table, "type") == self.scope_type
+            return and_(base_filter, type_filter)
+        return base_filter
 
 
 # ------- #

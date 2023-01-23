@@ -1,5 +1,47 @@
 <!-- markdown-link-check-disable -->
 
+# 0.32.0
+
+Release 0.32.0 introduces two big new features:
+* A new stack component, the "image builder", with a corresponding new Kaniko
+integration.
+* Logic for filtering and pagination of list requests.
+
+## Image Builder Abstraction and Kaniko Integration
+ZenML stacks can now contain an image builder as additional optional stack 
+component. The image builder defines how the Docker images are built that are
+required by many of the other stack components such as Airflow or Kubeflow.
+Previously, all image building was handled implicitly by ZenML using local
+Docker, which has now been refactored into the "local" image builder flavor.
+As an alternative, you can now install the new "kaniko" integration to build
+your images in Kubernetes using Kaniko.
+
+## Filtering and Pagination
+All list commands in ZenML are now capable of advanced filtering such as
+`zenml stack list --created="gt:22-12-04 17:00:00" --name contains:def`.
+
+Additionally, list commands now return pages of results, which significantly
+improves performance for power ZenML users that have already created many runs
+or other entities.
+
+## What's Changed
+* UserResponseModel contains roles, block recursion properly on more Models, reduce amount of Runs on a PipelineResponseModel by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1180
+* Bump ruff version by @strickvl in https://github.com/zenml-io/zenml/pull/1232
+* Zenfile becomes project by @strickvl in https://github.com/zenml-io/zenml/pull/1235
+* Fix class resolution in notebooks under Python>=3.10 by @fa9r in https://github.com/zenml-io/zenml/pull/1234
+* Fix Sagemaker README images & pipeline addition by @strickvl in https://github.com/zenml-io/zenml/pull/1239
+* Step/Pipeline configuration tests by @schustmi in https://github.com/zenml-io/zenml/pull/1233
+* Removed gRPC from diagrams by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1242
+* Fix MLflow tracking example bug for Macs by @strickvl in https://github.com/zenml-io/zenml/pull/1237
+* Fix copy function to copyfile in registered filesystem by @safoinme in https://github.com/zenml-io/zenml/pull/1243
+* Image builder abstraction by @schustmi in https://github.com/zenml-io/zenml/pull/1198
+* Add support for modular recipes to the recipe CLI by @wjayesh in https://github.com/zenml-io/zenml/pull/1247
+* Add docs on upgrading and troubleshooting zenml server by @wjayesh in https://github.com/zenml-io/zenml/pull/1244
+* Improve Seldon and Kserve Docs by @wjayesh in https://github.com/zenml-io/zenml/pull/1236
+* Add Pagination to all List commands by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1113
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.31.1...0.32.0
+
 # 0.31.1
 
 This release includes several bug fixes and new additions under the hood such as 
