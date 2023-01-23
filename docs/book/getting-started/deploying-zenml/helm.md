@@ -100,3 +100,30 @@ To disconnect from the current ZenML server and revert to using the local defaul
 ```bash
 zenml disconnect
 ```
+
+## Upgrading your ZenML server
+
+To upgrade your ZenML server Helm release to a new version, follow the steps below: 
+
+- Modify your `values.yaml` file that you used for the initial deployment to include the new image tag. The path to the tag is `zenml.image.tag`.
+- If you don’t have the previous `values.yaml` file handy, you can create a new one with your existing values using the following command:
+
+    ```bash
+    helm get values <ZENML_RELEASE> > values.yaml
+    ```
+
+- Upgrade the release using your modified values file. Make sure you are in the directory that hosts the helm chart:
+
+    ```bash
+    helm upgrade -n <NAMESPACE> <ZENML_RELEASE> . -f values.yaml
+    ```
+
+If you only want to change a few variables (like the image tag), you can also bypass using the values file and just use the `--set` flag to set the desired value.
+
+```bash
+helm upgrade -n <NAMESPACE> <ZENML_RELEASE> . --set zenml.image.tag=<VERSION>
+```
+
+
+> **Warning**
+> If you wish to downgrade a server, make sure that the version of ZenML that you’re moving to has the same database schema. This is because reverse migration of the schema is not supported.

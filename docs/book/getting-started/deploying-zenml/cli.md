@@ -262,3 +262,20 @@ To disconnect from the current ZenML server and revert to using the local defaul
 ```bash
 zenml disconnect
 ```
+
+## Upgrading your ZenML server
+
+To upgrade your ZenML server (that was deployed with the `zenml deploy` command) to a newer version, you can follow the steps below.
+
+- In the config file, set `zenmlserver_image_tag` to the version that you want your ZenML server to be running.
+- Run the deploy command again with this config file:
+    
+    ```bash
+    zenml deploy --config=/PATH/TO/FILE
+    ```
+    
+
+Any database schema updates are automatically handled by ZenML and unless mentioned otherwise, all of your data is migrated to the new version, intact.
+
+>**Warning**
+> If you wish to downgrade a server, make sure that the version of ZenML that you’re moving to has the same database schema. This is because reverse migration of the schema is not supported.
