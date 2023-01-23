@@ -1525,26 +1525,29 @@ class Client(metaclass=ClientMetaClass):
         stack_components = dict()
 
         for c_type, c_identifier in components.items():
-            if c_identifier:
-                component = self.get_stack_component(
-                    name_id_or_prefix=c_identifier,
-                    component_type=c_type,
-                )
-                stack_components[c_type] = [component.id]
 
-                if is_shared:
-                    if not component.is_shared:
-                        raise ValueError(
-                            "You attempted to include a private "
-                            f"{c_type} {name} in a shared stack. This "
-                            f"is not supported. You can either share"
-                            f" the {c_type} with the following "
-                            f"command: \n `zenml {c_type.replace('_', '-')} "
-                            f"share`{component.id}`\n "
-                            f"or create the stack privately and "
-                            f"then share it and all of its components using: "
-                            f"\n `zenml stack share {name} -r`"
-                        )
+            # Skip non-existent components.
+            if not c_identifier:
+                continue
+
+            # Get the component.
+            component = self.get_stack_component(
+                name_id_or_prefix=c_identifier,
+                component_type=c_type,
+            )
+            stack_components[c_type] = [component.id]
+
+            # Raise an error if private components are used in a shared stack.
+            if is_shared and not component.is_shared:
+                raise ValueError(
+                    f"You attempted to include the private {c_type} "
+                    f"'{component.name}' in a shared stack. This is not "
+                    f"supported. You can either share the {c_type} with the "
+                    f"following command:\n"
+                    f"`zenml {c_type.replace('_', '-')} share`{component.id}`\n"
+                    f"or create the stack privately and then share it and all "
+                    f"of its components using:\n`zenml stack share {name} -r`"
+                )
 
         stack = StackRequestModel(
             name=name,
@@ -1873,46 +1876,36 @@ class Client(metaclass=ClientMetaClass):
             KeyError: If no name_id_or_prefix is provided and no such component
                 is part of the active stack.
         """
-        if name_id_or_prefix:
-            # First interpret as full UUID
-            if isinstance(name_id_or_prefix, UUID):
-                return self.zen_store.get_stack_component(name_id_or_prefix)
-            else:
-                component_filter_model = ComponentFilterModel(
-                    logical_operator=LogicalOperators.OR,
-                    name=f"contains:{name_id_or_prefix}",
-                    id=f"startswith:{name_id_or_prefix}",
-                )
-                component_filter_model.set_scope_type(
-                    component_type=component_type
-                )
-                component_filter_model.set_scope_project(
-                    self.active_project.id
-                )
-                entity = self.zen_store.list_stack_components(
-                    component_filter_model=component_filter_model
-                )
-                if entity.total == 1:
-                    return entity.items[0]
-                else:
-                    raise ZenKeyError(
-                        f"{entity.total} stack components have been found that have "
-                        f"either a name or an id prefix that matches the provided "
-                        f"string '{name_id_or_prefix}':\n"
-                        f"{[f'{m.name}: {m.id}' for m in entity.items]}.\n"
-                        f"Please provide more characters to uniquely identify "
-                        f"only one of the stack components."
-                    )
-        else:
+        # If no `name_id_or_prefix` provided, try to get the active component.
+        if not name_id_or_prefix:
             components = self.active_stack_model.components.get(
                 component_type, None
             )
-            if components is None:
-                raise KeyError(
-                    "No name_id_or_prefix provided and there is no active "
-                    f"{component_type} in the current active stack."
-                )
-            return components[0]
+            if components:
+                return components[0]
+            raise KeyError(
+                "No name_id_or_prefix provided and there is no active "
+                f"{component_type} in the current active stack."
+            )
+
+        # Else, try to fetch the component with an explicit type filter
+        component_filter_model = ComponentFilterModel(
+            logical_operator=LogicalOperators.OR,
+            name=f"contains:{name_id_or_prefix}",
+            id=f"startswith:{name_id_or_prefix}",
+        )
+        component_filter_model.set_scope_type(component_type=component_type)
+        component_filter_model.set_scope_project(self.active_project.id)
+        type_scoped_list_method = partial(
+            self.zen_store.list_stack_components,
+            component_filter_model=component_filter_model,
+        )
+        return self._get_entity_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_stack_component,
+            list_method=type_scoped_list_method,
+            name_id_or_prefix=name_id_or_prefix,
+            ignore_list_filters=True,
+        )
 
     def list_stack_components(
         self,
@@ -2981,6 +2974,7 @@ class Client(metaclass=ClientMetaClass):
         get_method: Callable[..., AnyResponseModel],
         list_method: Callable[..., Page[AnyResponseModel]],
         name_id_or_prefix: Union[str, UUID],
+        ignore_list_filters: bool = False,
     ) -> "AnyResponseModel":
         """Fetches an entity using the name, id or partial id.
 
@@ -2989,6 +2983,10 @@ class Client(metaclass=ClientMetaClass):
             list_method: The method to use to fetch all entities.
             name_id_or_prefix: The id, name or partial id of the entity to
                 fetch.
+            ignore_list_filters: If True, do not pass any filters into the
+                provided list method and just call it without any arguments.
+                This is useful when passing custom list methods that expect
+                other arguments.
 
         Returns:
             The entity with the given name, id or partial id.
@@ -3006,11 +3004,14 @@ class Client(metaclass=ClientMetaClass):
 
         # If not a UUID, try to find by name or id prefix
         entity_label = get_method.__name__.replace("get_", "") + "s"
-        entity = list_method(
-            logical_operator=LogicalOperators.OR,
-            name=f"contains:{name_id_or_prefix}",
-            id=f"startswith:{name_id_or_prefix}",
-        )
+        if ignore_list_filters:
+            entity = list_method()
+        else:
+            entity = list_method(
+                logical_operator=LogicalOperators.OR,
+                name=f"contains:{name_id_or_prefix}",
+                id=f"startswith:{name_id_or_prefix}",
+            )
 
         # If no entity is found, raise an error.
         if entity.total == 0:
