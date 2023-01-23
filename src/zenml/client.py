@@ -1769,7 +1769,8 @@ class Client(metaclass=ClientMetaClass):
         # Make sure the stack is registered
         try:
             stack = self.get_stack(name_id_or_prefix=stack_name_id_or_prefix)
-
+        except ZenKeyError:
+            raise
         except KeyError:
             raise KeyError(
                 f"Stack '{stack_name_id_or_prefix}' cannot be activated since "
