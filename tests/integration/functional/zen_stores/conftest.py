@@ -26,11 +26,14 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.config.schedule import Schedule
 from zenml.enums import PermissionType
 from zenml.models import (
+    ArtifactFilterModel,
+    PipelineRunFilterModel,
     ProjectRequestModel,
     RoleRequestModel,
+    ScheduleFilterModel,
+    StepRunFilterModel,
     TeamRequestModel,
-    UserRequestModel, PipelineRunFilterModel, StepRunFilterModel,
-    ArtifactFilterModel, ScheduleFilterModel,
+    UserRequestModel,
 )
 from zenml.models.base_models import BaseResponseModel
 from zenml.zen_stores.base_zen_store import BaseZenStore
