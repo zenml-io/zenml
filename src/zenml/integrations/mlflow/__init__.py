@@ -34,10 +34,9 @@ class MlflowIntegration(Integration):
     # does not pin it. They fixed this in a later version, so we can probably
     # remove this once we update the mlflow version.
     REQUIREMENTS = [
-        "mlflow>=1.2.0,<1.26.0",
-        "mlserver>=0.5.3",
-        "mlserver-mlflow>=0.5.3",
-        "protobuf>=3.7.0,<4.0.0",
+        "mlflow>=2.0.1",
+        "mlserver>=1.2.1",
+        "mlserver-mlflow>=1.2.1",
     ]
 
     @classmethod

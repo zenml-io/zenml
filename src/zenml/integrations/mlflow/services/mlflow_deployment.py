@@ -19,8 +19,8 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 import numpy as np
 import requests
 from mlflow.pyfunc.backend import PyFuncBackend
-from mlflow.version import VERSION as MLFLOW_VERSION
 
+from zenml.constants import DEFAULT_SERVICE_START_STOP_TIMEOUT
 from zenml.logger import get_logger
 from zenml.services import (
     HTTPEndpointHealthMonitor,
@@ -89,12 +89,14 @@ class MLFlowDeploymentConfig(LocalDaemonServiceConfig):
         mlserver: set to True to use the MLflow MLServer backend (see
             https://github.com/SeldonIO/MLServer). If False, the
             MLflow built-in scoring server will be used.
+        timeout: timeout in seconds for starting and stopping the service
     """
 
     model_uri: str
     model_name: str
     workers: int = 1
     mlserver: bool = False
+    timeout: int = DEFAULT_SERVICE_START_STOP_TIMEOUT
 
 
 class MLFlowDeploymentService(LocalDaemonService):
@@ -167,26 +169,20 @@ class MLFlowDeploymentService(LocalDaemonService):
         )
 
         self.endpoint.prepare_for_start()
-
         try:
-            serve_kwargs: Dict[str, Any] = {}
-            # MLflow version 1.26 introduces an additional mandatory
-            # `timeout` argument to the `PyFuncBackend.serve` function
-            if int(MLFLOW_VERSION.split(".")[1]) >= 26:
-                serve_kwargs["timeout"] = None
-
             backend = PyFuncBackend(
                 config={},
                 no_conda=True,
                 workers=self.config.workers,
                 install_mlflow=False,
+                env_manager="local",
             )
             backend.serve(
                 model_uri=self.config.model_uri,
                 port=self.endpoint.status.port,
                 host="localhost",
                 enable_mlserver=self.config.mlserver,
-                **serve_kwargs,
+                timeout=self.config.timeout,
             )
         except KeyboardInterrupt:
             logger.info(
@@ -232,4 +228,4 @@ class MLFlowDeploymentService(LocalDaemonService):
         else:
             raise ValueError("No endpoint known for prediction.")
         response.raise_for_status()
-        return np.array(response.json())
+        return np.array(response.json()["predictions"])

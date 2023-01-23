@@ -134,6 +134,7 @@ def mlflow_model_deployer_step(
         pipeline_name=pipeline_name,
         pipeline_run_id=run_name,
         pipeline_step_name=step_name,
+        timeout=params.timeout,
     )
 
     # Creating a new service with inactive state and status by default
