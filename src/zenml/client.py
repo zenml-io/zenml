@@ -2842,7 +2842,22 @@ class Client(metaclass=ClientMetaClass):
         """Get all artifacts.
 
         Args:
-            **filter_kwargs: The filter arguments.
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            id: Use the id of runs to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            name: The name of the run to filter by.
+            artifact_store_id: The id of the artifact store to filter by.
+            type: The type of the artifact to filter by.
+            data_type: The data type of the artifact to filter by.
+            uri: The uri of the artifact to filter by.
+            materializer: The materializer of the artifact to filter by.
+            project_id: The id of the project to filter by.
+            user_id: The  id of the user to filter by.
+            only_unused: Only return artifacts that are not used in any runs.
 
         Returns:
             A list of artifacts.
