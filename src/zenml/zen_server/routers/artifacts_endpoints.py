@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for steps (and artifacts) of pipeline runs."""
 
-from typing import List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -43,7 +42,7 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=List[ArtifactResponseModel],
+    response_model=Page[ArtifactResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
