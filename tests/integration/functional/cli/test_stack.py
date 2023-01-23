@@ -478,10 +478,10 @@ def test_share_stack_that_is_already_shared_fails(
     assert arias_stack.is_shared is True
 
 
-def test_share_stack_when_component_is_already_shared_by_other_user_fails(
+def test_share_stack_when_component_is_private_fails(
     clean_project: Client,
 ) -> None:
-    """When sharing a stack all the components are also shared, so if a component with the same name is already shared this should fail."""
+    """When sharing a stack all the components should also be shared, so if a component is not shared this should fail."""
     if clean_project.zen_store.type != StoreType.REST:
         pytest.skip("Only supported on ZenML server")
 
@@ -511,20 +511,6 @@ def test_share_stack_when_component_is_already_shared_by_other_user_fails(
         },
     )
 
-    with create_sample_user_and_login(
-        prefix="Arias_Evil_Twin", initial_role="admin"
-    ) as (
-        other_user,
-        other_client,
-    ):
-        other_client.create_stack_component(
-            name=new_orchestrator.name,
-            is_shared=True,
-            component_type=StackComponentType.ORCHESTRATOR,
-            flavor="local",
-            configuration={},
-        )
-
     runner = CliRunner()
     share_command = cli.commands["stack"].commands["share"]
     result = runner.invoke(share_command, ["arias_new_stack"])
@@ -537,7 +523,7 @@ def test_share_stack_when_component_is_already_shared_by_other_user_fails(
 def test_create_shared_stack_when_component_is_private_fails(
     clean_project: Client,
 ) -> None:
-    """When sharing a stack all the components should also be shared, so if a component is not shared this should fail."""
+    """When creating a shared stack all the components should also be shared, so if a component is not shared this should fail."""
     runner = CliRunner()
     register_command = cli.commands["stack"].commands["register"]
     result = runner.invoke(
@@ -547,7 +533,7 @@ def test_create_shared_stack_when_component_is_private_fails(
     assert result.exit_code == 1
 
 
-def test_add_private_component_to_shared_stack_fails(
+def test_share_stack_when_component_is_already_shared_by_other_user_fails(
     clean_project: Client,
 ) -> None:
     """When sharing a stack all the components are also shared, so if a component with the same name is already shared this should fail."""
