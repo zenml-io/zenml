@@ -119,6 +119,10 @@
 * [Annotators](./component-gallery/annotators/annotators.md)
   * [Label Studio](./component-gallery/annotators/label-studio.md)
   * [Develop a Custom Annotator](./component-gallery/annotators/custom.md)
+* [Image Builders](./component-gallery/image-builders/image-builders.md)
+  * [Local Image Builder](./component-gallery/image-builders/local.md)
+  * [Kaniko Image Builder](./component-gallery/image-builders/kaniko.md)
+  * [Develop a Custom Image Builder](./component-gallery/image-builders/custom.md)
 
 ## Guidelines
 

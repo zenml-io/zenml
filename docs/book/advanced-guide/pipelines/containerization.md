@@ -12,8 +12,8 @@ or [step operators](../../component-gallery/step-operators/step-operators.md) in
 ZenML builds [Docker](https://www.docker.com/) images to transport and
 run your pipeline code in an isolated and well-defined environment.
 For this purpose, a [Dockerfile](https://docs.docker.com/engine/reference/builder/) is dynamically generated and used
-to build the image using the local Docker client. This Dockerfile consists of
-the following steps:
+to build the image using the [image builder](../../component-gallery/image-builders/image-builders.md)
+component of your stack. This Dockerfile consists of the following steps:
 
 * Starts from a parent image which needs to have ZenML installed. By default, this will use the [official ZenML image](https://hub.docker.com/r/zenmldocker/zenml/) for the Python and ZenML version that you're using in the active Python environment. If you want to use a different image as the base for the following steps, check out [this guide](#using-a-custom-parent-image).
 * **Installs additional pip dependencies**. ZenML will automatically detect which integrations are used in your stack and install the required dependencies.
@@ -21,17 +21,6 @@ If your pipeline needs any additional requirements, check out our [guide on incl
 * **Copies your global configuration**. This is needed so that ZenML can connect to your [deployed ZenML instance](../../getting-started/deploying-zenml/deploying-zenml.md) to fetch the active stack and other required information.
 * **Copies your source files**. These files need to be included in the Docker image so ZenML can execute your step code. Check out [this section](#which-files-get-included) for more information on which files get included by default and how to exclude files.
 * **Sets user-defined environment variables.**
-
-{% hint style="info" %}
-ZenML uses the official Docker Python library to build and push your images. This library
-loads its authentication credentials to push images from the default config location: `$HOME/.docker/config.json`.
-If your Docker configuration is stored in a different directory, you can use the environment
-variable `DOCKER_CONFIG` to override this behavior:
-```shell
-export DOCKER_CONFIG=/path/to/config_dir
-```
-The directory that you specify here must contain your Docker configuration in a file called `config.json`.
-{% endhint %}
 
 ## Customizing the build process
 
@@ -246,3 +235,11 @@ docker_settings = DockerSettings(
 def my_pipeline(...):
     ...
 ```
+
+## Customizing the build environment
+
+The [image builder](../../component-gallery/image-builders/image-builders.md) component
+of your stack defines the environment in which the Docker build with the previously
+described Dockerfile gets executed. This could be either on your local machine
+(when using the [local image builder](../../component-gallery/image-builders/local.md))
+or in some remote environment. Check our the image builder documentation for more information.
