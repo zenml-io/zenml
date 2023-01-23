@@ -971,6 +971,7 @@ decodable
 deduplicated
 deepchecks
 defaultdict
+depaginate
 deployer
 deployers
 deprovision

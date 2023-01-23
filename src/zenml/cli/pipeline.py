@@ -121,9 +121,7 @@ def list_schedules(**kwargs: Any) -> None:
     """List all pipeline schedules.
 
     Args:
-        pipeline: Filter by pipeline name or ID.
-        user: Filter by user name or ID.
-        name: Filter by schedule name.
+        **kwargs: Keyword arguments to filter schedules.
     """
     cli_utils.print_active_config()
     client = Client()

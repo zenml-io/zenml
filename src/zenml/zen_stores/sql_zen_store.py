@@ -660,7 +660,18 @@ class SqlZenStore(BaseZenStore):
         query = query.order_by(getattr(table, filter_model.sort_by))
 
         # Get the total amount of pages in the database for a given query
-        total_pages = math.ceil(total / filter_model.size)
+        if total == 0:
+            total_pages = 1
+        else:
+            total_pages = math.ceil(total / filter_model.size)
+
+        if filter_model.page > total_pages:
+            raise ValueError(
+                f"Invalid page {filter_model.page}. The requested page size is "
+                f"{filter_model.size} and there are a total of {total} items "
+                f"for this query. The maximum page value therefore is "
+                f"{total_pages}."
+            )
 
         # Get a page of the actual data
         item_schemas: List[AnySchema] = (
