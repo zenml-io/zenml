@@ -16,7 +16,6 @@
 from typing import List, Optional, Union
 from uuid import UUID
 
-from fastapi import Query
 from pydantic import BaseModel, Field
 
 from zenml.config.pipeline_configurations import PipelineSpec
@@ -74,19 +73,19 @@ class PipelineResponseModel(PipelineBaseModel, ProjectScopedResponseModel):
 class PipelineFilterModel(ProjectScopedFilterModel):
     """Model to enable advanced filtering of all Projects."""
 
-    name: str = Query(
+    name: str = Field(
         default=None,
         description="Name of the Pipeline",
     )
-    docstring: str = Query(
+    docstring: str = Field(
         default=None,
         description="Docstring of the Pipeline",
     )
 
-    project_id: Union[UUID, str] = Query(
+    project_id: Union[UUID, str] = Field(
         default=None, description="Project of the Pipeline"
     )
-    user_id: Union[UUID, str] = Query(None, description="User of the Pipeline")
+    user_id: Union[UUID, str] = Field(None, description="User of the Pipeline")
 
 
 # ------- #

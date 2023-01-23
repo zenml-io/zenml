@@ -16,7 +16,6 @@
 from typing import ClassVar, List, Optional, Union
 from uuid import UUID
 
-from fastapi import Query
 from pydantic import BaseModel, Field
 
 from zenml.enums import StackComponentType
@@ -77,22 +76,22 @@ class FlavorResponseModel(FlavorBaseModel, ProjectScopedResponseModel):
 class FlavorFilterModel(ProjectScopedFilterModel):
     """Model to enable advanced filtering of all Flavors."""
 
-    name: str = Query(
+    name: str = Field(
         default=None,
         description="Name of the flavor",
     )
-    type: str = Query(
+    type: str = Field(
         default=None,
         description="Stack Component Type of the stack flavor",
     )
-    integration: str = Query(
+    integration: str = Field(
         default=None,
         description="Integration associated with the flavor",
     )
-    project_id: Union[UUID, str] = Query(
+    project_id: Union[UUID, str] = Field(
         default=None, description="Project of the stack"
     )
-    user_id: Union[UUID, str] = Query(None, description="User of the stack")
+    user_id: Union[UUID, str] = Field(None, description="User of the stack")
 
 
 # ------- #

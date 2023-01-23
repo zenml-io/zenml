@@ -17,7 +17,6 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Dict, List, Optional, Union
 from uuid import UUID
 
-from fastapi import Query
 from pydantic import BaseModel, Field
 
 from zenml.config.step_configurations import Step
@@ -89,45 +88,45 @@ class StepRunResponseModel(StepRunBaseModel, ProjectScopedResponseModel):
 class StepRunFilterModel(ProjectScopedFilterModel):
     """Model to enable advanced filtering of all Artifacts."""
 
-    name: str = Query(
+    name: str = Field(
         default=None,
         description="Name of the step run",
     )
-    entrypoint_name: str = Query(
+    entrypoint_name: str = Field(
         default=None,
         description="Entrypoint name of the step run",
     )
-    code_hash: str = Query(
+    code_hash: str = Field(
         default=None,
         description="Code hash for this step run",
     )
-    cache_key: str = Query(
+    cache_key: str = Field(
         default=None,
         description="Cache key for this step run",
     )
-    status: str = Query(
+    status: str = Field(
         default=None,
         description="Status of the Step Run",
     )
-    start_time: Union[datetime, str] = Query(
+    start_time: Union[datetime, str] = Field(
         default=None, description="Start time for this run"
     )
-    end_time: Union[datetime, str] = Query(
+    end_time: Union[datetime, str] = Field(
         default=None, description="End time for this run"
     )
-    pipeline_run_id: Union[UUID, str] = Query(
+    pipeline_run_id: Union[UUID, str] = Field(
         default=None, description="Pipeline run of this step run"
     )
-    original_step_run_id: Union[UUID, str] = Query(
+    original_step_run_id: Union[UUID, str] = Field(
         default=None, description="Original id for this step run"
     )
-    user_id: Union[UUID, str] = Query(
+    user_id: Union[UUID, str] = Field(
         default=None, description="User that produced this step run"
     )
-    project_id: Union[UUID, str] = Query(
+    project_id: Union[UUID, str] = Field(
         default=None, description="Project of this step run"
     )
-    num_outputs: int = Query(
+    num_outputs: int = Field(
         default=None,
         description="Amount of outputs for this Step Run",
     )

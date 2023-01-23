@@ -24,7 +24,6 @@ from typing import (
 )
 from uuid import UUID
 
-from fastapi import Query
 from pydantic import BaseModel, Field, PrivateAttr, validator
 
 from zenml.enums import StackComponentType
@@ -104,25 +103,25 @@ class ComponentFilterModel(ShareableProjectScopedFilterModel):
     ]
     _scope_type: str = PrivateAttr(None)
 
-    is_shared: Union[bool, str] = Query(
+    is_shared: Union[bool, str] = Field(
         default=None, description="If the stack is shared or private"
     )
-    name: str = Query(
+    name: str = Field(
         default=None,
         description="Name of the stack component",
     )
-    flavor: str = Query(
+    flavor: str = Field(
         default=None,
         description="Flavor of the stack component",
     )
-    type: str = Query(
+    type: str = Field(
         default=None,
         description="Type of the stack component",
     )
-    project_id: Union[UUID, str] = Query(
+    project_id: Union[UUID, str] = Field(
         default=None, description="Project of the stack"
     )
-    user_id: Union[UUID, str] = Query(None, description="User of the stack")
+    user_id: Union[UUID, str] = Field(None, description="User of the stack")
 
     def set_scope_type(self, component_type: str) -> None:
         """Set the type of component on which to perform the filtering to scope the response."""

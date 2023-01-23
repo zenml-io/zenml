@@ -16,7 +16,6 @@
 from typing import ClassVar, List, Optional, Union
 from uuid import UUID
 
-from fastapi import Query
 from pydantic import BaseModel, Field
 
 from zenml.enums import ArtifactType
@@ -80,36 +79,36 @@ class ArtifactFilterModel(ProjectScopedFilterModel):
         "only_unused",
     ]
 
-    name: str = Query(
+    name: str = Field(
         default=None,
         description="Name of the artifact",
     )
-    uri: str = Query(
+    uri: str = Field(
         default=None,
         description="Uri of the artifact",
     )
-    materializer: str = Query(
+    materializer: str = Field(
         default=None,
         description="Materializer used to produce the artifact",
     )
-    type: str = Query(
+    type: str = Field(
         default=None,
         description="Type of the artifact",
     )
-    data_type: str = Query(
+    data_type: str = Field(
         default=None,
         description="Datatype of the artifact",
     )
-    artifact_store_id: Union[UUID, str] = Query(
+    artifact_store_id: Union[UUID, str] = Field(
         default=None, description="Artifact store for this artifact"
     )
-    project_id: Union[UUID, str] = Query(
+    project_id: Union[UUID, str] = Field(
         default=None, description="Project for this artifact"
     )
-    user_id: Union[UUID, str] = Query(
+    user_id: Union[UUID, str] = Field(
         default=None, description="User that produced this artifact"
     )
-    only_unused: bool = Query(
+    only_unused: bool = Field(
         default=False, description="Filter only for unused artifacts"
     )
 

@@ -14,7 +14,6 @@
 """Models representing projects."""
 
 
-from fastapi import Query
 from pydantic import BaseModel, Field
 
 from zenml.models.base_models import (
@@ -60,7 +59,7 @@ class ProjectResponseModel(ProjectBaseModel, BaseResponseModel):
 class ProjectFilterModel(BaseFilterModel):
     """Model to enable advanced filtering of all Projects."""
 
-    name: str = Query(
+    name: str = Field(
         default=None,
         description="Name of the project",
     )

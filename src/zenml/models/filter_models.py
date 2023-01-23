@@ -28,8 +28,7 @@ from typing import (
 )
 from uuid import UUID
 
-from fastapi import Query
-from pydantic import BaseModel, PrivateAttr, root_validator, validator
+from pydantic import BaseModel, Field, PrivateAttr, root_validator, validator
 from pydantic.typing import get_args
 from sqlmodel import SQLModel
 
@@ -259,22 +258,22 @@ class BaseFilterModel(BaseModel):
     # List of fields that are not even mentioned as options in the CLI.
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = []
 
-    sort_by: str = Query("created", description="Which column to sort by.")
-    logical_operator: LogicalOperators = Query(
+    sort_by: str = Field("created", description="Which column to sort by.")
+    logical_operator: LogicalOperators = Field(
         LogicalOperators.AND,
         description="Which logical operator to use between all filters "
         "['and', 'or']",
     )
-    page: int = Query(
+    page: int = Field(
         PAGINATION_STARTING_PAGE, ge=1, description="Page number"
     )
-    size: int = Query(
+    size: int = Field(
         PAGE_SIZE_DEFAULT, ge=1, le=PAGE_SIZE_MAXIMUM, description="Page size"
     )
 
-    id: Union[UUID, str] = Query(None, description="Id for this resource")
-    created: Union[datetime, str] = Query(None, description="Created")
-    updated: Union[datetime, str] = Query(None, description="Updated")
+    id: Union[UUID, str] = Field(None, description="Id for this resource")
+    created: Union[datetime, str] = Field(None, description="Created")
+    updated: Union[datetime, str] = Field(None, description="Updated")
 
     @validator("sort_by", pre=True)
     def sort_column(cls, v: str) -> str:

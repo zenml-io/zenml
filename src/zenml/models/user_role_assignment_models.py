@@ -16,7 +16,6 @@
 from typing import TYPE_CHECKING, Optional, Union
 from uuid import UUID
 
-from fastapi import Query
 from pydantic import BaseModel, Field
 
 from zenml.models import BaseFilterModel
@@ -63,13 +62,13 @@ class UserRoleAssignmentResponseModel(
 class UserRoleAssignmentFilterModel(BaseFilterModel):
     """Model to enable advanced filtering of all Role Assignments."""
 
-    project_id: Union[UUID, str] = Query(
+    project_id: Union[UUID, str] = Field(
         default=None, description="Project of the RoleAssignment"
     )
-    user_id: Union[UUID, str] = Query(
+    user_id: Union[UUID, str] = Field(
         default=None, description="User in the RoleAssignment"
     )
-    role_id: Union[UUID, str] = Query(
+    role_id: Union[UUID, str] = Field(
         default=None, description="Role in the RoleAssignment"
     )
 

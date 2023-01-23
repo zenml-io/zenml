@@ -17,8 +17,7 @@ from datetime import datetime, timedelta
 from typing import ClassVar, List, Optional, Union
 from uuid import UUID
 
-from fastapi import Query
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from zenml.config.schedule import Schedule
 from zenml.models.base_models import (
@@ -60,38 +59,38 @@ class ScheduleResponseModel(ScheduleBaseModel, ProjectScopedResponseModel):
 class ScheduleFilterModel(ShareableProjectScopedFilterModel):
     """Model to enable advanced filtering of all Users."""
 
-    project_id: Union[UUID, str] = Query(
+    project_id: Union[UUID, str] = Field(
         default=None, description="Project scope of the schedule."
     )
-    user_id: Union[UUID, str] = Query(
+    user_id: Union[UUID, str] = Field(
         None, description="User that created the schedule"
     )
-    pipeline_id: Union[UUID, str] = Query(
+    pipeline_id: Union[UUID, str] = Field(
         None, description="Pipeline that the schedule is attached to."
     )
-    orchestrator_id: Union[UUID, str] = Query(
+    orchestrator_id: Union[UUID, str] = Field(
         None, description="Orchestrator that the schedule is attached to."
     )
-    active: bool = Query(
+    active: bool = Field(
         default=None,
         description="If the schedule is active",
     )
-    cron_expression: str = Query(
+    cron_expression: str = Field(
         default=None,
         description="The cron expression, describing the schedule",
     )
-    start_time: Union[datetime, str] = Query(None, description="Start time")
-    end_time: Union[datetime, str] = Query(None, description="End time")
-    interval_second: Optional[float] = Query(
+    start_time: Union[datetime, str] = Field(None, description="Start time")
+    end_time: Union[datetime, str] = Field(None, description="End time")
+    interval_second: Optional[float] = Field(
         default=None,
         description="The repetition interval in seconds",
     )
-    catchup: bool = Query(
+    catchup: bool = Field(
         default=None,
         description="Whether or not the schedule is set to catchup past missed "
         "events",
     )
-    name: str = Query(
+    name: str = Field(
         default=None,
         description="Name of the schedule",
     )

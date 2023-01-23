@@ -27,7 +27,6 @@ from typing import (
 )
 from uuid import UUID
 
-from fastapi import Query
 from pydantic import BaseModel, Field
 
 from zenml import __version__ as current_zenml_version
@@ -156,42 +155,42 @@ class PipelineRunFilterModel(ProjectScopedFilterModel):
         "unlisted",
     ]
 
-    name: str = Query(
+    name: str = Field(
         default=None,
         description="Name of the Pipeline Run",
     )
-    orchestrator_run_id: str = Query(
+    orchestrator_run_id: str = Field(
         default=None,
         description="Name of the Pipeline Run within the orchestrator",
     )
 
-    pipeline_id: Union[UUID, str] = Query(
+    pipeline_id: Union[UUID, str] = Field(
         default=None, description="Pipeline associated with the Pipeline"
     )
-    project_id: Union[UUID, str] = Query(
+    project_id: Union[UUID, str] = Field(
         default=None, description="Project of the Pipeline"
     )
-    user_id: Union[UUID, str] = Query(None, description="User of the Pipeline")
+    user_id: Union[UUID, str] = Field(None, description="User of the Pipeline")
 
-    stack_id: Union[UUID, str] = Query(
+    stack_id: Union[UUID, str] = Field(
         default=None, description="Stack used for the Pipeline Run"
     )
-    schedule_id: Union[UUID, str] = Query(
+    schedule_id: Union[UUID, str] = Field(
         default=None, description="Schedule that triggered the Pipeline Run"
     )
 
-    status: str = Query(
+    status: str = Field(
         default=None,
         description="Name of the Pipeline Run",
     )
-    start_time: Union[datetime, str] = Query(
+    start_time: Union[datetime, str] = Field(
         default=None, description="Start time for this run"
     )
-    end_time: Union[datetime, str] = Query(
+    end_time: Union[datetime, str] = Field(
         default=None, description="End time for this run"
     )
 
-    num_steps: int = Query(
+    num_steps: int = Field(
         default=None,
         description="Amount of steps in the Pipeline Run",
     )

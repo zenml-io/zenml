@@ -14,10 +14,9 @@
 """Models representing stacks."""
 
 import json
-from typing import TYPE_CHECKING, Any, Dict, List, Union
+from typing import Any, Dict, List, Union
 from uuid import UUID
 
-from fastapi import Query
 from pydantic import BaseModel, Field
 
 from zenml.enums import StackComponentType
@@ -29,10 +28,6 @@ from zenml.models.base_models import (
 from zenml.models.component_models import ComponentResponseModel
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.filter_models import ShareableProjectScopedFilterModel
-
-if TYPE_CHECKING:
-    pass
-
 
 # ---- #
 # BASE #
@@ -126,19 +121,19 @@ class StackFilterModel(ShareableProjectScopedFilterModel):
     scoping.
     """
 
-    is_shared: Union[bool, str] = Query(
+    is_shared: Union[bool, str] = Field(
         default=None, description="If the stack is shared or private"
     )
-    name: str = Query(
+    name: str = Field(
         default=None,
         description="Name of the stack",
     )
-    description: str = Query(None, description="Description of the stack")
-    project_id: Union[UUID, str] = Query(
+    description: str = Field(None, description="Description of the stack")
+    project_id: Union[UUID, str] = Field(
         default=None, description="Project of the stack"
     )
-    user_id: Union[UUID, str] = Query(None, description="User of the stack")
-    component_id: Union[UUID, str] = Query(
+    user_id: Union[UUID, str] = Field(None, description="User of the stack")
+    component_id: Union[UUID, str] = Field(
         default=None, description="Component in the stack"
     )
 

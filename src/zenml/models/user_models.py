@@ -28,7 +28,6 @@ from typing import (
 )
 from uuid import UUID
 
-from fastapi import Query
 from pydantic import BaseModel, Field, SecretStr, root_validator
 
 from zenml.config.global_config import GlobalConfiguration
@@ -429,23 +428,23 @@ class UserAuthModel(UserBaseModel, BaseResponseModel):
 class UserFilterModel(BaseFilterModel):
     """Model to enable advanced filtering of all Users."""
 
-    name: str = Query(
+    name: str = Field(
         default=None,
         description="Name of the user",
     )
-    full_name: str = Query(
+    full_name: str = Field(
         default=None,
         description="Full Name of the user",
     )
-    email: str = Query(
+    email: str = Field(
         default=None,
         description="Full Name of the user",
     )
-    active: Union[bool, str] = Query(
+    active: Union[bool, str] = Field(
         default=None,
         description="Full Name of the user",
     )
-    email_opted_in: Union[bool, str] = Query(
+    email_opted_in: Union[bool, str] = Field(
         default=None,
         description="Full Name of the user",
     )
