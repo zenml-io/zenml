@@ -29,7 +29,8 @@ from zenml.models import (
     ProjectRequestModel,
     RoleRequestModel,
     TeamRequestModel,
-    UserRequestModel,
+    UserRequestModel, PipelineRunFilterModel, StepRunFilterModel,
+    ArtifactFilterModel, ScheduleFilterModel,
 )
 from zenml.models.base_models import BaseResponseModel
 from zenml.zen_stores.base_zen_store import BaseZenStore
@@ -90,9 +91,9 @@ def sql_store_with_run(
     pipeline_instance.run(unlisted=True)
 
     store = sql_store["store"]
-    pipeline_run = store.list_runs()[0]
-    pipeline_step = store.list_run_steps()[1]
-    artifact = store.list_artifacts()[0]
+    pipeline_run = store.list_runs(PipelineRunFilterModel())[0]
+    pipeline_step = store.list_run_steps(StepRunFilterModel())[1]
+    artifact = store.list_run_steps(StepRunFilterModel())[0]
     sql_store.update(
         {
             "pipeline_run": pipeline_run,
@@ -116,10 +117,10 @@ def sql_store_with_scheduled_run(
     schedule = Schedule(cron_expression="*/5 * * * *")
     pipeline_instance.run(unlisted=True, schedule=schedule)
     store = sql_store["store"]
-    schedule = store.list_schedules()[0]
-    pipeline_run = store.list_runs()[0]
-    pipeline_step = store.list_run_steps()[1]
-    artifact = store.list_artifacts()[0]
+    schedule = store.list_schedules(ScheduleFilterModel())[0]
+    pipeline_run = store.list_runs(PipelineRunFilterModel())[0]
+    pipeline_step = store.list_run_steps(StepRunFilterModel())[1]
+    artifact = store.list_artifacts(ArtifactFilterModel())[0]
     sql_store.update(
         {
             "schedule": schedule,
@@ -145,7 +146,7 @@ def sql_store_with_runs(
         pipeline_instance.run(unlisted=True)
 
     store = sql_store["store"]
-    pipeline_runs = store.list_runs()
+    pipeline_runs = store.list_runs(PipelineRunFilterModel())
 
     sql_store.update(
         {
