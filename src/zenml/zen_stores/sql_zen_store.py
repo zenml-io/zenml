@@ -2209,8 +2209,10 @@ class SqlZenStore(BaseZenStore):
                 )
             ).one_or_none()
             if not user_role:
-                raise KeyError(f"No user role assignment with id "
-                               f"{user_role_assignment_id} exists.")
+                raise KeyError(
+                    f"No user role assignment with id "
+                    f"{user_role_assignment_id} exists."
+                )
 
             session.delete(user_role)
 
@@ -2314,8 +2316,10 @@ class SqlZenStore(BaseZenStore):
                 )
             ).one_or_none()
             if not team_role:
-                raise KeyError(f"No team role assignment with id "
-                               f"{team_role_assignment_id} exists.")
+                raise KeyError(
+                    f"No team role assignment with id "
+                    f"{team_role_assignment_id} exists."
+                )
 
             session.delete(team_role)
 
