@@ -96,7 +96,7 @@ def sql_store_with_run(
     store = sql_store["store"]
     pipeline_run = store.list_runs(PipelineRunFilterModel())[0]
     pipeline_step = store.list_run_steps(StepRunFilterModel())[1]
-    artifact = store.list_run_steps(StepRunFilterModel())[0]
+    artifact = store.list_artifacts(ArtifactFilterModel())[0]
     sql_store.update(
         {
             "pipeline_run": pipeline_run,
