@@ -236,7 +236,9 @@ def revoke_role(
     role = client.get_role(name_id_or_prefix=role_name_or_id)
     project_id = None
     if project_name_or_id:
-        project_id = client.get_project(name_id_or_prefix=project_name_or_id).id
+        project_id = client.get_project(
+            name_id_or_prefix=project_name_or_id
+        ).id
 
     # Revoke the role from users
     for user_name_or_id in user_names_or_ids:
@@ -264,7 +266,7 @@ def revoke_role(
             team_role_assignments = client.list_team_role_assignment(
                 role_id=role.id,
                 team_id=team.id,
-                project_id=project.id,
+                project_id=project_id,
             )
             for team_role_assignment in team_role_assignments.items:
                 Client().delete_user_role_assignment(team_role_assignment.id)

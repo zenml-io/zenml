@@ -192,8 +192,8 @@ class StackRecipeService(TerraformService):
 
         # enable services
         for service in self.enabled_services:
-            vars[f'enable_{service}'] = True
-            
+            vars[f"enable_{service}"] = True
+
         # update zenml version to current version
         vars[ZENML_VERSION_VARIABLE] = zenml.__version__
         return vars

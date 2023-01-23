@@ -809,7 +809,7 @@ def deploy(
             deployment.
         skip_pull: Skip the pull of the stack recipe before deploying. This
             should be used if you have a local copy of your recipe already.
-        enabled_services: A list of services to install. Choose from mlflow, seldon, 
+        enabled_services: A list of services to install. Choose from mlflow, seldon,
             kserve, kubeflow, tekton.
     """
     with event_handler(
