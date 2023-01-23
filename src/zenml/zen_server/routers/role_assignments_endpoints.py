@@ -25,7 +25,12 @@ from zenml.models import (
 )
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
-from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
+from zenml.zen_server.utils import (
+    error_response,
+    handle_exceptions,
+    make_dependable,
+    zen_store,
+)
 
 router = APIRouter(
     prefix=API + VERSION_1 + USER_ROLE_ASSIGNMENTS,
@@ -41,7 +46,9 @@ router = APIRouter(
 )
 @handle_exceptions
 def list_user_role_assignments(
-    user_role_assignment_filter_model: UserRoleAssignmentFilterModel = Depends(),
+    user_role_assignment_filter_model: UserRoleAssignmentFilterModel = Depends(
+        make_dependable(UserRoleAssignmentFilterModel)
+    ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[UserRoleAssignmentResponseModel]:
     """Returns a list of all role assignments.

@@ -26,7 +26,12 @@ from zenml.models import (
 )
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
-from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
+from zenml.zen_server.utils import (
+    error_response,
+    handle_exceptions,
+    make_dependable,
+    zen_store,
+)
 
 router = APIRouter(
     prefix=API + VERSION_1 + STACK_COMPONENTS,
@@ -48,7 +53,9 @@ types_router = APIRouter(
 )
 @handle_exceptions
 def list_stack_components(
-    component_filter_model: ComponentFilterModel = Depends(),
+    component_filter_model: ComponentFilterModel = Depends(
+        make_dependable(ComponentFilterModel)
+    ),
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.READ]
     ),

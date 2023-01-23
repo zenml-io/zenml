@@ -27,7 +27,12 @@ from zenml.models import (
 )
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
-from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
+from zenml.zen_server.utils import (
+    error_response,
+    handle_exceptions,
+    make_dependable,
+    zen_store,
+)
 
 router = APIRouter(
     prefix=API + VERSION_1 + ROLES,
@@ -43,7 +48,9 @@ router = APIRouter(
 )
 @handle_exceptions
 def list_roles(
-    role_filter_model: RoleFilterModel = Depends(),
+    role_filter_model: RoleFilterModel = Depends(
+        make_dependable(RoleFilterModel)
+    ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[RoleResponseModel]:
     """Returns a list of all roles.

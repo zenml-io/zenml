@@ -62,7 +62,12 @@ from zenml.models import (
 )
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
-from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
+from zenml.zen_server.utils import (
+    error_response,
+    handle_exceptions,
+    make_dependable,
+    zen_store,
+)
 
 router = APIRouter(
     prefix=API + VERSION_1 + PROJECTS,
@@ -78,7 +83,9 @@ router = APIRouter(
 )
 @handle_exceptions
 def list_projects(
-    project_filter_model: ProjectFilterModel = Depends(),
+    project_filter_model: ProjectFilterModel = Depends(
+        make_dependable(ProjectFilterModel)
+    ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[ProjectResponseModel]:
     """Lists all projects in the organization.
@@ -192,7 +199,9 @@ def delete_project(
 @handle_exceptions
 def list_user_role_assignments_for_project(
     project_name_or_id: Union[str, UUID],
-    user_role_assignment_filter_model: UserRoleAssignmentFilterModel = Depends(),
+    user_role_assignment_filter_model: UserRoleAssignmentFilterModel = Depends(
+        make_dependable(UserRoleAssignmentFilterModel)
+    ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[UserRoleAssignmentResponseModel]:
     """Returns a list of all roles that are assigned to a team.
@@ -220,7 +229,9 @@ def list_user_role_assignments_for_project(
 @handle_exceptions
 def list_team_role_assignments_for_project(
     project_name_or_id: Union[str, UUID],
-    team_role_assignment_filter_model: TeamRoleAssignmentFilterModel = Depends(),
+    team_role_assignment_filter_model: TeamRoleAssignmentFilterModel = Depends(
+        make_dependable(TeamRoleAssignmentFilterModel)
+    ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[TeamRoleAssignmentResponseModel]:
     """Returns a list of all roles that are assigned to a team.
@@ -248,7 +259,9 @@ def list_team_role_assignments_for_project(
 @handle_exceptions
 def list_project_stacks(
     project_name_or_id: Union[str, UUID],
-    stack_filter_model: StackFilterModel = Depends(),
+    stack_filter_model: StackFilterModel = Depends(
+        make_dependable(StackFilterModel)
+    ),
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.READ]
     ),
@@ -325,7 +338,9 @@ def create_stack(
 @handle_exceptions
 def list_project_stack_components(
     project_name_or_id: Union[str, UUID],
-    component_filter_model: ComponentFilterModel = Depends(),
+    component_filter_model: ComponentFilterModel = Depends(
+        make_dependable(ComponentFilterModel)
+    ),
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.READ]
     ),
@@ -407,7 +422,9 @@ def create_stack_component(
 @handle_exceptions
 def list_project_flavors(
     project_name_or_id: Optional[Union[str, UUID]] = None,
-    flavor_filter_model: FlavorFilterModel = Depends(),
+    flavor_filter_model: FlavorFilterModel = Depends(
+        make_dependable(FlavorFilterModel)
+    ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[FlavorResponseModel]:
     """List stack components flavors of a certain type that are part of a project.
@@ -485,7 +502,9 @@ def create_flavor(
 @handle_exceptions
 def list_project_pipelines(
     project_name_or_id: Union[str, UUID],
-    pipeline_filter_model: PipelineFilterModel = Depends(),
+    pipeline_filter_model: PipelineFilterModel = Depends(
+        make_dependable(PipelineFilterModel)
+    ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[PipelineResponseModel]:
     """Gets pipelines defined for a specific project.
@@ -559,7 +578,9 @@ def create_pipeline(
 @handle_exceptions
 def list_runs(
     project_name_or_id: Union[str, UUID],
-    runs_filter_model: PipelineRunFilterModel = Depends(),
+    runs_filter_model: PipelineRunFilterModel = Depends(
+        make_dependable(PipelineRunFilterModel)
+    ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[PipelineRunResponseModel]:
     """Get pipeline runs according to query filters.

@@ -38,7 +38,12 @@ from zenml.models import (
 from zenml.models.page_model import Page
 from zenml.post_execution.lineage.lineage_graph import LineageGraph
 from zenml.zen_server.auth import AuthContext, authorize
-from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
+from zenml.zen_server.utils import (
+    error_response,
+    handle_exceptions,
+    make_dependable,
+    zen_store,
+)
 
 router = APIRouter(
     prefix=API + VERSION_1 + RUNS,
@@ -54,7 +59,9 @@ router = APIRouter(
 )
 @handle_exceptions
 def list_runs(
-    runs_filter_model: PipelineRunFilterModel = Depends(),
+    runs_filter_model: PipelineRunFilterModel = Depends(
+        make_dependable(PipelineRunFilterModel)
+    ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[PipelineRunResponseModel]:
     """Get pipeline runs according to query filters.
@@ -163,7 +170,9 @@ def get_run_dag(
 )
 @handle_exceptions
 def get_run_steps(
-    step_run_filter_model: StepRunFilterModel = Depends(),
+    step_run_filter_model: StepRunFilterModel = Depends(
+        make_dependable(StepRunFilterModel)
+    ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[StepRunResponseModel]:
     """Get all steps for a given pipeline run.

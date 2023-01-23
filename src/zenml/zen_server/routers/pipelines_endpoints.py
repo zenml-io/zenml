@@ -28,7 +28,12 @@ from zenml.models import (
 )
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
-from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
+from zenml.zen_server.utils import (
+    error_response,
+    handle_exceptions,
+    make_dependable,
+    zen_store,
+)
 
 router = APIRouter(
     prefix=API + VERSION_1 + PIPELINES,
@@ -44,7 +49,9 @@ router = APIRouter(
 )
 @handle_exceptions
 def list_pipelines(
-    pipeline_filter_model: PipelineFilterModel = Depends(),
+    pipeline_filter_model: PipelineFilterModel = Depends(
+        make_dependable(PipelineFilterModel)
+    ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[PipelineResponseModel]:
     """Gets a list of pipelines.
@@ -131,7 +138,9 @@ def delete_pipeline(
 )
 @handle_exceptions
 def list_pipeline_runs(
-    pipeline_run_filter_model: PipelineRunFilterModel = Depends(),
+    pipeline_run_filter_model: PipelineRunFilterModel = Depends(
+        make_dependable(PipelineRunFilterModel)
+    ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[PipelineRunResponseModel]:
     """Get pipeline runs according to query filters.
