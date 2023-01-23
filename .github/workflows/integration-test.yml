@@ -247,6 +247,7 @@ jobs:
           # re-install zenml to be sure
           poetry install --extras server
           # install airflow requirements
+          pip install numpy<=1.23.5
           pip install apache-airflow-providers-docker
 
       - name: Check Python Env ahead of tests
