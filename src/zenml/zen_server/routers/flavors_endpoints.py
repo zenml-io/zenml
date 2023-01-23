@@ -22,7 +22,12 @@ from zenml.enums import PermissionType
 from zenml.models import FlavorFilterModel, FlavorResponseModel
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
-from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
+from zenml.zen_server.utils import (
+    error_response,
+    handle_exceptions,
+    make_dependable,
+    zen_store,
+)
 
 router = APIRouter(
     prefix=API + VERSION_1 + FLAVORS,
@@ -38,7 +43,9 @@ router = APIRouter(
 )
 @handle_exceptions
 def list_flavors(
-    flavor_filter_model: FlavorFilterModel = Depends(),
+    flavor_filter_model: FlavorFilterModel = Depends(
+        make_dependable(FlavorFilterModel)
+    ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[FlavorResponseModel]:
     """Returns all flavors.

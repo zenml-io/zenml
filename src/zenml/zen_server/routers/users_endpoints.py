@@ -44,7 +44,12 @@ from zenml.zen_server.auth import (
     authenticate_credentials,
     authorize,
 )
-from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
+from zenml.zen_server.utils import (
+    error_response,
+    handle_exceptions,
+    make_dependable,
+    zen_store,
+)
 
 logger = get_logger(__name__)
 
@@ -76,7 +81,9 @@ current_user_router = APIRouter(
 )
 @handle_exceptions
 def list_users(
-    user_filter_model: UserFilterModel = Depends(),
+    user_filter_model: UserFilterModel = Depends(
+        make_dependable(UserFilterModel)
+    ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[UserResponseModel]:
     """Returns a list of all users.
@@ -328,7 +335,9 @@ def email_opt_in_response(
 )
 @handle_exceptions
 def list_role_assignments_for_user(
-    user_role_assignment_filter_model: UserRoleAssignmentFilterModel = Depends(),
+    user_role_assignment_filter_model: UserRoleAssignmentFilterModel = Depends(
+        make_dependable(UserRoleAssignmentFilterModel)
+    ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[UserRoleAssignmentResponseModel]:
     """Returns a list of all roles that are assigned to a user.

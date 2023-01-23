@@ -260,7 +260,7 @@ class BaseFilterModel(BaseModel):
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = []
 
     sort_by: str = Query("created", description="Which column to sort by.")
-    logical_operator: str = Query(
+    logical_operator: LogicalOperators = Query(
         LogicalOperators.AND,
         description="Which logical operator to use between all filters "
         "['and', 'or']",

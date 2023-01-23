@@ -25,7 +25,12 @@ from zenml.models.schedule_model import (
     ScheduleUpdateModel,
 )
 from zenml.zen_server.auth import AuthContext, authorize
-from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
+from zenml.zen_server.utils import (
+    error_response,
+    handle_exceptions,
+    make_dependable,
+    zen_store,
+)
 
 router = APIRouter(
     prefix=API + VERSION_1 + SCHEDULES,
@@ -41,7 +46,9 @@ router = APIRouter(
 )
 @handle_exceptions
 def list_schedules(
-    schedule_filter_model: ScheduleFilterModel = Depends(),
+    schedule_filter_model: ScheduleFilterModel = Depends(
+        make_dependable(ScheduleFilterModel)
+    ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[ScheduleResponseModel]:
     """Gets a list of schedules.
