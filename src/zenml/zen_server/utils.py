@@ -207,8 +207,9 @@ def handle_exceptions(func: F) -> F:
 def make_dependable(cls: Type[BaseModel]) -> Callable[..., Any]:
     """This function makes a pydantic model usable for fastapi query parameters.
 
-    Additionally, it converts InternalServerErrors that would happen due to
-    pydantic.ValidationError into 422 responses that signal an invalid request.
+    Additionally, it converts `InternalServerError`s that would happen due to
+    `pydantic.ValidationError` into 422 responses that signal an invalid
+    request.
 
     Check out https://github.com/tiangolo/fastapi/issues/1474 for context.
 
@@ -220,7 +221,7 @@ def make_dependable(cls: Type[BaseModel]) -> Callable[..., Any]:
         cls: The model class.
 
     Returns:
-        Function to use in FastAPIs `Depends`.
+        Function to use in FastAPI `Depends`.
     """
 
     def init_cls_and_handle_errors(*args: Any, **kwargs: Any) -> BaseModel:
