@@ -21,7 +21,12 @@ import click
 import zenml
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
-from zenml.cli.utils import _component_display_name, print_stacks_table
+from zenml.cli.utils import (
+    _component_display_name,
+    list_options,
+    print_page_info,
+    print_stacks_table,
+)
 from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
@@ -30,6 +35,7 @@ from zenml.exceptions import (
     ProvisioningError,
     StackExistsError,
 )
+from zenml.models import StackFilterModel
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
@@ -677,21 +683,18 @@ def rename_stack(
 
 
 @stack.command("list")
-@click.option("--just-mine", "-m", is_flag=True, required=False)
-def list_stacks(just_mine: bool = False) -> None:
-    """List all available stacks.
-
-    Args:
-        just_mine: To list only the stacks that the current user has created.
-    """
+@list_options(StackFilterModel)
+def list_stacks(**kwargs: Any) -> None:
+    """List all stacks that fulfill the filter requirements."""
     client = Client()
     with console.status("Listing stacks...\n"):
-        if just_mine:
-            stacks = client.list_stacks(user_name_or_id=client.active_user.id)
-        else:
-            stacks = client.list_stacks()
+        stacks = client.list_stacks(**kwargs)
+        if not stacks:
+            cli_utils.declare("No stacks found for the given filters.")
+            return
 
-        print_stacks_table(client, stacks)
+        print_stacks_table(client, stacks.items)
+        print_page_info(stacks)
 
 
 @stack.command(

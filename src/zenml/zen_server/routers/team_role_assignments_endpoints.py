@@ -16,12 +16,12 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
 
-from zenml.constants import API, USER_ROLE_ASSIGNMENTS, VERSION_1
+from zenml.constants import API, TEAM_ROLE_ASSIGNMENTS, VERSION_1
 from zenml.enums import PermissionType
 from zenml.models import (
-    UserRoleAssignmentFilterModel,
-    UserRoleAssignmentRequestModel,
-    UserRoleAssignmentResponseModel,
+    TeamRoleAssignmentFilterModel,
+    TeamRoleAssignmentRequestModel,
+    TeamRoleAssignmentResponseModel,
 )
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
@@ -33,47 +33,48 @@ from zenml.zen_server.utils import (
 )
 
 router = APIRouter(
-    prefix=API + VERSION_1 + USER_ROLE_ASSIGNMENTS,
-    tags=["role_assignments"],
+    prefix=API + VERSION_1 + TEAM_ROLE_ASSIGNMENTS,
+    tags=["team_role_assignments"],
     responses={401: error_response},
 )
 
 
 @router.get(
     "",
-    response_model=Page[UserRoleAssignmentResponseModel],
+    response_model=Page[TeamRoleAssignmentResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def list_user_role_assignments(
-    user_role_assignment_filter_model: UserRoleAssignmentFilterModel = Depends(
-        make_dependable(UserRoleAssignmentFilterModel)
+def list_team_role_assignments(
+    team_role_assignment_filter_model: TeamRoleAssignmentFilterModel = Depends(
+        make_dependable(TeamRoleAssignmentFilterModel)
     ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[UserRoleAssignmentResponseModel]:
+) -> Page[TeamRoleAssignmentResponseModel]:
     """Returns a list of all role assignments.
 
     Args:
-        user_role_assignment_filter_model: filter models for user role assignments
+        team_role_assignment_filter_model: filter models for team role assignments
+
 
     Returns:
         List of all role assignments.
     """
-    return zen_store().list_user_role_assignments(
-        user_role_assignment_filter_model=user_role_assignment_filter_model
+    return zen_store().list_team_role_assignments(
+        team_role_assignment_filter_model=team_role_assignment_filter_model
     )
 
 
 @router.post(
     "",
-    response_model=UserRoleAssignmentResponseModel,
+    response_model=TeamRoleAssignmentResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
-def create_role_assignment(
-    role_assignment: UserRoleAssignmentRequestModel,
+def create_team_role_assignment(
+    role_assignment: TeamRoleAssignmentRequestModel,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> UserRoleAssignmentResponseModel:
+) -> TeamRoleAssignmentResponseModel:
     """Creates a role assignment.
 
     # noqa: DAR401
@@ -84,21 +85,21 @@ def create_role_assignment(
     Returns:
         The created role assignment.
     """
-    return zen_store().create_user_role_assignment(
-        user_role_assignment=role_assignment
+    return zen_store().create_team_role_assignment(
+        team_role_assignment=role_assignment
     )
 
 
 @router.get(
     "/{role_assignment_id}",
-    response_model=UserRoleAssignmentResponseModel,
+    response_model=TeamRoleAssignmentResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def get_role_assignment(
+def get_team_role_assignment(
     role_assignment_id: UUID,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> UserRoleAssignmentResponseModel:
+) -> TeamRoleAssignmentResponseModel:
     """Returns a specific role assignment.
 
     Args:
@@ -107,8 +108,8 @@ def get_role_assignment(
     Returns:
         A specific role assignment.
     """
-    return zen_store().get_user_role_assignment(
-        user_role_assignment_id=role_assignment_id
+    return zen_store().get_team_role_assignment(
+        team_role_assignment_id=role_assignment_id
     )
 
 
@@ -117,7 +118,7 @@ def get_role_assignment(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def delete_role_assignment(
+def delete_team_role_assignment(
     role_assignment_id: UUID,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> None:
@@ -126,6 +127,6 @@ def delete_role_assignment(
     Args:
         role_assignment_id: The ID of the role assignment.
     """
-    zen_store().delete_user_role_assignment(
-        user_role_assignment_id=role_assignment_id
+    zen_store().delete_team_role_assignment(
+        team_role_assignment_id=role_assignment_id
     )

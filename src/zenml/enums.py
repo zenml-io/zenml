@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """ZenML enums."""
-
 import logging
 from enum import Enum
 
@@ -154,3 +153,23 @@ class PermissionType(StrEnum):
     ME = (
         "me"  # allows the user to self administrate (change name, password...)
     )
+
+
+class GenericFilterOps(StrEnum):
+    """Ops for all filters for string values on list methods."""
+
+    EQUALS = "equals"
+    CONTAINS = "contains"
+    STARTSWITH = "startswith"
+    ENDSWITH = "endswith"
+    GTE = "gte"
+    GT = "gt"
+    LTE = "lte"
+    LT = "lt"
+
+
+class LogicalOperators(StrEnum):
+    """Logical Ops to use to combine filters on list methods."""
+
+    OR = "or"
+    AND = "and"

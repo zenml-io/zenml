@@ -256,7 +256,7 @@ steps in the [Model Deployment Steps](https://apidocs.zenml.io/latest/integratio
 While KServe is a good fit for most use cases with the built-in model servers, 
 it is not always the best fit for your custom model deployment use case. For
 that reason KServe allows you to create your own model server using the KServe 
-ModelServer API where you can customize the predict, the pre- and 
+`ModelServer` API where you can customize the predict, the pre- and 
 post-processing functions. With ZenML's KServe Integration, you can create 
 your own custom model deployment code by creating a custom predict function 
 that will be passed to a custom deployment step responsible for preparing a 

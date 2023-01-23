@@ -12,10 +12,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for pipeline runs."""
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Security
+from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import (
     API,
@@ -29,13 +29,21 @@ from zenml.constants import (
 )
 from zenml.enums import ExecutionStatus, PermissionType
 from zenml.models import (
+    PipelineRunFilterModel,
     PipelineRunResponseModel,
     PipelineRunUpdateModel,
+    StepRunFilterModel,
     StepRunResponseModel,
 )
+from zenml.models.page_model import Page
 from zenml.post_execution.lineage.lineage_graph import LineageGraph
 from zenml.zen_server.auth import AuthContext, authorize
-from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
+from zenml.zen_server.utils import (
+    error_response,
+    handle_exceptions,
+    make_dependable,
+    zen_store,
+)
 
 router = APIRouter(
     prefix=API + VERSION_1 + RUNS,
@@ -46,44 +54,26 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=List[PipelineRunResponseModel],
+    response_model=Page[PipelineRunResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_runs(
-    project_name_or_id: Optional[Union[str, UUID]] = None,
-    stack_id: Optional[UUID] = None,
-    name: Optional[str] = None,
-    user_name_or_id: Optional[Union[str, UUID]] = None,
-    component_id: Optional[UUID] = None,
-    pipeline_id: Optional[UUID] = None,
-    unlisted: bool = False,
+    runs_filter_model: PipelineRunFilterModel = Depends(
+        make_dependable(PipelineRunFilterModel)
+    ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> List[PipelineRunResponseModel]:
+) -> Page[PipelineRunResponseModel]:
     """Get pipeline runs according to query filters.
 
     Args:
-        project_name_or_id: Name or ID of the project for which to filter runs.
-        stack_id: ID of the stack for which to filter runs.
-        name: Filter by run name if provided
-        user_name_or_id: If provided, only return runs for this user.
-        component_id: Filter by ID of a component that was used in the run.
-        pipeline_id: ID of the pipeline for which to filter runs.
-        unlisted: If True, only return unlisted runs that are not
-            associated with any pipeline.
+        runs_filter_model: Filter model used for pagination, sorting,
+                                   filtering
 
     Returns:
         The pipeline runs according to query filters.
     """
-    return zen_store().list_runs(
-        project_name_or_id=project_name_or_id,
-        name=name,
-        stack_id=stack_id,
-        component_id=component_id,
-        user_name_or_id=user_name_or_id,
-        pipeline_id=pipeline_id,
-        unlisted=unlisted,
-    )
+    return zen_store().list_runs(runs_filter_model=runs_filter_model)
 
 
 @router.get(
@@ -116,16 +106,13 @@ def get_run(
 def update_run(
     run_id: UUID,
     run_model: PipelineRunUpdateModel,
-    auth_context: AuthContext = Security(
-        authorize, scopes=[PermissionType.WRITE]
-    ),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> PipelineRunResponseModel:
     """Updates a run.
 
     Args:
         run_id: ID of the run.
         run_model: Run model to use for the update.
-        auth_context: Authorization Context
 
     Returns:
         The updated run model.
@@ -178,23 +165,26 @@ def get_run_dag(
 
 @router.get(
     "/{run_id}" + STEPS,
-    response_model=List[StepRunResponseModel],
+    response_model=Page[StepRunResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_run_steps(
-    run_id: UUID,
+    step_run_filter_model: StepRunFilterModel = Depends(
+        make_dependable(StepRunFilterModel)
+    ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> List[StepRunResponseModel]:
+) -> Page[StepRunResponseModel]:
     """Get all steps for a given pipeline run.
 
     Args:
-        run_id: ID of the pipeline run to use to get the DAG.
+        step_run_filter_model: Filter model used for pagination, sorting,
+            filtering
 
     Returns:
         The steps for a given pipeline run.
     """
-    return zen_store().list_run_steps(run_id)
+    return zen_store().list_run_steps(step_run_filter_model)
 
 
 @router.get(
