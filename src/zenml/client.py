@@ -1889,22 +1889,30 @@ class Client(metaclass=ClientMetaClass):
             )
 
         # Else, try to fetch the component with an explicit type filter
-        component_filter_model = ComponentFilterModel(
-            logical_operator=LogicalOperators.OR,
-            name=f"contains:{name_id_or_prefix}",
-            id=f"startswith:{name_id_or_prefix}",
-        )
-        component_filter_model.set_scope_type(component_type=component_type)
-        component_filter_model.set_scope_project(self.active_project.id)
-        type_scoped_list_method = partial(
-            self.zen_store.list_stack_components,
-            component_filter_model=component_filter_model,
-        )
+        def type_scoped_list_method(
+            **kwargs: Any,
+        ) -> Page[ComponentResponseModel]:
+            """Call `zen_store.list_stack_components` with type scoping.
+
+            Args:
+                **kwargs: Keyword arguments to pass to `ComponentFilterModel`.
+
+            Returns:
+                The type-scoped list of components.
+            """
+            component_filter_model = ComponentFilterModel(**kwargs)
+            component_filter_model.set_scope_type(
+                component_type=component_type
+            )
+            component_filter_model.set_scope_project(self.active_project.id)
+            return self.zen_store.list_stack_components(
+                component_filter_model=component_filter_model,
+            )
+
         return self._get_entity_by_id_or_name_or_prefix(
             get_method=self.zen_store.get_stack_component,
             list_method=type_scoped_list_method,
             name_id_or_prefix=name_id_or_prefix,
-            ignore_list_filters=True,
         )
 
     def list_stack_components(
@@ -2989,25 +2997,19 @@ class Client(metaclass=ClientMetaClass):
         get_method: Callable[..., AnyResponseModel],
         list_method: Callable[..., Page[AnyResponseModel]],
         name_id_or_prefix: Union[str, UUID],
-        ignore_list_filters: bool = False,
     ) -> "AnyResponseModel":
-        """Fetches an entity using the name, id or partial id.
+        """Fetches an entity using the id, name, or partial id/name.
 
         Args:
             get_method: The method to use to fetch the entity by id.
             list_method: The method to use to fetch all entities.
             name_id_or_prefix: The id, name or partial id of the entity to
                 fetch.
-            ignore_list_filters: If True, do not pass any filters into the
-                provided list method and just call it without any arguments.
-                This is useful when passing custom list methods that expect
-                other arguments.
 
         Returns:
             The entity with the given name, id or partial id.
 
         Raises:
-            KeyError: If no entity with the given name exists.
             ZenKeyError: If there is more than one entity with that name
                 or id prefix.
         """
@@ -3018,47 +3020,72 @@ class Client(metaclass=ClientMetaClass):
             return get_method(name_id_or_prefix)
 
         # If not a UUID, try to find by name
-        entity_label = get_method.__name__.replace("get_", "") + "s"
-        if ignore_list_filters:
-            entity = list_method()
-        else:
-            entity = list_method(
-                name=f"equals:{name_id_or_prefix}",
-            )
-
-        if entity.total > 1:
-            raise ZenKeyError(
-                f"{entity.total} {entity_label} have been found that have "
-                f"a name that matches the provided "
-                f"string '{name_id_or_prefix}':\n"
-                f"{[entity.items]}.\n"
-                f"Please use the id to uniquely identify "
-                f"only one of the {entity_label}s."
-            )
+        assert not isinstance(name_id_or_prefix, UUID)
+        entity = list_method(name=f"equals:{name_id_or_prefix}")
 
         # If only a single entity is found, return it
-        elif entity.total == 1:
+        if entity.total == 1:
             return entity.items[0]
 
         # If still no match, try with prefix now
-        elif entity.total == 0:
-            entity = list_method(
-                logical_operator=LogicalOperators.OR,
-                name=f"contains:{name_id_or_prefix}",
-                id=f"startswith:{name_id_or_prefix}",
+        if entity.total == 0:
+            return Client._get_entity_by_prefix(
+                get_method=get_method,
+                list_method=list_method,
+                partial_id_or_name=name_id_or_prefix,
             )
+
+        # If more than one entity with the same name is found, raise an error.
+        entity_label = get_method.__name__.replace("get_", "") + "s"
+        raise ZenKeyError(
+            f"{entity.total} {entity_label} have been found that have "
+            f"a name that matches the provided "
+            f"string '{name_id_or_prefix}':\n"
+            f"{[entity.items]}.\n"
+            f"Please use the id to uniquely identify "
+            f"only one of the {entity_label}s."
+        )
+
+    @staticmethod
+    def _get_entity_by_prefix(
+        get_method: Callable[..., AnyResponseModel],
+        list_method: Callable[..., Page[AnyResponseModel]],
+        partial_id_or_name: str,
+    ) -> "AnyResponseModel":
+        """Fetches an entity using a partial ID or name.
+
+        Args:
+            get_method: The method to use to fetch the entity by id.
+            list_method: The method to use to fetch all entities.
+            partial_id_or_name: The partial ID or name of the entity to fetch.
+
+        Returns:
+            The entity with the given partial ID or name.
+
+        Raises:
+            KeyError: If no entity with the given partial ID or name is found.
+            ZenKeyError: If there is more than one entity with that partial ID
+                or name.
+        """
+        entity = list_method(
+            logical_operator=LogicalOperators.OR,
+            name=f"contains:{partial_id_or_name}",
+            id=f"startswith:{partial_id_or_name}",
+        )
+
+        # If only a single entity is found, return it.
+        if entity.total == 1:
+            return entity.items[0]
+
+        entity_label = get_method.__name__.replace("get_", "") + "s"
 
         # If no entity is found, raise an error.
         if entity.total == 0:
             raise KeyError(
                 f"No {entity_label} have been found that have either a name "
                 f"or an id prefix that matches the provided string "
-                f"'{name_id_or_prefix}'."
+                f"'{partial_id_or_name}'."
             )
-
-        # If only a single entity is found, return it
-        elif entity.total == 1:
-            return entity.items[0]
 
         # If more than one entity is found, raise an error.
         ambiguous_entities: List[str] = []
@@ -3071,7 +3098,7 @@ class Client(metaclass=ClientMetaClass):
         raise ZenKeyError(
             f"{entity.total} {entity_label} have been found that have "
             f"either a name or an id prefix that matches the provided "
-            f"string '{name_id_or_prefix}':\n"
+            f"string '{partial_id_or_name}':\n"
             f"{ambiguous_entities}.\n"
             f"Please provide more characters to uniquely identify "
             f"only one of the {entity_label}s."
