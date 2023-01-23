@@ -660,7 +660,10 @@ class SqlZenStore(BaseZenStore):
         query = query.order_by(getattr(table, filter_model.sort_by))
 
         # Get the total amount of pages in the database for a given query
-        total_pages = math.ceil(total / filter_model.size)
+        if total == 0:
+            total_pages = 1
+        else:
+            total_pages = math.ceil(total / filter_model.size)
 
         if filter_model.page > total_pages:
             raise ValueError(
