@@ -670,7 +670,7 @@ class ShareableProjectScopedFilterModel(ProjectScopedFilterModel):
         if self.scope_user:
             user_filter = or_(
                 getattr(table, "user_id") == self.scope_user,
-                getattr(table, "is_shared") is True,
+                getattr(table, "is_shared").is_(True),
             )
             return and_(base_filter, user_filter)
         return base_filter
