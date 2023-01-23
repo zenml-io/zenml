@@ -75,6 +75,7 @@ BaseEntrypointConfiguration
 BaseEnvironmentComponent
 BaseException
 BaseExecutorOperator
+BaseImageBuilder
 BaseMaterializer
 BaseMaterializerMeta
 BaseModel
@@ -116,6 +117,7 @@ Bentos
 Bing
 Bitbucket
 BluePill
+BuildContext
 CIDR
 CLI
 CLIs
@@ -169,6 +171,9 @@ CustomContainerRegistryConfig
 CustomContainerRegistryFlavor
 CustomDeployParameters
 CustomFormatter
+CustomImageBuilder
+CustomImageBuilderConfig
+CustomImageBuilderFlavor
 CustomModelDeployer
 CustomModelDeployerConfig
 CustomModelDeployerFlavor
@@ -360,6 +365,8 @@ KServeDeploymentService
 KServeModelDeployer
 KServeclient
 KUBE
+Kaniko
+KanikoImageBuilder
 Keras
 KeyError
 Knative
@@ -386,6 +393,7 @@ LocalDaemonServiceConfig
 LocalDockerOrchestrator
 LocalExample
 LocalFilesystem
+LocalImageBuilder
 LocalOrchestrator
 LocalStack
 LocalZenServer
@@ -1182,6 +1190,7 @@ jsonschema
 jupyter
 jwt
 kaggle
+kaniko
 ker
 keras
 keyRings

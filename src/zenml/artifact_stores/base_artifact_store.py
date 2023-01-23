@@ -351,7 +351,7 @@ class BaseArtifactStore(StackComponent):
             {
                 "SUPPORTED_SCHEMES": self.config.SUPPORTED_SCHEMES,
                 "open": staticmethod(_sanitize_paths(self.open)),
-                "copy": staticmethod(_sanitize_paths(self.copyfile)),
+                "copyfile": staticmethod(_sanitize_paths(self.copyfile)),
                 "exists": staticmethod(_sanitize_paths(self.exists)),
                 "glob": staticmethod(_sanitize_paths(self.glob)),
                 "isdir": staticmethod(_sanitize_paths(self.isdir)),

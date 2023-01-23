@@ -10,6 +10,7 @@
   * [One Click Deployment using CLI](./getting-started/deploying-zenml/cli.md)
   * [Deploying with Docker](./getting-started/deploying-zenml/docker.md)
   * [Deploying with Helm](./getting-started/deploying-zenml/helm.md)
+  * [Troubleshooting your server](./getting-started/deploying-zenml/troubleshooting.md)
 * [Architecture Diagrams](getting-started/architecture-diagrams.md)
 * [Examples](./getting-started/examples.md)
 
@@ -119,6 +120,10 @@
 * [Annotators](./component-gallery/annotators/annotators.md)
   * [Label Studio](./component-gallery/annotators/label-studio.md)
   * [Develop a Custom Annotator](./component-gallery/annotators/custom.md)
+* [Image Builders](./component-gallery/image-builders/image-builders.md)
+  * [Local Image Builder](./component-gallery/image-builders/local.md)
+  * [Kaniko Image Builder](./component-gallery/image-builders/kaniko.md)
+  * [Develop a Custom Image Builder](./component-gallery/image-builders/custom.md)
 
 ## Guidelines
 
