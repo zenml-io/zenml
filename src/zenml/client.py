@@ -3017,11 +3017,31 @@ class Client(metaclass=ClientMetaClass):
         if is_valid_uuid(name_id_or_prefix):
             return get_method(name_id_or_prefix)
 
-        # If not a UUID, try to find by name or id prefix
+        # If not a UUID, try to find by name
         entity_label = get_method.__name__.replace("get_", "") + "s"
         if ignore_list_filters:
             entity = list_method()
         else:
+            entity = list_method(
+                name=f"equals:{name_id_or_prefix}",
+            )
+
+        if entity.total > 1:
+            raise ZenKeyError(
+                f"{entity.total} {entity_label} have been found that have "
+                f"a name that matches the provided "
+                f"string '{name_id_or_prefix}':\n"
+                f"{[entity.items]}.\n"
+                f"Please use the id to uniquely identify "
+                f"only one of the {entity_label}s."
+            )
+
+        # If only a single entity is found, return it
+        elif entity.total == 1:
+            return entity.items[0]
+
+        # If still no match, try with prefix now
+        elif entity.total == 0:
             entity = list_method(
                 logical_operator=LogicalOperators.OR,
                 name=f"contains:{name_id_or_prefix}",
@@ -3037,7 +3057,7 @@ class Client(metaclass=ClientMetaClass):
             )
 
         # If only a single entity is found, return it
-        if entity.total == 1:
+        elif entity.total == 1:
             return entity.items[0]
 
         # If more than one entity is found, raise an error.
