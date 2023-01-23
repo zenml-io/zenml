@@ -15,7 +15,7 @@
 
 import os
 import subprocess
-from typing import Any, ClassVar, Dict, Optional, cast
+from typing import Any, ClassVar, Dict, List, Optional, cast
 
 import yaml
 
@@ -53,7 +53,7 @@ class StackRecipeService(TerraformService):
     )
 
     # list of all enabled stack components
-    enabled_services: list = []
+    enabled_services: List[str] = []
 
     def check_installation(self) -> None:
         """Checks if necessary tools are installed on the host system.

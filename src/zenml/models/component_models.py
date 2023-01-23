@@ -19,12 +19,13 @@ from typing import (
     ClassVar,
     Dict,
     List,
+    Optional,
     Type,
     Union,
 )
 from uuid import UUID
 
-from pydantic import BaseModel, Field, PrivateAttr, validator
+from pydantic import BaseModel, Field, validator
 
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
@@ -95,13 +96,16 @@ class ComponentFilterModel(ShareableProjectScopedFilterModel):
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *ShareableProjectScopedFilterModel.FILTER_EXCLUDE_FIELDS,
-        "_scope_type",
+        "scope_type",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *ShareableProjectScopedFilterModel.CLI_EXCLUDE_FIELDS,
-        "_scope_type",
+        "scope_type",
     ]
-    _scope_type: str = PrivateAttr(None)
+    scope_type: Optional[str] = Field(
+        None,
+        description="The type to scope this query to.",
+    )
 
     is_shared: Union[bool, str] = Field(
         default=None, description="If the stack is shared or private"
@@ -125,7 +129,7 @@ class ComponentFilterModel(ShareableProjectScopedFilterModel):
 
     def set_scope_type(self, component_type: str) -> None:
         """Set the type of component on which to perform the filtering to scope the response."""
-        self._scope_type = component_type
+        self.scope_type = component_type
 
     def generate_filter(
         self, table: Type["SQLModel"]
@@ -143,8 +147,8 @@ class ComponentFilterModel(ShareableProjectScopedFilterModel):
         from sqlalchemy import and_
 
         base_filter = super().generate_filter(table)
-        if self._scope_type:
-            type_filter = getattr(table, "type") == self._scope_type
+        if self.scope_type:
+            type_filter = getattr(table, "type") == self.scope_type
             return and_(base_filter, type_filter)
         return base_filter
 

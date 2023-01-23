@@ -22,13 +22,14 @@ from typing import (
     ClassVar,
     Dict,
     List,
+    Optional,
     Tuple,
     Type,
     Union,
 )
 from uuid import UUID
 
-from pydantic import BaseModel, Field, PrivateAttr, root_validator, validator
+from pydantic import BaseModel, Field, root_validator, validator
 from pydantic.typing import get_args
 from sqlmodel import SQLModel
 
@@ -590,17 +591,20 @@ class ProjectScopedFilterModel(BaseFilterModel):
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *BaseFilterModel.FILTER_EXCLUDE_FIELDS,
-        "_scope_project",
+        "scope_project",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *BaseFilterModel.CLI_EXCLUDE_FIELDS,
-        "_scope_project",
+        "scope_project",
     ]
-    _scope_project: UUID = PrivateAttr(None)
+    scope_project: Optional[UUID] = Field(
+        None,
+        description="The project to scope this query to.",
+    )
 
     def set_scope_project(self, project_id: UUID) -> None:
         """Set the project to scope this response."""
-        self._scope_project = project_id
+        self.scope_project = project_id
 
     def generate_filter(
         self, table: Type["SQLModel"]
@@ -619,10 +623,8 @@ class ProjectScopedFilterModel(BaseFilterModel):
         from sqlalchemy import and_
 
         base_filter = super().generate_filter(table)
-        if self._scope_project:
-            project_filter = (
-                getattr(table, "project_id") == self._scope_project
-            )
+        if self.scope_project:
+            project_filter = getattr(table, "project_id") == self.scope_project
             return and_(base_filter, project_filter)
         return base_filter
 
@@ -632,17 +634,20 @@ class ShareableProjectScopedFilterModel(ProjectScopedFilterModel):
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *ProjectScopedFilterModel.FILTER_EXCLUDE_FIELDS,
-        "_scope_user",
+        "scope_user",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *ProjectScopedFilterModel.CLI_EXCLUDE_FIELDS,
-        "_scope_user",
+        "scope_user",
     ]
-    _scope_user: UUID = PrivateAttr(None)
+    scope_user: Optional[UUID] = Field(
+        None,
+        description="The user to scope this query to.",
+    )
 
     def set_scope_user(self, user_id: UUID) -> None:
         """Set the user that is performing the filtering to scope the response."""
-        self._scope_user = user_id
+        self.scope_user = user_id
 
     def generate_filter(
         self, table: Type["SQLModel"]
@@ -662,9 +667,9 @@ class ShareableProjectScopedFilterModel(ProjectScopedFilterModel):
         from sqlmodel import or_
 
         base_filter = super().generate_filter(table)
-        if self._scope_user:
+        if self.scope_user:
             user_filter = or_(
-                getattr(table, "user_id") == self._scope_user,
+                getattr(table, "user_id") == self.scope_user,
                 getattr(table, "is_shared") is True,
             )
             return and_(base_filter, user_filter)
