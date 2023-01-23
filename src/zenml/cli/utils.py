@@ -1163,17 +1163,17 @@ def create_data_type_help_text(
 
 
 def list_options(filter_model: Type[BaseFilterModel]) -> Callable[[F], F]:
-    """Create a decorator to generate the correct list of parameters to use for filtering.
+    """Create a decorator to generate the correct list of filter parameters.
 
-    The Outer decorator (list_options) is the responsible for creating the inner
-    decorator. This is necessary so that the type of FilterModel can be passed
+    The Outer decorator (`list_options`) is responsible for creating the inner
+    decorator. This is necessary so that the type of `FilterModel` can be passed
     in as a parameter.
 
     Based on the filter model, the inner decorator extracts all the click
     options that should be added to the decorated function (wrapper).
 
     Args:
-        filter_model: The filter model based on which to decorate the function
+        filter_model: The filter model based on which to decorate the function.
     """
 
     def inner_decorator(func: F) -> F:
