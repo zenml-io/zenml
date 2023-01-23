@@ -782,12 +782,12 @@ def test_revoking_role_for_team_succeeds(
         role_assignment = sql_store_with_user_team_role[
             "store"
         ].create_team_role_assignment(role_assignment)
-        sql_store_with_user_team_role["store"].delete_user_role_assignment(
-            user_role_assignment_id=role_assignment.id
+        sql_store_with_user_team_role["store"].delete_team_role_assignment(
+            team_role_assignment_id=role_assignment.id
         )
     with pytest.raises(KeyError):
-        sql_store_with_user_team_role["store"].get_user_role_assignment(
-            user_role_assignment_id=role_assignment.id
+        sql_store_with_user_team_role["store"].get_team_role_assignment(
+            team_role_assignment_id=role_assignment.id
         )
 
 
@@ -1588,18 +1588,18 @@ def test_list_unused_artifacts(sql_store_with_run):
 
 def test_delete_artifact_succeeds(sql_store_with_run):
     """Tests deleting artifact."""
-    sql_store_with_run["artifact"].id
+    artifact = sql_store_with_run["artifact"]
     artifacts = sql_store_with_run["store"].list_artifacts(
         ArtifactFilterModel()
     )
     assert len(artifacts) == 2
-    sql_store_with_run["store"].delete_artifact(artifact_id=artifacts[0].id)
-    assert (
-        len(sql_store_with_run["store"].list_artifacts(ArtifactFilterModel()))
-        == 1
+    sql_store_with_run["store"].delete_artifact(artifact_id=artifact.id)
+    artifacts = sql_store_with_run["store"].list_artifacts(
+        ArtifactFilterModel()
     )
+    assert len(artifacts) == 1
     with pytest.raises(KeyError):
-        sql_store_with_run["store"].get_artifact(artifact_id=artifacts[0].id)
+        sql_store_with_run["store"].get_artifact(artifact_id=artifact.id)
 
 
 def test_delete_artifact_fails_when_artifact_does_not_exist(sql_store):
