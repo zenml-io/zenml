@@ -223,15 +223,15 @@ def make_dependable(cls: Type[BaseModel]) -> Callable[..., Any]:
         Function to use in FastAPIs `Depends`.
     """
 
-    def init_cls_and_handle_errors(*args: Any, **kwargs: Any):
+    def init_cls_and_handle_errors(*args: Any, **kwargs: Any) -> BaseModel:
         try:
             inspect.signature(init_cls_and_handle_errors).bind(*args, **kwargs)
             return cls(*args, **kwargs)
         except ValidationError as e:
             for error in e.errors():
-                error["loc"] = ["query"] + list(error["loc"])
+                error["loc"] = tuple(["query"] + list(error["loc"]))
             raise HTTPException(422, detail=e.errors())
 
-    init_cls_and_handle_errors.__signature__ = inspect.signature(cls)
+    init_cls_and_handle_errors.__signature__ = inspect.signature(cls)  # type: ignore[attr-defined]
 
     return init_cls_and_handle_errors
