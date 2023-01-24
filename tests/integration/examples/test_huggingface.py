@@ -16,7 +16,6 @@ import pytest
 
 from tests.integration.examples.utils import run_example
 
-
 # TODO: enable this once the token classification example is fixed
 # def test_token_classification(request: pytest.FixtureRequest) -> None:
 #     """Runs the huggingface token classification example."""
