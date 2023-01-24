@@ -193,6 +193,8 @@ def remote_container_registry():
 
 @pytest.fixture
 def sample_step_operator():
+    """Fixture that creates a stub step operator for testing."""
+
     class StubStepOperator(BaseStepOperator):
         def launch(self, info, entrypoint_command) -> None:
             pass
