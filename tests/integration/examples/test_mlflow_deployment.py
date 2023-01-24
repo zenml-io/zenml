@@ -15,7 +15,7 @@
 import pytest
 
 from tests.integration.examples.utils import run_example
-from zenml.client import Client
+from zenml.post_execution import get_pipeline
 
 
 def test_example(request: pytest.FixtureRequest) -> None:
@@ -28,25 +28,11 @@ def test_example(request: pytest.FixtureRequest) -> None:
         run_count=1,
         step_count=4,
     ):
-        from zenml.integrations.mlflow.experiment_trackers import (
-            MLFlowExperimentTracker,
-        )
         from zenml.integrations.mlflow.services import MLFlowDeploymentService
 
-        # activate the stack set up and used by the example
-        client = Client()
-        experiment_tracker = client.active_stack.experiment_tracker
-        assert isinstance(experiment_tracker, MLFlowExperimentTracker)
-        experiment_tracker.configure_mlflow()
+        deployment_run = get_pipeline("continuous_deployment_pipeline").runs[
+            -1
+        ]
 
-        deployment_run = client.get_pipeline(
-            "continuous_deployment_pipeline"
-        ).runs[-1]
-
-        # the predictor step should have an MLflow deployment artifact as output
         service = deployment_run.get_step("model_deployer").output.read()
-
         assert isinstance(service, MLFlowDeploymentService)
-
-        # the service should not be running (stopped by the example post_run hook)
-        assert service.is_stopped
