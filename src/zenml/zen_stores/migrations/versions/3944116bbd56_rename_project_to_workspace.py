@@ -76,17 +76,17 @@ def downgrade() -> None:
 
     for table in tables:
         with op.batch_alter_table(table, schema=None) as batch_op:
-            old_fk = _fk_constraint_name(table=table, column="workspace_id")
-            batch_op.drop_constraint(old_fk, type_="foreignkey")
+            new_fk = _fk_constraint_name(table=table, column="workspace_id")
+            batch_op.drop_constraint(new_fk, type_="foreignkey")
 
             batch_op.alter_column(
                 column_name="workspace_id", new_column_name="project_id"
             )
 
         with op.batch_alter_table(table, schema=None) as batch_op:
-            new_fk = _fk_constraint_name(table=table, column="project_id")
+            old_fk = _fk_constraint_name(table=table, column="project_id")
             batch_op.create_foreign_key(
-                new_fk,
+                old_fk,
                 "workspace",
                 ["project_id"],
                 ["id"],
