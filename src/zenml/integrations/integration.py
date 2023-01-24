@@ -61,6 +61,7 @@ class Integration(metaclass=IntegrationMeta):
         Returns:
             True if all required packages are installed, False otherwise.
         """
+        cls.check_system()
         try:
             for r in cls.REQUIREMENTS:
                 pkg_resources.get_distribution(r)
@@ -81,6 +82,11 @@ class Integration(metaclass=IntegrationMeta):
                 f"{str(e)}"
             )
             return False
+
+    @classmethod
+    def check_system(cls) -> None:
+        """Abstract method to check the system for the integration."""
+        pass
 
     @classmethod
     def activate(cls) -> None:

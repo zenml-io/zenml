@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Initialization for TensorFlow integration."""
 
+import platform
 from zenml.integrations.constants import TENSORFLOW
 from zenml.integrations.integration import Integration
 
@@ -21,20 +22,33 @@ class TensorflowIntegration(Integration):
     """Definition of Tensorflow integration for ZenML."""
 
     NAME = TENSORFLOW
-    REQUIREMENTS = [
-        "tensorflow==2.8.0",
-        "tensorflow_io==0.24.0",
-        "protobuf>=3.6.0,<4.0.0",
-    ]
+    REQUIREMENTS = []
 
     @classmethod
     def activate(cls) -> None:
         """Activates the integration."""
         # need to import this explicitly to load the Tensorflow file IO support
         # for S3 and other file systems
-        import tensorflow_io  # type: ignore [import]
+        os = platform.system()
+        if os == "Linux" or os == "Windows":
+            import tensorflow_io  # type: ignore [import]
 
         from zenml.integrations.tensorflow import materializers  # noqa
 
+
+    @classmethod
+    def check_system(cls) -> None:
+        """Checks system version to install the correct version."""
+        os = platform.system()
+        if os == "Linux" or os == "Windows":
+            cls.REQUIREMENTS = [
+                "tensorflow==2.8.0",
+                "tensorflow_io==0.24.0",
+                "protobuf>=3.6.0,<4.0.0",
+            ]
+        elif os == "Darwin":
+            cls.REQUIREMENTS = [
+                "tensorflow-macos>=2.8.0",
+            ]
 
 TensorflowIntegration.check_installation()

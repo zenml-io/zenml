@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Initialization of the PyTorch integration."""
 
+import platform
 from zenml.integrations.constants import PYTORCH
 from zenml.integrations.integration import Integration
 from zenml.utils.source_utils import import_class_by_path
@@ -22,12 +23,24 @@ class PytorchIntegration(Integration):
     """Definition of PyTorch integration for ZenML."""
 
     NAME = PYTORCH
-    REQUIREMENTS = ["torch"]
+    REQUIREMENTS = []
 
     @classmethod
     def activate(cls) -> None:
         """Activates the integration."""
         from zenml.integrations.pytorch import materializers  # noqa
 
-
+    @classmethod
+    def check_system(cls) -> None:
+        """Checks system version to install the correct version."""
+        os = platform.system()
+        if os == "Darwin" or os == "Windows":
+            cls.REQUIREMENTS = [
+                "torch",
+            ]
+        elif os == "Linux":
+            cls.REQUIREMENTS = [
+                "torch", # TODO: Find a way to install cpu-only version
+            ]
+            
 PytorchIntegration.check_installation()
