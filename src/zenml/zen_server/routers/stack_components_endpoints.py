@@ -12,16 +12,26 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for stack components."""
-from typing import List, Optional, Union
+from typing import List
 from uuid import UUID
 
-from fastapi import APIRouter, Security
+from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, COMPONENT_TYPES, STACK_COMPONENTS, VERSION_1
 from zenml.enums import PermissionType, StackComponentType
-from zenml.models import ComponentResponseModel, ComponentUpdateModel
+from zenml.models import (
+    ComponentFilterModel,
+    ComponentResponseModel,
+    ComponentUpdateModel,
+)
+from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
-from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
+from zenml.zen_server.utils import (
+    error_response,
+    handle_exceptions,
+    make_dependable,
+    zen_store,
+)
 
 router = APIRouter(
     prefix=API + VERSION_1 + STACK_COMPONENTS,
@@ -38,67 +48,32 @@ types_router = APIRouter(
 
 @router.get(
     "",
-    response_model=List[ComponentResponseModel],
+    response_model=Page[ComponentResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_stack_components(
-    project_name_or_id: Optional[Union[str, UUID]] = None,
-    user_name_or_id: Optional[Union[str, UUID]] = None,
-    type: Optional[str] = None,
-    name: Optional[str] = None,
-    flavor_name: Optional[str] = None,
-    is_shared: Optional[bool] = None,
+    component_filter_model: ComponentFilterModel = Depends(
+        make_dependable(ComponentFilterModel)
+    ),
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.READ]
     ),
-) -> List[ComponentResponseModel]:
+) -> Page[ComponentResponseModel]:
     """Get a list of all stack components for a specific type.
 
     Args:
-        project_name_or_id: Name or ID of the project
-        user_name_or_id: Optionally filter by name or ID of the user.
-        name: Optionally filter by component name
-        type: Optionally filter by component type
-        flavor_name: Optionally filter by flavor
-        is_shared: Defines whether to return shared stack components or the
-            private stack components of the user. If not set, both are returned.
+        component_filter_model: Filter model used for pagination, sorting,
+                                filtering
         auth_context: Authentication Context
 
     Returns:
         List of stack components for a specific type.
     """
-    # TODO: Implement a sensible filtering mechanism
-
-    components: List[ComponentResponseModel] = []
-
-    # Get private stack components unless `is_shared` is set to True
-    if is_shared is None or not is_shared:
-        # only private components of the authenticated user can be accessed
-        if not user_name_or_id or user_name_or_id == str(auth_context.user.id):
-            own_components = zen_store().list_stack_components(
-                name=name,
-                user_name_or_id=auth_context.user.id,
-                project_name_or_id=project_name_or_id,
-                flavor_name=flavor_name,
-                type=type,
-                is_shared=False,
-            )
-            components += own_components
-
-    # Get shared stacks unless `is_shared` is set to False
-    if is_shared is None or is_shared:
-        shared_components = zen_store().list_stack_components(
-            project_name_or_id=project_name_or_id,
-            user_name_or_id=user_name_or_id,
-            flavor_name=flavor_name,
-            name=name,
-            type=type,
-            is_shared=True,
-        )
-        components += shared_components
-
-    return components
+    component_filter_model.set_scope_user(user_id=auth_context.user.id)
+    return zen_store().list_stack_components(
+        component_filter_model=component_filter_model
+    )
 
 
 @router.get(

@@ -25,6 +25,7 @@ from typing import (
     List,
     NoReturn,
     Optional,
+    Sequence,
     Set,
     Tuple,
     Type,
@@ -33,7 +34,6 @@ from typing import (
 )
 
 import click
-from pydantic import BaseModel
 from rich import box, table
 from rich.markup import escape
 from rich.prompt import Confirm
@@ -41,10 +41,21 @@ from rich.style import Style
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console, zenml_style_defaults
-from zenml.constants import IS_DEBUG_ENV
-from zenml.enums import StackComponentType, StoreType
+from zenml.constants import FILTERING_DATETIME_FORMAT, IS_DEBUG_ENV
+from zenml.enums import GenericFilterOps, StackComponentType, StoreType
 from zenml.logger import get_logger
+from zenml.models import BaseFilterModel
 from zenml.models.base_models import BaseResponseModel
+from zenml.models.filter_models import (
+    BoolFilter,
+    NumericFilter,
+    StrFilter,
+    UUIDFilter,
+)
+from zenml.models.page_model import Page
+from zenml.secret import BaseSecretSchema
+from zenml.services import BaseService, ServiceState
+from zenml.zen_server.deploy import ServerDeployment
 
 logger = get_logger(__name__)
 
@@ -61,9 +72,6 @@ if TYPE_CHECKING:
         PipelineRunResponseModel,
         StackResponseModel,
     )
-    from zenml.secret import BaseSecretSchema
-    from zenml.services import BaseService, ServiceState
-    from zenml.zen_server.deploy import ServerDeployment
 
 MAX_ARGUMENT_VALUE_SIZE = 10240
 
@@ -179,14 +187,14 @@ def print_table(obj: List[Dict[str, Any]], **columns: table.Column) -> None:
     console.print(rich_table)
 
 
-M = TypeVar("M", bound=BaseModel)
+T = TypeVar("T", bound=BaseResponseModel)
 
 
 def print_pydantic_models(
-    models: List[M],
+    models: Union[Page[T], List[T]],
     columns: Optional[List[str]] = None,
     exclude_columns: Optional[List[str]] = None,
-    is_active: Optional[Callable[[M], bool]] = None,
+    is_active: Optional[Callable[[T], bool]] = None,
 ) -> None:
     """Prints the list of Pydantic models in a table.
 
@@ -202,7 +210,7 @@ def print_pydantic_models(
     if exclude_columns is None:
         exclude_columns = list()
 
-    def __dictify(model: M) -> Dict[str, str]:
+    def __dictify(model: T) -> Dict[str, str]:
         """Helper function to map over the list to turn Models into dicts.
 
         Args:
@@ -256,7 +264,11 @@ def print_pydantic_models(
             else items
         )
 
-    print_table([__dictify(model) for model in models])
+    if isinstance(models, Page):
+        print_table([__dictify(model) for model in models.items])
+        print_page_info(models)
+    else:
+        print_table([__dictify(model) for model in models])
 
 
 def format_integration_list(
@@ -877,7 +889,7 @@ def get_shared_emoji(is_shared: bool) -> str:
 
 
 def print_stacks_table(
-    client: "Client", stacks: List["StackResponseModel"]
+    client: "Client", stacks: Sequence["StackResponseModel"]
 ) -> None:
     """Print a prettified list of all stacks supplied to this method.
 
@@ -914,7 +926,7 @@ def print_stacks_table(
 def print_components_table(
     client: "Client",
     component_type: StackComponentType,
-    components: List["ComponentResponseModel"],
+    components: Sequence["ComponentResponseModel"],
 ) -> None:
     """Prints a table with configuration options for a list of stack components.
 
@@ -995,7 +1007,7 @@ def get_execution_status_emoji(status: "ExecutionStatus") -> str:
 
 
 def print_pipeline_runs_table(
-    pipeline_runs: List["PipelineRunResponseModel"],
+    pipeline_runs: Sequence["PipelineRunResponseModel"],
 ) -> None:
     """Print a prettified list of all pipeline runs supplied to this method.
 
@@ -1049,3 +1061,166 @@ def warn_unsupported_non_default_project() -> None:
             "completed in the coming weeks. For the time being it "
             "is recommended to stay within the `default` project."
         )
+
+
+def print_page_info(page: Page[T]) -> None:
+    """Print all information pertaining to a page to show the amount of items and pages."""
+    declare(
+        f"Page `({page.page}/{page.total_pages})`, `{page.total}` items "
+        f"found for the applied filters."
+    )
+
+
+F = TypeVar("F", bound=Callable[..., None])
+
+
+def create_filter_help_text(
+    filter_model: Type[BaseFilterModel], field: str
+) -> str:
+    """Create the help text used in the click option help text.
+
+    Args:
+        filter_model: The filter model to use
+        field: The field within that filter model
+
+    Returns:
+        The help text.
+    """
+    if filter_model.is_datetime_field(field):
+        return (
+            f"[DATETIME] The following datetime format is supported: "
+            f"'{FILTERING_DATETIME_FORMAT}'. Make sure to keep it in "
+            f"quotation marks. "
+            f"Example: --{field}="
+            f"'{GenericFilterOps.GTE}:{FILTERING_DATETIME_FORMAT}' to "
+            f"filter for everything created on or after the given date."
+        )
+    elif filter_model.is_uuid_field(field):
+        return (
+            f"[UUID] Example: --{field}='{GenericFilterOps.STARTSWITH}:ab53ca' "
+            f"to filter for all UUIDs starting with that prefix."
+        )
+    elif filter_model.is_int_field(field):
+        return (
+            f"[INTEGER] Example: --{field}='{GenericFilterOps.GTE}:25' to "
+            f"filter for all entities where this field has a value greater than "
+            f"or equal to the value."
+        )
+    elif filter_model.is_bool_field(field):
+        return (
+            f"[BOOL] Example: --{field}='True' to "
+            f"filter for all instances where this field is true."
+        )
+    elif filter_model.is_str_field(field):
+        return (
+            f"[STRING] Example: --{field}='{GenericFilterOps.CONTAINS}:example' "
+            f"to filter everything that contains the query string somewhere in "
+            f"its {field}."
+        )
+    else:
+        return ""
+
+
+def create_data_type_help_text(
+    filter_model: Type[BaseFilterModel], field: str
+) -> str:
+    """Create a general help text for a fields datatype.
+
+    Args:
+        filter_model: The filter model to use
+        field: The field within that filter model
+
+    Returns:
+        The help text.
+    """
+    if filter_model.is_datetime_field(field):
+        return (
+            f"[DATETIME] supported filter operators: "
+            f"{[str(op) for op in NumericFilter.ALLOWED_OPS]}"
+        )
+    elif filter_model.is_uuid_field(field):
+        return (
+            f"[UUID] supported filter operators: "
+            f"{[str(op) for op in UUIDFilter.ALLOWED_OPS]}"
+        )
+    elif filter_model.is_int_field(field):
+        return (
+            f"[INTEGER] supported filter operators: "
+            f"{[str(op) for op in NumericFilter.ALLOWED_OPS]}"
+        )
+    elif filter_model.is_bool_field(field):
+        return (
+            f"[BOOL] supported filter operators: "
+            f"{[str(op) for op in BoolFilter.ALLOWED_OPS]}"
+        )
+    elif filter_model.is_str_field(field):
+        return (
+            f"[STRING] supported filter operators: "
+            f"{[str(op) for op in StrFilter.ALLOWED_OPS]}"
+        )
+    else:
+        return f"{field}"
+
+
+def list_options(filter_model: Type[BaseFilterModel]) -> Callable[[F], F]:
+    """Create a decorator to generate the correct list of filter parameters.
+
+    The Outer decorator (`list_options`) is responsible for creating the inner
+    decorator. This is necessary so that the type of `FilterModel` can be passed
+    in as a parameter.
+
+    Based on the filter model, the inner decorator extracts all the click
+    options that should be added to the decorated function (wrapper).
+
+    Args:
+        filter_model: The filter model based on which to decorate the function.
+    """
+
+    def inner_decorator(func: F) -> F:
+
+        options = []
+        data_type_descriptors = set()
+        for k, v in filter_model.__fields__.items():
+            if k not in filter_model.CLI_EXCLUDE_FIELDS:
+                options.append(
+                    click.option(
+                        f"--{k}",
+                        type=str,
+                        default=v.default,
+                        required=False,
+                        help=create_filter_help_text(filter_model, k),
+                    )
+                )
+            if k not in filter_model.FILTER_EXCLUDE_FIELDS:
+                data_type_descriptors.add(
+                    create_data_type_help_text(filter_model, k)
+                )
+
+        def wrapper(function: F) -> F:
+            for option in reversed(options):
+                function = option(function)
+            return function
+
+        func.__doc__ = (
+            f"{func.__doc__} By default all filters are "
+            f"interpreted as a check for equality. However advanced "
+            f"filter operators can be used to tune the filtering by "
+            f"writing the operator and separating it from the "
+            f"query parameter with a colon `:`, e.g. "
+            f"--field='operator:query'."
+        )
+
+        if data_type_descriptors:
+            joined_data_type_descriptors = "\n\n".join(data_type_descriptors)
+
+            func.__doc__ = (
+                f"{func.__doc__} \n\n"
+                f"\b Each datatype supports a specific "
+                f"set of filter operations, here are the relevant "
+                f"ones for the parameters of this command: \n\n"
+                f"{joined_data_type_descriptors}"
+            )
+
+        return wrapper(func)
+
+    return inner_decorator

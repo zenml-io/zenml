@@ -48,14 +48,14 @@ def test_publish_output_artifacts(clean_client):
         user=clean_client.active_user.id,
         project=clean_client.active_project.id,
     )
-    assert len(clean_client.zen_store.list_artifacts()) == 0
+    assert len(clean_client.list_artifacts()) == 0
     return_val = publish_output_artifacts({"output": artifact_1})
-    assert len(clean_client.zen_store.list_artifacts()) == 1
+    assert len(clean_client.list_artifacts()) == 1
     assert isinstance(return_val, dict)
     assert len(return_val) == 1
     assert isinstance(return_val["output"], UUID)
     return_val = publish_output_artifacts({})
-    assert len(clean_client.zen_store.list_artifacts()) == 1
+    assert len(clean_client.list_artifacts()) == 1
     assert return_val == {}
     return_val = publish_output_artifacts(
         {
@@ -63,7 +63,7 @@ def test_publish_output_artifacts(clean_client):
             "arias_model": artifact_3,
         }
     )
-    assert len(clean_client.zen_store.list_artifacts()) == 3
+    assert len(clean_client.list_artifacts()) == 3
     assert isinstance(return_val, dict)
     assert len(return_val) == 2
     assert isinstance(return_val["arias_data"], UUID)

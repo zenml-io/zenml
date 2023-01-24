@@ -13,17 +13,25 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for steps (and artifacts) of pipeline runs."""
 
-from asyncio.log import logger
-from typing import List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Security
+from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, ARTIFACTS, VERSION_1
 from zenml.enums import PermissionType
-from zenml.models import ArtifactRequestModel, ArtifactResponseModel
+from zenml.models import (
+    ArtifactFilterModel,
+    ArtifactRequestModel,
+    ArtifactResponseModel,
+)
+from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
-from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
+from zenml.zen_server.utils import (
+    error_response,
+    handle_exceptions,
+    make_dependable,
+    zen_store,
+)
 
 router = APIRouter(
     prefix=API + VERSION_1 + ARTIFACTS,
@@ -34,45 +42,27 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=List[ArtifactResponseModel],
+    response_model=Page[ArtifactResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_artifacts(
-    project_name_or_id: Optional[Union[str, UUID]] = None,
-    artifact_uri: Optional[str] = None,
-    artifact_store_id: Optional[UUID] = None,
-    only_unused: bool = False,
-    parent_step_id: Optional[UUID] = None,
+    artifact_filter_model: ArtifactFilterModel = Depends(
+        make_dependable(ArtifactFilterModel)
+    ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> List[ArtifactResponseModel]:
+) -> Page[ArtifactResponseModel]:
     """Get artifacts according to query filters.
 
     Args:
-        project_name_or_id: If specified, only artifacts from the given
-            project will be returned.
-        artifact_uri: If specified, only artifacts with the given URI will
-            be returned.
-        artifact_store_id: If specified, only artifacts from the given
-            artifact store will be returned.
-        only_unused: If True, only return artifacts that are not used in
-            any runs.
-        parent_step_id: Deprecated filter, will be ignored.
+        artifact_filter_model: Filter model used for pagination, sorting,
+            filtering
 
     Returns:
         The artifacts according to query filters.
     """
-    if parent_step_id:
-        logger.warning(
-            "The ZenML server received a request to list artifacts with an "
-            "outdated filter argument. If you see this message, please "
-            "update your ZenML client to match the server version."
-        )
     return zen_store().list_artifacts(
-        project_name_or_id=project_name_or_id,
-        artifact_uri=artifact_uri,
-        artifact_store_id=artifact_store_id,
-        only_unused=only_unused,
+        artifact_filter_model=artifact_filter_model
     )
 
 

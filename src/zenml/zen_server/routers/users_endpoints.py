@@ -13,10 +13,10 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for users."""
 
-from typing import List, Optional, Union
+from typing import Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Security, status
+from fastapi import APIRouter, Depends, HTTPException, Security, status
 
 from zenml.constants import (
     ACTIVATE,
@@ -31,17 +31,25 @@ from zenml.enums import PermissionType
 from zenml.exceptions import IllegalOperationError, NotAuthorizedError
 from zenml.logger import get_logger
 from zenml.models import (
-    RoleAssignmentResponseModel,
+    UserFilterModel,
     UserRequestModel,
     UserResponseModel,
+    UserRoleAssignmentFilterModel,
+    UserRoleAssignmentResponseModel,
     UserUpdateModel,
 )
+from zenml.models.page_model import Page
 from zenml.zen_server.auth import (
     AuthContext,
     authenticate_credentials,
     authorize,
 )
-from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
+from zenml.zen_server.utils import (
+    error_response,
+    handle_exceptions,
+    make_dependable,
+    zen_store,
+)
 
 logger = get_logger(__name__)
 
@@ -68,23 +76,25 @@ current_user_router = APIRouter(
 
 @router.get(
     "",
-    response_model=List[UserResponseModel],
+    response_model=Page[UserResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_users(
-    name: Optional[str] = None,
+    user_filter_model: UserFilterModel = Depends(
+        make_dependable(UserFilterModel)
+    ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> List[UserResponseModel]:
+) -> Page[UserResponseModel]:
     """Returns a list of all users.
 
     Args:
-        name: Optionally filter by name
+        user_filter_model: Model that takes care of filtering, sorting and pagination
 
     Returns:
         A list of all users.
     """
-    return zen_store().list_users(name=name)
+    return zen_store().list_users(user_filter_model=user_filter_model)
 
 
 @router.post(
@@ -320,32 +330,26 @@ def email_opt_in_response(
 
 @router.get(
     "/{user_name_or_id}" + ROLES,
-    response_model=List[RoleAssignmentResponseModel],
+    response_model=Page[UserRoleAssignmentResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def get_role_assignments_for_user(
-    user_name_or_id: Union[str, UUID],
-    project_name_or_id: Optional[Union[str, UUID]] = None,
-    role_name_or_id: Optional[Union[str, UUID]] = None,
+def list_role_assignments_for_user(
+    user_role_assignment_filter_model: UserRoleAssignmentFilterModel = Depends(
+        make_dependable(UserRoleAssignmentFilterModel)
+    ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> List[RoleAssignmentResponseModel]:
+) -> Page[UserRoleAssignmentResponseModel]:
     """Returns a list of all roles that are assigned to a user.
 
     Args:
-        user_name_or_id: Name or ID of the user.
-        project_name_or_id: If provided, only list roles that are limited to
-            the given project.
-        role_name_or_id: If provided, only list assignments of the given
-            role
+        user_role_assignment_filter_model: filter models for user role assignments
 
     Returns:
         A list of all roles that are assigned to a user.
     """
-    return zen_store().list_role_assignments(
-        user_name_or_id=user_name_or_id,
-        project_name_or_id=project_name_or_id,
-        role_name_or_id=role_name_or_id,
+    return zen_store().list_user_role_assignments(
+        user_role_assignment_filter_model=user_role_assignment_filter_model
     )
 
 
