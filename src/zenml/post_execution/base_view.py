@@ -139,4 +139,4 @@ class BaseView(ABC):
         """
         if not isinstance(other, self.__class__):
             return False
-        return self._model.id == other._model.id
+        return self._model == other._model  # Use the model's `__eq__` method.
