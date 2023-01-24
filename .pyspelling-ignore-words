@@ -1608,3 +1608,12 @@ conjuncted
 StackModels
 ComponentModels
 zenprojects
+workspaces
+Workspaces
+WORKSPACES
+ClusterIssuer
+balancer
+defaultPassword
+generateCerts
+letsencrypt
+privateKeySecretRef

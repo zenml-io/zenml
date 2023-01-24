@@ -90,7 +90,7 @@ router = APIRouter(
     PROJECTS,
     response_model=Page[WorkspaceResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
-    deprecated=True
+    deprecated=True,
 )
 @handle_exceptions
 def list_workspaces(
@@ -122,7 +122,7 @@ def list_workspaces(
     PROJECTS,
     response_model=WorkspaceResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
-    deprecated=True
+    deprecated=True,
 )
 @handle_exceptions
 def create_workspace(
@@ -151,7 +151,7 @@ def create_workspace(
     PROJECTS + "/{workspace_name_or_id}",
     response_model=WorkspaceResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
-    deprecated=True
+    deprecated=True,
 )
 @handle_exceptions
 def get_workspace(
@@ -180,7 +180,7 @@ def get_workspace(
     PROJECTS + "/{workspace_name_or_id}",
     response_model=WorkspaceResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
-    deprecated=True
+    deprecated=True,
 )
 @handle_exceptions
 def update_workspace(
@@ -212,7 +212,7 @@ def update_workspace(
 @router.delete(
     PROJECTS + "/{workspace_name_or_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
-    deprecated=True
+    deprecated=True,
 )
 @handle_exceptions
 def delete_workspace(
@@ -236,7 +236,7 @@ def delete_workspace(
     PROJECTS + "/{workspace_name_or_id}" + USER_ROLE_ASSIGNMENTS,
     response_model=Page[UserRoleAssignmentResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
-    deprecated=True
+    deprecated=True,
 )
 @handle_exceptions
 def list_user_role_assignments_for_workspace(
@@ -272,7 +272,7 @@ def list_user_role_assignments_for_workspace(
     PROJECTS + "/{workspace_name_or_id}" + TEAM_ROLE_ASSIGNMENTS,
     response_model=Page[TeamRoleAssignmentResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
-    deprecated=True
+    deprecated=True,
 )
 @handle_exceptions
 def list_team_role_assignments_for_workspace(
@@ -308,7 +308,7 @@ def list_team_role_assignments_for_workspace(
     PROJECTS + "/{workspace_name_or_id}" + STACKS,
     response_model=Page[StackResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
-    deprecated=True
+    deprecated=True,
 )
 @handle_exceptions
 def list_workspace_stacks(
@@ -349,7 +349,7 @@ def list_workspace_stacks(
     PROJECTS + "/{workspace_name_or_id}" + STACKS,
     response_model=StackResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
-    deprecated=True
+    deprecated=True,
 )
 @handle_exceptions
 def create_stack(
@@ -399,7 +399,7 @@ def create_stack(
     PROJECTS + "/{workspace_name_or_id}" + STACK_COMPONENTS,
     response_model=Page[ComponentResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
-    deprecated=True
+    deprecated=True,
 )
 @handle_exceptions
 def list_workspace_stack_components(
@@ -442,7 +442,7 @@ def list_workspace_stack_components(
     PROJECTS + "/{workspace_name_or_id}" + STACK_COMPONENTS,
     response_model=ComponentResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
-    deprecated=True
+    deprecated=True,
 )
 @handle_exceptions
 def create_stack_component(
@@ -495,7 +495,7 @@ def create_stack_component(
     PROJECTS + "/{workspace_name_or_id}" + FLAVORS,
     response_model=Page[FlavorResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
-    deprecated=True
+    deprecated=True,
 )
 @handle_exceptions
 def list_workspace_flavors(
@@ -533,7 +533,7 @@ def list_workspace_flavors(
     PROJECTS + "/{workspace_name_or_id}" + FLAVORS,
     response_model=FlavorResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
-    deprecated=True
+    deprecated=True,
 )
 @handle_exceptions
 def create_flavor(
@@ -587,7 +587,7 @@ def create_flavor(
     PROJECTS + "/{workspace_name_or_id}" + PIPELINES,
     response_model=Page[PipelineResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
-    deprecated=True
+    deprecated=True,
 )
 @handle_exceptions
 def list_workspace_pipelines(
@@ -625,7 +625,7 @@ def list_workspace_pipelines(
     PROJECTS + "/{workspace_name_or_id}" + PIPELINES,
     response_model=PipelineResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
-    deprecated=True
+    deprecated=True,
 )
 @handle_exceptions
 def create_pipeline(
@@ -675,7 +675,7 @@ def create_pipeline(
     PROJECTS + "/{workspace_name_or_id}" + RUNS,
     response_model=Page[PipelineRunResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
-    deprecated=True
+    deprecated=True,
 )
 @handle_exceptions
 def list_runs(
@@ -711,7 +711,7 @@ def list_runs(
     PROJECTS + "/{workspace_name_or_id}" + SCHEDULES,
     response_model=ScheduleResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
-    deprecated=True
+    deprecated=True,
 )
 @handle_exceptions
 def create_schedule(
@@ -760,7 +760,7 @@ def create_schedule(
     PROJECTS + "/{workspace_name_or_id}" + RUNS,
     response_model=PipelineRunResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
-    deprecated=True
+    deprecated=True,
 )
 @handle_exceptions
 def create_pipeline_run(
