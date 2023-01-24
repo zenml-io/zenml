@@ -49,7 +49,7 @@ class RunMetadataSchema(BaseSchema, table=True):
         ondelete="CASCADE",
         nullable=True,
     )
-    pipeline_run: "PipelineRunSchema" = Relationship(
+    pipeline_run: Optional["PipelineRunSchema"] = Relationship(
         back_populates="run_metadata"
     )
 
@@ -61,7 +61,9 @@ class RunMetadataSchema(BaseSchema, table=True):
         ondelete="CASCADE",
         nullable=True,
     )
-    step_run: "StepRunSchema" = Relationship(back_populates="run_metadata")
+    step_run: Optional["StepRunSchema"] = Relationship(
+        back_populates="run_metadata"
+    )
 
     artifact_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -71,7 +73,9 @@ class RunMetadataSchema(BaseSchema, table=True):
         ondelete="CASCADE",
         nullable=True,
     )
-    artifact: "ArtifactSchema" = Relationship(back_populates="run_metadata")
+    artifact: Optional["ArtifactSchema"] = Relationship(
+        back_populates="run_metadata"
+    )
 
     stack_component_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -81,7 +85,7 @@ class RunMetadataSchema(BaseSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    stack_component: "StackComponentSchema" = Relationship(
+    stack_component: Optional["StackComponentSchema"] = Relationship(
         back_populates="run_metadata"
     )
 
@@ -93,7 +97,7 @@ class RunMetadataSchema(BaseSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    user: "UserSchema" = Relationship(back_populates="run_metadata")
+    user: Optional["UserSchema"] = Relationship(back_populates="run_metadata")
 
     project_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -125,7 +129,7 @@ class RunMetadataSchema(BaseSchema, table=True):
             value=json.loads(self.value),
             type=self.type,
             project=self.project.to_model(),
-            user=self.user.to_model(),
+            user=self.user.to_model() if self.user else None,
             created=self.created,
             updated=self.updated,
         )

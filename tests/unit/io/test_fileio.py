@@ -216,13 +216,22 @@ def test_stat_raises_error_when_file_doesnt_exist(tmp_path) -> None:
 def test_size_returns_int_for_file(tmp_path):
     """Test that size returns an int for a file input"""
     with NamedTemporaryFile(dir=tmp_path) as temp_file:
-        assert isinstance(fileio.size(temp_file.name), int)
+        file_size = fileio.size(temp_file.name)
+        assert isinstance(file_size, int)
+        assert file_size == os.path.getsize(temp_file.name)
 
 
 def test_size_returns_int_for_dir(tmp_path):
     """Test that size returns an int for a directory input"""
-    with NamedTemporaryFile(dir=tmp_path):
-        assert isinstance(fileio.size(str(tmp_path)), int)
+    with NamedTemporaryFile(dir=tmp_path) as temp_file:
+        dir_size = fileio.size(str(tmp_path))
+        assert isinstance(dir_size, int)
+        assert dir_size == os.path.getsize(temp_file.name)  # only one file
+
+
+def test_size_returns_zero_for_empty_dir(tmp_path):
+    """Test that size returns zero for an empty directory"""
+    assert fileio.size(str(tmp_path)) == 0
 
 
 def test_size_returns_zero_for_non_existent_file(tmp_path):

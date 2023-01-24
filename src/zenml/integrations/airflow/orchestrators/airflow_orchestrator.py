@@ -614,6 +614,5 @@ class AirflowOrchestrator(BaseOrchestrator):
         if self._dag_path:
             run_metadata["airflow_dag_path"] = Path(self._dag_path)
         if self.config.local:
-            run_metadata["airflow_log_file"] = Path(self.log_file)
             run_metadata["airflow_uri"] = Uri("http://localhost:8080")
         return run_metadata

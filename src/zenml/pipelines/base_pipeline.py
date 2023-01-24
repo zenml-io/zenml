@@ -176,15 +176,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
         return self.configuration.enable_cache
 
     @property
-    def enable_artifact_metadata(self) -> Optional[bool]:
-        """If artifact metadata is enabled for the pipeline.
-
-        Returns:
-            If artifact metadata is enabled for the pipeline.
-        """
-        return self.configuration.enable_artifact_metadata
-
-    @property
     def configuration(self) -> PipelineConfiguration:
         """The configuration of the pipeline.
 
