@@ -147,8 +147,12 @@ class StepLauncher:
         pipeline_run, run_was_created = self._create_or_reuse_run()
         try:
             if run_was_created:
-                self._stack.publish_pipeline_run_metadata(
+                pipeline_run_metadata = self._stack.get_pipeline_run_metadata(
                     run_id=pipeline_run.id
+                )
+                publish_utils.publish_pipeline_run_metadata(
+                    pipeline_run_id=pipeline_run.id,
+                    pipeline_run_metadata=pipeline_run_metadata,
                 )
             client = Client()
             docstring, source_code = self._get_step_docstring_and_source_code()

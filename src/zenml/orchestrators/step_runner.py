@@ -33,6 +33,7 @@ from zenml.models.artifact_models import (
 from zenml.orchestrators.publish_utils import (
     publish_output_artifact_metadata,
     publish_output_artifacts,
+    publish_step_run_metadata,
     publish_successful_step_run,
 )
 from zenml.steps.step_context import StepContext
@@ -115,8 +116,12 @@ class StepRunner:
                 step_failed = True
                 raise
             finally:
-                self._stack.publish_step_run_metadata(
+                step_run_metadata = self._stack.get_step_run_metadata(
                     info=step_run_info,
+                )
+                publish_step_run_metadata(
+                    step_run_id=step_run_info.step_run_id,
+                    step_run_metadata=step_run_metadata,
                 )
                 self._stack.cleanup_step_run(
                     info=step_run_info, step_failed=step_failed

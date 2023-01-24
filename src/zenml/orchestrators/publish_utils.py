@@ -180,3 +180,41 @@ def update_pipeline_run_status(pipeline_run: PipelineRunResponseModel) -> None:
         Client().zen_store.update_run(
             run_id=pipeline_run.id, run_update=run_update
         )
+
+
+def publish_pipeline_run_metadata(
+    pipeline_run_id: "UUID",
+    pipeline_run_metadata: Dict["UUID", Dict[str, "MetadataType"]],
+) -> None:
+    """Publishes the given pipeline run metadata.
+
+    Args:
+        pipeline_run_id: The ID of the pipeline run.
+        pipeline_run_metadata: A dictionary mapping stack component IDs to the
+            metadata they created.
+    """
+    for stack_component_id, metadata in pipeline_run_metadata.items():
+        Client().create_run_metadata(
+            metadata=metadata,
+            pipeline_run_id=pipeline_run_id,
+            stack_component_id=stack_component_id,
+        )
+
+
+def publish_step_run_metadata(
+    step_run_id: "UUID",
+    step_run_metadata: Dict["UUID", Dict[str, "MetadataType"]],
+) -> None:
+    """Publishes the given step run metadata.
+
+    Args:
+        step_run_id: The ID of the step run.
+        step_run_metadata: A dictionary mapping stack component IDs to the
+            metadata they created.
+    """
+    for stack_component_id, metadata in step_run_metadata.items():
+        Client().create_run_metadata(
+            metadata=metadata,
+            step_run_id=step_run_id,
+            stack_component_id=stack_component_id,
+        )

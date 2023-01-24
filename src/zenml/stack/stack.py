@@ -36,6 +36,7 @@ from zenml.constants import (
 from zenml.enums import SecretValidationLevel, StackComponentType
 from zenml.exceptions import ProvisioningError, StackValidationError
 from zenml.logger import get_logger
+from zenml.metadata.metadata_types import MetadataType
 from zenml.models import StackResponseModel
 from zenml.utils import settings_utils
 
@@ -827,41 +828,45 @@ class Stack:
         ).values():
             component.prepare_step_run(info=info)
 
-    def publish_pipeline_run_metadata(self, run_id: UUID) -> None:
-        """Publish general component-specific metadata of a pipeline run.
+    def get_pipeline_run_metadata(
+        self, run_id: UUID
+    ) -> Dict[UUID, Dict[str, MetadataType]]:
+        """Get general component-specific metadata for a pipeline run.
 
         Args:
             run_id: ID of the pipeline run.
+
+        Returns:
+            A dictionary mapping component IDs to the metadata they created.
         """
-        client = Client()
+        pipeline_run_metadata: Dict[UUID, Dict[str, MetadataType]] = {}
         for component in self.components.values():
-            pipeline_run_metadata = component.get_pipeline_run_metadata(
+            component_metadata = component.get_pipeline_run_metadata(
                 run_id=run_id
             )
-            if pipeline_run_metadata:
-                client.create_run_metadata(
-                    metadata=pipeline_run_metadata,
-                    pipeline_run_id=run_id,
-                    stack_component_id=component.id,
-                )
+            if component_metadata:
+                pipeline_run_metadata[component.id] = component_metadata
+        return pipeline_run_metadata
 
-    def publish_step_run_metadata(self, info: "StepRunInfo") -> None:
-        """Publish component- and step-specific metadata after a step ran.
+    def get_step_run_metadata(
+        self, info: "StepRunInfo"
+    ) -> Dict[UUID, Dict[str, MetadataType]]:
+        """Get component-specific metadata for a step run.
 
         Args:
             info: Info about the step that was executed.
+
+        Returns:
+            A dictionary mapping component IDs to the metadata they created.
         """
-        client = Client()
+        step_run_metadata: Dict[UUID, Dict[str, MetadataType]] = {}
         for component in self._get_active_components_for_step(
             info.config
         ).values():
-            step_run_metadata = component.get_step_run_metadata(info=info)
-            if step_run_metadata:
-                client.create_run_metadata(
-                    metadata=step_run_metadata,
-                    step_run_id=info.step_run_id,
-                    stack_component_id=component.id,
-                )
+            component_metadata = component.get_step_run_metadata(info=info)
+            if component_metadata:
+                step_run_metadata[component.id] = component_metadata
+        return step_run_metadata
 
     def cleanup_step_run(self, info: "StepRunInfo", step_failed: bool) -> None:
         """Cleans up resources after the step run is finished.
