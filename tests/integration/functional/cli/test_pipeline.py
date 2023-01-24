@@ -69,7 +69,7 @@ def test_pipeline_run_multifile(clean_client, files_dir: str) -> None:
     """Test that zenml pipeline run works as expected when the pipeline, its
     steps and materializers are all in the different files.
 
-    This test creates a project with the following structure.
+    This test creates a files/folders with the following structure.
     |custom_obj_file
     |   |--custom_obj_file.py
     |materializer_file
@@ -118,7 +118,7 @@ def test_pipeline_run_multifile(clean_client, files_dir: str) -> None:
             del sys.modules[mod]
 
 
-def test_pipeline_list(clean_project_with_run):
+def test_pipeline_list(clean_workspace_with_run):
     """Test that zenml pipeline list does not fail."""
     runner = CliRunner()
     list_command = cli.commands["pipeline"].commands["list"]
@@ -126,9 +126,9 @@ def test_pipeline_list(clean_project_with_run):
     assert result.exit_code == 0
 
 
-def test_pipeline_delete(clean_project_with_run):
+def test_pipeline_delete(clean_workspace_with_run):
     """Test that zenml pipeline delete works as expected."""
-    existing_pipelines = clean_project_with_run.list_pipelines()
+    existing_pipelines = clean_workspace_with_run.list_pipelines()
     assert len(existing_pipelines) == 1
     pipeline_name = existing_pipelines[0].name
     runner = CliRunner()
@@ -136,12 +136,12 @@ def test_pipeline_delete(clean_project_with_run):
     result = runner.invoke(delete_command, [pipeline_name, "-y"])
     assert result.exit_code == 0
     with pytest.raises(KeyError):
-        clean_project_with_run.get_pipeline(pipeline_name)
-    existing_pipelines = clean_project_with_run.list_pipelines()
+        clean_workspace_with_run.get_pipeline(pipeline_name)
+    existing_pipelines = clean_workspace_with_run.list_pipelines()
     assert len(existing_pipelines) == 0
 
 
-def test_pipeline_run_list(clean_project_with_run):
+def test_pipeline_run_list(clean_workspace_with_run):
     """Test that zenml pipeline runs list does not fail."""
     runner = CliRunner()
     list_command = cli.commands["pipeline"].commands["runs"].commands["list"]
@@ -149,9 +149,9 @@ def test_pipeline_run_list(clean_project_with_run):
     assert result.exit_code == 0
 
 
-def test_pipeline_run_delete(clean_project_with_run):
+def test_pipeline_run_delete(clean_workspace_with_run):
     """Test that zenml pipeline runs delete works as expected."""
-    existing_runs = clean_project_with_run.list_runs()
+    existing_runs = clean_workspace_with_run.list_runs()
     assert len(existing_runs) == 1
     run_name = existing_runs[0].name
     runner = CliRunner()
@@ -161,12 +161,12 @@ def test_pipeline_run_delete(clean_project_with_run):
     result = runner.invoke(delete_command, [run_name, "-y"])
     assert result.exit_code == 0
     with pytest.raises(KeyError):
-        clean_project_with_run.get_pipeline_run(run_name)
-    existing_runs = clean_project_with_run.list_runs()
+        clean_workspace_with_run.get_pipeline_run(run_name)
+    existing_runs = clean_workspace_with_run.list_runs()
     assert len(existing_runs) == 0
 
 
-def test_pipeline_schedule_list(clean_project_with_scheduled_run):
+def test_pipeline_schedule_list(clean_workspace_with_scheduled_run):
     """Test that `zenml pipeline schedules list` does not fail."""
     runner = CliRunner()
     list_command = (
@@ -176,9 +176,9 @@ def test_pipeline_schedule_list(clean_project_with_scheduled_run):
     assert result.exit_code == 0
 
 
-def test_pipeline_schedule_delete(clean_project_with_scheduled_run):
+def test_pipeline_schedule_delete(clean_workspace_with_scheduled_run):
     """Test that `zenml pipeline schedules delete` works as expected."""
-    existing_schedules = clean_project_with_scheduled_run.list_schedules()
+    existing_schedules = clean_workspace_with_scheduled_run.list_schedules()
     assert len(existing_schedules) == 1
     schedule_name = existing_schedules[0].name
     runner = CliRunner()
@@ -188,6 +188,6 @@ def test_pipeline_schedule_delete(clean_project_with_scheduled_run):
     result = runner.invoke(delete_command, [schedule_name, "-y"])
     assert result.exit_code == 0
     with pytest.raises(KeyError):
-        clean_project_with_scheduled_run.get_schedule(schedule_name)
-    existing_schedules = clean_project_with_scheduled_run.list_schedules()
+        clean_workspace_with_scheduled_run.get_schedule(schedule_name)
+    existing_schedules = clean_workspace_with_scheduled_run.list_schedules()
     assert len(existing_schedules) == 0

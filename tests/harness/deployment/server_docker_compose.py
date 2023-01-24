@@ -155,7 +155,7 @@ services:
         """
         from compose.cli.main import (  # type: ignore[import]
             TopLevelCommand,
-            project_from_options,
+            workspace_from_options,
         )
 
         if self.is_running:
@@ -177,7 +177,7 @@ services:
         self.build_server_image()
 
         options = {
-            "--project-name": self.config.name,
+            "--workspace-name": self.config.name,
             "--wait": True,
             "--pull": "never",
             "--no-deps": False,
@@ -194,8 +194,8 @@ services:
             "--scale": "",
         }
 
-        project = project_from_options(str(path), options)
-        cmd = TopLevelCommand(project)
+        workspace = workspace_from_options(str(path), options)
+        cmd = TopLevelCommand(workspace)
         cmd.up(options)
 
         timeout = DEPLOYMENT_START_TIMEOUT
@@ -217,13 +217,13 @@ services:
                 time.sleep(1)
 
         logging.info(
-            f"Started docker-compose project '{self.config.name}' "
+            f"Started docker-compose workspace '{self.config.name}' "
             f"for deployment '{self.config.name}'."
         )
 
     def down(self) -> None:
         """Stops the deployment."""
-        from compose.cli.main import TopLevelCommand, project_from_options
+        from compose.cli.main import TopLevelCommand, workspace_from_options
 
         zenml_container = self.zenml_container
         mysql_container = self.mysql_container
@@ -234,19 +234,19 @@ services:
             return
 
         options = {
-            "--project-name": self.config.name,
+            "--workspace-name": self.config.name,
             "--remove-orphans": False,
             "--rmi": "none",
             "--volumes": "",
         }
 
         path = self.get_runtime_path()
-        project = project_from_options(str(path), options)
-        cmd = TopLevelCommand(project)
+        workspace = workspace_from_options(str(path), options)
+        cmd = TopLevelCommand(workspace)
         cmd.down(options)
 
         logging.info(
-            f"Removed docker-compose project '{self.config.name}' "
+            f"Removed docker-compose workspace '{self.config.name}' "
             f"for deployment '{self.config.name}'."
         )
 

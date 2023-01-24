@@ -355,7 +355,7 @@ def test_configure_pipeline_with_invalid_settings_key(empty_pipeline):
 
 
 def test_run_configuration_in_code(
-    mocker, clean_project, one_step_pipeline, empty_step
+    mocker, clean_workspace, one_step_pipeline, empty_step
 ):
     """Tests configuring a pipeline run in code."""
     mock_compile = mocker.patch.object(
@@ -376,7 +376,7 @@ def test_run_configuration_in_code(
 
 
 def test_run_configuration_from_file(
-    mocker, clean_project, one_step_pipeline, empty_step, tmp_path
+    mocker, clean_workspace, one_step_pipeline, empty_step, tmp_path
 ):
     """Tests configuring a pipeline run from a file."""
     mock_compile = mocker.patch.object(
@@ -397,7 +397,7 @@ def test_run_configuration_from_file(
 
 
 def test_run_configuration_from_code_and_file(
-    mocker, clean_project, one_step_pipeline, empty_step, tmp_path
+    mocker, clean_workspace, one_step_pipeline, empty_step, tmp_path
 ):
     """Tests merging the configuration of a pipeline run from a file and within
     code."""

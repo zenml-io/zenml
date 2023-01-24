@@ -239,7 +239,7 @@ class BaseFilterModel(BaseModel):
     ```
     ResourceListModel(
         name="contains:default",
-        project="default"
+        workspace="default"
         count_steps="gte:5"
         sort_by="created",
         page=2,
@@ -586,33 +586,33 @@ class BaseFilterModel(BaseModel):
             raise RuntimeError("No valid logical operator was supplied.")
 
 
-class ProjectScopedFilterModel(BaseFilterModel):
-    """Model to enable advanced scoping with project."""
+class WorkspaceScopedFilterModel(BaseFilterModel):
+    """Model to enable advanced scoping with workspace."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *BaseFilterModel.FILTER_EXCLUDE_FIELDS,
-        "scope_project",
+        "scope_workspace",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *BaseFilterModel.CLI_EXCLUDE_FIELDS,
-        "scope_project",
+        "scope_workspace",
     ]
-    scope_project: Optional[UUID] = Field(
+    scope_workspace: Optional[UUID] = Field(
         None,
-        description="The project to scope this query to.",
+        description="The workspace to scope this query to.",
     )
 
-    def set_scope_project(self, project_id: UUID) -> None:
-        """Set the project to scope this response."""
-        self.scope_project = project_id
+    def set_scope_workspace(self, workspace_id: UUID) -> None:
+        """Set the workspace to scope this response."""
+        self.scope_workspace = workspace_id
 
     def generate_filter(
         self, table: Type["SQLModel"]
     ) -> Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]:
         """Generate the filter for the query.
 
-        Many resources are scoped by project, in which case only the resources
-        belonging to the active project should be returned.
+        Many resources are scoped by workspace, in which case only the resources
+        belonging to the active workspace should be returned.
 
         Args:
             table: The Table that is being queried from.
@@ -623,21 +623,23 @@ class ProjectScopedFilterModel(BaseFilterModel):
         from sqlalchemy import and_
 
         base_filter = super().generate_filter(table)
-        if self.scope_project:
-            project_filter = getattr(table, "project_id") == self.scope_project
-            return and_(base_filter, project_filter)
+        if self.scope_workspace:
+            workspace_filter = (
+                getattr(table, "workspace_id") == self.scope_workspace
+            )
+            return and_(base_filter, workspace_filter)
         return base_filter
 
 
-class ShareableProjectScopedFilterModel(ProjectScopedFilterModel):
-    """Model to enable advanced scoping with project and user scoped shareable things."""
+class ShareableWorkspaceScopedFilterModel(WorkspaceScopedFilterModel):
+    """Model to enable advanced scoping with workspace and user scoped shareable things."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *ProjectScopedFilterModel.FILTER_EXCLUDE_FIELDS,
+        *WorkspaceScopedFilterModel.FILTER_EXCLUDE_FIELDS,
         "scope_user",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *ProjectScopedFilterModel.CLI_EXCLUDE_FIELDS,
+        *WorkspaceScopedFilterModel.CLI_EXCLUDE_FIELDS,
         "scope_user",
     ]
     scope_user: Optional[UUID] = Field(

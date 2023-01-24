@@ -28,7 +28,7 @@ def test_local_orchestrator_attributes():
         flavor="default",
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )

@@ -17,7 +17,7 @@ from uuid import uuid4
 
 import pytest
 
-from tests.harness.utils import clean_project_session
+from tests.harness.utils import clean_workspace_session
 from zenml.artifact_stores.local_artifact_store import (
     LocalArtifactStore,
     LocalArtifactStoreConfig,
@@ -33,9 +33,9 @@ from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.models import (
     ArtifactResponseModel,
     PipelineRunResponseModel,
-    ProjectResponseModel,
     StepRunResponseModel,
     UserResponseModel,
+    WorkspaceResponseModel,
 )
 from zenml.models.artifact_models import ArtifactRequestModel
 from zenml.models.pipeline_run_models import PipelineRunRequestModel
@@ -54,16 +54,16 @@ from zenml.steps import StepContext, step
 
 
 @pytest.fixture(scope="module", autouse=True)
-def module_auto_clean_project(
+def module_auto_clean_workspace(
     tmp_path_factory: pytest.TempPathFactory,
 ) -> Generator[Client, None, None]:
     """Fixture to automatically create, activate and use a separate ZenML
-    project for an entire test module.
+    workspace for an entire test module.
 
     Yields:
-        A ZenML client configured to use the project.
+        A ZenML client configured to use the workspace.
     """
-    with clean_project_session(
+    with clean_workspace_session(
         tmp_path_factory=tmp_path_factory,
         clean_repo=True,
     ) as client:
@@ -80,7 +80,7 @@ def local_stack():
         flavor="default",
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -91,7 +91,7 @@ def local_stack():
         flavor="default",
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -113,7 +113,7 @@ def local_orchestrator():
         flavor="local",
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -129,7 +129,7 @@ def local_artifact_store():
         flavor="local",
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -152,7 +152,7 @@ def remote_artifact_store():
         flavor="gcp",
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -168,7 +168,7 @@ def local_container_registry():
         flavor="default",
         type=StackComponentType.CONTAINER_REGISTRY,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -184,7 +184,7 @@ def remote_container_registry():
         flavor="default",
         type=StackComponentType.CONTAINER_REGISTRY,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -323,9 +323,9 @@ def sample_user_model() -> UserResponseModel:
 
 
 @pytest.fixture
-def sample_project_model() -> ProjectResponseModel:
-    """Return a sample project model for testing purposes."""
-    return ProjectResponseModel(
+def sample_workspace_model() -> WorkspaceResponseModel:
+    """Return a sample workspace model for testing purposes."""
+    return WorkspaceResponseModel(
         id=uuid4(),
         name="axl",
         created=datetime.now(),
@@ -335,7 +335,7 @@ def sample_project_model() -> ProjectResponseModel:
 
 @pytest.fixture
 def sample_step_model(
-    sample_project_model, sample_user_model
+    sample_workspace_model, sample_user_model
 ) -> StepRunResponseModel:
     """Return a sample step model for testing purposes."""
     step = Step.parse_obj(
@@ -353,7 +353,7 @@ def sample_step_model(
         status=ExecutionStatus.COMPLETED,
         created=datetime.now(),
         updated=datetime.now(),
-        project=sample_project_model,
+        workspace=sample_workspace_model,
         user=sample_user_model,
     )
 
@@ -374,7 +374,7 @@ def sample_step_request_model() -> StepRunRequestModel:
         pipeline_run_id=uuid4(),
         status=ExecutionStatus.COMPLETED,
         step=step,
-        project=uuid4(),
+        workspace=uuid4(),
         user=uuid4(),
     )
 
@@ -388,7 +388,7 @@ def sample_step_view(sample_step_model) -> StepView:
 @pytest.fixture
 def sample_pipeline_run_model(
     sample_user_model: UserResponseModel,
-    sample_project_model: ProjectResponseModel,
+    sample_workspace_model: WorkspaceResponseModel,
 ) -> PipelineRunResponseModel:
     """Return sample pipeline run view for testing purposes."""
     return PipelineRunResponseModel(
@@ -400,7 +400,7 @@ def sample_pipeline_run_model(
         created=datetime.now(),
         updated=datetime.now(),
         user=sample_user_model,
-        project=sample_project_model,
+        workspace=sample_workspace_model,
     )
 
 
@@ -414,7 +414,7 @@ def sample_pipeline_run_request_model() -> PipelineRunRequestModel:
         num_steps=1,
         status=ExecutionStatus.COMPLETED,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
     )
 
 
@@ -434,7 +434,7 @@ def sample_pipeline_run_view(
 
 @pytest.fixture
 def sample_artifact_model(
-    sample_project_model, sample_user_model
+    sample_workspace_model, sample_user_model
 ) -> ArtifactResponseModel:
     """Return a sample artifact model for testing purposes."""
     return ArtifactResponseModel(
@@ -449,7 +449,7 @@ def sample_artifact_model(
         is_cached=False,
         created=datetime.now(),
         updated=datetime.now(),
-        project=sample_project_model,
+        workspace=sample_workspace_model,
         user=sample_user_model,
     )
 
@@ -466,6 +466,6 @@ def sample_artifact_request_model() -> ArtifactRequestModel:
         parent_step_id=uuid4(),
         producer_step_id=uuid4(),
         is_cached=False,
-        project=uuid4(),
+        workspace=uuid4(),
         user=uuid4(),
     )
