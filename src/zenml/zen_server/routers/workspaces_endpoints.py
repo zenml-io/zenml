@@ -102,7 +102,7 @@ def list_workspaces(
 
     Args:
         workspace_filter_model: Filter model used for pagination, sorting,
-                              filtering
+            filtering
 
     Returns:
         A list of workspaces.
@@ -244,8 +244,8 @@ def list_user_role_assignments_for_workspace(
 
     Args:
         workspace_name_or_id: Name or ID of the workspace.
-        user_role_assignment_filter_model: Filter model used for pagination, sorting,
-                                    filtering
+        user_role_assignment_filter_model: Filter model used for pagination,
+            sorting, filtering
 
     Returns:
         A list of all roles that are assigned to a team.
@@ -279,8 +279,8 @@ def list_team_role_assignments_for_workspace(
 
     Args:
         workspace_name_or_id: Name or ID of the workspace.
-        team_role_assignment_filter_model: Filter model used for pagination, sorting,
-                                    filtering
+        team_role_assignment_filter_model: Filter model used for pagination,
+            sorting, filtering
 
     Returns:
         A list of all roles that are assigned to a team.
@@ -674,7 +674,7 @@ def list_runs(
     Args:
         workspace_name_or_id: Name or ID of the workspace.
         runs_filter_model: Filter model used for pagination, sorting,
-                                   filtering
+            filtering
 
 
     Returns:
