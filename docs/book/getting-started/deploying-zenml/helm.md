@@ -89,7 +89,7 @@ applications. For example:
 
 - an Ingress service like [nginx-ingress](https://kubernetes.github.io/ingress-nginx/deploy/)
 is recommended if you want to expose HTTP services to the internet. An Ingress
-is required if you want to use secure HTTPs for your ZenML deployment. The
+is required if you want to use secure HTTPS for your ZenML deployment. The
 alternative is to use a LoadBalancer service to expose the ZenML service using
 plain HTTP, but this is not recommended for production.
 - a [cert-manager](https://cert-manager.io/docs/installation/) is
