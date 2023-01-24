@@ -14,12 +14,12 @@ deploy ZenML in any Kubernetes cluster using the Helm chart.
 You'll need the following:
 
 - A Kubernetes cluster.
-- Optional, but recommended: a MySQL compatible database reachable from the
+- Optional, but recommended: a MySQL-compatible database reachable from the
 Kubernetes cluster (e.g. one of the managed databases offered by Google Cloud,
 AWS or Azure). A MySQL server version of 8.0 or higher is required.
 - the [Kubernetes client](https://kubernetes.io/docs/tasks/tools/#kubectl)
-already installed on your machine and configured to access your cluster
-- [Helm](https://helm.sh/docs/intro/install/) installed on your machine
+already installed on your machine and configured to access your cluster.
+- [Helm](https://helm.sh/docs/intro/install/) installed on your machine.
 
 To gain access to the ZenML Helm chart, you'll need to clone the ZenML
 repository and checkout the `main` branch, or one of the release tags:
@@ -27,7 +27,7 @@ repository and checkout the `main` branch, or one of the release tags:
 ```bash
 git clone https://github.com/zenml-io/zenml.git
 # Optional: checkout a previous release tag
-git checkout 0.21.1
+# git checkout 0.21.1 
 # Switch to the directory that hosts the helm chart
 cd src/zenml/zen_server/deploy/helm/
 ```
@@ -46,11 +46,11 @@ section.
 
 ### Collect information from your SQL database service
 
-Using an external MySQL compatible database service is optional, but is
+Using an external MySQL-compatible database service is optional, but is
 recommended for production deployments. If omitted, ZenML will default to using
 an embedded SQLite database, which has the following limitations:
 
-- the SQLite database is not persistent, meaning that it will be lost if the
+- the SQLite database is not persisted, meaning that it will be lost if the
 ZenML server pod is restarted or deleted
 - the SQLite database does not scale horizontally, meaning that you will not be
 able to use more than one replica at at time for the ZenML server pod
@@ -77,13 +77,13 @@ also need to prepare additional SSL certificates and keys:
   - the TLS CA certificate that was used to sign the server TLS certificate, if
     you're using a self-signed certificate or signed by a custom certificate
     authority that is not already trusted by default by most operating systems. 
-  - the TLS client certificate and key. Only needed if you decided to use
+  - the TLS client certificate and key. This is only needed if you decide to use
     client certificates for your DB connection (some managed DB services support
     this, CloudSQL is an example).
 
 ### Optional cluster services
 
-It is common practice to install additional infrastructure related services in
+It is common practice to install additional infrastructure-related services in
 a Kubernetes cluster to support the deployment and long-term management of
 applications. For example:
 
@@ -92,7 +92,7 @@ is recommended if you want to expose HTTP services to the internet. An Ingress
 is required if you want to use secure HTTPs for your ZenML deployment. The
 alternative is to use a LoadBalancer service to expose the ZenML service using
 plain HTTP, but this is not recommended for production.
-- [cert-manager](https://cert-manager.io/docs/installation/) is
+- a [cert-manager](https://cert-manager.io/docs/installation/) is
 recommended if you want to generate and manage TLS certificates for your ZenML
 deployment. It can be used to automatically provision TLS certificates from a
 certificate authority (CA) of your choice, such as [Let's Encrypt](https://letsencrypt.org/).
@@ -110,7 +110,7 @@ the `values.yaml` file located in the `src/zenml/zen_server/deploy/helm` folder
 (let’s call this `custom-values.yaml`). You’ll use this as a template to
 customize your configuration. Any values that you don’t override you should
 simply remove from your `custom-values.yaml` file to keep it clean and
-compatible with future helm chart releases.
+compatible with future Helm chart releases.
 
 In most cases, you’ll need to change the following configuration values in
 `custom-values.yaml`:
@@ -123,11 +123,11 @@ In most cases, you’ll need to change the following configuration values in
     - CA and/or client TLS certificates, if you’re using SSL to secure the
     connection to the database
 
-- the ingress configuration, if enabled:
+- the Ingress configuration, if enabled:
     - enabling TLS
     - enabling self-signed certificates
     - configuring the hostname that will be used to access the ZenML server,
-    if different than the IP address or hostname associated with the Ingress
+    if different from the IP address or hostname associated with the Ingress
     service installed in your cluster
 
 > **Note**
