@@ -18,6 +18,7 @@ import pytest
 
 from zenml.enums import ArtifactType, ExecutionStatus
 from zenml.models.artifact_models import ArtifactRequestModel
+from zenml.models.page_model import Page
 from zenml.orchestrators import publish_utils
 
 
@@ -171,7 +172,7 @@ def test_updating_the_pipeline_run_status(
     """Tests updateding the status of a pipeline run."""
     mocker.patch(
         "zenml.zen_stores.sql_zen_store.SqlZenStore.list_run_steps",
-        return_value=[],
+        return_value=Page(page=1, size=50, total_pages=1, total=0, items=[]),
     )
     mocker.patch(
         "zenml.orchestrators.publish_utils.get_pipeline_run_status",

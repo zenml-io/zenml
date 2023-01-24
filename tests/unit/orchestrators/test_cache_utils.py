@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from datetime import datetime
 from unittest import mock
 from unittest.mock import ANY
 from uuid import uuid4
@@ -22,11 +21,7 @@ import pytest
 from zenml.config.compiler import Compiler
 from zenml.config.step_configurations import Step
 from zenml.enums import ExecutionStatus
-from zenml.models import (
-    ProjectResponseModel,
-    StepRunResponseModel,
-    UserResponseModel,
-)
+from zenml.models.page_model import Page
 from zenml.orchestrators import cache_utils
 from zenml.steps import Output, step
 from zenml.steps.base_step import BaseStep
@@ -240,73 +235,77 @@ def test_generate_cache_key_considers_caching_parameters(
     assert key_1 != key_2
 
 
-def _create_step_run(
-    user: UserResponseModel,
-    project: ProjectResponseModel,
-):
-    """Creates a step run with the given user and project."""
-    step = Step.parse_obj(
-        {
-            "spec": {"source": "", "upstream_steps": [], "inputs": {}},
-            "config": {
-                "name": "step_name",
-            },
-        }
-    )
-
-    return StepRunResponseModel(
-        id=uuid4(),
-        name="sample_step",
-        pipeline_run_id=uuid4(),
-        step=step,
-        status=ExecutionStatus.COMPLETED,
-        created=datetime.now(),
-        updated=datetime.now(),
-        project=project,
-        user=user,
-    )
-
-
-def test_fetching_cached_step_run(
-    mocker, sample_user_model, sample_project_model
+def test_fetching_cached_step_run_queries_cache_candidates(
+    mocker, create_step_run
 ):
     """Tests fetching a cached step run."""
-    step_run_1 = _create_step_run(
-        user=sample_user_model, project=sample_project_model
-    )
-    step_run_2 = _create_step_run(
-        user=sample_user_model, project=sample_project_model
+    mock_list_run_steps = mocker.patch(
+        "zenml.client.Client.list_run_steps",
+        return_value=Page(
+            page=1,
+            size=1,
+            total_pages=1,
+            total=0,
+            items=[],
+        ),
     )
 
-    assert step_run_2.created > step_run_1.created
+    assert cache_utils.get_cached_step_run(cache_key="cache_key") is None
+
+    cache_candidate = create_step_run()
 
     mock_list_run_steps = mocker.patch(
-        "zenml.zen_stores.sql_zen_store.SqlZenStore.list_run_steps",
-        return_value=[step_run_1, step_run_2],
+        "zenml.client.Client.list_run_steps",
+        return_value=Page(
+            page=1,
+            size=1,
+            total_pages=1,
+            total=1,
+            items=[cache_candidate],
+        ),
     )
 
     cached_step = cache_utils.get_cached_step_run(cache_key="cache_key")
-    assert cached_step is step_run_2
+    assert cached_step == cache_candidate
     mock_list_run_steps.assert_called_with(
         project_id=ANY,
         cache_key="cache_key",
         status=ExecutionStatus.COMPLETED,
+        sort_by="created",
     )
 
-    # Switch the order of the returned step runs
-    mocker.patch(
-        "zenml.zen_stores.sql_zen_store.SqlZenStore.list_run_steps",
-        return_value=[step_run_2, step_run_1],
+
+def test_fetching_cached_step_run_uses_latest_candidate(
+    clean_client, sample_pipeline_run_request_model, sample_step_request_model
+):
+    """Tests that the latest step run with the same cache key is used for
+    caching."""
+    sample_step_request_model.cache_key = "cache_key"
+    sample_step_request_model.project = clean_client.active_project.id
+    sample_pipeline_run_request_model.project = clean_client.active_project.id
+
+    # Create a pipeline run and step run
+    clean_client.zen_store.create_run(sample_pipeline_run_request_model)
+    sample_step_request_model.pipeline_run_id = (
+        sample_pipeline_run_request_model.id
     )
+    response_1 = clean_client.zen_store.create_run_step(
+        sample_step_request_model
+    )
+
+    # Create another pipeline run and step run, with the same cache key
+    sample_pipeline_run_request_model.id = uuid4()
+    sample_pipeline_run_request_model.name = "new_run_name"
+    clean_client.zen_store.create_run(sample_pipeline_run_request_model)
+    sample_step_request_model.pipeline_run_id = (
+        sample_pipeline_run_request_model.id
+    )
+    response_2 = clean_client.zen_store.create_run_step(
+        sample_step_request_model
+    )
+
+    # The second step run was created after the first one
+    assert response_2.created > response_1.created
 
     cached_step = cache_utils.get_cached_step_run(cache_key="cache_key")
-    assert cached_step is step_run_2
-
-    # No step run found
-    mocker.patch(
-        "zenml.zen_stores.sql_zen_store.SqlZenStore.list_run_steps",
-        return_value=[],
-    )
-
-    cached_step = cache_utils.get_cached_step_run(cache_key="cache_key")
-    assert cached_step is None
+    assert cached_step == response_2

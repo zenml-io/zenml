@@ -13,58 +13,17 @@
 #  permissions and limitations under the License.
 
 import os
-from datetime import datetime
-from uuid import uuid4
 
 import pytest
 
-from zenml.config.step_configurations import Step
-from zenml.enums import ExecutionStatus
-from zenml.models import (
-    ProjectResponseModel,
-    StepRunResponseModel,
-    UserResponseModel,
-)
 from zenml.orchestrators import output_utils
 
 
-def _create_step_run(
-    user: UserResponseModel,
-    project: ProjectResponseModel,
-):
-    """Creates a step run with the given user, project, step name and output
-    artifacts."""
-    step = Step.parse_obj(
-        {
-            "spec": {"source": "", "upstream_steps": [], "inputs": {}},
-            "config": {
-                "name": "step_name",
-                "enable_cache": True,
-                "outputs": {"output_name": {"materializer_source": ""}},
-            },
-        }
-    )
-
-    return StepRunResponseModel(
-        id=uuid4(),
-        name="sample_step",
-        pipeline_run_id=uuid4(),
-        step=step,
-        status=ExecutionStatus.COMPLETED,
-        created=datetime.now(),
-        updated=datetime.now(),
-        project=project,
-        user=user,
-    )
-
-
-def test_output_artifact_preparation(
-    sample_user_model, sample_project_model, local_stack
-):
+def test_output_artifact_preparation(create_step_run, local_stack):
     """Tests that the output artifact generation computes the correct artifact
     uris and creates the directories."""
-    step_run = _create_step_run(
-        user=sample_user_model, project=sample_project_model
+    step_run = create_step_run(
+        outputs={"output_name": {"materializer_source": ""}}
     )
 
     output_artifact_uris = output_utils.prepare_output_artifact_uris(

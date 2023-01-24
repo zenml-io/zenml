@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from datetime import datetime
-from typing import Generator
+from typing import Any, Callable, Dict, Generator, Optional
 from uuid import uuid4
 
 import pytest
@@ -489,3 +489,43 @@ def sample_artifact_request_model() -> ArtifactRequestModel:
         project=uuid4(),
         user=uuid4(),
     )
+
+
+@pytest.fixture
+def create_step_run(
+    sample_user_model: UserResponseModel,
+    sample_project_model: ProjectResponseModel,
+) -> Callable[..., StepRunResponseModel]:
+    """Fixture that returns a function which can be used to create a
+    customizable StepRunResponseModel."""
+
+    def f(
+        step_name: str = "step_name",
+        outputs: Optional[Dict[str, Any]] = None,
+        **kwargs: Any,
+    ) -> StepRunResponseModel:
+        step = Step.parse_obj(
+            {
+                "spec": {"source": "", "upstream_steps": []},
+                "config": {
+                    "name": step_name or "step_name",
+                    "outputs": outputs or {},
+                },
+            }
+        )
+        model_args = {
+            "id": uuid4(),
+            "name": "sample_step",
+            "pipeline_run_id": uuid4(),
+            "step": step,
+            "status": ExecutionStatus.COMPLETED,
+            "created": datetime.now(),
+            "updated": datetime.now(),
+            "project": sample_project_model,
+            "user": sample_user_model,
+            "output_artifacts": {},
+            **kwargs,
+        }
+        return StepRunResponseModel(**model_args)
+
+    return f
