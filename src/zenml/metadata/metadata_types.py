@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Custom types that can be used as metadata of ZenML artifacts."""
 
-from typing import Union
+from typing import Any, Dict, List, Set, Tuple, Union
 
 from zenml.utils.enum_utils import StrEnum
 
@@ -50,10 +50,24 @@ class StorageSize(int):
     """Storage size of an artifact in number of bytes."""
 
 
-# Union of all types that can be used as metadata.
-# We don't use subscripted generics here because they cannot be used for
-# `isinstance` checks.
+# Union of all types that can be used as metadata. Used for type annotations.
 MetadataType = Union[
+    str,
+    int,
+    float,
+    bool,
+    Dict[Any, Any],
+    List[Any],
+    Set[Any],
+    Tuple[Any, ...],
+    Uri,
+    Path,
+    DType,
+    StorageSize,
+]
+
+# Tuple of all types that can be used as metadata. Used for `isinstance` checks.
+MetadataTypeTuple = (
     str,
     int,
     float,
@@ -61,12 +75,12 @@ MetadataType = Union[
     dict,
     list,
     set,
-    tuple,  # type: ignore[type-arg]
+    tuple,
     Uri,
     Path,
     DType,
     StorageSize,
-]
+)
 
 
 class MetadataTypeEnum(StrEnum):

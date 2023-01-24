@@ -21,7 +21,7 @@ from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.default_materializer_registry import (
     default_materializer_registry,
 )
-from zenml.metadata.metadata_types import MetadataType
+from zenml.metadata.metadata_types import MetadataTypeTuple
 
 
 def test_handle_int_env_var():
@@ -76,7 +76,7 @@ def _test_materializer(
         assert isinstance(metadata, dict)
         for key, value in metadata.items():
             assert isinstance(key, str)
-            assert isinstance(value, MetadataType)
+            assert isinstance(value, MetadataTypeTuple)
 
         # Assert that materializer loads the data with the correct type
         loaded_data = materializer.load(step_output_type)
