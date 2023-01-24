@@ -69,15 +69,25 @@ from zenml.zen_server.utils import (
     zen_store,
 )
 
+# This is a workaround to slowly deprecate the projects routes. This along with
+#  all the decorators using it, can be removed in a few releases.
+PROJECTS = "/projects"
+
+
 router = APIRouter(
-    prefix=API + VERSION_1 + WORKSPACES,
+    prefix=API + VERSION_1,
     tags=["workspaces"],
     responses={401: error_response},
 )
 
 
 @router.get(
-    "",
+    WORKSPACES,
+    response_model=Page[WorkspaceResponseModel],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@router.get(
+    PROJECTS,
     response_model=Page[WorkspaceResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
@@ -103,7 +113,12 @@ def list_workspaces(
 
 
 @router.post(
-    "",
+    WORKSPACES,
+    response_model=WorkspaceResponseModel,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@router.post(
+    PROJECTS,
     response_model=WorkspaceResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
@@ -126,7 +141,12 @@ def create_workspace(
 
 
 @router.get(
-    "/{workspace_name_or_id}",
+    WORKSPACES + "/{workspace_name_or_id}",
+    response_model=WorkspaceResponseModel,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@router.get(
+    PROJECTS + "/{workspace_name_or_id}",
     response_model=WorkspaceResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
@@ -149,7 +169,12 @@ def get_workspace(
 
 
 @router.put(
-    "/{workspace_name_or_id}",
+    WORKSPACES + "/{workspace_name_or_id}",
+    response_model=WorkspaceResponseModel,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@router.put(
+    PROJECTS + "/{workspace_name_or_id}",
     response_model=WorkspaceResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
@@ -177,7 +202,11 @@ def update_workspace(
 
 
 @router.delete(
-    "/{workspace_name_or_id}",
+    WORKSPACES + "/{workspace_name_or_id}",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@router.delete(
+    PROJECTS + "/{workspace_name_or_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -194,7 +223,12 @@ def delete_workspace(
 
 
 @router.get(
-    "/{workspace_name_or_id}" + USER_ROLE_ASSIGNMENTS,
+    WORKSPACES + "/{workspace_name_or_id}" + USER_ROLE_ASSIGNMENTS,
+    response_model=Page[UserRoleAssignmentResponseModel],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@router.get(
+    PROJECTS + "/{workspace_name_or_id}" + USER_ROLE_ASSIGNMENTS,
     response_model=Page[UserRoleAssignmentResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
@@ -224,7 +258,12 @@ def list_user_role_assignments_for_workspace(
 
 
 @router.get(
-    "/{workspace_name_or_id}" + TEAM_ROLE_ASSIGNMENTS,
+    WORKSPACES + "/{workspace_name_or_id}" + TEAM_ROLE_ASSIGNMENTS,
+    response_model=Page[TeamRoleAssignmentResponseModel],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@router.get(
+    PROJECTS + "/{workspace_name_or_id}" + TEAM_ROLE_ASSIGNMENTS,
     response_model=Page[TeamRoleAssignmentResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
@@ -254,7 +293,12 @@ def list_team_role_assignments_for_workspace(
 
 
 @router.get(
-    "/{workspace_name_or_id}" + STACKS,
+    WORKSPACES + "/{workspace_name_or_id}" + STACKS,
+    response_model=Page[StackResponseModel],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@router.get(
+    PROJECTS + "/{workspace_name_or_id}" + STACKS,
     response_model=Page[StackResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
@@ -289,7 +333,12 @@ def list_workspace_stacks(
 
 
 @router.post(
-    "/{workspace_name_or_id}" + STACKS,
+    WORKSPACES + "/{workspace_name_or_id}" + STACKS,
+    response_model=StackResponseModel,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@router.post(
+    PROJECTS + "/{workspace_name_or_id}" + STACKS,
     response_model=StackResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
@@ -333,7 +382,12 @@ def create_stack(
 
 
 @router.get(
-    "/{workspace_name_or_id}" + STACK_COMPONENTS,
+    WORKSPACES + "/{workspace_name_or_id}" + STACK_COMPONENTS,
+    response_model=Page[ComponentResponseModel],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@router.get(
+    PROJECTS + "/{workspace_name_or_id}" + STACK_COMPONENTS,
     response_model=Page[ComponentResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
@@ -370,7 +424,12 @@ def list_workspace_stack_components(
 
 
 @router.post(
-    "/{workspace_name_or_id}" + STACK_COMPONENTS,
+    WORKSPACES + "/{workspace_name_or_id}" + STACK_COMPONENTS,
+    response_model=ComponentResponseModel,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@router.post(
+    PROJECTS + "/{workspace_name_or_id}" + STACK_COMPONENTS,
     response_model=ComponentResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
@@ -417,7 +476,12 @@ def create_stack_component(
 
 
 @router.get(
-    "/{workspace_name_or_id}" + FLAVORS,
+    WORKSPACES + "/{workspace_name_or_id}" + FLAVORS,
+    response_model=Page[FlavorResponseModel],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@router.get(
+    PROJECTS + "/{workspace_name_or_id}" + FLAVORS,
     response_model=Page[FlavorResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
@@ -449,7 +513,12 @@ def list_workspace_flavors(
 
 
 @router.post(
-    "/{workspace_name_or_id}" + FLAVORS,
+    WORKSPACES + "/{workspace_name_or_id}" + FLAVORS,
+    response_model=FlavorResponseModel,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@router.post(
+    PROJECTS + "/{workspace_name_or_id}" + FLAVORS,
     response_model=FlavorResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
@@ -497,7 +566,12 @@ def create_flavor(
 
 
 @router.get(
-    "/{workspace_name_or_id}" + PIPELINES,
+    WORKSPACES + "/{workspace_name_or_id}" + PIPELINES,
+    response_model=Page[PipelineResponseModel],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@router.get(
+    PROJECTS + "/{workspace_name_or_id}" + PIPELINES,
     response_model=Page[PipelineResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
@@ -529,7 +603,12 @@ def list_workspace_pipelines(
 
 
 @router.post(
-    "/{workspace_name_or_id}" + PIPELINES,
+    WORKSPACES + "/{workspace_name_or_id}" + PIPELINES,
+    response_model=PipelineResponseModel,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@router.post(
+    PROJECTS + "/{workspace_name_or_id}" + PIPELINES,
     response_model=PipelineResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
@@ -573,7 +652,12 @@ def create_pipeline(
 
 
 @router.get(
-    "/{workspace_name_or_id}" + RUNS,
+    WORKSPACES + "/{workspace_name_or_id}" + RUNS,
+    response_model=Page[PipelineRunResponseModel],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@router.get(
+    PROJECTS + "/{workspace_name_or_id}" + RUNS,
     response_model=Page[PipelineRunResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
@@ -603,7 +687,12 @@ def list_runs(
 
 
 @router.post(
-    "/{workspace_name_or_id}" + SCHEDULES,
+    WORKSPACES + "/{workspace_name_or_id}" + SCHEDULES,
+    response_model=ScheduleResponseModel,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@router.post(
+    PROJECTS + "/{workspace_name_or_id}" + SCHEDULES,
     response_model=ScheduleResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
@@ -646,7 +735,12 @@ def create_schedule(
 
 
 @router.post(
-    "/{workspace_name_or_id}" + RUNS,
+    WORKSPACES + "/{workspace_name_or_id}" + RUNS,
+    response_model=PipelineRunResponseModel,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@router.post(
+    PROJECTS + "/{workspace_name_or_id}" + RUNS,
     response_model=PipelineRunResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
@@ -695,7 +789,12 @@ def create_pipeline_run(
 
 
 @router.get(
-    "/{workspace_name_or_id}" + STATISTICS,
+    WORKSPACES + "/{workspace_name_or_id}" + STATISTICS,
+    response_model=Dict[str, str],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@router.get(
+    PROJECTS + "/{workspace_name_or_id}" + STATISTICS,
     response_model=Dict[str, str],
     responses={401: error_response, 404: error_response, 422: error_response},
 )

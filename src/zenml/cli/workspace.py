@@ -189,3 +189,21 @@ def delete_workspace(workspace_name_or_id: str) -> None:
     except (KeyError, IllegalOperationError) as err:
         cli_utils.error(str(err))
     cli_utils.declare(f"Deleted workspace '{workspace_name_or_id}'.")
+
+
+@cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
+def project() -> None:
+    """Deprecated commands for project management."""
+    cli_utils.warning(
+        "DEPRECATION WARNING: `project` has been renamed to"
+        "`workspace`. Please switch to using "
+        "`zenml workspace ...`."
+    )
+
+
+project.add_command(list_workspaces)
+project.add_command(describe_workspace)
+project.add_command(create_workspace)
+project.add_command(update_workspace)
+project.add_command(set_workspace)
+project.add_command(delete_workspace)

@@ -7,7 +7,6 @@ Create Date: 2023-01-24 12:54:29.192057
 """
 from typing import Set
 
-import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
@@ -48,7 +47,6 @@ def _get_changed_tables() -> Set[str]:
 
 def upgrade() -> None:
     """Upgrade database schema and/or data, creating a new revision."""
-
     tables = _get_changed_tables()
 
     for table in tables:
