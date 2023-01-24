@@ -57,7 +57,7 @@ def test_publish_output_artifacts(clean_client):
     assert isinstance(return_val, dict)
     assert len(return_val) == 1
     assert isinstance(return_val["output"], UUID)
-    
+
     return_val = publish_utils.publish_output_artifacts({})
     assert len(clean_client.list_artifacts()) == 1
 
