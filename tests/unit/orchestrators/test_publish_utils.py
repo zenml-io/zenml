@@ -169,7 +169,7 @@ def test_pipeline_run_status_computation(
 def test_updating_the_pipeline_run_status(
     mocker, sample_pipeline_run_model, old_status, new_status
 ):
-    """Tests updateding the status of a pipeline run."""
+    """Tests updating the status of a pipeline run."""
     mocker.patch(
         "zenml.zen_stores.sql_zen_store.SqlZenStore.list_run_steps",
         return_value=Page(page=1, size=50, total_pages=1, total=0, items=[]),
