@@ -14,36 +14,43 @@
 """Pydantic models for the various concepts in ZenML."""
 
 from zenml.models.artifact_models import (
+    ArtifactFilterModel,
     ArtifactRequestModel,
     ArtifactResponseModel,
     ArtifactUpdateModel,
 )
 from zenml.models.component_models import (
+    ComponentFilterModel,
     ComponentRequestModel,
     ComponentResponseModel,
     ComponentUpdateModel,
 )
-from zenml.models.flavor_models import FlavorRequestModel, FlavorResponseModel
+from zenml.models.filter_models import Filter, BaseFilterModel
+from zenml.models.flavor_models import (
+    FlavorFilterModel,
+    FlavorRequestModel,
+    FlavorResponseModel,
+)
 from zenml.models.pipeline_models import (
+    PipelineFilterModel,
     PipelineRequestModel,
     PipelineResponseModel,
     PipelineUpdateModel,
 )
 from zenml.models.pipeline_run_models import (
+    PipelineRunFilterModel,
     PipelineRunRequestModel,
     PipelineRunResponseModel,
     PipelineRunUpdateModel,
 )
 from zenml.models.project_models import (
+    ProjectFilterModel,
     ProjectRequestModel,
     ProjectResponseModel,
     ProjectUpdateModel,
 )
-from zenml.models.role_assignment_models import (
-    RoleAssignmentRequestModel,
-    RoleAssignmentResponseModel,
-)
 from zenml.models.role_models import (
+    RoleFilterModel,
     RoleRequestModel,
     RoleResponseModel,
     RoleUpdateModel,
@@ -52,27 +59,42 @@ from zenml.models.schedule_model import (
     ScheduleRequestModel,
     ScheduleResponseModel,
     ScheduleUpdateModel,
+    ScheduleFilterModel,
 )
 from zenml.models.stack_models import (
+    StackFilterModel,
     StackRequestModel,
     StackResponseModel,
     StackUpdateModel,
 )
 from zenml.models.step_run_models import (
+    StepRunFilterModel,
     StepRunRequestModel,
     StepRunResponseModel,
     StepRunUpdateModel,
 )
 from zenml.models.team_models import (
+    TeamFilterModel,
     TeamRequestModel,
     TeamResponseModel,
     TeamUpdateModel,
 )
+from zenml.models.team_role_assignment_models import (
+    TeamRoleAssignmentFilterModel,
+    TeamRoleAssignmentRequestModel,
+    TeamRoleAssignmentResponseModel,
+)
 from zenml.models.user_models import (
     UserAuthModel,
+    UserFilterModel,
     UserRequestModel,
     UserResponseModel,
     UserUpdateModel,
+)
+from zenml.models.user_role_assignment_models import (
+    UserRoleAssignmentFilterModel,
+    UserRoleAssignmentRequestModel,
+    UserRoleAssignmentResponseModel,
 )
 
 ComponentResponseModel.update_forward_refs(
@@ -94,7 +116,14 @@ UserResponseModel.update_forward_refs(TeamResponseModel=TeamResponseModel)
 
 TeamResponseModel.update_forward_refs(UserResponseModel=UserResponseModel)
 
-RoleAssignmentResponseModel.update_forward_refs(
+UserRoleAssignmentResponseModel.update_forward_refs(
+    RoleResponseModel=RoleResponseModel,
+    TeamResponseModel=TeamResponseModel,
+    UserResponseModel=UserResponseModel,
+    ProjectResponseModel=ProjectResponseModel,
+)
+
+TeamRoleAssignmentResponseModel.update_forward_refs(
     RoleResponseModel=RoleResponseModel,
     TeamResponseModel=TeamResponseModel,
     UserResponseModel=UserResponseModel,
@@ -133,39 +162,56 @@ __all__ = [
     "ArtifactRequestModel",
     "ArtifactResponseModel",
     "ArtifactUpdateModel",
+    "ArtifactFilterModel",
     "ComponentRequestModel",
     "ComponentResponseModel",
     "ComponentUpdateModel",
+    "ComponentFilterModel",
     "FlavorRequestModel",
     "FlavorResponseModel",
+    "FlavorFilterModel",
+    "BaseFilterModel",
     "PipelineRequestModel",
     "PipelineResponseModel",
     "PipelineUpdateModel",
+    "PipelineFilterModel",
     "PipelineRunRequestModel",
     "PipelineRunResponseModel",
     "PipelineRunUpdateModel",
+    "PipelineRunFilterModel",
     "ProjectRequestModel",
     "ProjectResponseModel",
     "ProjectUpdateModel",
-    "RoleAssignmentRequestModel",
-    "RoleAssignmentResponseModel",
+    "ProjectFilterModel",
+    "UserRoleAssignmentRequestModel",
+    "UserRoleAssignmentResponseModel",
+    "UserRoleAssignmentFilterModel",
+    "TeamRoleAssignmentRequestModel",
+    "TeamRoleAssignmentResponseModel",
+    "TeamRoleAssignmentFilterModel",
     "RoleRequestModel",
     "RoleResponseModel",
     "RoleUpdateModel",
+    "RoleFilterModel",
     "ScheduleRequestModel",
     "ScheduleResponseModel",
     "ScheduleUpdateModel",
+    "ScheduleFilterModel",
     "StackRequestModel",
     "StackResponseModel",
     "StackUpdateModel",
+    "StackFilterModel",
     "StepRunRequestModel",
     "StepRunResponseModel",
     "StepRunUpdateModel",
+    "StepRunFilterModel",
     "TeamRequestModel",
     "TeamResponseModel",
     "TeamUpdateModel",
+    "TeamFilterModel",
     "UserRequestModel",
     "UserResponseModel",
     "UserUpdateModel",
+    "UserFilterModel",
     "UserAuthModel",
 ]

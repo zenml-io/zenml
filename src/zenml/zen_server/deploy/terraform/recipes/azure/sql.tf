@@ -4,7 +4,7 @@ resource "azurerm_resource_group" "rg" {
 }
 
 resource "azurerm_mysql_flexible_server" "mysql" {
-  count                  = var.deploy_db? 1 : 0
+  count                  = var.deploy_db ? 1 : 0
   name                   = var.db_instance_name
   resource_group_name    = azurerm_resource_group.rg.name
   location               = azurerm_resource_group.rg.location
@@ -14,11 +14,11 @@ resource "azurerm_mysql_flexible_server" "mysql" {
   storage {
     size_gb = var.db_disk_size
   }
-  sku_name               = var.db_sku_name
+  sku_name = var.db_sku_name
 }
 
 resource "azurerm_mysql_flexible_database" "db" {
-  count               = var.deploy_db? 1 : 0
+  count               = var.deploy_db ? 1 : 0
   name                = var.db_name
   resource_group_name = azurerm_resource_group.rg.name
   server_name         = azurerm_mysql_flexible_server.mysql[0].name
@@ -27,7 +27,7 @@ resource "azurerm_mysql_flexible_database" "db" {
 }
 
 resource "azurerm_mysql_flexible_server_firewall_rule" "allow_IPs" {
-  count               = var.deploy_db? 1 : 0
+  count               = var.deploy_db ? 1 : 0
   name                = "all_traffic"
   resource_group_name = azurerm_resource_group.rg.name
   server_name         = azurerm_mysql_flexible_server.mysql[0].name
@@ -36,7 +36,7 @@ resource "azurerm_mysql_flexible_server_firewall_rule" "allow_IPs" {
 }
 
 resource "azurerm_mysql_flexible_server_configuration" "require_ssl" {
-  count               = var.deploy_db? 1 : 0
+  count               = var.deploy_db ? 1 : 0
   name                = "require_secure_transport"
   resource_group_name = azurerm_resource_group.rg.name
   server_name         = azurerm_mysql_flexible_server.mysql[0].name
@@ -44,14 +44,17 @@ resource "azurerm_mysql_flexible_server_configuration" "require_ssl" {
 }
 
 resource "random_password" "mysql_password" {
-  length  = 12
-  special = false
+  length      = 12
+  special     = false
+  min_lower   = 1
+  min_numeric = 1
+  min_upper   = 1
 }
 
 # download SSL certificate
 resource "null_resource" "download-SSL-certificate" {
-  count   = var.deploy_db? 1 : 0
-  
+  count = var.deploy_db ? 1 : 0
+
   provisioner "local-exec" {
     command = "wget https://dl.cacerts.digicert.com/DigiCertGlobalRootCA.crt.pem"
   }
