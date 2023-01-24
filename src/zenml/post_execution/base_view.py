@@ -95,11 +95,11 @@ class BaseView(ABC):
             The attribute with the given name.
         """
         # Handle special cases that are required by the `dir` call below
-        if __name in ("__dict__", "__class__"):
+        if __name in {"__dict__", "__class__"}:
             return super().__getattribute__(__name)
 
         # Check the custom view properties first in case of overwrites
-        if __name in [attr for attr in dir(self) if not attr.startswith("__")]:
+        if __name in {attr for attr in dir(self) if not attr.startswith("__")}:
             return super().__getattribute__(__name)
 
         # Then check if the attribute is a field in the model
@@ -121,7 +121,7 @@ class BaseView(ABC):
         """
         repr = self.__class__.__qualname__
         repr_key_strs = [
-            f"{key}={self.__getattribute__(key)}" for key in self.REPR_KEYS
+            f"{key}={getattr(self, key)}" for key in self.REPR_KEYS
         ]
         details = ", ".join(repr_key_strs)
         if details:
