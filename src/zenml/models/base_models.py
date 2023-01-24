@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Base domain model definitions."""
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, Any, Dict, Type, TypeVar, Union
 from uuid import UUID
 
 from pydantic import Field
@@ -43,7 +43,14 @@ class BaseResponseModel(AnalyticsTrackedModelMixin):
     id: UUID = Field(title="The unique resource id.")
 
     created: datetime = Field(title="Time when this resource was created.")
-    updated: datetime = Field(title="Time when this resource was last updated.")
+    updated: datetime = Field(
+        title="Time when this resource was last updated."
+    )
+
+    class Config:
+        """Allow extras on Response Models."""
+
+        extra = "allow"
 
     def __hash__(self) -> int:
         """Implementation of hash magic method.
@@ -84,7 +91,7 @@ class UserScopedResponseModel(BaseResponseModel):
     Used as a base class for all domain models that are "owned" by a user.
     """
 
-    user: Optional["UserResponseModel"] = Field(
+    user: Union["UserResponseModel", None] = Field(
         title="The user that created this resource.", nullable=True
     )
 

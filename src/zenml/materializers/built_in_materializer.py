@@ -33,7 +33,12 @@ logger = get_logger(__name__)
 DEFAULT_FILENAME = "data.json"
 DEFAULT_BYTES_FILENAME = "data.txt"
 DEFAULT_METADATA_FILENAME = "metadata.json"
-BASIC_TYPES = (bool, float, int, str)  # complex/bytes are not JSON serializable
+BASIC_TYPES = (
+    bool,
+    float,
+    int,
+    str,
+)  # complex/bytes are not JSON serializable
 
 
 class BuiltInMaterializer(BaseMaterializer):
@@ -169,7 +174,9 @@ def _is_serializable(obj: Any) -> bool:
     if isinstance(obj, (list, tuple, set)):
         return _all_serializable(obj)
     if isinstance(obj, dict):
-        return _all_serializable(obj.keys()) and _all_serializable(obj.values())
+        return _all_serializable(obj.keys()) and _all_serializable(
+            obj.values()
+        )
     return False
 
 

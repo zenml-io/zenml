@@ -12,9 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Pipeline configuration classes."""
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+import json
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 
-from pydantic import root_validator, validator
+import yaml
+from pydantic import validator
 
 from zenml.config.constants import DOCKER_SETTINGS_KEY
 from zenml.config.schedule import Schedule
@@ -42,26 +44,6 @@ class PipelineConfiguration(PipelineConfigurationUpdate):
     """Pipeline configuration class."""
 
     name: str
-    enable_cache: bool
-    enable_artifact_metadata: bool
-
-    @root_validator(pre=True)
-    def _fill_missing_values(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """Fill in values that might be missing in old configs.
-
-        Args:
-            values: The values dict used to instantiate the model.
-
-        Returns:
-            The values dict with missing values filled in.
-        """
-        default_values = {
-            "enable_artifact_metadata": False,
-        }
-        for key, default_value in default_values.items():
-            if key not in values:
-                values[key] = default_value
-        return values
 
     @validator("name")
     def ensure_pipeline_name_allowed(cls, name: str) -> str:
@@ -108,6 +90,18 @@ class PipelineRunConfiguration(StrictBaseModel):
     steps: Dict[str, StepConfigurationUpdate] = {}
     settings: Dict[str, BaseSettings] = {}
     extra: Dict[str, Any] = {}
+
+    def yaml(self, **kwargs: Any) -> str:
+        """Yaml representation of the run configuration.
+
+        Args:
+            **kwargs: Kwargs to pass to the pydantic json(...) method.
+
+        Returns:
+            Yaml string representation of the run configuration (with unsorted keys).
+        """
+        dict_ = json.loads(self.json(**kwargs, sort_keys=False))
+        return cast(str, yaml.dump(dict_, sort_keys=False))
 
 
 class PipelineSpec(StrictBaseModel):

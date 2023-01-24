@@ -30,6 +30,7 @@ from zenml.models import (
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
+from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.stack_schemas import StackSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
@@ -63,6 +64,16 @@ class PipelineRunSchema(NamedSchema, table=True):
         nullable=True,
     )
     pipeline: "PipelineSchema" = Relationship(back_populates="runs")
+
+    schedule_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=ScheduleSchema.__tablename__,
+        source_column="schedule_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+    schedule: ScheduleSchema = Relationship(back_populates="runs")
 
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -135,6 +146,7 @@ class PipelineRunSchema(NamedSchema, table=True):
             project_id=request.project,
             user_id=request.user,
             pipeline_id=request.pipeline,
+            schedule_id=request.schedule_id,
             enable_cache=request.enable_cache,
             start_time=request.start_time,
             status=request.status,
@@ -150,6 +162,9 @@ class PipelineRunSchema(NamedSchema, table=True):
         self, _block_recursion: bool = False
     ) -> PipelineRunResponseModel:
         """Convert a `PipelineRunSchema` to a `PipelineRunResponseModel`.
+
+        Args:
+            _block_recursion: If other models should be recursively filled
 
         Returns:
             The created `PipelineRunResponseModel`.
@@ -169,9 +184,9 @@ class PipelineRunSchema(NamedSchema, table=True):
             return PipelineRunResponseModel(
                 id=self.id,
                 name=self.name,
-                stack=self.stack.to_model() if self.stack else None,
                 project=self.project.to_model(),
-                user=self.user.to_model() if self.user else None,
+                user=self.user.to_model(True) if self.user else None,
+                schedule_id=self.schedule_id,
                 orchestrator_run_id=self.orchestrator_run_id,
                 enable_cache=self.enable_cache,
                 enable_artifact_metadata=self.enable_artifact_metadata,
@@ -194,7 +209,7 @@ class PipelineRunSchema(NamedSchema, table=True):
                 name=self.name,
                 stack=self.stack.to_model() if self.stack else None,
                 project=self.project.to_model(),
-                user=self.user.to_model() if self.user else None,
+                user=self.user.to_model(True) if self.user else None,
                 orchestrator_run_id=self.orchestrator_run_id,
                 enable_cache=self.enable_cache,
                 enable_artifact_metadata=self.enable_artifact_metadata,
@@ -202,10 +217,9 @@ class PipelineRunSchema(NamedSchema, table=True):
                 end_time=self.end_time,
                 status=self.status,
                 pipeline=(
-                    self.pipeline.to_model(not _block_recursion)
-                    if self.pipeline
-                    else None
+                    self.pipeline.to_model(False) if self.pipeline else None
                 ),
+                schedule_id=self.schedule_id,
                 pipeline_configuration=json.loads(self.pipeline_configuration),
                 num_steps=self.num_steps,
                 git_sha=self.git_sha,

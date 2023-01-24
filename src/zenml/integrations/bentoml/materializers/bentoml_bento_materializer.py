@@ -90,7 +90,9 @@ class BentoMaterializer(BaseMaterializer):
         # Remove the temporary directory
         fileio.rmtree(temp_dir.name)
 
-    def extract_metadata(self, bento: bento.Bento) -> Dict[str, "MetadataType"]:
+    def extract_metadata(
+        self, bento: bento.Bento
+    ) -> Dict[str, "MetadataType"]:
         """Extract metadata from the given `Bento` object.
 
         Args:

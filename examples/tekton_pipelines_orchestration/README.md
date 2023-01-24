@@ -59,6 +59,35 @@ python run.py --lr=0.02
 python run.py --epochs=10
 ```
 
+## Run the same pipeline on a local Tekton Pipelines deployment
+
+### 📄 Infrastructure Requirements (Pre-requisites)
+
+You don't need to set up any infrastructure to run the pipeline locally. However, you need the following tools installed:
+  * Docker must be installed on your local machine.
+  * Install k3d by running `curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash`.
+
+## Create a local Tekton Pipelines Stack
+
+To get a stack with Tekton Pipelines and potential other components, you can make use of ZenML's Stack Recipes that are a set of terraform based modules that take care of setting up a cluster with Tekton among other things.
+
+Run the following command to deploy the local Tekton Pipelines stack:
+
+```bash
+zenml stack recipe deploy k3d-modular --install tekton
+```
+
+>**Note**:
+> This recipe comes with MLflow, Kubeflow and Minio enabled by default. If you want any other components like KServe, or Seldon, you can specify that using the `--install/-i` flag.
+
+This will deploy a local Kubernetes cluster with Tekton Pipelines installed. You can verify this by running `kubectl get pods` and checking if the Tekton Pipelines pods are running.
+It will also generate a stack YAML file that you can import as a ZenML stack by running 
+
+```bash
+zenml stack import -f <path-to-stack-yaml>
+```
+Once the stack is set, you can then simply proceed to running your pipelines.
+
 ## 🏃️ Run the same pipeline on a cloud-based Tekton Pipelines deployment
 
 ### 📄 Infrastructure Requirements (Pre-requisites)

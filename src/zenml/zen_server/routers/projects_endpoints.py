@@ -12,46 +12,65 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for projects."""
-from typing import Dict, List, Optional, Union
+from typing import Dict, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Security
+from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import (
     API,
     FLAVORS,
     PIPELINES,
     PROJECTS,
-    ROLES,
     RUN_METADATA,
     RUNS,
+    SCHEDULES,
     STACK_COMPONENTS,
     STACKS,
     STATISTICS,
+    TEAM_ROLE_ASSIGNMENTS,
+    USER_ROLE_ASSIGNMENTS,
     VERSION_1,
 )
-from zenml.enums import PermissionType, StackComponentType
+from zenml.enums import PermissionType
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
+    ComponentFilterModel,
     ComponentRequestModel,
     ComponentResponseModel,
+    FlavorFilterModel,
     FlavorRequestModel,
     FlavorResponseModel,
+    PipelineFilterModel,
     PipelineRequestModel,
     PipelineResponseModel,
+    PipelineRunFilterModel,
     PipelineRunRequestModel,
     PipelineRunResponseModel,
+    ProjectFilterModel,
     ProjectRequestModel,
     ProjectResponseModel,
     ProjectUpdateModel,
-    RoleAssignmentResponseModel,
     RunMetadataRequestModel,
     RunMetadataResponseModel,
+    ScheduleRequestModel,
+    ScheduleResponseModel,
+    StackFilterModel,
     StackRequestModel,
     StackResponseModel,
+    TeamRoleAssignmentFilterModel,
+    TeamRoleAssignmentResponseModel,
+    UserRoleAssignmentFilterModel,
+    UserRoleAssignmentResponseModel,
 )
+from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
-from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
+from zenml.zen_server.utils import (
+    error_response,
+    handle_exceptions,
+    make_dependable,
+    zen_store,
+)
 
 router = APIRouter(
     prefix=API + VERSION_1 + PROJECTS,
@@ -62,23 +81,26 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=List[ProjectResponseModel],
+    response_model=Page[ProjectResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_projects(
-    name: Optional[str] = None,
+    project_filter_model: ProjectFilterModel = Depends(
+        make_dependable(ProjectFilterModel)
+    ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> List[ProjectResponseModel]:
+) -> Page[ProjectResponseModel]:
     """Lists all projects in the organization.
 
     Args:
-        name: Optional name of the project to filter by.
+        project_filter_model: Filter model used for pagination, sorting,
+                              filtering
 
     Returns:
         A list of projects.
     """
-    return zen_store().list_projects(name=name)
+    return zen_store().list_projects(project_filter_model=project_filter_model)
 
 
 @router.post(
@@ -173,86 +195,98 @@ def delete_project(
 
 
 @router.get(
-    "/{project_name_or_id}" + ROLES,
-    response_model=List[RoleAssignmentResponseModel],
+    "/{project_name_or_id}" + USER_ROLE_ASSIGNMENTS,
+    response_model=Page[UserRoleAssignmentResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def get_role_assignments_for_project(
+def list_user_role_assignments_for_project(
     project_name_or_id: Union[str, UUID],
-    user_name_or_id: Optional[Union[str, UUID]] = None,
-    team_name_or_id: Optional[Union[str, UUID]] = None,
+    user_role_assignment_filter_model: UserRoleAssignmentFilterModel = Depends(
+        make_dependable(UserRoleAssignmentFilterModel)
+    ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> List[RoleAssignmentResponseModel]:
+) -> Page[UserRoleAssignmentResponseModel]:
     """Returns a list of all roles that are assigned to a team.
 
     Args:
         project_name_or_id: Name or ID of the project.
-        user_name_or_id: If provided, only list roles that are assigned to the
-            given user.
-        team_name_or_id: If provided, only list roles that are assigned to the
-            given team.
+        user_role_assignment_filter_model: Filter model used for pagination, sorting,
+                                    filtering
 
     Returns:
         A list of all roles that are assigned to a team.
     """
-    return zen_store().list_role_assignments(
-        project_name_or_id=project_name_or_id,
-        user_name_or_id=user_name_or_id,
-        team_name_or_id=team_name_or_id,
+    project = zen_store().get_project(project_name_or_id)
+    user_role_assignment_filter_model.project_id = project.id
+    return zen_store().list_user_role_assignments(
+        user_role_assignment_filter_model=user_role_assignment_filter_model
+    )
+
+
+@router.get(
+    "/{project_name_or_id}" + TEAM_ROLE_ASSIGNMENTS,
+    response_model=Page[TeamRoleAssignmentResponseModel],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def list_team_role_assignments_for_project(
+    project_name_or_id: Union[str, UUID],
+    team_role_assignment_filter_model: TeamRoleAssignmentFilterModel = Depends(
+        make_dependable(TeamRoleAssignmentFilterModel)
+    ),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+) -> Page[TeamRoleAssignmentResponseModel]:
+    """Returns a list of all roles that are assigned to a team.
+
+    Args:
+        project_name_or_id: Name or ID of the project.
+        team_role_assignment_filter_model: Filter model used for pagination, sorting,
+                                    filtering
+
+    Returns:
+        A list of all roles that are assigned to a team.
+    """
+    project = zen_store().get_project(project_name_or_id)
+    team_role_assignment_filter_model.project_id = project.id
+    return zen_store().list_team_role_assignments(
+        team_role_assignment_filter_model=team_role_assignment_filter_model
     )
 
 
 @router.get(
     "/{project_name_or_id}" + STACKS,
-    response_model=List[StackResponseModel],
+    response_model=Page[StackResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_project_stacks(
     project_name_or_id: Union[str, UUID],
-    user_name_or_id: Optional[Union[str, UUID]] = None,
-    component_id: Optional[UUID] = None,
-    name: Optional[str] = None,
-    is_shared: Optional[bool] = None,
+    stack_filter_model: StackFilterModel = Depends(
+        make_dependable(StackFilterModel)
+    ),
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.READ]
     ),
-) -> List[StackResponseModel]:
-    """Get stacks that are part of a specific project.
+) -> Page[StackResponseModel]:
+    """Get stacks that are part of a specific project for the user.
 
     # noqa: DAR401
 
     Args:
         project_name_or_id: Name or ID of the project.
-        user_name_or_id: Optionally filter by name or ID of the user.
-        component_id: Optionally filter by component that is part of the stack.
-        name: Optionally filter by stack name
-        is_shared: Optionally filter by shared status of the stack
+        stack_filter_model: Filter model used for pagination, sorting, filtering
         auth_context: Authentication Context
 
     Returns:
         All stacks part of the specified project.
     """
-    stacks = zen_store().list_stacks(
-        project_name_or_id=project_name_or_id,
-        user_name_or_id=user_name_or_id or auth_context.user.id,
-        component_id=component_id,
-        is_shared=False,
-        name=name,
-    )
-    # In case the user didn't explicitly filter for is shared == False
-    if is_shared is None or is_shared:
-        shared_stacks = zen_store().list_stacks(
-            project_name_or_id=project_name_or_id,
-            user_name_or_id=user_name_or_id or auth_context.user.id,
-            component_id=component_id,
-            is_shared=True,
-            name=name,
-        )
-        stacks += shared_stacks
+    project = zen_store().get_project(project_name_or_id)
+    stack_filter_model.project_id = project.id
 
-    return stacks
+    stack_filter_model.set_scope_user(user_id=auth_context.user.id)
+
+    return zen_store().list_stacks(stack_filter_model=stack_filter_model)
 
 
 @router.post(
@@ -301,58 +335,39 @@ def create_stack(
 
 @router.get(
     "/{project_name_or_id}" + STACK_COMPONENTS,
-    response_model=List[ComponentResponseModel],
+    response_model=Page[ComponentResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_project_stack_components(
     project_name_or_id: Union[str, UUID],
-    user_name_or_id: Optional[Union[str, UUID]] = None,
-    type: Optional[str] = None,
-    name: Optional[str] = None,
-    flavor_name: Optional[str] = None,
-    is_shared: Optional[bool] = None,
+    component_filter_model: ComponentFilterModel = Depends(
+        make_dependable(ComponentFilterModel)
+    ),
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.READ]
     ),
-) -> List[ComponentResponseModel]:
+) -> Page[ComponentResponseModel]:
     """List stack components that are part of a specific project.
 
     # noqa: DAR401
 
     Args:
         project_name_or_id: Name or ID of the project.
-        user_name_or_id: Optionally filter by name or ID of the user.
-        name: Optionally filter by component name
-        type: Optionally filter by component type
-        flavor_name: Optionally filter by flavor name
-        is_shared: Optionally filter by shared status of the component
+        component_filter_model: Filter model used for pagination, sorting,
+            filtering
         auth_context: Authentication Context
 
     Returns:
         All stack components part of the specified project.
     """
-    components = zen_store().list_stack_components(
-        name=name,
-        user_name_or_id=user_name_or_id or auth_context.user.id,
-        project_name_or_id=project_name_or_id,
-        flavor_name=flavor_name,
-        type=type,
-        is_shared=False,
-    )
-    # In case the user didn't explicitly filter for is shared == False
-    if is_shared is None or is_shared:
-        shared_components = zen_store().list_stack_components(
-            project_name_or_id=project_name_or_id,
-            user_name_or_id=user_name_or_id,
-            flavor_name=flavor_name,
-            name=name,
-            type=type,
-            is_shared=True,
-        )
+    project = zen_store().get_project(project_name_or_id)
+    component_filter_model.project_id = project.id
 
-        components += shared_components
-    return components
+    component_filter_model.set_scope_user(user_id=auth_context.user.id)
+    return zen_store().list_stack_components(
+        component_filter_model=component_filter_model
+    )
 
 
 @router.post(
@@ -404,39 +419,34 @@ def create_stack_component(
 
 @router.get(
     "/{project_name_or_id}" + FLAVORS,
-    response_model=List[FlavorResponseModel],
+    response_model=Page[FlavorResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_project_flavors(
     project_name_or_id: Optional[Union[str, UUID]] = None,
-    component_type: Optional[StackComponentType] = None,
-    user_name_or_id: Optional[Union[str, UUID]] = None,
-    name: Optional[str] = None,
-    is_shared: Optional[bool] = None,
+    flavor_filter_model: FlavorFilterModel = Depends(
+        make_dependable(FlavorFilterModel)
+    ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> List[FlavorResponseModel]:
+) -> Page[FlavorResponseModel]:
     """List stack components flavors of a certain type that are part of a project.
 
     # noqa: DAR401
 
     Args:
-        component_type: Type of the component.
         project_name_or_id: Name or ID of the project.
-        user_name_or_id: Optionally filter by name or ID of the user.
-        name: Optionally filter by flavor name.
-        is_shared: Optionally filter by shared status of the flavor.
+        flavor_filter_model: Filter model used for pagination, sorting,
+            filtering
+
 
     Returns:
         All stack components of a certain type that are part of a project.
     """
-    return zen_store().list_flavors(
-        project_name_or_id=project_name_or_id,
-        component_type=component_type,
-        user_name_or_id=user_name_or_id,
-        is_shared=is_shared,
-        name=name,
-    )
+    if project_name_or_id:
+        project = zen_store().get_project(project_name_or_id)
+        flavor_filter_model.project_id = project.id
+    return zen_store().list_flavors(flavor_filter_model=flavor_filter_model)
 
 
 @router.post(
@@ -489,32 +499,33 @@ def create_flavor(
 
 @router.get(
     "/{project_name_or_id}" + PIPELINES,
-    response_model=List[PipelineResponseModel],
+    response_model=Page[PipelineResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_project_pipelines(
     project_name_or_id: Union[str, UUID],
-    user_name_or_id: Optional[Union[str, UUID]] = None,
-    name: Optional[str] = None,
+    pipeline_filter_model: PipelineFilterModel = Depends(
+        make_dependable(PipelineFilterModel)
+    ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> List[PipelineResponseModel]:
+) -> Page[PipelineResponseModel]:
     """Gets pipelines defined for a specific project.
 
     # noqa: DAR401
 
     Args:
-        project_name_or_id: Name or ID of the project to get pipelines for.
-        user_name_or_id: Optionally filter by name or ID of the user.
-        name: Optionally filter by pipeline name
+        project_name_or_id: Name or ID of the project.
+        pipeline_filter_model: Filter model used for pagination, sorting,
+            filtering
 
     Returns:
         All pipelines within the project.
     """
+    project = zen_store().get_project(project_name_or_id)
+    pipeline_filter_model.project_id = project.id
     return zen_store().list_pipelines(
-        project_name_or_id=project_name_or_id,
-        user_name_or_id=user_name_or_id,
-        name=name,
+        pipeline_filter_model=pipeline_filter_model
     )
 
 
@@ -564,44 +575,75 @@ def create_pipeline(
 
 @router.get(
     "/{project_name_or_id}" + RUNS,
-    response_model=List[PipelineRunResponseModel],
+    response_model=Page[PipelineRunResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_runs(
     project_name_or_id: Union[str, UUID],
-    stack_id: Optional[UUID] = None,
-    name: Optional[str] = None,
-    user_name_or_id: Optional[Union[str, UUID]] = None,
-    component_id: Optional[UUID] = None,
-    pipeline_id: Optional[UUID] = None,
-    unlisted: bool = False,
+    runs_filter_model: PipelineRunFilterModel = Depends(
+        make_dependable(PipelineRunFilterModel)
+    ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> List[PipelineRunResponseModel]:
+) -> Page[PipelineRunResponseModel]:
     """Get pipeline runs according to query filters.
 
     Args:
-        project_name_or_id: Name or ID of the project for which to filter runs.
-        stack_id: ID of the stack for which to filter runs.
-        name: Filter by run name if provided
-        user_name_or_id: If provided, only return runs for this user.
-        component_id: Filter by ID of a component that was used in the run.
-        pipeline_id: ID of the pipeline for which to filter runs.
-        unlisted: If True, only return unlisted runs that are not
-            associated with any pipeline.
+        project_name_or_id: Name or ID of the project.
+        runs_filter_model: Filter model used for pagination, sorting,
+                                   filtering
+
 
     Returns:
         The pipeline runs according to query filters.
     """
-    return zen_store().list_runs(
-        project_name_or_id=project_name_or_id,
-        name=name,
-        stack_id=stack_id,
-        component_id=component_id,
-        user_name_or_id=user_name_or_id,
-        pipeline_id=pipeline_id,
-        unlisted=unlisted,
-    )
+    project = zen_store().get_project(project_name_or_id)
+    runs_filter_model.project_id = project.id
+
+    return zen_store().list_runs(runs_filter_model=runs_filter_model)
+
+
+@router.post(
+    "/{project_name_or_id}" + SCHEDULES,
+    response_model=ScheduleResponseModel,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_schedule(
+    project_name_or_id: Union[str, UUID],
+    schedule: ScheduleRequestModel,
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
+) -> ScheduleResponseModel:
+    """Creates a schedule.
+
+    Args:
+        project_name_or_id: Name or ID of the project.
+        schedule: Schedule to create.
+        auth_context: Authentication context.
+
+    Returns:
+        The created schedule.
+
+    Raises:
+        IllegalOperationError: If the project or user specified in the schedule
+            does not match the current project or authenticated user.
+    """
+    project = zen_store().get_project(project_name_or_id)
+
+    if schedule.project != project.id:
+        raise IllegalOperationError(
+            "Creating pipeline runs outside of the project scope "
+            f"of this endpoint `{project_name_or_id}` is "
+            f"not supported."
+        )
+    if schedule.user != auth_context.user.id:
+        raise IllegalOperationError(
+            "Creating pipeline runs for a user other than yourself "
+            "is not supported."
+        )
+    return zen_store().create_schedule(schedule=schedule)
 
 
 @router.post(
@@ -718,20 +760,19 @@ def get_project_statistics(
     Returns:
         All pipelines within the project.
     """
-    zen_store().list_runs()
+    project = zen_store().get_project(project_name_or_id)
+
     return {
-        "stacks": len(
-            zen_store().list_stacks(project_name_or_id=project_name_or_id)
-        ),
-        "components": len(
-            zen_store().list_stack_components(
-                project_name_or_id=project_name_or_id
-            )
-        ),
-        "pipelines": len(
-            zen_store().list_pipelines(project_name_or_id=project_name_or_id)
-        ),
-        "runs": len(
-            zen_store().list_runs(project_name_or_id=project_name_or_id)
-        ),
+        "stacks": zen_store()
+        .list_stacks(StackFilterModel(project_id=project.id))
+        .total,
+        "components": zen_store()
+        .list_stack_components(ComponentFilterModel(project_id=project.id))
+        .total,
+        "pipelines": zen_store()
+        .list_pipelines(PipelineFilterModel(project_id=project.id))
+        .total,
+        "runs": zen_store()
+        .list_runs(PipelineRunFilterModel(project_id=project.id))
+        .total,
     }

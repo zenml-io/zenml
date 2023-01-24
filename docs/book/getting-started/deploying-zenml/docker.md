@@ -389,3 +389,33 @@ server, you can check the logs with the command:
 ```shell
 docker compose -p zenml logs -f
 ```
+
+## Upgrading your ZenML server
+
+To upgrade to a new version with docker, you would have to delete the existing container and then execute the docker run command again with the version of the `zenml-server` image that you want to use.
+
+- Delete the existing ZenML container:
+    
+  ```bash
+  # find your container ID
+  docker ps
+  ```
+  
+  ```bash
+  # stop the container
+  docker stop <CONTAINER_ID>
+  
+  # remove the container
+  docker rm <CONTAINER_ID>
+  ```
+    
+- Deploy the version of the `zenml-server` image that you want to use. Find all versions [here](https://hub.docker.com/r/zenmldocker/zenml-server/tags).
+
+  ```bash
+  docker run -it -d -p 8080:80 --name <CONTAINER_NAME> zenmldocker/zenml-server:<VERSION>
+  ```
+
+If you wish to keep your data after the upgrade, you should choose to deploy the container either with a persistent storage or with an external MySQL instance. In all other cases, your data will be lost once the container is deleted and a new one is spun up.
+
+>**Warning**
+> If you wish to downgrade a server, make sure that the version of ZenML that you’re moving to has the same database schema. This is because reverse migration of the schema is not supported.

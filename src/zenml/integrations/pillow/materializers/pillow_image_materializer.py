@@ -58,8 +58,7 @@ class PillowImageMaterializer(BaseMaterializer):
         files = io_utils.find_files(self.uri, f"{DEFAULT_IMAGE_FILENAME}.*")
         filepath = [file for file in files if not fileio.isdir(file)][0]
 
-        # # FAILING OPTION 1: temporary directory
-        # # create a temporary folder
+        # create a temporary folder
         temp_dir = tempfile.TemporaryDirectory(prefix="zenml-temp-")
         temp_file = os.path.join(
             temp_dir.name,
@@ -76,7 +75,6 @@ class PillowImageMaterializer(BaseMaterializer):
         Args:
             image: An Image.Image object.
         """
-        # # FAILING OPTION 1: temporary directory
         super().save(image)
         temp_dir = tempfile.TemporaryDirectory(prefix="zenml-temp-")
         file_extension = image.format or DEFAULT_IMAGE_EXTENSION
@@ -91,7 +89,9 @@ class PillowImageMaterializer(BaseMaterializer):
         io_utils.copy(temp_image_path, artifact_store_path, overwrite=True)  # type: ignore[attr-defined]
         temp_dir.cleanup()
 
-    def extract_metadata(self, image: Image.Image) -> Dict[str, "MetadataType"]:
+    def extract_metadata(
+        self, image: Image.Image
+    ) -> Dict[str, "MetadataType"]:
         """Extract metadata from the given `Image` object.
 
         Args:

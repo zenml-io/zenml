@@ -75,7 +75,9 @@ class KerasMaterializer(BaseMaterializer):
         # Remove the temporary directory
         fileio.rmtree(temp_dir.name)
 
-    def extract_metadata(self, model: keras.Model) -> Dict[str, "MetadataType"]:
+    def extract_metadata(
+        self, model: keras.Model
+    ) -> Dict[str, "MetadataType"]:
         """Extract metadata from the given `Model` object.
 
         Args:

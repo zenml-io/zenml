@@ -14,7 +14,7 @@
 """Implementation of the SageMaker orchestrator."""
 
 import os
-from typing import TYPE_CHECKING, Optional, Type, cast
+from typing import TYPE_CHECKING, Optional, Tuple, Type, cast
 
 import sagemaker
 from sagemaker.workflow.execution_variables import ExecutionVariables
@@ -24,6 +24,7 @@ from sagemaker.workflow.steps import ProcessingStep
 from zenml.config.base_settings import BaseSettings
 from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
 from zenml.entrypoints import StepEntrypointConfiguration
+from zenml.enums import StackComponentType
 from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
     SagemakerOrchestratorConfig,
     SagemakerOrchestratorSettings,
@@ -31,7 +32,10 @@ from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
 from zenml.logger import get_logger
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
-from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
+from zenml.stack import StackValidator
+from zenml.utils.pipeline_docker_image_builder import (
+    PipelineDockerImageBuilder,
+)
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
@@ -56,6 +60,43 @@ class SagemakerOrchestrator(BaseOrchestrator):
             The configuration.
         """
         return cast(SagemakerOrchestratorConfig, self._config)
+
+    @property
+    def validator(self) -> Optional[StackValidator]:
+        """Validates the stack.
+
+        In the remote case, checks that the stack contains a container registry,
+        image builder and only remote components.
+
+        Returns:
+            A `StackValidator` instance.
+        """
+
+        def _validate_remote_components(
+            stack: "Stack",
+        ) -> Tuple[bool, str]:
+            for component in stack.components.values():
+                if not component.config.is_local:
+                    continue
+
+                return False, (
+                    f"The Sagemaker orchestrator runs pipelines remotely, "
+                    f"but the '{component.name}' {component.type.value} is "
+                    "a local stack component and will not be available in "
+                    "the Sagemaker step.\nPlease ensure that you always "
+                    "use non-local stack components with the Sagemaker "
+                    "orchestrator."
+                )
+
+            return True, ""
+
+        return StackValidator(
+            required_components={
+                StackComponentType.CONTAINER_REGISTRY,
+                StackComponentType.IMAGE_BUILDER,
+            },
+            custom_validation_function=_validate_remote_components,
+        )
 
     def get_orchestrator_run_id(self) -> str:
         """Returns the run id of the active orchestrator run.
@@ -87,7 +128,7 @@ class SagemakerOrchestrator(BaseOrchestrator):
             stack: The stack on which the pipeline will be deployed.
         """
         docker_image_builder = PipelineDockerImageBuilder()
-        repo_digest = docker_image_builder.build_and_push_docker_image(
+        repo_digest = docker_image_builder.build_docker_image(
             deployment=deployment, stack=stack
         )
         deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)

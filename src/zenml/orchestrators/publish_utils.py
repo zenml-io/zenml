@@ -14,6 +14,7 @@
 """Utilities to publish pipeline and step runs."""
 
 from datetime import datetime
+from functools import partial
 from typing import TYPE_CHECKING, Dict, List
 
 from zenml.client import Client
@@ -161,9 +162,11 @@ def update_pipeline_run_status(pipeline_run: PipelineRunResponseModel) -> None:
         pipeline_run: The model of the current pipeline run.
     """
     assert pipeline_run.num_steps is not None
-    steps_in_current_run = Client().zen_store.list_run_steps(
-        run_id=pipeline_run.id
+    client = Client()
+    steps_in_current_run = client.depaginate(
+        partial(client.list_run_steps, pipeline_run_id=pipeline_run.id)
     )
+
     new_status = get_pipeline_run_status(
         step_statuses=[step_run.status for step_run in steps_in_current_run],
         num_steps=pipeline_run.num_steps,

@@ -29,7 +29,9 @@ from great_expectations.data_context.types.base import (  # type: ignore[import]
 from great_expectations.data_context.types.resource_identifiers import (  # type: ignore[import]
     ValidationResultIdentifier,
 )
-from great_expectations.types import SerializableDictDot  # type: ignore[import]
+from great_expectations.types import (  # type: ignore[import]
+    SerializableDictDot,
+)
 
 from zenml.enums import ArtifactType
 from zenml.materializers.base_materializer import BaseMaterializer

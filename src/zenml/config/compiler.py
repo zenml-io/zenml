@@ -20,15 +20,19 @@ from zenml.config.base_settings import BaseSettings, ConfigurationLevel
 from zenml.config.pipeline_configurations import PipelineRunConfiguration
 from zenml.config.pipeline_deployment import PipelineDeployment
 from zenml.config.settings_resolver import SettingsResolver
-from zenml.config.step_configurations import Step, StepConfiguration, StepSpec
+from zenml.config.step_configurations import (
+    Step,
+    StepConfiguration,
+    StepSpec,
+)
 from zenml.environment import get_run_environment_dict
 from zenml.exceptions import PipelineInterfaceError, StackValidationError
 from zenml.utils import pydantic_utils, settings_utils, source_utils
 
 if TYPE_CHECKING:
     from zenml.pipelines import BasePipeline
-    from zenml.steps import BaseStep
     from zenml.stack import Stack, StackComponent
+    from zenml.steps import BaseStep
 
 from zenml.logger import get_logger
 
@@ -134,6 +138,11 @@ class Compiler:
             if step_name not in pipeline.steps:
                 raise KeyError(f"No step with name {step_name}.")
             pipeline.steps[step_name]._apply_configuration(step_config)
+
+        # Override `enable_cache` of all steps if set at run level
+        if config.enable_cache is not None:
+            for step_ in pipeline.steps.values():
+                step_.configure(enable_cache=config.enable_cache)
 
     def _apply_stack_default_settings(
         self, pipeline: "BasePipeline", stack: "Stack"
@@ -262,7 +271,8 @@ class Compiler:
                 settings_instance = resolver.resolve(stack=stack)
             except KeyError:
                 logger.info(
-                    "Not including stack component settings with key `%s`.", key
+                    "Not including stack component settings with key `%s`.",
+                    key,
                 )
                 continue
 
@@ -315,18 +325,12 @@ class Compiler:
             configuration_level=ConfigurationLevel.STEP,
             stack=stack,
         )
-
-        merged_settings = {
-            **pipeline_settings,
-            **step_settings,
-        }
-        merged_extras = {**pipeline_extra, **step.configuration.extra}
+        step_extra = step.configuration.extra
 
         step.configure(
-            settings=merged_settings,
-            extra=merged_extras,
-            merge=False,
+            settings=pipeline_settings, extra=pipeline_extra, merge=False
         )
+        step.configure(settings=step_settings, extra=step_extra, merge=True)
 
         complete_step_configuration = StepConfiguration(
             **step.configuration.dict()

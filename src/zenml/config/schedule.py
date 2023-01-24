@@ -27,6 +27,9 @@ class Schedule(BaseModel):
     """Class for defining a pipeline schedule.
 
     Attributes:
+        name: Optional name to give to the schedule. If not set, a default name
+            will be generated based on the pipeline name and the current date
+            and time.
         cron_expression: Cron expression for the pipeline schedule. If a value
             for this is set it takes precedence over the start time + interval.
         start_time: datetime object to indicate when to start the schedule.
@@ -42,6 +45,7 @@ class Schedule(BaseModel):
             internally, you should turn catchup off to avoid duplicate backfill.
     """
 
+    name: Optional[str] = None
     cron_expression: Optional[str] = None
     start_time: Optional[datetime.datetime] = None
     end_time: Optional[datetime.datetime] = None

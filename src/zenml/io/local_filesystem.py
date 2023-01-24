@@ -30,7 +30,16 @@
 import glob
 import os
 import shutil
-from typing import Any, Callable, ClassVar, Iterable, List, Optional, Set, Tuple
+from typing import (
+    Any,
+    Callable,
+    ClassVar,
+    Iterable,
+    List,
+    Optional,
+    Set,
+    Tuple,
+)
 
 from zenml.io.filesystem import BaseFilesystem, PathType
 from zenml.io.filesystem_registry import default_filesystem_registry
@@ -59,7 +68,9 @@ class LocalFilesystem(BaseFilesystem):
         return open(name, mode=mode)
 
     @staticmethod
-    def copyfile(src: PathType, dst: PathType, overwrite: bool = False) -> None:
+    def copyfile(
+        src: PathType, dst: PathType, overwrite: bool = False
+    ) -> None:
         """Copy a file from the source to the destination.
 
         Args:

@@ -118,7 +118,16 @@ class StepView:
         Returns:
             The docstring of the step function or class.
         """
-        return self.step_configuration.docstring
+        return self._model.docstring
+
+    @property
+    def source_code(self) -> Optional[str]:
+        """Source code of the step function or class.
+
+        Returns:
+            The source code of the step function or class.
+        """
+        return self._model.source_code
 
     @property
     def parameters(self) -> Dict[str, str]:
@@ -163,7 +172,7 @@ class StepView:
         return self.step_configuration.extra
 
     @property
-    def enable_cache(self) -> bool:
+    def enable_cache(self) -> Optional[bool]:
         """Returns whether caching is enabled for this step.
 
         Returns:
@@ -172,7 +181,7 @@ class StepView:
         return self.step_configuration.enable_cache
 
     @property
-    def enable_artifact_metadata(self) -> bool:
+    def enable_artifact_metadata(self) -> Optional[bool]:
         """Returns whether artifact metadata is enabled for this step.
 
         Returns:

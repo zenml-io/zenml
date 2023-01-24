@@ -15,7 +15,7 @@
 
 import time
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict, Tuple
+from typing import TYPE_CHECKING, Dict, Optional, Tuple
 
 from zenml.client import Client
 from zenml.config.step_configurations import Step
@@ -102,7 +102,7 @@ def _get_step_operator(
 
 
 class StepLauncher:
-    """This class is responsible for launching a step of a ZenML pipeline.
+    """A class responsible for launching a step of a ZenML pipeline.
 
     This class follows these steps to launch and publish a ZenML step:
     1. Publish or reuse a `PipelineRun`
@@ -151,11 +151,14 @@ class StepLauncher:
                     run_id=pipeline_run.id
                 )
             client = Client()
+            docstring, source_code = self._get_step_docstring_and_source_code()
             step_run = StepRunRequestModel(
                 name=self._step_name,
                 pipeline_run_id=pipeline_run.id,
                 step=self._step,
                 status=ExecutionStatus.RUNNING,
+                docstring=docstring,
+                source_code=source_code,
                 start_time=datetime.utcnow(),
                 user=client.active_user.id,
                 project=client.active_project.id,
@@ -190,6 +193,28 @@ class StepLauncher:
             publish_utils.publish_failed_pipeline_run(pipeline_run.id)
             raise
 
+    def _get_step_docstring_and_source_code(self) -> Tuple[Optional[str], str]:
+        """Gets the docstring and source code of the step.
+
+        If any of the two is longer than 1000 characters, it will be truncated.
+
+        Returns:
+            The docstring and source code of the step.
+        """
+        from zenml.steps.base_step import BaseStep
+
+        step_instance = BaseStep.load_from_source(self._step.spec.source)
+
+        docstring = step_instance.docstring
+        if docstring and len(docstring) > 1000:
+            docstring = docstring[:1000] + "..."
+
+        source_code = step_instance.source_code
+        if source_code and len(source_code) > 1000:
+            source_code = source_code[:1000] + "..."
+
+        return docstring, source_code
+
     def _create_or_reuse_run(self) -> Tuple[PipelineRunResponseModel, bool]:
         """Creates a pipeline run or reuses an existing one.
 
@@ -219,6 +244,7 @@ class StepLauncher:
             project=client.active_project.id,
             stack=self._deployment.stack_id,
             pipeline=self._deployment.pipeline_id,
+            schedule_id=self._deployment.schedule_id,
             enable_cache=self._deployment.pipeline.enable_cache,
             enable_artifact_metadata=self._deployment.pipeline.enable_artifact_metadata,
             status=ExecutionStatus.RUNNING,
@@ -262,9 +288,9 @@ class StepLauncher:
         step_run.parent_step_ids = parent_step_ids
         step_run.cache_key = cache_key
 
-        cache_enabled = (
-            self._deployment.pipeline.enable_cache
-            and self._step.config.enable_cache
+        cache_enabled = cache_utils.is_cache_enabled(
+            step_enable_cache=self._step.config.enable_cache,
+            pipeline_enable_cache=self._deployment.pipeline.enable_cache,
         )
 
         execution_needed = True
