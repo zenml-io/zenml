@@ -579,9 +579,9 @@ class BaseFilterModel(BaseModel):
                 column_filter.generate_query_conditions(table=table)
             )
         if self.logical_operator == LogicalOperators.OR:
-            return or_(*filters)
+            return or_(False, *filters)
         elif self.logical_operator == LogicalOperators.AND:
-            return and_(*filters)
+            return and_(True, *filters)
         else:
             raise RuntimeError("No valid logical operator was supplied.")
 
