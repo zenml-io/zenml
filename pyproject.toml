@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.31.1"
+version = "0.32.0"
 packages = [
     { include = "zenml", from = "src" },
 ]
@@ -64,6 +64,7 @@ rich = {extras = ["jupyter"], version = "^12.0.0"}
 httplib2 = "<0.20,>=0.19.1"
 pyparsing = "<3,>=2.4.0"
 sqlmodel = "~0.0.8"
+sqlalchemy_utils = "0.38.3"
 passlib = { extras = ["bcrypt"], version = "~1.7.4"}
 python-terraform = { version = "^0.10.1" }
 pymysql = { version = "~1.0.2"}
@@ -302,6 +303,7 @@ module = [
     "multipart.*",
     "jose.*",
     "fastapi_utils.*",
+    "sqlalchemy_utils.*"
 ]
 ignore_missing_imports = true
 

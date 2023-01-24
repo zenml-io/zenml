@@ -97,7 +97,6 @@ class PipelineSchema(NamedSchema, table=True):
                 spec=PipelineSpec.parse_raw(self.spec),
                 created=self.created,
                 updated=self.updated,
-                status=status_last_x_runs,
             )
         else:
             return PipelineResponseModel(

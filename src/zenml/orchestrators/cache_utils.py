@@ -27,7 +27,6 @@ if TYPE_CHECKING:
     from zenml.config.step_configurations import Step
     from zenml.models.step_run_models import StepRunResponseModel
 
-
 logger = get_logger(__name__)
 
 
@@ -132,12 +131,18 @@ def get_cached_step_run(cache_key: str) -> Optional["StepRunResponseModel"]:
     Returns:
         The existing step run if the step can be cached, otherwise None.
     """
-    cache_candidates = Client().zen_store.list_run_steps(
-        project_id=Client().active_project.id,
-        cache_key=cache_key,
-        status=ExecutionStatus.COMPLETED,
+    cache_candidates = (
+        Client()
+        .list_run_steps(
+            project_id=Client().active_project.id,
+            cache_key=cache_key,
+            status=ExecutionStatus.COMPLETED,
+            sort_by="created",
+            size=1,
+        )
+        .items
     )
+
     if cache_candidates:
-        cache_candidates.sort(key=lambda s: s.created)
         return cache_candidates[-1]
     return None

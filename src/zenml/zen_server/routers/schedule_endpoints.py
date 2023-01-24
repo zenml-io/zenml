@@ -12,19 +12,25 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for pipeline run schedules."""
-from typing import List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Security
+from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, SCHEDULES, VERSION_1
 from zenml.enums import PermissionType
+from zenml.models.page_model import Page
 from zenml.models.schedule_model import (
+    ScheduleFilterModel,
     ScheduleResponseModel,
     ScheduleUpdateModel,
 )
 from zenml.zen_server.auth import AuthContext, authorize
-from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
+from zenml.zen_server.utils import (
+    error_response,
+    handle_exceptions,
+    make_dependable,
+    zen_store,
+)
 
 router = APIRouter(
     prefix=API + VERSION_1 + SCHEDULES,
@@ -35,33 +41,27 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=List[ScheduleResponseModel],
+    response_model=Page[ScheduleResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_schedules(
-    project_name_or_id: Optional[Union[str, UUID]] = None,
-    user_name_or_id: Optional[Union[str, UUID]] = None,
-    pipeline_id: Optional[UUID] = None,
-    name: Optional[str] = None,
+    schedule_filter_model: ScheduleFilterModel = Depends(
+        make_dependable(ScheduleFilterModel)
+    ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> List[ScheduleResponseModel]:
+) -> Page[ScheduleResponseModel]:
     """Gets a list of schedules.
 
     Args:
-        project_name_or_id: Name or ID of the project to get schedules for.
-        user_name_or_id: Optionally filter by name or ID of the user.
-        pipeline_id: Optionally filter by pipeline ID.
-        name: Optionally filter by schedule name
+        schedule_filter_model: Filter model used for pagination, sorting,
+            filtering
 
     Returns:
         List of schedule objects.
     """
     return zen_store().list_schedules(
-        project_name_or_id=project_name_or_id,
-        user_name_or_id=user_name_or_id,
-        pipeline_id=pipeline_id,
-        name=name,
+        schedule_filter_model=schedule_filter_model
     )
 
 

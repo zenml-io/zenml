@@ -64,6 +64,35 @@ The inference pipeline simulates loading data from a dynamic external source,
 then uses that data to perform online predictions using the running Seldon
 Core prediction server.
 
+# 🏠 Local Stack
+
+## 📄 Infrastructure Requirements (Pre-requisites)
+
+You don't need to set up any infrastructure to run your pipelines with Seldon, locally. However, you need the following tools installed:
+  * Docker must be installed on your local machine.
+  * Install k3d by running `curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash`.
+
+## Create a local Seldon Stack
+
+To get a stack with Seldon Core and potential other components, you can make use of ZenML's Stack Recipes that are a set of terraform based modules that take care of setting up a cluster with Seldon among other things.
+
+Run the following command to deploy the local Seldon stack:
+
+```bash
+zenml stack recipe deploy k3d-modular --install seldon
+```
+
+>**Note**:
+> This recipe comes with MLflow, Kubeflow and Minio enabled by default. If you want any other components like KServe or Tekton, you can specify that using the `--install/-i` flag.
+
+This will deploy a local Kubernetes cluster with Seldon installed. 
+It will also generate a stack YAML file that you can import as a ZenML stack by running 
+
+```bash
+zenml stack import -f <path-to-stack-yaml>
+```
+Once the stack is set, you can then simply proceed to running your pipelines.
+
 # ☁️ Cloud Stack
 
 ### 📄 Prerequisites 

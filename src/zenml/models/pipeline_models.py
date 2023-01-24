@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """Models representing pipelines."""
 
-from typing import List, Optional
+from typing import List, Optional, Union
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
@@ -25,6 +26,7 @@ from zenml.models.base_models import (
     update_model,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
+from zenml.models.filter_models import ProjectScopedFilterModel
 from zenml.models.pipeline_run_models import PipelineRunResponseModel
 
 # ---- #
@@ -61,6 +63,29 @@ class PipelineResponseModel(PipelineBaseModel, ProjectScopedResponseModel):
     status: Optional[List[ExecutionStatus]] = Field(
         title="The status of the last x Pipeline Runs."
     )
+
+
+# ------ #
+# FILTER #
+# ------ #
+
+
+class PipelineFilterModel(ProjectScopedFilterModel):
+    """Model to enable advanced filtering of all Projects."""
+
+    name: str = Field(
+        default=None,
+        description="Name of the Pipeline",
+    )
+    docstring: str = Field(
+        default=None,
+        description="Docstring of the Pipeline",
+    )
+
+    project_id: Union[UUID, str] = Field(
+        default=None, description="Project of the Pipeline"
+    )
+    user_id: Union[UUID, str] = Field(None, description="User of the Pipeline")
 
 
 # ------- #
