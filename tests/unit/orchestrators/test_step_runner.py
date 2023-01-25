@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import sys
 from uuid import uuid4
 
 import pytest
@@ -47,9 +48,12 @@ def test_running_a_successful_step(mocker, local_stack):
     mock_publish_successful_step_run = mocker.patch(
         "zenml.orchestrators.step_runner.publish_successful_step_run"
     )
-    mock_entrypoint = mocker.patch.object(
-        successful_step, "entrypoint", autospec=True, return_value=None
-    )
+    if sys.version_info >= (3, 8):
+        # Mocking the entrypoint function adds a `_mock_self` arg to the mock
+        # signature on python 3.7.x which messes with the input resolution
+        mock_entrypoint = mocker.patch.object(
+            successful_step, "entrypoint", autospec=True, return_value=None
+        )
 
     step = Step.parse_obj(
         {
@@ -81,9 +85,10 @@ def test_running_a_successful_step(mocker, local_stack):
     mock_cleanup_step_run.assert_called_with(
         info=step_run_info, step_failed=False
     )
-    mock_entrypoint.assert_called()
     mock_publish_output_artifacts.assert_called_once()
     mock_publish_successful_step_run.assert_called_once()
+    if sys.version_info >= (3, 8):
+        mock_entrypoint.assert_called_once()
 
 
 def test_running_a_failing_step(mocker, local_stack):

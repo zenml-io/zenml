@@ -88,7 +88,7 @@ def test_publishing_a_successful_step_run(mocker):
     publish_utils.publish_successful_step_run(
         step_run_id=step_run_id, output_artifact_ids=output_artifact_ids
     )
-    call_kwargs = mock_update_run_step.call_args.kwargs
+    _, call_kwargs = mock_update_run_step.call_args
     assert call_kwargs["step_run_id"] == step_run_id
     assert (
         call_kwargs["step_run_update"].output_artifacts == output_artifact_ids
@@ -105,7 +105,7 @@ def test_publishing_a_failed_step_run(mocker):
     step_run_id = uuid4()
 
     publish_utils.publish_failed_step_run(step_run_id=step_run_id)
-    call_kwargs = mock_update_run_step.call_args.kwargs
+    _, call_kwargs = mock_update_run_step.call_args
     assert call_kwargs["step_run_id"] == step_run_id
     assert call_kwargs["step_run_update"].status == ExecutionStatus.FAILED
 
@@ -119,7 +119,7 @@ def test_publishing_a_failed_pipeline_run(mocker):
     pipeline_run_id = uuid4()
 
     publish_utils.publish_failed_pipeline_run(pipeline_run_id=pipeline_run_id)
-    call_kwargs = mock_update_run.call_args.kwargs
+    _, call_kwargs = mock_update_run.call_args
     assert call_kwargs["run_id"] == pipeline_run_id
     assert call_kwargs["run_update"].status == ExecutionStatus.FAILED
 
@@ -189,7 +189,6 @@ def test_updating_the_pipeline_run_status(
     if old_status == new_status:
         mock_update_run.assert_not_called()
     else:
-        call_kwargs = mock_update_run.call_args.kwargs
-
+        _, call_kwargs = mock_update_run.call_args
         call_kwargs["run_id"] == sample_pipeline_run_model.id
         call_kwargs["run_update"].status == new_status
