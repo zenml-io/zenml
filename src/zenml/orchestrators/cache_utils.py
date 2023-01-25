@@ -134,6 +134,8 @@ def get_cached_step_run(cache_key: str) -> Optional["StepRunResponseModel"]:
     """
     client = Client()
 
+    # TODO: replace this with a descending sort that returns just a single
+    # item once we support that functionality
     list_method = functools.partial(
         client.list_run_steps,
         project_id=client.active_project.id,
