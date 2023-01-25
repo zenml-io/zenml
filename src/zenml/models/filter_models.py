@@ -287,7 +287,7 @@ class BaseFilterModel(BaseModel):
             if split_value[0] not in SorterOps.values():
                 logger.warning(
                     "Invalid operand used for column sorting. "
-                    "Only the following operands are supgitported `%s`. "
+                    "Only the following operands are supported `%s`. "
                     "Defaulting to 'asc' on column `%s`.",
                     SorterOps.values(),
                     column,
