@@ -35,6 +35,8 @@ requirements:
       AWS environment in the us-east-1 region that provides a Sagemaker orchestrator.
     system_tools:
       - docker
+    capabilities:
+      synchronized: true
     stacks:
       - name: aws-us-east-1-sagemaker
         type: orchestrator
