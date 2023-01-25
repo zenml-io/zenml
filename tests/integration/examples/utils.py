@@ -112,13 +112,19 @@ def run_example(
 
     yield example, runs
 
+    client = Client()
+    # Cleanup registered pipelines so they don't cause trouble in future
+    # example runs
+    for pipeline in client.depaginate(list_method=client.list_pipelines):
+        client.delete_pipeline(pipeline.id)
+
     cleanup_docker = request.config.getoption("cleanup_docker", False)
 
     if cleanup_docker:
         # Clean up more expensive resources like docker containers, volumes and
         # images, if any were created.
 
-        active_stack = Client().active_stack_model
+        active_stack = client.active_stack_model
         if StackComponentType.CONTAINER_REGISTRY in active_stack.components:
             container_registry = active_stack.components[
                 StackComponentType.CONTAINER_REGISTRY

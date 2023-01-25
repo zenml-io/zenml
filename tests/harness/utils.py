@@ -353,9 +353,7 @@ def setup_test_stack_session(
             raise ValueError(
                 "tmp_path_factory is required if clean_repo is True."
             )
-        with clean_project_session(
-            tmp_path_factory, clean_repo=True
-        ) as repo_client:
+        with clean_repo_session(tmp_path_factory) as repo_client:
             with harness.setup_test_stack(
                 module=request.module,
                 environment=environment,
