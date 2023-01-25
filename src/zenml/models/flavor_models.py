@@ -23,7 +23,7 @@ from zenml.models.base_models import (
     ProjectScopedRequestModel,
     UserScopedResponseModel,
 )
-from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
+from zenml.models.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.filter_models import ProjectScopedFilterModel
 
 if TYPE_CHECKING:

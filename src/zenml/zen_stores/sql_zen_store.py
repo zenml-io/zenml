@@ -121,9 +121,9 @@ from zenml.models import (
     UserUpdateModel,
 )
 from zenml.models.base_models import BaseResponseModel
+from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.models.page_model import Page
 from zenml.models.schedule_model import ScheduleFilterModel
-from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.models.server_models import ServerDatabaseType, ServerModel
 from zenml.utils import uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
