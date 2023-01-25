@@ -37,6 +37,7 @@ class MlflowIntegration(Integration):
         "mlflow>=1.24.0",
         "mlserver>=0.5.3",
         "mlserver-mlflow>=0.5.3",
+        "numpy>=1.23.5",
     ]
 
     @classmethod
