@@ -25,6 +25,7 @@ class HyperParameterTuning(DynamicPipeline):
         **kwargs: Any,
     ) -> None:
         """
+        Initialize the pipeline by creating the step instances used by it.
 
         Args:
             load_data_step: the type of step that loads the data.

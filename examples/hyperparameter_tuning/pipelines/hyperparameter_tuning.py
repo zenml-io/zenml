@@ -44,6 +44,7 @@ class HyperParameterTuning(DynamicPipeline):
         **kwargs: Any,
     ) -> None:
         """
+        Initialize the pipeline by creating the step instances used by it.
 
         Args:
             load_data_step: the type of step that loads the data.
@@ -72,7 +73,9 @@ class HyperParameterTuning(DynamicPipeline):
                         model_parameters=dict(param),
                         evaluation_type="validation",
                     )
-                ).configure(name=f"{evaluate_step.__name__}_{param_id(param)}"),
+                ).configure(
+                    name=f"{evaluate_step.__name__}_{param_id(param)}"
+                ),
             )
             for param in hyperparameters_conf_list
         ]
