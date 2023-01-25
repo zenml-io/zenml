@@ -95,7 +95,7 @@ class TektonOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydan
 
         msg_header = (
             "Automatically exposing the Tekton UI TCP port locally as part of "
-            "the stack provisioning when `zenml stack up` is run has been "
+            "the stack provisioning using `zenml stack up` has been "
             "removed in favor of methods better suited for this "
             "purpose, such as using an Ingress controller in the remote "
             "cluster. \n"

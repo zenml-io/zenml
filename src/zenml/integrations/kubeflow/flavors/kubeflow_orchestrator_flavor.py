@@ -208,8 +208,8 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
 
         msg_header = (
             "The ability to automatically provision and manage a Kubeflow "
-            "instance running in a local K3D cluster when `zenml stack up` is "
-            "executed is no longer available in the current version of ZenML "
+            "instance with  `zenml stack up` on top of a local K3D cluster "
+            "is no longer available in the current version of ZenML "
             "client. Please use the `k3d-modular` ZenML stack recipe to "
             "achieve the same results (and more). Automatically exposing the "
             "Kubeflow UI TCP port locally as part of the stack provisioning "

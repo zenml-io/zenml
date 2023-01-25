@@ -29,8 +29,8 @@ streamlined and efficient.
 
 We will continue to support the old commands for the time being, but we
 strongly recommend adding your custom stack component provisioning and
-deprovisioning logic to the terraform recipe files. Or Make it independent of
-the main implementation of the stack component. 
+deprovisioning logic to the terraform recipe files. Alternatively, you can make 
+it independent from the main implementation of the stack component. 
 {% endhint %}
 
 ## Defining States of Custom Components

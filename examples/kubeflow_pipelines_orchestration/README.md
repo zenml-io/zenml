@@ -110,15 +110,13 @@ cloud providers (AWS, GCP, and Azure).
 
 ### 🥞 Let's cook up a Local Kubeflow stack recipe
 
-To allow users to test out their pipelines locally without having to cloud
-resources, we have created a stack recipe that spins up a local Kubernetes
-cluster using K3D and installs Kubeflow Pipelines and other tools on it.
-
-The stack recipe is called `k3d-modular` and is available in the ZenML
+To Run the pipeline on a local Kubeflow Pipelines deployment, you can use the
+ZenML Stack recipes to spin up a local Kubernetes cluster and install Kubeflow
+Pipelines on it. The stack recipe is called `k3d-modular` and is available in the ZenML
 [stack recipe repository](https://github.com/zenml-io/mlops-stacks/tree/main/k3d-modular).
-The recipe is modular, meaning that it can be configured to use different
-orchestrators, Model Deployers, and other tools. By default, it uses the
-following tools:
+The recipe is modular, meaning that you can configured it to use different
+orchestrators, Model Deployers, and other tools. By default, the recipe will
+install the following tools:
 
 * The **Minio Artifact Store** as a remote alternative to the local file system
 for storing artifacts, the Minio server is deployed as a Kubernetes pod.
@@ -141,7 +139,7 @@ zenml stack recipe deploy k3d-modular
 The flow to get started for this example can be the following:
 
 1. Pull the `k3d-modular` recipe to your local system. Learn more about what 
-this recipe does from its README.
+this recipe does from its [README](https://github.com/zenml-io/mlops-stacks/blob/main/k3d-modular/README.md).
 
 ```shell
 zenml stack recipe pull k3d-modular
