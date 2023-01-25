@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Utilities for caching."""
 
+import functools
 import hashlib
 from typing import TYPE_CHECKING, Dict, Optional
 
@@ -131,17 +132,18 @@ def get_cached_step_run(cache_key: str) -> Optional["StepRunResponseModel"]:
     Returns:
         The existing step run if the step can be cached, otherwise None.
     """
-    cache_candidates = (
-        Client()
-        .list_run_steps(
-            project_id=Client().active_project.id,
-            cache_key=cache_key,
-            status=ExecutionStatus.COMPLETED,
-            sort_by="created",
-            size=1,
-        )
-        .items
+    client = Client()
+
+    # TODO: replace this with a descending sort that returns just a single
+    # item once we support that functionality
+    list_method = functools.partial(
+        client.list_run_steps,
+        project_id=client.active_project.id,
+        cache_key=cache_key,
+        status=ExecutionStatus.COMPLETED,
+        sort_by="created",
     )
+    cache_candidates = client.depaginate(list_method=list_method)
 
     if cache_candidates:
         return cache_candidates[-1]
