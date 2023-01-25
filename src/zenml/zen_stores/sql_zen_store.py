@@ -38,7 +38,7 @@ from uuid import UUID
 
 import pymysql
 from pydantic import root_validator
-from sqlalchemy import func, text, asc, desc
+from sqlalchemy import asc, desc, func, text
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import ArgumentError, NoResultFound, OperationalError
 from sqlalchemy.orm import noload
@@ -54,8 +54,9 @@ from zenml.constants import (
 from zenml.enums import (
     ExecutionStatus,
     LoggingLevels,
+    SorterOps,
     StackComponentType,
-    StoreType, SorterOps,
+    StoreType,
 )
 from zenml.exceptions import (
     EntityExistsError,

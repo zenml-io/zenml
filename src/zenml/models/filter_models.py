@@ -281,16 +281,17 @@ class BaseFilterModel(BaseModel):
         """Validate that the sort_column is a valid column with a valid operand."""
         column = v
         split_value = v.split(":", 1)
-        if (
-                len(split_value) == 2
-        ):
+        if len(split_value) == 2:
             column = split_value[1]
 
             if split_value[0] not in SorterOps.values():
-                logger.warning("Invalid operand used for column sorting."
-                               "Only 'asc' and 'desc' are supported."
-                               "Defaulting to 'asc' on column `%s`.",
-                               column)
+                logger.warning(
+                    "Invalid operand used for column sorting."
+                    "Only the following operands are supported `%s`."
+                    "Defaulting to 'asc' on column `%s`.",
+                    SorterOps.values(),
+                    column,
+                )
                 v = column
 
         if column in cls.FILTER_EXCLUDE_FIELDS:
@@ -322,13 +323,11 @@ class BaseFilterModel(BaseModel):
         """Converts the class variables into a list of usable Filter Models."""
         column = self.sort_by
         # The default sorting operand is asc
-        operator = 'asc'
+        operator = SorterOps.ASCENDING
 
         # Check if user explicitly set an operand
         split_value = self.sort_by.split(":", 1)
-        if (
-                len(split_value) == 2
-        ):
+        if len(split_value) == 2:
             column = split_value[1]
 
             if split_value[0] in SorterOps.values():
