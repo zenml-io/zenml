@@ -6,6 +6,7 @@ Create Date: 2023-01-24 12:54:29.192057
 
 """
 from typing import Set
+
 import sqlalchemy as sa
 from alembic import op
 
@@ -57,7 +58,7 @@ def upgrade() -> None:
             batch_op.alter_column(
                 column_name="project_id",
                 new_column_name="workspace_id",
-                existing_type=sa.CHAR(length=32)
+                existing_type=sa.CHAR(length=32),
             )
 
         # Once all data is moved to the new colum, create new fk
@@ -84,7 +85,7 @@ def downgrade() -> None:
             batch_op.alter_column(
                 column_name="workspace_id",
                 new_column_name="project_id",
-                existing_type=sa.CHAR(length=32)
+                existing_type=sa.CHAR(length=32),
             )
 
         with op.batch_alter_table(table, schema=None) as batch_op:
