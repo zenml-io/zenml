@@ -111,6 +111,7 @@ from zenml.models.artifact_models import (
 from zenml.models.base_models import BaseResponseModel
 from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.models.page_model import Page
+from zenml.models.run_metadata_models import RunMetadataFilterModel
 from zenml.models.schedule_model import (
     ScheduleFilterModel,
     ScheduleResponseModel,
@@ -3072,36 +3073,67 @@ class Client(metaclass=ClientMetaClass):
 
     def list_run_metadata(
         self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
         project_id: Optional[UUID] = None,
         user_id: Optional[UUID] = None,
         pipeline_run_id: Optional[UUID] = None,
         step_run_id: Optional[UUID] = None,
         artifact_id: Optional[UUID] = None,
         stack_component_id: Optional[UUID] = None,
-    ) -> List[RunMetadataResponseModel]:
+        key: Optional[str] = None,
+        value: Optional["MetadataType"] = None,
+        type: Optional[str] = None,
+    ) -> Page[RunMetadataResponseModel]:
         """List run metadata.
 
         Args:
-            project_id: If provided, only return metadata for this project.
-            user_id: If provided, only return metadata for this user.
-            pipeline_run_id: If provided, only return metadata for this pipeline
-                run.
-            step_run_id: If provided, only return metadata for this step run.
-            artifact_id: If provided, only return metadata for this artifact.
-            stack_component_id: If provided, only return metadata for this
-                stack component.
+            sort_by: The field to sort the results by.
+            page: The page number to return.
+            size: The number of results to return per page.
+            logical_operator: The logical operator to use for filtering.
+            id: The ID of the metadata.
+            created: The creation time of the metadata.
+            updated: The last update time of the metadata.
+            project_id: The ID of the project the metadata belongs to.
+            user_id: The ID of the user that created the metadata.
+            pipeline_run_id: The ID of the pipeline run the metadata belongs to.
+            step_run_id: The ID of the step run the metadata belongs to.
+            artifact_id: The ID of the artifact the metadata belongs to.
+            stack_component_id: The ID of the stack component that produced
+                the metadata.
+            key: The key of the metadata.
+            value: The value of the metadata.
+            type: The type of the metadata.
 
         Returns:
             The run metadata.
         """
-        return self.zen_store.list_run_metadata(
-            project_id=project_id or self.active_project.id,
+        metadata_filter_model = RunMetadataFilterModel(
+            sort_by=sort_by,
+            page=page,
+            size=size,
+            logical_operator=logical_operator,
+            id=id,
+            created=created,
+            updated=updated,
+            project_id=project_id,
             user_id=user_id,
             pipeline_run_id=pipeline_run_id,
             step_run_id=step_run_id,
             artifact_id=artifact_id,
             stack_component_id=stack_component_id,
+            key=key,
+            value=value,
+            type=type,
         )
+        metadata_filter_model.set_scope_project(self.active_project.id)
+        return self.zen_store.list_run_metadata(metadata_filter_model)
 
     # ---- utility prefix matching get functions -----
 

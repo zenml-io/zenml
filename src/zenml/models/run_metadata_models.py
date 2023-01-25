@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing run metadata."""
 
-from typing import Optional
+from typing import Optional, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -24,6 +24,7 @@ from zenml.models.base_models import (
     ProjectScopedResponseModel,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
+from zenml.models.filter_models import ProjectScopedFilterModel
 
 # ---- #
 # BASE #
@@ -33,7 +34,9 @@ from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 class RunMetadataBaseModel(BaseModel):
     """Base model for run metadata."""
 
-    pipeline_run_id: Optional[UUID]
+    pipeline_run_id: Optional[UUID] = Field(
+        title="The ID of the pipeline run that this metadata belongs to.",
+    )
     step_run_id: Optional[UUID]
     artifact_id: Optional[UUID]
     stack_component_id: Optional[UUID]
@@ -60,6 +63,23 @@ class RunMetadataResponseModel(
     RunMetadataBaseModel, ProjectScopedResponseModel
 ):
     """Response model for run metadata."""
+
+
+# ------ #
+# FILTER #
+# ------ #
+
+
+class RunMetadataFilterModel(ProjectScopedFilterModel):
+    """Model to enable advanced filtering of run metadata."""
+
+    pipeline_run_id: Optional[Union[str, UUID]] = None
+    step_run_id: Optional[Union[str, UUID]] = None
+    artifact_id: Optional[Union[str, UUID]] = None
+    stack_component_id: Optional[Union[str, UUID]] = None
+    key: Optional[str] = None
+    value: Optional[Union[str, MetadataType]] = None
+    type: Optional[Union[str, MetadataTypeEnum]] = None
 
 
 # ------- #

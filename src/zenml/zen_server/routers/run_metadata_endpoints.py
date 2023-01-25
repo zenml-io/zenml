@@ -13,16 +13,21 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for run metadata."""
 
-from typing import List, Optional
-from uuid import UUID
 
-from fastapi import APIRouter, Security
+from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, RUN_METADATA, VERSION_1
 from zenml.enums import PermissionType
 from zenml.models import RunMetadataResponseModel
+from zenml.models.page_model import Page
+from zenml.models.run_metadata_models import RunMetadataFilterModel
 from zenml.zen_server.auth import AuthContext, authorize
-from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
+from zenml.zen_server.utils import (
+    error_response,
+    handle_exceptions,
+    make_dependable,
+    zen_store,
+)
 
 router = APIRouter(
     prefix=API + VERSION_1 + RUN_METADATA,
@@ -33,37 +38,23 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=List[RunMetadataResponseModel],
+    response_model=Page[RunMetadataResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_run_metadata(
-    project_id: Optional[UUID] = None,
-    user_id: Optional[UUID] = None,
-    pipeline_run_id: Optional[UUID] = None,
-    step_run_id: Optional[UUID] = None,
-    artifact_id: Optional[UUID] = None,
-    stack_component_id: Optional[UUID] = None,
+    run_metadata_filter_model: RunMetadataFilterModel = Depends(
+        make_dependable(RunMetadataFilterModel)
+    ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> List[RunMetadataResponseModel]:
+) -> Page[RunMetadataResponseModel]:
     """Get run metadata according to query filters.
 
     Args:
-        project_id: ID of the project to filter by.
-        user_id: ID of the user to filter by.
-        pipeline_run_id: ID of the pipeline run to filter by.
-        step_run_id: ID of the step run to filter by.
-        artifact_id: ID of the artifact to filter by.
-        stack_component_id: ID of the stack component to filter by.
+        run_metadata_filter_model: Filter model used for pagination, sorting,
+            filtering.
 
     Returns:
         The pipeline runs according to query filters.
     """
-    return zen_store().list_run_metadata(
-        project_id=project_id,
-        user_id=user_id,
-        pipeline_run_id=pipeline_run_id,
-        step_run_id=step_run_id,
-        artifact_id=artifact_id,
-        stack_component_id=stack_component_id,
-    )
+    return zen_store().list_run_metadata(run_metadata_filter_model)

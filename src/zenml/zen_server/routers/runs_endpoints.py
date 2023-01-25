@@ -67,8 +67,7 @@ def list_runs(
     """Get pipeline runs according to query filters.
 
     Args:
-        runs_filter_model: Filter model used for pagination, sorting,
-                                   filtering
+        runs_filter_model: Filter model used for pagination, sorting, filtering
 
     Returns:
         The pipeline runs according to query filters.

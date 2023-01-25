@@ -55,6 +55,7 @@ from zenml.models.role_models import (
     RoleUpdateModel,
 )
 from zenml.models.run_metadata_models import (
+    RunMetadataFilterModel,
     RunMetadataRequestModel,
     RunMetadataResponseModel,
 )
@@ -203,6 +204,7 @@ __all__ = [
     "RoleResponseModel",
     "RoleUpdateModel",
     "RoleFilterModel",
+    "RunMetadataFilterModel",
     "RunMetadataRequestModel",
     "RunMetadataResponseModel",
     "ScheduleRequestModel",

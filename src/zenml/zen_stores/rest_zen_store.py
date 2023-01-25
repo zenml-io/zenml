@@ -132,6 +132,7 @@ from zenml.models.base_models import (
     ProjectScopedResponseModel,
 )
 from zenml.models.page_model import Page
+from zenml.models.run_metadata_models import RunMetadataFilterModel
 from zenml.models.schedule_model import ScheduleFilterModel
 from zenml.models.server_models import ServerModel
 from zenml.models.team_models import TeamFilterModel, TeamUpdateModel
@@ -1588,34 +1589,21 @@ class RestZenStore(BaseZenStore):
 
     def list_run_metadata(
         self,
-        project_id: Optional[UUID] = None,
-        user_id: Optional[UUID] = None,
-        pipeline_run_id: Optional[UUID] = None,
-        step_run_id: Optional[UUID] = None,
-        artifact_id: Optional[UUID] = None,
-        stack_component_id: Optional[UUID] = None,
-    ) -> List[RunMetadataResponseModel]:
+        run_metadata_filter_model: RunMetadataFilterModel,
+    ) -> Page[RunMetadataResponseModel]:
         """List run metadata.
 
         Args:
-            project_id: If provided, only return metadata for this project.
-            user_id: If provided, only return metadata for this user.
-            pipeline_run_id: If provided, only return metadata for this pipeline
-                run.
-            step_run_id: If provided, only return metadata for this step run.
-            artifact_id: If provided, only return metadata for this artifact.
-            stack_component_id: If provided, only return metadata for this
-                stack component.
+            run_metadata_filter_model: All filter parameters including
+                pagination params.
 
         Returns:
             The run metadata.
         """
-        filters = locals()
-        filters.pop("self")
-        return self._list_resources(
+        return self._list_paginated_resources(
             route=RUN_METADATA,
             response_model=RunMetadataResponseModel,
-            **filters,
+            filter_model=run_metadata_filter_model,
         )
 
     # =======================

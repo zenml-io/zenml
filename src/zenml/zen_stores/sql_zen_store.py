@@ -124,6 +124,7 @@ from zenml.models import (
 )
 from zenml.models.base_models import BaseResponseModel
 from zenml.models.page_model import Page
+from zenml.models.run_metadata_models import RunMetadataFilterModel
 from zenml.models.schedule_model import ScheduleFilterModel
 from zenml.models.server_models import ServerDatabaseType, ServerModel
 from zenml.utils import uuid_utils
@@ -3520,50 +3521,25 @@ class SqlZenStore(BaseZenStore):
 
     def list_run_metadata(
         self,
-        project_id: Optional[UUID] = None,
-        user_id: Optional[UUID] = None,
-        pipeline_run_id: Optional[UUID] = None,
-        step_run_id: Optional[UUID] = None,
-        artifact_id: Optional[UUID] = None,
-        stack_component_id: Optional[UUID] = None,
-    ) -> List[RunMetadataResponseModel]:
+        run_metadata_filter_model: RunMetadataFilterModel,
+    ) -> Page[RunMetadataResponseModel]:
         """List run metadata.
 
         Args:
-            project_id: If provided, only return metadata for this project.
-            user_id: If provided, only return metadata for this user.
-            pipeline_run_id: If provided, only return metadata for this pipeline
-                run.
-            step_run_id: If provided, only return metadata for this step run.
-            artifact_id: If provided, only return metadata for this artifact.
-            stack_component_id: If provided, only return metadata for this
-                stack component.
+            run_metadata_filter_model: All filter parameters including
+                pagination params.
 
         Returns:
             The run metadata.
         """
         with Session(self.engine) as session:
             query = select(RunMetadataSchema)
-            if project_id is not None:
-                query = query.where(RunMetadataSchema.project_id == project_id)
-            if user_id is not None:
-                query = query.where(RunMetadataSchema.user_id == user_id)
-            if pipeline_run_id is not None:
-                query = query.where(
-                    RunMetadataSchema.pipeline_run_id == pipeline_run_id
-                )
-            if step_run_id is not None:
-                query = query.where(
-                    RunMetadataSchema.step_run_id == step_run_id
-                )
-            if stack_component_id is not None:
-                query = query.where(
-                    RunMetadataSchema.stack_component_id == stack_component_id
-                )
-            return [
-                run_metadata_schema.to_model()
-                for run_metadata_schema in session.exec(query).all()
-            ]
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=RunMetadataSchema,
+                filter_model=run_metadata_filter_model,
+            )
 
     # =======================
     # Internal helper methods
