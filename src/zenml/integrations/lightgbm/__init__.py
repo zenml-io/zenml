@@ -22,6 +22,7 @@ class LightGBMIntegration(Integration):
 
     NAME = LIGHTGBM
     REQUIREMENTS = ["lightgbm>=1.0.0"]
+    APT_PACKAGES = ["libgomp1"]
 
     @classmethod
     def activate(cls) -> None:
