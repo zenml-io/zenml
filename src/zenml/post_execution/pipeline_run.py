@@ -167,16 +167,17 @@ class PipelineRunView:
         return self.pipeline_configuration.get(PARAM_ENABLE_CACHE)
 
     @property
-    def enable_artifact_metadata(self) -> bool:
+    def enable_artifact_metadata(self) -> Optional[bool]:
         """Returns whether artifact metadata is enabled for this pipeline run.
 
         Returns:
             True if artifact metadata is enabled for this pipeline run.
         """
-        enable_artifact_metadata = self.pipeline_configuration[
-            "enable_artifact_metadata"
-        ]
-        return cast(bool, enable_artifact_metadata)
+        from zenml.pipelines.base_pipeline import (
+            PARAM_ENABLE_ARTIFACT_METADATA,
+        )
+
+        return self.pipeline_configuration.get(PARAM_ENABLE_ARTIFACT_METADATA)
 
     @property
     def zenml_version(self) -> Optional[str]:

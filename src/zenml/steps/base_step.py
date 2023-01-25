@@ -289,20 +289,17 @@ class BaseStep(metaclass=BaseStepMeta):
         logger.debug(
             "Step '%s': Caching %s.",
             name,
-            "enabled" if enable_cache else "disabled",
+            "enabled" if enable_cache is not False else "disabled",
         )
 
         enable_artifact_metadata = kwargs.pop(
             PARAM_ENABLE_ARTIFACT_METADATA, None
         )
-        if not isinstance(enable_artifact_metadata, bool):
-            # Default to artifact metadata enabled if not explicitly set
-            enable_artifact_metadata = True
 
         logger.debug(
             "Step '%s': Artifact metadata %s.",
             name,
-            "enabled" if enable_artifact_metadata else "disabled",
+            "enabled" if enable_artifact_metadata is not False else "disabled",
         )
 
         self._configuration = PartialStepConfiguration(

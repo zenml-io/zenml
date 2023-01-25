@@ -30,6 +30,7 @@ from zenml.models.artifact_models import (
     ArtifactRequestModel,
     ArtifactResponseModel,
 )
+from zenml.orchestrators.cache_utils import is_cache_enabled
 from zenml.orchestrators.publish_utils import (
     publish_output_artifact_metadata,
     publish_output_artifacts,
@@ -130,10 +131,15 @@ class StepRunner:
         # Store and publish the output artifacts of the step function.
         output_annotations = parse_return_type_annotations(spec.annotations)
         output_data = self._validate_outputs(return_values, output_annotations)
+        artifact_metadata_enabled = is_cache_enabled(
+            step_enable_cache=step_run_info.config.enable_artifact_metadata,
+            pipeline_enable_cache=step_run_info.pipeline.enable_artifact_metadata,
+        )
         output_artifacts, artifact_metadata = self._store_output_artifacts(
             output_data=output_data,
             output_artifact_uris=output_artifact_uris,
             output_materializers=output_materializers,
+            artifact_metadata_enabled=artifact_metadata_enabled,
         )
         output_artifact_ids = publish_output_artifacts(
             output_artifacts=output_artifacts,
@@ -344,6 +350,7 @@ class StepRunner:
         output_data: Dict[str, Any],
         output_materializers: Dict[str, Type[BaseMaterializer]],
         output_artifact_uris: Dict[str, str],
+        artifact_metadata_enabled: bool,
     ) -> Tuple[
         Dict[str, ArtifactRequestModel], Dict[str, Dict[str, "MetadataType"]]
     ]:
@@ -354,6 +361,8 @@ class StepRunner:
                 names to return values.
             output_materializers: The output materializers of the step.
             output_artifact_uris: The output artifact URIs of the step.
+            artifact_metadata_enabled: Whether artifact metadata collection is
+                enabled.
 
         Returns:
             An `ArtifactRequestModel` for each output artifact that was saved,
@@ -379,8 +388,7 @@ class StepRunner:
             uri = output_artifact_uris[output_name]
             materializer = materializer_class(uri)
             materializer.save(return_value)
-            # TODO: or self._pipeline.enable_artifact_metadata
-            if self._step.config.enable_artifact_metadata:
+            if artifact_metadata_enabled:
                 artifact_metadata = materializer.extract_metadata(return_value)
                 output_artifact_metadata[output_name] = artifact_metadata
             output_artifact = ArtifactRequestModel(
