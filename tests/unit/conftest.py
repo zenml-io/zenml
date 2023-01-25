@@ -356,31 +356,6 @@ def sample_project_model() -> ProjectResponseModel:
 
 
 @pytest.fixture
-def sample_step_model(
-    sample_project_model, sample_user_model
-) -> StepRunResponseModel:
-    """Return a sample step model for testing purposes."""
-    step = Step.parse_obj(
-        {
-            "spec": {"source": "", "upstream_steps": [], "inputs": {}},
-            "config": {"name": "step_name", "enable_cache": True},
-        }
-    )
-
-    return StepRunResponseModel(
-        id=uuid4(),
-        name="sample_step",
-        pipeline_run_id=uuid4(),
-        step=step,
-        status=ExecutionStatus.COMPLETED,
-        created=datetime.now(),
-        updated=datetime.now(),
-        project=sample_project_model,
-        user=sample_user_model,
-    )
-
-
-@pytest.fixture
 def sample_step_request_model() -> StepRunRequestModel:
     """Return a sample step model for testing purposes."""
     step = Step.parse_obj(
@@ -402,9 +377,10 @@ def sample_step_request_model() -> StepRunRequestModel:
 
 
 @pytest.fixture
-def sample_step_view(sample_step_model) -> StepView:
+def sample_step_view(create_step_run) -> StepView:
     """Return a sample step view for testing purposes."""
-    return StepView(sample_step_model)
+    sample_step_run = create_step_run()
+    return StepView(sample_step_run)
 
 
 @pytest.fixture
