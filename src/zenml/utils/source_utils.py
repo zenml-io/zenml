@@ -376,7 +376,7 @@ def resolve_class(class_: Type[Any], replace_main_module: bool = True) -> str:
 
     try:
         file_path = inspect.getfile(class_)
-    except TypeError:
+    except (TypeError, OSError):
         # builtin file
         return initial_source
 

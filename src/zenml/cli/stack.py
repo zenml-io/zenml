@@ -21,7 +21,12 @@ import click
 import zenml
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
-from zenml.cli.utils import _component_display_name, print_stacks_table
+from zenml.cli.utils import (
+    _component_display_name,
+    list_options,
+    print_page_info,
+    print_stacks_table,
+)
 from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
@@ -30,6 +35,7 @@ from zenml.exceptions import (
     ProvisioningError,
     StackExistsError,
 )
+from zenml.models import StackFilterModel
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
@@ -139,6 +145,14 @@ def stack() -> None:
     required=False,
 )
 @click.option(
+    "-i",
+    "--image_builder",
+    "image_builder",
+    help="Name of the image builder for this stack.",
+    type=str,
+    required=False,
+)
+@click.option(
     "--set",
     "set_stack",
     is_flag=True,
@@ -165,6 +179,7 @@ def register_stack(
     alerter: Optional[str] = None,
     annotator: Optional[str] = None,
     data_validator: Optional[str] = None,
+    image_builder: Optional[str] = None,
     set_stack: bool = False,
     share: bool = False,
 ) -> None:
@@ -183,6 +198,7 @@ def register_stack(
         alerter: Name of the alerter for this stack.
         annotator: Name of the annotator for this stack.
         data_validator: Name of the data validator for this stack.
+        image_builder: Name of the new image builder for this stack.
         set_stack: Immediately set this stack as active.
         share: Share the stack with other users.
     """
@@ -202,6 +218,8 @@ def register_stack(
             components[StackComponentType.DATA_VALIDATOR] = data_validator
         if feature_store:
             components[StackComponentType.FEATURE_STORE] = feature_store
+        if image_builder:
+            components[StackComponentType.IMAGE_BUILDER] = image_builder
         if model_deployer:
             components[StackComponentType.MODEL_DEPLOYER] = model_deployer
         if secrets_manager:
@@ -337,6 +355,14 @@ def register_stack(
     type=str,
     required=False,
 )
+@click.option(
+    "-i",
+    "--image_builder",
+    "image_builder",
+    help="Name of the image builder for this stack.",
+    type=str,
+    required=False,
+)
 def update_stack(
     stack_name_or_id: Optional[str] = None,
     artifact_store: Optional[str] = None,
@@ -350,6 +376,7 @@ def update_stack(
     alerter: Optional[str] = None,
     annotator: Optional[str] = None,
     data_validator: Optional[str] = None,
+    image_builder: Optional[str] = None,
 ) -> None:
     """Update a stack.
 
@@ -367,6 +394,7 @@ def update_stack(
         alerter: Name of the new alerter for this stack.
         annotator: Name of the new annotator for this stack.
         data_validator: Name of the new data validator for this stack.
+        image_builder: Name of the new image builder for this stack.
     """
     client = Client()
 
@@ -391,6 +419,8 @@ def update_stack(
             ]
         if feature_store:
             updates[StackComponentType.FEATURE_STORE] = [feature_store]
+        if image_builder:
+            updates[StackComponentType.IMAGE_BUILDER] = [image_builder]
         if model_deployer:
             updates[StackComponentType.MODEL_DEPLOYER] = [model_deployer]
         if orchestrator:
@@ -538,6 +568,14 @@ def share_stack(
     is_flag=True,
     required=False,
 )
+@click.option(
+    "-i",
+    "--image_builder",
+    "image_builder_flag",
+    help="Include this to remove the image builder from this stack.",
+    is_flag=True,
+    required=False,
+)
 def remove_stack_component(
     stack_name_or_id: Optional[str] = None,
     container_registry_flag: Optional[bool] = False,
@@ -549,6 +587,7 @@ def remove_stack_component(
     alerter_flag: Optional[bool] = False,
     annotator_flag: Optional[bool] = False,
     data_validator_flag: Optional[bool] = False,
+    image_builder_flag: Optional[bool] = False,
 ) -> None:
     """Remove stack components from a stack.
 
@@ -565,6 +604,7 @@ def remove_stack_component(
         alerter_flag: To remove the alerter from this stack.
         annotator_flag: To remove the annotator from this stack.
         data_validator_flag: To remove the data validator from this stack.
+        image_builder_flag: To remove the image builder from this stack.
     """
     client = Client()
 
@@ -597,6 +637,9 @@ def remove_stack_component(
 
         if data_validator_flag:
             stack_component_update[StackComponentType.DATA_VALIDATOR] = []
+
+        if image_builder_flag:
+            stack_component_update[StackComponentType.IMAGE_BUILDER] = []
 
         try:
             updated_stack = client.update_stack(
@@ -640,21 +683,18 @@ def rename_stack(
 
 
 @stack.command("list")
-@click.option("--just-mine", "-m", is_flag=True, required=False)
-def list_stacks(just_mine: bool = False) -> None:
-    """List all available stacks.
-
-    Args:
-        just_mine: To list only the stacks that the current user has created.
-    """
+@list_options(StackFilterModel)
+def list_stacks(**kwargs: Any) -> None:
+    """List all stacks that fulfill the filter requirements."""
     client = Client()
     with console.status("Listing stacks...\n"):
-        if just_mine:
-            stacks = client.list_stacks(user_name_or_id=client.active_user.id)
-        else:
-            stacks = client.list_stacks()
+        stacks = client.list_stacks(**kwargs)
+        if not stacks:
+            cli_utils.declare("No stacks found for the given filters.")
+            return
 
-        print_stacks_table(client, stacks)
+        print_stacks_table(client, stacks.items)
+        print_page_info(stacks)
 
 
 @stack.command(

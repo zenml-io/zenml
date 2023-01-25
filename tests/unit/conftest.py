@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from datetime import datetime
-from typing import Generator
+from typing import Any, Callable, Dict, Generator, Optional
 from uuid import uuid4
 
 import pytest
@@ -50,6 +50,7 @@ from zenml.stack.stack_component import (
     StackComponentConfig,
     StackComponentType,
 )
+from zenml.step_operators import BaseStepOperator, BaseStepOperatorConfig
 from zenml.steps import StepContext, step
 
 
@@ -190,6 +191,27 @@ def remote_container_registry():
     )
 
 
+@pytest.fixture
+def sample_step_operator():
+    """Fixture that creates a stub step operator for testing."""
+
+    class StubStepOperator(BaseStepOperator):
+        def launch(self, info, entrypoint_command) -> None:
+            pass
+
+    return StubStepOperator(
+        name="",
+        id=uuid4(),
+        config=BaseStepOperatorConfig(),
+        flavor="stub",
+        type=StackComponentType.STEP_OPERATOR,
+        user=uuid4(),
+        project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+
+
 @step
 def _empty_step() -> None:
     """Empty step for testing."""
@@ -219,6 +241,17 @@ def generate_empty_steps():
         return output
 
     return _generate_empty_steps
+
+
+@pytest.fixture
+def empty_pipeline():
+    """Pytest fixture that returns an empty pipeline."""
+
+    @pipeline
+    def _pipeline():
+        pass
+
+    return _pipeline
 
 
 @pytest.fixture
@@ -323,31 +356,6 @@ def sample_project_model() -> ProjectResponseModel:
 
 
 @pytest.fixture
-def sample_step_model(
-    sample_project_model, sample_user_model
-) -> StepRunResponseModel:
-    """Return a sample step model for testing purposes."""
-    step = Step.parse_obj(
-        {
-            "spec": {"source": "", "upstream_steps": [], "inputs": {}},
-            "config": {"name": "step_name", "enable_cache": True},
-        }
-    )
-
-    return StepRunResponseModel(
-        id=uuid4(),
-        name="sample_step",
-        pipeline_run_id=uuid4(),
-        step=step,
-        status=ExecutionStatus.COMPLETED,
-        created=datetime.now(),
-        updated=datetime.now(),
-        project=sample_project_model,
-        user=sample_user_model,
-    )
-
-
-@pytest.fixture
 def sample_step_request_model() -> StepRunRequestModel:
     """Return a sample step model for testing purposes."""
     step = Step.parse_obj(
@@ -369,9 +377,10 @@ def sample_step_request_model() -> StepRunRequestModel:
 
 
 @pytest.fixture
-def sample_step_view(sample_step_model) -> StepView:
+def sample_step_view(create_step_run) -> StepView:
     """Return a sample step view for testing purposes."""
-    return StepView(sample_step_model)
+    sample_step_run = create_step_run()
+    return StepView(sample_step_run)
 
 
 @pytest.fixture
@@ -458,3 +467,43 @@ def sample_artifact_request_model() -> ArtifactRequestModel:
         project=uuid4(),
         user=uuid4(),
     )
+
+
+@pytest.fixture
+def create_step_run(
+    sample_user_model: UserResponseModel,
+    sample_project_model: ProjectResponseModel,
+) -> Callable[..., StepRunResponseModel]:
+    """Fixture that returns a function which can be used to create a
+    customizable StepRunResponseModel."""
+
+    def f(
+        step_name: str = "step_name",
+        outputs: Optional[Dict[str, Any]] = None,
+        **kwargs: Any,
+    ) -> StepRunResponseModel:
+        step = Step.parse_obj(
+            {
+                "spec": {"source": "", "upstream_steps": []},
+                "config": {
+                    "name": step_name or "step_name",
+                    "outputs": outputs or {},
+                },
+            }
+        )
+        model_args = {
+            "id": uuid4(),
+            "name": "sample_step",
+            "pipeline_run_id": uuid4(),
+            "step": step,
+            "status": ExecutionStatus.COMPLETED,
+            "created": datetime.now(),
+            "updated": datetime.now(),
+            "project": sample_project_model,
+            "user": sample_user_model,
+            "output_artifacts": {},
+            **kwargs,
+        }
+        return StepRunResponseModel(**model_args)
+
+    return f
