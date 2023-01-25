@@ -21,12 +21,16 @@ from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.enums import PermissionType
 from zenml.models import (
-    RoleAssignmentRequestModel,
     RoleRequestModel,
     RoleResponseModel,
     RoleUpdateModel,
+    TeamRoleAssignmentRequestModel,
+    TeamRoleAssignmentResponseModel,
+    UserRoleAssignmentRequestModel,
 )
-from zenml.models.role_assignment_models import RoleAssignmentResponseModel
+from zenml.models.user_role_assignment_models import (
+    UserRoleAssignmentResponseModel,
+)
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
@@ -134,7 +138,7 @@ class UserRoleAssignmentSchema(BaseSchema, table=True):
 
     @classmethod
     def from_request(
-        cls, role_assignment: RoleAssignmentRequestModel
+        cls, role_assignment: UserRoleAssignmentRequestModel
     ) -> "UserRoleAssignmentSchema":
         """Create a `UserRoleAssignmentSchema` from a `RoleAssignmentRequestModel`.
 
@@ -151,13 +155,13 @@ class UserRoleAssignmentSchema(BaseSchema, table=True):
             project_id=role_assignment.project,
         )
 
-    def to_model(self) -> RoleAssignmentResponseModel:
+    def to_model(self) -> UserRoleAssignmentResponseModel:
         """Convert a `UserRoleAssignmentSchema` to a `RoleAssignmentModel`.
 
         Returns:
             The converted `RoleAssignmentModel`.
         """
-        return RoleAssignmentResponseModel(
+        return UserRoleAssignmentResponseModel(
             id=self.id,
             project=self.project.to_model() if self.project else None,
             user=self.user.to_model(_block_recursion=True)
@@ -207,7 +211,7 @@ class TeamRoleAssignmentSchema(BaseSchema, table=True):
 
     @classmethod
     def from_request(
-        cls, role_assignment: RoleAssignmentRequestModel
+        cls, role_assignment: TeamRoleAssignmentRequestModel
     ) -> "TeamRoleAssignmentSchema":
         """Create a `TeamRoleAssignmentSchema` from a `RoleAssignmentRequestModel`.
 
@@ -224,13 +228,13 @@ class TeamRoleAssignmentSchema(BaseSchema, table=True):
             project_id=role_assignment.project,
         )
 
-    def to_model(self) -> RoleAssignmentResponseModel:
+    def to_model(self) -> TeamRoleAssignmentResponseModel:
         """Convert a `TeamRoleAssignmentSchema` to a `RoleAssignmentModel`.
 
         Returns:
             The converted `RoleAssignmentModel`.
         """
-        return RoleAssignmentResponseModel(
+        return TeamRoleAssignmentResponseModel(
             id=self.id,
             project=self.project.to_model() if self.project else None,
             team=self.team.to_model(_block_recursion=True),

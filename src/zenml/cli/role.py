@@ -13,15 +13,18 @@
 #  permissions and limitations under the License.
 """Functionality to administer roles of the ZenML CLI and server."""
 
-from typing import List, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
 import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
+from zenml.cli.utils import list_options
 from zenml.client import Client
+from zenml.console import console
 from zenml.enums import CliCategories, PermissionType
 from zenml.exceptions import EntityExistsError, IllegalOperationError
+from zenml.models import RoleFilterModel, UserRoleAssignmentFilterModel
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
@@ -30,17 +33,22 @@ def role() -> None:
 
 
 @role.command("list")
-def list_roles() -> None:
-    """List all roles."""
+@list_options(RoleFilterModel)
+def list_roles(**kwargs: Any) -> None:
+    """List all roles that fulfill the filter requirements."""
     cli_utils.print_active_config()
-    roles = Client().list_roles()
-    if not roles:
-        cli_utils.declare("No roles registered.")
-        return
-    cli_utils.print_pydantic_models(
-        roles,
-        exclude_columns=["created", "updated"],
-    )
+    client = Client()
+    with console.status("Listing roles...\n"):
+
+        roles = client.list_roles(**kwargs)
+        if not roles.items:
+            cli_utils.declare("No roles found for the given filters.")
+            return
+
+        cli_utils.print_pydantic_models(
+            roles,
+            exclude_columns=["created", "updated"],
+        )
 
 
 @role.command("create", help="Create a new role.")
@@ -166,10 +174,9 @@ def assign_role(
     # Assign the role to users
     for user_name_or_id in user_names_or_ids:
         try:
-            Client().create_role_assignment(
+            Client().create_user_role_assignment(
                 role_name_or_id=role_name_or_id,
-                user_or_team_name_or_id=user_name_or_id,
-                is_user=True,
+                user_name_or_id=user_name_or_id,
                 project_name_or_id=project_name_or_id,
             )
         except KeyError as err:
@@ -184,10 +191,9 @@ def assign_role(
     # Assign the role to teams
     for team_name_or_id in team_names_or_ids:
         try:
-            Client().create_role_assignment(
+            Client().create_team_role_assignment(
                 role_name_or_id=role_name_or_id,
-                user_or_team_name_or_id=team_name_or_id,
-                is_user=False,
+                team_name_or_id=team_name_or_id,
                 project_name_or_id=project_name_or_id,
             )
         except KeyError as err:
@@ -225,16 +231,26 @@ def revoke_role(
             role. If this is not provided, the role will be revoked globally.
     """
     cli_utils.print_active_config()
+    client = Client()
+
+    role = client.get_role(name_id_or_prefix=role_name_or_id)
+    project_id = None
+    if project_name_or_id:
+        project_id = client.get_project(
+            name_id_or_prefix=project_name_or_id
+        ).id
 
     # Revoke the role from users
     for user_name_or_id in user_names_or_ids:
+        user = client.get_user(name_id_or_prefix=user_name_or_id)
         try:
-            Client().delete_role_assignment(
-                role_name_or_id=role_name_or_id,
-                user_or_team_name_or_id=user_name_or_id,
-                is_user=True,
-                project_name_or_id=project_name_or_id,
+            user_role_assignments = client.list_user_role_assignment(
+                role_id=role.id,
+                user_id=user.id,
+                project_id=project_id,
             )
+            for user_role_assignment in user_role_assignments.items:
+                Client().delete_user_role_assignment(user_role_assignment.id)
         except KeyError as err:
             cli_utils.warning(str(err))
         else:
@@ -245,13 +261,15 @@ def revoke_role(
 
     # Revoke the role from teams
     for team_name_or_id in team_names_or_ids:
+        team = client.get_team(name_id_or_prefix=team_name_or_id)
         try:
-            Client().delete_role_assignment(
-                role_name_or_id=role_name_or_id,
-                user_or_team_name_or_id=team_name_or_id,
-                is_user=False,
-                project_name_or_id=project_name_or_id,
+            team_role_assignments = client.list_team_role_assignment(
+                role_id=role.id,
+                team_id=team.id,
+                project_id=project_id,
             )
+            for team_role_assignment in team_role_assignments.items:
+                Client().delete_user_role_assignment(team_role_assignment.id)
         except KeyError as err:
             cli_utils.warning(str(err))
         else:
@@ -267,40 +285,22 @@ def assignment() -> None:
 
 
 @assignment.command("list")
-@click.option("--role", "role_name_or_id", type=str, required=False)
-@click.option("--project", "project_name_or_id", type=str, required=False)
-@click.option(
-    "--user",
-    "user_name_or_id",
-    type=str,
-    required=False,
-)
-def list_role_assignments(
-    role_name_or_id: Optional[str] = None,
-    user_name_or_id: Optional[str] = None,
-    project_name_or_id: Optional[str] = None,
-) -> None:
-    """List all role assignments.
-
-    Args:
-        role_name_or_id: Name or ID of a role to list role assignments for.
-        user_name_or_id: Name or ID of a user to list role assignments for.
-        project_name_or_id: Name or ID of a project to list role assignments
-            for.
-    """
+@list_options(UserRoleAssignmentFilterModel)
+def list_role_assignments(**kwargs: Any) -> None:
+    """List all user role assignments that fulfill the filter requirements."""
     cli_utils.print_active_config()
-    # Hacky workaround while role assignments are scoped to the user endpoint
-    role_assignments = Client().list_role_assignment(
-        role_name_or_id=role_name_or_id,
-        user_name_or_id=user_name_or_id,
-        project_name_or_id=project_name_or_id,
-    )
-    if not role_assignments:
-        cli_utils.declare("No roles assigned.")
-        return
-    cli_utils.print_pydantic_models(
-        role_assignments, exclude_columns=["id", "created", "updated"]
-    )
+    client = Client()
+    with console.status("Listing roles...\n"):
+
+        role_assignments = client.list_user_role_assignment(**kwargs)
+        if not role_assignments.items:
+            cli_utils.declare(
+                "No roles assignments found for the given filters."
+            )
+            return
+        cli_utils.print_pydantic_models(
+            role_assignments, exclude_columns=["id", "created", "updated"]
+        )
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)

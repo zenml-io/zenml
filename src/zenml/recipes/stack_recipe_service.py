@@ -15,7 +15,7 @@
 
 import os
 import subprocess
-from typing import Any, ClassVar, Dict, Optional, cast
+from typing import Any, ClassVar, Dict, List, Optional, cast
 
 import yaml
 
@@ -52,7 +52,8 @@ class StackRecipeService(TerraformService):
         "stack_recipes",
     )
 
-    create_zen_server: bool = False
+    # list of all enabled stack components
+    enabled_services: List[str] = []
 
     def check_installation(self) -> None:
         """Checks if necessary tools are installed on the host system.
@@ -188,6 +189,11 @@ class StackRecipeService(TerraformService):
             derived from the tfvars.json file.
         """
         vars = super().get_vars()
+
+        # enable services
+        for service in self.enabled_services:
+            vars[f"enable_{service}"] = True
+
         # update zenml version to current version
         vars[ZENML_VERSION_VARIABLE] = zenml.__version__
         return vars

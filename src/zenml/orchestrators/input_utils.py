@@ -19,6 +19,7 @@ from uuid import UUID
 from zenml.client import Client
 from zenml.config.step_configurations import Step
 from zenml.exceptions import InputResolutionError
+from zenml.models import StepRunFilterModel
 
 if TYPE_CHECKING:
     from zenml.models.artifact_models import ArtifactResponseModel
@@ -43,7 +44,9 @@ def resolve_step_inputs(
     """
     current_run_steps = {
         run_step.step.config.name: run_step
-        for run_step in Client().zen_store.list_run_steps(run_id=run_id)
+        for run_step in Client()
+        .zen_store.list_run_steps(StepRunFilterModel(pipeline_run_id=run_id))
+        .items
     }
 
     input_artifacts: Dict[str, "ArtifactResponseModel"] = {}

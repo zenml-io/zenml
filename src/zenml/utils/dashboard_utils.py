@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Utility class to help with interacting with the dashboard."""
-
+from functools import partial
 from typing import Optional
 from uuid import UUID
 
@@ -43,10 +43,10 @@ def get_run_url(
         return ""
 
     url = client.zen_store.url
-    runs = client.zen_store.list_runs(name=run_name)
+    runs = client.depaginate(partial(client.list_runs, name=run_name))
 
     if pipeline_id:
-        url += f"/pipelines/{str(pipeline_id)}/runs"
+        url += f"/projects/{client.active_project.name}/pipelines/{str(pipeline_id)}/runs"
     elif runs:
         url += "/runs"
     else:

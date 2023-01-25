@@ -131,15 +131,10 @@ metrics of your pipeline runs. The MLFlow server is deployed as a Kubernetes
 pod.
 
 ```bash
-# Make sure to create the local registry on port 5000 for it to work 
-zenml container-registry register local_registry --flavor=default --uri=localhost:5000 
-zenml orchestrator register local_kubeflow_orchestrator --flavor=kubeflow
-zenml stack register local_kubeflow_stack \
-    -a default \
-    -o local_kubeflow_orchestrator \
-    -c local_registry \
-    --set
+zenml stack recipe deploy k3d-modular
 ```
+>**Note**:
+> This recipe comes with MLflow, Kubeflow and Minio enabled by default. If you want any other components like KServe, Seldon or Tekton, you can specify that using the `--install/-i` flag.
 
 #### 🏁 Deploy the stack using ZenML CLI
 

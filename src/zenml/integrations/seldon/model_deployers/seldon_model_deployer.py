@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional, Type, cast
 from uuid import UUID
 
 from zenml.client import Client
+from zenml.enums import StackComponentType
 from zenml.integrations.seldon.constants import (
     SELDON_CUSTOM_DEPLOYMENT,
     SELDON_DOCKER_IMAGE_KEY,
@@ -36,7 +37,7 @@ from zenml.logger import get_logger
 from zenml.model_deployers import BaseModelDeployer, BaseModelDeployerFlavor
 from zenml.secrets_managers import BaseSecretsManager
 from zenml.services.service import BaseService, ServiceConfig
-from zenml.stack.stack import Stack
+from zenml.stack import Stack, StackValidator
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
 from zenml.utils.pipeline_docker_image_builder import (
     PipelineDockerImageBuilder,
@@ -66,6 +67,20 @@ class SeldonModelDeployer(BaseModelDeployer):
             The configuration.
         """
         return cast(SeldonModelDeployerConfig, self._config)
+
+    @property
+    def validator(self) -> Optional[StackValidator]:
+        """Ensures there is a container registry and image builder in the stack.
+
+        Returns:
+            A `StackValidator` instance.
+        """
+        return StackValidator(
+            required_components={
+                StackComponentType.CONTAINER_REGISTRY,
+                StackComponentType.IMAGE_BUILDER,
+            }
+        )
 
     @staticmethod
     def get_model_server_info(  # type: ignore[override]
@@ -145,7 +160,7 @@ class SeldonModelDeployer(BaseModelDeployer):
 
         if needs_docker_image:
             docker_image_builder = PipelineDockerImageBuilder()
-            repo_digest = docker_image_builder.build_and_push_docker_image(
+            repo_digest = docker_image_builder.build_docker_image(
                 deployment=deployment, stack=stack
             )
             deployment.add_extra(SELDON_DOCKER_IMAGE_KEY, repo_digest)
