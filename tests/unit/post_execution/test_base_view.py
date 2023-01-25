@@ -84,7 +84,7 @@ def test_view_properties_override_model_fields(looking_at_aria):
 def test_repr(looking_at_aria):
     """Test that the repr is correct."""
     _, aria = looking_at_aria
-    # We expect only "name" and "belongs_to_alex" to be in the repr.
+    # We expect only `name` and `belongs_to_alex` to be in the repr.
     assert repr(aria) == "AriaView(name=Aria, belongs_to_alex=True)"
 
 
