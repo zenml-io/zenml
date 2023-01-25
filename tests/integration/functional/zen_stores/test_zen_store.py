@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 import uuid
 from contextlib import ExitStack as does_not_raise
-from typing import Any, Callable, Dict, List, TypeVar, Union
+from typing import Callable, Type, TypeVar
 
 import pytest
 from pydantic import BaseModel
@@ -23,19 +23,27 @@ from zenml.client import Client
 from zenml.enums import StoreType
 from zenml.exceptions import EntityExistsError, IllegalOperationError
 from zenml.models import (
+    BaseFilterModel,
+    ProjectFilterModel,
     ProjectRequestModel,
     ProjectUpdateModel,
+    RoleFilterModel,
+    RoleRequestModel,
+    RoleUpdateModel,
     TeamRequestModel,
     TeamUpdateModel,
+    UserFilterModel,
     UserRequestModel,
-    UserUpdateModel, RoleRequestModel, RoleUpdateModel,
-    RoleAssignmentRequestModel,
+    UserUpdateModel, UserRoleAssignmentRequestModel,
+    TeamRoleAssignmentRequestModel,
 )
 from zenml.models.base_models import BaseRequestModel, BaseResponseModel
+from zenml.models.page_model import Page
 from zenml.zen_stores.base_zen_store import (
+    DEFAULT_ADMIN_ROLE,
+    DEFAULT_GUEST_ROLE,
     DEFAULT_PROJECT_NAME,
     DEFAULT_USERNAME,
-    BaseZenStore, DEFAULT_ADMIN_ROLE, DEFAULT_GUEST_ROLE,
 )
 
 DEFAULT_NAME = "default"
@@ -55,7 +63,7 @@ class CrudTestConfig(BaseModel):
     (entities with a `name` field)
     """
 
-    zen_store_list_method: Callable[[Any], List[AnyResponseModel]]
+    zen_store_list_method: Callable[[BaseFilterModel], Page[AnyResponseModel]]
     zen_store_get_method: Callable[[uuid.UUID], AnyResponseModel]
     zen_store_create_method: Callable[[AnyRequestModel], AnyResponseModel]
     zen_store_update_method: Callable[
@@ -64,6 +72,7 @@ class CrudTestConfig(BaseModel):
     zen_store_delete_method: Callable[[uuid.UUID], None]
     create_model: "BaseRequestModel"
     update_model: "BaseRequestModel"
+    filter_model: Type[BaseFilterModel]
     entity_name: str
 
 
@@ -74,7 +83,10 @@ project_crud_test_config = CrudTestConfig(
     zen_store_update_method=Client().zen_store.update_project,
     zen_store_delete_method=Client().zen_store.delete_project,
     create_model=ProjectRequestModel(name=sample_name("sample_project")),
-    update_model=ProjectUpdateModel(name=sample_name("updated_sample_project")),
+    update_model=ProjectUpdateModel(
+        name=sample_name("updated_sample_project")
+    ),
+    filter_model=ProjectFilterModel,
     entity_name="project",
 )
 
@@ -87,6 +99,7 @@ user_crud_test_config = CrudTestConfig(
     zen_store_delete_method=Client().zen_store.delete_user,
     create_model=UserRequestModel(name=sample_name("sample_user")),
     update_model=UserUpdateModel(name=sample_name("updated_sample_user")),
+    filter_model=UserFilterModel,
     entity_name="user",
 )
 
@@ -106,10 +119,16 @@ def test_basic_crud_for_entity(crud_test_config: CrudTestConfig):
     assert create_model.name
     # Test the creation
     created_entity = crud_test_config.zen_store_create_method(create_model)
-    # List all entities to verify the entity was actually created
-    entities_list = crud_test_config.zen_store_list_method()
-    assert create_model.name in [e.name for e in entities_list]
-    assert created_entity.id in [e.id for e in entities_list]
+    # Filter by name to verify the entity was actually created
+    entities_list = crud_test_config.zen_store_list_method(
+        crud_test_config.filter_model(name=create_model.name)
+    )
+    assert entities_list.total > 0
+    # Filter by id to verify the entity was actually created
+    entities_list = crud_test_config.zen_store_list_method(
+        crud_test_config.filter_model(id=created_entity.id)
+    )
+    assert entities_list.total > 0
     # Test the get method
     with does_not_raise():
         returned_entity_by_id = crud_test_config.zen_store_get_method(
@@ -127,18 +146,29 @@ def test_basic_crud_for_entity(crud_test_config: CrudTestConfig):
         updated_entity = crud_test_config.zen_store_update_method(
             created_entity.id, update_model
         )
-    # Verify the entity can be found using the new name, not the old name
-    entities_list = crud_test_config.zen_store_list_method()
     assert updated_entity.id == created_entity.id
-    assert update_model.name in [e.name for e in entities_list]
-    assert create_model.name not in [e.name for e in entities_list]
+    # Verify the entity can be found using the new name, not the old name
+    entities_list = crud_test_config.zen_store_list_method(
+        crud_test_config.filter_model(name=update_model.name)
+    )
+    assert entities_list.total > 0
+    entities_list = crud_test_config.zen_store_list_method(
+        crud_test_config.filter_model(name=create_model.name)
+    )
+    assert entities_list.total == 0
     # Cleanup
     with does_not_raise():
         crud_test_config.zen_store_delete_method(created_entity.id)
-    # Verify the entity can no longer be found using the name or id
-    entities_list = crud_test_config.zen_store_list_method()
-    assert create_model.name not in [e.name for e in entities_list]
-    assert created_entity.id not in [e.id for e in entities_list]
+    # Filter by name to verify the entity was actually deleted
+    entities_list = crud_test_config.zen_store_list_method(
+        crud_test_config.filter_model(name=update_model.name)
+    )
+    assert entities_list.total == 0
+    # Filter by id to verify the entity was actually deleted
+    entities_list = crud_test_config.zen_store_list_method(
+        crud_test_config.filter_model(id=created_entity.id)
+    )
+    assert entities_list.total == 0
 
 
 @pytest.mark.parametrize(
@@ -155,6 +185,14 @@ def test_create_entity_twice_fails(crud_test_config: CrudTestConfig):
     # Second one fails
     with pytest.raises(EntityExistsError):
         crud_test_config.zen_store_create_method(crud_test_config.create_model)
+    # Cleanup
+    with does_not_raise():
+        crud_test_config.zen_store_delete_method(created_entity.id)
+    # Filter by id to verify the entity was actually deleted
+    entities_list = crud_test_config.zen_store_list_method(
+        crud_test_config.filter_model(id=created_entity.id)
+    )
+    assert entities_list.total == 0
 
 
 @pytest.mark.parametrize(
@@ -205,7 +243,10 @@ def test_deleting_nonexistent_project_raises_error(
 def test_only_one_default_project_present():
     """Tests that one and only one default project is present."""
     client = Client()
-    assert len(client.zen_store.list_projects(name="default")) == 1
+    assert (
+        len(client.zen_store.list_projects(ProjectFilterModel(name="default")))
+        == 1
+    )
 
 
 def test_updating_default_project_fails():
@@ -382,8 +423,8 @@ def test_creating_role_with_empty_permissions_succeeds():
     created_role = zen_store.create_role(new_role)
     with does_not_raise():
         zen_store.get_role(role_name_or_id=new_role.name)
-    list_of_roles = zen_store.list_roles()
-    assert new_role.name in [r.name for r in list_of_roles]
+    list_of_roles = zen_store.list_roles(RoleFilterModel(name=new_role.name))
+    assert list_of_roles.total > 0
     # Cleanup
     with does_not_raise():
         zen_store.delete_role(created_role.id)
@@ -425,17 +466,13 @@ def test_deleting_assigned_role_fails():
     new_user = UserRequestModel(name=sample_name("aria"))
     created_user = zen_store.create_user(new_user)
 
-    role_assignment = RoleAssignmentRequestModel(
+    role_assignment = UserRoleAssignmentRequestModel(
         role=created_role.id,
         user=created_user.id,
         project=None,
     )
     with does_not_raise():
-        (
-            zen_store.create_role_assignment(
-                role_assignment
-            )
-        )
+        (zen_store.create_user_role_assignment(role_assignment))
     with pytest.raises(IllegalOperationError):
         zen_store.delete_role(created_role.id)
 
@@ -444,6 +481,7 @@ def test_deleting_assigned_role_fails():
         # By deleting the user first, the role assignment is cleaned up as well
         zen_store.delete_user(created_user.id)
         zen_store.delete_role(created_role.id)
+
 
 #  .----------------
 # | ROLE ASSIGNMENTS
@@ -460,17 +498,13 @@ def test_assigning_role_to_user_succeeds():
     new_user = UserRequestModel(name=sample_name("aria"))
     created_user = zen_store.create_user(new_user)
 
-    role_assignment = RoleAssignmentRequestModel(
+    role_assignment = UserRoleAssignmentRequestModel(
         role=created_role.id,
         user=created_user.id,
         project=None,
     )
     with does_not_raise():
-        (
-            zen_store.create_role_assignment(
-                role_assignment
-            )
-        )
+        (zen_store.create_user_role_assignment(role_assignment))
     # Cleanup
     with does_not_raise():
         zen_store.delete_user(created_user.id)
@@ -487,17 +521,13 @@ def test_assigning_role_to_team_succeeds():
     new_team = TeamRequestModel(name=sample_name("cats"))
     created_team = zen_store.create_team(new_team)
 
-    role_assignment = RoleAssignmentRequestModel(
+    role_assignment = TeamRoleAssignmentRequestModel(
         role=created_role.id,
         team=created_team.id,
         project=None,
     )
     with does_not_raise():
-        (
-            zen_store.create_role_assignment(
-                role_assignment
-            )
-        )
+        (zen_store.create_team_role_assignment(role_assignment))
     # Cleanup
     with does_not_raise():
         zen_store.delete_team(created_team.id)
@@ -514,23 +544,15 @@ def test_assigning_role_if_assignment_already_exists_fails():
     new_user = UserRequestModel(name=sample_name("aria"))
     created_user = zen_store.create_user(new_user)
 
-    role_assignment = RoleAssignmentRequestModel(
+    role_assignment = UserRoleAssignmentRequestModel(
         role=created_role.id,
         user=created_user.id,
         project=None,
     )
     with does_not_raise():
-        (
-            zen_store.create_role_assignment(
-                role_assignment
-            )
-        )
+        (zen_store.create_user_role_assignment(role_assignment))
     with pytest.raises(EntityExistsError):
-        (
-            zen_store.create_role_assignment(
-                role_assignment
-            )
-        )
+        (zen_store.create_user_role_assignment(role_assignment))
 
     # Cleanup
     with does_not_raise():
@@ -548,20 +570,16 @@ def test_revoking_role_for_user_succeeds():
     new_user = UserRequestModel(name=sample_name("aria"))
     created_user = zen_store.create_user(new_user)
 
-    role_assignment = RoleAssignmentRequestModel(
+    role_assignment = UserRoleAssignmentRequestModel(
         role=created_role.id,
         user=created_user.id,
         project=None,
     )
     with does_not_raise():
-        role_assignment = zen_store.create_role_assignment(role_assignment)
-        zen_store.delete_role_assignment(
-            role_assignment_id=role_assignment.id
-        )
+        role_assignment = zen_store.create_user_role_assignment(role_assignment)
+        zen_store.delete_user_role_assignment(user_role_assignment_id=role_assignment.id)
     with pytest.raises(KeyError):
-        zen_store.get_role_assignment(
-            role_assignment_id=role_assignment.id
-        )
+        zen_store.get_user_role_assignment(user_role_assignment_id=role_assignment.id)
 
     # Cleanup
     with does_not_raise():
@@ -579,20 +597,16 @@ def test_revoking_role_for_team_succeeds():
     new_team = TeamRequestModel(name=sample_name("cats"))
     created_team = zen_store.create_team(new_team)
 
-    role_assignment = RoleAssignmentRequestModel(
+    role_assignment = TeamRoleAssignmentRequestModel(
         role=created_role.id,
         team=created_team.id,
         project=None,
     )
     with does_not_raise():
-        role_assignment = zen_store.create_role_assignment(role_assignment)
-        zen_store.delete_role_assignment(
-            role_assignment_id=role_assignment.id
-        )
+        role_assignment = zen_store.create_team_role_assignment(role_assignment)
+        zen_store.delete_team_role_assignment(team_role_assignment_id=role_assignment.id)
     with pytest.raises(KeyError):
-        zen_store.get_role_assignment(
-            role_assignment_id=role_assignment.id
-        )
+        zen_store.get_team_role_assignment(team_role_assignment_id=role_assignment.id)
 
     # Cleanup
     with does_not_raise():
@@ -604,9 +618,10 @@ def test_revoking_nonexistent_role_fails():
     """Tests revoking a nonexistent role fails."""
     zen_store = Client().zen_store
     with pytest.raises(KeyError):
-        zen_store.delete_role_assignment(
-            role_assignment_id=uuid.uuid4()
-        )
+        zen_store.delete_team_role_assignment(team_role_assignment_id=uuid.uuid4())
+    with pytest.raises(KeyError):
+        zen_store.delete_user_role_assignment(user_role_assignment_id=uuid.uuid4())
+
 
 #
 # #  .-------.

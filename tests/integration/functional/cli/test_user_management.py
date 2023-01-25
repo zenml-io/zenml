@@ -16,8 +16,8 @@ from click.testing import CliRunner
 from tests.integration.functional.cli.test_utils import (
     create_sample_team,
     create_sample_user,
-    sample_team_name,
     sample_name,
+    sample_team_name,
     team_create_command,
     team_delete_command,
     team_describe_command,
