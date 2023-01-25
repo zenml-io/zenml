@@ -32,8 +32,7 @@ CUSTOM_OBJ_NAME = "SomeObj"
 
 
 def test_pipeline_run_single_file(clean_client, files_dir: str) -> None:
-    """Test that zenml pipeline run works as expected when the pipeline, its
-    steps and materializers are all in the same file."""
+    """Test that zenml pipeline run works as expected when the pipeline, its steps and materializers are all in the same file."""
     clean_sys_modules = sys.modules
 
     os.chdir(files_dir)
@@ -165,3 +164,30 @@ def test_pipeline_run_delete(clean_project_with_run):
         clean_project_with_run.get_pipeline_run(run_name)
     existing_runs = clean_project_with_run.list_runs()
     assert len(existing_runs) == 0
+
+
+def test_pipeline_schedule_list(clean_project_with_scheduled_run):
+    """Test that `zenml pipeline schedules list` does not fail."""
+    runner = CliRunner()
+    list_command = (
+        cli.commands["pipeline"].commands["schedule"].commands["list"]
+    )
+    result = runner.invoke(list_command)
+    assert result.exit_code == 0
+
+
+def test_pipeline_schedule_delete(clean_project_with_scheduled_run):
+    """Test that `zenml pipeline schedules delete` works as expected."""
+    existing_schedules = clean_project_with_scheduled_run.list_schedules()
+    assert len(existing_schedules) == 1
+    schedule_name = existing_schedules[0].name
+    runner = CliRunner()
+    delete_command = (
+        cli.commands["pipeline"].commands["schedule"].commands["delete"]
+    )
+    result = runner.invoke(delete_command, [schedule_name, "-y"])
+    assert result.exit_code == 0
+    with pytest.raises(KeyError):
+        clean_project_with_scheduled_run.get_schedule(schedule_name)
+    existing_schedules = clean_project_with_scheduled_run.list_schedules()
+    assert len(existing_schedules) == 0

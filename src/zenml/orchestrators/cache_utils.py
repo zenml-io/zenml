@@ -27,8 +27,31 @@ if TYPE_CHECKING:
     from zenml.config.step_configurations import Step
     from zenml.models.step_run_models import StepRunResponseModel
 
-
 logger = get_logger(__name__)
+
+
+def is_cache_enabled(
+    step_enable_cache: Optional[bool],
+    pipeline_enable_cache: Optional[bool],
+) -> bool:
+    """Checks if caching is enabled for a step run.
+
+    This is the case if:
+    - caching is explicitly enabled for the step, or
+    - caching is neither explicitly disabled for the step nor the pipeline.
+
+    Args:
+        step_enable_cache: The enable cache parameter of the step.
+        pipeline_enable_cache: The enable cache parameter of the pipeline.
+
+    Returns:
+        True if caching is enabled, False otherwise.
+    """
+    if step_enable_cache is not None:
+        return step_enable_cache
+    if pipeline_enable_cache is not None:
+        return pipeline_enable_cache
+    return True
 
 
 def generate_cache_key(
@@ -108,12 +131,18 @@ def get_cached_step_run(cache_key: str) -> Optional["StepRunResponseModel"]:
     Returns:
         The existing step run if the step can be cached, otherwise None.
     """
-    cache_candidates = Client().zen_store.list_run_steps(
-        project_id=Client().active_project.id,
-        cache_key=cache_key,
-        status=ExecutionStatus.COMPLETED,
+    cache_candidates = (
+        Client()
+        .list_run_steps(
+            project_id=Client().active_project.id,
+            cache_key=cache_key,
+            status=ExecutionStatus.COMPLETED,
+            sort_by="created",
+            size=1,
+        )
+        .items
     )
+
     if cache_candidates:
-        cache_candidates.sort(key=lambda s: s.created)
         return cache_candidates[-1]
     return None

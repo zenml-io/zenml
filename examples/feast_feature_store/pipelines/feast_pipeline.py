@@ -24,6 +24,6 @@ def feast_pipeline(
     get_features,
     feature_printer,
 ):
-    """Links all the steps together in a pipeline"""
+    """Links all the steps together in a pipeline."""
     features = get_features()
     feature_printer(features)

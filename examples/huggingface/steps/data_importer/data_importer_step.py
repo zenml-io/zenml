@@ -20,7 +20,7 @@ from zenml.steps import step
 
 @step
 def data_importer(params: HuggingfaceParameters) -> DatasetDict:
-    """Load dataset using huggingface datasets"""
+    """Load dataset using huggingface datasets."""
     datasets = load_dataset(params.dataset_name)
     print("Sample Example :", datasets["train"][7])
     return datasets

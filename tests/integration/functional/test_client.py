@@ -65,8 +65,7 @@ def _create_local_stack(
     orchestrator_name: Optional[str] = None,
     artifact_store_name: Optional[str] = None,
 ) -> StackResponseModel:
-    """Creates a local stack with components with the given names. If the
-    names are not given, a random string is used instead."""
+    """Creates a local stack with components with the given names. If the names are not given, a random string is used instead."""
 
     def _random_name():
         return "".join(random.choices(string.ascii_letters, k=10))
@@ -76,7 +75,8 @@ def _create_local_stack(
     )
 
     artifact_store = _create_local_artifact_store(
-        client=client, artifact_store_name=artifact_store_name or _random_name()
+        client=client,
+        artifact_store_name=artifact_store_name or _random_name(),
     )
 
     return client.create_stack(
@@ -98,8 +98,7 @@ def test_repository_detection(tmp_path):
 def test_initializing_repo_creates_directory_and_uses_default_stack(
     tmp_path, clean_client
 ):
-    """Tests that repo initialization creates a .zen directory and uses the
-    default local stack."""
+    """Tests that repo initialization creates a .zen directory and uses the default local stack."""
     Client.initialize(tmp_path)
     assert fileio.exists(str(tmp_path / ".zen"))
 
@@ -121,8 +120,7 @@ def test_initializing_repo_creates_directory_and_uses_default_stack(
 
 
 def test_initializing_repo_twice_fails(tmp_path):
-    """Tests that initializing a repo in a directory where another repo already
-    exists fails."""
+    """Tests that initializing a repo in a directory where another repo already exists fails."""
     Client.initialize(tmp_path)
     with pytest.raises(InitializationException):
         Client.initialize(tmp_path)
@@ -139,8 +137,7 @@ def test_freshly_initialized_repo_attributes(tmp_path):
 def test_finding_repository_directory_with_explicit_path(
     tmp_path, clean_client
 ):
-    """Tests that a repository can be found using an explicit path, an
-    environment variable and the current working directory."""
+    """Tests that a repository can be found using an explicit path, an environment variable and the current working directory."""
     subdirectory_path = tmp_path / "some_other_directory"
     io_utils.create_dir_recursive_if_not_exists(str(subdirectory_path))
     os.chdir(str(subdirectory_path))
@@ -194,8 +191,7 @@ def test_finding_repository_directory_with_explicit_path(
 
 
 def test_creating_repository_instance_during_step_execution(mocker):
-    """Tests that creating a Repository instance while a step is being executed
-    does not fail."""
+    """Tests that creating a Repository instance while a step is being executed does not fail."""
     mocker.patch(
         "zenml.environment.Environment.step_is_running",
         return_value=True,
@@ -260,8 +256,7 @@ def test_registering_a_stack_with_existing_name(clean_client):
 
 
 def test_updating_a_stack_with_new_component_succeeds(clean_client):
-    """Tests that updating a new stack with already registered components
-    updates the stack with the new or altered components passed in."""
+    """Tests that updating a new stack with already registered components updates the stack with the new or altered components passed in."""
     stack = _create_local_stack(
         client=clean_client, stack_name="some_new_stack_name"
     )
@@ -350,8 +345,7 @@ def test_getting_a_stack_component(clean_client):
 
 
 def test_getting_a_nonexisting_stack_component(clean_client):
-    """Tests that getting a stack component for a name that isn't registered
-    fails."""
+    """Tests that getting a stack component for a name that isn't registered fails."""
     with pytest.raises(KeyError):
         clean_client.get_stack(name_id_or_prefix=str(uuid4()))
 
@@ -402,8 +396,7 @@ def test_deregistering_a_stack_component_in_stack_fails(clean_client):
 def test_deregistering_a_stack_component_that_is_part_of_a_registered_stack(
     clean_client,
 ):
-    """Tests that deregistering a stack component that is part of a registered
-    stack fails."""
+    """Tests that deregistering a stack component that is part of a registered stack fails."""
     component = clean_client.active_stack_model.components[
         StackComponentType.ORCHESTRATOR
     ][0]

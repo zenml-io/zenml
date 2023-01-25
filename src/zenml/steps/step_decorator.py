@@ -67,7 +67,7 @@ def step(_func: F) -> Type[BaseStep]:
 def step(
     *,
     name: Optional[str] = None,
-    enable_cache: bool = True,
+    enable_cache: Optional[bool] = None,
     experiment_tracker: Optional[str] = None,
     step_operator: Optional[str] = None,
     output_artifacts: Optional["OutputArtifactsSpecification"] = None,

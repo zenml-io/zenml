@@ -89,7 +89,7 @@ def _create_local_secrets_manager(client: Client):
 
 
 def test_describe_stack_contains_local_stack() -> None:
-    """Test that the stack describe command contains the default local stack"""
+    """Test that the stack describe command contains the default local stack."""
     runner = CliRunner()
     describe_command = cli.commands["stack"].commands["describe"]
     result = runner.invoke(describe_command)
@@ -101,7 +101,7 @@ def test_describe_stack_contains_local_stack() -> None:
 def test_describe_stack_bad_input_fails(
     not_a_stack: str,
 ) -> None:
-    """Test if the stack describe fails when passing in bad parameters"""
+    """Test if the stack describe fails when passing in bad parameters."""
     runner = CliRunner()
     describe_command = cli.commands["stack"].commands["describe"]
     result = runner.invoke(describe_command, [not_a_stack])
@@ -228,8 +228,7 @@ def test_updating_non_active_stack_succeeds(clean_project) -> None:
 
 
 def test_update_stack_adding_component_succeeds(clean_project) -> None:
-    """Test stack update by adding a new component to a stack
-    succeeds."""
+    """Test stack update by adding a new component to a stack succeeds."""
     # first we create and activate a non-default stack
     registered_stack = clean_project.active_stack_model
 
@@ -275,8 +274,7 @@ def test_update_stack_adding_component_succeeds(clean_project) -> None:
 
 
 def test_update_stack_adding_to_default_stack_fails(clean_project) -> None:
-    """Test stack update by adding a new component to the default stack
-    is prohibited."""
+    """Test stack update by adding a new component to the default stack is prohibited."""
     # first we set the active stack to a non-default stack
     registered_stack = clean_project.active_stack_model
 
@@ -480,69 +478,10 @@ def test_share_stack_that_is_already_shared_fails(
     assert arias_stack.is_shared is True
 
 
-def test_share_stack_when_component_is_already_shared_by_other_user_fails(
-    clean_project: Client,
-) -> None:
-    """When sharing a stack all the components are also shared, so if a
-    component with the same name is already shared this should fail."""
-
-    if clean_project.zen_store.type != StoreType.REST:
-        pytest.skip("Only supported on ZenML server")
-
-    new_artifact_store = _create_local_artifact_store(clean_project)
-
-    new_artifact_store_model = clean_project.create_stack_component(
-        name=new_artifact_store.name,
-        flavor=new_artifact_store.flavor,
-        component_type=new_artifact_store.type,
-        configuration=new_artifact_store.config.dict(),
-    )
-
-    new_orchestrator = _create_local_orchestrator(clean_project)
-
-    new_orchestrator_model = clean_project.create_stack_component(
-        name=new_orchestrator.name,
-        flavor=new_orchestrator.flavor,
-        component_type=new_orchestrator.type,
-        configuration=new_orchestrator.config.dict(),
-    )
-
-    clean_project.create_stack(
-        name="arias_new_stack",
-        components={
-            StackComponentType.ARTIFACT_STORE: new_artifact_store_model.name,
-            StackComponentType.ORCHESTRATOR: new_orchestrator_model.name,
-        },
-    )
-
-    with create_sample_user_and_login(
-        prefix="Arias_Evil_Twin", initial_role="admin"
-    ) as (
-        other_user,
-        other_client,
-    ):
-        other_client.create_stack_component(
-            name=new_orchestrator.name,
-            is_shared=True,
-            component_type=StackComponentType.ORCHESTRATOR,
-            flavor="local",
-            configuration={},
-        )
-
-    runner = CliRunner()
-    share_command = cli.commands["stack"].commands["share"]
-    result = runner.invoke(share_command, ["arias_new_stack"])
-    assert result.exit_code == 1
-
-    arias_stack = clean_project.get_stack("arias_new_stack")
-    assert arias_stack.is_shared is False
-
-
 def test_create_shared_stack_when_component_is_private_fails(
     clean_project: Client,
 ) -> None:
-    """When sharing a stack all the components should also be shared, so if a
-    component is not shared this should fail."""
+    """When creating a shared stack all the components should also be shared, so if a component is not shared this should fail."""
     runner = CliRunner()
     register_command = cli.commands["stack"].commands["register"]
     result = runner.invoke(
@@ -552,12 +491,10 @@ def test_create_shared_stack_when_component_is_private_fails(
     assert result.exit_code == 1
 
 
-def test_add_private_component_to_shared_stack_fails(
+def test_share_stack_when_component_is_already_shared_by_other_user_fails(
     clean_project: Client,
 ) -> None:
-    """When sharing a stack all the components are also shared, so if a
-    component with the same name is already shared this should fail."""
-
+    """When sharing a stack all the components are also shared, so if a component with the same name is already shared this should fail."""
     if clean_project.zen_store.type != StoreType.REST:
         pytest.skip("Only supported on ZenML server")
 
@@ -617,8 +554,7 @@ def test_add_private_component_to_shared_stack_fails(
 def test_share_stack_when_component_is_private_fails(
     clean_project: Client,
 ) -> None:
-    """When sharing a stack all the components are also shared, so if a
-    component with the same name is already shared this should fail."""
+    """When sharing a stack all the components are also shared, so if a component with the same name is already shared this should fail."""
     # Non-shared components
     new_artifact_store = _create_local_artifact_store(clean_project)
 

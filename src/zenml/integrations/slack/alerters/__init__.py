@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from zenml.integrations.slack.alerters.slack_alerter import SlackAlerter  # noqa
+from zenml.integrations.slack.alerters.slack_alerter import (  # noqa
+    SlackAlerter,
+)
 
 __all__ = ["SlackAlerter"]

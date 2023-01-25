@@ -39,8 +39,10 @@ def apply_pod_settings(
         container_op.add_node_selector_constraint(label_name=key, value=value)
 
     if settings.affinity:
-        affinity: V1Affinity = serialization_utils.deserialize_kubernetes_model(
-            settings.affinity, "V1Affinity"
+        affinity: V1Affinity = (
+            serialization_utils.deserialize_kubernetes_model(
+                settings.affinity, "V1Affinity"
+            )
         )
         container_op.add_affinity(affinity)
 
@@ -51,3 +53,11 @@ def apply_pod_settings(
             )
         )
         container_op.add_toleration(toleration)
+
+    resource_requests = settings.resources.get("requests") or {}
+    for name, value in resource_requests.items():
+        container_op.add_resource_request(name, value)
+
+    resource_limits = settings.resources.get("limits") or {}
+    for name, value in resource_limits.items():
+        container_op.add_resource_limit(name, value)

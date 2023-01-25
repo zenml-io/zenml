@@ -43,7 +43,9 @@ from zenml.orchestrators import BaseOrchestrator
 from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
 from zenml.stack import Stack
 from zenml.utils import yaml_utils
-from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
+from zenml.utils.pipeline_docker_image_builder import (
+    PipelineDockerImageBuilder,
+)
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
@@ -100,7 +102,9 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
                 remote_url.startswith(prefix)
                 for prefix in GITHUB_REMOTE_URL_PREFIXES
             )
-            if not (is_github_repo or self.config.skip_github_repository_check):
+            if not (
+                is_github_repo or self.config.skip_github_repository_check
+            ):
                 raise RuntimeError(
                     f"The remote URL '{remote_url}' of your git repo "
                     f"({self._git_repo.git_dir}) is not pointing to a GitHub "
@@ -172,7 +176,10 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
             return True, ""
 
         return StackValidator(
-            required_components={StackComponentType.CONTAINER_REGISTRY},
+            required_components={
+                StackComponentType.CONTAINER_REGISTRY,
+                StackComponentType.IMAGE_BUILDER,
+            },
             custom_validation_function=_validate_local_requirements,
         )
 
@@ -313,7 +320,7 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
             )
 
         docker_image_builder = PipelineDockerImageBuilder()
-        repo_digest = docker_image_builder.build_and_push_docker_image(
+        repo_digest = docker_image_builder.build_docker_image(
             deployment=deployment, stack=stack
         )
         deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)

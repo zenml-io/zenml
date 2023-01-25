@@ -25,12 +25,12 @@ NOT_LOGGING_LEVELS = ["abc", "my_cat_is_called_aria", "pipeline123"]
 
 
 def read_global_config():
-    """Read the global config file"""
+    """Read the global config file."""
     return yaml_utils.read_yaml(GlobalConfiguration()._config_file())
 
 
 def test_analytics_opt_in_amends_global_config():
-    """Check to make sure that analytics opt-in amends global config"""
+    """Check to make sure that analytics opt-in amends global config."""
     pre_test_status = GlobalConfiguration().analytics_opt_in
     runner = CliRunner()
     result = runner.invoke(opt_in)
@@ -40,7 +40,7 @@ def test_analytics_opt_in_amends_global_config():
 
 
 def test_analytics_opt_out_amends_global_config():
-    """Check to make sure that analytics opt-out amends global config"""
+    """Check to make sure that analytics opt-out amends global config."""
     pre_test_status = GlobalConfiguration().analytics_opt_in
     runner = CliRunner()
     result = runner.invoke(opt_out)
@@ -53,7 +53,7 @@ def test_analytics_opt_out_amends_global_config():
 def test_set_logging_verbosity_stops_when_not_real_level(
     not_a_level: str,
 ) -> None:
-    """Check that set_logging_verbosity doesn't run when no real level"""
+    """Check that set_logging_verbosity doesn't run when no real level."""
     pre_test_logging_status = ZENML_LOGGING_VERBOSITY
     runner = CliRunner()
     result = runner.invoke(set_logging_verbosity, [not_a_level])

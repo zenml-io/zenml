@@ -14,7 +14,7 @@
 """Base Zen Store implementation."""
 import os
 from abc import ABC
-from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, ClassVar, Dict, Optional, Tuple, Type, Union
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -34,14 +34,17 @@ from zenml.models import (
     ComponentRequestModel,
     ProjectRequestModel,
     ProjectResponseModel,
-    RoleAssignmentRequestModel,
+    RoleFilterModel,
     RoleRequestModel,
     RoleResponseModel,
+    StackFilterModel,
     StackRequestModel,
     StackResponseModel,
     UserRequestModel,
     UserResponseModel,
+    UserRoleAssignmentRequestModel,
 )
+from zenml.models.page_model import Page
 from zenml.models.server_models import (
     ServerDatabaseType,
     ServerDeploymentType,
@@ -223,7 +226,8 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
 
         config = SqlZenStoreConfiguration(
-            type=StoreType.SQL, url=SqlZenStoreConfiguration.get_local_url(path)
+            type=StoreType.SQL,
+            url=SqlZenStoreConfiguration.get_local_url(path),
         )
         return config
 
@@ -333,7 +337,9 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
                     "Resetting the active stack to default.",
                     config_name,
                 )
-                active_stack = self._get_or_create_default_stack(active_project)
+                active_stack = self._get_or_create_default_stack(
+                    active_project
+                )
             else:
                 if active_stack.project.id != active_project.id:
                     logger.warning(
@@ -493,16 +499,18 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
             KeyError: if the project or default stack doesn't exist.
         """
         default_stacks = self.list_stacks(
-            project_name_or_id=project_name_or_id,
-            user_name_or_id=user_name_or_id,
-            name=DEFAULT_STACK_NAME,
+            StackFilterModel(
+                project_id=project_name_or_id,
+                user_id=user_name_or_id,
+                name=DEFAULT_STACK_NAME,
+            )
         )
-        if len(default_stacks) == 0:
+        if default_stacks.total == 0:
             raise KeyError(
                 f"No default stack found for user {str(user_name_or_id)} in "
                 f"project {str(project_name_or_id)}"
             )
-        return default_stacks[0]
+        return default_stacks.items[0]
 
     # -----
     # Roles
@@ -611,8 +619,8 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
                 password=user_password,
             )
         )
-        self.create_role_assignment(
-            RoleAssignmentRequestModel(
+        self.create_user_role_assignment(
+            UserRoleAssignmentRequestModel(
                 role=self._admin_role.id,
                 user=new_user.id,
                 project=None,
@@ -625,13 +633,13 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
     # -----
 
     @property
-    def roles(self) -> List[RoleResponseModel]:
+    def roles(self) -> Page[RoleResponseModel]:
         """All existing roles.
 
         Returns:
             A list of all existing roles.
         """
-        return self.list_roles()
+        return self.list_roles(RoleFilterModel())
 
     # --------
     # Projects
