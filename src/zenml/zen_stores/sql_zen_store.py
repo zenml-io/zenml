@@ -38,7 +38,7 @@ from uuid import UUID
 
 import pymysql
 from pydantic import root_validator
-from sqlalchemy import func, text
+from sqlalchemy import func, text, asc, desc
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import ArgumentError, NoResultFound, OperationalError
 from sqlalchemy.orm import noload
@@ -55,7 +55,7 @@ from zenml.enums import (
     ExecutionStatus,
     LoggingLevels,
     StackComponentType,
-    StoreType,
+    StoreType, SorterOps,
 )
 from zenml.exceptions import (
     EntityExistsError,
@@ -657,7 +657,11 @@ class SqlZenStore(BaseZenStore):
         )
 
         # Sorting
-        query = query.order_by(getattr(table, filter_model.sort_by))
+        column, operand = filter_model.sorting_params
+        if operand == SorterOps.DESCENDING:
+            query = query.order_by(desc(getattr(table, column)))
+        else:
+            query = query.order_by(asc(getattr(table, column)))
 
         # Get the total amount of pages in the database for a given query
         if total == 0:
