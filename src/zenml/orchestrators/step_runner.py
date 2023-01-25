@@ -30,13 +30,13 @@ from zenml.models.artifact_models import (
     ArtifactRequestModel,
     ArtifactResponseModel,
 )
-from zenml.orchestrators.cache_utils import is_cache_enabled
 from zenml.orchestrators.publish_utils import (
     publish_output_artifact_metadata,
     publish_output_artifacts,
     publish_step_run_metadata,
     publish_successful_step_run,
 )
+from zenml.orchestrators.utils import is_setting_enabled
 from zenml.steps.step_context import StepContext
 from zenml.steps.step_environment import StepEnvironment
 from zenml.steps.utils import (
@@ -106,8 +106,13 @@ class StepRunner:
         # that the step function code can access to retrieve information about
         # the pipeline runtime, such as the current step name and the current
         # pipeline run ID
+        cache_enabled = is_setting_enabled(
+            is_enabled_on_step=step_run_info.config.enable_cache,
+            is_enabled_on_pipeline=step_run_info.pipeline.enable_cache,
+        )
         with StepEnvironment(
             step_run_info=step_run_info,
+            cache_enabled=cache_enabled,
         ):
             self._stack.prepare_step_run(info=step_run_info)
             step_failed = False
@@ -131,9 +136,9 @@ class StepRunner:
         # Store and publish the output artifacts of the step function.
         output_annotations = parse_return_type_annotations(spec.annotations)
         output_data = self._validate_outputs(return_values, output_annotations)
-        artifact_metadata_enabled = is_cache_enabled(
-            step_enable_cache=step_run_info.config.enable_artifact_metadata,
-            pipeline_enable_cache=step_run_info.pipeline.enable_artifact_metadata,
+        artifact_metadata_enabled = is_setting_enabled(
+            is_enabled_on_step=step_run_info.config.enable_artifact_metadata,
+            is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_metadata,
         )
         output_artifacts, artifact_metadata = self._store_output_artifacts(
             output_data=output_data,

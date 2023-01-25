@@ -39,6 +39,7 @@ from zenml.orchestrators import (
 )
 from zenml.orchestrators import utils as orchestrator_utils
 from zenml.orchestrators.step_runner import StepRunner
+from zenml.orchestrators.utils import is_setting_enabled
 from zenml.stack import Stack
 from zenml.utils import string_utils
 
@@ -292,9 +293,9 @@ class StepLauncher:
         step_run.parent_step_ids = parent_step_ids
         step_run.cache_key = cache_key
 
-        cache_enabled = cache_utils.is_cache_enabled(
-            step_enable_cache=self._step.config.enable_cache,
-            pipeline_enable_cache=self._deployment.pipeline.enable_cache,
+        cache_enabled = is_setting_enabled(
+            is_enabled_on_step=self._step.config.enable_cache,
+            is_enabled_on_pipeline=self._deployment.pipeline.enable_cache,
         )
 
         execution_needed = True
