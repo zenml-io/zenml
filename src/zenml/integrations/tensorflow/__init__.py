@@ -14,6 +14,7 @@
 """Initialization for TensorFlow integration."""
 
 import platform
+from typing import List
 from zenml.integrations.constants import TENSORFLOW
 from zenml.integrations.integration import Integration
 
@@ -35,20 +36,23 @@ class TensorflowIntegration(Integration):
 
         from zenml.integrations.tensorflow import materializers  # noqa
 
-
     @classmethod
-    def check_system(cls) -> None:
-        """Checks system version to install the correct version."""
-        os = platform.system()
-        if os == "Linux" or os == "Windows":
-            cls.REQUIREMENTS = [
+    def define_platform_specific_requirements(cls, platfrom: str) -> List[str]:
+        """Defines platform specific requirements for the integration."""
+
+        if platfrom == "Linux" or platfrom == "Windows":
+            requirements = [
                 "tensorflow==2.8.0",
                 "tensorflow_io==0.24.0",
                 "protobuf>=3.6.0,<4.0.0",
             ]
-        elif os == "Darwin":
-            cls.REQUIREMENTS = [
+        elif platfrom == "Darwin":
+            requirements = [
                 "tensorflow-macos>=2.8.0",
             ]
+        else:
+            requirements = []
+        return requirements
+
 
 TensorflowIntegration.check_installation()

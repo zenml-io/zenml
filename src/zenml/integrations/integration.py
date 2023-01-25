@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Base and meta classes for ZenML integrations."""
 
+import platform
 from typing import Any, Dict, List, Tuple, Type, cast
 
 import pkg_resources
@@ -43,6 +44,10 @@ class IntegrationMeta(type):
         cls = cast(Type["Integration"], super().__new__(mcs, name, bases, dct))
         if name != "Integration":
             integration_registry.register_integration(cls.NAME, cls)
+        platform_specific_requirements = (
+            cls.define_platform_specific_requirements(platform.system())
+        )
+        cls.REQUIREMENTS = cls.REQUIREMENTS + platform_specific_requirements
         return cls
 
 
@@ -61,7 +66,6 @@ class Integration(metaclass=IntegrationMeta):
         Returns:
             True if all required packages are installed, False otherwise.
         """
-        cls.check_system()
         try:
             for r in cls.REQUIREMENTS:
                 pkg_resources.get_distribution(r)
@@ -84,9 +88,20 @@ class Integration(metaclass=IntegrationMeta):
             return False
 
     @classmethod
-    def check_system(cls) -> None:
-        """Abstract method to check the system for the integration."""
-        pass
+    def define_platform_specific_requirements(cls, platform: str) -> List[str]:
+        """Abstract method to define platform specific requirements.
+
+        If the integfration has platform specific requirements, this method
+        should be overridden to return a list of requirements for the given
+        platform.
+
+        Args:
+            platform: The platform to define requirements for.
+
+        Returns:
+            A list of requirements for the given platform.
+        """
+        return []
 
     @classmethod
     def activate(cls) -> None:

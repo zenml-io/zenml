@@ -14,6 +14,7 @@
 """Initialization of the PyTorch integration."""
 
 import platform
+from typing import List
 from zenml.integrations.constants import PYTORCH
 from zenml.integrations.integration import Integration
 from zenml.utils.source_utils import import_class_by_path
@@ -31,16 +32,20 @@ class PytorchIntegration(Integration):
         from zenml.integrations.pytorch import materializers  # noqa
 
     @classmethod
-    def check_system(cls) -> None:
-        """Checks system version to install the correct version."""
-        os = platform.system()
-        if os == "Darwin" or os == "Windows":
-            cls.REQUIREMENTS = [
+    def define_platform_specific_requirements(cls, platfrom: str) -> List[str]:
+        """Defines platform specific requirements for the integration."""
+
+        if platfrom == "Darwin" or platfrom == "Windows":
+            requirements = [
                 "torch",
             ]
-        elif os == "Linux":
-            cls.REQUIREMENTS = [
-                "torch", # TODO: Find a way to install cpu-only version
+        elif platfrom == "Linux":
+            requirements = [
+                "torch",  # TODO: Find a way to install cpu-only version
             ]
-            
+        else:
+            requirements = []
+        return requirements
+
+
 PytorchIntegration.check_installation()
