@@ -172,9 +172,15 @@ class MLFlowDeploymentService(LocalDaemonService):
         self.endpoint.prepare_for_start()
         try:
             backend_kwargs: Dict[str, Any] = {}
+            serve_kwargs: Dict[str, Any] = {}
+            mlflow_version = MLFLOW_VERSION.split(".")
+            # MLflow version 1.26 introduces an additional mandatory
+            # `timeout` argument to the `PyFuncBackend.serve` function
+            if int(mlflow_version[1]) >= 26 or int(mlflow_version[0]) >= 2:
+                serve_kwargs["timeout"] = None
             # Mlflow 2.0+ requires the env_manager to be set to "local"
             # to run the deploy the model on the local running environment
-            if int(MLFLOW_VERSION.split(".")[0]) >= 2:
+            if int(mlflow_version[0]) >= 2:
                 backend_kwargs["env_manager"] = "local"
             backend = PyFuncBackend(
                 config={},
@@ -188,7 +194,7 @@ class MLFlowDeploymentService(LocalDaemonService):
                 port=self.endpoint.status.port,
                 host="localhost",
                 enable_mlserver=self.config.mlserver,
-                timeout=self.config.timeout,
+                **serve_kwargs,
             )
         except KeyboardInterrupt:
             logger.info(

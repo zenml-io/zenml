@@ -26,6 +26,6 @@ def predictor(
     """Run a inference request against a prediction service."""
     service.start(timeout=10)  # should be a NOP if already started
     prediction = service.predict(data)
-    prediction = np.apply_along_axis(lambda x: x.argmax(), -1, prediction)
+    prediction = prediction.argmax(axis=-1)
     rich_print("Prediction: ", prediction)
     return prediction
