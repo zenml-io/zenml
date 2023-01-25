@@ -161,16 +161,26 @@ secret schemas, check out the [API Docs](https://apidocs.zenml.io/latest/integra
 
 ## How do you use it?
 
-We can register the model deployer and use it in our active stack:
+For registering the model deployer, we need the URL of the Istio Ingress Gateway deployed on the Kubernetes cluster. We can get this URL by running the following command (assuming that the service name is `istio-ingressgateway`, deployed in the `istio-system` namespace):
+
+```bash
+# For GKE clusters, the host is the GKE cluster IP address.
+export INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+# For EKS clusters, the host is the EKS cluster IP hostname.
+export INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+```
+Now register the model deployer:
 
 ```bash
 zenml model-deployer register kserve_gke --flavor=kserve \
   --kubernetes_context=gke_zenml-core_us-east1-b_zenml-test-cluster \ 
   --kubernetes_namespace=zenml-workloads \
-  --base_url=$INGRESS_URL \
+  --base_url=$INGRESS_HOST \
   --secret=kserve_secret
+```
 
-# Now we can use the model deployer in our stack
+We can now use the model deployer in our stack.
+```
 zenml stack update kserve_stack --model-deployer=kserve_gke
 ```
 
@@ -246,7 +256,7 @@ steps in the [Model Deployment Steps](https://apidocs.zenml.io/latest/integratio
 While KServe is a good fit for most use cases with the built-in model servers, 
 it is not always the best fit for your custom model deployment use case. For
 that reason KServe allows you to create your own model server using the KServe 
-ModelServer API where you can customize the predict, the pre- and 
+`ModelServer` API where you can customize the predict, the pre- and 
 post-processing functions. With ZenML's KServe Integration, you can create 
 your own custom model deployment code by creating a custom predict function 
 that will be passed to a custom deployment step responsible for preparing a 

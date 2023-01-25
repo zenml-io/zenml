@@ -13,16 +13,21 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for flavors."""
 
-from typing import List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Security
+from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, FLAVORS, VERSION_1
-from zenml.enums import PermissionType, StackComponentType
-from zenml.models import FlavorResponseModel
+from zenml.enums import PermissionType
+from zenml.models import FlavorFilterModel, FlavorResponseModel
+from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
-from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
+from zenml.zen_server.utils import (
+    error_response,
+    handle_exceptions,
+    make_dependable,
+    zen_store,
+)
 
 router = APIRouter(
     prefix=API + VERSION_1 + FLAVORS,
@@ -33,37 +38,27 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=List[FlavorResponseModel],
+    response_model=Page[FlavorResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def list_flavors(
-    project_name_or_id: Optional[Union[str, UUID]] = None,
-    component_type: Optional[StackComponentType] = None,
-    user_name_or_id: Optional[Union[str, UUID]] = None,
-    name: Optional[str] = None,
-    is_shared: Optional[bool] = None,
+    flavor_filter_model: FlavorFilterModel = Depends(
+        make_dependable(FlavorFilterModel)
+    ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> List[FlavorResponseModel]:
+) -> Page[FlavorResponseModel]:
     """Returns all flavors.
 
     Args:
-        project_name_or_id: Name or ID of the project.
-        component_type: Optionally filter by component type.
-        user_name_or_id: Optionally filter by name or ID of the user.
-        name: Optionally filter by flavor name.
-        is_shared: Optionally filter by shared status of the flavor.
+        flavor_filter_model: Filter model used for pagination, sorting,
+                             filtering
+
 
     Returns:
         All flavors.
     """
-    return zen_store().list_flavors(
-        project_name_or_id=project_name_or_id,
-        component_type=component_type,
-        user_name_or_id=user_name_or_id,
-        is_shared=is_shared,
-        name=name,
-    )
+    return zen_store().list_flavors(flavor_filter_model=flavor_filter_model)
 
 
 @router.get(

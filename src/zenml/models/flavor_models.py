@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """Models representing stack component flavors."""
 
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Union
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
@@ -22,10 +23,12 @@ from zenml.models.base_models import (
     ProjectScopedRequestModel,
     UserScopedResponseModel,
 )
-from zenml.models.constants import STR_FIELD_MAX_LENGTH
+from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
+from zenml.models.filter_models import ProjectScopedFilterModel
 
 if TYPE_CHECKING:
     from zenml.models import ProjectResponseModel
+
 
 # ---- #
 # BASE #
@@ -74,6 +77,32 @@ class FlavorResponseModel(FlavorBaseModel, UserScopedResponseModel):
     project: Optional["ProjectResponseModel"] = Field(
         title="The project of this resource."
     )
+
+
+# ------ #
+# FILTER #
+# ------ #
+
+
+class FlavorFilterModel(ProjectScopedFilterModel):
+    """Model to enable advanced filtering of all Flavors."""
+
+    name: str = Field(
+        default=None,
+        description="Name of the flavor",
+    )
+    type: str = Field(
+        default=None,
+        description="Stack Component Type of the stack flavor",
+    )
+    integration: str = Field(
+        default=None,
+        description="Integration associated with the flavor",
+    )
+    project_id: Union[UUID, str] = Field(
+        default=None, description="Project of the stack"
+    )
+    user_id: Union[UUID, str] = Field(None, description="User of the stack")
 
 
 # ------- #

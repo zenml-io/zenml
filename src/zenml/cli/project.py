@@ -13,16 +13,18 @@
 #  permissions and limitations under the License.
 """Functionality to administer projects of the ZenML CLI and server."""
 
-from typing import Optional
+from typing import Any, Optional
 
 import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
-from zenml.cli.utils import warn_unsupported_non_default_project
+from zenml.cli.utils import list_options, warn_unsupported_non_default_project
 from zenml.client import Client
+from zenml.console import console
 from zenml.enums import CliCategories
 from zenml.exceptions import EntityExistsError, IllegalOperationError
+from zenml.models import ProjectFilterModel
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
@@ -31,22 +33,25 @@ def project() -> None:
 
 
 @project.command("list", hidden=True)
-def list_projects() -> None:
+@list_options(ProjectFilterModel)
+def list_projects(**kwargs: Any) -> None:
     """List all projects."""
     warn_unsupported_non_default_project()
     cli_utils.print_active_config()
-    projects = Client().zen_store.list_projects()
+    client = Client()
+    with console.status("Listing projects...\n"):
 
-    if projects:
-        active_project = Client().active_project
-        active_project_id = active_project.id if active_project else None
-        cli_utils.print_pydantic_models(
-            projects,
-            exclude_columns=["id", "created", "updated"],
-            is_active=(lambda p: p.id == active_project_id),
-        )
-    else:
-        cli_utils.declare("No projects registered.")
+        projects = client.list_projects(**kwargs)
+        if projects:
+            active_project = Client().active_project
+            active_project_id = active_project.id if active_project else None
+            cli_utils.print_pydantic_models(
+                projects,
+                exclude_columns=["id", "created", "updated"],
+                is_active=(lambda p: p.id == active_project_id),
+            )
+        else:
+            cli_utils.declare("No projects found for the given filter.")
 
 
 @project.command("create", help="Create a new project.", hidden=True)
