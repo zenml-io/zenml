@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,3 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+
+from zenml.enums import StackComponentType
+from zenml.orchestrators import LocalDockerOrchestratorFlavor
+
+
+def test_local_docker_orchestrator_flavor_attributes():
+    """Tests that the basic attributes of the local docker orchestrator flavor
+    are set correctly."""
+
+    flavor = LocalDockerOrchestratorFlavor()
+    assert flavor.type == StackComponentType.ORCHESTRATOR
+    assert flavor.name == "local_docker"
