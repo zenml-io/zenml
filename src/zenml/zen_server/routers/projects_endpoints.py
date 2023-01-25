@@ -279,10 +279,8 @@ def list_project_stacks(
         All stacks part of the specified project.
     """
     project = zen_store().get_project(project_name_or_id)
-    stack_filter_model.project_id = project.id
-
+    stack_filter_model.set_scope_project(project.id)
     stack_filter_model.set_scope_user(user_id=auth_context.user.id)
-
     return zen_store().list_stacks(stack_filter_model=stack_filter_model)
 
 
@@ -359,8 +357,7 @@ def list_project_stack_components(
         All stack components part of the specified project.
     """
     project = zen_store().get_project(project_name_or_id)
-    component_filter_model.project_id = project.id
-
+    component_filter_model.set_scope_project(project.id)
     component_filter_model.set_scope_user(user_id=auth_context.user.id)
     return zen_store().list_stack_components(
         component_filter_model=component_filter_model
@@ -442,7 +439,7 @@ def list_project_flavors(
     """
     if project_name_or_id:
         project = zen_store().get_project(project_name_or_id)
-        flavor_filter_model.project_id = project.id
+        flavor_filter_model.set_scope_project(project.id)
     return zen_store().list_flavors(flavor_filter_model=flavor_filter_model)
 
 
@@ -520,7 +517,7 @@ def list_project_pipelines(
         All pipelines within the project.
     """
     project = zen_store().get_project(project_name_or_id)
-    pipeline_filter_model.project_id = project.id
+    pipeline_filter_model.set_scope_project(project.id)
     return zen_store().list_pipelines(
         pipeline_filter_model=pipeline_filter_model
     )
@@ -595,8 +592,7 @@ def list_runs(
         The pipeline runs according to query filters.
     """
     project = zen_store().get_project(project_name_or_id)
-    runs_filter_model.project_id = project.id
-
+    runs_filter_model.set_scope_project(project.id)
     return zen_store().list_runs(runs_filter_model=runs_filter_model)
 
 
@@ -713,7 +709,6 @@ def get_project_statistics(
         All pipelines within the project.
     """
     project = zen_store().get_project(project_name_or_id)
-
     return {
         "stacks": zen_store()
         .list_stacks(StackFilterModel(project_id=project.id))
