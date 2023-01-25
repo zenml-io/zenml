@@ -333,10 +333,8 @@ def list_workspace_stacks(
         All stacks part of the specified workspace.
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
-    stack_filter_model.workspace_id = workspace.id
-
+    stack_filter_model.set_scope_workspace(workspace.id)
     stack_filter_model.set_scope_user(user_id=auth_context.user.id)
-
     return zen_store().list_stacks(stack_filter_model=stack_filter_model)
 
 
@@ -424,8 +422,8 @@ def list_workspace_stack_components(
     Returns:
         All stack components part of the specified workspace.
     """
-    workspace = zen_store().get_workspace(workspace_name_or_id)
-    component_filter_model.workspace_id = workspace.id
+    project = zen_store().get_project(project_name_or_id)
+    component_filter_model.project_id = project.id
 
     component_filter_model.set_scope_user(user_id=auth_context.user.id)
     return zen_store().list_stack_components(
@@ -518,9 +516,9 @@ def list_workspace_flavors(
     Returns:
         All stack components of a certain type that are part of a workspace.
     """
-    if workspace_name_or_id:
-        workspace = zen_store().get_workspace(workspace_name_or_id)
-        flavor_filter_model.workspace_id = workspace.id
+    if project_name_or_id:
+        project = zen_store().get_project(project_name_or_id)
+        flavor_filter_model.project_id = project.id
     return zen_store().list_flavors(flavor_filter_model=flavor_filter_model)
 
 
@@ -609,8 +607,8 @@ def list_workspace_pipelines(
     Returns:
         All pipelines within the workspace.
     """
-    workspace = zen_store().get_workspace(workspace_name_or_id)
-    pipeline_filter_model.workspace_id = workspace.id
+    project = zen_store().get_project(project_name_or_id)
+    pipeline_filter_model.project_id = project.id
     return zen_store().list_pipelines(
         pipeline_filter_model=pipeline_filter_model
     )
@@ -696,8 +694,8 @@ def list_runs(
     Returns:
         The pipeline runs according to query filters.
     """
-    workspace = zen_store().get_workspace(workspace_name_or_id)
-    runs_filter_model.workspace_id = workspace.id
+    project = zen_store().get_project(project_name_or_id)
+    runs_filter_model.project_id = project.id
 
     return zen_store().list_runs(runs_filter_model=runs_filter_model)
 
@@ -831,7 +829,7 @@ def get_workspace_statistics(
     Returns:
         All pipelines within the workspace.
     """
-    workspace = zen_store().get_workspace(workspace_name_or_id)
+    project = zen_store().get_project(project_name_or_id)
 
     return {
         "stacks": zen_store()
