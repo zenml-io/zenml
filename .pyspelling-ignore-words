@@ -1608,3 +1608,9 @@ conjuncted
 StackModels
 ComponentModels
 zenprojects
+ClusterIssuer
+balancer
+defaultPassword
+generateCerts
+letsencrypt
+privateKeySecretRef
