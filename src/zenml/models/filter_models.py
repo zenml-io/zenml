@@ -329,10 +329,7 @@ class BaseFilterModel(BaseModel):
         split_value = self.sort_by.split(":", 1)
         if len(split_value) == 2:
             column = split_value[1]
-
-            if split_value[0] in SorterOps.values():
-
-                operator = SorterOps(split_value[0])
+            operator = SorterOps(split_value[0])
 
         return column, operator
 
