@@ -855,7 +855,8 @@ class SqlZenStore(BaseZenStore):
         #  and the FlavorRegistry recreates all in-built and integration
         #  flavors in the db.
         revisions_afterwards = self.alembic.current_revisions()
-        if len(revisions) < len(revisions_afterwards):
+
+        if revisions != revisions_afterwards:
             from zenml.stack.flavor_registry import FlavorRegistry
 
             self._purge_non_custom_flavors()

@@ -1,7 +1,7 @@
 """Port flavors into database. [bea8a6ce3015].
 
 Revision ID: bea8a6ce3015
-Revises: 0.31.1
+Revises: 0.32.0
 Create Date: 2022-12-20 11:20:30.731406
 
 """
