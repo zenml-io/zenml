@@ -150,6 +150,15 @@ class LocalArtifactStoreFlavor(BaseArtifactStoreFlavor):
         return "local"
 
     @property
+    def logo_url(self) -> str:
+        """A url to represent the flavor in the dashboard.
+
+        Returns:
+            The flavor logo.
+        """
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/artifact_Store/local.svg"
+
+    @property
     def config_class(self) -> Type[LocalArtifactStoreConfig]:
         """Config class for this flavor.
 

@@ -23,6 +23,7 @@ from zenml.enums import StackComponentType
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 from zenml.models import FlavorRequestModel, FlavorResponseModel
+from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
 
@@ -39,10 +40,12 @@ class FlavorRegistry:
             StackComponentType, Dict[str, FlavorResponseModel]
         ] = defaultdict(dict)
 
-        self.register_default_flavors()
-        self.register_integration_flavors()
+    def register_flavors(self, store: BaseZenStore) -> None:
+        self.register_default_flavors(store=store)
+        self.register_integration_flavors(store=store)
 
-    def register_default_flavors(self) -> None:
+    @staticmethod
+    def register_default_flavors(store: BaseZenStore) -> None:
         """Registers the default built-in flavors."""
         from zenml.artifact_stores import LocalArtifactStoreFlavor
         from zenml.container_registries import (
@@ -73,17 +76,17 @@ class FlavorRegistry:
         )
         for flavor in default_flavors:
             flavor_instance = flavor()  # type: ignore[abstract]
-            self._register_flavor(
-                flavor_instance.to_model(integration="built-in")
-            )
+            store.create_flavor(
+                flavor_instance.to_model(integration="built-in"))
 
-    def register_integration_flavors(self) -> None:
+    @staticmethod
+    def register_integration_flavors(store: BaseZenStore) -> None:
         """Registers the flavors implemented by integrations."""
         for name, integration in integration_registry.integrations.items():
             integrated_flavors = integration.flavors()
             if integrated_flavors:
                 for flavor in integrated_flavors:
-                    self._register_flavor(flavor().to_model(integration=name))
+                    store.create_flavor(flavor().to_model(integration=name))
 
     def _register_flavor(
         self,
@@ -139,33 +142,4 @@ class FlavorRegistry:
                 flavors.append(flavor)
         return flavors
 
-    def get_flavors_by_type(
-        self, component_type: StackComponentType
-    ) -> List[FlavorResponseModel]:
-        """Return the list of flavors with given type.
 
-        Args:
-            component_type: The type of the stack component.
-
-        Returns:
-            The list of flavors with the given type.
-        """
-        return list(self._flavors[component_type].values())
-
-    def get_flavor_by_name_and_type(
-        self, name: str, component_type: StackComponentType
-    ) -> FlavorResponseModel:
-        """Gets the flavor for a given name and type.
-
-        Args:
-            name: The name of the flavor.
-            component_type: The type of the stack component.
-
-        Returns:
-            The flavor with the given name and type.
-        """
-        return self._flavors[component_type][name]
-
-
-# Create the instance of the registry
-flavor_registry = FlavorRegistry()

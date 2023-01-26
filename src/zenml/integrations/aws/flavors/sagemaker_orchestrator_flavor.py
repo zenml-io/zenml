@@ -90,6 +90,15 @@ class SagemakerOrchestratorFlavor(BaseOrchestratorFlavor):
         return AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR
 
     @property
+    def logo_url(self) -> str:
+        """A url to represent the flavor in the dashboard.
+
+        Returns:
+            The flavor logo.
+        """
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/sagemaker.png"
+
+    @property
     def config_class(self) -> Type[SagemakerOrchestratorConfig]:
         """Returns SagemakerOrchestratorConfig config class.
 

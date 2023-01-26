@@ -262,6 +262,15 @@ class LocalSecretsManagerFlavor(BaseSecretsManagerFlavor):
         return "local"
 
     @property
+    def logo_url(self) -> str:
+        """A url to represent the flavor in the dashboard.
+
+        Returns:
+            The flavor logo.
+        """
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/secrets_managers/local.svg"
+
+    @property
     def config_class(self) -> Type[LocalSecretsManagerConfig]:
         """The config class for this flavor.
 

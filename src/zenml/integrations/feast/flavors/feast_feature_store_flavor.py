@@ -60,6 +60,15 @@ class FeastFeatureStoreFlavor(BaseFeatureStoreFlavor):
         return FEAST_FEATURE_STORE_FLAVOR
 
     @property
+    def logo_url(self) -> str:
+        """A url to represent the flavor in the dashboard.
+
+        Returns:
+            The flavor logo.
+        """
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/feature_store/feast.png"
+
+    @property
     def config_class(self) -> Type[FeastFeatureStoreConfig]:
         """Returns FeastFeatureStoreConfig config class.
 

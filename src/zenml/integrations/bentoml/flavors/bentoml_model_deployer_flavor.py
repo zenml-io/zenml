@@ -44,6 +44,15 @@ class BentoMLModelDeployerFlavor(BaseModelDeployerFlavor):
         return BENTOML_MODEL_DEPLOYER_FLAVOR
 
     @property
+    def logo_url(self) -> str:
+        """A url to represent the flavor in the dashboard.
+
+        Returns:
+            The flavor logo.
+        """
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/model_deployer/bentoml.png"
+
+    @property
     def config_class(self) -> Type[BentoMLModelDeployerConfig]:
         """Returns `BentoMLModelDeployerConfig` config class.
 

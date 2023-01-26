@@ -227,13 +227,13 @@ class StackRequirement(BaseTestConfigModel):
             RuntimeError: If the configured component flavor is not found in
                 ZenML.
         """
-        from zenml.stack.flavor_registry import flavor_registry
 
         if self.flavor is None:
             return None
 
+        client = Client()
         try:
-            flavor = flavor_registry.get_flavor_by_name_and_type(
+            flavor = client.get_flavor_by_name_and_type(
                 component_type=self.type, name=self.flavor
             )
         except KeyError:

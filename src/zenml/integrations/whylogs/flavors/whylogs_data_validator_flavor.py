@@ -62,6 +62,15 @@ class WhylogsDataValidatorFlavor(BaseDataValidatorFlavor):
         return WHYLOGS_DATA_VALIDATOR_FLAVOR
 
     @property
+    def logo_url(self) -> str:
+        """A url to represent the flavor in the dashboard.
+
+        Returns:
+            The flavor logo.
+        """
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/data_validator/whylogs.png"
+
+    @property
     def config_class(self) -> Type[WhylogsDataValidatorConfig]:
         """Returns `WhylogsDataValidatorConfig` config class.
 

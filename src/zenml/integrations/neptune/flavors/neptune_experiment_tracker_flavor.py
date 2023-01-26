@@ -73,6 +73,15 @@ class NeptuneExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
         return NEPTUNE_MODEL_EXPERIMENT_TRACKER_FLAVOR
 
     @property
+    def logo_url(self) -> str:
+        """A url to represent the flavor in the dashboard.
+
+        Returns:
+            The flavor logo.
+        """
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/experiment_tracker/neptune.png"
+
+    @property
     def config_class(self) -> Type[NeptuneExperimentTrackerConfig]:
         """Returns `NeptuneExperimentTrackerConfig` config class.
 

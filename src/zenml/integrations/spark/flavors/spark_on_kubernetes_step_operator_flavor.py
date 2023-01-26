@@ -54,6 +54,15 @@ class KubernetesSparkStepOperatorFlavor(SparkStepOperatorFlavor):
         return SPARK_KUBERNETES_STEP_OPERATOR
 
     @property
+    def logo_url(self) -> str:
+        """A url to represent the flavor in the dashboard.
+
+        Returns:
+            The flavor logo.
+        """
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/step_operator/spark.png"
+
+    @property
     def config_class(self) -> Type[KubernetesSparkStepOperatorConfig]:
         """Returns `KubernetesSparkStepOperatorConfig` config class.
 

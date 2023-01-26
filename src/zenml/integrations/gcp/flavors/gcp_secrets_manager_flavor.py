@@ -102,6 +102,15 @@ class GCPSecretsManagerFlavor(BaseSecretsManagerFlavor):
         return GCP_SECRETS_MANAGER_FLAVOR
 
     @property
+    def logo_url(self) -> str:
+        """A url to represent the flavor in the dashboard.
+
+        Returns:
+            The flavor logo.
+        """
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/secrets_managers/gcp.png"
+
+    @property
     def config_class(self) -> Type[GCPSecretsManagerConfig]:
         """Returns GCPSecretsManagerConfig config class.
 

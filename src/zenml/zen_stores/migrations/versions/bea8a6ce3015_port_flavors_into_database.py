@@ -20,21 +20,6 @@ branch_labels = None
 depends_on = None
 
 
-def built_in_flavors() -> List[Dict[str, Any]]:
-    """Load json file containing a json representation of all inbuilt flavors."""
-    with open(
-        "src/zenml/zen_stores/migrations/versions/bea8a6ce3015_port_flavors_into_database.json",
-        "r",
-    ) as f:
-        flavors_list: List[Dict[str, Any]] = json.load(f)
-        for item in flavors_list:
-            item["id"] = str(uuid.uuid4()).replace("-", "")
-            item["created"] = datetime.utcnow()
-            item["updated"] = datetime.utcnow()
-
-        return flavors_list
-
-
 def upgrade() -> None:
     """Upgrade database schema and/or data, creating a new revision."""
     with op.batch_alter_table("flavor", schema=None) as batch_op:
@@ -48,19 +33,6 @@ def upgrade() -> None:
         batch_op.alter_column(
             "user_id", existing_type=sa.CHAR(length=32), nullable=True
         )
-
-    #  will get reflected
-    meta = sa.MetaData(bind=op.get_bind())
-    meta.reflect(only=("flavor",))
-
-    # Prefill the roles table with the admin and guest role
-    op.bulk_insert(
-        sa.Table(
-            "flavor",
-            meta,
-        ),
-        [*built_in_flavors()],
-    )
 
 
 def downgrade() -> None:

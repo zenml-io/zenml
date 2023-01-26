@@ -61,6 +61,15 @@ class MLFlowModelDeployerFlavor(BaseModelDeployerFlavor):
         return MLFLOW_MODEL_DEPLOYER_FLAVOR
 
     @property
+    def logo_url(self) -> str:
+        """A url to represent the flavor in the dashboard.
+
+        Returns:
+            The flavor logo.
+        """
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/model_deployer/mlflow.png"
+
+    @property
     def config_class(self) -> Type[MLFlowModelDeployerConfig]:
         """Returns `MLFlowModelDeployerConfig` config class.
 

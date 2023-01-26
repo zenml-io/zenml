@@ -37,6 +37,15 @@ class DeepchecksDataValidatorFlavor(BaseDataValidatorFlavor):
         return DEEPCHECKS_DATA_VALIDATOR_FLAVOR
 
     @property
+    def logo_url(self) -> str:
+        """A url to represent the flavor in the dashboard.
+
+        Returns:
+            The flavor logo.
+        """
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/data_validator/deepchecks.png"
+
+    @property
     def implementation_class(self) -> Type["DeepchecksDataValidator"]:
         """Implementation class.
 

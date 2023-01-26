@@ -36,6 +36,15 @@ class Flavor:
 
     @property
     @abstractmethod
+    def logo_url(self) -> str:
+        """A url to represent the flavor in the dashboard.
+
+        Returns:
+            The flavor logo.
+        """
+
+    @property
+    @abstractmethod
     def type(self) -> StackComponentType:
         """The stack component type.
 
@@ -108,5 +117,6 @@ class Flavor:
             source=resolve_class(self.__class__),  # noqa
             config_schema=self.config_schema,
             integration=integration,
+            logo_url=self.logo_url
         )
         return model
