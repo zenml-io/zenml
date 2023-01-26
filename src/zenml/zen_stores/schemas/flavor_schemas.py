@@ -86,5 +86,7 @@ class FlavorSchema(NamedSchema, table=True):
             created=self.created,
             updated=self.updated,
             logo_url=self.logo_url if self.logo_url else None,
-            flavor_docs_url=self.flavor_docs_url if self.flavor_docs_url else None,
+            flavor_docs_url=self.flavor_docs_url
+            if self.flavor_docs_url
+            else None,
         )

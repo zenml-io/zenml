@@ -1536,7 +1536,7 @@ class SqlZenStore(BaseZenStore):
                     project_id=flavor.project,
                     user_id=flavor.user,
                     logo_url=flavor.logo_url,
-                    flavor_docs_url=flavor.flavor_docs_url
+                    flavor_docs_url=flavor.flavor_docs_url,
                 )
                 session.add(new_flavor)
                 session.commit()
@@ -1621,12 +1621,13 @@ class SqlZenStore(BaseZenStore):
             except NoResultFound as error:
                 raise KeyError from error
 
-    def _purge_non_custom_flavors(self):
+    def _purge_non_custom_flavors(self) -> None:
         """Delete all non-custom flavors."""
         with Session(self.engine) as session:
             non_custom_flavors = session.exec(
-                select(FlavorSchema)
-                .where(FlavorSchema.integration != "custom")
+                select(FlavorSchema).where(
+                    FlavorSchema.integration != "custom"
+                )
             ).all()
             for flavor in non_custom_flavors:
                 session.delete(flavor)

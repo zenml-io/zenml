@@ -46,7 +46,7 @@ class Flavor:
         component_type = self.type.plural.replace("_", "-")
         name = self.name.replace("_", "-")
 
-        url = f"https://docs.zenml.io/v/{__version__}/component-gallery/{component_type}/{self.name}"
+        url = f"https://docs.zenml.io/v/{__version__}/component-gallery/{component_type}/{name}"
 
         # import requests
         #
@@ -140,6 +140,6 @@ class Flavor:
             config_schema=self.config_schema,
             integration=integration,
             logo_url=self.logo_url,
-            flavor_docs_url=self.flavor_docs_url
+            flavor_docs_url=self.flavor_docs_url,
         )
         return model
