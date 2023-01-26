@@ -45,8 +45,11 @@ class Flavor:
 
         component_type = self.type.plural.replace("_", "-")
         name = self.name.replace("_", "-")
+        # base = f"https://docs.zenml.io/v/{__version__}"
+        # TODO: Replace this before merge
+        base = "https://zenml-io.gitbook.io/test-space"
 
-        url = f"https://docs.zenml.io/v/{__version__}/component-gallery/{component_type}/{name}"
+        url = f"{base}/component-gallery/{component_type}/{name}"
 
         # import requests
         #
