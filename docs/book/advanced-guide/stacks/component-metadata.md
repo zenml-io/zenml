@@ -24,22 +24,25 @@ has finished running.
 Below you can see the base class definitions of both methods:
 
 ```python
-from zenml.metadata.metadata_types import MetadataType
-
-def get_pipeline_run_metadata(
-    self, run_id: UUID
-) -> Dict[str, "MetadataType"]:
-    return {}
-```
-
-```python
 from zenml.config.step_run_info import StepRunInfo
 from zenml.metadata.metadata_types import MetadataType
 
-def get_step_run_metadata(
-    self, info: "StepRunInfo"
-) -> Dict[str, "MetadataType"]:
-    return {}
+
+class StackComponent:
+
+    ...
+
+    def get_pipeline_run_metadata(
+        self, run_id: UUID
+    ) -> Dict[str, "MetadataType"]:
+        return {}
+
+    ...
+
+    def get_step_run_metadata(
+        self, info: "StepRunInfo"
+    ) -> Dict[str, "MetadataType"]:
+        return {}
 ```
 
 Both functions are expected to return dicts mapping names to the values you 
@@ -59,28 +62,30 @@ As an example, let us look at how these methods are implemented in the
 [MLflow experiment tracker](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/mlflow/experiment_trackers/mlflow_experiment_tracker.py):
 
 ```python
+from zenml.config.step_run_info import StepRunInfo
 from zenml.metadata.metadata_types import MetadataType, Uri
 
 
-def get_pipeline_run_metadata(
-    self, run_id: UUID
-) -> Dict[str, "MetadataType"]:
-    return {
-        "mlflow_tracking_uri": Uri(self.get_tracking_uri()),
-    }
-```
+class MLFlowExperimentTracker(BaseExperimentTracker):
 
-```python
-from zenml.config.step_run_info import StepRunInfo
-from zenml.metadata.metadata_types import MetadataType
+    ...
 
-def get_step_run_metadata(
-    self, info: "StepRunInfo"
-) -> Dict[str, "MetadataType"]:
-    return {
-        "mlflow_run_id": mlflow.active_run().info.run_id,
-        "mlflow_experiment_id": mlflow.active_run().info.experiment_id,
-    }
+    def get_pipeline_run_metadata(
+        self, run_id: UUID
+    ) -> Dict[str, "MetadataType"]:
+        return {
+            "mlflow_tracking_uri": Uri(self.get_tracking_uri()),
+        }
+    
+    ...
+
+    def get_step_run_metadata(
+        self, info: "StepRunInfo"
+    ) -> Dict[str, "MetadataType"]:
+        return {
+            "mlflow_run_id": mlflow.active_run().info.run_id,
+            "mlflow_experiment_id": mlflow.active_run().info.experiment_id,
+        }
 ```
 
 As you see, the MLflow experiment tracker extracts the tracking URI on a 
