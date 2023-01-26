@@ -58,6 +58,10 @@ class FlavorBaseModel(BaseModel):
         title="Optionally, a url pointing to a png,"
         "svg or jpg can be attached."
     )
+    flavor_docs_url: Optional[str] = Field(
+        title="Optionally, a url pointing to docs,"
+        "within docs.zenml.io."
+    )
 
 
 # -------- #
@@ -103,6 +107,7 @@ class FlavorFilterModel(ProjectScopedFilterModel):
         default=None, description="Project of the stack"
     )
     user_id: Union[UUID, str] = Field(None, description="User of the stack")
+
 
 
 # ------- #

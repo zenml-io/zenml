@@ -21,6 +21,7 @@ def upgrade() -> None:
     with op.batch_alter_table("flavor", schema=None) as batch_op:
 
         batch_op.add_column(sa.Column("logo_url", sa.TEXT(), nullable=True))
+        batch_op.add_column(sa.Column("flavor_docs_url", sa.TEXT(), nullable=True))
 
         batch_op.alter_column(
             "project_id", existing_type=sa.CHAR(length=32), nullable=True

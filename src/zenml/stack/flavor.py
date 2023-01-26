@@ -35,6 +35,28 @@ class Flavor:
         """
 
     @property
+    def flavor_docs_url(self) -> str:
+        """A url to point at docs explaining this flavor.
+
+        Returns:
+            A flavor docs url.
+        """
+        from zenml import __version__
+
+        component_type = self.type.plural.replace("_", "-")
+        name = self.name.replace("_", "-")
+
+        url = f"https://docs.zenml.io/v/{__version__}/component-gallery/{component_type}/{self.name}"
+
+        # import requests
+        #
+        # r = requests.head(url)
+        # if r.status_code == 404:
+        #     print(f"SOS: {url}")
+
+        return url
+
+    @property
     @abstractmethod
     def logo_url(self) -> str:
         """A url to represent the flavor in the dashboard.
@@ -118,5 +140,6 @@ class Flavor:
             config_schema=self.config_schema,
             integration=integration,
             logo_url=self.logo_url,
+            flavor_docs_url=self.flavor_docs_url
         )
         return model

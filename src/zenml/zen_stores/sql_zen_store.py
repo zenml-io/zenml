@@ -1536,6 +1536,7 @@ class SqlZenStore(BaseZenStore):
                     project_id=flavor.project,
                     user_id=flavor.user,
                     logo_url=flavor.logo_url,
+                    flavor_docs_url=flavor.flavor_docs_url
                 )
                 session.add(new_flavor)
                 session.commit()
