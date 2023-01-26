@@ -849,6 +849,7 @@ class SqlZenStore(BaseZenStore):
         revisions_afterwards = self.alembic.current_revisions()
         if len(revisions) < len(revisions_afterwards):
             from zenml.stack.flavor_registry import FlavorRegistry
+
             FlavorRegistry().register_flavors(store=self)
 
     def get_store_info(self) -> ServerModel:

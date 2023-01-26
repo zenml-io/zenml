@@ -5,10 +5,6 @@ Revises: 0.31.1
 Create Date: 2022-12-20 11:20:30.731406
 
 """
-import json
-import uuid
-from datetime import datetime
-from typing import Any, Dict, List
 
 import sqlalchemy as sa
 from alembic import op

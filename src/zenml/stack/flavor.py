@@ -117,6 +117,6 @@ class Flavor:
             source=resolve_class(self.__class__),  # noqa
             config_schema=self.config_schema,
             integration=integration,
-            logo_url=self.logo_url
+            logo_url=self.logo_url,
         )
         return model

@@ -41,6 +41,11 @@ class FlavorRegistry:
         ] = defaultdict(dict)
 
     def register_flavors(self, store: BaseZenStore) -> None:
+        """Register all flavors to the DB.
+
+        Args:
+            store: The instance of a store to use for persistence
+        """
         self.register_default_flavors(store=store)
         self.register_integration_flavors(store=store)
 
@@ -77,7 +82,8 @@ class FlavorRegistry:
         for flavor in default_flavors:
             flavor_instance = flavor()  # type: ignore[abstract]
             store.create_flavor(
-                flavor_instance.to_model(integration="built-in"))
+                flavor_instance.to_model(integration="built-in")
+            )
 
     @staticmethod
     def register_integration_flavors(store: BaseZenStore) -> None:
@@ -141,5 +147,3 @@ class FlavorRegistry:
             for flavor in flavors_by_type.values():
                 flavors.append(flavor)
         return flavors
-
-

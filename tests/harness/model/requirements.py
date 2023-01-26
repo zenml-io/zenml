@@ -227,7 +227,6 @@ class StackRequirement(BaseTestConfigModel):
             RuntimeError: If the configured component flavor is not found in
                 ZenML.
         """
-
         if self.flavor is None:
             return None
 

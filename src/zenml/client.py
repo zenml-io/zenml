@@ -2300,7 +2300,7 @@ class Client(metaclass=ClientMetaClass):
 
     def get_flavors_by_type(
         self, component_type: "StackComponentType"
-    ) -> Page["FlavorResponseModel"]:
+    ) -> Page[FlavorResponseModel]:
         """Fetches the list of flavor for a stack component type.
 
         Args:
@@ -2311,12 +2311,10 @@ class Client(metaclass=ClientMetaClass):
         """
         logger.debug(f"Fetching the flavors of type {component_type}.")
 
-        custom_flavors = self.list_custom_flavors(
+        return self.list_flavors(
             project_id=self.active_project.id,
             type=component_type,
         )
-
-        return custom_flavors
 
     def get_flavor_by_name_and_type(
         self, name: str, component_type: "StackComponentType"

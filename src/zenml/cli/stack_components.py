@@ -828,6 +828,7 @@ def generate_stack_component_flavor_list_command(
             flavors = client.get_flavors_by_type(component_type=component_type)
 
             cli_utils.print_flavor_list(flavors=flavors)
+            cli_utils.print_page_info(flavors)
 
     return list_stack_component_flavor_command
 

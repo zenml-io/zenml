@@ -334,14 +334,14 @@ def print_stack_configuration(
     )
 
 
-def print_flavor_list(flavors: List["FlavorResponseModel"]) -> None:
+def print_flavor_list(flavors: Page["FlavorResponseModel"]) -> None:
     """Prints the list of flavors.
 
     Args:
         flavors: List of flavors to print.
     """
     flavor_table = []
-    for f in flavors:
+    for f in flavors.items:
         flavor_table.append(
             {
                 "FLAVOR": f.name,
