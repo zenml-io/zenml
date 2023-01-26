@@ -17,7 +17,7 @@ import hashlib
 from typing import TYPE_CHECKING, Dict, Optional
 
 from zenml.client import Client
-from zenml.enums import ExecutionStatus
+from zenml.enums import ExecutionStatus, SorterOps
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
@@ -131,18 +131,16 @@ def get_cached_step_run(cache_key: str) -> Optional["StepRunResponseModel"]:
     Returns:
         The existing step run if the step can be cached, otherwise None.
     """
-    cache_candidates = (
-        Client()
-        .list_run_steps(
-            project_id=Client().active_project.id,
-            cache_key=cache_key,
-            status=ExecutionStatus.COMPLETED,
-            sort_by="created",
-            size=1,
-        )
-        .items
-    )
+    client = Client()
+
+    cache_candidates = client.list_run_steps(
+        project_id=client.active_project.id,
+        cache_key=cache_key,
+        status=ExecutionStatus.COMPLETED,
+        sort_by=f"{SorterOps.DESCENDING}:created",
+        size=1,
+    ).items
 
     if cache_candidates:
-        return cache_candidates[-1]
+        return cache_candidates[0]
     return None
