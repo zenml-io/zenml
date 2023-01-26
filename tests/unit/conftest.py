@@ -206,7 +206,7 @@ def sample_step_operator():
         flavor="stub",
         type=StackComponentType.STEP_OPERATOR,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -472,7 +472,7 @@ def sample_artifact_request_model() -> ArtifactRequestModel:
 @pytest.fixture
 def create_step_run(
     sample_user_model: UserResponseModel,
-    sample_project_model: WorkspaceResponseModel,
+    sample_workspace_model: WorkspaceResponseModel,
 ) -> Callable[..., StepRunResponseModel]:
     """Fixture that returns a function which can be used to create a
     customizable StepRunResponseModel."""
@@ -499,7 +499,7 @@ def create_step_run(
             "status": ExecutionStatus.COMPLETED,
             "created": datetime.now(),
             "updated": datetime.now(),
-            "project": sample_project_model,
+            "workspace": sample_workspace_model,
             "user": sample_user_model,
             "output_artifacts": {},
             **kwargs,
