@@ -105,8 +105,8 @@ class ServerDeployer(metaclass=SingletonMetaClass):
         # before the server is deployed. This is necessary because the server
         # may require access to the local store configuration or database.
         gc = GlobalConfiguration()
-        if gc.store is None:
-            _ = gc.zen_store
+
+        _ = gc.zen_store
 
         try:
             self.get_server(config.name)
