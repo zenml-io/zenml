@@ -16,7 +16,8 @@ from zenml.integrations.constants import HUGGINGFACE, TENSORFLOW
 from zenml.pipelines import pipeline
 
 docker_settings = DockerSettings(
-    required_integrations=[HUGGINGFACE, TENSORFLOW]
+    required_integrations=[HUGGINGFACE, TENSORFLOW],
+    environment={"HF_HOME": "/app/huggingface"},
 )
 
 
