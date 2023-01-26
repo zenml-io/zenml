@@ -51,7 +51,7 @@ def get_run(name: str) -> "PipelineRunView":
     # TODO: [server] this error handling could be improved
     if not runs:
         raise KeyError(f"No run with name '{name}' exists.")
-    elif runs.total:
+    elif runs.total > 1:
         raise RuntimeError(
             f"Multiple runs have been found for name  '{name}'.", runs
         )
@@ -59,7 +59,7 @@ def get_run(name: str) -> "PipelineRunView":
 
 
 def get_unlisted_runs() -> List["PipelineRunView"]:
-    """Fetches post-execution views the most recent 50 unlisted runs.
+    """Fetches the post-execution views of the 50 most recent unlisted runs.
 
     Unlisted runs are runs that are not associated with any pipeline.
 
