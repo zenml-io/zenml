@@ -114,9 +114,11 @@ def test_filter_model_sort_by_for_existing_field_succeeds(
 
 @pytest.mark.parametrize(
     "correct_sortable_column",
-    [(SorterOps.DESCENDING, "created"),
-     (SorterOps.ASCENDING, "updated"),
-     (SorterOps.DESCENDING, "id")]
+    [
+        (SorterOps.DESCENDING, "created"),
+        (SorterOps.ASCENDING, "updated"),
+        (SorterOps.DESCENDING, "id"),
+    ],
 )
 def test_filter_model_sort_by_existing_field_with_order_succeeds(
     correct_sortable_column: Any,
@@ -131,9 +133,7 @@ def test_filter_model_sort_by_existing_field_with_order_succeeds(
 
 @pytest.mark.parametrize(
     "correct_sortable_column",
-    [("pancakes", "created"),
-     ("", "updated"),
-     (1, "id")]
+    [("pancakes", "created"), ("", "updated"), (1, "id")],
 )
 def test_filter_model_sort_by_existing_field_wrong_order_succeeds(
     correct_sortable_column: Any,
