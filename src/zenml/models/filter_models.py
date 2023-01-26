@@ -280,7 +280,7 @@ class BaseFilterModel(BaseModel):
     @validator("sort_by", pre=True)
     def validate_sort_by(cls, v: str) -> str:
         """Validate that the sort_column is a valid column with a valid operand."""
-        # Somehow pydantic allows you to pass in int values, which wil be
+        # Somehow pydantic allows you to pass in int values, which will be
         #  interpreted as string, however within the validator they are still
         #  integers, which don't have a .split() method
         if not isinstance(v, str):
