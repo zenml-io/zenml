@@ -20,7 +20,7 @@ import pytest
 
 from zenml.config.compiler import Compiler
 from zenml.config.step_configurations import Step
-from zenml.enums import ExecutionStatus
+from zenml.enums import ExecutionStatus, SorterOps
 from zenml.models.page_model import Page
 from zenml.orchestrators import cache_utils
 from zenml.steps import Output, step
@@ -271,7 +271,8 @@ def test_fetching_cached_step_run_queries_cache_candidates(
         project_id=ANY,
         cache_key="cache_key",
         status=ExecutionStatus.COMPLETED,
-        sort_by="created",
+        sort_by=f"{SorterOps.DESCENDING}:created",
+        size=1,
     )
 
 

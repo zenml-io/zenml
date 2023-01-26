@@ -13,12 +13,11 @@
 #  permissions and limitations under the License.
 """Utilities for caching."""
 
-import functools
 import hashlib
 from typing import TYPE_CHECKING, Dict, Optional
 
 from zenml.client import Client
-from zenml.enums import ExecutionStatus
+from zenml.enums import ExecutionStatus, SorterOps
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
@@ -134,17 +133,14 @@ def get_cached_step_run(cache_key: str) -> Optional["StepRunResponseModel"]:
     """
     client = Client()
 
-    # TODO: replace this with a descending sort that returns just a single
-    # item once we support that functionality
-    list_method = functools.partial(
-        client.list_run_steps,
+    cache_candidates = client.list_run_steps(
         project_id=client.active_project.id,
         cache_key=cache_key,
         status=ExecutionStatus.COMPLETED,
-        sort_by="created",
-    )
-    cache_candidates = client.depaginate(list_method=list_method)
+        sort_by=f"{SorterOps.DESCENDING}:created",
+        size=1,
+    ).items
 
     if cache_candidates:
-        return cache_candidates[-1]
+        return cache_candidates[0]
     return None

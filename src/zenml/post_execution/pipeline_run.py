@@ -51,7 +51,7 @@ def get_run(name: str) -> "PipelineRunView":
     # TODO: [server] this error handling could be improved
     if not runs:
         raise KeyError(f"No run with name '{name}' exists.")
-    elif runs.total:
+    elif runs.total > 1:
         raise RuntimeError(
             f"Multiple runs have been found for name  '{name}'.", runs
         )
