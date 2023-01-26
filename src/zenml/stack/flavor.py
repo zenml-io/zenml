@@ -45,17 +45,8 @@ class Flavor:
 
         component_type = self.type.plural.replace("_", "-")
         name = self.name.replace("_", "-")
-        # base = f"https://docs.zenml.io/v/{__version__}"
-        # TODO: Replace this before merge
-        base = "https://zenml-io.gitbook.io/test-space"
-
+        base = f"https://docs.zenml.io/v/{__version__}"
         url = f"{base}/component-gallery/{component_type}/{name}"
-
-        # import requests
-        #
-        # r = requests.head(url)
-        # if r.status_code == 404:
-        #     print(f"SOS: {url}")
 
         return url
 
