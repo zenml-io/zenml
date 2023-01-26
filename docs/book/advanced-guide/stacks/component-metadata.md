@@ -13,17 +13,19 @@ use.
 ## Base Abstraction
 
 Which metadata is tracked is defined by two methods of the
-[StackComponent base class]((https://github.com/zenml-io/zenml/blob/main/src/zenml/stack/stack_component.py):
+[StackComponent base class](https://github.com/zenml-io/zenml/blob/main/src/zenml/stack/stack_component.py):
 - `get_pipeline_run_metadata()` defines the metadata that is associated with 
 an entire pipeline run (such as the orchestrator URL) and is called once at
 the beginning of your pipeline run,
 - `get_step_run_metadata()` defines step-specific metadata (such as the 
-experiment tracker project name) and gets extracted after the respective step 
+experiment tracker project name) and gets called after the respective step 
 has finished running.
 
 Below you can see the base class definitions of both methods:
 
 ```python
+from zenml.metadata.metadata_types import MetadataType
+
 def get_pipeline_run_metadata(
     self, run_id: UUID
 ) -> Dict[str, "MetadataType"]:
@@ -31,6 +33,9 @@ def get_pipeline_run_metadata(
 ```
 
 ```python
+from zenml.config.step_run_info import StepRunInfo
+from zenml.metadata.metadata_types import MetadataType
+
 def get_step_run_metadata(
     self, info: "StepRunInfo"
 ) -> Dict[str, "MetadataType"]:
@@ -54,7 +59,8 @@ As an example, let us look at how these methods are implemented in the
 [MLflow experiment tracker](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/mlflow/experiment_trackers/mlflow_experiment_tracker.py):
 
 ```python
-from zenml.metadata.metadata_types import Uri
+from zenml.metadata.metadata_types import MetadataType, Uri
+
 
 def get_pipeline_run_metadata(
     self, run_id: UUID
@@ -65,6 +71,9 @@ def get_pipeline_run_metadata(
 ```
 
 ```python
+from zenml.config.step_run_info import StepRunInfo
+from zenml.metadata.metadata_types import MetadataType
+
 def get_step_run_metadata(
     self, info: "StepRunInfo"
 ) -> Dict[str, "MetadataType"]:
@@ -83,8 +92,8 @@ here to have it rendered as a link in the dashboard.
 {% hint style="info" %}
 If your stack component should track a value that is not a built-in datatype 
 (or otherwise part of `MetadataType`), you will need to cast it to a supported
-data type first. For example, if you had a value `x: numpy.float64`, you should
-cast that to a built-in type via `x.item()` first. Or, if you wanted to track a 
+datatype first. For example, if you had a value `x: numpy.float64`, you could
+cast it to a built-in `float` type via `x.item()`. Or, if you wanted to track a 
 custom class `y: CustomClass`, you could track its string representation 
 `str(y)` instead.
 {% endhint %}
