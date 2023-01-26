@@ -21,7 +21,7 @@ from pydantic.error_wrappers import ValidationError
 
 import zenml.exceptions
 from zenml.constants import FILTERING_DATETIME_FORMAT
-from zenml.enums import GenericFilterOps
+from zenml.enums import GenericFilterOps, SorterOps
 from zenml.models.filter_models import (
     BaseFilterModel,
     Filter,
@@ -107,6 +107,43 @@ def test_filter_model_sort_by_for_existing_field_succeeds(
     """Test that the filter model sort_by field enforces valid filter fields"""
     filter_model = BaseFilterModel(sort_by=correct_sortable_column)
     assert filter_model.sort_by == correct_sortable_column
+    assert filter_model.sorting_params[0] == correct_sortable_column
+    # Assert that the default sorting order is ascending
+    assert filter_model.sorting_params[1] == SorterOps.ASCENDING
+
+
+@pytest.mark.parametrize(
+    "correct_sortable_column",
+    [(SorterOps.DESCENDING, "created"),
+     (SorterOps.ASCENDING, "updated"),
+     (SorterOps.DESCENDING, "id")]
+)
+def test_filter_model_sort_by_existing_field_with_order_succeeds(
+    correct_sortable_column: Any,
+):
+    """Test that the filter model sort_by field enforces correct order"""
+    built_query = f"{correct_sortable_column[0]}:{correct_sortable_column[1]}"
+    filter_model = BaseFilterModel(sort_by=built_query)
+    assert filter_model.sort_by == built_query
+    assert filter_model.sorting_params[0] == correct_sortable_column[1]
+    assert filter_model.sorting_params[1] == correct_sortable_column[0]
+
+
+@pytest.mark.parametrize(
+    "correct_sortable_column",
+    [("pancakes", "created"),
+     ("", "updated"),
+     (1, "id")]
+)
+def test_filter_model_sort_by_existing_field_wrong_order_succeeds(
+    correct_sortable_column: Any,
+):
+    """Test that the filter model sort_by field ignores invalid order args"""
+    built_query = f"{correct_sortable_column[0]}:{correct_sortable_column[1]}"
+    filter_model = BaseFilterModel(sort_by=built_query)
+    assert filter_model.sort_by == correct_sortable_column[1]
+    assert filter_model.sorting_params[0] == correct_sortable_column[1]
+    assert filter_model.sorting_params[1] == SorterOps.ASCENDING
 
 
 @pytest.mark.parametrize(
