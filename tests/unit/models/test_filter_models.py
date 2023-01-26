@@ -19,6 +19,7 @@ from uuid import UUID
 import pytest
 from pydantic.error_wrappers import ValidationError
 
+import zenml.exceptions
 from zenml.constants import FILTERING_DATETIME_FORMAT
 from zenml.enums import GenericFilterOps
 from zenml.models.filter_models import (
@@ -109,13 +110,22 @@ def test_filter_model_sort_by_for_existing_field_succeeds(
 
 
 @pytest.mark.parametrize(
-    "incorrect_sortable_column", ["catastic_column", "zenml", "page", 1]
+    "incorrect_sortable_column", ["catastic_column", "zenml", "page"]
 )
 def test_filter_model_sort_by_for_non_filter_fields_fails(
     incorrect_sortable_column: Any,
 ):
     """Test that the filter model sort_by field enforces valid filter fields"""
     with pytest.raises(ValidationError):
+        BaseFilterModel(sort_by=incorrect_sortable_column)
+
+
+@pytest.mark.parametrize("incorrect_sortable_column", [1, {1, 2, 3}, int])
+def test_filter_model_sort_by_non_str_input_fails(
+    incorrect_sortable_column: Any,
+):
+    """Test that the filter model sort_by field enforces valid filter fields"""
+    with pytest.raises(zenml.exceptions.ValidationError):
         BaseFilterModel(sort_by=incorrect_sortable_column)
 
 

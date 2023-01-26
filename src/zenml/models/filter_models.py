@@ -40,6 +40,7 @@ from zenml.constants import (
     PAGINATION_STARTING_PAGE,
 )
 from zenml.enums import GenericFilterOps, LogicalOperators, SorterOps
+from zenml.exceptions import ValidationError
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
@@ -277,8 +278,16 @@ class BaseFilterModel(BaseModel):
     updated: Union[datetime, str] = Field(None, description="Updated")
 
     @validator("sort_by", pre=True)
-    def sort_column(cls, v: str) -> str:
+    def validate_sort_by(cls, v: str) -> str:
         """Validate that the sort_column is a valid column with a valid operand."""
+        # Somehow pydantic allows you to pass in int values, which wil be
+        #  interpreted as string, however within the validator they are still
+        #  integers, which don't have a .split() method
+        if not isinstance(v, str):
+            raise ValidationError(
+                f"str type expected for the sort_by field. "
+                f"Received a {type(v)}"
+            )
         column = v
         split_value = v.split(":", 1)
         if len(split_value) == 2:
