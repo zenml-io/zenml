@@ -1,4 +1,4 @@
-# Hyperparameter Tuning Pipeline
+# Grid search based Hyper-parameter tuning with Dynamic Pipelines
 
 This example demonstrates the concept of a dynamic pipeline in ZenML. Dynamic pipelines do not necessarily have a fixed number of steps, but allow the user to define pipelines with a configurable amount of steps with splitting branches. The example shown here illustrates one such application of a dynamic pipeline, namely creating a pipeline that performs a grid search hyperparameter tuning all within one pipeline and on the orchestrator level.
 
