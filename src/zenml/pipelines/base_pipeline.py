@@ -32,6 +32,7 @@ from typing import (
 )
 
 import yaml
+from packaging import version
 
 from zenml import constants
 from zenml.client import Client
@@ -66,6 +67,7 @@ from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
+    from zenml.models import PipelineResponseModel
     from zenml.post_execution import PipelineRunView
 
     StepConfigurationUpdateOrDict = Union[
@@ -496,7 +498,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
             pipeline_id = None
             if register_pipeline:
                 step_specs = [
-                    step.spec for step in pipeline_deployment.steps.values()
+                    (pipeline_parameter_name, step.spec)
+                    for pipeline_parameter_name, step in pipeline_deployment.steps.items()
                 ]
                 pipeline_spec = PipelineSpec(steps=step_specs)
 
@@ -757,3 +760,71 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
         with open(path, "w") as f:
             f.write(yaml_string)
+
+    @classmethod
+    def from_model(cls: Type[T], model: "PipelineResponseModel") -> T:
+        """Creates a pipeline instance from a model.
+
+        Args:
+            model: The model to load the pipeline instance from.
+
+        Returns:
+            The pipeline instance.
+        """
+        if version.parse(model.spec.version) < version.parse("0.2"):
+            raise ValueError(
+                "Loading a pipeline is only possible for pipeline specs with "
+                "version 0.2 or higher."
+            )
+
+        def connect(**steps: BaseStep) -> None:
+            inspect.signature(connect).bind(**steps)
+
+            step_outputs = {}
+            for pipeline_parameter_name, step_spec in model.spec.steps:
+                step = steps[pipeline_parameter_name]
+
+                step_inputs = {}
+                # TODO: this doesn't work if any step name gets configured
+                # after this pipeline is loaded
+                for input_name, input_ in step_spec.inputs.items():
+                    step_inputs[input_name] = step_outputs[input_.step_name][
+                        input_.output_name
+                    ]
+
+                step_output = step(**step_inputs)
+                output_keys = list(step.OUTPUT_SIGNATURE.keys())
+
+                if len(output_keys) == 1:
+                    step_output = [step_output]
+
+                step_outputs[step.name] = {
+                    key: step_output[i] for i, key in enumerate(output_keys)
+                }
+
+        parameters = [
+            inspect.Parameter(
+                name=pipeline_parameter_name,
+                kind=inspect.Parameter.POSITIONAL_OR_KEYWORD,
+            )
+            for pipeline_parameter_name, _ in model.spec.steps
+        ]
+        signature = inspect.Signature(parameters=parameters)
+        connect.__signature__ = signature
+
+        pipeline_class = type(
+            model.name,
+            (cls,),
+            {
+                PIPELINE_INNER_FUNC_NAME: staticmethod(connect),
+                "__doc__": model.docstring,
+            },
+        )
+
+        steps = {
+            pipeline_parameter_name: BaseStep.load_from_source(
+                step_spec.source
+            )
+            for pipeline_parameter_name, step_spec in model.spec.steps
+        }
+        return pipeline_class(**steps)

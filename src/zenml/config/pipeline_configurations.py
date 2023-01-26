@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Pipeline configuration classes."""
 import json
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, cast
 
 import yaml
 from pydantic import validator
@@ -105,8 +105,10 @@ class PipelineRunConfiguration(StrictBaseModel):
 class PipelineSpec(StrictBaseModel):
     """Specification of a pipeline."""
 
-    version: str = "0.1"
-    steps: List[StepSpec]
+    version: str = "0.2"
+    # TODO: this change breaks with previous versions, figure out a way to
+    # handle it gracefully
+    steps: List[Tuple[str, StepSpec]]
 
     def __eq__(self, other: Any) -> bool:
         """Returns whether the other object is referring to the same pipeline.
