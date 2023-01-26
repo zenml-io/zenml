@@ -39,7 +39,8 @@ from zenml.constants import (
     PAGE_SIZE_MAXIMUM,
     PAGINATION_STARTING_PAGE,
 )
-from zenml.enums import GenericFilterOps, LogicalOperators
+from zenml.enums import GenericFilterOps, LogicalOperators, SorterOps
+from zenml.exceptions import ValidationError
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
@@ -277,13 +278,36 @@ class BaseFilterModel(BaseModel):
     updated: Union[datetime, str] = Field(None, description="Updated")
 
     @validator("sort_by", pre=True)
-    def sort_column(cls, v: str) -> str:
-        """Validate that the sort_column is a valid filter field."""
-        if v in cls.FILTER_EXCLUDE_FIELDS:
+    def validate_sort_by(cls, v: str) -> str:
+        """Validate that the sort_column is a valid column with a valid operand."""
+        # Somehow pydantic allows you to pass in int values, which will be
+        #  interpreted as string, however within the validator they are still
+        #  integers, which don't have a .split() method
+        if not isinstance(v, str):
+            raise ValidationError(
+                f"str type expected for the sort_by field. "
+                f"Received a {type(v)}"
+            )
+        column = v
+        split_value = v.split(":", 1)
+        if len(split_value) == 2:
+            column = split_value[1]
+
+            if split_value[0] not in SorterOps.values():
+                logger.warning(
+                    "Invalid operand used for column sorting. "
+                    "Only the following operands are supported `%s`. "
+                    "Defaulting to 'asc' on column `%s`.",
+                    SorterOps.values(),
+                    column,
+                )
+                v = column
+
+        if column in cls.FILTER_EXCLUDE_FIELDS:
             raise ValueError(
                 f"This resource can not be sorted by this field: '{v}'"
             )
-        elif v in cls.__fields__:
+        elif column in cls.__fields__:
             return v
         else:
             raise ValueError(
@@ -302,6 +326,21 @@ class BaseFilterModel(BaseModel):
         return self._generate_filter_list(
             {key: getattr(self, key) for key in self.__fields__}
         )
+
+    @property
+    def sorting_params(self) -> Tuple[str, SorterOps]:
+        """Converts the class variables into a list of usable Filter Models."""
+        column = self.sort_by
+        # The default sorting operand is asc
+        operator = SorterOps.ASCENDING
+
+        # Check if user explicitly set an operand
+        split_value = self.sort_by.split(":", 1)
+        if len(split_value) == 2:
+            column = split_value[1]
+            operator = SorterOps(split_value[0])
+
+        return column, operator
 
     @classmethod
     def _generate_filter_list(cls, values: Dict[str, Any]) -> List[Filter]:

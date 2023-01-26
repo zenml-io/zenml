@@ -36,6 +36,7 @@ ArtifactStore
 ArtifactStoreInterfaceError
 ArtifactType
 ArtifactView
+asc
 AssertionError
 AssumeRole
 AttributeError
