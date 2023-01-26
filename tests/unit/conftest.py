@@ -472,7 +472,7 @@ def sample_artifact_request_model() -> ArtifactRequestModel:
 @pytest.fixture
 def create_step_run(
     sample_user_model: UserResponseModel,
-    sample_project_model: ProjectResponseModel,
+    sample_project_model: WorkspaceResponseModel,
 ) -> Callable[..., StepRunResponseModel]:
     """Fixture that returns a function which can be used to create a
     customizable StepRunResponseModel."""
