@@ -167,13 +167,13 @@ class PipelineRunView:
         return self.pipeline_configuration.get(PARAM_ENABLE_CACHE)
 
     @property
-    def zenml_version(self) -> Optional[str]:
+    def client_version(self) -> Optional[str]:
         """Version of ZenML that this pipeline run was performed with.
 
         Returns:
             The version of ZenML that this pipeline run was performed with.
         """
-        return self._model.zenml_version
+        return self._model.client_version
 
     @property
     def client_environment(self) -> Dict[str, str]:
