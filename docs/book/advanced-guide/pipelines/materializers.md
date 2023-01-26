@@ -81,7 +81,12 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         Returns:
             A dictionary of metadata.
         """
-        # optionally, extract some metadata from `data` for ZenML to store
+        # Optionally, extract some metadata from `data` for ZenML to store.
+        # E.g.:
+        # return {
+        #     "some_attribute_i_want_to_track": self.some_attribute,
+        #     "pi": 3.14,
+        # }
         ...
 ```
 
@@ -125,13 +130,22 @@ then you might want to use `torch.save()` and `torch.load()` here.
 
 ### (Optional) Which Metadata to Extract for the Artifact
 
-Optionally, you can choose to overwrite the `extract_metadata()` method to 
-extract custom metadata for all artifacts that were saved by your materializer.
-By default, this will only extract the storage size and runtime data type of an 
-artifact, but you can overwrite it to track anything you wish.
-E.g., the `zenml.materializers.NumpyMaterializer` overwrites this method to 
-automatically track the `shape`, `dtype`, and some statistical properties of
-each `np.ndarray` that it saves.
+Optionally, you can overwrite the `extract_metadata()` method to track custom 
+metadata for all artifacts saved by your materializer. Anything you extract 
+here will be displayed in the dashboard next to your artifacts.
+
+To extract metadata, define and return a dictionary of values you want to track. 
+The only requirement is that all your values are built-in types (like `str`, 
+`int`, `list`, `dict`, ...) or among the special types defined in
+[src.zenml.metadata.metadata_types](https://github.com/zenml-io/zenml/blob/main/src/zenml/metadata/metadata_types.py)
+that are displayed in a dedicated way in the dashboard.
+See [src.zenml.metadata.metadata_types.MetadataType](https://github.com/zenml-io/zenml/blob/main/src/zenml/metadata/metadata_types.py)
+for more details.
+
+By default, this method will extract an artifact's storage size and runtime 
+data type, but you can overwrite it to track anything you wish. E.g., the 
+`zenml.materializers.NumpyMaterializer` overwrites this method to track the 
+`shape`, `dtype`, and some statistical properties of each `np.ndarray` that it saves.
 
 {% hint style="info" %}
 If you would like to disable artifact metadata extraction altogether, you can 
