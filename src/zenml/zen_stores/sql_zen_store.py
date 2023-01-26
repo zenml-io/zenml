@@ -851,10 +851,14 @@ class SqlZenStore(BaseZenStore):
                 self.alembic.stamp(ZENML_ALEMBIC_START_REVISION)
                 self.alembic.upgrade()
 
+        # If an alembic migration took place, all non-custom flavors are purged
+        #  and the FlavorRegistry recreates all in-built and integration
+        #  flavors in the db.
         revisions_afterwards = self.alembic.current_revisions()
         if len(revisions) < len(revisions_afterwards):
             from zenml.stack.flavor_registry import FlavorRegistry
 
+            self._purge_non_custom_flavors()
             FlavorRegistry().register_flavors(store=self)
 
     def get_store_info(self) -> ServerModel:
@@ -1615,6 +1619,15 @@ class SqlZenStore(BaseZenStore):
             except NoResultFound as error:
                 raise KeyError from error
 
+    def _purge_non_custom_flavors(self):
+        """Delete all non-custom flavors."""
+        with Session(self.engine) as session:
+            non_custom_flavors = session.exec(
+                select(FlavorSchema)
+                .where(FlavorSchema.integration != "custom")
+            ).all()
+            for flavor in non_custom_flavors:
+                session.delete(flavor)
             session.commit()
 
     # -----
