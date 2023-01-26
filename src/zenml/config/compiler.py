@@ -17,7 +17,10 @@ import string
 from typing import TYPE_CHECKING, Any, Dict, List, Sequence, Tuple
 
 from zenml.config.base_settings import BaseSettings, ConfigurationLevel
-from zenml.config.pipeline_configurations import PipelineRunConfiguration
+from zenml.config.pipeline_configurations import (
+    PipelineRunConfiguration,
+    PipelineSpec,
+)
 from zenml.config.pipeline_deployment import PipelineDeployment
 from zenml.config.settings_resolver import SettingsResolver
 from zenml.config.step_configurations import (
@@ -113,6 +116,30 @@ class Compiler:
         )
         logger.debug("Compiled pipeline deployment: %s", deployment)
         return deployment
+
+    def compile_spec(self, pipeline: "BasePipeline") -> PipelineSpec:
+        """Compiles a ZenML pipeline to a pipeline spec.
+
+        Args:
+            pipeline: The pipeline to compile.
+
+        Returns:
+            The compiled pipeline spec.
+        """
+        logger.debug(
+            "Compiling pipeline spec for pipeline `%s`.", pipeline.name
+        )
+        # Copy the pipeline before we connec the steps so we don't mess with
+        # the pipeline object/step objects in any way
+        pipeline = copy.deepcopy(pipeline)
+        self._verify_distinct_step_names(pipeline=pipeline)
+        pipeline.connect(**pipeline.steps)
+
+        steps = [
+            (name, self._get_step_spec(step))
+            for name, step in self._get_sorted_steps(steps=pipeline.steps)
+        ]
+        return PipelineSpec(steps=steps)
 
     def _apply_run_configuration(
         self, pipeline: "BasePipeline", config: PipelineRunConfiguration
