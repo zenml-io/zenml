@@ -54,19 +54,21 @@ B = TypeVar("B", bound=BaseResponseModel)
 class Page(GenericModel, Generic[B]):
     """Return Model for List Models to accommodate pagination."""
 
-    page: PositiveInt
-
-    # TODO: this should be called max_size or max_items instead, and size should
-    # return the actual size of the page (len(self.items))
-    size: PositiveInt
+    index: PositiveInt
+    max_size: PositiveInt
     total_pages: NonNegativeInt
     total: NonNegativeInt
     items: Sequence[B]
 
     __params_type__ = BaseFilterModel
 
+    @property
+    def size(self) -> int:
+        """Return the item count of the page."""
+        return len(self.items)
+
     def __len__(self) -> int:
-        """Return the length of the page."""
+        """Return the item count of the page."""
         return len(self.items)
 
     def __getitem__(self, index: int) -> B:
