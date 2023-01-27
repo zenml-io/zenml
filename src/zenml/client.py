@@ -50,7 +50,6 @@ from zenml.enums import (
     StoreType,
 )
 from zenml.exceptions import (
-    AlreadyExistsException,
     EntityExistsError,
     IllegalOperationError,
     InitializationException,
@@ -68,7 +67,6 @@ from zenml.models import (
     FlavorRequestModel,
     FlavorResponseModel,
     PipelineFilterModel,
-    PipelineRequestModel,
     PipelineResponseModel,
     PipelineRunFilterModel,
     PipelineRunResponseModel,
@@ -116,7 +114,6 @@ from zenml.utils.analytics_utils import AnalyticsEvent, event_handler, track
 from zenml.utils.filesync_model import FileSyncModel
 
 if TYPE_CHECKING:
-    from zenml.config.pipeline_configurations import PipelineSpec
     from zenml.stack import Stack, StackComponentConfig
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
@@ -2387,82 +2384,6 @@ class Client(metaclass=ClientMetaClass):
     # -------------
     # - PIPELINES -
     # -------------
-
-    def create_pipeline(
-        self,
-        pipeline_name: str,
-        pipeline_spec: "PipelineSpec",
-        pipeline_docstring: Optional[str],
-    ) -> UUID:
-        """Registers a pipeline in the ZenStore within the active workspace.
-
-        This will do one of the following three things:
-        A) If there is no pipeline with this name, register a new pipeline.
-        B) If a pipeline exists that has the same config, use that pipeline.
-        C) If a pipeline with different config exists, raise an error.
-
-        Args:
-            pipeline_name: The name of the pipeline to register.
-            pipeline_spec: The spec of the pipeline.
-            pipeline_docstring: The docstring of the pipeline.
-
-        Returns:
-            The id of the existing or newly registered pipeline.
-
-        Raises:
-            AlreadyExistsException: If there is an existing pipeline in the
-                workspace with the same name but a different configuration.
-        """
-        existing_pipelines = self.list_pipelines(name=pipeline_name)
-
-        # TODO: determine version and version hash
-        version, version_hash = "Michael", "will fix this"
-
-        # A) If there is no pipeline with this name, register a new pipeline.
-        if len(existing_pipelines.items) == 0:
-            create_pipeline_request = PipelineRequestModel(
-                workspace=self.active_workspace.id,
-                user=self.active_user.id,
-                name=pipeline_name,
-                version=version,
-                version_hash=version_hash,
-                spec=pipeline_spec,
-                docstring=pipeline_docstring,
-            )
-            pipeline = self.zen_store.create_pipeline(
-                pipeline=create_pipeline_request
-            )
-            logger.info(f"Registered new pipeline with name {pipeline.name}.")
-            return pipeline.id
-
-        else:
-            if len(existing_pipelines.items) == 1:
-                existing_pipeline = existing_pipelines.items[0]
-                # B) If a pipeline exists that has the same config, use that
-                # pipeline.
-                if pipeline_spec == existing_pipeline.spec:
-                    logger.debug(
-                        "Did not register pipeline since it already exists."
-                    )
-                    return existing_pipeline.id
-
-        # C) If a pipeline with different config exists, raise an error.
-        error_msg = (
-            f"Cannot run pipeline '{pipeline_name}' since this name has "
-            "already been registered with a different pipeline "
-            "configuration. You have three options to resolve this issue:\n"
-            "1) You can register a new pipeline by changing the name "
-            "of your pipeline, e.g., via `@pipeline(name='new_pipeline_name')."
-            "\n2) You can execute the current run without linking it to any "
-            "pipeline by setting the 'unlisted' argument to `True`, e.g., "
-            "via `my_pipeline_instance.run(unlisted=True)`. "
-            "Unlisted runs are not linked to any pipeline, but are still "
-            "tracked by ZenML and can be accessed via the 'All Runs' tab. \n"
-            "3) You can delete the existing pipeline via "
-            f"`zenml pipeline delete {pipeline_name}`. This will then "
-            "change all existing runs of this pipeline to become unlisted."
-        )
-        raise AlreadyExistsException(error_msg)
 
     def list_pipelines(
         self,

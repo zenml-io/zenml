@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Abstract base class for all ZenML pipelines."""
 
+import hashlib
 import inspect
 from abc import abstractmethod
 from datetime import datetime
@@ -52,6 +53,7 @@ from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.enums import StackComponentType
 from zenml.exceptions import PipelineConfigurationError, PipelineInterfaceError
 from zenml.logger import get_logger
+from zenml.models import PipelineRequestModel, PipelineResponseModel
 from zenml.models.schedule_model import ScheduleRequestModel
 from zenml.stack import Stack
 from zenml.steps import BaseStep
@@ -67,7 +69,6 @@ from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
-    from zenml.models import PipelineResponseModel
     from zenml.post_execution import PipelineRunView
 
     StepConfigurationUpdateOrDict = Union[
@@ -485,7 +486,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             )
             from zenml.config.compiler import Compiler
 
-            pipeline_deployment = Compiler().compile(
+            pipeline_deployment, pipeline_spec = Compiler().compile(
                 pipeline=self, stack=stack, run_configuration=run_config
             )
 
@@ -497,17 +498,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
             pipeline_id = None
             if register_pipeline:
-                step_specs = [
-                    (pipeline_parameter_name, step.spec)
-                    for pipeline_parameter_name, step in pipeline_deployment.steps.items()
-                ]
-                pipeline_spec = PipelineSpec(steps=step_specs)
-
-                pipeline_id = Client().create_pipeline(
-                    pipeline_name=pipeline_deployment.pipeline.name,
-                    pipeline_spec=pipeline_spec,
-                    pipeline_docstring=self.__doc__,
-                )
+                pipeline_id = self._register(pipeline_spec=pipeline_spec).id
                 pipeline_deployment = pipeline_deployment.copy(
                     update={"pipeline_id": pipeline_id}
                 )
@@ -827,4 +818,80 @@ class BasePipeline(metaclass=BasePipelineMeta):
             )
             for pipeline_parameter_name, step_spec in model.spec.steps
         }
-        return pipeline_class(**steps)
+        pipeline_instance = pipeline_class(**steps)
+        # TODO: verify that this pipeline instance has the same unique ID
+        # as the model
+        return pipeline_instance
+
+    def register(self) -> "PipelineResponseModel":
+        """Register the pipeline in the server.
+
+        Returns:
+            The registered pipeline model.
+        """
+        from zenml.config.compiler import Compiler
+
+        pipeline_spec = Compiler().compile_spec(self)
+        return self._register(pipeline_spec=pipeline_spec)
+
+    def _register(
+        self, pipeline_spec: "PipelineSpec"
+    ) -> "PipelineResponseModel":
+        version_hash = self._compute_unique_identifier(
+            pipeline_spec=pipeline_spec
+        )
+
+        matching_pipelines = Client().list_pipelines(
+            name=self.name,
+            version_hash=version_hash,
+            size=1,
+            sort_by="desc:created",
+        )
+        if matching_pipelines.total:
+            registered_pipeline = matching_pipelines.items[0]
+            logger.info(
+                "Reusing registered pipeline `%s` (version: %s).",
+                registered_pipeline.name,
+                registered_pipeline.version,
+            )
+            return registered_pipeline
+
+        version = self._get_latest_version() or 1
+
+        client = Client()
+        request = PipelineRequestModel(
+            workspace=client.active_workspace.id,
+            user=client.active_user.id,
+            name=self.name,
+            version=str(version),
+            version_hash=version_hash,
+            spec=pipeline_spec,
+            docstring=self.__doc__,
+        )
+
+        registered_pipeline = client.zen_store.create_pipeline(request)
+        logger.info(
+            "Registered pipeline `%s` (version %s).",
+            registered_pipeline.name,
+            registered_pipeline.version,
+        )
+        return registered_pipeline
+
+    def _compute_unique_identifier(self, pipeline_spec: PipelineSpec) -> str:
+        hash_ = hashlib.md5()
+        hash_.update(pipeline_spec.json(sort_keys=False).encode())
+
+        for step_name, _ in pipeline_spec.steps:
+            step_source = self.steps[step_name].source_code
+            hash_.update(step_source.encode())
+
+        return hash_.hexdigest()
+
+    def _get_latest_version(self) -> Optional[int]:
+        all_pipelines = Client().list_pipelines(
+            name=self.name, sort_by="desc:created"
+        )
+        if all_pipelines.total:
+            return int(all_pipelines.items[0].version)
+        else:
+            return None

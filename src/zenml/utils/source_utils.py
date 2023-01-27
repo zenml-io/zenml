@@ -412,11 +412,26 @@ def get_main_module_source() -> str:
     return get_module_source_from_module(main_module)
 
 
+def import_by_path(path: str) -> Any:
+    """Imports a module attribute.
+
+    Args:
+        path: The source path of the attribute to import, e.g.
+            `some.module.attribute_name`.
+
+    Returns:
+        The imported attribute.
+    """
+    module_name, attribute_name = path.rsplit(".", 1)
+    module = importlib.import_module(module_name)
+    return getattr(module, attribute_name)
+
+
 def import_class_by_path(class_path: str) -> Type[Any]:
     """Imports a class based on a given path.
 
     Args:
-        class_path: str, class_source e.g. this.module.Class
+        class_path: Class_source e.g. this.module.Class
 
     Returns:
         the given class

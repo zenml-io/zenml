@@ -2526,13 +2526,14 @@ class SqlZenStore(BaseZenStore):
             existing_pipeline = session.exec(
                 select(PipelineSchema)
                 .where(PipelineSchema.name == pipeline.name)
+                .where(PipelineSchema.version == pipeline.version)
                 .where(PipelineSchema.workspace_id == pipeline.workspace)
             ).first()
             if existing_pipeline is not None:
                 raise EntityExistsError(
                     f"Unable to create pipeline in workspace "
-                    f"'{pipeline.workspace}': A pipeline with this name "
-                    f"already exists."
+                    f"'{pipeline.workspace}': A pipeline with this name and "
+                    f"version already exists."
                 )
 
             # Create the pipeline

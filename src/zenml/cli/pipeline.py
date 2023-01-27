@@ -25,6 +25,8 @@ from zenml.enums import CliCategories
 from zenml.logger import get_logger
 from zenml.models import PipelineFilterModel, PipelineRunFilterModel
 from zenml.models.schedule_model import ScheduleFilterModel
+from zenml.pipelines import BasePipeline
+from zenml.utils import source_utils
 
 logger = get_logger(__name__)
 
@@ -32,6 +34,52 @@ logger = get_logger(__name__)
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
 def pipeline() -> None:
     """List, run, or delete pipelines."""
+
+
+@pipeline.command(
+    "register",
+    help="Register a pipeline instance. The SOURCE argument needs to be an "
+    "importable source path resolving to a ZenML pipeline instance, e.g. "
+    "`my_module.my_pipeline_instance`.",
+)
+@click.argument("source")
+def register_pipeline(source: str) -> None:
+    """Register a pipeline."""
+    cli_utils.print_active_config()
+
+    if "." not in source:
+        cli_utils.error(
+            f"The given source path `{source}` is invalid. Make sure it looks "
+            "like `some.module.name_of_pipeline_instance_attribute` and "
+            "resolves to a pipeline object."
+        )
+
+    repo_root = Client().root
+    if not repo_root:
+        cli_utils.error(
+            "`zenml pipeline register` can only be called within a ZenML "
+            "repository. Run `zenml init` at your source code root and try "
+            "again."
+        )
+
+    try:
+        with source_utils.prepend_python_path([str(repo_root)]):
+            pipeline_instance = source_utils.import_by_path(source)
+    except ModuleNotFoundError as e:
+        cli_utils.error(
+            f"Unable to import module `{e.name}`. Make sure the source path is "
+            "relative to your PYTHONPATH."
+        )
+    except AttributeError as e:
+        cli_utils.error("Unable to load attribute from module: " + str(e))
+
+    if not isinstance(pipeline_instance, BasePipeline):
+        cli_utils.error(
+            f"The given source path `{source}` does not resolve to a pipeline "
+            "object."
+        )
+
+    pipeline_instance.register()
 
 
 @pipeline.command("run", help="Run a pipeline with the given configuration.")

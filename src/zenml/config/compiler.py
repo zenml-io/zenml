@@ -50,7 +50,7 @@ class Compiler:
         pipeline: "BasePipeline",
         stack: "Stack",
         run_configuration: PipelineRunConfiguration,
-    ) -> PipelineDeployment:
+    ) -> Tuple[PipelineDeployment, PipelineSpec]:
         """Compiles a ZenML pipeline to a serializable representation.
 
         Args:
@@ -59,7 +59,7 @@ class Compiler:
             run_configuration: The run configuration for this pipeline.
 
         Returns:
-            The compiled pipeline.
+            The compiled pipeline deployment and spec
         """
         logger.debug("Compiling pipeline `%s`.", pipeline.name)
         # Copy the pipeline before we apply any run-level configurations so
@@ -114,8 +114,13 @@ class Compiler:
             steps=steps,
             client_environment=get_run_environment_dict(),
         )
+
+        step_specs = [(name, step.spec) for name, step in steps.items()]
+        pipeline_spec = PipelineSpec(steps=step_specs)
         logger.debug("Compiled pipeline deployment: %s", deployment)
-        return deployment
+        logger.debug("Compiled pipeline spec: %s", pipeline_spec)
+
+        return deployment, pipeline_spec
 
     def compile_spec(self, pipeline: "BasePipeline") -> PipelineSpec:
         """Compiles a ZenML pipeline to a pipeline spec.
@@ -139,7 +144,9 @@ class Compiler:
             (name, self._get_step_spec(step))
             for name, step in self._get_sorted_steps(steps=pipeline.steps)
         ]
-        return PipelineSpec(steps=steps)
+        pipeline_spec = PipelineSpec(steps=steps)
+        logger.debug("Compiled pipeline spec: %s", pipeline_spec)
+        return pipeline_spec
 
     def _apply_run_configuration(
         self, pipeline: "BasePipeline", config: PipelineRunConfiguration
