@@ -14,7 +14,7 @@
 """Models representing steps of pipeline runs."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -25,10 +25,12 @@ from zenml.models.base_models import (
     ProjectScopedRequestModel,
     ProjectScopedResponseModel,
 )
-from zenml.models.constants import STR_FIELD_MAX_LENGTH
+from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
+from zenml.models.filter_models import ProjectScopedFilterModel
 
 if TYPE_CHECKING:
     from zenml.models import ArtifactResponseModel
+
 
 # ---- #
 # BASE #
@@ -52,6 +54,16 @@ class StepRunBaseModel(BaseModel):
         default=None,
         max_length=STR_FIELD_MAX_LENGTH,
     )
+    docstring: Optional[str] = Field(
+        title="The docstring of the step function or class.",
+        default=None,
+        max_length=TEXT_FIELD_MAX_LENGTH,
+    )
+    source_code: Optional[str] = Field(
+        title="The source code of the step function or class.",
+        default=None,
+        max_length=TEXT_FIELD_MAX_LENGTH,
+    )
     start_time: Optional[datetime] = None
     end_time: Optional[datetime] = None
 
@@ -66,6 +78,58 @@ class StepRunResponseModel(StepRunBaseModel, ProjectScopedResponseModel):
 
     input_artifacts: Dict[str, "ArtifactResponseModel"] = {}
     output_artifacts: Dict[str, "ArtifactResponseModel"] = {}
+
+
+# ------ #
+# FILTER #
+# ------ #
+
+
+class StepRunFilterModel(ProjectScopedFilterModel):
+    """Model to enable advanced filtering of all Artifacts."""
+
+    name: str = Field(
+        default=None,
+        description="Name of the step run",
+    )
+    entrypoint_name: str = Field(
+        default=None,
+        description="Entrypoint name of the step run",
+    )
+    code_hash: str = Field(
+        default=None,
+        description="Code hash for this step run",
+    )
+    cache_key: str = Field(
+        default=None,
+        description="Cache key for this step run",
+    )
+    status: str = Field(
+        default=None,
+        description="Status of the Step Run",
+    )
+    start_time: Union[datetime, str] = Field(
+        default=None, description="Start time for this run"
+    )
+    end_time: Union[datetime, str] = Field(
+        default=None, description="End time for this run"
+    )
+    pipeline_run_id: Union[UUID, str] = Field(
+        default=None, description="Pipeline run of this step run"
+    )
+    original_step_run_id: Union[UUID, str] = Field(
+        default=None, description="Original id for this step run"
+    )
+    user_id: Union[UUID, str] = Field(
+        default=None, description="User that produced this step run"
+    )
+    project_id: Union[UUID, str] = Field(
+        default=None, description="Project of this step run"
+    )
+    num_outputs: int = Field(
+        default=None,
+        description="Amount of outputs for this Step Run",
+    )
 
 
 # ------- #

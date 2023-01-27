@@ -70,7 +70,7 @@ jobs:
           zenml integration install -y kserve
           zenml integration install -y --ignore-integration feast --ignore-integration label_studio --ignore-integration seldon --ignore-integration kserve --ignore-integration airflow --ignore-integration bentoml
           poetry install --extras server
-          pip install jinja2==3.0.3
+          pip install jinja2==3.0.3 protobuf==3.20.0 numpy~=1.21.5
 
       - name: Setup git user
         run: |
@@ -79,8 +79,10 @@ jobs:
 
         # env.py leads to errors in the build as run_migrations() gets executed
         # the migration versions are not necessary parts of the api docs
-      - name: Delete unnecessary alembic files
+      - name: Initialize DB and delete unnecessary alembic files
         run: |
+          source $VENV
+          zenml status # to initialize the db
           rm -rf src/zenml/zen_stores/migrations/env.py
           rm -rf src/zenml/zen_stores/migrations/versions
           rm -rf src/zenml/zen_stores/migrations/script.py.mako

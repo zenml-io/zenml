@@ -37,8 +37,8 @@ def rest_api_auth_token() -> Tuple[str, str]:
     yield zen_store.url, zen_store._get_auth_token()
 
 
-def test_get_stack_endpoints(rest_api_auth_token):
-    """Test that the stack methods behave as they should."""
+def test_list_stacks_endpoint(rest_api_auth_token):
+    """Test that the list stack endpoint works."""
     endpoint, token = rest_api_auth_token
     api_endpoint = endpoint + API + VERSION_1
 
@@ -47,16 +47,22 @@ def test_get_stack_endpoints(rest_api_auth_token):
         headers={"Authorization": f"Bearer {token}"},
     )
     assert stacks_response.status_code == 200
-    assert isinstance(stacks_response.json(), (list, tuple))
-    assert len(stacks_response.json()) >= 1
+    assert isinstance(stacks_response.json(), dict)
+    assert len(stacks_response.json()["items"]) >= 1
+
+
+def test_list_users_endpoint(rest_api_auth_token):
+    """Test that the list users endpoint works."""
+    endpoint, token = rest_api_auth_token
+    api_endpoint = endpoint + API + VERSION_1
 
     users_response = requests.get(
         api_endpoint + USERS,
         headers={"Authorization": f"Bearer {token}"},
     )
     assert users_response.status_code == 200
-    assert isinstance(users_response.json(), list)
-    assert len(users_response.json()) >= 1
+    assert isinstance(users_response.json(), dict)
+    assert len(users_response.json()["items"]) >= 1
 
 
 def test_server_requires_auth(rest_api_auth_token):

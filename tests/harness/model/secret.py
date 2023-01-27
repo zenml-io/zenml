@@ -57,17 +57,15 @@ class BaseTestSecretConfigModel(BaseTestConfigModel):
 
         return None
 
-    def _resolve_secret(self, secret_name: str) -> str:
+    def _resolve_secret(self, secret_name: str, value: str) -> str:
         """Resolves a secret.
 
         Args:
             secret_name: The secret name.
+            value: The original value.
 
         Returns:
             The resolved secret value.
-
-        Raises:
-            ValueError: If the secret could not be resolved.
         """
         from tests.harness.harness import TestHarness
 
@@ -79,7 +77,8 @@ class BaseTestSecretConfigModel(BaseTestConfigModel):
         if secret:
             return secret.value.get_secret_value()
 
-        raise ValueError(f"Secret '{secret_name}' could not be resolved.")
+        logging.error(f"Secret '{secret_name}' could not be resolved.")
+        return value
 
     def __custom_getattribute__(self, key: str) -> Any:
         """Custom __getattribute__ implementation that resolves secrets.
@@ -100,7 +99,7 @@ class BaseTestSecretConfigModel(BaseTestConfigModel):
 
         secret_name = self._get_secret_name(value)
         if secret_name:
-            return self._resolve_secret(secret_name)
+            return self._resolve_secret(secret_name, value)
 
         return value
 
@@ -126,7 +125,7 @@ class BaseTestSecretConfigModel(BaseTestConfigModel):
                 # secret is not defined in the test harness configuration
                 # or using environment variables.
                 try:
-                    self._resolve_secret(secret_name)
+                    self._resolve_secret(secret_name, "")
                 except ValueError:
                     logging.warning(
                         f"Secret '{secret_name}' is referenced in field "
@@ -148,6 +147,6 @@ class BaseTestSecretConfigModel(BaseTestConfigModel):
         for key, value in d.items():
             secret_name = self._get_secret_name(value)
             if secret_name:
-                d[key] = self._resolve_secret(secret_name)
+                d[key] = self._resolve_secret(secret_name, value)
 
         return d

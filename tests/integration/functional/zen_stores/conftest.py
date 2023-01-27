@@ -17,18 +17,25 @@ from typing import Dict, Union
 
 import pytest
 
+from tests.integration.functional.conftest import (
+    constant_int_output_test_step,
+    int_plus_one_test_step,
+)
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
+from zenml.config.schedule import Schedule
 from zenml.enums import PermissionType
 from zenml.models import (
+    ArtifactFilterModel,
+    PipelineRunFilterModel,
     ProjectRequestModel,
     RoleRequestModel,
+    ScheduleFilterModel,
+    StepRunFilterModel,
     TeamRequestModel,
     UserRequestModel,
 )
 from zenml.models.base_models import BaseResponseModel
-from zenml.pipelines import pipeline
-from zenml.steps import step
 from zenml.zen_stores.base_zen_store import BaseZenStore
 from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
 
@@ -75,28 +82,6 @@ def sql_store(
 
 
 @pytest.fixture
-def connected_two_step_pipeline():
-    """Pytest fixture that returns a pipeline which takes two steps
-    `step_1` and `step_2` that are connected."""
-
-    @pipeline
-    def _pipeline(step_1, step_2):
-        step_2(step_1())
-
-    return _pipeline
-
-
-@step
-def constant_int_output_test_step() -> int:
-    return 7
-
-
-@step
-def int_plus_one_test_step(input: int) -> int:
-    return input + 1
-
-
-@pytest.fixture
 def sql_store_with_run(
     sql_store,
     connected_two_step_pipeline,
@@ -109,9 +94,9 @@ def sql_store_with_run(
     pipeline_instance.run(unlisted=True)
 
     store = sql_store["store"]
-    pipeline_run = store.list_runs()[0]
-    pipeline_step = store.list_run_steps()[1]
-    artifact = store.list_artifacts()[0]
+    pipeline_run = store.list_runs(PipelineRunFilterModel())[0]
+    pipeline_step = store.list_run_steps(StepRunFilterModel())[1]
+    artifact = store.list_artifacts(ArtifactFilterModel())[0]
     sql_store.update(
         {
             "pipeline_run": pipeline_run,
@@ -120,6 +105,33 @@ def sql_store_with_run(
         }
     )
 
+    yield sql_store
+
+
+@pytest.fixture
+def sql_store_with_scheduled_run(
+    sql_store,
+    connected_two_step_pipeline,
+) -> Dict[str, Union[BaseZenStore, BaseResponseModel]]:
+    pipeline_instance = connected_two_step_pipeline(
+        step_1=constant_int_output_test_step(),
+        step_2=int_plus_one_test_step(),
+    )
+    schedule = Schedule(cron_expression="*/5 * * * *")
+    pipeline_instance.run(unlisted=True, schedule=schedule)
+    store = sql_store["store"]
+    schedule = store.list_schedules(ScheduleFilterModel())[0]
+    pipeline_run = store.list_runs(PipelineRunFilterModel())[0]
+    pipeline_step = store.list_run_steps(StepRunFilterModel())[1]
+    artifact = store.list_artifacts(ArtifactFilterModel())[0]
+    sql_store.update(
+        {
+            "schedule": schedule,
+            "pipeline_run": pipeline_run,
+            "step": pipeline_step,
+            "artifact": artifact,
+        }
+    )
     yield sql_store
 
 
@@ -137,7 +149,7 @@ def sql_store_with_runs(
         pipeline_instance.run(unlisted=True)
 
     store = sql_store["store"]
-    pipeline_runs = store.list_runs()
+    pipeline_runs = store.list_runs(PipelineRunFilterModel())
 
     sql_store.update(
         {

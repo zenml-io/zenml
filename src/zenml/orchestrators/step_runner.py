@@ -142,11 +142,7 @@ class StepRunner:
         """
         from zenml.steps import BaseStep
 
-        step_class: Type[BaseStep] = source_utils.load_and_validate_class(
-            self._step.spec.source, expected_class=BaseStep
-        )
-
-        step_instance = step_class()
+        step_instance = BaseStep.load_from_source(self._step.spec.source)
         step_instance._configuration = self._step.config
         return step_instance.entrypoint
 
@@ -351,7 +347,7 @@ class StepRunner:
         artifact_stores = client.active_stack_model.components.get(
             StackComponentType.ARTIFACT_STORE
         )
-        assert artifact_stores is not None  # Every stack has an artifact store.
+        assert artifact_stores  # Every stack has an artifact store.
         artifact_store_id = artifact_stores[0].id
         output_artifacts: Dict[str, ArtifactRequestModel] = {}
         for output_name, return_value in output_data.items():

@@ -42,7 +42,9 @@ from zenml.integrations.gcp.google_credentials_mixin import (
 from zenml.logger import get_logger
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
-from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
+from zenml.utils.pipeline_docker_image_builder import (
+    PipelineDockerImageBuilder,
+)
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
@@ -140,7 +142,10 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
             return True, ""
 
         return StackValidator(
-            required_components={StackComponentType.CONTAINER_REGISTRY},
+            required_components={
+                StackComponentType.CONTAINER_REGISTRY,
+                StackComponentType.IMAGE_BUILDER,
+            },
             custom_validation_function=_validate_remote_components,
         )
 
@@ -163,12 +168,12 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
         if not steps_to_run:
             return
         docker_image_builder = PipelineDockerImageBuilder()
-        image_digest = docker_image_builder.build_and_push_docker_image(
-            deployment=deployment,
-            stack=stack,
+        repo_digest = docker_image_builder.build_docker_image(
+            deployment=deployment, stack=stack
         )
+
         for step in steps_to_run:
-            step.config.extra[VERTEX_DOCKER_IMAGE_DIGEST_KEY] = image_digest
+            step.config.extra[VERTEX_DOCKER_IMAGE_DIGEST_KEY] = repo_digest
 
     def launch(
         self,
