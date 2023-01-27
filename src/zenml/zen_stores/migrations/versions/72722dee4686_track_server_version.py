@@ -1,7 +1,7 @@
 """Track server version [72722dee4686].
 
 Revision ID: 72722dee4686
-Revises: 0.32.0
+Revises: 3944116bbd56
 Create Date: 2023-01-26 11:52:42.765022
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "72722dee4686"
-down_revision = "0.32.0"
+down_revision = "3944116bbd56"
 branch_labels = None
 depends_on = None
 
