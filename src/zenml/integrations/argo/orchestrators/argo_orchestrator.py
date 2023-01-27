@@ -221,7 +221,6 @@ class ArgoOrchestrator(BaseOrchestrator):
         repo_digest = docker_image_builder.build_docker_image(
             deployment=deployment, stack=stack
         )
-        # repo_digest = '715803424590.dkr.ecr.us-east-1.amazonaws.com/zenml@sha256:d1249d5a86be79ca2486c3ff92d0c629f80da2c2e9103047b815a1694ee20dd6'
         deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
 
     def prepare_or_run_pipeline(
