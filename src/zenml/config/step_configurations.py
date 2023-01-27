@@ -173,12 +173,8 @@ class StepSpec(StrictBaseModel):
             if self.upstream_steps != other.upstream_steps:
                 return False
 
-            # TODO: rethink this once we have pipeline versioning
-            # for now we don't compare the inputs because that would force
-            # users to re-register their pipeline if they change an output or
-            # input name
-            # if self.inputs != other.inputs:
-            #     return False
+            if self.inputs != other.inputs:
+                return False
 
             # Remove internal version pin from older sources for backwards
             # compatibility

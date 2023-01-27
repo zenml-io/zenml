@@ -138,7 +138,7 @@ def test_step_sorting(empty_step, local_stack):
     pipeline_instance = sequential_pipeline(
         step_2=empty_step(name="step_2"), step_1=empty_step(name="step_1")
     )
-    deployment = Compiler().compile(
+    deployment, _ = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
         run_configuration=PipelineRunConfiguration(),
@@ -193,7 +193,7 @@ def test_stack_component_settings_merging(
         },
     )
 
-    deployment = Compiler().compile(
+    deployment, _ = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
         run_configuration=run_config,
@@ -236,7 +236,7 @@ def test_general_settings_merging(one_step_pipeline, empty_step, local_stack):
         },
     )
 
-    deployment = Compiler().compile(
+    deployment, _ = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
         run_configuration=run_config,
@@ -277,7 +277,7 @@ def test_extra_merging(one_step_pipeline, empty_step, local_stack):
         steps={"step_": StepConfigurationUpdate(extra=run_step_extra)},
     )
 
-    deployment = Compiler().compile(
+    deployment, _ = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
         run_configuration=run_config,
@@ -314,7 +314,7 @@ def test_stack_component_settings_for_missing_component_are_ignored(
         steps={"step_": StepConfigurationUpdate(settings=settings)},
     )
 
-    deployment = Compiler().compile(
+    deployment, _ = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
         run_configuration=run_config,

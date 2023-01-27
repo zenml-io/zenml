@@ -37,6 +37,7 @@ from packaging import version
 
 from zenml import constants
 from zenml.client import Client
+from zenml.config.compiler import Compiler
 from zenml.config.config_keys import (
     PipelineConfigurationKeys,
     StepConfigurationKeys,
@@ -484,7 +485,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
             run_config = pydantic_utils.update_model(
                 run_config, update=new_values
             )
-            from zenml.config.compiler import Compiler
 
             pipeline_deployment, pipeline_spec = Compiler().compile(
                 pipeline=self, stack=stack, run_configuration=run_config
@@ -776,8 +776,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 step = steps[pipeline_parameter_name]
 
                 step_inputs = {}
-                # TODO: this doesn't work if any step name gets configured
-                # after this pipeline is loaded
+                # TODO: this doesn't work if any step/input/output name gets
+                # configured after this pipeline is loaded
                 for input_name, input_ in step_spec.inputs.items():
                     step_inputs[input_name] = step_outputs[input_.step_name][
                         input_.output_name
@@ -819,8 +819,20 @@ class BasePipeline(metaclass=BasePipelineMeta):
             for pipeline_parameter_name, step_spec in model.spec.steps
         }
         pipeline_instance = pipeline_class(**steps)
-        # TODO: verify that this pipeline instance has the same unique ID
-        # as the model
+
+        # TODO: the compilation already fails as it calls `connect` which
+        # relies on the step + input/output_names to be identical
+        new_pipeline_spec = Compiler().compile_spec(pipeline=pipeline_instance)
+        if new_pipeline_spec != model.spec:
+            # TODO: should this raise an issue instead or can we fix the
+            # connect method above to work with updated specs?
+            logger.warning(
+                "The pipeline spec of the loaded pipeline does not match the "
+                "original spec. This might be due to updates to the step "
+                "names or step input/output names and might lead to issues "
+                "running this pipeline."
+            )
+
         return pipeline_instance
 
     def register(self) -> "PipelineResponseModel":
@@ -829,8 +841,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
         Returns:
             The registered pipeline model.
         """
-        from zenml.config.compiler import Compiler
-
         pipeline_spec = Compiler().compile_spec(self)
         return self._register(pipeline_spec=pipeline_spec)
 
@@ -856,7 +866,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
             )
             return registered_pipeline
 
-        version = self._get_latest_version() or 1
+        latest_version = self._get_latest_version() or 0
+        version = latest_version + 1
 
         client = Client()
         request = PipelineRequestModel(
