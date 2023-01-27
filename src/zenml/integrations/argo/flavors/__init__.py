@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Argo integration flavors."""
 
-from zenml.integrations.tekton.flavors.tekton_orchestrator_flavor import (
+from zenml.integrations.argo.flavors.argo_orchestrator_flavor import (
     ArgoOrchestratorConfig,
     ArgoOrchestratorFlavor,
 )

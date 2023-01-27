@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ from zenml.integrations.argo import ARGO_ORCHESTRATOR_FLAVOR
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
 
 if TYPE_CHECKING:
-    from zenml.integrations.tekton.orchestrators import ArgoOrchestrator
+    from zenml.integrations.argo.orchestrators import ArgoOrchestrator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
@@ -35,10 +35,11 @@ class ArgoOrchestratorSettings(BaseSettings):
     """
 
     pod_settings: Optional[KubernetesPodSettings] = None
+    token: Optional[str] = None  # starting with `Bearer `
 
 
 class ArgoOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
-    BaseOrchestratorConfig, TektonOrchestratorSettings
+    BaseOrchestratorConfig, ArgoOrchestratorSettings
 ):
     """Configuration for the Tekton orchestrator.
 

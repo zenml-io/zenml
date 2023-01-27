@@ -16,11 +16,8 @@
 from zenml.integrations.argo.orchestrators.argo_orchestrator import (  # noqa
     ArgoOrchestrator,
 )
-from zenml.integrations.argo.orchestrator.argo_entrypoint_configuration import (  # noqa
+from zenml.integrations.argo.orchestrators.argo_entrypoint_configuration import (  # noqa
     ArgoEntrypointConfiguration,
 )
 
-__all__ = [
-    "ArgoOrchestrator",
-    "ArgoEntrypointConfiguration"
-]
+__all__ = ["ArgoOrchestrator", "ArgoEntrypointConfiguration"]

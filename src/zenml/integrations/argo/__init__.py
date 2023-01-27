@@ -17,9 +17,8 @@ The Argo integration sub-module powers an alternative to the local
 orchestrator. You can enable it by registering the Argo orchestrator with
 the CLI tool.
 """
-from typing import List
+from typing import List, Type
 
-from zenml.enums import StackComponentType
 from zenml.integrations.constants import ARGO
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
@@ -43,5 +42,6 @@ class ArgoIntegration(Integration):
         from zenml.integrations.argo.flavors import ArgoOrchestratorFlavor
 
         return [ArgoOrchestratorFlavor]
+
 
 ArgoIntegration.check_installation()

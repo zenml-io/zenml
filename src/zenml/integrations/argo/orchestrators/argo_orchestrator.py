@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,14 +12,19 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the Argo orchestrator."""
+import base64
+import errno
 import os
 import subprocess
 import sys
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
+from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Type, cast
 
-from kfp import dsl
-from kfp_argo.compiler import ArgoCompiler
-from kfp_argo.compiler.pipeline_utils import ArgoPipelineConf
+from hera import (  # type: ignore[attr-defined]
+    Env,
+    Task,
+    Workflow,
+    WorkflowService,
+)
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 
@@ -27,7 +32,6 @@ from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
-from zenml.integrations.kubeflow.utils import apply_pod_settings
 from zenml.integrations.argo.flavors.argo_orchestrator_flavor import (
     DEFAULT_ARGO_UI_PORT,
     ArgoOrchestratorConfig,
@@ -39,13 +43,14 @@ from zenml.orchestrators import BaseOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 from zenml.utils import io_utils, networking_utils
-from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
+from zenml.utils.pipeline_docker_image_builder import (
+    PipelineDockerImageBuilder,
+)
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.stack import Stack
-    from zenml.steps import ResourceSettings
 
 
 logger = get_logger(__name__)
@@ -53,33 +58,41 @@ logger = get_logger(__name__)
 ENV_ZENML_ARGO_RUN_ID = "ZENML_ARGO_RUN_ID"
 
 
-def get_sa_token(service_account: str = "default", namespace: str = "default", config_file: Optional[str] = None):
+def get_sa_token(
+    service_account: str,
+    namespace: str = "argo",
+    config_file: Optional[str] = None,
+) -> str:
     """Get ServiceAccount token using kubernetes config.
-     Parameters
-    ----------
-    service_account: str
-        The service account to authenticate from.
-    namespace: str = 'default'
-        The K8S namespace the workflow service submits workflows to. This defaults to the `default` namespace.
-    config_file: Optional[str] = None
-        The path to k8s configuration file.
-     Raises
-    ------
-    FileNotFoundError
-        When the config_file can not be found.
+
+    Args:
+        service_account: str: The service account to authenticate from.
+        namespace: str: The K8S namespace the workflow service submits workflows to. Defaults to default.
+        config_file: Optional[str]: The path to k8s configuration file. Defaults to None.
+
+    Raises:
+        FileNotFoundError: When the config_file can not be found.
     """
     if config_file is not None and not os.path.isfile(config_file):
-        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), config_file)
+        raise FileNotFoundError(
+            errno.ENOENT, os.strerror(errno.ENOENT), config_file
+        )
 
-    config.load_kube_config(config_file=config_file)
-    v1 = client.CoreV1Api()
-    secret_name = v1.read_namespaced_service_account(service_account, namespace).secrets[0].name
+    k8s_config.load_kube_config(config_file=config_file)
+    v1 = k8s_client.CoreV1Api()
+    secret_name = (
+        v1.read_namespaced_service_account(service_account, namespace)
+        .secrets[0]
+        .name
+    )
     sec = v1.read_namespaced_secret(secret_name, namespace).data
     return base64.b64decode(sec["token"]).decode()
 
 
-def dummy():
-    print("dummy")
+def dummy() -> None:
+    """Create dummy function for argo task."""
+    print("This function is ignored.")
+
 
 class ArgoOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines using Argo."""
@@ -186,7 +199,10 @@ class ArgoOrchestrator(BaseOrchestrator):
             return True, ""
 
         return StackValidator(
-            required_components={StackComponentType.CONTAINER_REGISTRY},
+            required_components={
+                StackComponentType.CONTAINER_REGISTRY,
+                StackComponentType.IMAGE_BUILDER,
+            },
             custom_validation_function=_validate,
         )
 
@@ -202,43 +218,18 @@ class ArgoOrchestrator(BaseOrchestrator):
             stack: The stack on which the pipeline will be deployed.
         """
         docker_image_builder = PipelineDockerImageBuilder()
-        repo_digest = docker_image_builder.build_and_push_docker_image(
+        repo_digest = docker_image_builder.build_docker_image(
             deployment=deployment, stack=stack
         )
+        # repo_digest = '715803424590.dkr.ecr.us-east-1.amazonaws.com/zenml@sha256:d1249d5a86be79ca2486c3ff92d0c629f80da2c2e9103047b815a1694ee20dd6'
         deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
-
-    @staticmethod
-    def _configure_container_resources(
-        container_op: dsl.ContainerOp,
-        resource_settings: "ResourceSettings",
-    ) -> None:
-        """Adds resource requirements to the container.
-
-        Args:
-            container_op: The container operation to configure.
-            resource_settings: The resource settings to use for this
-                container.
-        """
-        if resource_settings.cpu_count is not None:
-            container_op = container_op.set_cpu_limit(
-                str(resource_settings.cpu_count)
-            )
-
-        if resource_settings.gpu_count is not None:
-            container_op = container_op.set_gpu_limit(
-                resource_settings.gpu_count
-            )
-
-        if resource_settings.memory is not None:
-            memory_limit = resource_settings.memory[:-1]
-            container_op = container_op.set_memory_limit(memory_limit)
 
     def prepare_or_run_pipeline(
         self,
         deployment: "PipelineDeployment",
         stack: "Stack",
     ) -> Any:
-        """Runs the pipeline on Argo.
+        """Run the pipeline on Argo.
 
         This function first compiles the ZenML pipeline into a Argo yaml
         and then applies this configuration to run the pipeline.
@@ -250,7 +241,6 @@ class ArgoOrchestrator(BaseOrchestrator):
         Raises:
             RuntimeError: If you try to run the pipelines in a notebook environment.
         """
-
         # First check whether the code running in a notebook
         if Environment.in_notebook():
             raise RuntimeError(
@@ -269,26 +259,45 @@ class ArgoOrchestrator(BaseOrchestrator):
 
         # Dictionary mapping step names to airflow_operators. This will be needed
         # to configure airflow operator dependencies
-        step_name_to_argo_task = {}
+        # settings = cast(
+        #     ArgoOrchestratorSettings, self.get_settings(deployment)
+        # )
+        _token = get_sa_token(
+            "jenkins", namespace=self.config.kubernetes_namespace
+        )
+        with Workflow(
+            orchestrator_run_name.replace("_", "-"),
+            service=WorkflowService(
+                host=f"https://127.0.0.1:{self.config.argo_ui_port}",
+                namespace=self.config.kubernetes_namespace,
+                token=_token,
+                verify_ssl=False,
+            ),
+        ) as w:
+            step_name_to_argo_task = {}
 
-        with Workflow(pipeline.name, WorkflowService(host=f"https://127.0.0.1:{self.argo_ui_port}", token=get_sa_token(namespace=self.kubernetes_namespace), verify_ssl=False, namespace=self.kubernetes_namespace)) as w:
-            for step in sorted_steps:
+            for step_name, step in deployment.steps.items():
                 # Create callable that will be used by argo to execute the step
                 # within the orchestrated environment
-                command = ArgoEntrypointConfiguration.get_entrypoint_command()
+                command = StepEntrypointConfiguration.get_entrypoint_command()
                 arguments = (
-                    ArgoEntrypointConfiguration.get_entrypoint_arguments(
-                        step=step,
-                        pb2_pipeline=pb2_pipeline,
+                    StepEntrypointConfiguration.get_entrypoint_arguments(
+                        step_name=step_name,
                     )
                 )
 
                 current_task = Task(
-                    step.name,
+                    step_name.replace("_", "-"),
                     dummy,
                     image=image_name,
                     command=command,
-                    args=arguments
+                    args=arguments,
+                    env=[
+                        Env(
+                            name=ENV_ZENML_ARGO_RUN_ID,
+                            value="{{workflow.uid}}",
+                        )
+                    ],
                 )
 
                 if self.requires_resources_in_orchestration_environment(step):
@@ -296,19 +305,16 @@ class ArgoOrchestrator(BaseOrchestrator):
                         "Specifying step resources is not yet supported for "
                         "the Airflow orchestrator, ignoring resource "
                         "configuration for step %s.",
-                        step.name,
+                        step_name,
                     )
 
                 # Configure the current argo operator to run after all upstream
                 # operators finished executing
-                step_name_to_argo_task[step.name] = current_task
-                upstream_step_names = self.get_upstream_step_names(
-                    step=step, pb2_pipeline=pb2_pipeline
-                )
-                for upstream_step_name in upstream_step_names:
+                step_name_to_argo_task[step_name] = current_task
+                for upstream_step_name in step.spec.upstream_steps:
                     step_name_to_argo_task[upstream_step_name] >> current_task
 
-        if runtime_configuration.schedule:
+        if deployment.schedule:
             logger.warning(
                 "The Argo Orchestrator currently does not support the "
                 "use of schedules. The `schedule` will be ignored "
@@ -318,8 +324,8 @@ class ArgoOrchestrator(BaseOrchestrator):
         logger.info(
             "Running Argo pipeline in kubernetes context '%s' and namespace "
             "'%s'.",
-            self.kubernetes_context,
-            self.kubernetes_namespace,
+            self.config.kubernetes_context,
+            self.config.kubernetes_namespace,
         )
         try:
             w.create()
@@ -327,12 +333,12 @@ class ArgoOrchestrator(BaseOrchestrator):
             raise RuntimeError(
                 f"Failed to upload Argo pipeline: {str(e)}. "
                 f"Please make sure your kubernetes config is present and the "
-                f"{self.kubernetes_context} kubernetes context is configured "
+                f"{self.config.kubernetes_context} kubernetes context is configured "
                 f"correctly.",
             )
 
     def get_orchestrator_run_id(self) -> str:
-        """Returns the active orchestrator run id.
+        """Return the active orchestrator run id.
 
         Raises:
             RuntimeError: If the environment variable specifying the run id
@@ -428,7 +434,7 @@ class ArgoOrchestrator(BaseOrchestrator):
             fileio.remove(self.log_file)
 
     def resume(self) -> None:
-        """Starts the UI forwarding daemon if necessary."""
+        """Start the UI forwarding daemon if necessary."""
         if self.is_running:
             logger.info("Argo UI forwarding is already running.")
             return
@@ -436,7 +442,7 @@ class ArgoOrchestrator(BaseOrchestrator):
         self.start_ui_daemon()
 
     def suspend(self) -> None:
-        """Stops the UI forwarding daemon if it's running."""
+        """Stop the UI forwarding daemon if it's running."""
         if not self.is_running:
             logger.info("Argo UI forwarding not running.")
             return
@@ -444,7 +450,7 @@ class ArgoOrchestrator(BaseOrchestrator):
         self.stop_ui_daemon()
 
     def start_ui_daemon(self) -> None:
-        """Starts the UI forwarding daemon if possible."""
+        """Start the UI forwarding daemon if possible."""
         port = self.config.argo_ui_port
         if (
             port == DEFAULT_ARGO_UI_PORT
@@ -459,7 +465,7 @@ class ArgoOrchestrator(BaseOrchestrator):
             "--context",
             self.config.kubernetes_context,
             "--namespace",
-            "argo-pipelines",
+            f"{self.config.kubernetes_namespace}",
             "port-forward",
             "svc/argo-server",
             f"{port}:2746",
@@ -507,7 +513,7 @@ class ArgoOrchestrator(BaseOrchestrator):
             )
 
     def stop_ui_daemon(self) -> None:
-        """Stops the UI forwarding daemon if it's running."""
+        """Stop the UI forwarding daemon if it's running."""
         if fileio.exists(self._pid_file_path):
             if sys.platform == "win32":
                 # Daemon functionality is not supported on Windows, so the PID

@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ class ArgoEntrypointConfiguration(StepEntrypointConfiguration):
 
     @classmethod
     def get_custom_entrypoint_options(cls) -> Set[str]:
-        """Adds a run name option for the entrypoint.
+        """Add a run name option for the entrypoint.
 
         Returns:
             Set of custom entrypoint options.
@@ -37,7 +37,7 @@ class ArgoEntrypointConfiguration(StepEntrypointConfiguration):
     def get_custom_entrypoint_arguments(
         cls, step: BaseStep, *args: Any, **kwargs: Any
     ) -> List[str]:
-        """Returns a Argo placeholder for the run name argument.
+        """Return a Argo placeholder for the run name argument.
 
         Args:
             step: The step that is being executed.
@@ -57,7 +57,7 @@ class ArgoEntrypointConfiguration(StepEntrypointConfiguration):
         ]
 
     def get_run_name(self, pipeline_name: str) -> str:
-        """Returns the pipeline run name.
+        """Return the pipeline run name.
 
         Args:
             pipeline_name: The name of the pipeline.
