@@ -20,7 +20,7 @@ from pydantic import BaseModel
 
 from tests.integration.functional.zen_stores.utils import sample_name
 from zenml.client import Client
-from zenml.enums import StoreType
+from zenml.enums import StoreType, StackComponentType
 from zenml.exceptions import EntityExistsError, IllegalOperationError
 from zenml.models import (
     BaseFilterModel,
@@ -35,9 +35,12 @@ from zenml.models import (
     UserFilterModel,
     UserRequestModel,
     UserUpdateModel, UserRoleAssignmentRequestModel,
-    TeamRoleAssignmentRequestModel,
+    TeamRoleAssignmentRequestModel, TeamFilterModel, StackRequestModel,
+    StackUpdateModel, StackFilterModel, ComponentRequestModel,
+    ComponentUpdateModel, ComponentFilterModel,
 )
-from zenml.models.base_models import BaseRequestModel, BaseResponseModel
+from zenml.models.base_models import BaseRequestModel, BaseResponseModel, \
+    ProjectScopedRequestModel
 from zenml.models.page_model import Page
 from zenml.zen_stores.base_zen_store import (
     DEFAULT_ADMIN_ROLE,
@@ -103,7 +106,56 @@ user_crud_test_config = CrudTestConfig(
     entity_name="user",
 )
 
-list_of_entities = [project_crud_test_config, user_crud_test_config]
+
+role_crud_test_config = CrudTestConfig(
+    zen_store_list_method=Client().zen_store.list_roles,
+    zen_store_get_method=Client().zen_store.get_role,
+    zen_store_create_method=Client().zen_store.create_role,
+    zen_store_update_method=Client().zen_store.update_role,
+    zen_store_delete_method=Client().zen_store.delete_role,
+    create_model=RoleRequestModel(name=sample_name("sample_role"), permissions=set()),
+    update_model=RoleUpdateModel(name=sample_name("updated_sample_role")),
+    filter_model=RoleFilterModel,
+    entity_name="role",
+)
+
+team_crud_test_config = CrudTestConfig(
+    zen_store_list_method=Client().zen_store.list_teams,
+    zen_store_get_method=Client().zen_store.get_team,
+    zen_store_create_method=Client().zen_store.create_team,
+    zen_store_update_method=Client().zen_store.update_team,
+    zen_store_delete_method=Client().zen_store.delete_team,
+    create_model=TeamRequestModel(name=sample_name("sample_team")),
+    update_model=TeamUpdateModel(name=sample_name("updated_sample_team")),
+    filter_model=TeamFilterModel,
+    entity_name="team",
+)
+
+# component_crud_test_config = CrudTestConfig(
+#     zen_store_list_method=Client().zen_store.list_stack_components,
+#     zen_store_get_method=Client().zen_store.get_stack_component,
+#     zen_store_create_method=Client().zen_store.create_stack_component,
+#     zen_store_update_method=Client().zen_store.update_stack_component,
+#     zen_store_delete_method=Client().zen_store.delete_stack_component,
+#     create_model=ComponentRequestModel(name=sample_name("sample_component"),
+#                                        type=StackComponentType.ORCHESTRATOR,
+#                                        flavor="local",
+#                                        configuration={},
+#                                        user=uuid.uuid4(),
+#                                        project=uuid.uuid4()),
+#     update_model=ComponentUpdateModel(
+#         name=sample_name("updated_sample_component")),
+#     filter_model=ComponentFilterModel,
+#     entity_name="component",
+# )
+
+list_of_entities = [
+    project_crud_test_config,
+    user_crud_test_config,
+    role_crud_test_config,
+    team_crud_test_config,
+#    component_crud_test_config
+]
 
 
 @pytest.mark.parametrize(
@@ -113,8 +165,12 @@ list_of_entities = [project_crud_test_config, user_crud_test_config]
 )
 def test_basic_crud_for_entity(crud_test_config: CrudTestConfig):
     """Tests the basic crud operations for a given entity."""
+    client = Client()
     # Create the entity
     create_model = crud_test_config.create_model
+    if isinstance(create_model, ProjectScopedRequestModel):
+        create_model.user = client.active_user.id
+        create_model.project = client.active_project.id
     # This generic test only works for entities with a name field
     assert create_model.name
     # Test the creation
@@ -178,6 +234,12 @@ def test_basic_crud_for_entity(crud_test_config: CrudTestConfig):
 )
 def test_create_entity_twice_fails(crud_test_config: CrudTestConfig):
     """Tests getting a non-existent entity by id."""
+    client = Client()
+    # Create the entity
+    create_model = crud_test_config.create_model
+    if isinstance(create_model, ProjectScopedRequestModel):
+        create_model.user = client.active_user.id
+        create_model.project = client.active_project.id
     # First creation is successful
     created_entity = crud_test_config.zen_store_create_method(
         crud_test_config.create_model
