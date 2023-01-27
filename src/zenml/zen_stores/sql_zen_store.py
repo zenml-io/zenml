@@ -2527,16 +2527,9 @@ class SqlZenStore(BaseZenStore):
                 )
 
             # Create the pipeline
-            new_pipeline = PipelineSchema(
-                name=pipeline.name,
-                project_id=pipeline.project,
-                user_id=pipeline.user,
-                docstring=pipeline.docstring,
-                spec=pipeline.spec.json(sort_keys=True),
-            )
+            new_pipeline = PipelineSchema.from_request(pipeline)
             session.add(new_pipeline)
             session.commit()
-            # Refresh the Model that was just created
             session.refresh(new_pipeline)
 
             return new_pipeline.to_model()

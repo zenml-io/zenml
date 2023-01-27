@@ -1008,65 +1008,60 @@ def test_deleting_a_stack_succeeds(
 # ---------
 
 
-def test_create_pipeline_succeeds(
-    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-):
+@pytest.fixture
+def sql_store_with_pipeline(sql_store):
+    """Creates a pipeline in the store."""
+    project_id = sql_store["default_project"].id
+    user_id = sql_store["active_user"].id
+    spec = PipelineSpec(steps=[])
+    request_model = PipelineRequestModel(
+        name="arias_pipeline",
+        version="1",
+        version_hash="123",
+        project=project_id,
+        user=user_id,
+        spec=spec,
+    )
+    sql_store["pipeline_request_model"] = request_model
+    response_model = sql_store["store"].create_pipeline(pipeline=request_model)
+    sql_store["pipeline_response_model"] = response_model
+    return sql_store
+
+
+def test_create_and_list_pipeline_succeeds(sql_store_with_pipeline):
     """Tests creating pipeline."""
-    project_id = sql_store["default_project"].id
-    user_id = sql_store["active_user"].id
-    spec = PipelineSpec(steps=[])
-    new_pipeline = PipelineRequestModel(
-        name="arias_pipeline",
-        project=project_id,
-        user=user_id,
-        spec=spec,
-    )
-    sql_store["store"].create_pipeline(pipeline=new_pipeline)
-    pipelines = sql_store["store"].list_pipelines(PipelineFilterModel())
+    store = sql_store_with_pipeline["store"]
+    pipeline_request_model = sql_store_with_pipeline["pipeline_request_model"]
+    pipelines = store.list_pipelines(PipelineFilterModel())
     assert len(pipelines) == 1
-    assert pipelines[0].name == "arias_pipeline"
+    assert pipelines[0].name == pipeline_request_model.name
+    assert pipelines[0].version == pipeline_request_model.version
+    assert pipelines[0].version_hash == pipeline_request_model.version_hash
 
 
-def test_creating_identical_pipeline_fails(
-    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-):
+def test_creating_identical_pipeline_fails(sql_store_with_pipeline):
     """Tests creating identical pipeline fails."""
-    project_id = sql_store["default_project"].id
-    user_id = sql_store["active_user"].id
-    spec = PipelineSpec(steps=[])
-    new_pipeline = PipelineRequestModel(
-        name="arias_pipeline",
-        project=project_id,
-        user=user_id,
-        spec=spec,
-    )
-    sql_store["store"].create_pipeline(pipeline=new_pipeline)
+    store = sql_store_with_pipeline["store"]
+    pipeline_request_model = sql_store_with_pipeline["pipeline_request_model"]
     with pytest.raises(EntityExistsError):
-        sql_store["store"].create_pipeline(pipeline=new_pipeline)
-    pipelines = sql_store["store"].list_pipelines(PipelineFilterModel())
+        store.create_pipeline(pipeline=pipeline_request_model)
+    pipelines = store.list_pipelines(PipelineFilterModel())
     assert len(pipelines) == 1
 
 
-def test_get_pipeline_succeeds(
-    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-):
+def test_get_pipeline_succeeds(sql_store_with_pipeline):
     """Tests getting pipeline."""
-    project_id = sql_store["default_project"].id
-    user_id = sql_store["active_user"].id
-    spec = PipelineSpec(steps=[])
-    new_pipeline = PipelineRequestModel(
-        name="arias_pipeline",
-        project=project_id,
-        user=user_id,
-        spec=spec,
-    )
-    sql_store["store"].create_pipeline(pipeline=new_pipeline)
-    pipeline_id = (
-        sql_store["store"].list_pipelines(PipelineFilterModel())[0].id
-    )
-    pipeline = sql_store["store"].get_pipeline(pipeline_id=pipeline_id)
+    store = sql_store_with_pipeline["store"]
+    pipeline_response_model = sql_store_with_pipeline[
+        "pipeline_response_model"
+    ]
+    pipeline_id = pipeline_response_model.id
+    pipeline = store.get_pipeline(pipeline_id=pipeline_id)
     assert pipeline is not None
-    assert pipeline.name == "arias_pipeline"
+    assert pipeline_id == pipeline.id
+    assert pipeline.name == pipeline_response_model.name
+    assert pipeline.version == pipeline_response_model.version
+    assert pipeline.version_hash == pipeline_response_model.version_hash
 
 
 def test_get_pipeline_fails_for_nonexistent_pipeline(
@@ -1077,92 +1072,47 @@ def test_get_pipeline_fails_for_nonexistent_pipeline(
         sql_store["store"].get_pipeline(uuid.uuid4())
 
 
-def test_list_pipelines_succeeds(
-    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-):
-    """Tests listing pipelines."""
-    project_id = sql_store["default_project"].id
-    user_id = sql_store["active_user"].id
-    spec = PipelineSpec(steps=[])
-    new_pipeline = PipelineRequestModel(
-        name="arias_pipeline",
-        project=project_id,
-        user=user_id,
-        spec=spec,
-    )
-    sql_store["store"].create_pipeline(pipeline=new_pipeline)
-    with does_not_raise():
-        pipelines = sql_store["store"].list_pipelines(PipelineFilterModel())
-        assert len(pipelines) == 1
-
-
-def test_update_pipeline_succeeds(
-    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-):
+def test_update_pipeline_succeeds(sql_store_with_pipeline):
     """Tests updating pipeline."""
-    project_id = sql_store["default_project"].id
-    user_id = sql_store["active_user"].id
-    spec = PipelineSpec(steps=[])
-    new_pipeline = PipelineRequestModel(
-        name="arias_pipeline",
-        project=project_id,
-        user=user_id,
-        spec=spec,
-    )
-    new_pipeline = sql_store["store"].create_pipeline(pipeline=new_pipeline)
-
-    pipeline_update = PipelineUpdateModel(
-        name="blupus_ka_pipeline",
-    )
+    store = sql_store_with_pipeline["store"]
+    pipeline_response_model = sql_store_with_pipeline[
+        "pipeline_response_model"
+    ]
+    pipeline_update = PipelineUpdateModel(name="blupus_ka_pipeline")
     with does_not_raise():
-        pipeline_update = sql_store["store"].update_pipeline(
-            pipeline_id=new_pipeline.id, pipeline_update=pipeline_update
+        pipeline_update = store.update_pipeline(
+            pipeline_id=pipeline_response_model.id,
+            pipeline_update=pipeline_update,
         )
     assert pipeline_update is not None
+    assert pipeline_update.id == pipeline_response_model.id
     assert pipeline_update.name == "blupus_ka_pipeline"
-    assert pipeline_update.spec == new_pipeline.spec
+    assert pipeline_update.spec == pipeline_response_model.spec
 
 
 def test_updating_nonexistent_pipeline_fails(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests updating nonexistent pipeline fails."""
-    project_id = sql_store["default_project"].id
-    user_id = sql_store["active_user"].id
-    spec = PipelineSpec(steps=[])
-    pipeline_update = PipelineUpdateModel(
-        name="blupus_ka_pipeline",
-        project=project_id,
-        user=user_id,
-        spec=spec,
-    )
+    pipeline_update = PipelineUpdateModel(name="blupus_ka_pipeline")
     with pytest.raises(KeyError):
         sql_store["store"].update_pipeline(
             pipeline_id=uuid.uuid4(), pipeline_update=pipeline_update
         )
 
 
-def test_deleting_pipeline_succeeds(
-    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-):
+def test_deleting_pipeline_succeeds(sql_store_with_pipeline):
     """Tests deleting pipeline."""
-    project_id = sql_store["default_project"].id
-    user_id = sql_store["active_user"].id
-    spec = PipelineSpec(steps=[])
-    new_pipeline = PipelineRequestModel(
-        name="arias_pipeline",
-        project=project_id,
-        user=user_id,
-        spec=spec,
-    )
-    sql_store["store"].create_pipeline(pipeline=new_pipeline)
-    pipeline_id = (
-        sql_store["store"].list_pipelines(PipelineFilterModel())[0].id
-    )
-    sql_store["store"].delete_pipeline(pipeline_id)
-    assert len(sql_store["store"].list_pipelines(PipelineFilterModel())) == 0
+    store = sql_store_with_pipeline["store"]
+    pipeline_response_model = sql_store_with_pipeline[
+        "pipeline_response_model"
+    ]
+    pipeline_id = pipeline_response_model.id
+    assert len(store.list_pipelines(PipelineFilterModel())) == 1
+    store.delete_pipeline(pipeline_id)
+    assert len(store.list_pipelines(PipelineFilterModel())) == 0
     with pytest.raises(KeyError):
-        sql_store["store"].get_pipeline(pipeline_id)
+        store.get_pipeline(pipeline_id)
 
 
 def test_deleting_nonexistent_pipeline_fails(

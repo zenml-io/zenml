@@ -2403,12 +2403,17 @@ class Client(metaclass=ClientMetaClass):
         """
         existing_pipelines = self.list_pipelines(name=pipeline_name)
 
+        # TODO: determine version and version hash
+        version, version_hash = "Michael", "will fix this"
+
         # A) If there is no pipeline with this name, register a new pipeline.
         if len(existing_pipelines.items) == 0:
             create_pipeline_request = PipelineRequestModel(
                 project=self.active_project.id,
                 user=self.active_user.id,
                 name=pipeline_name,
+                version=version,
+                version_hash=version_hash,
                 spec=pipeline_spec,
                 docstring=pipeline_docstring,
             )
@@ -2457,6 +2462,8 @@ class Client(metaclass=ClientMetaClass):
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
+        version: Optional[str] = None,
+        version_hash: Optional[str] = None,
         docstring: Optional[str] = None,
         project_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
@@ -2468,13 +2475,15 @@ class Client(metaclass=ClientMetaClass):
             page: The page of items
             size: The maximum size of all pages
             logical_operator: Which logical operator to use [and, or]
-            id: Use the id of stacks to filter by.
+            id: Use the id of pipeline to filter by.
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
-            docstring: Use the stack description for filtering
+            name: The name of the pipeline to filter by.
+            version: The version of the pipeline to filter by.
+            version_hash: The version hash of the pipeline to filter by.
+            docstring: The docstring of the pipeline to filter by.
             project_id: The id of the project to filter by.
             user_id: The  id of the user to filter by.
-            name: The name of the stack to filter by.
 
         Returns:
             A page with Pipeline fitting the filter description
@@ -2488,6 +2497,8 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
             name=name,
+            version=version,
+            version_hash=version_hash,
             docstring=docstring,
             project_id=project_id,
             user_id=user_id,

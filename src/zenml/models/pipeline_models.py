@@ -41,7 +41,14 @@ class PipelineBaseModel(BaseModel):
         title="The name of the pipeline.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-
+    version: str = Field(
+        title="The version of the pipeline.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    version_hash: str = Field(
+        title="The version hash of the pipeline.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
     docstring: Optional[str] = Field(
         title="The docstring of the pipeline.",
         max_length=TEXT_FIELD_MAX_LENGTH,
@@ -77,11 +84,18 @@ class PipelineFilterModel(ProjectScopedFilterModel):
         default=None,
         description="Name of the Pipeline",
     )
+    version: str = Field(
+        default=None,
+        description="Version of the Pipeline",
+    )
+    version_hash: str = Field(
+        default=None,
+        description="Version hash of the Pipeline",
+    )
     docstring: str = Field(
         default=None,
         description="Docstring of the Pipeline",
     )
-
     project_id: Union[UUID, str] = Field(
         default=None, description="Project of the Pipeline"
     )
