@@ -56,7 +56,7 @@ class SlackAlerterFlavor(BaseAlerterFlavor):
         Returns:
             The flavor logo.
         """
-        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/alerter/slack"
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/alerter/slack.png"
 
     @property
     def config_class(self) -> Type[SlackAlerterConfig]:
