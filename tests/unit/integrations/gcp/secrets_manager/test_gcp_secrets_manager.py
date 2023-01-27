@@ -137,7 +137,7 @@ def test_prepend_group_name_to_keys(parametrized_input: ZenMLSecret):
         flavor="gcp",
         type=StackComponentType.SECRETS_MANAGER,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )

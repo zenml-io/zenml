@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Models representing projects."""
+"""Models representing workspaces."""
 
 
 from pydantic import BaseModel, Field
@@ -28,16 +28,16 @@ from zenml.models.filter_models import BaseFilterModel
 # ---- #
 # BASE #
 # ---- #
-class ProjectBaseModel(BaseModel):
-    """Base model for projects."""
+class WorkspaceBaseModel(BaseModel):
+    """Base model for workspaces."""
 
     name: str = Field(
-        title="The unique name of the project.",
+        title="The unique name of the workspace.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     description: str = Field(
         default="",
-        title="The description of the project.",
+        title="The description of the workspace.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
 
@@ -47,8 +47,8 @@ class ProjectBaseModel(BaseModel):
 # -------- #
 
 
-class ProjectResponseModel(ProjectBaseModel, BaseResponseModel):
-    """Response model for projects."""
+class WorkspaceResponseModel(WorkspaceBaseModel, BaseResponseModel):
+    """Response model for workspaces."""
 
 
 # ------ #
@@ -56,12 +56,12 @@ class ProjectResponseModel(ProjectBaseModel, BaseResponseModel):
 # ------ #
 
 
-class ProjectFilterModel(BaseFilterModel):
-    """Model to enable advanced filtering of all Projects."""
+class WorkspaceFilterModel(BaseFilterModel):
+    """Model to enable advanced filtering of all Workspaces."""
 
     name: str = Field(
         default=None,
-        description="Name of the project",
+        description="Name of the workspace",
     )
 
 
@@ -70,8 +70,8 @@ class ProjectFilterModel(BaseFilterModel):
 # ------- #
 
 
-class ProjectRequestModel(ProjectBaseModel, BaseRequestModel):
-    """Request model for projects."""
+class WorkspaceRequestModel(WorkspaceBaseModel, BaseRequestModel):
+    """Request model for workspaces."""
 
 
 # ------ #
@@ -80,5 +80,5 @@ class ProjectRequestModel(ProjectBaseModel, BaseRequestModel):
 
 
 @update_model
-class ProjectUpdateModel(ProjectRequestModel):
-    """Update model for projects."""
+class WorkspaceUpdateModel(WorkspaceRequestModel):
+    """Update model for workspaces."""

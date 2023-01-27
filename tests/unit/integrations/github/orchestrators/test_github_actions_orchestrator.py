@@ -40,7 +40,7 @@ def _get_github_actions_orchestrator() -> GitHubActionsOrchestrator:
         flavor="github",
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -64,7 +64,7 @@ def test_github_actions_orchestrator_stack_validation(
         flavor="default",
         type=StackComponentType.CONTAINER_REGISTRY,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )

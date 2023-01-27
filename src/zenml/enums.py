@@ -168,6 +168,13 @@ class GenericFilterOps(StrEnum):
     LT = "lt"
 
 
+class SorterOps(StrEnum):
+    """Ops for all filters for string values on list methods."""
+
+    ASCENDING = "asc"
+    DESCENDING = "desc"
+
+
 class LogicalOperators(StrEnum):
     """Logical Ops to use to combine filters on list methods."""
 

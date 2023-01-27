@@ -27,7 +27,7 @@ from zenml.models.base_models import (
 )
 from zenml.models.component_models import ComponentResponseModel
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
-from zenml.models.filter_models import ShareableProjectScopedFilterModel
+from zenml.models.filter_models import ShareableWorkspaceScopedFilterModel
 
 # ---- #
 # BASE #
@@ -53,7 +53,7 @@ class StackBaseModel(BaseModel):
 
 
 class StackResponseModel(StackBaseModel, ShareableResponseModel):
-    """Stack model with Components, User and Project fully hydrated."""
+    """Stack model with Components, User and Workspace fully hydrated."""
 
     components: Dict[StackComponentType, List[ComponentResponseModel]] = Field(
         title="A mapping of stack component types to the actual"
@@ -112,7 +112,7 @@ class StackResponseModel(StackBaseModel, ShareableResponseModel):
 # ------ #
 
 
-class StackFilterModel(ShareableProjectScopedFilterModel):
+class StackFilterModel(ShareableWorkspaceScopedFilterModel):
     """Model to enable advanced filtering of all StackModels.
 
     The Stack Model needs additional scoping. As such the `_scope_user` field
@@ -129,8 +129,8 @@ class StackFilterModel(ShareableProjectScopedFilterModel):
         description="Name of the stack",
     )
     description: str = Field(None, description="Description of the stack")
-    project_id: Union[UUID, str] = Field(
-        default=None, description="Project of the stack"
+    workspace_id: Union[UUID, str] = Field(
+        default=None, description="Workspace of the stack"
     )
     user_id: Union[UUID, str] = Field(None, description="User of the stack")
     component_id: Union[UUID, str] = Field(
@@ -144,7 +144,7 @@ class StackFilterModel(ShareableProjectScopedFilterModel):
 
 
 class StackRequestModel(StackBaseModel, ShareableRequestModel):
-    """Stack model with components, user and project as UUIDs."""
+    """Stack model with components, user and workspace as UUIDs."""
 
     components: Dict[StackComponentType, List[UUID]] = Field(
         title="A mapping of stack component types to the actual"
