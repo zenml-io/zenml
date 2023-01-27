@@ -1,5 +1,24 @@
 <!-- markdown-link-check-disable -->
 
+# 0.32.1
+
+This release resolves several minor bugs and inconveniences introduced during 
+the filtering and pagination overhaul in the last release. Additionally, the 
+release includes new integration tests to improve future stability.
+
+## What's Changed
+* Update and improve docker and helm deployment docs by @stefannica in https://github.com/zenml-io/zenml/pull/1246
+* Fixed broken link returned form pipeline runs by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1257
+* Fix project scoping on `list_project_...` endpoints by @fa9r in https://github.com/zenml-io/zenml/pull/1256
+* Orchestrator tests by @schustmi in https://github.com/zenml-io/zenml/pull/1258
+* Add integration tests for lineage graph creation by @fa9r in https://github.com/zenml-io/zenml/pull/1253
+* Always instantiate a zen_store before startup. by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1261
+* Fix post execution run fetching by @schustmi in https://github.com/zenml-io/zenml/pull/1263
+* Implemented the option to choose between ascending and descending on list calls by @AlexejPenner in https://github.com/zenml-io/zenml/pull/1260
+* Fix logger warning message by @strickvl in https://github.com/zenml-io/zenml/pull/1267
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.32.0...0.32.1
+
 # 0.32.0
 
 Release 0.32.0 introduces two big new features:

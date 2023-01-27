@@ -159,7 +159,7 @@ class Stack:
                 type=flavor.type,
                 config=LocalImageBuilderConfig(),
                 user=Client().active_user.id,
-                project=Client().active_project.id,
+                workspace=Client().active_workspace.id,
                 created=datetime.utcnow(),
                 updated=datetime.utcnow(),
             )
@@ -174,7 +174,7 @@ class Stack:
                 "future versions of ZenML. Please add an image builder to this "
                 "stack:\n"
                 "`zenml image-builder register <NAME> ...\n"
-                "zenml stack udate %s -i <NAME>",
+                "zenml stack update %s -i <NAME>",
                 name,
                 id,
             )

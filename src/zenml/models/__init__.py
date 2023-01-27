@@ -43,11 +43,11 @@ from zenml.models.pipeline_run_models import (
     PipelineRunResponseModel,
     PipelineRunUpdateModel,
 )
-from zenml.models.project_models import (
-    ProjectFilterModel,
-    ProjectRequestModel,
-    ProjectResponseModel,
-    ProjectUpdateModel,
+from zenml.models.workspace_models import (
+    WorkspaceFilterModel,
+    WorkspaceRequestModel,
+    WorkspaceResponseModel,
+    WorkspaceUpdateModel,
 )
 from zenml.models.role_models import (
     RoleFilterModel,
@@ -99,17 +99,17 @@ from zenml.models.user_role_assignment_models import (
 
 ComponentResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
-    ProjectResponseModel=ProjectResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
 )
 
 StackResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
-    ProjectResponseModel=ProjectResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
 )
 
 FlavorResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
-    ProjectResponseModel=ProjectResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
 )
 
 UserResponseModel.update_forward_refs(TeamResponseModel=TeamResponseModel)
@@ -120,42 +120,42 @@ UserRoleAssignmentResponseModel.update_forward_refs(
     RoleResponseModel=RoleResponseModel,
     TeamResponseModel=TeamResponseModel,
     UserResponseModel=UserResponseModel,
-    ProjectResponseModel=ProjectResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
 )
 
 TeamRoleAssignmentResponseModel.update_forward_refs(
     RoleResponseModel=RoleResponseModel,
     TeamResponseModel=TeamResponseModel,
     UserResponseModel=UserResponseModel,
-    ProjectResponseModel=ProjectResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
 )
 
 PipelineResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
-    ProjectResponseModel=ProjectResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
 )
 
 ScheduleResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
-    ProjectResponseModel=ProjectResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
 )
 
 PipelineRunResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
-    ProjectResponseModel=ProjectResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
     PipelineResponseModel=PipelineResponseModel,
     StackResponseModel=StackResponseModel,
 )
 
 StepRunResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
-    ProjectResponseModel=ProjectResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
     ArtifactResponseModel=ArtifactResponseModel,
 )
 
 ArtifactResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
-    ProjectResponseModel=ProjectResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
 )
 
 __all__ = [
@@ -179,10 +179,10 @@ __all__ = [
     "PipelineRunResponseModel",
     "PipelineRunUpdateModel",
     "PipelineRunFilterModel",
-    "ProjectRequestModel",
-    "ProjectResponseModel",
-    "ProjectUpdateModel",
-    "ProjectFilterModel",
+    "WorkspaceRequestModel",
+    "WorkspaceResponseModel",
+    "WorkspaceUpdateModel",
+    "WorkspaceFilterModel",
     "UserRoleAssignmentRequestModel",
     "UserRoleAssignmentResponseModel",
     "UserRoleAssignmentFilterModel",

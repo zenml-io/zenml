@@ -42,16 +42,16 @@ Stack:
 
 ```
 Initializing the ZenML global configuration version to 0.13.2
-Creating default project 'default' ...
+Creating default workspace 'default' ...
 Creating default user 'default' ...
-Creating default stack for user 'default' in project default...
-Active project not set. Setting it to the default.
-The active stack is not set. Setting the active stack to the default project stack.
+Creating default stack for user 'default' in workspace default...
+Active workspace not set. Setting it to the default.
+The active stack is not set. Setting the active stack to the default workspace stack.
 Using the default store for the global config.
 Unable to find ZenML repository in your current working directory (/tmp/folder) or any parent directories. If you want to use an existing repository which is in a different location, set the environment variable 'ZENML_REPOSITORY_PATH'. If you want to create a new repository, run zenml init.
 Running without an active repository root.
 Using the default local database.
-Running with active project: 'default' (global)
+Running with active workspace: 'default' (global)
 ┏━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
 ┃ ACTIVE │ STACK NAME │ SHARED │ OWNER   │ ARTIFACT_STORE │ ORCHESTRATOR ┃
 ┠────────┼────────────┼────────┼─────────┼────────────────┼──────────────┨
@@ -78,11 +78,11 @@ information:
 
 1. The `global.yaml` file stores the global configuration settings: the unique
 ZenML user ID, the active database configuration, the analytics related options
-the active Stack and active Project. This is an example of the `global.yaml`
+the active Stack and active Workspace. This is an example of the `global.yaml`
 file contents immediately after initialization:
 
    ```yaml
-   active_project_name: default
+   active_workspace_name: default
    active_stack_id: ...
    analytics_opt_in: true
    store:

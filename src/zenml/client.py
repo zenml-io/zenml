@@ -72,10 +72,6 @@ from zenml.models import (
     PipelineResponseModel,
     PipelineRunFilterModel,
     PipelineRunResponseModel,
-    ProjectFilterModel,
-    ProjectRequestModel,
-    ProjectResponseModel,
-    ProjectUpdateModel,
     RoleFilterModel,
     RoleRequestModel,
     RoleResponseModel,
@@ -100,6 +96,10 @@ from zenml.models import (
     UserRoleAssignmentRequestModel,
     UserRoleAssignmentResponseModel,
     UserUpdateModel,
+    WorkspaceFilterModel,
+    WorkspaceRequestModel,
+    WorkspaceResponseModel,
+    WorkspaceUpdateModel,
 )
 from zenml.models.artifact_models import (
     ArtifactFilterModel,
@@ -127,37 +127,39 @@ AnyResponseModel = TypeVar("AnyResponseModel", bound=BaseResponseModel)
 class ClientConfiguration(FileSyncModel):
     """Pydantic object used for serializing client configuration options."""
 
-    _active_project: Optional["ProjectResponseModel"] = None
-    active_project_id: Optional[UUID]
+    _active_workspace: Optional["WorkspaceResponseModel"] = None
+    active_workspace_id: Optional[UUID]
     active_stack_id: Optional[UUID]
 
     @property
-    def active_project(self) -> ProjectResponseModel:
-        """Get the active project for the local client.
+    def active_workspace(self) -> WorkspaceResponseModel:
+        """Get the active workspace for the local client.
 
         Returns:
-            The active project.
+            The active workspace.
 
         Raises:
-            RuntimeError: If no active project is set.
+            RuntimeError: If no active workspace is set.
         """
-        if self._active_project:
-            return self._active_project
+        if self._active_workspace:
+            return self._active_workspace
         else:
             raise RuntimeError(
-                "No active project is configured. Run "
-                "`zenml project set PROJECT_NAME` to set the active "
-                "project."
+                "No active workspace is configured. Run "
+                "`zenml workspace set PROJECT_NAME` to set the active "
+                "workspace."
             )
 
-    def set_active_project(self, project: "ProjectResponseModel") -> None:
-        """Set the project for the local client.
+    def set_active_workspace(
+        self, workspace: "WorkspaceResponseModel"
+    ) -> None:
+        """Set the workspace for the local client.
 
         Args:
-            project: The project to set active.
+            workspace: The workspace to set active.
         """
-        self._active_project = project
-        self.active_project_id = project.id
+        self._active_workspace = workspace
+        self.active_workspace_id = workspace.id
 
     def set_active_stack(self, stack: "StackResponseModel") -> None:
         """Set the stack for the local client.
@@ -301,7 +303,7 @@ class Client(metaclass=ClientMetaClass):
         If a client configuration is found at the given path or the
         path, it is loaded and used to initialize the client.
         If no client configuration is found, the global configuration is
-        used instead to manage the active stack, project etc.
+        used instead to manage the active stack, workspace etc.
 
         Args:
             root: The path to set as the active repository root. If not set,
@@ -345,18 +347,18 @@ class Client(metaclass=ClientMetaClass):
 
         This method is called to ensure that the client configuration
         doesn't contain outdated information, such as an active stack or
-        project that no longer exists.
+        workspace that no longer exists.
         """
         if not self._config:
             return
 
-        active_project, active_stack = self.zen_store.validate_active_config(
-            self._config.active_project_id,
+        active_workspace, active_stack = self.zen_store.validate_active_config(
+            self._config.active_workspace_id,
             self._config.active_stack_id,
             config_name="repo",
         )
         self._config.set_active_stack(active_stack)
-        self._config.set_active_project(active_project)
+        self._config.set_active_workspace(active_workspace)
 
     def _load_config(self) -> Optional[ClientConfiguration]:
         """Loads the client configuration from disk.
@@ -554,31 +556,31 @@ class Client(metaclass=ClientMetaClass):
         """
         self._set_active_root(root)
 
-    @track(event=AnalyticsEvent.SET_PROJECT)
-    def set_active_project(
-        self, project_name_or_id: Union[str, UUID]
-    ) -> "ProjectResponseModel":
-        """Set the project for the local client.
+    @track(event=AnalyticsEvent.SET_WORKSPACE)
+    def set_active_workspace(
+        self, workspace_name_or_id: Union[str, UUID]
+    ) -> "WorkspaceResponseModel":
+        """Set the workspace for the local client.
 
         Args:
-            project_name_or_id: The name or ID of the project to set active.
+            workspace_name_or_id: The name or ID of the workspace to set active.
 
         Returns:
-            The model of the active project.
+            The model of the active workspace.
         """
-        project = self.zen_store.get_project(
-            project_name_or_id=project_name_or_id
+        workspace = self.zen_store.get_workspace(
+            workspace_name_or_id=workspace_name_or_id
         )  # raises KeyError
         if self._config:
-            self._config.set_active_project(project)
+            self._config.set_active_workspace(workspace)
             # Sanitize the client configuration to reflect the current
             # settings
             self._sanitize_config()
         else:
-            # set the active project globally only if the client doesn't use
+            # set the active workspace globally only if the client doesn't use
             # a local configuration
-            GlobalConfiguration().set_active_project(project)
-        return project
+            GlobalConfiguration().set_active_workspace(workspace)
+        return workspace
 
     # ---- #
     # USER #
@@ -624,7 +626,7 @@ class Client(metaclass=ClientMetaClass):
             self.create_user_role_assignment(
                 role_name_or_id=initial_role,
                 user_name_or_id=created_user.id,
-                project_name_or_id=None,
+                workspace_name_or_id=None,
             )
 
         return created_user
@@ -671,7 +673,7 @@ class Client(metaclass=ClientMetaClass):
             id: Use the id of stacks to filter by.
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
-            name: Use the user name for filtering
+            name: Use the username for filtering
             full_name: Use the user full name for filtering
             email: Use the user email for filtering
             active: User the user active status for filtering
@@ -1083,7 +1085,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         role_name_or_id: Union[str, UUID],
         user_name_or_id: Union[str, UUID],
-        project_name_or_id: Optional[Union[str, UUID]] = None,
+        workspace_name_or_id: Optional[Union[str, UUID]] = None,
     ) -> UserRoleAssignmentResponseModel:
         """Create a role assignment.
 
@@ -1091,20 +1093,22 @@ class Client(metaclass=ClientMetaClass):
             role_name_or_id: Name or ID of the role to assign.
             user_name_or_id: Name or ID of the user or team to assign
                 the role to.
-            project_name_or_id: project scope within which to assign the role.
+            workspace_name_or_id: workspace scope within which to assign the role.
 
         Returns:
             The newly created role assignment.
         """
         role = self.get_role(name_id_or_prefix=role_name_or_id)
-        project = None
-        if project_name_or_id:
-            project = self.get_project(name_id_or_prefix=project_name_or_id)
+        workspace = None
+        if workspace_name_or_id:
+            workspace = self.get_workspace(
+                name_id_or_prefix=workspace_name_or_id
+            )
         user = self.get_user(name_id_or_prefix=user_name_or_id)
         role_assignment = UserRoleAssignmentRequestModel(
             role=role.id,
             user=user.id,
-            project=project,
+            workspace=workspace,
         )
         return self.zen_store.create_user_role_assignment(
             user_role_assignment=role_assignment
@@ -1128,7 +1132,7 @@ class Client(metaclass=ClientMetaClass):
         id: Optional[Union[UUID, str]] = None,
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
-        project_id: Optional[Union[str, UUID]] = None,
+        workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
         role_id: Optional[Union[str, UUID]] = None,
     ) -> Page[UserRoleAssignmentResponseModel]:
@@ -1142,7 +1146,7 @@ class Client(metaclass=ClientMetaClass):
             id: Use the id of the user role assignment to filter by.
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
-            project_id: The id of the project to filter by.
+            workspace_id: The id of the workspace to filter by.
             user_id: The id of the user to filter by.
             role_id: The id of the role to filter by.
 
@@ -1158,7 +1162,7 @@ class Client(metaclass=ClientMetaClass):
                 id=id,
                 created=created,
                 updated=updated,
-                project_id=project_id,
+                workspace_id=workspace_id,
                 user_id=user_id,
                 role_id=role_id,
             )
@@ -1190,7 +1194,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         role_name_or_id: Union[str, UUID],
         team_name_or_id: Union[str, UUID],
-        project_name_or_id: Optional[Union[str, UUID]] = None,
+        workspace_name_or_id: Optional[Union[str, UUID]] = None,
     ) -> TeamRoleAssignmentResponseModel:
         """Create a role assignment.
 
@@ -1198,20 +1202,22 @@ class Client(metaclass=ClientMetaClass):
             role_name_or_id: Name or ID of the role to assign.
             team_name_or_id: Name or ID of the team to assign
                 the role to.
-            project_name_or_id: project scope within which to assign the role.
+            workspace_name_or_id: workspace scope within which to assign the role.
 
         Returns:
             The newly created role assignment.
         """
         role = self.get_role(name_id_or_prefix=role_name_or_id)
-        project = None
-        if project_name_or_id:
-            project = self.get_project(name_id_or_prefix=project_name_or_id)
+        workspace = None
+        if workspace_name_or_id:
+            workspace = self.get_workspace(
+                name_id_or_prefix=workspace_name_or_id
+            )
         team = self.get_team(name_id_or_prefix=team_name_or_id)
         role_assignment = TeamRoleAssignmentRequestModel(
             role=role.id,
             team=team.id,
-            project=project,
+            workspace=workspace,
         )
         return self.zen_store.create_team_role_assignment(
             team_role_assignment=role_assignment
@@ -1235,7 +1241,7 @@ class Client(metaclass=ClientMetaClass):
         id: Optional[Union[UUID, str]] = None,
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
-        project_id: Optional[Union[str, UUID]] = None,
+        workspace_id: Optional[Union[str, UUID]] = None,
         team_id: Optional[Union[str, UUID]] = None,
         role_id: Optional[Union[str, UUID]] = None,
     ) -> Page[TeamRoleAssignmentResponseModel]:
@@ -1249,7 +1255,7 @@ class Client(metaclass=ClientMetaClass):
             id: Use the id of the team role assignment to filter by.
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
-            project_id: The id of the project to filter by.
+            workspace_id: The id of the workspace to filter by.
             team_id: The id of the team to filter by.
             role_id: The id of the role to filter by.
 
@@ -1265,7 +1271,7 @@ class Client(metaclass=ClientMetaClass):
                 id=id,
                 created=created,
                 updated=updated,
-                project_id=project_id,
+                workspace_id=workspace_id,
                 team_id=team_id,
                 role_id=role_id,
             )
@@ -1276,65 +1282,65 @@ class Client(metaclass=ClientMetaClass):
     # ------- #
 
     @property
-    def active_project(self) -> "ProjectResponseModel":
-        """Get the currently active project of the local client.
+    def active_workspace(self) -> "WorkspaceResponseModel":
+        """Get the currently active workspace of the local client.
 
-        If no active project is configured locally for the client, the
-        active project in the global configuration is used instead.
+        If no active workspace is configured locally for the client, the
+        active workspace in the global configuration is used instead.
 
         Returns:
-            The active project.
+            The active workspace.
 
         Raises:
-            RuntimeError: If the active project is not set.
+            RuntimeError: If the active workspace is not set.
         """
-        project: Optional["ProjectResponseModel"] = None
+        workspace: Optional["WorkspaceResponseModel"] = None
         if self._config:
-            project = self._config.active_project
+            workspace = self._config.active_workspace
 
-        if not project:
-            project = GlobalConfiguration().get_active_project()
+        if not workspace:
+            workspace = GlobalConfiguration().get_active_workspace()
 
-        if not project:
+        if not workspace:
             raise RuntimeError(
-                "No active project is configured. Run "
-                "`zenml project set PROJECT_NAME` to set the active "
-                "project."
+                "No active workspace is configured. Run "
+                "`zenml workspace set PROJECT_NAME` to set the active "
+                "workspace."
             )
 
-        from zenml.zen_stores.base_zen_store import DEFAULT_PROJECT_NAME
+        from zenml.zen_stores.base_zen_store import DEFAULT_WORKSPACE_NAME
 
-        if project.name != DEFAULT_PROJECT_NAME:
+        if workspace.name != DEFAULT_WORKSPACE_NAME:
             logger.warning(
-                f"You are running with a non-default project "
-                f"'{project.name}'. Any stacks, components, "
+                f"You are running with a non-default workspace "
+                f"'{workspace.name}'. Any stacks, components, "
                 f"pipelines and pipeline runs produced in this "
-                f"project will currently not be accessible through "
+                f"workspace will currently not be accessible through "
                 f"the dashboard. However, this will be possible "
                 f"in the near future."
             )
-        return project
+        return workspace
 
-    def get_project(
+    def get_workspace(
         self, name_id_or_prefix: Optional[Union[UUID, str]]
-    ) -> ProjectResponseModel:
-        """Gets a project.
+    ) -> WorkspaceResponseModel:
+        """Gets a workspace.
 
         Args:
-            name_id_or_prefix: The name or ID of the project.
+            name_id_or_prefix: The name or ID of the workspace.
 
         Returns:
             The Project
         """
         if not name_id_or_prefix:
-            return self.active_project
+            return self.active_workspace
         return self._get_entity_by_id_or_name_or_prefix(
-            get_method=self.zen_store.get_project,
-            list_method=self.list_projects,
+            get_method=self.zen_store.get_workspace,
+            list_method=self.list_workspaces,
             name_id_or_prefix=name_id_or_prefix,
         )
 
-    def list_projects(
+    def list_workspaces(
         self,
         sort_by: str = "created",
         page: int = PAGINATION_STARTING_PAGE,
@@ -1344,8 +1350,8 @@ class Client(metaclass=ClientMetaClass):
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
-    ) -> Page[ProjectResponseModel]:
-        """List all projects.
+    ) -> Page[WorkspaceResponseModel]:
+        """List all workspaces.
 
         Args:
             sort_by: The column to sort by
@@ -1359,8 +1365,8 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The Team
         """
-        return self.zen_store.list_projects(
-            ProjectFilterModel(
+        return self.zen_store.list_workspaces(
+            WorkspaceFilterModel(
                 sort_by=sort_by,
                 page=page,
                 size=size,
@@ -1372,66 +1378,68 @@ class Client(metaclass=ClientMetaClass):
             )
         )
 
-    def create_project(
+    def create_workspace(
         self, name: str, description: str
-    ) -> "ProjectResponseModel":
-        """Create a new project.
+    ) -> "WorkspaceResponseModel":
+        """Create a new workspace.
 
         Args:
-            name: Name of the project.
-            description: Description of the project.
+            name: Name of the workspace.
+            description: Description of the workspace.
 
         Returns:
-            The created project.
+            The created workspace.
         """
-        return self.zen_store.create_project(
-            ProjectRequestModel(name=name, description=description)
+        return self.zen_store.create_workspace(
+            WorkspaceRequestModel(name=name, description=description)
         )
 
-    def update_project(
+    def update_workspace(
         self,
         name_id_or_prefix: Optional[Union[UUID, str]],
         new_name: Optional[str] = None,
         new_description: Optional[str] = None,
-    ) -> "ProjectResponseModel":
-        """Update a project.
+    ) -> "WorkspaceResponseModel":
+        """Update a workspace.
 
         Args:
-            name_id_or_prefix: Name, ID or prefix of the project to update.
-            new_name: New name of the project.
-            new_description: New description of the project.
+            name_id_or_prefix: Name, ID or prefix of the workspace to update.
+            new_name: New name of the workspace.
+            new_description: New description of the workspace.
 
         Returns:
-            The updated project.
+            The updated workspace.
         """
-        project = self.get_project(name_id_or_prefix=name_id_or_prefix)
-        project_update = ProjectUpdateModel()
+        workspace = self.get_workspace(name_id_or_prefix=name_id_or_prefix)
+        workspace_update = WorkspaceUpdateModel()
         if new_name:
-            project_update.name = new_name
+            workspace_update.name = new_name
         if new_description:
-            project_update.description = new_description
-        return self.zen_store.update_project(
-            project_id=project.id,
-            project_update=project_update,
+            workspace_update.description = new_description
+        return self.zen_store.update_workspace(
+            workspace_id=workspace.id,
+            workspace_update=workspace_update,
         )
 
-    def delete_project(self, project_name_or_id: str) -> None:
-        """Delete a project.
+    def delete_workspace(self, workspace_name_or_id: str) -> None:
+        """Delete a workspace.
 
         Args:
-            project_name_or_id: The name or ID of the project to delete.
+            workspace_name_or_id: The name or ID of the workspace to delete.
 
         Raises:
-            IllegalOperationError: If the project to delete is the active
-                project.
+            IllegalOperationError: If the workspace to delete is the active
+                workspace.
         """
-        project = self.zen_store.get_project(project_name_or_id)
-        if self.active_project.id == project.id:
+        workspace = self.zen_store.get_workspace(workspace_name_or_id)
+        if self.active_workspace.id == workspace.id:
             raise IllegalOperationError(
-                f"Project '{project_name_or_id}' cannot be deleted since it is "
-                "currently active. Please set another project as active first."
+                f"Project '{workspace_name_or_id}' cannot be deleted since it is "
+                "currently active. Please set another workspace as active first."
             )
-        self.zen_store.delete_project(project_name_or_id=project_name_or_id)
+        self.zen_store.delete_workspace(
+            workspace_name_or_id=workspace_name_or_id
+        )
 
     # ------ #
     # STACKS #
@@ -1553,7 +1561,7 @@ class Client(metaclass=ClientMetaClass):
             name=name,
             components=stack_components,
             is_shared=is_shared,
-            project=self.active_project.id,
+            workspace=self.active_workspace.id,
             user=self.active_user.id,
         )
 
@@ -1594,7 +1602,7 @@ class Client(metaclass=ClientMetaClass):
 
         # Create the update model
         update_model = StackUpdateModel(
-            project=self.active_project.id,
+            workspace=self.active_workspace.id,
             user=self.active_user.id,
         )
 
@@ -1712,7 +1720,7 @@ class Client(metaclass=ClientMetaClass):
         is_shared: Optional[bool] = None,
         name: Optional[str] = None,
         description: Optional[str] = None,
-        project_id: Optional[Union[str, UUID]] = None,
+        workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
         component_id: Optional[Union[str, UUID]] = None,
     ) -> Page[StackResponseModel]:
@@ -1727,7 +1735,7 @@ class Client(metaclass=ClientMetaClass):
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
             description: Use the stack description for filtering
-            project_id: The id of the project to filter by.
+            workspace_id: The id of the workspace to filter by.
             user_id: The  id of the user to filter by.
             component_id: The id of the component to filter by.
             name: The name of the stack to filter by.
@@ -1741,7 +1749,7 @@ class Client(metaclass=ClientMetaClass):
             size=size,
             sort_by=sort_by,
             logical_operator=logical_operator,
-            project_id=project_id,
+            workspace_id=workspace_id,
             user_id=user_id,
             component_id=component_id,
             name=name,
@@ -1751,7 +1759,7 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
         )
-        stack_filter_model.set_scope_project(self.active_project.id)
+        stack_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_stacks(stack_filter_model)
 
     @track(event=AnalyticsEvent.SET_STACK)
@@ -1905,7 +1913,9 @@ class Client(metaclass=ClientMetaClass):
             component_filter_model.set_scope_type(
                 component_type=component_type
             )
-            component_filter_model.set_scope_project(self.active_project.id)
+            component_filter_model.set_scope_workspace(
+                self.active_workspace.id
+            )
             return self.zen_store.list_stack_components(
                 component_filter_model=component_filter_model,
             )
@@ -1929,7 +1939,7 @@ class Client(metaclass=ClientMetaClass):
         name: Optional[str] = None,
         flavor: Optional[str] = None,
         type: Optional[str] = None,
-        project_id: Optional[Union[str, UUID]] = None,
+        workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
     ) -> Page[ComponentResponseModel]:
         """Lists all registered stack components.
@@ -1944,7 +1954,7 @@ class Client(metaclass=ClientMetaClass):
             updated: Use the last updated date for filtering
             flavor: Use the component flavor for filtering
             type: Use the component type for filtering
-            project_id: The id of the project to filter by.
+            workspace_id: The id of the workspace to filter by.
             user_id: The id of the user to filter by.
             name: The name of the component to filter by.
             is_shared: The shared status of the component to filter by.
@@ -1957,7 +1967,7 @@ class Client(metaclass=ClientMetaClass):
             size=size,
             sort_by=sort_by,
             logical_operator=logical_operator,
-            project_id=project_id or self.active_project.id,
+            workspace_id=workspace_id or self.active_workspace.id,
             user_id=user_id,
             name=name,
             is_shared=is_shared,
@@ -1967,7 +1977,7 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
         )
-        component_filter_model.set_scope_project(self.active_project.id)
+        component_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_stack_components(
             component_filter_model=component_filter_model
         )
@@ -2015,7 +2025,7 @@ class Client(metaclass=ClientMetaClass):
             configuration=configuration,
             is_shared=is_shared,
             user=self.active_user.id,
-            project=self.active_project.id,
+            workspace=self.active_workspace.id,
         )
 
         # Register the new model
@@ -2054,7 +2064,7 @@ class Client(metaclass=ClientMetaClass):
         )
 
         update_model = ComponentUpdateModel(
-            project=self.active_project.id,
+            workspace=self.active_workspace.id,
             user=self.active_user.id,
         )
 
@@ -2202,7 +2212,7 @@ class Client(metaclass=ClientMetaClass):
             name=flavor.name,
             config_schema=flavor.config_schema,
             user=self.active_user.id,
-            project=self.active_project.id,
+            workspace=self.active_workspace.id,
         )
 
         return self.zen_store.create_flavor(flavor=create_flavor_request)
@@ -2247,7 +2257,7 @@ class Client(metaclass=ClientMetaClass):
         name: Optional[str] = None,
         type: Optional[str] = None,
         integration: Optional[str] = None,
-        project_id: Optional[Union[str, UUID]] = None,
+        workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
     ) -> Page[FlavorResponseModel]:
         """Fetches all the flavor models.
@@ -2260,7 +2270,7 @@ class Client(metaclass=ClientMetaClass):
             id: Use the id of flavors to filter by.
             created: Use to flavors by time of creation
             updated: Use the last updated date for filtering
-            project_id: The id of the project to filter by.
+            workspace_id: The id of the workspace to filter by.
             user_id: The  id of the user to filter by.
             name: The name of the flavor to filter by.
             type: The type of the flavor to filter by.
@@ -2274,7 +2284,7 @@ class Client(metaclass=ClientMetaClass):
             size=size,
             sort_by=sort_by,
             logical_operator=logical_operator,
-            project_id=project_id or self.active_project.id,
+            workspace_id=workspace_id or self.active_workspace.id,
             user_id=user_id,
             name=name,
             type=type,
@@ -2283,7 +2293,7 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
         )
-        flavor_filter_model.set_scope_project(self.active_project.id)
+        flavor_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_flavors(
             flavor_filter_model=flavor_filter_model
         )
@@ -2308,7 +2318,7 @@ class Client(metaclass=ClientMetaClass):
         )
 
         custom_flavors = self.list_custom_flavors(
-            project_id=self.active_project.id,
+            workspace_id=self.active_workspace.id,
             type=component_type,
         )
 
@@ -2344,7 +2354,9 @@ class Client(metaclass=ClientMetaClass):
             zenml_flavor = None
 
         custom_flavors = self.list_custom_flavors(
-            project_id=self.active_project.id, type=component_type, name=name
+            workspace_id=self.active_workspace.id,
+            type=component_type,
+            name=name,
         ).items
 
         if custom_flavors:
@@ -2382,7 +2394,7 @@ class Client(metaclass=ClientMetaClass):
         pipeline_spec: "PipelineSpec",
         pipeline_docstring: Optional[str],
     ) -> UUID:
-        """Registers a pipeline in the ZenStore within the active project.
+        """Registers a pipeline in the ZenStore within the active workspace.
 
         This will do one of the following three things:
         A) If there is no pipeline with this name, register a new pipeline.
@@ -2399,7 +2411,7 @@ class Client(metaclass=ClientMetaClass):
 
         Raises:
             AlreadyExistsException: If there is an existing pipeline in the
-                project with the same name but a different configuration.
+                workspace with the same name but a different configuration.
         """
         existing_pipelines = self.list_pipelines(name=pipeline_name)
 
@@ -2409,7 +2421,7 @@ class Client(metaclass=ClientMetaClass):
         # A) If there is no pipeline with this name, register a new pipeline.
         if len(existing_pipelines.items) == 0:
             create_pipeline_request = PipelineRequestModel(
-                project=self.active_project.id,
+                workspace=self.active_workspace.id,
                 user=self.active_user.id,
                 name=pipeline_name,
                 version=version,
@@ -2465,7 +2477,7 @@ class Client(metaclass=ClientMetaClass):
         version: Optional[str] = None,
         version_hash: Optional[str] = None,
         docstring: Optional[str] = None,
-        project_id: Optional[Union[str, UUID]] = None,
+        workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
     ) -> Page[PipelineResponseModel]:
         """List all pipelines.
@@ -2482,7 +2494,7 @@ class Client(metaclass=ClientMetaClass):
             version: The version of the pipeline to filter by.
             version_hash: The version hash of the pipeline to filter by.
             docstring: The docstring of the pipeline to filter by.
-            project_id: The id of the project to filter by.
+            workspace_id: The id of the workspace to filter by.
             user_id: The  id of the user to filter by.
 
         Returns:
@@ -2500,10 +2512,10 @@ class Client(metaclass=ClientMetaClass):
             version=version,
             version_hash=version_hash,
             docstring=docstring,
-            project_id=project_id,
+            workspace_id=workspace_id,
             user_id=user_id,
         )
-        pipeline_filter_model.set_scope_project(self.active_project.id)
+        pipeline_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_pipelines(
             pipeline_filter_model=pipeline_filter_model
         )
@@ -2549,7 +2561,7 @@ class Client(metaclass=ClientMetaClass):
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
-        project_id: Optional[Union[str, UUID]] = None,
+        workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
         pipeline_id: Optional[Union[str, UUID]] = None,
         orchestrator_id: Optional[Union[str, UUID]] = None,
@@ -2571,7 +2583,7 @@ class Client(metaclass=ClientMetaClass):
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
             name: The name of the stack to filter by.
-            project_id: The id of the project to filter by.
+            workspace_id: The id of the workspace to filter by.
             user_id: The  id of the user to filter by.
             pipeline_id: The id of the pipeline to filter by.
             orchestrator_id: The id of the orchestrator to filter by.
@@ -2594,7 +2606,7 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
             name=name,
-            project_id=project_id,
+            workspace_id=workspace_id,
             user_id=user_id,
             pipeline_id=pipeline_id,
             orchestrator_id=orchestrator_id,
@@ -2605,7 +2617,7 @@ class Client(metaclass=ClientMetaClass):
             interval_second=interval_second,
             catchup=catchup,
         )
-        schedule_filter_model.set_scope_project(self.active_project.id)
+        schedule_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_schedules(
             schedule_filter_model=schedule_filter_model
         )
@@ -2656,7 +2668,7 @@ class Client(metaclass=ClientMetaClass):
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
-        project_id: Optional[Union[str, UUID]] = None,
+        workspace_id: Optional[Union[str, UUID]] = None,
         pipeline_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[Union[str, UUID]] = None,
@@ -2678,7 +2690,7 @@ class Client(metaclass=ClientMetaClass):
             id: The id of the runs to filter by.
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
-            project_id: The id of the project to filter by.
+            workspace_id: The id of the workspace to filter by.
             pipeline_id: The id of the pipeline to filter by.
             user_id: The  id of the user to filter by.
             stack_id: The  id of the user to filter by.
@@ -2703,7 +2715,7 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
             name=name,
-            project_id=project_id,
+            workspace_id=workspace_id,
             pipeline_id=pipeline_id,
             schedule_id=schedule_id,
             orchestrator_run_id=orchestrator_run_id,
@@ -2715,7 +2727,7 @@ class Client(metaclass=ClientMetaClass):
             num_steps=num_steps,
             unlisted=unlisted,
         )
-        runs_filter_model.set_scope_project(self.active_project.id)
+        runs_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_runs(runs_filter_model=runs_filter_model)
 
     def get_pipeline_run(
@@ -2770,7 +2782,7 @@ class Client(metaclass=ClientMetaClass):
         end_time: Optional[Union[datetime, str]] = None,
         pipeline_run_id: Optional[Union[str, UUID]] = None,
         original_step_run_id: Optional[Union[str, UUID]] = None,
-        project_id: Optional[Union[str, UUID]] = None,
+        workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
         num_outputs: Optional[Union[int, str]] = None,
     ) -> Page[StepRunResponseModel]:
@@ -2786,7 +2798,7 @@ class Client(metaclass=ClientMetaClass):
             updated: Use the last updated date for filtering
             start_time: Use to filter by the time when the step started running
             end_time: Use to filter by the time when the step finished running
-            project_id: The id of the project to filter by.
+            workspace_id: The id of the workspace to filter by.
             user_id: The  id of the user to filter by.
             pipeline_run_id: The  id of the pipeline run to filter by.
             original_step_run_id: The  id of the pipeline run to filter by.
@@ -2816,11 +2828,11 @@ class Client(metaclass=ClientMetaClass):
             start_time=start_time,
             end_time=end_time,
             name=name,
-            project_id=project_id,
+            workspace_id=workspace_id,
             user_id=user_id,
             num_outputs=num_outputs,
         )
-        step_run_filter_model.set_scope_project(self.active_project.id)
+        step_run_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_run_steps(
             step_run_filter_model=step_run_filter_model
         )
@@ -2855,7 +2867,7 @@ class Client(metaclass=ClientMetaClass):
         data_type: Optional[str] = None,
         uri: Optional[str] = None,
         materializer: Optional[str] = None,
-        project_id: Optional[Union[str, UUID]] = None,
+        workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
         only_unused: Optional[bool] = False,
     ) -> Page[ArtifactResponseModel]:
@@ -2875,7 +2887,7 @@ class Client(metaclass=ClientMetaClass):
             data_type: The data type of the artifact to filter by.
             uri: The uri of the artifact to filter by.
             materializer: The materializer of the artifact to filter by.
-            project_id: The id of the project to filter by.
+            workspace_id: The id of the workspace to filter by.
             user_id: The  id of the user to filter by.
             only_unused: Only return artifacts that are not used in any runs.
 
@@ -2896,11 +2908,11 @@ class Client(metaclass=ClientMetaClass):
             data_type=data_type,
             uri=uri,
             materializer=materializer,
-            project_id=project_id,
+            workspace_id=workspace_id,
             user_id=user_id,
             only_unused=only_unused,
         )
-        artifact_filter_model.set_scope_project(self.active_project.id)
+        artifact_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_artifacts(artifact_filter_model)
 
     def get_artifact(self, artifact_id: UUID) -> ArtifactResponseModel:
