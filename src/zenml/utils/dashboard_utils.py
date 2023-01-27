@@ -46,7 +46,7 @@ def get_run_url(
     runs = client.depaginate(partial(client.list_runs, name=run_name))
 
     if pipeline_id:
-        url += f"/projects/{client.active_project.name}/pipelines/{str(pipeline_id)}/runs"
+        url += f"/projects/{client.active_workspace.name}/pipelines/{str(pipeline_id)}/runs"
     elif runs:
         url += "/runs"
     else:

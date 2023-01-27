@@ -20,14 +20,14 @@ from pydantic import BaseModel, Field
 
 from zenml.enums import StackComponentType
 from zenml.models.base_models import (
-    ProjectScopedRequestModel,
     UserScopedResponseModel,
+    WorkspaceScopedRequestModel,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
-from zenml.models.filter_models import ProjectScopedFilterModel
+from zenml.models.filter_models import WorkspaceScopedFilterModel
 
 if TYPE_CHECKING:
-    from zenml.models import ProjectResponseModel
+    from zenml.models import WorkspaceResponseModel
 
 
 # ---- #
@@ -77,7 +77,7 @@ class FlavorResponseModel(FlavorBaseModel, UserScopedResponseModel):
         "integration",
     ]
 
-    project: Optional["ProjectResponseModel"] = Field(
+    workspace: Optional["WorkspaceResponseModel"] = Field(
         title="The project of this resource."
     )
 
@@ -87,7 +87,7 @@ class FlavorResponseModel(FlavorBaseModel, UserScopedResponseModel):
 # ------ #
 
 
-class FlavorFilterModel(ProjectScopedFilterModel):
+class FlavorFilterModel(WorkspaceScopedFilterModel):
     """Model to enable advanced filtering of all Flavors."""
 
     name: str = Field(
@@ -102,8 +102,8 @@ class FlavorFilterModel(ProjectScopedFilterModel):
         default=None,
         description="Integration associated with the flavor",
     )
-    project_id: Union[UUID, str] = Field(
-        default=None, description="Project of the stack"
+    workspace_id: Union[UUID, str] = Field(
+        default=None, description="Workspace of the stack"
     )
     user_id: Union[UUID, str] = Field(None, description="User of the stack")
 
@@ -113,7 +113,7 @@ class FlavorFilterModel(ProjectScopedFilterModel):
 # ------- #
 
 
-class FlavorRequestModel(FlavorBaseModel, ProjectScopedRequestModel):
+class FlavorRequestModel(FlavorBaseModel, WorkspaceScopedRequestModel):
     """Request model for stack component flavors."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = [

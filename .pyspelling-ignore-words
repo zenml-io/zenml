@@ -1629,4 +1629,6 @@ defaultPassword
 generateCerts
 letsencrypt
 privateKeySecretRef
-
+workspaces
+Workspaces
+WORKSPACES

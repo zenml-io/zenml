@@ -127,7 +127,7 @@ class Flavor:
         client = Client()
         model = FlavorRequestModel(
             user=client.active_user.id,
-            project=client.active_project.id,
+            workspace=client.active_workspace.id,
             name=self.name,
             type=self.type,
             source=resolve_class(self.__class__),  # noqa

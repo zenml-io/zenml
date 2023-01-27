@@ -92,7 +92,7 @@ class FlavorRegistry:
     def register_default_flavors(self, store: BaseZenStore) -> None:
         """Registers the default built-in flavors."""
         for flavor in self.builtin_flavors:
-            flavor_instance = flavor()  # type: ignore[abstract]
+            flavor_instance = flavor()
             store.create_flavor(
                 flavor_instance.to_model(integration="built-in")
             )
