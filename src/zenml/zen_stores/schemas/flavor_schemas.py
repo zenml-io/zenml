@@ -85,7 +85,7 @@ class FlavorSchema(NamedSchema, table=True):
             workspace=self.workspace.to_model() if self.workspace else None,
             created=self.created,
             updated=self.updated,
-            logo_url=self.logo_url if self.logo_url else None,
+            logo_url=self.logo_url,
             flavor_docs_url=self.flavor_docs_url
             if self.flavor_docs_url
             else None,
