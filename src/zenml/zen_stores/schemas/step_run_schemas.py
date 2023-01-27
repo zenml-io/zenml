@@ -33,9 +33,9 @@ from zenml.models.step_run_models import (
 from zenml.zen_stores.schemas.artifact_schemas import ArtifactSchema
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
-from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
     from zenml.models import ArtifactResponseModel
@@ -76,15 +76,15 @@ class StepRunSchema(NamedSchema, table=True):
     )
     user: Optional["UserSchema"] = Relationship(back_populates="step_runs")
 
-    project_id: UUID = build_foreign_key_field(
+    workspace_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=ProjectSchema.__tablename__,
-        source_column="project_id",
+        target=WorkspaceSchema.__tablename__,
+        source_column="workspace_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=False,
     )
-    project: "ProjectSchema" = Relationship(back_populates="step_runs")
+    workspace: "WorkspaceSchema" = Relationship(back_populates="step_runs")
 
     enable_cache: Optional[bool] = Field(nullable=True)
     code_hash: Optional[str] = Field(nullable=True)
@@ -138,7 +138,7 @@ class StepRunSchema(NamedSchema, table=True):
             name=request.name,
             pipeline_run_id=request.pipeline_run_id,
             original_step_run_id=request.original_step_run_id,
-            project_id=request.project,
+            workspace_id=request.workspace,
             user_id=request.user,
             enable_cache=step_config.enable_cache,
             code_hash=step_config.caching_parameters.get(
@@ -186,7 +186,7 @@ class StepRunSchema(NamedSchema, table=True):
             name=self.name,
             pipeline_run_id=self.pipeline_run_id,
             original_step_run_id=self.original_step_run_id,
-            project=self.project.to_model(),
+            workspace=self.workspace.to_model(),
             user=self.user.to_model() if self.user else None,
             parent_step_ids=parent_step_ids,
             cache_key=self.cache_key,

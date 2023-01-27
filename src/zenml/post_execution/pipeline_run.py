@@ -41,16 +41,16 @@ def get_run(name: str) -> "PipelineRunView":
         RuntimeError: If multiple runs with the given name exist.
     """
     client = Client()
-    active_project_id = client.active_project.id
+    active_workspace_id = client.active_workspace.id
     runs = client.list_runs(
         name=name,
-        project_id=active_project_id,
+        workspace_id=active_workspace_id,
     )
 
     # TODO: [server] this error handling could be improved
     if not runs:
         raise KeyError(f"No run with name '{name}' exists.")
-    elif runs.total:
+    elif runs.total > 1:
         raise RuntimeError(
             f"Multiple runs have been found for name  '{name}'.", runs
         )
@@ -67,7 +67,7 @@ def get_unlisted_runs() -> List["PipelineRunView"]:
     """
     client = Client()
     runs = client.list_runs(
-        project_id=client.active_project.id, unlisted=True, size=50
+        workspace_id=client.active_workspace.id, unlisted=True, size=50
     )
     return [PipelineRunView(model) for model in runs.items]
 

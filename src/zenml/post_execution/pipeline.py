@@ -30,14 +30,14 @@ logger = get_logger(__name__)
 
 @track(event=AnalyticsEvent.GET_PIPELINES)
 def get_pipelines() -> List["PipelineView"]:
-    """Fetches all post-execution pipeline views in the active project.
+    """Fetches all post-execution pipeline views in the active workspace.
 
     Returns:
         A list of post-execution pipeline views.
     """
     # TODO: [server] handle the active stack correctly
     client = Client()
-    pipelines = client.list_pipelines(project_id=client.active_project.id)
+    pipelines = client.list_pipelines(workspace_id=client.active_workspace.id)
     return [PipelineView(model) for model in pipelines.items]
 
 
@@ -114,18 +114,18 @@ def get_pipeline(
         )
 
     client = Client()
-    active_project_id = client.active_project.id
+    active_workspace_id = client.active_workspace.id
 
     pipeline_models = client.list_pipelines(
         name=pipeline_name,
-        project_id=active_project_id,
+        workspace_id=active_workspace_id,
     )
     if pipeline_models.total == 1:
         return PipelineView(pipeline_models.items[0])
     elif pipeline_models.total > 1:
         raise RuntimeError(
-            f"Pipeline_name `{pipeline_name}` not unique within Project "
-            f"`{active_project_id}`."
+            f"Pipeline_name `{pipeline_name}` not unique within workspace "
+            f"`{active_workspace_id}`."
         )
     else:
         return None
@@ -153,12 +153,13 @@ class PipelineView(BaseView):
         Returns:
             The number of runs of this pipeline.
         """
-        active_project_id = Client().active_project.id
+        active_workspace_id = Client().active_workspace.id
         return (
             Client()
             .zen_store.list_runs(
                 PipelineRunFilterModel(
-                    project_id=active_project_id, pipeline_id=self._model.id
+                    workspace_id=active_workspace_id,
+                    pipeline_id=self._model.id,
                 )
             )
             .total
@@ -176,9 +177,11 @@ class PipelineView(BaseView):
         """
         # Do not cache runs as new runs might appear during this objects
         # lifecycle
-        active_project_id = Client().active_project.id
+        active_workspace_id = Client().active_workspace.id
         runs = Client().list_runs(
-            project_id=active_project_id, pipeline_id=self.model.id, size=50
+            workspace_id=active_workspace_id,
+            pipeline_id=self.model.id,
+            size=50,
         )
 
         return [PipelineRunView(run) for run in runs.items]

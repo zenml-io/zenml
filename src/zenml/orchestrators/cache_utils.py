@@ -17,7 +17,7 @@ import hashlib
 from typing import TYPE_CHECKING, Dict, Optional
 
 from zenml.client import Client
-from zenml.enums import ExecutionStatus
+from zenml.enums import ExecutionStatus, SorterOps
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
@@ -58,7 +58,7 @@ def generate_cache_key(
     step: "Step",
     input_artifact_ids: Dict[str, "UUID"],
     artifact_store: "BaseArtifactStore",
-    project_id: "UUID",
+    workspace_id: "UUID",
 ) -> str:
     """Generates a cache key for a step run.
 
@@ -66,7 +66,7 @@ def generate_cache_key(
     runs are identical and can be cached.
 
     The cache key is a MD5 hash of:
-    - the project ID,
+    - the workspace ID,
     - the artifact store ID and path,
     - the source code that defines the step,
     - the parameters of the step,
@@ -79,15 +79,15 @@ def generate_cache_key(
         step: The step to generate the cache key for.
         input_artifact_ids: The input artifact IDs for the step.
         artifact_store: The artifact store of the active stack.
-        project_id: The ID of the active project.
+        workspace_id: The ID of the active workspace.
 
     Returns:
         A cache key.
     """
     hash_ = hashlib.md5()
 
-    # Project ID
-    hash_.update(project_id.bytes)
+    # Workspace ID
+    hash_.update(workspace_id.bytes)
 
     # Artifact store ID and path
     hash_.update(artifact_store.id.bytes)
@@ -123,7 +123,7 @@ def get_cached_step_run(cache_key: str) -> Optional["StepRunResponseModel"]:
     """If a given step can be cached, get the corresponding existing step run.
 
     A step run can be cached if there is an existing step run in the same
-    project which has the same cache key and was successfully executed.
+    workspace which has the same cache key and was successfully executed.
 
     Args:
         cache_key: The cache key of the step.
@@ -131,18 +131,16 @@ def get_cached_step_run(cache_key: str) -> Optional["StepRunResponseModel"]:
     Returns:
         The existing step run if the step can be cached, otherwise None.
     """
-    cache_candidates = (
-        Client()
-        .list_run_steps(
-            project_id=Client().active_project.id,
-            cache_key=cache_key,
-            status=ExecutionStatus.COMPLETED,
-            sort_by="created",
-            size=1,
-        )
-        .items
-    )
+    client = Client()
+
+    cache_candidates = client.list_run_steps(
+        workspace_id=client.active_workspace.id,
+        cache_key=cache_key,
+        status=ExecutionStatus.COMPLETED,
+        sort_by=f"{SorterOps.DESCENDING}:created",
+        size=1,
+    ).items
 
     if cache_candidates:
-        return cache_candidates[-1]
+        return cache_candidates[0]
     return None

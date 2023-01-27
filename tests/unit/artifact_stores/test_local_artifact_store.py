@@ -32,7 +32,7 @@ def test_local_artifact_store_attributes():
         flavor="default",
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -51,7 +51,7 @@ def test_local_artifact_store_only_supports_local_paths():
             flavor="default",
             type=StackComponentType.ARTIFACT_STORE,
             user=uuid4(),
-            project=uuid4(),
+            workspace=uuid4(),
             created=datetime.now(),
             updated=datetime.now(),
         )
@@ -64,7 +64,7 @@ def test_local_artifact_store_only_supports_local_paths():
             flavor="default",
             type=StackComponentType.ARTIFACT_STORE,
             user=uuid4(),
-            project=uuid4(),
+            workspace=uuid4(),
             created=datetime.now(),
             updated=datetime.now(),
         )
@@ -77,7 +77,7 @@ def test_local_artifact_store_only_supports_local_paths():
             flavor="default",
             type=StackComponentType.ARTIFACT_STORE,
             user=uuid4(),
-            project=uuid4(),
+            workspace=uuid4(),
             created=datetime.now(),
             updated=datetime.now(),
         )
@@ -89,7 +89,7 @@ def test_local_artifact_store_only_supports_local_paths():
         flavor="default",
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )

@@ -35,7 +35,7 @@ from zenml.models.base_models import (
     update_model,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
-from zenml.models.filter_models import ShareableProjectScopedFilterModel
+from zenml.models.filter_models import ShareableWorkspaceScopedFilterModel
 from zenml.utils import secret_utils
 
 if TYPE_CHECKING:
@@ -85,7 +85,7 @@ class ComponentResponseModel(ComponentBaseModel, ShareableResponseModel):
 # ------ #
 
 
-class ComponentFilterModel(ShareableProjectScopedFilterModel):
+class ComponentFilterModel(ShareableWorkspaceScopedFilterModel):
     """Model to enable advanced filtering of all ComponentModels.
 
     The Component Model needs additional scoping. As such the `_scope_user`
@@ -95,11 +95,11 @@ class ComponentFilterModel(ShareableProjectScopedFilterModel):
     """
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *ShareableProjectScopedFilterModel.FILTER_EXCLUDE_FIELDS,
+        *ShareableWorkspaceScopedFilterModel.FILTER_EXCLUDE_FIELDS,
         "scope_type",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *ShareableProjectScopedFilterModel.CLI_EXCLUDE_FIELDS,
+        *ShareableWorkspaceScopedFilterModel.CLI_EXCLUDE_FIELDS,
         "scope_type",
     ]
     scope_type: Optional[str] = Field(
@@ -122,8 +122,8 @@ class ComponentFilterModel(ShareableProjectScopedFilterModel):
         default=None,
         description="Type of the stack component",
     )
-    project_id: Union[UUID, str] = Field(
-        default=None, description="Project of the stack"
+    workspace_id: Union[UUID, str] = Field(
+        default=None, description="Workspace of the stack component"
     )
     user_id: Union[UUID, str] = Field(None, description="User of the stack")
 
