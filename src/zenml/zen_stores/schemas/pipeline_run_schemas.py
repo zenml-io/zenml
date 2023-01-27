@@ -26,11 +26,11 @@ from zenml.models import PipelineRunResponseModel
 from zenml.models.pipeline_run_models import PipelineRunRequestModel
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
-from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.stack_schemas import StackSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
     from zenml.models import PipelineRunUpdateModel
@@ -82,15 +82,15 @@ class PipelineRunSchema(NamedSchema, table=True):
     )
     user: Optional["UserSchema"] = Relationship(back_populates="runs")
 
-    project_id: UUID = build_foreign_key_field(
+    workspace_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=ProjectSchema.__tablename__,
-        source_column="project_id",
+        target=WorkspaceSchema.__tablename__,
+        source_column="workspace_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=False,
     )
-    project: "ProjectSchema" = Relationship(back_populates="runs")
+    workspace: "WorkspaceSchema" = Relationship(back_populates="runs")
 
     orchestrator_run_id: Optional[str] = Field(nullable=True)
 
@@ -136,7 +136,7 @@ class PipelineRunSchema(NamedSchema, table=True):
             name=request.name,
             orchestrator_run_id=request.orchestrator_run_id,
             stack_id=request.stack,
-            project_id=request.project,
+            workspace_id=request.workspace,
             user_id=request.user,
             pipeline_id=request.pipeline,
             schedule_id=request.schedule_id,
@@ -178,7 +178,7 @@ class PipelineRunSchema(NamedSchema, table=True):
             return PipelineRunResponseModel(
                 id=self.id,
                 name=self.name,
-                project=self.project.to_model(),
+                workspace=self.workspace.to_model(),
                 user=self.user.to_model(True) if self.user else None,
                 schedule_id=self.schedule_id,
                 orchestrator_run_id=self.orchestrator_run_id,
@@ -201,7 +201,7 @@ class PipelineRunSchema(NamedSchema, table=True):
                 id=self.id,
                 name=self.name,
                 stack=self.stack.to_model() if self.stack else None,
-                project=self.project.to_model(),
+                workspace=self.workspace.to_model(),
                 user=self.user.to_model(True) if self.user else None,
                 orchestrator_run_id=self.orchestrator_run_id,
                 enable_cache=self.enable_cache,

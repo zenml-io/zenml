@@ -29,7 +29,7 @@ def test_init_creates_zen_folder(tmp_path: Path) -> None:
     assert (tmp_path / REPOSITORY_DIRECTORY_NAME).exists()
 
 
-def test_clean_user_config(clean_project) -> None:
+def test_clean_user_config(clean_workspace) -> None:
     global_zen_config_yaml = (
         Path(get_global_config_directory()) / CONFIG_FILE_NAME
     )
