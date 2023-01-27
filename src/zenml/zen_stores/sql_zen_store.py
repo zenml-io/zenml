@@ -126,6 +126,7 @@ from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.models.page_model import Page
 from zenml.models.schedule_model import ScheduleFilterModel
 from zenml.models.server_models import ServerDatabaseType, ServerModel
+from zenml.stack.flavor_registry import FlavorRegistry
 from zenml.utils import uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.enum_utils import StrEnum
@@ -857,10 +858,12 @@ class SqlZenStore(BaseZenStore):
         revisions_afterwards = self.alembic.current_revisions()
 
         if revisions != revisions_afterwards:
-            from zenml.stack.flavor_registry import FlavorRegistry
+            self._sync_flavors()
 
-            self._purge_non_custom_flavors()
-            FlavorRegistry().register_flavors(store=self)
+    def _sync_flavors(self) -> None:
+        """Purge all in-built and integration flavors from the DB and sync."""
+        self._purge_non_custom_flavors()
+        FlavorRegistry().register_flavors(store=self)
 
     def get_store_info(self) -> ServerModel:
         """Get information about the store.

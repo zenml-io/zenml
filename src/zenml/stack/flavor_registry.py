@@ -101,6 +101,6 @@ class FlavorRegistry:
     def register_integration_flavors(store: BaseZenStore) -> None:
         """Registers the flavors implemented by integrations."""
         for name, integration in integration_registry.integrations.items():
-            integrated_flavors = (integration.flavors())
+            integrated_flavors = integration.flavors()
             for flavor in integrated_flavors:
                 store.create_flavor(flavor().to_model(integration=name))

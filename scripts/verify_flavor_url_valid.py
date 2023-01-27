@@ -20,12 +20,14 @@ from rich.console import Console
 from rich.progress import track
 import tempfile
 
+from zenml.enums import StoreType
 from zenml.stack import Flavor
 from zenml.stack.flavor_registry import FlavorRegistry
 import requests
 import click
 
 from zenml import __version__
+from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 
 @click.group()
@@ -177,3 +179,21 @@ def _verify_image_not_corrupt(r: Response, flavor: Type[Flavor]):
             assert Image.open(filepath)  # Open image without failing
         else:
             pass  # Not yet verifying valid svg
+
+
+@flavors.command(
+    "sync",
+    help="During development of new flavors, this function can be used to "
+         "purge the database and sync all flavors, including the new one, "
+         "into the database.")
+def sync():
+    from zenml.client import Client
+
+    store = Client().zen_store
+    if isinstance(store, SqlZenStore):
+        store._sync_flavors()
+    else:
+        style = "bold orange"
+        text = "This command requires you to be connected to a SqlZenStore. " \
+               "Please disconnect from the RestZenStore and try again."
+        Console().print(text, style=style)
