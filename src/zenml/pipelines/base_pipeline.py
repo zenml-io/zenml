@@ -818,6 +818,41 @@ class BasePipeline(metaclass=BasePipelineMeta):
             )
             for pipeline_parameter_name, step_spec in model.spec.steps
         }
+
+        available_outputs = {
+            step.name: list(step.OUTPUT_SIGNATURE.keys())
+            for step in steps.values()
+        }
+        for pipeline_parameter_name, step_spec in model.spec.steps:
+            for upstream_step in step_spec.upstream_steps:
+                if upstream_step not in available_outputs:
+                    raise RuntimeError(f"Missing step `{upstream_step}`.")
+
+            for input_spec in step_spec.inputs.values():
+                if input_spec.step_name not in available_outputs:
+                    raise RuntimeError(
+                        f"Missing step `{input_spec.step_name}`."
+                    )
+
+                if (
+                    input_spec.output_name
+                    not in available_outputs[input_spec.step_name]
+                ):
+                    raise RuntimeError(
+                        f"Missing output `{input_spec.output_name}` for step "
+                        f"`{input_spec.step_name}`."
+                    )
+
+            step = steps[pipeline_parameter_name]
+            input_names = set(step.INPUT_SIGNATURE)
+            spec_input_names = set(step_spec.inputs)
+
+            if input_names != spec_input_names:
+                raise RuntimeError(
+                    f"Input names don't match. Step inputs: `{input_names}`, "
+                    f"spec inputs: `{spec_input_names}`."
+                )
+
         pipeline_instance = pipeline_class(**steps)
 
         # TODO: the compilation already fails as it calls `connect` which
