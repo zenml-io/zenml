@@ -145,22 +145,19 @@ class MLFlowExperimentTrackerConfig(  # type: ignore[misc] # https://github.com/
             if is_remote_mlflow_tracking_uri(tracking_uri):
                 # we need either username + password or a token to authenticate to
                 # the remote backend
-                basic_auth = values.get("tracking_username") and values.get(
-                    "tracking_password"
-                )
+                basic_auth = values.get("tracking_username")
                 token_auth = values.get("tracking_token")
 
                 if not (basic_auth or token_auth):
                     raise ValueError(
                         f"MLflow experiment tracking with a remote backend "
                         f"{tracking_uri} is only possible when specifying either "
-                        f"username and password or an authentication token in your "
+                        f"username or an authentication token in your "
                         f"stack component. To update your component, run the "
                         f"following command: `zenml experiment-tracker update "
                         f"<NAME> --tracking_username=MY_USERNAME "
-                        f"--tracking_password=MY_PASSWORD "
                         f"--tracking_token=MY_TOKEN` and specify either your "
-                        f"username and password or token."
+                        f"username or token."
                     )
 
         return values
