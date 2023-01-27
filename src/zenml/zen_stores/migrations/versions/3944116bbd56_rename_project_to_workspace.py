@@ -1,7 +1,7 @@
 """Rename project to workspace. [3944116bbd56].
 
 Revision ID: 3944116bbd56
-Revises: 0.32.0
+Revises: 0.32.1
 Create Date: 2023-01-24 12:54:29.192057
 
 """
@@ -12,7 +12,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "3944116bbd56"
-down_revision = "0.32.0"
+down_revision = "0.32.1"
 branch_labels = None
 depends_on = None
 
