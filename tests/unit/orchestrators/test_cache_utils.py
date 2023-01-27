@@ -283,7 +283,9 @@ def test_fetching_cached_step_run_uses_latest_candidate(
     caching."""
     sample_step_request_model.cache_key = "cache_key"
     sample_step_request_model.workspace = clean_client.active_workspace.id
-    sample_pipeline_run_request_model.workspace = clean_client.active_workspace.id
+    sample_pipeline_run_request_model.workspace = (
+        clean_client.active_workspace.id
+    )
 
     # Create a pipeline run and step run
     clean_client.zen_store.create_run(sample_pipeline_run_request_model)
