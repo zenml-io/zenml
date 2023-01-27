@@ -11,16 +11,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""SQL Model Implementations for Projects."""
+"""SQL Model Implementations for Workspaces."""
 from datetime import datetime
 from typing import TYPE_CHECKING, List
 
 from sqlmodel import Relationship
 
 from zenml.models import (
-    ProjectRequestModel,
-    ProjectResponseModel,
-    ProjectUpdateModel,
+    WorkspaceRequestModel,
+    WorkspaceResponseModel,
+    WorkspaceUpdateModel,
 )
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 
@@ -39,80 +39,93 @@ if TYPE_CHECKING:
     )
 
 
-class ProjectSchema(NamedSchema, table=True):
-    """SQL Model for projects."""
+class WorkspaceSchema(NamedSchema, table=True):
+    """SQL Model for workspaces."""
 
     __tablename__ = "workspace"
 
     description: str
 
     user_role_assignments: List["UserRoleAssignmentSchema"] = Relationship(
-        back_populates="project", sa_relationship_kwargs={"cascade": "delete"}
+        back_populates="workspace",
+        sa_relationship_kwargs={"cascade": "delete"},
     )
     team_role_assignments: List["TeamRoleAssignmentSchema"] = Relationship(
-        back_populates="project",
+        back_populates="workspace",
         sa_relationship_kwargs={"cascade": "all, delete"},
     )
     stacks: List["StackSchema"] = Relationship(
-        back_populates="project", sa_relationship_kwargs={"cascade": "delete"}
+        back_populates="workspace",
+        sa_relationship_kwargs={"cascade": "delete"},
     )
     components: List["StackComponentSchema"] = Relationship(
-        back_populates="project", sa_relationship_kwargs={"cascade": "delete"}
+        back_populates="workspace",
+        sa_relationship_kwargs={"cascade": "delete"},
     )
     flavors: List["FlavorSchema"] = Relationship(
-        back_populates="project", sa_relationship_kwargs={"cascade": "delete"}
+        back_populates="workspace",
+        sa_relationship_kwargs={"cascade": "delete"},
     )
     pipelines: List["PipelineSchema"] = Relationship(
-        back_populates="project", sa_relationship_kwargs={"cascade": "delete"}
+        back_populates="workspace",
+        sa_relationship_kwargs={"cascade": "delete"},
     )
     schedules: List["ScheduleSchema"] = Relationship(
-        back_populates="project", sa_relationship_kwargs={"cascade": "delete"}
+        back_populates="workspace",
+        sa_relationship_kwargs={"cascade": "delete"},
     )
     runs: List["PipelineRunSchema"] = Relationship(
-        back_populates="project", sa_relationship_kwargs={"cascade": "delete"}
+        back_populates="workspace",
+        sa_relationship_kwargs={"cascade": "delete"},
     )
     step_runs: List["StepRunSchema"] = Relationship(
-        back_populates="project", sa_relationship_kwargs={"cascade": "delete"}
+        back_populates="workspace",
+        sa_relationship_kwargs={"cascade": "delete"},
     )
     artifacts: List["ArtifactSchema"] = Relationship(
-        back_populates="project", sa_relationship_kwargs={"cascade": "delete"}
+        back_populates="workspace",
+        sa_relationship_kwargs={"cascade": "delete"},
     )
 
     @classmethod
-    def from_request(cls, project: ProjectRequestModel) -> "ProjectSchema":
-        """Create a `ProjectSchema` from a `ProjectResponseModel`.
+    def from_request(
+        cls, workspace: WorkspaceRequestModel
+    ) -> "WorkspaceSchema":
+        """Create a `WorkspaceSchema` from a `WorkspaceResponseModel`.
 
         Args:
-            project: The `ProjectResponseModel` from which to create the schema.
+            workspace: The `WorkspaceResponseModel` from which to create the schema.
 
         Returns:
-            The created `ProjectSchema`.
+            The created `WorkspaceSchema`.
         """
-        return cls(name=project.name, description=project.description)
+        return cls(name=workspace.name, description=workspace.description)
 
-    def update(self, project_update: ProjectUpdateModel) -> "ProjectSchema":
-        """Update a `ProjectSchema` from a `ProjectUpdateModel`.
+    def update(
+        self, workspace_update: WorkspaceUpdateModel
+    ) -> "WorkspaceSchema":
+        """Update a `WorkspaceSchema` from a `WorkspaceUpdateModel`.
 
         Args:
-            project_update: The `ProjectUpdateModel` from which to update the
+            workspace_update: The `WorkspaceUpdateModel` from which to update the
                 schema.
 
         Returns:
-            The updated `ProjectSchema`.
+            The updated `WorkspaceSchema`.
         """
-        for field, value in project_update.dict(exclude_unset=True).items():
+        for field, value in workspace_update.dict(exclude_unset=True).items():
             setattr(self, field, value)
 
         self.updated = datetime.utcnow()
         return self
 
-    def to_model(self) -> ProjectResponseModel:
-        """Convert a `ProjectSchema` to a `ProjectResponseModel`.
+    def to_model(self) -> WorkspaceResponseModel:
+        """Convert a `WorkspaceSchema` to a `WorkspaceResponseModel`.
 
         Returns:
-            The converted `ProjectResponseModel`.
+            The converted `WorkspaceResponseModel`.
         """
-        return ProjectResponseModel(
+        return WorkspaceResponseModel(
             id=self.id,
             name=self.name,
             description=self.description,

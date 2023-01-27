@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Endpoint definitions for projects."""
+"""Endpoint definitions for workspaces."""
 from typing import Dict, Optional, Union
 from uuid import UUID
 
@@ -21,7 +21,6 @@ from zenml.constants import (
     API,
     FLAVORS,
     PIPELINES,
-    PROJECTS,
     RUNS,
     SCHEDULES,
     STACK_COMPONENTS,
@@ -30,6 +29,7 @@ from zenml.constants import (
     TEAM_ROLE_ASSIGNMENTS,
     USER_ROLE_ASSIGNMENTS,
     VERSION_1,
+    WORKSPACES,
 )
 from zenml.enums import PermissionType
 from zenml.exceptions import IllegalOperationError
@@ -46,10 +46,6 @@ from zenml.models import (
     PipelineRunFilterModel,
     PipelineRunRequestModel,
     PipelineRunResponseModel,
-    ProjectFilterModel,
-    ProjectRequestModel,
-    ProjectResponseModel,
-    ProjectUpdateModel,
     ScheduleRequestModel,
     ScheduleResponseModel,
     StackFilterModel,
@@ -59,6 +55,10 @@ from zenml.models import (
     TeamRoleAssignmentResponseModel,
     UserRoleAssignmentFilterModel,
     UserRoleAssignmentResponseModel,
+    WorkspaceFilterModel,
+    WorkspaceRequestModel,
+    WorkspaceResponseModel,
+    WorkspaceUpdateModel,
 )
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
@@ -69,136 +69,178 @@ from zenml.zen_server.utils import (
     zen_store,
 )
 
+# This is a workaround to slowly deprecate the workspaces routes. This along with
+#  all the decorators using it, can be removed in a few releases.
+PROJECTS = "/workspaces"
+
+
 router = APIRouter(
-    prefix=API + VERSION_1 + PROJECTS,
-    tags=["projects"],
+    prefix=API + VERSION_1,
+    tags=["workspaces"],
     responses={401: error_response},
 )
 
 
 @router.get(
-    "",
-    response_model=Page[ProjectResponseModel],
+    WORKSPACES,
+    response_model=Page[WorkspaceResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@router.get(
+    PROJECTS,
+    response_model=Page[WorkspaceResponseModel],
+    responses={401: error_response, 404: error_response, 422: error_response},
+    deprecated=True,
+)
 @handle_exceptions
-def list_projects(
-    project_filter_model: ProjectFilterModel = Depends(
-        make_dependable(ProjectFilterModel)
+def list_workspaces(
+    workspace_filter_model: WorkspaceFilterModel = Depends(
+        make_dependable(WorkspaceFilterModel)
     ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Page[ProjectResponseModel]:
-    """Lists all projects in the organization.
+) -> Page[WorkspaceResponseModel]:
+    """Lists all workspaces in the organization.
 
     Args:
-        project_filter_model: Filter model used for pagination, sorting,
-                              filtering
+        workspace_filter_model: Filter model used for pagination, sorting,
+            filtering
 
     Returns:
-        A list of projects.
+        A list of workspaces.
     """
-    return zen_store().list_projects(project_filter_model=project_filter_model)
+    return zen_store().list_workspaces(
+        workspace_filter_model=workspace_filter_model
+    )
 
 
 @router.post(
-    "",
-    response_model=ProjectResponseModel,
+    WORKSPACES,
+    response_model=WorkspaceResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
+@router.post(
+    PROJECTS,
+    response_model=WorkspaceResponseModel,
+    responses={401: error_response, 409: error_response, 422: error_response},
+    deprecated=True,
+)
 @handle_exceptions
-def create_project(
-    project: ProjectRequestModel,
+def create_workspace(
+    workspace: WorkspaceRequestModel,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> ProjectResponseModel:
-    """Creates a project based on the requestBody.
+) -> WorkspaceResponseModel:
+    """Creates a workspace based on the requestBody.
 
     # noqa: DAR401
 
     Args:
-        project: Project to create.
+        workspace: Workspace to create.
 
     Returns:
-        The created project.
+        The created workspace.
     """
-    return zen_store().create_project(project=project)
+    return zen_store().create_workspace(workspace=workspace)
 
 
 @router.get(
-    "/{project_name_or_id}",
-    response_model=ProjectResponseModel,
+    WORKSPACES + "/{workspace_name_or_id}",
+    response_model=WorkspaceResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@router.get(
+    PROJECTS + "/{workspace_name_or_id}",
+    response_model=WorkspaceResponseModel,
+    responses={401: error_response, 404: error_response, 422: error_response},
+    deprecated=True,
+)
 @handle_exceptions
-def get_project(
-    project_name_or_id: Union[str, UUID],
+def get_workspace(
+    workspace_name_or_id: Union[str, UUID],
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> ProjectResponseModel:
-    """Get a project for given name.
+) -> WorkspaceResponseModel:
+    """Get a workspace for given name.
 
     # noqa: DAR401
 
     Args:
-        project_name_or_id: Name or ID of the project.
+        workspace_name_or_id: Name or ID of the workspace.
 
     Returns:
-        The requested project.
+        The requested workspace.
     """
-    return zen_store().get_project(project_name_or_id=project_name_or_id)
+    return zen_store().get_workspace(workspace_name_or_id=workspace_name_or_id)
 
 
 @router.put(
-    "/{project_name_or_id}",
-    response_model=ProjectResponseModel,
+    WORKSPACES + "/{workspace_name_or_id}",
+    response_model=WorkspaceResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@router.put(
+    PROJECTS + "/{workspace_name_or_id}",
+    response_model=WorkspaceResponseModel,
+    responses={401: error_response, 404: error_response, 422: error_response},
+    deprecated=True,
+)
 @handle_exceptions
-def update_project(
-    project_name_or_id: UUID,
-    project_update: ProjectUpdateModel,
+def update_workspace(
+    workspace_name_or_id: UUID,
+    workspace_update: WorkspaceUpdateModel,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> ProjectResponseModel:
-    """Get a project for given name.
+) -> WorkspaceResponseModel:
+    """Get a workspace for given name.
 
     # noqa: DAR401
 
     Args:
-        project_name_or_id: Name or ID of the project to update.
-        project_update: the project to use to update
+        workspace_name_or_id: Name or ID of the workspace to update.
+        workspace_update: the workspace to use to update
 
     Returns:
-        The updated project.
+        The updated workspace.
     """
-    return zen_store().update_project(
-        project_id=project_name_or_id,
-        project_update=project_update,
+    return zen_store().update_workspace(
+        workspace_id=workspace_name_or_id,
+        workspace_update=workspace_update,
     )
 
 
 @router.delete(
-    "/{project_name_or_id}",
+    WORKSPACES + "/{workspace_name_or_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@router.delete(
+    PROJECTS + "/{workspace_name_or_id}",
+    responses={401: error_response, 404: error_response, 422: error_response},
+    deprecated=True,
+)
 @handle_exceptions
-def delete_project(
-    project_name_or_id: Union[str, UUID],
+def delete_workspace(
+    workspace_name_or_id: Union[str, UUID],
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
 ) -> None:
-    """Deletes a project.
+    """Deletes a workspace.
 
     Args:
-        project_name_or_id: Name or ID of the project.
+        workspace_name_or_id: Name or ID of the workspace.
     """
-    zen_store().delete_project(project_name_or_id=project_name_or_id)
+    zen_store().delete_workspace(workspace_name_or_id=workspace_name_or_id)
 
 
 @router.get(
-    "/{project_name_or_id}" + USER_ROLE_ASSIGNMENTS,
+    WORKSPACES + "/{workspace_name_or_id}" + USER_ROLE_ASSIGNMENTS,
     response_model=Page[UserRoleAssignmentResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@router.get(
+    PROJECTS + "/{workspace_name_or_id}" + USER_ROLE_ASSIGNMENTS,
+    response_model=Page[UserRoleAssignmentResponseModel],
+    responses={401: error_response, 404: error_response, 422: error_response},
+    deprecated=True,
+)
 @handle_exceptions
-def list_user_role_assignments_for_project(
-    project_name_or_id: Union[str, UUID],
+def list_user_role_assignments_for_workspace(
+    workspace_name_or_id: Union[str, UUID],
     user_role_assignment_filter_model: UserRoleAssignmentFilterModel = Depends(
         make_dependable(UserRoleAssignmentFilterModel)
     ),
@@ -207,28 +249,34 @@ def list_user_role_assignments_for_project(
     """Returns a list of all roles that are assigned to a team.
 
     Args:
-        project_name_or_id: Name or ID of the project.
-        user_role_assignment_filter_model: Filter model used for pagination, sorting,
-                                    filtering
+        workspace_name_or_id: Name or ID of the workspace.
+        user_role_assignment_filter_model: Filter model used for pagination,
+            sorting, filtering
 
     Returns:
         A list of all roles that are assigned to a team.
     """
-    project = zen_store().get_project(project_name_or_id)
-    user_role_assignment_filter_model.project_id = project.id
+    workspace = zen_store().get_workspace(workspace_name_or_id)
+    user_role_assignment_filter_model.workspace_id = workspace.id
     return zen_store().list_user_role_assignments(
         user_role_assignment_filter_model=user_role_assignment_filter_model
     )
 
 
 @router.get(
-    "/{project_name_or_id}" + TEAM_ROLE_ASSIGNMENTS,
+    WORKSPACES + "/{workspace_name_or_id}" + TEAM_ROLE_ASSIGNMENTS,
     response_model=Page[TeamRoleAssignmentResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@router.get(
+    PROJECTS + "/{workspace_name_or_id}" + TEAM_ROLE_ASSIGNMENTS,
+    response_model=Page[TeamRoleAssignmentResponseModel],
+    responses={401: error_response, 404: error_response, 422: error_response},
+    deprecated=True,
+)
 @handle_exceptions
-def list_team_role_assignments_for_project(
-    project_name_or_id: Union[str, UUID],
+def list_team_role_assignments_for_workspace(
+    workspace_name_or_id: Union[str, UUID],
     team_role_assignment_filter_model: TeamRoleAssignmentFilterModel = Depends(
         make_dependable(TeamRoleAssignmentFilterModel)
     ),
@@ -237,28 +285,34 @@ def list_team_role_assignments_for_project(
     """Returns a list of all roles that are assigned to a team.
 
     Args:
-        project_name_or_id: Name or ID of the project.
-        team_role_assignment_filter_model: Filter model used for pagination, sorting,
-                                    filtering
+        workspace_name_or_id: Name or ID of the workspace.
+        team_role_assignment_filter_model: Filter model used for pagination,
+            sorting, filtering
 
     Returns:
         A list of all roles that are assigned to a team.
     """
-    project = zen_store().get_project(project_name_or_id)
-    team_role_assignment_filter_model.project_id = project.id
+    workspace = zen_store().get_workspace(workspace_name_or_id)
+    team_role_assignment_filter_model.workspace_id = workspace.id
     return zen_store().list_team_role_assignments(
         team_role_assignment_filter_model=team_role_assignment_filter_model
     )
 
 
 @router.get(
-    "/{project_name_or_id}" + STACKS,
+    WORKSPACES + "/{workspace_name_or_id}" + STACKS,
     response_model=Page[StackResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@router.get(
+    PROJECTS + "/{workspace_name_or_id}" + STACKS,
+    response_model=Page[StackResponseModel],
+    responses={401: error_response, 404: error_response, 422: error_response},
+    deprecated=True,
+)
 @handle_exceptions
-def list_project_stacks(
-    project_name_or_id: Union[str, UUID],
+def list_workspace_stacks(
+    workspace_name_or_id: Union[str, UUID],
     stack_filter_model: StackFilterModel = Depends(
         make_dependable(StackFilterModel)
     ),
@@ -266,41 +320,47 @@ def list_project_stacks(
         authorize, scopes=[PermissionType.READ]
     ),
 ) -> Page[StackResponseModel]:
-    """Get stacks that are part of a specific project for the user.
+    """Get stacks that are part of a specific workspace for the user.
 
     # noqa: DAR401
 
     Args:
-        project_name_or_id: Name or ID of the project.
+        workspace_name_or_id: Name or ID of the workspace.
         stack_filter_model: Filter model used for pagination, sorting, filtering
         auth_context: Authentication Context
 
     Returns:
-        All stacks part of the specified project.
+        All stacks part of the specified workspace.
     """
-    project = zen_store().get_project(project_name_or_id)
-    stack_filter_model.set_scope_project(project.id)
+    workspace = zen_store().get_workspace(workspace_name_or_id)
+    stack_filter_model.set_scope_workspace(workspace.id)
     stack_filter_model.set_scope_user(user_id=auth_context.user.id)
     return zen_store().list_stacks(stack_filter_model=stack_filter_model)
 
 
 @router.post(
-    "/{project_name_or_id}" + STACKS,
+    WORKSPACES + "/{workspace_name_or_id}" + STACKS,
     response_model=StackResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
+@router.post(
+    PROJECTS + "/{workspace_name_or_id}" + STACKS,
+    response_model=StackResponseModel,
+    responses={401: error_response, 409: error_response, 422: error_response},
+    deprecated=True,
+)
 @handle_exceptions
 def create_stack(
-    project_name_or_id: Union[str, UUID],
+    workspace_name_or_id: Union[str, UUID],
     stack: StackRequestModel,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.WRITE]
     ),
 ) -> StackResponseModel:
-    """Creates a stack for a particular project.
+    """Creates a stack for a particular workspace.
 
     Args:
-        project_name_or_id: Name or ID of the project.
+        workspace_name_or_id: Name or ID of the workspace.
         stack: Stack to register.
         auth_context: The authentication context.
 
@@ -308,15 +368,15 @@ def create_stack(
         The created stack.
 
     Raises:
-        IllegalOperationError: If the project or user specified in the stack
-            does not match the current project or authenticated user.
+        IllegalOperationError: If the workspace or user specified in the stack
+            does not match the current workspace or authenticated user.
     """
-    project = zen_store().get_project(project_name_or_id)
+    workspace = zen_store().get_workspace(workspace_name_or_id)
 
-    if stack.project != project.id:
+    if stack.workspace != workspace.id:
         raise IllegalOperationError(
-            "Creating stacks outside of the project scope "
-            f"of this endpoint `{project_name_or_id}` is "
+            "Creating stacks outside of the workspace scope "
+            f"of this endpoint `{workspace_name_or_id}` is "
             f"not supported."
         )
     if stack.user != auth_context.user.id:
@@ -329,13 +389,19 @@ def create_stack(
 
 
 @router.get(
-    "/{project_name_or_id}" + STACK_COMPONENTS,
+    WORKSPACES + "/{workspace_name_or_id}" + STACK_COMPONENTS,
     response_model=Page[ComponentResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@router.get(
+    PROJECTS + "/{workspace_name_or_id}" + STACK_COMPONENTS,
+    response_model=Page[ComponentResponseModel],
+    responses={401: error_response, 404: error_response, 422: error_response},
+    deprecated=True,
+)
 @handle_exceptions
-def list_project_stack_components(
-    project_name_or_id: Union[str, UUID],
+def list_workspace_stack_components(
+    workspace_name_or_id: Union[str, UUID],
     component_filter_model: ComponentFilterModel = Depends(
         make_dependable(ComponentFilterModel)
     ),
@@ -343,21 +409,22 @@ def list_project_stack_components(
         authorize, scopes=[PermissionType.READ]
     ),
 ) -> Page[ComponentResponseModel]:
-    """List stack components that are part of a specific project.
+    """List stack components that are part of a specific workspace.
 
     # noqa: DAR401
 
     Args:
-        project_name_or_id: Name or ID of the project.
+        workspace_name_or_id: Name or ID of the workspace.
         component_filter_model: Filter model used for pagination, sorting,
             filtering
         auth_context: Authentication Context
 
     Returns:
-        All stack components part of the specified project.
+        All stack components part of the specified workspace.
     """
-    project = zen_store().get_project(project_name_or_id)
-    component_filter_model.set_scope_project(project.id)
+    workspace = zen_store().get_workspace(workspace_name_or_id)
+    component_filter_model.workspace_id = workspace.id
+
     component_filter_model.set_scope_user(user_id=auth_context.user.id)
     return zen_store().list_stack_components(
         component_filter_model=component_filter_model
@@ -365,13 +432,19 @@ def list_project_stack_components(
 
 
 @router.post(
-    "/{project_name_or_id}" + STACK_COMPONENTS,
+    WORKSPACES + "/{workspace_name_or_id}" + STACK_COMPONENTS,
     response_model=ComponentResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
+@router.post(
+    PROJECTS + "/{workspace_name_or_id}" + STACK_COMPONENTS,
+    response_model=ComponentResponseModel,
+    responses={401: error_response, 409: error_response, 422: error_response},
+    deprecated=True,
+)
 @handle_exceptions
 def create_stack_component(
-    project_name_or_id: Union[str, UUID],
+    workspace_name_or_id: Union[str, UUID],
     component: ComponentRequestModel,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.WRITE]
@@ -380,7 +453,7 @@ def create_stack_component(
     """Creates a stack component.
 
     Args:
-        project_name_or_id: Name or ID of the project.
+        workspace_name_or_id: Name or ID of the workspace.
         component: Stack component to register.
         auth_context: Authentication context.
 
@@ -388,15 +461,15 @@ def create_stack_component(
         The created stack component.
 
     Raises:
-        IllegalOperationError: If the project or user specified in the stack
-            component does not match the current project or authenticated user.
+        IllegalOperationError: If the workspace or user specified in the stack
+            component does not match the current workspace or authenticated user.
     """
-    project = zen_store().get_project(project_name_or_id)
+    workspace = zen_store().get_workspace(workspace_name_or_id)
 
-    if component.project != project.id:
+    if component.workspace != workspace.id:
         raise IllegalOperationError(
-            "Creating components outside of the project scope "
-            f"of this endpoint `{project_name_or_id}` is "
+            "Creating components outside of the workspace scope "
+            f"of this endpoint `{workspace_name_or_id}` is "
             f"not supported."
         )
     if component.user != auth_context.user.id:
@@ -412,45 +485,57 @@ def create_stack_component(
 
 
 @router.get(
-    "/{project_name_or_id}" + FLAVORS,
+    WORKSPACES + "/{workspace_name_or_id}" + FLAVORS,
     response_model=Page[FlavorResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@router.get(
+    PROJECTS + "/{workspace_name_or_id}" + FLAVORS,
+    response_model=Page[FlavorResponseModel],
+    responses={401: error_response, 404: error_response, 422: error_response},
+    deprecated=True,
+)
 @handle_exceptions
-def list_project_flavors(
-    project_name_or_id: Optional[Union[str, UUID]] = None,
+def list_workspace_flavors(
+    workspace_name_or_id: Optional[Union[str, UUID]] = None,
     flavor_filter_model: FlavorFilterModel = Depends(
         make_dependable(FlavorFilterModel)
     ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[FlavorResponseModel]:
-    """List stack components flavors of a certain type that are part of a project.
+    """List stack components flavors of a certain type that are part of a workspace.
 
     # noqa: DAR401
 
     Args:
-        project_name_or_id: Name or ID of the project.
+        workspace_name_or_id: Name or ID of the workspace.
         flavor_filter_model: Filter model used for pagination, sorting,
             filtering
 
 
     Returns:
-        All stack components of a certain type that are part of a project.
+        All stack components of a certain type that are part of a workspace.
     """
-    if project_name_or_id:
-        project = zen_store().get_project(project_name_or_id)
-        flavor_filter_model.set_scope_project(project.id)
+    if workspace_name_or_id:
+        workspace = zen_store().get_workspace(workspace_name_or_id)
+        flavor_filter_model.workspace_id = workspace.id
     return zen_store().list_flavors(flavor_filter_model=flavor_filter_model)
 
 
 @router.post(
-    "/{project_name_or_id}" + FLAVORS,
+    WORKSPACES + "/{workspace_name_or_id}" + FLAVORS,
     response_model=FlavorResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
+@router.post(
+    PROJECTS + "/{workspace_name_or_id}" + FLAVORS,
+    response_model=FlavorResponseModel,
+    responses={401: error_response, 409: error_response, 422: error_response},
+    deprecated=True,
+)
 @handle_exceptions
 def create_flavor(
-    project_name_or_id: Union[str, UUID],
+    workspace_name_or_id: Union[str, UUID],
     flavor: FlavorRequestModel,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.WRITE]
@@ -459,7 +544,7 @@ def create_flavor(
     """Creates a stack component flavor.
 
     Args:
-        project_name_or_id: Name or ID of the project.
+        workspace_name_or_id: Name or ID of the workspace.
         flavor: Stack component flavor to register.
         auth_context: Authentication context.
 
@@ -467,16 +552,16 @@ def create_flavor(
         The created stack component flavor.
 
     Raises:
-        IllegalOperationError: If the project or user specified in the stack
-            component flavor does not match the current project or authenticated
+        IllegalOperationError: If the workspace or user specified in the stack
+            component flavor does not match the current workspace or authenticated
             user.
     """
-    project = zen_store().get_project(project_name_or_id)
+    workspace = zen_store().get_workspace(workspace_name_or_id)
 
-    if flavor.project != project.id:
+    if flavor.workspace != workspace.id:
         raise IllegalOperationError(
-            "Creating flavors outside of the project scope "
-            f"of this endpoint `{project_name_or_id}` is "
+            "Creating flavors outside of the workspace scope "
+            f"of this endpoint `{workspace_name_or_id}` is "
             f"not supported."
         )
     if flavor.user != auth_context.user.id:
@@ -492,45 +577,57 @@ def create_flavor(
 
 
 @router.get(
-    "/{project_name_or_id}" + PIPELINES,
+    WORKSPACES + "/{workspace_name_or_id}" + PIPELINES,
     response_model=Page[PipelineResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@router.get(
+    PROJECTS + "/{workspace_name_or_id}" + PIPELINES,
+    response_model=Page[PipelineResponseModel],
+    responses={401: error_response, 404: error_response, 422: error_response},
+    deprecated=True,
+)
 @handle_exceptions
-def list_project_pipelines(
-    project_name_or_id: Union[str, UUID],
+def list_workspace_pipelines(
+    workspace_name_or_id: Union[str, UUID],
     pipeline_filter_model: PipelineFilterModel = Depends(
         make_dependable(PipelineFilterModel)
     ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Page[PipelineResponseModel]:
-    """Gets pipelines defined for a specific project.
+    """Gets pipelines defined for a specific workspace.
 
     # noqa: DAR401
 
     Args:
-        project_name_or_id: Name or ID of the project.
+        workspace_name_or_id: Name or ID of the workspace.
         pipeline_filter_model: Filter model used for pagination, sorting,
             filtering
 
     Returns:
-        All pipelines within the project.
+        All pipelines within the workspace.
     """
-    project = zen_store().get_project(project_name_or_id)
-    pipeline_filter_model.set_scope_project(project.id)
+    workspace = zen_store().get_workspace(workspace_name_or_id)
+    pipeline_filter_model.workspace_id = workspace.id
     return zen_store().list_pipelines(
         pipeline_filter_model=pipeline_filter_model
     )
 
 
 @router.post(
-    "/{project_name_or_id}" + PIPELINES,
+    WORKSPACES + "/{workspace_name_or_id}" + PIPELINES,
     response_model=PipelineResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
+@router.post(
+    PROJECTS + "/{workspace_name_or_id}" + PIPELINES,
+    response_model=PipelineResponseModel,
+    responses={401: error_response, 409: error_response, 422: error_response},
+    deprecated=True,
+)
 @handle_exceptions
 def create_pipeline(
-    project_name_or_id: Union[str, UUID],
+    workspace_name_or_id: Union[str, UUID],
     pipeline: PipelineRequestModel,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.WRITE]
@@ -539,7 +636,7 @@ def create_pipeline(
     """Creates a pipeline.
 
     Args:
-        project_name_or_id: Name or ID of the project.
+        workspace_name_or_id: Name or ID of the workspace.
         pipeline: Pipeline to create.
         auth_context: Authentication context.
 
@@ -547,15 +644,15 @@ def create_pipeline(
         The created pipeline.
 
     Raises:
-        IllegalOperationError: If the project or user specified in the pipeline
-            does not match the current project or authenticated user.
+        IllegalOperationError: If the workspace or user specified in the pipeline
+            does not match the current workspace or authenticated user.
     """
-    project = zen_store().get_project(project_name_or_id)
+    workspace = zen_store().get_workspace(workspace_name_or_id)
 
-    if pipeline.project != project.id:
+    if pipeline.workspace != workspace.id:
         raise IllegalOperationError(
-            "Creating pipelines outside of the project scope "
-            f"of this endpoint `{project_name_or_id}` is "
+            "Creating pipelines outside of the workspace scope "
+            f"of this endpoint `{workspace_name_or_id}` is "
             f"not supported."
         )
     if pipeline.user != auth_context.user.id:
@@ -568,13 +665,19 @@ def create_pipeline(
 
 
 @router.get(
-    "/{project_name_or_id}" + RUNS,
+    WORKSPACES + "/{workspace_name_or_id}" + RUNS,
     response_model=Page[PipelineRunResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@router.get(
+    PROJECTS + "/{workspace_name_or_id}" + RUNS,
+    response_model=Page[PipelineRunResponseModel],
+    responses={401: error_response, 404: error_response, 422: error_response},
+    deprecated=True,
+)
 @handle_exceptions
 def list_runs(
-    project_name_or_id: Union[str, UUID],
+    workspace_name_or_id: Union[str, UUID],
     runs_filter_model: PipelineRunFilterModel = Depends(
         make_dependable(PipelineRunFilterModel)
     ),
@@ -583,27 +686,34 @@ def list_runs(
     """Get pipeline runs according to query filters.
 
     Args:
-        project_name_or_id: Name or ID of the project.
+        workspace_name_or_id: Name or ID of the workspace.
         runs_filter_model: Filter model used for pagination, sorting,
-                                   filtering
+            filtering
 
 
     Returns:
         The pipeline runs according to query filters.
     """
-    project = zen_store().get_project(project_name_or_id)
-    runs_filter_model.set_scope_project(project.id)
+    workspace = zen_store().get_workspace(workspace_name_or_id)
+    runs_filter_model.workspace_id = workspace.id
+
     return zen_store().list_runs(runs_filter_model=runs_filter_model)
 
 
 @router.post(
-    "/{project_name_or_id}" + SCHEDULES,
+    WORKSPACES + "/{workspace_name_or_id}" + SCHEDULES,
     response_model=ScheduleResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
+@router.post(
+    PROJECTS + "/{workspace_name_or_id}" + SCHEDULES,
+    response_model=ScheduleResponseModel,
+    responses={401: error_response, 409: error_response, 422: error_response},
+    deprecated=True,
+)
 @handle_exceptions
 def create_schedule(
-    project_name_or_id: Union[str, UUID],
+    workspace_name_or_id: Union[str, UUID],
     schedule: ScheduleRequestModel,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.WRITE]
@@ -612,7 +722,7 @@ def create_schedule(
     """Creates a schedule.
 
     Args:
-        project_name_or_id: Name or ID of the project.
+        workspace_name_or_id: Name or ID of the workspace.
         schedule: Schedule to create.
         auth_context: Authentication context.
 
@@ -620,15 +730,15 @@ def create_schedule(
         The created schedule.
 
     Raises:
-        IllegalOperationError: If the project or user specified in the schedule
-            does not match the current project or authenticated user.
+        IllegalOperationError: If the workspace or user specified in the schedule
+            does not match the current workspace or authenticated user.
     """
-    project = zen_store().get_project(project_name_or_id)
+    workspace = zen_store().get_workspace(workspace_name_or_id)
 
-    if schedule.project != project.id:
+    if schedule.workspace != workspace.id:
         raise IllegalOperationError(
-            "Creating pipeline runs outside of the project scope "
-            f"of this endpoint `{project_name_or_id}` is "
+            "Creating pipeline runs outside of the workspace scope "
+            f"of this endpoint `{workspace_name_or_id}` is "
             f"not supported."
         )
     if schedule.user != auth_context.user.id:
@@ -640,13 +750,19 @@ def create_schedule(
 
 
 @router.post(
-    "/{project_name_or_id}" + RUNS,
+    WORKSPACES + "/{workspace_name_or_id}" + RUNS,
     response_model=PipelineRunResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
+@router.post(
+    PROJECTS + "/{workspace_name_or_id}" + RUNS,
+    response_model=PipelineRunResponseModel,
+    responses={401: error_response, 409: error_response, 422: error_response},
+    deprecated=True,
+)
 @handle_exceptions
 def create_pipeline_run(
-    project_name_or_id: Union[str, UUID],
+    workspace_name_or_id: Union[str, UUID],
     pipeline_run: PipelineRunRequestModel,
     auth_context: AuthContext = Security(
         authorize, scopes=[PermissionType.WRITE]
@@ -656,7 +772,7 @@ def create_pipeline_run(
     """Creates a pipeline run.
 
     Args:
-        project_name_or_id: Name or ID of the project.
+        workspace_name_or_id: Name or ID of the workspace.
         pipeline_run: Pipeline run to create.
         auth_context: Authentication context.
         get_if_exists: If a similar pipeline run already exists, return it
@@ -666,15 +782,15 @@ def create_pipeline_run(
         The created pipeline run.
 
     Raises:
-        IllegalOperationError: If the project or user specified in the pipeline
-            run does not match the current project or authenticated user.
+        IllegalOperationError: If the workspace or user specified in the pipeline
+            run does not match the current workspace or authenticated user.
     """
-    project = zen_store().get_project(project_name_or_id)
+    workspace = zen_store().get_workspace(workspace_name_or_id)
 
-    if pipeline_run.project != project.id:
+    if pipeline_run.workspace != workspace.id:
         raise IllegalOperationError(
-            "Creating pipeline runs outside of the project scope "
-            f"of this endpoint `{project_name_or_id}` is "
+            "Creating pipeline runs outside of the workspace scope "
+            f"of this endpoint `{workspace_name_or_id}` is "
             f"not supported."
         )
     if pipeline_run.user != auth_context.user.id:
@@ -689,37 +805,45 @@ def create_pipeline_run(
 
 
 @router.get(
-    "/{project_name_or_id}" + STATISTICS,
+    WORKSPACES + "/{workspace_name_or_id}" + STATISTICS,
+    response_model=Dict[str, str],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@router.get(
+    PROJECTS + "/{workspace_name_or_id}" + STATISTICS,
     response_model=Dict[str, str],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def get_project_statistics(
-    project_name_or_id: Union[str, UUID],
+def get_workspace_statistics(
+    workspace_name_or_id: Union[str, UUID],
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
 ) -> Dict[str, int]:
-    """Gets statistics of a project.
+    """Gets statistics of a workspace.
 
     # noqa: DAR401
 
     Args:
-        project_name_or_id: Name or ID of the project to get statistics for.
+        workspace_name_or_id: Name or ID of the workspace to get statistics for.
 
     Returns:
-        All pipelines within the project.
+        All pipelines within the workspace.
     """
-    project = zen_store().get_project(project_name_or_id)
+    workspace = zen_store().get_workspace(workspace_name_or_id)
+
     return {
         "stacks": zen_store()
-        .list_stacks(StackFilterModel(project_id=project.id))
+        .list_stacks(StackFilterModel(scope_workspace=workspace.id))
         .total,
         "components": zen_store()
-        .list_stack_components(ComponentFilterModel(project_id=project.id))
+        .list_stack_components(
+            ComponentFilterModel(scope_workspace=workspace.id)
+        )
         .total,
         "pipelines": zen_store()
-        .list_pipelines(PipelineFilterModel(project_id=project.id))
+        .list_pipelines(PipelineFilterModel(scope_workspace=workspace.id))
         .total,
         "runs": zen_store()
-        .list_runs(PipelineRunFilterModel(project_id=project.id))
+        .list_runs(PipelineRunFilterModel(scope_workspace=workspace.id))
         .total,
     }

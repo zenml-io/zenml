@@ -116,7 +116,7 @@ class FlavorRegistry:
             # This is a small trick to convert the request to response
             id=UUID(int=0),
             user=client.active_user,
-            project=client.active_project,
+            workspace=client.active_workspace,
             created=datetime.utcnow(),
             updated=datetime.utcnow(),
         )
