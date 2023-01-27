@@ -178,6 +178,8 @@ class TemplateGenerator:
 
 
 class YAMLSerializationMixin(BaseModel):
+    """Class to serialize/deserialize pydantic models to/from YAML."""
+
     def yaml(self, sort_keys: bool = False, **kwargs: Any) -> str:
         """YAML string representation..
 
