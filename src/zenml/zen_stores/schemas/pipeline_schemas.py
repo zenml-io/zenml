@@ -23,9 +23,9 @@ from sqlmodel import Field, Relationship
 from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.models.pipeline_models import PipelineResponseModel
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
-from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
     from zenml.models import PipelineUpdateModel
@@ -41,15 +41,15 @@ class PipelineSchema(NamedSchema, table=True):
     docstring: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     spec: str = Field(sa_column=Column(TEXT, nullable=False))
 
-    project_id: UUID = build_foreign_key_field(
+    workspace_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=ProjectSchema.__tablename__,
-        source_column="project_id",
+        target=WorkspaceSchema.__tablename__,
+        source_column="workspace_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=False,
     )
-    project: "ProjectSchema" = Relationship(back_populates="pipelines")
+    workspace: "WorkspaceSchema" = Relationship(back_populates="pipelines")
 
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -91,7 +91,7 @@ class PipelineSchema(NamedSchema, table=True):
             return PipelineResponseModel(
                 id=self.id,
                 name=self.name,
-                project=self.project.to_model(),
+                workspace=self.workspace.to_model(),
                 user=self.user.to_model(True) if self.user else None,
                 docstring=self.docstring,
                 spec=PipelineSpec.parse_raw(self.spec),
@@ -102,7 +102,7 @@ class PipelineSchema(NamedSchema, table=True):
             return PipelineResponseModel(
                 id=self.id,
                 name=self.name,
-                project=self.project.to_model(),
+                workspace=self.workspace.to_model(),
                 user=self.user.to_model(True) if self.user else None,
                 runs=[r.to_model(_block_recursion=True) for r in x_runs],
                 docstring=self.docstring,

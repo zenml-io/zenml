@@ -20,11 +20,11 @@ from pydantic import BaseModel, Field
 
 from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
 from zenml.models.base_models import (
-    ProjectScopedRequestModel,
-    ProjectScopedResponseModel,
+    WorkspaceScopedRequestModel,
+    WorkspaceScopedResponseModel,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
-from zenml.models.filter_models import ProjectScopedFilterModel
+from zenml.models.filter_models import WorkspaceScopedFilterModel
 
 # ---- #
 # BASE #
@@ -60,7 +60,7 @@ class RunMetadataBaseModel(BaseModel):
 
 
 class RunMetadataResponseModel(
-    RunMetadataBaseModel, ProjectScopedResponseModel
+    RunMetadataBaseModel, WorkspaceScopedResponseModel
 ):
     """Response model for run metadata."""
 
@@ -70,7 +70,7 @@ class RunMetadataResponseModel(
 # ------ #
 
 
-class RunMetadataFilterModel(ProjectScopedFilterModel):
+class RunMetadataFilterModel(WorkspaceScopedFilterModel):
     """Model to enable advanced filtering of run metadata."""
 
     pipeline_run_id: Optional[Union[str, UUID]] = None
@@ -87,5 +87,7 @@ class RunMetadataFilterModel(ProjectScopedFilterModel):
 # ------- #
 
 
-class RunMetadataRequestModel(RunMetadataBaseModel, ProjectScopedRequestModel):
+class RunMetadataRequestModel(
+    RunMetadataBaseModel, WorkspaceScopedRequestModel
+):
     """Request model for run metadata."""

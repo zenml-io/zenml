@@ -1,7 +1,7 @@
 """Create Run Metadata Table [ec0d785ca296].
 
 Revision ID: ec0d785ca296
-Revises: 0.32.0
+Revises: 3944116bbd56
 Create Date: 2022-12-16 11:34:17.005750
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "ec0d785ca296"
-down_revision = "0.32.0"
+down_revision = "3944116bbd56"
 branch_labels = None
 depends_on = None
 
@@ -41,7 +41,9 @@ def upgrade() -> None:
             "stack_component_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
         ),
         sa.Column("user_id", sqlmodel.sql.sqltypes.GUID(), nullable=True),
-        sa.Column("project_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
+        sa.Column(
+            "workspace_id", sqlmodel.sql.sqltypes.GUID(), nullable=False
+        ),
         sa.Column("value", sa.TEXT(), nullable=False),
         sa.Column("id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
         sa.Column("created", sa.DateTime(), nullable=False),
@@ -55,9 +57,9 @@ def upgrade() -> None:
             ondelete="CASCADE",
         ),
         sa.ForeignKeyConstraint(
-            ["project_id"],
+            ["workspace_id"],
             ["workspace.id"],
-            name="fk_run_metadata_project_id_workspace",
+            name="fk_run_metadata_workspace_id_workspace",
             ondelete="CASCADE",
         ),
         sa.ForeignKeyConstraint(

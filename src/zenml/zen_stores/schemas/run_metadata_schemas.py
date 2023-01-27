@@ -30,10 +30,10 @@ from zenml.zen_stores.schemas.artifact_schemas import ArtifactSchema
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
-from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 
 class RunMetadataSchema(BaseSchema, table=True):
@@ -99,15 +99,15 @@ class RunMetadataSchema(BaseSchema, table=True):
     )
     user: Optional["UserSchema"] = Relationship(back_populates="run_metadata")
 
-    project_id: UUID = build_foreign_key_field(
+    workspace_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=ProjectSchema.__tablename__,
-        source_column="project_id",
+        target=WorkspaceSchema.__tablename__,
+        source_column="workspace_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=False,
     )
-    project: "ProjectSchema" = Relationship(back_populates="run_metadata")
+    workspace: "WorkspaceSchema" = Relationship(back_populates="run_metadata")
 
     key: str
     value: str = Field(sa_column=Column(TEXT, nullable=False))
@@ -128,7 +128,7 @@ class RunMetadataSchema(BaseSchema, table=True):
             key=self.key,
             value=json.loads(self.value),
             type=self.type,
-            project=self.project.to_model(),
+            workspace=self.workspace.to_model(),
             user=self.user.to_model() if self.user else None,
             created=self.created,
             updated=self.updated,
@@ -147,7 +147,7 @@ class RunMetadataSchema(BaseSchema, table=True):
             The created `RunMetadataSchema`.
         """
         return cls(
-            project_id=request.project,
+            workspace_id=request.workspace,
             user_id=request.user,
             pipeline_run_id=request.pipeline_run_id,
             step_run_id=request.step_run_id,

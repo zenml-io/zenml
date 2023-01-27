@@ -375,13 +375,11 @@ class StepRunner:
         """
         client = Client()
         active_user_id = client.active_user.id
-        active_project_id = client.active_project.id
+        active_workspace_id = client.active_workspace.id
         artifact_stores = client.active_stack_model.components.get(
             StackComponentType.ARTIFACT_STORE
         )
-        assert (
-            artifact_stores is not None
-        )  # Every stack has an artifact store.
+        assert artifact_stores  # Every stack has an artifact store.
         artifact_store_id = artifact_stores[0].id
         output_artifacts: Dict[str, ArtifactRequestModel] = {}
         output_artifact_metadata: Dict[str, Dict[str, "MetadataType"]] = {}
@@ -403,7 +401,7 @@ class StepRunner:
                 materializer=materializer_source,
                 data_type=source_utils.resolve_class(type(return_value)),
                 user=active_user_id,
-                project=active_project_id,
+                workspace=active_workspace_id,
                 artifact_store_id=artifact_store_id,
             )
             output_artifacts[output_name] = output_artifact

@@ -89,7 +89,7 @@ class LineageGraph(BaseModel):
                         artifact_type=artifact.type,
                         artifact_data_type=artifact.data_type,
                         parent_step_id=str(step.id),
-                        producer_step_id=str(artifact.producer_step_id),
+                        producer_step_id=str(artifact.producer_step_run_id),
                         uri=artifact.uri,
                         metadata=[
                             (m.key, str(m.value), str(m.type))
