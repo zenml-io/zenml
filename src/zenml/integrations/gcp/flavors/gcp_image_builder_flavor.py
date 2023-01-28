@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Google Cloud image builder flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING, Type
 
 from zenml.image_builders import BaseImageBuilderConfig, BaseImageBuilderFlavor
 from zenml.integrations.gcp import GCP_IMAGE_BUILDER_FLAVOR
@@ -33,13 +33,10 @@ class GCPImageBuilderConfig(
     """Google Cloud Builder image builder configuration.
 
     Attributes:
-        project: GCP project name. If `None`, the project will be inferred from
-            the environment. Defaults to `None`.
         cloud_builder_image: The name of the Docker image to use for the build
             steps. Defaults to `gcr.io/cloud-builders/docker`.
     """
 
-    project: Optional[str] = None
     cloud_builder_image: str = DEFAULT_CLOUD_BUILDER_IMAGE
 
 
