@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Kaniko image builder implementation."""
 
-import hashlib
 import json
 import random
 import shutil
@@ -25,9 +24,11 @@ from zenml.client import Client
 from zenml.enums import StackComponentType
 from zenml.image_builders import BaseImageBuilder
 from zenml.integrations.kaniko.flavors import KanikoImageBuilderConfig
-from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.stack import StackValidator
+from zenml.utils.image_builder_context_uploader import (
+    ImageBuilderContextUploader,
+)
 
 if TYPE_CHECKING:
     from zenml.container_registries import BaseContainerRegistry
@@ -282,28 +283,10 @@ class KanikoImageBuilder(BaseImageBuilder):
             The path of the uploaded build context.
         """
         artifact_store = Client().active_stack.artifact_store
-
-        hash_ = hashlib.sha1()
-        with tempfile.NamedTemporaryFile(mode="w+b") as f:
-            build_context.write_archive(f, gzip=True)
-
-            while True:
-                data = f.read(64 * 1024)
-                if not data:
-                    break
-                hash_.update(data)
-
-            filename = f"{hash_.hexdigest()}.tar.gz"
-            filepath = f"{artifact_store.path}/kaniko-contexts/{filename}"
-            if not fileio.exists(filepath):
-                logger.info(
-                    "Uploading Kaniko build context to `%s`.", filepath
-                )
-                fileio.copy(f.name, filepath)
-            else:
-                logger.info("Build context already exists, not uploading.")
-
-        return filepath
+        parent_path = f"{artifact_store.path}/kaniko-contexts"
+        return ImageBuilderContextUploader.upload_build_context(
+            build_context=build_context, parent_path=parent_path
+        )
 
     @staticmethod
     def _write_build_context(
