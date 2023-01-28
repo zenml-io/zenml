@@ -14,6 +14,7 @@
 """Implementation of Docker image build context uploader."""
 
 import hashlib
+import os
 import tempfile
 from typing import TYPE_CHECKING
 
@@ -55,7 +56,7 @@ class ImageBuilderContextUploader:
                 hash_.update(data)
 
             filename = f"{hash_.hexdigest()}.tar.gz"
-            filepath = f"{parent_path}/{filename}"
+            filepath = os.path.join(parent_path, filename)
             if not fileio.exists(filepath):
                 logger.info("Uploading build context to `%s`.", filepath)
                 fileio.copy(f.name, filepath)
