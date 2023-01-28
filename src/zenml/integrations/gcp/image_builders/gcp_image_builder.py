@@ -108,8 +108,15 @@ class GCPImageBuilder(BaseImageBuilder, GoogleCredentialsMixin):
             The Docker image name with digest.
 
         Raises:
+            RuntimeError: If no container registry is passed.
             RuntimeError: If the Cloud Build build fails.
         """
+        if not container_registry:
+            raise RuntimeError(
+                "The GCP Image Builder requires a container registry to push "
+                "the image to. Please provide one and try again."
+            )
+
         logger.info("Using Cloud Build to build image `%s`", image_name)
         cloud_build_context = self._upload_build_context(
             build_context=build_context
