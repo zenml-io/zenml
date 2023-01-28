@@ -46,7 +46,7 @@ class ImageBuilderContextUploader:
             The path to the uploaded build context.
         """
         hash_ = hashlib.sha1()
-        with tempfile.NamedTemporaryFile(mode="w+b") as f:
+        with tempfile.NamedTemporaryFile(mode="w+b", delete=False) as f:
             build_context.write_archive(f, gzip=True)
 
             while True:
@@ -63,4 +63,5 @@ class ImageBuilderContextUploader:
             else:
                 logger.info("Build context already exists, not uploading.")
 
+        os.unlink(f.name)
         return filepath
