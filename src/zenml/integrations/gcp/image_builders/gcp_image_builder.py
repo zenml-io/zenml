@@ -105,7 +105,7 @@ class GCPImageBuilder(BaseImageBuilder, GoogleCredentialsMixin):
             container_registry: Optional container registry to push to.
 
         Returns:
-            The Docker image repo digest.
+            The Docker image name with digest.
 
         Raises:
             RuntimeError: If the Cloud Build build fails.
@@ -117,8 +117,9 @@ class GCPImageBuilder(BaseImageBuilder, GoogleCredentialsMixin):
         build = self._configure_cloud_build(
             image_name=image_name, cloud_build_context=cloud_build_context
         )
-        self._run_cloud_build(build=build)
-        return image_name
+        image_digest = self._run_cloud_build(build=build)
+        image_name_with_digest = f"{image_name}@{image_digest}"
+        return image_name_with_digest
 
     @staticmethod
     def _upload_build_context(build_context: "BuildContext") -> str:
@@ -159,7 +160,7 @@ class GCPImageBuilder(BaseImageBuilder, GoogleCredentialsMixin):
 
         cloud_builder_image = self.config.cloud_builder_image
         logger.info(
-            "Using Cloud Builder image `%s` to run the steps",
+            "Using Cloud Builder image `%s` to run the steps in the build",
             cloud_builder_image,
         )
 
@@ -179,13 +180,17 @@ class GCPImageBuilder(BaseImageBuilder, GoogleCredentialsMixin):
                     "args": ["push", image_name],
                 },
             ],
+            images=[image_name],
         )
 
-    def _run_cloud_build(self, build: cloudbuild_v1.Build) -> None:
+    def _run_cloud_build(self, build: cloudbuild_v1.Build) -> str:
         """Executes the Cloud Build run to build the Docker image.
 
         Args:
             build: The build to run.
+
+        Returns:
+            The Docker image repo digest.
 
         Raises:
             RuntimeError: If the Cloud Build run has failed.
@@ -193,10 +198,14 @@ class GCPImageBuilder(BaseImageBuilder, GoogleCredentialsMixin):
         credentials, project_id = self._get_authentication()
         client = cloudbuild_v1.CloudBuildClient(credentials=credentials)
 
-        logger.info("Running Cloud Build to build the Docker image...")
         operation = client.create_build(project_id=project_id, build=build)
+        log_url = operation.metadata.build.log_url
+        logger.info(
+            "Running Cloud Build to build the Docker image. Cloud Build logs: `%s`",
+            log_url,
+        )
+
         result = operation.result()
-        log_url = result.log_url
 
         if result.status != cloudbuild_v1.Build.Status.SUCCESS:
             raise RuntimeError(
@@ -208,3 +217,6 @@ class GCPImageBuilder(BaseImageBuilder, GoogleCredentialsMixin):
             f"The Docker image has been built successfully. More information can "
             f"be found in the Cloud Build logs: `{log_url}`."
         )
+
+        image_digest: str = result.results.images[0].digest
+        return image_digest
