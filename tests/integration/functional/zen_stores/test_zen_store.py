@@ -20,33 +20,40 @@ from pydantic import BaseModel
 
 from tests.integration.functional.zen_stores.utils import sample_name
 from zenml.client import Client
-from zenml.enums import StoreType, StackComponentType
+from zenml.constants import DEFAULT_STACK
+from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import EntityExistsError, IllegalOperationError
 from zenml.models import (
     BaseFilterModel,
+    ComponentFilterModel,
+    ComponentRequestModel,
+    ComponentUpdateModel,
     ProjectFilterModel,
     ProjectRequestModel,
     ProjectUpdateModel,
     RoleFilterModel,
     RoleRequestModel,
     RoleUpdateModel,
+    TeamFilterModel,
     TeamRequestModel,
+    TeamRoleAssignmentRequestModel,
     TeamUpdateModel,
     UserFilterModel,
     UserRequestModel,
-    UserUpdateModel, UserRoleAssignmentRequestModel,
-    TeamRoleAssignmentRequestModel, TeamFilterModel, StackRequestModel,
-    StackUpdateModel, StackFilterModel, ComponentRequestModel,
-    ComponentUpdateModel, ComponentFilterModel,
+    UserRoleAssignmentRequestModel,
+    UserUpdateModel, StackUpdateModel,
 )
-from zenml.models.base_models import BaseRequestModel, BaseResponseModel, \
-    ProjectScopedRequestModel
+from zenml.models.base_models import (
+    BaseRequestModel,
+    BaseResponseModel,
+    ProjectScopedRequestModel,
+)
 from zenml.models.page_model import Page
 from zenml.zen_stores.base_zen_store import (
     DEFAULT_ADMIN_ROLE,
     DEFAULT_GUEST_ROLE,
     DEFAULT_PROJECT_NAME,
-    DEFAULT_USERNAME,
+    DEFAULT_USERNAME, DEFAULT_STACK_NAME,
 )
 
 DEFAULT_NAME = "default"
@@ -66,25 +73,52 @@ class CrudTestConfig(BaseModel):
     (entities with a `name` field)
     """
 
-    zen_store_list_method: Callable[[BaseFilterModel], Page[AnyResponseModel]]
-    zen_store_get_method: Callable[[uuid.UUID], AnyResponseModel]
-    zen_store_create_method: Callable[[AnyRequestModel], AnyResponseModel]
-    zen_store_update_method: Callable[
-        [uuid.UUID, AnyRequestModel], AnyResponseModel
-    ]
-    zen_store_delete_method: Callable[[uuid.UUID], None]
+    zen_store_list_method: str
+    zen_store_get_method: str
+    zen_store_create_method: str
+    zen_store_update_method: str
+    zen_store_delete_method: str
     create_model: "BaseRequestModel"
     update_model: "BaseRequestModel"
     filter_model: Type[BaseFilterModel]
     entity_name: str
 
+    @property
+    def list_method(
+        self,
+    ) -> Callable[[BaseFilterModel], Page[AnyResponseModel]]:
+        store = Client().zen_store
+        return getattr(store, self.zen_store_list_method)
+
+    @property
+    def get_method(self) -> Callable[[uuid.UUID], AnyResponseModel]:
+        store = Client().zen_store
+        return getattr(store, self.zen_store_get_method)
+
+    @property
+    def delete_method(self) -> Callable[[uuid.UUID], None]:
+        store = Client().zen_store
+        return getattr(store, self.zen_store_delete_method)
+
+    @property
+    def create_method(self) -> Callable[[AnyRequestModel], AnyResponseModel]:
+        store = Client().zen_store
+        return getattr(store, self.zen_store_create_method)
+
+    @property
+    def update_method(
+        self,
+    ) -> Callable[[uuid.UUID, AnyRequestModel], AnyResponseModel]:
+        store = Client().zen_store
+        return getattr(store, self.zen_store_update_method)
+
 
 project_crud_test_config = CrudTestConfig(
-    zen_store_list_method=Client().zen_store.list_projects,
-    zen_store_get_method=Client().zen_store.get_project,
-    zen_store_create_method=Client().zen_store.create_project,
-    zen_store_update_method=Client().zen_store.update_project,
-    zen_store_delete_method=Client().zen_store.delete_project,
+    zen_store_list_method="list_projects",
+    zen_store_get_method="get_project",
+    zen_store_create_method="create_project",
+    zen_store_update_method="update_project",
+    zen_store_delete_method="delete_project",
     create_model=ProjectRequestModel(name=sample_name("sample_project")),
     update_model=ProjectUpdateModel(
         name=sample_name("updated_sample_project")
@@ -95,11 +129,11 @@ project_crud_test_config = CrudTestConfig(
 
 
 user_crud_test_config = CrudTestConfig(
-    zen_store_list_method=Client().zen_store.list_users,
-    zen_store_get_method=Client().zen_store.get_user,
-    zen_store_create_method=Client().zen_store.create_user,
-    zen_store_update_method=Client().zen_store.update_user,
-    zen_store_delete_method=Client().zen_store.delete_user,
+    zen_store_list_method="list_users",
+    zen_store_get_method="get_user",
+    zen_store_create_method="create_user",
+    zen_store_update_method="update_user",
+    zen_store_delete_method="delete_user",
     create_model=UserRequestModel(name=sample_name("sample_user")),
     update_model=UserUpdateModel(name=sample_name("updated_sample_user")),
     filter_model=UserFilterModel,
@@ -108,53 +142,58 @@ user_crud_test_config = CrudTestConfig(
 
 
 role_crud_test_config = CrudTestConfig(
-    zen_store_list_method=Client().zen_store.list_roles,
-    zen_store_get_method=Client().zen_store.get_role,
-    zen_store_create_method=Client().zen_store.create_role,
-    zen_store_update_method=Client().zen_store.update_role,
-    zen_store_delete_method=Client().zen_store.delete_role,
-    create_model=RoleRequestModel(name=sample_name("sample_role"), permissions=set()),
+    zen_store_list_method="list_roles",
+    zen_store_get_method="get_role",
+    zen_store_create_method="create_role",
+    zen_store_update_method="update_role",
+    zen_store_delete_method="delete_role",
+    create_model=RoleRequestModel(
+        name=sample_name("sample_role"), permissions=set()
+    ),
     update_model=RoleUpdateModel(name=sample_name("updated_sample_role")),
     filter_model=RoleFilterModel,
     entity_name="role",
 )
 
 team_crud_test_config = CrudTestConfig(
-    zen_store_list_method=Client().zen_store.list_teams,
-    zen_store_get_method=Client().zen_store.get_team,
-    zen_store_create_method=Client().zen_store.create_team,
-    zen_store_update_method=Client().zen_store.update_team,
-    zen_store_delete_method=Client().zen_store.delete_team,
+    zen_store_list_method="list_teams",
+    zen_store_get_method="get_team",
+    zen_store_create_method="create_team",
+    zen_store_update_method="update_team",
+    zen_store_delete_method="delete_team",
     create_model=TeamRequestModel(name=sample_name("sample_team")),
     update_model=TeamUpdateModel(name=sample_name("updated_sample_team")),
     filter_model=TeamFilterModel,
     entity_name="team",
 )
 
-# component_crud_test_config = CrudTestConfig(
-#     zen_store_list_method=Client().zen_store.list_stack_components,
-#     zen_store_get_method=Client().zen_store.get_stack_component,
-#     zen_store_create_method=Client().zen_store.create_stack_component,
-#     zen_store_update_method=Client().zen_store.update_stack_component,
-#     zen_store_delete_method=Client().zen_store.delete_stack_component,
-#     create_model=ComponentRequestModel(name=sample_name("sample_component"),
-#                                        type=StackComponentType.ORCHESTRATOR,
-#                                        flavor="local",
-#                                        configuration={},
-#                                        user=uuid.uuid4(),
-#                                        project=uuid.uuid4()),
-#     update_model=ComponentUpdateModel(
-#         name=sample_name("updated_sample_component")),
-#     filter_model=ComponentFilterModel,
-#     entity_name="component",
-# )
+component_crud_test_config = CrudTestConfig(
+    zen_store_list_method="list_stack_components",
+    zen_store_get_method="get_stack_component",
+    zen_store_create_method="create_stack_component",
+    zen_store_update_method="update_stack_component",
+    zen_store_delete_method="delete_stack_component",
+    create_model=ComponentRequestModel(
+        name=sample_name("sample_component"),
+        type=StackComponentType.ORCHESTRATOR,
+        flavor="local",
+        configuration={},
+        user=uuid.uuid4(),
+        project=uuid.uuid4(),
+    ),
+    update_model=ComponentUpdateModel(
+        name=sample_name("updated_sample_component")
+    ),
+    filter_model=ComponentFilterModel,
+    entity_name="component",
+)
 
 list_of_entities = [
     project_crud_test_config,
     user_crud_test_config,
     role_crud_test_config,
     team_crud_test_config,
-#    component_crud_test_config
+    component_crud_test_config,
 ]
 
 
@@ -166,6 +205,7 @@ list_of_entities = [
 def test_basic_crud_for_entity(crud_test_config: CrudTestConfig):
     """Tests the basic crud operations for a given entity."""
     client = Client()
+
     # Create the entity
     create_model = crud_test_config.create_model
     if isinstance(create_model, ProjectScopedRequestModel):
@@ -174,54 +214,48 @@ def test_basic_crud_for_entity(crud_test_config: CrudTestConfig):
     # This generic test only works for entities with a name field
     assert create_model.name
     # Test the creation
-    created_entity = crud_test_config.zen_store_create_method(create_model)
+    created_entity = crud_test_config.create_method(create_model)
     # Filter by name to verify the entity was actually created
-    entities_list = crud_test_config.zen_store_list_method(
+    entities_list = crud_test_config.list_method(
         crud_test_config.filter_model(name=create_model.name)
     )
     assert entities_list.total > 0
     # Filter by id to verify the entity was actually created
-    entities_list = crud_test_config.zen_store_list_method(
+    entities_list = crud_test_config.list_method(
         crud_test_config.filter_model(id=created_entity.id)
     )
     assert entities_list.total > 0
     # Test the get method
     with does_not_raise():
-        returned_entity_by_id = crud_test_config.zen_store_get_method(
-            created_entity.id
-        )
-        returned_entity_by_name = crud_test_config.zen_store_get_method(
-            created_entity.name
-        )
+        returned_entity_by_id = crud_test_config.get_method(created_entity.id)
     assert returned_entity_by_id == created_entity
-    assert returned_entity_by_name == created_entity
     # Update the created entity
     update_model = crud_test_config.update_model
     assert update_model.name
     with does_not_raise():
-        updated_entity = crud_test_config.zen_store_update_method(
+        updated_entity = crud_test_config.update_method(
             created_entity.id, update_model
         )
     assert updated_entity.id == created_entity.id
     # Verify the entity can be found using the new name, not the old name
-    entities_list = crud_test_config.zen_store_list_method(
+    entities_list = crud_test_config.list_method(
         crud_test_config.filter_model(name=update_model.name)
     )
     assert entities_list.total > 0
-    entities_list = crud_test_config.zen_store_list_method(
+    entities_list = crud_test_config.list_method(
         crud_test_config.filter_model(name=create_model.name)
     )
     assert entities_list.total == 0
     # Cleanup
     with does_not_raise():
-        crud_test_config.zen_store_delete_method(created_entity.id)
+        crud_test_config.delete_method(created_entity.id)
     # Filter by name to verify the entity was actually deleted
-    entities_list = crud_test_config.zen_store_list_method(
+    entities_list = crud_test_config.list_method(
         crud_test_config.filter_model(name=update_model.name)
     )
     assert entities_list.total == 0
     # Filter by id to verify the entity was actually deleted
-    entities_list = crud_test_config.zen_store_list_method(
+    entities_list = crud_test_config.list_method(
         crud_test_config.filter_model(id=created_entity.id)
     )
     assert entities_list.total == 0
@@ -241,17 +275,17 @@ def test_create_entity_twice_fails(crud_test_config: CrudTestConfig):
         create_model.user = client.active_user.id
         create_model.project = client.active_project.id
     # First creation is successful
-    created_entity = crud_test_config.zen_store_create_method(
+    created_entity = crud_test_config.create_method(
         crud_test_config.create_model
     )
     # Second one fails
     with pytest.raises(EntityExistsError):
-        crud_test_config.zen_store_create_method(crud_test_config.create_model)
+        crud_test_config.create_method(crud_test_config.create_model)
     # Cleanup
     with does_not_raise():
-        crud_test_config.zen_store_delete_method(created_entity.id)
+        crud_test_config.delete_method(created_entity.id)
     # Filter by id to verify the entity was actually deleted
-    entities_list = crud_test_config.zen_store_list_method(
+    entities_list = crud_test_config.list_method(
         crud_test_config.filter_model(id=created_entity.id)
     )
     assert entities_list.total == 0
@@ -265,7 +299,7 @@ def test_create_entity_twice_fails(crud_test_config: CrudTestConfig):
 def test_get_nonexistent_entity_fails(crud_test_config: CrudTestConfig):
     """Tests getting a non-existent entity by id."""
     with pytest.raises(KeyError):
-        crud_test_config.zen_store_get_method(uuid.uuid4())
+        crud_test_config.get_method(uuid.uuid4())
 
 
 @pytest.mark.parametrize(
@@ -281,7 +315,7 @@ def test_updating_nonexisting_entity_raises_error(
     update_model = crud_test_config.update_model
     assert update_model.name
     with pytest.raises(KeyError):
-        crud_test_config.zen_store_update_method(uuid.uuid4(), update_model)
+        crud_test_config.update_method(uuid.uuid4(), update_model)
 
 
 @pytest.mark.parametrize(
@@ -294,7 +328,7 @@ def test_deleting_nonexistent_project_raises_error(
 ):
     """Tests deleting a nonexistent project raises an error."""
     with pytest.raises(KeyError):
-        crud_test_config.zen_store_delete_method(uuid.uuid4())
+        crud_test_config.delete_method(uuid.uuid4())
 
 
 # .----------.
@@ -638,10 +672,16 @@ def test_revoking_role_for_user_succeeds():
         project=None,
     )
     with does_not_raise():
-        role_assignment = zen_store.create_user_role_assignment(role_assignment)
-        zen_store.delete_user_role_assignment(user_role_assignment_id=role_assignment.id)
+        role_assignment = zen_store.create_user_role_assignment(
+            role_assignment
+        )
+        zen_store.delete_user_role_assignment(
+            user_role_assignment_id=role_assignment.id
+        )
     with pytest.raises(KeyError):
-        zen_store.get_user_role_assignment(user_role_assignment_id=role_assignment.id)
+        zen_store.get_user_role_assignment(
+            user_role_assignment_id=role_assignment.id
+        )
 
     # Cleanup
     with does_not_raise():
@@ -665,10 +705,16 @@ def test_revoking_role_for_team_succeeds():
         project=None,
     )
     with does_not_raise():
-        role_assignment = zen_store.create_team_role_assignment(role_assignment)
-        zen_store.delete_team_role_assignment(team_role_assignment_id=role_assignment.id)
+        role_assignment = zen_store.create_team_role_assignment(
+            role_assignment
+        )
+        zen_store.delete_team_role_assignment(
+            team_role_assignment_id=role_assignment.id
+        )
     with pytest.raises(KeyError):
-        zen_store.get_team_role_assignment(team_role_assignment_id=role_assignment.id)
+        zen_store.get_team_role_assignment(
+            team_role_assignment_id=role_assignment.id
+        )
 
     # Cleanup
     with does_not_raise():
@@ -680,17 +726,42 @@ def test_revoking_nonexistent_role_fails():
     """Tests revoking a nonexistent role fails."""
     zen_store = Client().zen_store
     with pytest.raises(KeyError):
-        zen_store.delete_team_role_assignment(team_role_assignment_id=uuid.uuid4())
+        zen_store.delete_team_role_assignment(
+            team_role_assignment_id=uuid.uuid4()
+        )
     with pytest.raises(KeyError):
-        zen_store.delete_user_role_assignment(user_role_assignment_id=uuid.uuid4())
+        zen_store.delete_user_role_assignment(
+            user_role_assignment_id=uuid.uuid4()
+        )
 
 
-#
-# #  .-------.
-# # | STACKS |
-# # '--------'
-#
-#
+#  .-------.
+# | STACKS |
+# '--------'
+
+
+def test_updating_default_stack_fails():
+    """Tests that updating the default stack is prohibited."""
+    client = Client()
+
+    default_stack = client.get_stack(DEFAULT_STACK_NAME)
+    assert default_stack.name == DEFAULT_PROJECT_NAME
+    stack_update = StackUpdateModel(name="axls_stack")
+    with pytest.raises(IllegalOperationError):
+        client.zen_store.update_stack(
+             stack_id=default_stack.id, stack_update=stack_update
+         )
+
+
+def test_deleting_default_stack_fails():
+    """Tests that deleting the default stack is prohibited."""
+    client = Client()
+
+    default_stack = client.get_stack(DEFAULT_STACK_NAME)
+    with pytest.raises(IllegalOperationError):
+        client.zen_store.delete_stack(default_stack.id)
+
+
 # def test_list_stacks_succeeds(
 #     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 # ):
@@ -787,19 +858,6 @@ def test_revoking_nonexistent_role_fails():
 #     )
 #
 #
-# def test_updating_default_stack_fails(
-#     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-# ):
-#     """Tests that updating the default stack is prohibited."""
-#     default_stack_id = sql_store["default_stack"].id
-#     default_stack = sql_store["store"].get_stack(default_stack_id)
-#     new_stack_name = "axls_stack"
-#     stack_update = StackUpdateModel(name=new_stack_name)
-#     with pytest.raises(IllegalOperationError):
-#         sql_store["store"].update_stack(
-#             stack_id=default_stack.id, stack_update=stack_update
-#         )
-#
 #
 # def test_updating_nonexistent_stack_fails(
 #     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
@@ -834,15 +892,6 @@ def test_revoking_nonexistent_role_fails():
 #     sql_store["store"].delete_stack(new_stack.id)
 #     with pytest.raises(KeyError):
 #         sql_store["store"].get_stack(new_stack.id)
-#
-#
-# def test_deleting_default_stack_fails(
-#     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-# ):
-#     """Tests that deleting the default stack is prohibited."""
-#     default_stack_id = sql_store["default_stack"].id
-#     with pytest.raises(IllegalOperationError):
-#         sql_store["store"].delete_stack(default_stack_id)
 #
 #
 # def test_deleting_nonexistent_stack_fails(
