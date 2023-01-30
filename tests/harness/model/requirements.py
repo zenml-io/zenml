@@ -27,11 +27,11 @@ from pydantic import Extra, Field
 from tests.harness.model.base import BaseTestConfigModel
 from tests.harness.model.secret import BaseTestSecretConfigModel
 from zenml.enums import StackComponentType
+from zenml.client import Client
 
 if TYPE_CHECKING:
     from tests.harness.environment import TestEnvironment
     from tests.harness.harness import TestHarness
-    from zenml.client import Client
     from zenml.models.component_models import ComponentResponseModel
 
 
