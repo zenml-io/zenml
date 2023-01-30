@@ -13,188 +13,53 @@
 #  permissions and limitations under the License.
 import uuid
 from contextlib import ExitStack as does_not_raise
-from typing import Callable, Type, TypeVar
 
 import pytest
-from pydantic import BaseModel
 
-from tests.integration.functional.zen_stores.utils import sample_name
+from tests.integration.functional.zen_stores.conftest import (
+    CrudTestConfig,
+    list_of_entities,
+    sample_name,
+)
+from tests.integration.functional.zen_stores.utils import pipeline_instance
 from zenml.client import Client
-from zenml.constants import DEFAULT_STACK
 from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import EntityExistsError, IllegalOperationError
 from zenml.models import (
-    BaseFilterModel,
+    ArtifactFilterModel,
     ComponentFilterModel,
-    ComponentRequestModel,
     ComponentUpdateModel,
+    PipelineRunFilterModel,
     ProjectFilterModel,
-    ProjectRequestModel,
     ProjectUpdateModel,
     RoleFilterModel,
     RoleRequestModel,
     RoleUpdateModel,
-    TeamFilterModel,
+    StackUpdateModel,
+    StepRunFilterModel,
     TeamRequestModel,
     TeamRoleAssignmentRequestModel,
     TeamUpdateModel,
-    UserFilterModel,
     UserRequestModel,
     UserRoleAssignmentRequestModel,
-    UserUpdateModel, StackUpdateModel,
+    UserUpdateModel,
 )
 from zenml.models.base_models import (
-    BaseRequestModel,
-    BaseResponseModel,
     ProjectScopedRequestModel,
 )
-from zenml.models.page_model import Page
 from zenml.zen_stores.base_zen_store import (
     DEFAULT_ADMIN_ROLE,
     DEFAULT_GUEST_ROLE,
     DEFAULT_PROJECT_NAME,
-    DEFAULT_USERNAME, DEFAULT_STACK_NAME,
+    DEFAULT_STACK_NAME,
+    DEFAULT_USERNAME,
 )
 
 DEFAULT_NAME = "default"
 
-# .------------.
-# | BASIC CRUD |
-# '------------'
-
-AnyRequestModel = TypeVar("AnyRequestModel", bound=BaseRequestModel)
-AnyResponseModel = TypeVar("AnyResponseModel", bound=BaseResponseModel)
-
-
-class CrudTestConfig(BaseModel):
-    """Model to collect all methods pertaining to a given entity.
-
-    Please Note: This implementation will only work for named entities,
-    (entities with a `name` field)
-    """
-
-    zen_store_list_method: str
-    zen_store_get_method: str
-    zen_store_create_method: str
-    zen_store_update_method: str
-    zen_store_delete_method: str
-    create_model: "BaseRequestModel"
-    update_model: "BaseRequestModel"
-    filter_model: Type[BaseFilterModel]
-    entity_name: str
-
-    @property
-    def list_method(
-        self,
-    ) -> Callable[[BaseFilterModel], Page[AnyResponseModel]]:
-        store = Client().zen_store
-        return getattr(store, self.zen_store_list_method)
-
-    @property
-    def get_method(self) -> Callable[[uuid.UUID], AnyResponseModel]:
-        store = Client().zen_store
-        return getattr(store, self.zen_store_get_method)
-
-    @property
-    def delete_method(self) -> Callable[[uuid.UUID], None]:
-        store = Client().zen_store
-        return getattr(store, self.zen_store_delete_method)
-
-    @property
-    def create_method(self) -> Callable[[AnyRequestModel], AnyResponseModel]:
-        store = Client().zen_store
-        return getattr(store, self.zen_store_create_method)
-
-    @property
-    def update_method(
-        self,
-    ) -> Callable[[uuid.UUID, AnyRequestModel], AnyResponseModel]:
-        store = Client().zen_store
-        return getattr(store, self.zen_store_update_method)
-
-
-project_crud_test_config = CrudTestConfig(
-    zen_store_list_method="list_projects",
-    zen_store_get_method="get_project",
-    zen_store_create_method="create_project",
-    zen_store_update_method="update_project",
-    zen_store_delete_method="delete_project",
-    create_model=ProjectRequestModel(name=sample_name("sample_project")),
-    update_model=ProjectUpdateModel(
-        name=sample_name("updated_sample_project")
-    ),
-    filter_model=ProjectFilterModel,
-    entity_name="project",
-)
-
-
-user_crud_test_config = CrudTestConfig(
-    zen_store_list_method="list_users",
-    zen_store_get_method="get_user",
-    zen_store_create_method="create_user",
-    zen_store_update_method="update_user",
-    zen_store_delete_method="delete_user",
-    create_model=UserRequestModel(name=sample_name("sample_user")),
-    update_model=UserUpdateModel(name=sample_name("updated_sample_user")),
-    filter_model=UserFilterModel,
-    entity_name="user",
-)
-
-
-role_crud_test_config = CrudTestConfig(
-    zen_store_list_method="list_roles",
-    zen_store_get_method="get_role",
-    zen_store_create_method="create_role",
-    zen_store_update_method="update_role",
-    zen_store_delete_method="delete_role",
-    create_model=RoleRequestModel(
-        name=sample_name("sample_role"), permissions=set()
-    ),
-    update_model=RoleUpdateModel(name=sample_name("updated_sample_role")),
-    filter_model=RoleFilterModel,
-    entity_name="role",
-)
-
-team_crud_test_config = CrudTestConfig(
-    zen_store_list_method="list_teams",
-    zen_store_get_method="get_team",
-    zen_store_create_method="create_team",
-    zen_store_update_method="update_team",
-    zen_store_delete_method="delete_team",
-    create_model=TeamRequestModel(name=sample_name("sample_team")),
-    update_model=TeamUpdateModel(name=sample_name("updated_sample_team")),
-    filter_model=TeamFilterModel,
-    entity_name="team",
-)
-
-component_crud_test_config = CrudTestConfig(
-    zen_store_list_method="list_stack_components",
-    zen_store_get_method="get_stack_component",
-    zen_store_create_method="create_stack_component",
-    zen_store_update_method="update_stack_component",
-    zen_store_delete_method="delete_stack_component",
-    create_model=ComponentRequestModel(
-        name=sample_name("sample_component"),
-        type=StackComponentType.ORCHESTRATOR,
-        flavor="local",
-        configuration={},
-        user=uuid.uuid4(),
-        project=uuid.uuid4(),
-    ),
-    update_model=ComponentUpdateModel(
-        name=sample_name("updated_sample_component")
-    ),
-    filter_model=ComponentFilterModel,
-    entity_name="component",
-)
-
-list_of_entities = [
-    project_crud_test_config,
-    user_crud_test_config,
-    role_crud_test_config,
-    team_crud_test_config,
-    component_crud_test_config,
-]
+# .--------------.
+# | GENERIC CRUD |
+# '--------------'
 
 
 @pytest.mark.parametrize(
@@ -211,8 +76,6 @@ def test_basic_crud_for_entity(crud_test_config: CrudTestConfig):
     if isinstance(create_model, ProjectScopedRequestModel):
         create_model.user = client.active_user.id
         create_model.project = client.active_project.id
-    # This generic test only works for entities with a name field
-    assert create_model.name
     # Test the creation
     created_entity = crud_test_config.create_method(create_model)
     # Filter by name to verify the entity was actually created
@@ -229,31 +92,24 @@ def test_basic_crud_for_entity(crud_test_config: CrudTestConfig):
     with does_not_raise():
         returned_entity_by_id = crud_test_config.get_method(created_entity.id)
     assert returned_entity_by_id == created_entity
-    # Update the created entity
-    update_model = crud_test_config.update_model
-    assert update_model.name
-    with does_not_raise():
-        updated_entity = crud_test_config.update_method(
-            created_entity.id, update_model
-        )
-    assert updated_entity.id == created_entity.id
-    # Verify the entity can be found using the new name, not the old name
-    entities_list = crud_test_config.list_method(
-        crud_test_config.filter_model(name=update_model.name)
-    )
-    assert entities_list.total > 0
-    entities_list = crud_test_config.list_method(
-        crud_test_config.filter_model(name=create_model.name)
-    )
-    assert entities_list.total == 0
+    if crud_test_config.update_model:
+        # Update the created entity
+        update_model = crud_test_config.update_model
+        with does_not_raise():
+            updated_entity = crud_test_config.update_method(
+                created_entity.id, update_model
+            )
+        # Ids should remain the same
+        assert updated_entity.id == created_entity.id
+        # Something in the Model should have changed
+        assert updated_entity.json() != created_entity.json()
+
     # Cleanup
     with does_not_raise():
         crud_test_config.delete_method(created_entity.id)
     # Filter by name to verify the entity was actually deleted
-    entities_list = crud_test_config.list_method(
-        crud_test_config.filter_model(name=update_model.name)
-    )
-    assert entities_list.total == 0
+    with pytest.raises(KeyError):
+        crud_test_config.get_method(created_entity.id)
     # Filter by id to verify the entity was actually deleted
     entities_list = crud_test_config.list_method(
         crud_test_config.filter_model(id=created_entity.id)
@@ -268,6 +124,10 @@ def test_basic_crud_for_entity(crud_test_config: CrudTestConfig):
 )
 def test_create_entity_twice_fails(crud_test_config: CrudTestConfig):
     """Tests getting a non-existent entity by id."""
+    if crud_test_config.entity_name == "artifact":
+        # Artifacts do not check for duplicates
+        pytest.skip()
+
     client = Client()
     # Create the entity
     create_model = crud_test_config.create_model
@@ -311,11 +171,13 @@ def test_updating_nonexisting_entity_raises_error(
     crud_test_config: CrudTestConfig,
 ):
     """Tests updating a nonexistent entity raises an error."""
-    # Update the created entity
-    update_model = crud_test_config.update_model
-    assert update_model.name
-    with pytest.raises(KeyError):
-        crud_test_config.update_method(uuid.uuid4(), update_model)
+    if crud_test_config.update_model:
+        # Update the created entity
+        update_model = crud_test_config.update_model
+        with pytest.raises(KeyError):
+            crud_test_config.update_method(uuid.uuid4(), update_model)
+    else:
+        pytest.skip()
 
 
 @pytest.mark.parametrize(
@@ -579,9 +441,9 @@ def test_deleting_assigned_role_fails():
         zen_store.delete_role(created_role.id)
 
 
-#  .----------------
-# | ROLE ASSIGNMENTS
-# '-----------------
+#  .-----------------.
+# | ROLE ASSIGNMENTS |
+# '------------------'
 
 
 def test_assigning_role_to_user_succeeds():
@@ -735,6 +597,79 @@ def test_revoking_nonexistent_role_fails():
         )
 
 
+# -----------------.
+# Stack components |
+# -----------------'
+
+# TODO: tests regarding sharing of components missing
+
+
+def test_update_default_stack_component_fails():
+    """Tests that updating default stack components fails."""
+    client = Client()
+    store = client.zen_store
+    default_artifact_store = store.list_stack_components(
+        ComponentFilterModel(
+            project_id=client.active_project.id,
+            type=StackComponentType.ARTIFACT_STORE,
+            name="default",
+        )
+    )[0]
+
+    default_orchestrator = store.list_stack_components(
+        ComponentFilterModel(
+            project_id=client.active_project.id,
+            type=StackComponentType.ORCHESTRATOR,
+            name="default",
+        )
+    )[0]
+
+    component_update = ComponentUpdateModel(name="aria")
+    with pytest.raises(IllegalOperationError):
+        store.update_stack_component(
+            component_id=default_orchestrator.id,
+            component_update=component_update,
+        )
+
+    default_orchestrator.name = "axl"
+    with pytest.raises(IllegalOperationError):
+        store.update_stack_component(
+            component_id=default_artifact_store.id,
+            component_update=component_update,
+        )
+
+
+def test_delete_default_stack_component_fails():
+    """Tests that deleting default stack components is prohibited."""
+    client = Client()
+    store = client.zen_store
+    default_artifact_store = store.list_stack_components(
+        ComponentFilterModel(
+            project_id=client.active_project.id,
+            type=StackComponentType.ARTIFACT_STORE,
+            name="default",
+        )
+    )[0]
+
+    default_orchestrator = store.list_stack_components(
+        ComponentFilterModel(
+            project_id=client.active_project.id,
+            type=StackComponentType.ORCHESTRATOR,
+            name="default",
+        )
+    )[0]
+
+    with pytest.raises(IllegalOperationError):
+        store.delete_stack_component(default_artifact_store.id)
+
+    with pytest.raises(IllegalOperationError):
+        store.delete_stack_component(default_orchestrator.id)
+
+
+# ------------------------.
+# Stack component flavors |
+# ------------------------'
+
 #  .-------.
 # | STACKS |
 # '--------'
@@ -749,8 +684,8 @@ def test_updating_default_stack_fails():
     stack_update = StackUpdateModel(name="axls_stack")
     with pytest.raises(IllegalOperationError):
         client.zen_store.update_stack(
-             stack_id=default_stack.id, stack_update=stack_update
-         )
+            stack_id=default_stack.id, stack_update=stack_update
+        )
 
 
 def test_deleting_default_stack_fails():
@@ -923,834 +858,112 @@ def test_deleting_default_stack_fails():
 #     sql_store["store"].delete_stack(new_stack.id)
 #     with pytest.raises(KeyError):
 #         sql_store["store"].get_stack(new_stack.id)
-#
-#
-# # ---------
-# # Pipelines
-# # ---------
-#
-#
-# def test_create_pipeline_succeeds(
-#     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-# ):
-#     """Tests creating pipeline."""
-#     project_id = sql_store["default_project"].id
-#     user_id = sql_store["active_user"].id
-#     spec = PipelineSpec(steps=[])
-#     new_pipeline = PipelineRequestModel(
-#         name="arias_pipeline",
-#         project=project_id,
-#         user=user_id,
-#         spec=spec,
-#     )
-#     sql_store["store"].create_pipeline(pipeline=new_pipeline)
-#     pipelines = sql_store["store"].list_pipelines()
-#     assert len(pipelines) == 1
-#     assert pipelines[0].name == "arias_pipeline"
-#
-#
-# def test_creating_identical_pipeline_fails(
-#     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-# ):
-#     """Tests creating identical pipeline fails."""
-#     project_id = sql_store["default_project"].id
-#     user_id = sql_store["active_user"].id
-#     spec = PipelineSpec(steps=[])
-#     new_pipeline = PipelineRequestModel(
-#         name="arias_pipeline",
-#         project=project_id,
-#         user=user_id,
-#         spec=spec,
-#     )
-#     sql_store["store"].create_pipeline(pipeline=new_pipeline)
-#     with pytest.raises(EntityExistsError):
-#         sql_store["store"].create_pipeline(pipeline=new_pipeline)
-#     pipelines = sql_store["store"].list_pipelines()
-#     assert len(pipelines) == 1
-#
-#
-# def test_get_pipeline_succeeds(
-#     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-# ):
-#     """Tests getting pipeline."""
-#     project_id = sql_store["default_project"].id
-#     user_id = sql_store["active_user"].id
-#     spec = PipelineSpec(steps=[])
-#     new_pipeline = PipelineRequestModel(
-#         name="arias_pipeline",
-#         project=project_id,
-#         user=user_id,
-#         spec=spec,
-#     )
-#     sql_store["store"].create_pipeline(pipeline=new_pipeline)
-#     pipeline_id = sql_store["store"].list_pipelines()[0].id
-#     pipeline = sql_store["store"].get_pipeline(pipeline_id=pipeline_id)
-#     assert pipeline is not None
-#     assert pipeline.name == "arias_pipeline"
-#
-#
-# def test_get_pipeline_fails_for_nonexistent_pipeline(
-#     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-# ):
-#     """Tests getting pipeline fails for nonexistent pipeline."""
-#     with pytest.raises(KeyError):
-#         sql_store["store"].get_pipeline(uuid.uuid4())
-#
-#
-# def test_list_pipelines_succeeds(
-#     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-# ):
-#     """Tests listing pipelines."""
-#     project_id = sql_store["default_project"].id
-#     user_id = sql_store["active_user"].id
-#     spec = PipelineSpec(steps=[])
-#     new_pipeline = PipelineRequestModel(
-#         name="arias_pipeline",
-#         project=project_id,
-#         user=user_id,
-#         spec=spec,
-#     )
-#     sql_store["store"].create_pipeline(pipeline=new_pipeline)
-#     with does_not_raise():
-#         pipelines = sql_store["store"].list_pipelines()
-#         assert len(pipelines) == 1
-#
-#
-# def test_update_pipeline_succeeds(
-#     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-# ):
-#     """Tests updating pipeline."""
-#     project_id = sql_store["default_project"].id
-#     user_id = sql_store["active_user"].id
-#     spec = PipelineSpec(steps=[])
-#     new_pipeline = PipelineRequestModel(
-#         name="arias_pipeline",
-#         project=project_id,
-#         user=user_id,
-#         spec=spec,
-#     )
-#     new_pipeline = sql_store["store"].create_pipeline(pipeline=new_pipeline)
-#
-#     pipeline_update = PipelineUpdateModel(
-#         name="blupus_ka_pipeline",
-#     )
-#     with does_not_raise():
-#         pipeline_update = sql_store["store"].update_pipeline(
-#             pipeline_id=new_pipeline.id, pipeline_update=pipeline_update
-#         )
-#     assert pipeline_update is not None
-#     assert pipeline_update.name == "blupus_ka_pipeline"
-#     assert pipeline_update.spec == new_pipeline.spec
-#
-#
-# def test_updating_nonexistent_pipeline_fails(
-#     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-# ):
-#     """Tests updating nonexistent pipeline fails."""
-#     project_id = sql_store["default_project"].id
-#     user_id = sql_store["active_user"].id
-#     spec = PipelineSpec(steps=[])
-#     pipeline_update = PipelineUpdateModel(
-#         name="blupus_ka_pipeline",
-#         project=project_id,
-#         user=user_id,
-#         spec=spec,
-#     )
-#     with pytest.raises(KeyError):
-#         sql_store["store"].update_pipeline(
-#             pipeline_id=uuid.uuid4(), pipeline_update=pipeline_update
-#         )
-#
-#
-# def test_deleting_pipeline_succeeds(
-#     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-# ):
-#     """Tests deleting pipeline."""
-#     project_id = sql_store["default_project"].id
-#     user_id = sql_store["active_user"].id
-#     spec = PipelineSpec(steps=[])
-#     new_pipeline = PipelineRequestModel(
-#         name="arias_pipeline",
-#         project=project_id,
-#         user=user_id,
-#         spec=spec,
-#     )
-#     sql_store["store"].create_pipeline(pipeline=new_pipeline)
-#     pipeline_id = sql_store["store"].list_pipelines()[0].id
-#     sql_store["store"].delete_pipeline(pipeline_id)
-#     assert len(sql_store["store"].list_pipelines()) == 0
-#     with pytest.raises(KeyError):
-#         sql_store["store"].get_pipeline(pipeline_id)
-#
-#
-# def test_deleting_nonexistent_pipeline_fails(
-#     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-# ):
-#     """Tests deleting nonexistent pipeline fails."""
-#     with pytest.raises(KeyError):
-#         sql_store["store"].delete_pipeline(uuid.uuid4())
-#
-#
-# # --------------
-# # Pipeline runs
-# # --------------
-#
-#
-# def test_getting_run_succeeds(
-#     sql_store_with_run: BaseZenStore,
-# ):
-#     """Tests getting run."""
-#     run_id = sql_store_with_run["pipeline_run"].id
-#     with does_not_raise():
-#         run = sql_store_with_run["store"].get_run(run_id)
-#         assert run is not None
-#         assert run.name == sql_store_with_run["pipeline_run"].name
-#
-#
-# def test_getting_nonexistent_run_fails(
-#     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-# ):
-#     """Tests getting nonexistent run fails."""
-#     with pytest.raises(KeyError):
-#         sql_store["store"].get_run(uuid.uuid4())
-#
-#
-# def test_list_runs_succeeds(
-#     sql_store_with_run: BaseZenStore,
-# ):
-#     """Tests listing runs."""
-#     run = sql_store_with_run["pipeline_run"]
-#     with does_not_raise():
-#         runs = sql_store_with_run["store"].list_runs()
-#         assert len(runs) == 1
-#         assert runs[0].name == run.name
-#
-#
-# def test_list_runs_returns_nothing_when_no_runs_exist(
-#     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-# ):
-#     """Tests listing runs returns nothing when no runs exist."""
-#     runs = sql_store["store"].list_runs()
-#     assert len(runs) == 0
-#
-#     with pytest.raises(KeyError):
-#         sql_store["store"].list_runs(project_name_or_id=uuid.uuid4())
-#
-#     false_stack_runs = sql_store["store"].list_runs(stack_id=uuid.uuid4())
-#     assert len(false_stack_runs) == 0
-#
-#     false_run_name_runs = sql_store["store"].list_runs(name="not_arias_run")
-#     assert len(false_run_name_runs) == 0
-#
-#     with pytest.raises(KeyError):
-#         sql_store["store"].list_runs(user_name_or_id=uuid.uuid4())
-#
-#     false_pipeline_runs = sql_store["store"].list_runs(pipeline_id=uuid.uuid4())
-#     assert len(false_pipeline_runs) == 0
-#
-#
-# def test_list_runs_is_ordered(sql_store_with_runs):
-#     """Tests listing runs returns ordered runs."""
-#     runs = sql_store_with_runs["store"].list_runs()
-#     assert len(runs) == 10
-#     assert all(
-#         runs[i].created <= runs[i + 1].created for i in range(len(runs) - 1)
-#     )
-#
-#
-# def test_update_run_succeeds(sql_store_with_run):
-#     """Tests updating run."""
-#     run_id = sql_store_with_run["pipeline_run"].id
-#     run = sql_store_with_run["store"].get_run(run_id)
-#     assert run.status == ExecutionStatus.COMPLETED
-#     run_update = PipelineRunUpdateModel(
-#         status=ExecutionStatus.FAILED,
-#     )
-#     sql_store_with_run["store"].update_run(run_id, run_update)
-#     run = sql_store_with_run["store"].get_run(run_id)
-#     assert run.status == ExecutionStatus.FAILED
-#
-#
-# def test_update_nonexistent_run_fails(sql_store):
-#     """Tests updating nonexistent run fails."""
-#     with pytest.raises(KeyError):
-#         sql_store["store"].update_run(uuid.uuid4(), PipelineRunUpdateModel())
-#
-#
-# def test_deleting_run_succeeds(sql_store_with_run):
-#     """Tests deleting run."""
-#     assert len(sql_store_with_run["store"].list_runs()) == 1
-#     run_id = sql_store_with_run["pipeline_run"].id
-#     sql_store_with_run["store"].delete_run(run_id)
-#     assert len(sql_store_with_run["store"].list_runs()) == 0
-#     with pytest.raises(KeyError):
-#         sql_store_with_run["store"].get_run(run_id)
-#
-#
-# def test_deleting_nonexistent_run_fails(sql_store):
-#     """Tests deleting nonexistent run fails."""
-#     with pytest.raises(KeyError):
-#         sql_store["store"].delete_run(uuid.uuid4())
-#
-#
-# def test_deleting_run_deletes_steps(sql_store_with_run):
-#     """Tests deleting run deletes its steps."""
-#     assert len(sql_store_with_run["store"].list_run_steps()) == 2
-#     run_id = sql_store_with_run["pipeline_run"].id
-#     sql_store_with_run["store"].delete_run(run_id)
-#     assert len(sql_store_with_run["store"].list_run_steps()) == 0
-#
-#
-# # ------------------
-# # Pipeline run steps
-# # ------------------
-#
-#
-# def test_get_run_step_succeeds(
-#     sql_store_with_run: BaseZenStore,
-# ):
-#     """Tests getting run step."""
-#     pipeline_step = sql_store_with_run["step"]
-#     run_step = sql_store_with_run["store"].get_run_step(
-#         step_run_id=pipeline_step.id
-#     )
-#     assert run_step is not None
-#     assert run_step.id == pipeline_step.id
-#     assert run_step == pipeline_step
-#
-#
-# def test_get_run_step_fails_when_step_does_not_exist(
-#     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-# ):
-#     """Tests getting run step fails when step does not exist."""
-#     with pytest.raises(KeyError):
-#         sql_store["store"].get_run_step(step_run_id=uuid.uuid4())
-#
-#
-# def test_get_run_step_outputs_succeeds(
-#     sql_store_with_run: BaseZenStore,
-# ):
-#     """Tests getting run step outputs."""
-#     pipeline_step = sql_store_with_run["step"]
-#     store = sql_store_with_run["store"]
-#     run_step_outputs = store.get_run_step(pipeline_step.id).output_artifacts
-#     assert len(run_step_outputs) == 1
-#
-#
-# def test_get_run_step_inputs_succeeds(
-#     sql_store_with_run: BaseZenStore,
-# ):
-#     """Tests getting run step inputs."""
-#     pipeline_step = sql_store_with_run["step"]
-#     store = sql_store_with_run["store"]
-#     run_step_inputs = store.get_run_step(pipeline_step.id).input_artifacts
-#     assert len(run_step_inputs) == 1
-#
-#
-# def test_get_run_step_status_succeeds(
-#     sql_store_with_run: BaseZenStore,
-# ):
-#     """Tests getting run step status."""
-#     pipeline_step = sql_store_with_run["step"]
-#     run_step_status = (
-#         sql_store_with_run["store"]
-#         .get_run_step(step_run_id=pipeline_step.id)
-#         .status
-#     )
-#     assert run_step_status is not None
-#     assert isinstance(run_step_status, ExecutionStatus)
-#     assert run_step_status == ExecutionStatus.COMPLETED
-#
-#
-# def test_list_run_steps_succeeds(
-#     sql_store_with_run: BaseZenStore,
-# ):
-#     """Tests listing run steps."""
-#     run_steps = sql_store_with_run["store"].list_run_steps(
-#         run_id=sql_store_with_run["pipeline_run"].id
-#     )
-#     assert len(run_steps) == 2
-#     assert run_steps[1] == sql_store_with_run["step"]
-#
-#
-# def test_update_run_step_succeeds(sql_store_with_run):
-#     """Tests updating run step."""
-#     step_run = sql_store_with_run["step"]
-#     store = sql_store_with_run["store"]
-#     step_run = store.get_run_step(step_run_id=step_run.id)
-#     assert step_run.status == ExecutionStatus.COMPLETED
-#     run_update = StepRunUpdateModel(status=ExecutionStatus.FAILED)
-#     updated_run = store.update_run_step(step_run.id, run_update)
-#     assert updated_run.status == ExecutionStatus.FAILED
-#     step_run = store.get_run_step(step_run_id=step_run.id)
-#     assert step_run.status == ExecutionStatus.FAILED
-#
-#
-# def test_update_run_step_fails_when_step_does_not_exist(sql_store):
-#     """Tests updating run step fails when step does not exist."""
-#     run_update = StepRunUpdateModel(status=ExecutionStatus.FAILED)
-#     with pytest.raises(KeyError):
-#         sql_store["store"].update_run_step(uuid.uuid4(), run_update)
-#
-#
-# # ---------
-# # Artifacts
-# # ---------
-#
-#
-# def test_create_artifact_succeeds(sql_store):
-#     """Tests creating artifact."""
-#     artifact_name = "test_artifact"
-#     artifact = ArtifactRequestModel(
-#         name=artifact_name,
-#         type=ArtifactType.DATA,
-#         uri="",
-#         materializer="",
-#         data_type="",
-#         user=sql_store["active_user"].id,
-#         project=sql_store["default_project"].id,
-#     )
-#     with does_not_raise():
-#         created_artifact = sql_store["store"].create_artifact(artifact=artifact)
-#         assert created_artifact.name == artifact_name
-#
-#
-# def get_artifact_succeeds(sql_store_with_run):
-#     """Tests getting artifact."""
-#     artifact = sql_store_with_run["store"].get_artifact(
-#         artifact_id=sql_store_with_run["artifact"].id
-#     )
-#     assert artifact is not None
-#     assert artifact == sql_store_with_run["artifact"]
-#
-#
-# def test_get_artifact_fails_when_artifact_does_not_exist(sql_store):
-#     """Tests getting artifact fails when artifact does not exist."""
-#     with pytest.raises(KeyError):
-#         sql_store["store"].get_artifact(artifact_id=uuid.uuid4())
-#
-#
-# def test_list_artifacts_succeeds(sql_store_with_run):
-#     """Tests listing artifacts."""
-#     artifacts = sql_store_with_run["store"].list_artifacts()
-#     assert len(artifacts) == 2
-#     assert artifacts[0] == sql_store_with_run["artifact"]
-#
-#
-# def test_list_unused_artifacts(sql_store_with_run):
-#     """Tests listing with `unused=True` only returns unused artifacts."""
-#     artifacts = sql_store_with_run["store"].list_artifacts()
-#     assert len(artifacts) == 2
-#     artifacts = sql_store_with_run["store"].list_artifacts(only_unused=True)
-#     assert len(artifacts) == 0
-#     run_id = sql_store_with_run["pipeline_run"].id
-#     sql_store_with_run["store"].delete_run(run_id)
-#     artifacts = sql_store_with_run["store"].list_artifacts(only_unused=True)
-#     assert len(artifacts) == 2
-#
-#
-# def test_delete_artifact_succeeds(sql_store_with_run):
-#     """Tests deleting artifact."""
-#     artifact_id = sql_store_with_run["artifact"].id
-#     assert len(sql_store_with_run["store"].list_artifacts()) == 2
-#     sql_store_with_run["store"].delete_artifact(artifact_id=artifact_id)
-#     assert len(sql_store_with_run["store"].list_artifacts()) == 1
-#     with pytest.raises(KeyError):
-#         sql_store_with_run["store"].get_artifact(artifact_id=artifact_id)
-#
-#
-# def test_delete_artifact_fails_when_artifact_does_not_exist(sql_store):
-#     """Tests deleting artifact fails when artifact does not exist."""
-#     with pytest.raises(KeyError):
-#         sql_store["store"].delete_artifact(artifact_id=uuid.uuid4())
-#
-#
-# # ----------------
-# # Stack components
-# # ----------------
-#
-#
-# def test_create_stack_component_succeeds(
-#     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-# ):
-#     """Tests creating stack component."""
-#     stack_component_name = "arias_cat_detection_orchestrator"
-#     stack_component = ComponentRequestModel(
-#         name=stack_component_name,
-#         type=StackComponentType.ORCHESTRATOR,
-#         flavor="default",
-#         configuration={},
-#         project=sql_store["default_project"].id,
-#         user=sql_store["active_user"].id,
-#     )
-#     with does_not_raise():
-#         created_component = sql_store["store"].create_stack_component(
-#             component=stack_component
-#         )
-#         assert created_component.name == stack_component_name
-#
-#
-# def test_create_component_fails_when_same_name(
-#     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-# ):
-#     """Tests creating component fails when same name."""
-#     stack_component_name = "nicto"
-#     stack_component = ComponentRequestModel(
-#         name=stack_component_name,
-#         type=StackComponentType.ORCHESTRATOR,
-#         flavor="default",
-#         configuration={},
-#         project=sql_store["default_project"].id,
-#         user=sql_store["active_user"].id,
-#     )
-#     sql_store["store"].create_stack_component(component=stack_component)
-#     with pytest.raises(StackComponentExistsError):
-#         sql_store["store"].create_stack_component(component=stack_component)
-#
-#
-# def test_get_stack_component(
-#     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-# ):
-#     """Tests getting stack component."""
-#     components = sql_store["default_stack"].components
-#     component_id = list(components.values())[0][0].id
-#     with does_not_raise():
-#         sql_store["store"].get_stack_component(component_id=component_id)
-#
-#
-# def test_get_stack_component_fails_when_component_does_not_exist(
-#     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-# ):
-#     """Tests getting stack component fails when component does not exist."""
-#     with pytest.raises(KeyError):
-#         sql_store["store"].get_stack_component(component_id=uuid.uuid4())
-#
-#
-# def test_list_stack_components_succeeds(
-#     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-# ):
-#     """Tests listing stack components."""
-#     stack_components = sql_store["store"].list_stack_components(
-#         project_name_or_id=sql_store["default_project"].name
-#     )
-#     assert len(stack_components) == 2
-#     component_types = [component.type for component in stack_components]
-#     assert StackComponentType.ORCHESTRATOR in component_types
-#     assert StackComponentType.ARTIFACT_STORE in component_types
-#
-#
-# def test_list_stack_components_fails_when_project_does_not_exist(
-#     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-# ):
-#     """Tests listing stack components fails when project does not exist."""
-#     with pytest.raises(KeyError):
-#         sql_store["store"].list_stack_components(
-#             project_name_or_id=uuid.uuid4()
-#         )
-#
-#
-# def test_list_stack_components_works_with_filters(
-#     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-# ):
-#     """Tests listing stack components works with filters."""
-#     artifact_stores = sql_store["store"].list_stack_components(
-#         project_name_or_id=sql_store["default_project"].name,
-#         type=StackComponentType.ARTIFACT_STORE,
-#     )
-#     assert len(artifact_stores) == 1
-#     assert artifact_stores[0].type == StackComponentType.ARTIFACT_STORE
-#
-#     orchestrators = sql_store["store"].list_stack_components(
-#         project_name_or_id=sql_store["default_project"].name,
-#         type=StackComponentType.ORCHESTRATOR,
-#     )
-#     assert len(orchestrators) == 1
-#     assert orchestrators[0].type == StackComponentType.ORCHESTRATOR
-#
-#
-# def test_list_stack_components_lists_nothing_for_nonexistent_filters(
-#     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-# ):
-#     """Tests listing stack components lists nothing for nonexistent filters."""
-#     flavor_filtered = sql_store["store"].list_stack_components(
-#         project_name_or_id=sql_store["default_project"].name,
-#         flavor_name="nonexistent",
-#     )
-#     assert len(flavor_filtered) == 0
-#
-#     with pytest.raises(KeyError):
-#         sql_store["store"].list_stack_components(
-#             project_name_or_id=sql_store["default_project"].name,
-#             user_name_or_id=uuid.uuid4(),
-#         )
-#
-#     name_filtered = sql_store["store"].list_stack_components(
-#         project_name_or_id=sql_store["default_project"].name,
-#         name="nonexistent",
-#     )
-#     assert len(name_filtered) == 0
-#
-#
-# def test_update_stack_component_succeeds(
-#     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-# ):
-#     """Tests updating stack component."""
-#     stack_component_name = "aria"
-#     stack_component = ComponentRequestModel(
-#         name=stack_component_name,
-#         type=StackComponentType.ORCHESTRATOR,
-#         flavor="default",
-#         configuration={},
-#         project=sql_store["default_project"].id,
-#         user=sql_store["active_user"].id,
-#     )
-#     with does_not_raise():
-#         orchestrator = sql_store["store"].create_stack_component(
-#             component=stack_component
-#         )
-#
-#     updated_orchestrator_name = "axl"
-#     component_update = ComponentUpdateModel(name=updated_orchestrator_name)
-#     with does_not_raise():
-#         updated_component = sql_store["store"].update_stack_component(
-#             component_id=orchestrator.id, component_update=component_update
-#         )
-#         assert updated_component.name == updated_orchestrator_name
-#
-#
-# def test_update_default_stack_component_fails(
-#     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
-# ):
-#     """Tests that updating default stack components fails."""
-#     default_artifact_store = sql_store["store"].list_stack_components(
-#         project_name_or_id=sql_store["default_project"].name,
-#         type=StackComponentType.ARTIFACT_STORE,
-#         name="default",
-#     )[0]
-#
-#     default_orchestrator = sql_store["store"].list_stack_components(
-#         project_name_or_id=sql_store["default_project"].name,
-#         type=StackComponentType.ORCHESTRATOR,
-#         name="default",
-#     )[0]
-#
-#     component_update = ComponentUpdateModel(name="aria")
-#     with pytest.raises(IllegalOperationError):
-#         sql_store["store"].update_stack_component(
-#             component_id=default_orchestrator.id,
-#             component_update=component_update,
-#         )
-#
-#     default_orchestrator.name = "axl"
-#     with pytest.raises(IllegalOperationError):
-#         sql_store["store"].update_stack_component(
-#             component_id=default_artifact_store.id,
-#             component_update=component_update,
-#         )
-#
-#
-# def test_update_stack_component_fails_when_component_does_not_exist(
-#     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-# ):
-#     """Tests updating stack component fails when component does not exist."""
-#     stack_component = ComponentUpdateModel(
-#         name="nonexistent",
-#         type=StackComponentType.ORCHESTRATOR,
-#         flavor="default",
-#         configuration={},
-#         project=sql_store["default_project"].id,
-#         user=sql_store["active_user"].id,
-#     )
-#     with pytest.raises(KeyError):
-#         sql_store["store"].update_stack_component(
-#             component_id=uuid.uuid4(), component_update=stack_component
-#         )
-#
-#
-# def test_delete_stack_component_succeeds(
-#     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-# ):
-#     """Tests deleting stack component."""
-#     stack_component_name = "arias_cat_detection_orchestrator"
-#     stack_component = ComponentRequestModel(
-#         name=stack_component_name,
-#         type=StackComponentType.ORCHESTRATOR,
-#         flavor="default",
-#         configuration={},
-#         project=sql_store["default_project"].id,
-#         user=sql_store["active_user"].id,
-#     )
-#     created_component = sql_store["store"].create_stack_component(
-#         component=stack_component
-#     )
-#     orchestrators = sql_store["store"].list_stack_components(
-#         project_name_or_id=sql_store["default_project"].name,
-#         type=StackComponentType.ORCHESTRATOR,
-#     )
-#     assert len(orchestrators) == 2
-#     with does_not_raise():
-#         sql_store["store"].delete_stack_component(
-#             component_id=created_component.id
-#         )
-#         orchestrators = sql_store["store"].list_stack_components(
-#             project_name_or_id=sql_store["default_project"].name,
-#             type=StackComponentType.ORCHESTRATOR,
-#         )
-#     assert len(orchestrators) == 1
-#     with pytest.raises(KeyError):
-#         sql_store["store"].get_stack_component(
-#             component_id=created_component.id
-#         )
-#
-#
-# def test_delete_default_stack_component_fails(
-#     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-# ):
-#     """Tests that deleting default stack components is prohibited."""
-#     default_artifact_store = sql_store["store"].list_stack_components(
-#         project_name_or_id=sql_store["default_project"].name,
-#         type=StackComponentType.ARTIFACT_STORE,
-#         name="default",
-#     )[0]
-#
-#     default_orchestrator = sql_store["store"].list_stack_components(
-#         project_name_or_id=sql_store["default_project"].name,
-#         type=StackComponentType.ORCHESTRATOR,
-#         name="default",
-#     )[0]
-#
-#     with pytest.raises(IllegalOperationError):
-#         sql_store["store"].delete_stack_component(default_artifact_store.id)
-#
-#     with pytest.raises(IllegalOperationError):
-#         sql_store["store"].delete_stack_component(default_orchestrator.id)
-#
-#
-# def test_delete_stack_component_fails_when_component_does_not_exist(
-#     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-# ):
-#     """Tests deleting stack component fails when component does not exist."""
-#     with pytest.raises(KeyError):
-#         sql_store["store"].delete_stack_component(component_id=uuid.uuid4())
-#
-#
-# # -----------------------
-# # Stack component flavors
-# # -----------------------
-#
-#
-# def test_create_stack_component_flavor_succeeds(
-#     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-# ):
-#     """Tests creating stack component flavor."""
-#     flavor_name = "blupus"
-#     blupus_flavor = FlavorRequestModel(
-#         name=flavor_name,
-#         type=StackComponentType.ORCHESTRATOR,
-#         config_schema="default",
-#         source=".",
-#         project=sql_store["default_project"].id,
-#         user=sql_store["active_user"].id,
-#     )
-#     with does_not_raise():
-#         sql_store["store"].create_flavor(flavor=blupus_flavor)
-#         blupus_flavor_id = (
-#             sql_store["store"]
-#             .list_flavors(
-#                 project_name_or_id=sql_store["default_project"].name,
-#                 component_type=StackComponentType.ORCHESTRATOR,
-#                 name=flavor_name,
-#             )[0]
-#             .id
-#         )
-#         created_flavor = sql_store["store"].get_flavor(
-#             flavor_id=blupus_flavor_id
-#         )
-#         assert created_flavor.name == flavor_name
-#
-#
-# def test_create_stack_component_fails_when_flavor_already_exists(
-#     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-# ):
-#     """Tests creating stack component flavor fails when flavor already exists."""
-#     flavor_name = "scinda"
-#     scinda_flavor = FlavorRequestModel(
-#         name=flavor_name,
-#         type=StackComponentType.ORCHESTRATOR,
-#         config_schema="default",
-#         source=".",
-#         project=sql_store["default_project"].id,
-#         user=sql_store["active_user"].id,
-#     )
-#     with does_not_raise():
-#         sql_store["store"].create_flavor(flavor=scinda_flavor)
-#     scinda_copy_flavor = FlavorRequestModel(
-#         name=flavor_name,
-#         type=StackComponentType.ORCHESTRATOR,
-#         config_schema="default",
-#         source=".",
-#         project=sql_store["default_project"].id,
-#         user=sql_store["active_user"].id,
-#     )
-#     with pytest.raises(EntityExistsError):
-#         sql_store["store"].create_flavor(flavor=scinda_copy_flavor)
-#
-#
-# def test_get_flavor_succeeds(
-#     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-# ):
-#     """Tests getting stack component flavor."""
-#     flavor_name = "verata"
-#     verata_flavor = FlavorRequestModel(
-#         name=flavor_name,
-#         type=StackComponentType.ARTIFACT_STORE,
-#         config_schema="default",
-#         source=".",
-#         project=sql_store["default_project"].id,
-#         user=sql_store["active_user"].id,
-#     )
-#     with does_not_raise():
-#         new_flavor = sql_store["store"].create_flavor(flavor=verata_flavor)
-#
-#         assert (
-#             sql_store["store"].get_flavor(flavor_id=new_flavor.id).name
-#             == flavor_name
-#         )
-#
-#
-# def test_get_flavor_fails_when_flavor_does_not_exist(
-#     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-# ):
-#     """Tests getting stack component flavor fails when flavor does not exist."""
-#     with pytest.raises(KeyError):
-#         sql_store["store"].get_flavor(flavor_id=uuid.uuid4())
-#
-#
-# def test_list_flavors_succeeds(
-#     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-# ):
-#     """Tests listing stack component flavors."""
-#     flavor_name = "verata"
-#     verata_flavor = FlavorRequestModel(
-#         name=flavor_name,
-#         type=StackComponentType.ARTIFACT_STORE,
-#         config_schema="default",
-#         source=".",
-#         project=sql_store["default_project"].id,
-#         user=sql_store["active_user"].id,
-#     )
-#     with does_not_raise():
-#         sql_store["store"].create_flavor(flavor=verata_flavor)
-#         assert len(sql_store["store"].list_flavors()) == 1
-#         assert sql_store["store"].list_flavors()[0].name == flavor_name
-#
-#
-# def test_list_flavors_fails_with_nonexistent_project(
-#     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-# ):
-#     """Tests listing stack component flavors fails with nonexistent project."""
-#     with pytest.raises(KeyError):
-#         sql_store["store"].list_flavors(
-#             project_name_or_id="nonexistent",
-#             component_type=StackComponentType.ORCHESTRATOR,
-#         )
+
+
+# ---------
+# Pipelines
+# ---------
+
+
+# --------------
+# Pipeline runs
+# --------------
+
+
+def test_list_runs_is_ordered():
+    """Tests listing runs returns ordered runs."""
+    client = Client()
+    store = client.zen_store
+
+    num_pipelines_before = store.list_runs(PipelineRunFilterModel()).total
+
+    for _ in range(10):
+        pipeline_instance.run(unlisted=True)
+
+    pipelines = store.list_runs(PipelineRunFilterModel()).items
+    assert len(pipelines) == num_pipelines_before + 10
+    assert all(
+        pipelines[i].created <= pipelines[i + 1].created
+        for i in range(len(pipelines) - 1)
+    )
+    # Cleanup
+    for p in pipelines:
+        run_id = p.id
+        store.delete_run(run_id)
+
+
+def test_deleting_run_deletes_steps():
+    """Tests deleting run deletes its steps."""
+    client = Client()
+    store = client.zen_store
+
+    # Here we assume the test db is not in a clean state
+    num_steps_before = store.list_run_steps(StepRunFilterModel()).total
+    num_pipelines_before = store.list_runs(PipelineRunFilterModel()).total
+
+    pipeline_instance.run(unlisted=True)
+    steps = store.list_run_steps(StepRunFilterModel())
+
+    assert steps.total == num_steps_before + 2
+    pipelines = store.list_runs(PipelineRunFilterModel())
+    assert pipelines.total == num_pipelines_before + 1
+    run_id = pipelines[0].id
+    store.delete_run(run_id)
+    assert len(store.list_run_steps(StepRunFilterModel())) == num_steps_before
+
+
+# ------------------
+# Pipeline run steps
+# ------------------
+
+
+def test_get_run_step_outputs_succeeds():
+    """Tests getting run step outputs."""
+    client = Client()
+    store = client.zen_store
+
+    pipeline_instance.run(unlisted=True)
+    steps = store.list_run_steps(StepRunFilterModel(name="step_2"))
+
+    for step in steps.items:
+        run_step_outputs = store.get_run_step(step.id).output_artifacts
+        assert len(run_step_outputs) == 1
+
+
+def test_get_run_step_inputs_succeeds():
+    """Tests getting run step inputs."""
+    client = Client()
+    store = client.zen_store
+
+    pipeline_instance.run(unlisted=True)
+
+    steps = store.list_run_steps(StepRunFilterModel(name="step_2"))
+    for step in steps.items:
+        run_step_inputs = store.get_run_step(step.id).input_artifacts
+        assert len(run_step_inputs) == 1
+
+
+# ---------
+# Artifacts
+# ---------
+
+
+def test_list_unused_artifacts():
+    """Tests listing with `unused=True` only returns unused artifacts."""
+    client = Client()
+    store = client.zen_store
+
+    pipeline_instance.run(unlisted=True)
+
+    artifacts = store.list_artifacts(ArtifactFilterModel())
+    assert len(artifacts) == 2
+    artifacts = store.list_artifacts(ArtifactFilterModel(only_unused=True))
+    assert len(artifacts) == 0
+
+    # Cleanup
+    pipelines = store.list_runs(PipelineRunFilterModel()).items
+    for p in pipelines:
+        store.delete_run(p.id)
+
+    artifacts = store.list_artifacts(ArtifactFilterModel(only_unused=True))
+    assert len(artifacts) == 2

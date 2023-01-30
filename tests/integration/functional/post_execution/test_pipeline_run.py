@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Integration tests for pipeline run post-execution functionality."""
 
-from tests.integration.functional.conftest import (
+from tests.integration.functional.zen_stores.utils import (
     constant_int_output_test_step,
     int_plus_one_test_step,
 )

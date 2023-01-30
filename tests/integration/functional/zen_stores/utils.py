@@ -1,45 +1,39 @@
-import pytest
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
 
-from zenml.client import Client
-from zenml.models import (
-    ProjectRequestModel,
-    ProjectResponseModel,
-    UserRequestModel,
-    UserResponseModel,
+
+from zenml.pipelines import pipeline
+from zenml.steps import step
+
+
+@step
+def constant_int_output_test_step() -> int:
+    return 7
+
+
+@step
+def int_plus_one_test_step(input: int) -> int:
+    return input + 1
+
+
+@pipeline(name="connected_two_step_pipeline")
+def connected_two_step_pipeline(step_1, step_2):
+    """Pytest fixture that returns a pipeline which takes two steps
+    `step_1` and `step_2` that are connected."""
+    step_2(step_1())
+
+
+pipeline_instance = connected_two_step_pipeline(
+    step_1=constant_int_output_test_step(),
+    step_2=int_plus_one_test_step(),
 )
-from zenml.utils.string_utils import random_str
-
-
-def sample_name(prefix: str = "aria") -> str:
-    """Function to get random username."""
-    return f"{prefix}_{random_str(4)}"
-
-
-@pytest.fixture
-def sample_project() -> "ProjectResponseModel":
-    """Function to create a sample project."""
-    client = Client()
-    new_project = ProjectRequestModel(name=sample_name("sample_prj"))
-    created_sample_project = client.zen_store.create_project(new_project)
-    yield created_sample_project
-    # In case the test didn't delete the project it is cleaned up here
-    try:
-        client.zen_store.delete_project(created_sample_project.id)
-    except KeyError:
-        pass
-
-
-@pytest.fixture
-def sample_user() -> "UserResponseModel":
-    """Function to create a sample user."""
-    client = Client()
-    new_user = UserRequestModel(
-        name=sample_name("sample_user"), password=random_str(8)
-    )
-    created_sample_user = client.zen_store.create_user(new_user)
-    yield created_sample_user
-    # In case the test didn't delete the user it is cleaned up here
-    try:
-        client.zen_store.delete_user(created_sample_user.id)
-    except KeyError:
-        pass
