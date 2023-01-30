@@ -45,7 +45,7 @@ def _get_kubernetes_orchestrator(
         flavor="kubernetes",
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )

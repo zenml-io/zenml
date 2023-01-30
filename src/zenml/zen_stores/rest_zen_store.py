@@ -46,7 +46,6 @@ from zenml.constants import (
     INFO,
     LOGIN,
     PIPELINES,
-    PROJECTS,
     ROLES,
     RUNS,
     SCHEDULES,
@@ -58,6 +57,7 @@ from zenml.constants import (
     USER_ROLE_ASSIGNMENTS,
     USERS,
     VERSION_1,
+    WORKSPACES,
 )
 from zenml.enums import StoreType
 from zenml.exceptions import (
@@ -90,10 +90,6 @@ from zenml.models import (
     PipelineRunResponseModel,
     PipelineRunUpdateModel,
     PipelineUpdateModel,
-    ProjectFilterModel,
-    ProjectRequestModel,
-    ProjectResponseModel,
-    ProjectUpdateModel,
     RoleFilterModel,
     RoleRequestModel,
     RoleResponseModel,
@@ -121,12 +117,16 @@ from zenml.models import (
     UserRoleAssignmentRequestModel,
     UserRoleAssignmentResponseModel,
     UserUpdateModel,
+    WorkspaceFilterModel,
+    WorkspaceRequestModel,
+    WorkspaceResponseModel,
+    WorkspaceUpdateModel,
 )
 from zenml.models.base_models import (
     BaseRequestModel,
     BaseResponseModel,
-    ProjectScopedRequestModel,
-    ProjectScopedResponseModel,
+    WorkspaceScopedRequestModel,
+    WorkspaceScopedResponseModel,
 )
 from zenml.models.page_model import Page
 from zenml.models.schedule_model import ScheduleFilterModel
@@ -148,12 +148,12 @@ Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
 
 AnyRequestModel = TypeVar("AnyRequestModel", bound=BaseRequestModel)
 AnyProjestRequestModel = TypeVar(
-    "AnyProjestRequestModel", bound=ProjectScopedRequestModel
+    "AnyProjestRequestModel", bound=WorkspaceScopedRequestModel
 )
 
 AnyResponseModel = TypeVar("AnyResponseModel", bound=BaseResponseModel)
 AnyProjestResponseModel = TypeVar(
-    "AnyProjestResponseModel", bound=ProjectScopedResponseModel
+    "AnyProjestResponseModel", bound=WorkspaceScopedResponseModel
 )
 
 DEFAULT_HTTP_TIMEOUT = 30
@@ -395,7 +395,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             The registered stack.
         """
-        return self._create_project_scoped_resource(
+        return self._create_workspace_scoped_resource(
             resource=stack,
             route=STACKS,
             response_model=StackResponseModel,
@@ -483,7 +483,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             The created stack component.
         """
-        return self._create_project_scoped_resource(
+        return self._create_workspace_scoped_resource(
             resource=component,
             route=STACK_COMPONENTS,
             response_model=ComponentResponseModel,
@@ -572,7 +572,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             The newly created flavor.
         """
-        return self._create_project_scoped_resource(
+        return self._create_workspace_scoped_resource(
             resource=flavor,
             route=FLAVORS,
             response_model=FlavorResponseModel,
@@ -942,7 +942,7 @@ class RestZenStore(BaseZenStore):
             user_role_assignment_id: Name or ID of the role assignment to get.
 
         Returns:
-            The requested project.
+            The requested workspace.
         """
         return self._get_resource(
             resource_id=user_role_assignment_id,
@@ -972,7 +972,7 @@ class RestZenStore(BaseZenStore):
             user_role_assignment: The role assignment to create.
 
         Returns:
-            The newly created project.
+            The newly created workspace.
         """
         return self._create_resource(
             resource=user_role_assignment,
@@ -1053,92 +1053,92 @@ class RestZenStore(BaseZenStore):
         )
 
     # --------
-    # Projects
+    # Workspaces
     # --------
 
-    @track(AnalyticsEvent.CREATED_PROJECT)
-    def create_project(
-        self, project: ProjectRequestModel
-    ) -> ProjectResponseModel:
-        """Creates a new project.
+    @track(AnalyticsEvent.CREATED_WORKSPACE)
+    def create_workspace(
+        self, workspace: WorkspaceRequestModel
+    ) -> WorkspaceResponseModel:
+        """Creates a new workspace.
 
         Args:
-            project: The project to create.
+            workspace: The workspace to create.
 
         Returns:
-            The newly created project.
+            The newly created workspace.
         """
         return self._create_resource(
-            resource=project,
-            route=PROJECTS,
-            response_model=ProjectResponseModel,
+            resource=workspace,
+            route=WORKSPACES,
+            response_model=WorkspaceResponseModel,
         )
 
-    def get_project(
-        self, project_name_or_id: Union[UUID, str]
-    ) -> ProjectResponseModel:
-        """Get an existing project by name or ID.
+    def get_workspace(
+        self, workspace_name_or_id: Union[UUID, str]
+    ) -> WorkspaceResponseModel:
+        """Get an existing workspace by name or ID.
 
         Args:
-            project_name_or_id: Name or ID of the project to get.
+            workspace_name_or_id: Name or ID of the workspace to get.
 
         Returns:
-            The requested project.
+            The requested workspace.
         """
         return self._get_resource(
-            resource_id=project_name_or_id,
-            route=PROJECTS,
-            response_model=ProjectResponseModel,
+            resource_id=workspace_name_or_id,
+            route=WORKSPACES,
+            response_model=WorkspaceResponseModel,
         )
 
-    def list_projects(
-        self, project_filter_model: ProjectFilterModel
-    ) -> Page[ProjectResponseModel]:
-        """List all project matching the given filter criteria.
+    def list_workspaces(
+        self, workspace_filter_model: WorkspaceFilterModel
+    ) -> Page[WorkspaceResponseModel]:
+        """List all workspace matching the given filter criteria.
 
         Args:
-            project_filter_model: All filter parameters including pagination
+            workspace_filter_model: All filter parameters including pagination
                 params.
 
         Returns:
-            A list of all project matching the filter criteria.
+            A list of all workspace matching the filter criteria.
         """
         return self._list_paginated_resources(
-            route=PROJECTS,
-            response_model=ProjectResponseModel,
-            filter_model=project_filter_model,
+            route=WORKSPACES,
+            response_model=WorkspaceResponseModel,
+            filter_model=workspace_filter_model,
         )
 
-    @track(AnalyticsEvent.UPDATED_PROJECT)
-    def update_project(
-        self, project_id: UUID, project_update: ProjectUpdateModel
-    ) -> ProjectResponseModel:
-        """Update an existing project.
+    @track(AnalyticsEvent.UPDATED_WORKSPACE)
+    def update_workspace(
+        self, workspace_id: UUID, workspace_update: WorkspaceUpdateModel
+    ) -> WorkspaceResponseModel:
+        """Update an existing workspace.
 
         Args:
-            project_id: The ID of the project to be updated.
-            project_update: The update to be applied to the project.
+            workspace_id: The ID of the workspace to be updated.
+            workspace_update: The update to be applied to the workspace.
 
         Returns:
-            The updated project.
+            The updated workspace.
         """
         return self._update_resource(
-            resource_id=project_id,
-            resource_update=project_update,
-            route=PROJECTS,
-            response_model=ProjectResponseModel,
+            resource_id=workspace_id,
+            resource_update=workspace_update,
+            route=WORKSPACES,
+            response_model=WorkspaceResponseModel,
         )
 
-    @track(AnalyticsEvent.DELETED_PROJECT)
-    def delete_project(self, project_name_or_id: Union[str, UUID]) -> None:
-        """Deletes a project.
+    @track(AnalyticsEvent.DELETED_WORKSPACE)
+    def delete_workspace(self, workspace_name_or_id: Union[str, UUID]) -> None:
+        """Deletes a workspace.
 
         Args:
-            project_name_or_id: Name or ID of the project to delete.
+            workspace_name_or_id: Name or ID of the workspace to delete.
         """
         self._delete_resource(
-            resource_id=project_name_or_id,
-            route=PROJECTS,
+            resource_id=workspace_name_or_id,
+            route=WORKSPACES,
         )
 
     # ---------
@@ -1149,7 +1149,7 @@ class RestZenStore(BaseZenStore):
     def create_pipeline(
         self, pipeline: PipelineRequestModel
     ) -> PipelineResponseModel:
-        """Creates a new pipeline in a project.
+        """Creates a new pipeline in a workspace.
 
         Args:
             pipeline: The pipeline to create.
@@ -1157,7 +1157,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             The newly created pipeline.
         """
-        return self._create_project_scoped_resource(
+        return self._create_workspace_scoped_resource(
             resource=pipeline,
             route=PIPELINES,
             response_model=PipelineResponseModel,
@@ -1243,7 +1243,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             The newly created schedule.
         """
-        return self._create_project_scoped_resource(
+        return self._create_workspace_scoped_resource(
             resource=schedule,
             route=SCHEDULES,
             response_model=ScheduleResponseModel,
@@ -1267,7 +1267,7 @@ class RestZenStore(BaseZenStore):
     def list_schedules(
         self, schedule_filter_model: ScheduleFilterModel
     ) -> Page[ScheduleResponseModel]:
-        """List all schedules in the project.
+        """List all schedules in the workspace.
 
         Args:
             schedule_filter_model: All filter parameters including pagination
@@ -1329,7 +1329,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             The created pipeline run.
         """
-        return self._create_project_scoped_resource(
+        return self._create_workspace_scoped_resource(
             resource=pipeline_run,
             response_model=PipelineRunResponseModel,
             route=RUNS,
@@ -1366,7 +1366,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             The pipeline run.
         """
-        return self._create_project_scoped_resource(
+        return self._create_workspace_scoped_resource(
             resource=pipeline_run,
             route=RUNS,
             response_model=PipelineRunResponseModel,
@@ -1891,14 +1891,14 @@ class RestZenStore(BaseZenStore):
         response_body = self.post(f"{route}", body=resource, params=params)
         return response_model.parse_obj(response_body)
 
-    def _create_project_scoped_resource(
+    def _create_workspace_scoped_resource(
         self,
-        resource: ProjectScopedRequestModel,
+        resource: WorkspaceScopedRequestModel,
         response_model: Type[AnyProjestResponseModel],
         route: str,
         params: Optional[Dict[str, Any]] = None,
     ) -> AnyProjestResponseModel:
-        """Create a new project scoped resource.
+        """Create a new workspace scoped resource.
 
         Args:
             resource: The resource to create.
@@ -1913,7 +1913,7 @@ class RestZenStore(BaseZenStore):
         return self._create_resource(
             resource=resource,
             response_model=response_model,
-            route=f"{PROJECTS}/{str(resource.project)}{route}",
+            route=f"{WORKSPACES}/{str(resource.workspace)}{route}",
             params=params,
         )
 

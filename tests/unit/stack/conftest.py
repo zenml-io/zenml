@@ -95,7 +95,7 @@ def stub_component():
         flavor=MOCK_FLAVOR,
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )

@@ -242,7 +242,10 @@ jobs:
           # re-install zenml to be sure
           poetry install --extras server
           # install airflow requirements
+          pip install "numpy>=1.21.0,<1.24.0"
           pip install apache-airflow-providers-docker
+          # Version 4.2.1 raises: AttributeError: type object 'Draft7Validator' has no attribute 'FORMAT_CHECKER'
+          pip install altair==4.2.0
 
       - name: Check Python Env ahead of tests
         run: |
