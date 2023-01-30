@@ -808,7 +808,7 @@ def create_pipeline_run(
 
 
 @router.post(
-    "/{workspace_name_or_id}" + RUN_METADATA,
+    WORKSPACES + "/{workspace_name_or_id}" + RUN_METADATA,
     response_model=RunMetadataResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
