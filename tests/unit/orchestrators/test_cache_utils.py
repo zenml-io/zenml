@@ -137,7 +137,7 @@ def generate_cache_key_kwargs(local_artifact_store):
         "step": _compile_step(_cache_test_step()),
         "input_artifact_ids": {"input_1": uuid4()},
         "artifact_store": local_artifact_store,
-        "project_id": uuid4(),
+        "workspace_id": uuid4(),
     }
 
 
@@ -148,10 +148,10 @@ def test_generate_cache_key_is_deterministic(generate_cache_key_kwargs):
     assert key_1 == key_2
 
 
-def test_generate_cache_key_considers_project_id(generate_cache_key_kwargs):
-    """Check that the cache key changes if the project ID changes."""
+def test_generate_cache_key_considers_workspace_id(generate_cache_key_kwargs):
+    """Check that the cache key changes if the workspace ID changes."""
     key_1 = cache_utils.generate_cache_key(**generate_cache_key_kwargs)
-    generate_cache_key_kwargs["project_id"] = uuid4()
+    generate_cache_key_kwargs["workspace_id"] = uuid4()
     key_2 = cache_utils.generate_cache_key(**generate_cache_key_kwargs)
     assert key_1 != key_2
 
@@ -268,7 +268,7 @@ def test_fetching_cached_step_run_queries_cache_candidates(
     cached_step = cache_utils.get_cached_step_run(cache_key="cache_key")
     assert cached_step == cache_candidate
     mock_list_run_steps.assert_called_with(
-        project_id=ANY,
+        workspace_id=ANY,
         cache_key="cache_key",
         status=ExecutionStatus.COMPLETED,
         sort_by=f"{SorterOps.DESCENDING}:created",
@@ -282,8 +282,10 @@ def test_fetching_cached_step_run_uses_latest_candidate(
     """Tests that the latest step run with the same cache key is used for
     caching."""
     sample_step_request_model.cache_key = "cache_key"
-    sample_step_request_model.project = clean_client.active_project.id
-    sample_pipeline_run_request_model.project = clean_client.active_project.id
+    sample_step_request_model.workspace = clean_client.active_workspace.id
+    sample_pipeline_run_request_model.workspace = (
+        clean_client.active_workspace.id
+    )
 
     # Create a pipeline run and step run
     clean_client.zen_store.create_run(sample_pipeline_run_request_model)

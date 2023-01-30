@@ -21,9 +21,9 @@ from sqlmodel import Relationship, SQLModel
 
 from zenml.models import StackResponseModel
 from zenml.zen_stores.schemas.base_schemas import ShareableSchema
-from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
     from zenml.models.stack_models import StackUpdateModel
@@ -66,15 +66,15 @@ class StackSchema(ShareableSchema, table=True):
 
     __tablename__ = "stack"
 
-    project_id: UUID = build_foreign_key_field(
+    workspace_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=ProjectSchema.__tablename__,
-        source_column="project_id",
+        target=WorkspaceSchema.__tablename__,
+        source_column="workspace_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=False,
     )
-    project: "ProjectSchema" = Relationship(back_populates="stacks")
+    workspace: "WorkspaceSchema" = Relationship(back_populates="stacks")
 
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -113,8 +113,8 @@ class StackSchema(ShareableSchema, table=True):
             elif field == "user":
                 assert self.user_id == value
 
-            elif field == "project":
-                assert self.project_id == value
+            elif field == "workspace":
+                assert self.workspace_id == value
 
             else:
                 setattr(self, field, value)
@@ -132,7 +132,7 @@ class StackSchema(ShareableSchema, table=True):
             id=self.id,
             name=self.name,
             user=self.user.to_model(True) if self.user else None,
-            project=self.project.to_model(),
+            workspace=self.workspace.to_model(),
             is_shared=self.is_shared,
             components={c.type: [c.to_model()] for c in self.components},
             created=self.created,

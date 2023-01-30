@@ -71,7 +71,7 @@ def list_pipelines(**kwargs: Any) -> None:
 
         cli_utils.print_pydantic_models(
             pipelines,
-            exclude_columns=["id", "created", "updated", "user", "project"],
+            exclude_columns=["id", "created", "updated", "user", "workspace"],
         )
 
 
@@ -134,7 +134,7 @@ def list_schedules(**kwargs: Any) -> None:
 
     cli_utils.print_pydantic_models(
         schedules,
-        exclude_columns=["id", "created", "updated", "user", "project"],
+        exclude_columns=["id", "created", "updated", "user", "workspace"],
     )
 
 

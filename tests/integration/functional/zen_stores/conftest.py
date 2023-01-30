@@ -28,12 +28,12 @@ from zenml.enums import PermissionType
 from zenml.models import (
     ArtifactFilterModel,
     PipelineRunFilterModel,
-    ProjectRequestModel,
     RoleRequestModel,
     ScheduleFilterModel,
     StepRunFilterModel,
     TeamRequestModel,
     UserRequestModel,
+    WorkspaceRequestModel,
 )
 from zenml.models.base_models import BaseResponseModel
 from zenml.zen_stores.base_zen_store import BaseZenStore
@@ -64,14 +64,15 @@ def sql_store(
     _ = client.zen_store
 
     store = gc.zen_store
-    default_project = store._default_project
+    default_workspace = store._default_workspace
     active_user = store.get_user()
     default_stack = store._get_default_stack(
-        project_name_or_id=default_project.id, user_name_or_id=active_user.id
+        workspace_name_or_id=default_workspace.id,
+        user_name_or_id=active_user.id,
     )
     yield {
         "store": store,
-        "default_project": default_project,
+        "default_workspace": default_workspace,
         "default_stack": default_stack,
         "active_user": active_user,
     }
@@ -196,13 +197,13 @@ def sql_store_with_user_team_role(
     new_user = UserRequestModel(name="axl")
     new_user = store.create_user(new_user)
 
-    new_project = ProjectRequestModel(name="axl_prj")
-    new_project = store.create_project(new_project)
+    new_workspace = WorkspaceRequestModel(name="axl_prj")
+    new_workspace = store.create_workspace(new_workspace)
 
     yield {
         "store": store,
         "user": new_user,
         "team": new_team,
         "role": new_role,
-        "project": new_project,
+        "workspace": new_workspace,
     }

@@ -50,7 +50,7 @@ def list_artifacts(**kwargs: Any) -> None:
             "created",
             "updated",
             "user",
-            "project",
+            "workspace",
             "producer_step_run_id",
         ],
     )

@@ -297,7 +297,7 @@ class BaseTestDeployment(ABC):
         os.environ["ZENML_CONFIG_PATH"] = str(config_path)
         os.environ["ZENML_ANALYTICS_OPT_IN"] = "false"
         os.environ["ZENML_ENABLE_REPO_INIT_WARNINGS"] = "false"
-        os.environ["ZENML_DISABLE_PROJECT_WARNINGS"] = "true"
+        os.environ["ZENML_DISABLE_WORKSPACE_WARNINGS"] = "true"
 
         # initialize the global config and client at the new path
         gc = GlobalConfiguration()

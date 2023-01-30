@@ -119,6 +119,7 @@ Bentos
 Bing
 Bitbucket
 BluePill
+Blupus
 BuildContext
 CIDR
 CLI
@@ -1631,4 +1632,6 @@ defaultPassword
 generateCerts
 letsencrypt
 privateKeySecretRef
-
+workspaces
+Workspaces
+WORKSPACES
