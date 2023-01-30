@@ -20,11 +20,13 @@ from datetime import datetime
 from typing import (
     TYPE_CHECKING,
     Any,
+    Callable,
     ClassVar,
     Dict,
     List,
     Mapping,
     Optional,
+    Set,
     Tuple,
     Type,
     TypeVar,
@@ -769,54 +771,13 @@ class BasePipeline(metaclass=BasePipelineMeta):
             )
 
         steps = cls._load_and_verify_steps(pipeline_spec=model.spec)
+        connect_method = cls._generate_connect_method(model=model)
 
-        def connect(**steps: BaseStep) -> None:
-            inspect.signature(connect).bind(**steps)
-
-            step_outputs = {}
-            for pipeline_parameter_name, step_spec in model.spec.steps:
-                step = steps[pipeline_parameter_name]
-
-                step_inputs = {}
-                for input_name, input_ in step_spec.inputs.items():
-                    try:
-                        step_inputs[input_name] = step_outputs[
-                            input_.step_name
-                        ][input_.output_name]
-                    except KeyError:
-                        raise RuntimeError(
-                            f"Unable to find upstream step "
-                            f"`{input_.step_name}` in pipeline `{model.name}`. "
-                            "This is probably due to configuring a new step "
-                            "name after loading a pipeline using "
-                            "`BasePipeline.from_model`."
-                        )
-
-                step_output = step(**step_inputs)
-                output_keys = list(step.OUTPUT_SIGNATURE.keys())
-
-                if len(output_keys) == 1:
-                    step_output = [step_output]
-
-                step_outputs[step.name] = {
-                    key: step_output[i] for i, key in enumerate(output_keys)
-                }
-
-        parameters = [
-            inspect.Parameter(
-                name=pipeline_parameter_name,
-                kind=inspect.Parameter.POSITIONAL_OR_KEYWORD,
-            )
-            for pipeline_parameter_name, _ in model.spec.steps
-        ]
-        signature = inspect.Signature(parameters=parameters)
-        connect.__signature__ = signature
-
-        pipeline_class = type(
+        pipeline_class: Type[T] = type(
             model.name,
             (cls,),
             {
-                PIPELINE_INNER_FUNC_NAME: staticmethod(connect),
+                PIPELINE_INNER_FUNC_NAME: staticmethod(connect_method),
                 "__doc__": model.docstring,
             },
         )
@@ -841,9 +802,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
             The loaded steps.
         """
         steps = {}
-        available_outputs = {}
+        available_outputs: Dict[str, Set[str]] = {}
 
-        for pipeline_parameter_name, step_spec in pipeline_spec.spec.steps:
+        for pipeline_parameter_name, step_spec in pipeline_spec.steps:
             for upstream_step in step_spec.upstream_steps:
                 if upstream_step not in available_outputs:
                     raise RuntimeError(
@@ -874,9 +835,66 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 )
 
             steps[pipeline_parameter_name] = step
-            available_outputs[step.name] = list(step.OUTPUT_SIGNATURE.keys())
+            available_outputs[step.name] = set(step.OUTPUT_SIGNATURE.keys())
 
         return steps
+
+    @staticmethod
+    def _generate_connect_method(
+        model: "PipelineResponseModel",
+    ) -> Callable[..., None]:
+        """Dynamically generates a connect method for a pipeline model.
+
+        Args:
+            model: The model for which to generate the method.
+
+        Returns:
+            The generated connect method.
+        """
+
+        def connect(**steps: BaseStep) -> None:
+            inspect.signature(connect).bind(**steps)
+
+            step_outputs: Dict[str, Dict[str, BaseStep._OutputArtifact]] = {}
+            for pipeline_parameter_name, step_spec in model.spec.steps:
+                step = steps[pipeline_parameter_name]
+
+                step_inputs = {}
+                for input_name, input_ in step_spec.inputs.items():
+                    try:
+                        step_inputs[input_name] = step_outputs[
+                            input_.step_name
+                        ][input_.output_name]
+                    except KeyError:
+                        raise RuntimeError(
+                            f"Unable to find upstream step "
+                            f"`{input_.step_name}` in pipeline `{model.name}`. "
+                            "This is probably due to configuring a new step "
+                            "name after loading a pipeline using "
+                            "`BasePipeline.from_model`."
+                        )
+
+                step_output = step(**step_inputs)
+                output_keys = list(step.OUTPUT_SIGNATURE.keys())
+
+                if isinstance(step_output, BaseStep._OutputArtifact):
+                    step_output = [step_output]
+
+                step_outputs[step.name] = {
+                    key: step_output[i] for i, key in enumerate(output_keys)
+                }
+
+        parameters = [
+            inspect.Parameter(
+                name=pipeline_parameter_name,
+                kind=inspect.Parameter.POSITIONAL_OR_KEYWORD,
+            )
+            for pipeline_parameter_name, _ in model.spec.steps
+        ]
+        signature = inspect.Signature(parameters=parameters)
+        connect.__signature__ = signature  # type: ignore[attr-defined]
+
+        return connect
 
     def register(self) -> "PipelineResponseModel":
         """Register the pipeline in the server.
