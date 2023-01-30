@@ -768,6 +768,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 "version 0.2 or higher."
             )
 
+        steps = cls._load_and_verify_steps(pipeline_spec=model.spec)
+
         def connect(**steps: BaseStep) -> None:
             inspect.signature(connect).bind(**steps)
 
@@ -776,12 +778,19 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 step = steps[pipeline_parameter_name]
 
                 step_inputs = {}
-                # TODO: this doesn't work if any step/input/output name gets
-                # configured after this pipeline is loaded
                 for input_name, input_ in step_spec.inputs.items():
-                    step_inputs[input_name] = step_outputs[input_.step_name][
-                        input_.output_name
-                    ]
+                    try:
+                        step_inputs[input_name] = step_outputs[
+                            input_.step_name
+                        ][input_.output_name]
+                    except KeyError:
+                        raise RuntimeError(
+                            f"Unable to find upstream step "
+                            f"`{input_.step_name}` in pipeline `{model.name}`. "
+                            "This is probably due to configuring a new step "
+                            "name after loading a pipeline using "
+                            "`BasePipeline.from_model`."
+                        )
 
                 step_output = step(**step_inputs)
                 output_keys = list(step.OUTPUT_SIGNATURE.keys())
@@ -812,63 +821,62 @@ class BasePipeline(metaclass=BasePipelineMeta):
             },
         )
 
-        steps = {
-            pipeline_parameter_name: BaseStep.load_from_source(
-                step_spec.source
-            )
-            for pipeline_parameter_name, step_spec in model.spec.steps
-        }
+        pipeline_instance = pipeline_class(**steps)
+        return pipeline_instance
 
-        available_outputs = {
-            step.name: list(step.OUTPUT_SIGNATURE.keys())
-            for step in steps.values()
-        }
-        for pipeline_parameter_name, step_spec in model.spec.steps:
+    @staticmethod
+    def _load_and_verify_steps(
+        pipeline_spec: "PipelineSpec",
+    ) -> Dict[str, BaseStep]:
+        """Loads steps and verifies their names and inputs/outputs names.
+
+        Args:
+            pipeline_spec: The pipeline spec from which to load the steps.
+
+        Raises:
+            RuntimeError: If the step names or input/output names of the
+                loaded steps don't match with the names defined in the spec.
+
+        Returns:
+            The loaded steps.
+        """
+        steps = {}
+        available_outputs = {}
+
+        for pipeline_parameter_name, step_spec in pipeline_spec.spec.steps:
             for upstream_step in step_spec.upstream_steps:
                 if upstream_step not in available_outputs:
-                    raise RuntimeError(f"Missing step `{upstream_step}`.")
-
-            for input_spec in step_spec.inputs.values():
-                if input_spec.step_name not in available_outputs:
                     raise RuntimeError(
-                        f"Missing step `{input_spec.step_name}`."
+                        f"Unable to find upstream step `{upstream_step}`. "
+                        "This is probably because the step was renamed in code."
                     )
 
+            for input_spec in step_spec.inputs.values():
                 if (
                     input_spec.output_name
                     not in available_outputs[input_spec.step_name]
                 ):
                     raise RuntimeError(
                         f"Missing output `{input_spec.output_name}` for step "
-                        f"`{input_spec.step_name}`."
+                        f"`{input_spec.step_name}`. This is probably because "
+                        "the output of the step was renamed."
                     )
 
-            step = steps[pipeline_parameter_name]
+            step = BaseStep.load_from_source(step_spec.source)
             input_names = set(step.INPUT_SIGNATURE)
             spec_input_names = set(step_spec.inputs)
 
             if input_names != spec_input_names:
                 raise RuntimeError(
-                    f"Input names don't match. Step inputs: `{input_names}`, "
-                    f"spec inputs: `{spec_input_names}`."
+                    f"Input names of step {step_spec.source} and the spec "
+                    f"from the database don't match. Step inputs: "
+                    f"`{input_names}`, spec inputs: `{spec_input_names}`."
                 )
 
-        pipeline_instance = pipeline_class(**steps)
+            steps[pipeline_parameter_name] = step
+            available_outputs[step.name] = list(step.OUTPUT_SIGNATURE.keys())
 
-        # TODO: the compilation already fails as it calls `connect` which
-        # relies on the step + input/output_names to be identical
-        new_pipeline_spec = Compiler().compile_spec(pipeline=pipeline_instance)
-        if new_pipeline_spec != model.spec:
-            # TODO: should this raise an issue instead or can we fix the
-            # connect method above to work with updated specs?
-            logger.warning(
-                "The pipeline spec of the loaded pipeline does not match the "
-                "original spec. This might be due to updates to the step "
-                "names or step input/output names and might lead to issues "
-                "running this pipeline."
-            )
-
-        return pipeline_instance
+        return steps
 
     def register(self) -> "PipelineResponseModel":
         """Register the pipeline in the server.
@@ -882,6 +890,14 @@ class BasePipeline(metaclass=BasePipelineMeta):
     def _register(
         self, pipeline_spec: "PipelineSpec"
     ) -> "PipelineResponseModel":
+        """Register the pipeline in the server.
+
+        Args:
+            pipeline_spec: The pipeline spec to register.
+
+        Returns:
+            The registered pipeline model.
+        """
         version_hash = self._compute_unique_identifier(
             pipeline_spec=pipeline_spec
         )
@@ -902,14 +918,14 @@ class BasePipeline(metaclass=BasePipelineMeta):
             return registered_pipeline
 
         latest_version = self._get_latest_version() or 0
-        version = latest_version + 1
+        version = str(latest_version + 1)
 
         client = Client()
         request = PipelineRequestModel(
             workspace=client.active_workspace.id,
             user=client.active_user.id,
             name=self.name,
-            version=str(version),
+            version=version,
             version_hash=version_hash,
             spec=pipeline_spec,
             docstring=self.__doc__,
@@ -924,6 +940,14 @@ class BasePipeline(metaclass=BasePipelineMeta):
         return registered_pipeline
 
     def _compute_unique_identifier(self, pipeline_spec: PipelineSpec) -> str:
+        """Computes a unique identifier from the pipeline spec and steps.
+
+        Args:
+            pipeline_spec: Compiled spec of the pipeline.
+
+        Returns:
+            The unique identifier of the pipeline.
+        """
         hash_ = hashlib.md5()
         hash_.update(pipeline_spec.json(sort_keys=False).encode())
 
@@ -934,8 +958,13 @@ class BasePipeline(metaclass=BasePipelineMeta):
         return hash_.hexdigest()
 
     def _get_latest_version(self) -> Optional[int]:
+        """Gets the latest version of this pipeline.
+
+        Returns:
+            The latest version or `None` if no version exists.
+        """
         all_pipelines = Client().list_pipelines(
-            name=self.name, sort_by="desc:created"
+            name=self.name, sort_by="desc:created", size=1
         )
         if all_pipelines.total:
             return int(all_pipelines.items[0].version)
