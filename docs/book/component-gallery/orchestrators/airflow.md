@@ -123,7 +123,7 @@ export AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL=10
 export no_proxy=*
 ```
 
-3. Run `airflow standalone` to initialise the database, make a user, and start 
+3. Run `airflow standalone` to initialise the database, create a user, and start
 all components for you.
 
 {% endhint %}

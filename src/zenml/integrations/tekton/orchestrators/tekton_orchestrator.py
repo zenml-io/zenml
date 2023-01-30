@@ -89,16 +89,6 @@ class TektonOrchestrator(BaseOrchestrator):
         """
         return TektonOrchestratorSettings
 
-    @property
-    def is_local(self) -> bool:
-        """Checks if the Tekton orchestrator is running locally.
-
-        Returns:
-            `True` if the Tekton orchestrator is running locally (i.e. in
-            the local k3d cluster).
-        """
-        return self.config.is_local
-
     def get_kubernetes_contexts(self) -> Tuple[List[str], Optional[str]]:
         """Get the list of configured Kubernetes contexts and the active context.
 
@@ -151,7 +141,7 @@ class TektonOrchestrator(BaseOrchestrator):
                 f"--skip_local_validations=True'\n"
             )
 
-            if not self.config.skip_local_validations and not self.is_local:
+            if not self.config.skip_local_validations and not self.config.is_local:
 
                 # if the orchestrator is not running in a local k3d cluster,
                 # we cannot have any other local components in our stack,
@@ -245,7 +235,7 @@ class TektonOrchestrator(BaseOrchestrator):
 
         stack = Client().active_stack
 
-        if self.is_local:
+        if self.config.is_local:
             stack.check_local_paths()
 
             local_stores_path = GlobalConfiguration().local_stores_path

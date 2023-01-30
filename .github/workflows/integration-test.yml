@@ -66,6 +66,7 @@ on:
           # AWS ZenML server deployment with local components
           - aws-local-orchestrator
           - aws-docker-orchestrator
+          - aws-kubeflow-orchestrator
           - aws-airflow-orchestrator
           # AWS ZenML server deployment with AWS cloud components
           - aws-cloud-local-orchestrator
@@ -76,6 +77,7 @@ on:
           # GCP ZenML server deployment with local components
           - gcp-local-orchestrator
           - gcp-docker-orchestrator
+          - gcp-kubeflow-orchestrator
           - gcp-airflow-orchestrator
           # GCP ZenML server deployment with GCP cloud components
           - gcp-cloud-local-orchestrator

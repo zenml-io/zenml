@@ -110,7 +110,7 @@ cloud providers (AWS, GCP, and Azure).
 
 ### 🥞 Let's cook up a Local Kubeflow stack recipe
 
-To Run the pipeline on a local Kubeflow Pipelines deployment, you can use the
+To run the pipeline on a local Kubeflow Pipelines deployment, you can use the
 ZenML Stack recipes to spin up a local Kubernetes cluster and install Kubeflow
 Pipelines on it. The stack recipe is called `k3d-modular` and is available in the ZenML
 [stack recipe repository](https://github.com/zenml-io/mlops-stacks/tree/main/k3d-modular).
