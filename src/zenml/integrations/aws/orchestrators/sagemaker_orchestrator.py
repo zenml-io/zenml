@@ -14,7 +14,8 @@
 """Implementation of the SageMaker orchestrator."""
 
 import os
-from typing import TYPE_CHECKING, Optional, Tuple, Type, cast
+from typing import TYPE_CHECKING, Dict, Optional, Tuple, Type, cast
+from uuid import UUID
 
 import sagemaker
 from sagemaker.workflow.execution_variables import ExecutionVariables
@@ -30,6 +31,7 @@ from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
     SagemakerOrchestratorSettings,
 )
 from zenml.logger import get_logger
+from zenml.metadata.metadata_types import MetadataType
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
@@ -228,3 +230,23 @@ class SagemakerOrchestrator(BaseOrchestrator):
                 delay=POLLING_DELAY, max_attempts=MAX_POLLING_ATTEMPTS
             )
             logger.info("Pipeline completed successfully.")
+
+    def get_pipeline_run_metadata(
+        self, run_id: UUID
+    ) -> Dict[str, "MetadataType"]:
+        """Get general component-specific metadata for a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run.
+
+        Returns:
+            A dictionary of metadata.
+        """
+        # TODO: Add this once we can get the region
+        # run_url = (
+        #     f"https://{region}.console.aws.amazon.com/sagemaker/"
+        #     f"home?region={region}"
+        # )
+        return {
+            "pipeline_execution_arn": os.environ[ENV_ZENML_SAGEMAKER_RUN_ID]
+        }
