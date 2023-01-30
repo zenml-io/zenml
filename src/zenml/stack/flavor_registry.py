@@ -44,7 +44,7 @@ class FlavorRegistry:
         Args:
             store: The instance of a store to use for persistence
         """
-        self.register_default_flavors(store=store)
+        self.register_builtin_flavors(store=store)
         self.register_integration_flavors(store=store)
 
     @property
@@ -89,13 +89,11 @@ class FlavorRegistry:
 
         return integrated_flavors
 
-    def register_default_flavors(self, store: BaseZenStore) -> None:
+    def register_builtin_flavors(self, store: BaseZenStore) -> None:
         """Registers the default built-in flavors."""
         for flavor in self.builtin_flavors:
-            flavor_instance = flavor()
-            store.create_flavor(
-                flavor_instance.to_model(integration="built-in")
-            )
+            flavor_request_model = flavor().to_model(integration="built-in")
+            store.create_flavor(flavor_request_model)
 
     @staticmethod
     def register_integration_flavors(store: BaseZenStore) -> None:
@@ -103,4 +101,5 @@ class FlavorRegistry:
         for name, integration in integration_registry.integrations.items():
             integrated_flavors = integration.flavors()
             for flavor in integrated_flavors:
-                store.create_flavor(flavor().to_model(integration=name))
+                flavor_request_model = flavor().to_model(integration=name)
+                store.create_flavor(flavor_request_model)

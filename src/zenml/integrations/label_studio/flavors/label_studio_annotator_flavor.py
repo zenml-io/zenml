@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Label Studio annotator flavor."""
 
-from typing import TYPE_CHECKING, Type
+from typing import TYPE_CHECKING, Optional, Type
 
 from zenml.annotators.base_annotator import (
     BaseAnnotatorConfig,
@@ -55,6 +55,15 @@ class LabelStudioAnnotatorFlavor(BaseAnnotatorFlavor):
             The name of the flavor.
         """
         return LABEL_STUDIO_ANNOTATOR_FLAVOR
+
+    @property
+    def docs_url(self) -> Optional[str]:
+        """A url to point at docs explaining this flavor.
+
+        Returns:
+            A flavor docs url.
+        """
+        return self.generate_default_docs_url()
 
     @property
     def logo_url(self) -> str:

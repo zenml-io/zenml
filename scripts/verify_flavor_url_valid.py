@@ -32,17 +32,17 @@ from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 @click.group()
 def cli() -> None:
-    """CLI base command for the ZenML test framework."""
+    """CLI base command for the ZenML dev framework."""
 
 
 @cli.group()
 def flavors() -> None:
-    """View and manage test deployments."""
+    """Interact with flavors in dev environment."""
 
 
 @flavors.group()
 def verify() -> None:
-    """View and manage test deployments."""
+    """Verify urls on flavors."""
 
 
 @verify.command(
@@ -92,7 +92,7 @@ def docs(
     flavors = fr.builtin_flavors + fr.integration_flavors
 
     for flavor in track(flavors, description="Analyzing ..."):
-        url_components = flavor().flavor_docs_url.split("/component-gallery", 1)
+        url_components = flavor().docs_url.split("/component-gallery", 1)
         url_components[0] = root_domain
 
         url = url_components[0] + "/component-gallery" + url_components[1]

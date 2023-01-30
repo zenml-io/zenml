@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Deepchecks data validator flavor."""
 
-from typing import TYPE_CHECKING, Type
+from typing import TYPE_CHECKING, Optional, Type
 
 from zenml.data_validators.base_data_validator import BaseDataValidatorFlavor
 from zenml.integrations.deepchecks import DEEPCHECKS_DATA_VALIDATOR_FLAVOR
@@ -35,6 +35,15 @@ class DeepchecksDataValidatorFlavor(BaseDataValidatorFlavor):
             The name of the flavor.
         """
         return DEEPCHECKS_DATA_VALIDATOR_FLAVOR
+
+    @property
+    def docs_url(self) -> Optional[str]:
+        """A url to point at docs explaining this flavor.
+
+        Returns:
+            A flavor docs url.
+        """
+        return self.generate_default_docs_url()
 
     @property
     def logo_url(self) -> str:

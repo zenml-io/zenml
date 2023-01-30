@@ -15,7 +15,7 @@
 
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, Type, cast
+from typing import TYPE_CHECKING, Dict, List, Optional, Type, cast
 
 from zenml.cli.utils import error
 from zenml.config.global_config import GlobalConfiguration
@@ -260,6 +260,15 @@ class LocalSecretsManagerFlavor(BaseSecretsManagerFlavor):
             The name of the flavor.
         """
         return "local"
+
+    @property
+    def docs_url(self) -> Optional[str]:
+        """A url to point at docs explaining this flavor.
+
+        Returns:
+            A flavor docs url.
+        """
+        return self.generate_default_docs_url()
 
     @property
     def logo_url(self) -> str:

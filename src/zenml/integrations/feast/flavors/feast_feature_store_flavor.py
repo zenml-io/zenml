@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Feast feature store flavor."""
 
-from typing import TYPE_CHECKING, Type
+from typing import TYPE_CHECKING, Optional, Type
 
 from zenml.feature_stores.base_feature_store import (
     BaseFeatureStoreConfig,
@@ -58,6 +58,15 @@ class FeastFeatureStoreFlavor(BaseFeatureStoreFlavor):
             The name of the flavor.
         """
         return FEAST_FEATURE_STORE_FLAVOR
+
+    @property
+    def docs_url(self) -> Optional[str]:
+        """A url to point at docs explaining this flavor.
+
+        Returns:
+            A flavor docs url.
+        """
+        return self.generate_default_docs_url()
 
     @property
     def logo_url(self) -> str:

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """GitHub secrets manager flavor."""
 
-from typing import TYPE_CHECKING, Type
+from typing import TYPE_CHECKING, Optional, Type
 
 from zenml.integrations.github import GITHUB_SECRET_MANAGER_FLAVOR
 from zenml.secrets_managers import (
@@ -48,6 +48,15 @@ class GitHubSecretsManagerFlavor(BaseSecretsManagerFlavor):
             The name of the flavor.
         """
         return GITHUB_SECRET_MANAGER_FLAVOR
+
+    @property
+    def docs_url(self) -> Optional[str]:
+        """A url to point at docs explaining this flavor.
+
+        Returns:
+            A flavor docs url.
+        """
+        return self.generate_default_docs_url()
 
     @property
     def logo_url(self) -> str:

@@ -35,24 +35,17 @@ class Flavor:
         """
 
     @property
-    def flavor_docs_url(self) -> str:
+    def docs_url(self) -> Optional[str]:
         """A url to point at docs explaining this flavor.
 
         Returns:
             A flavor docs url.
         """
-        from zenml import __version__
-
-        component_type = self.type.plural.replace("_", "-")
-        name = self.name.replace("_", "-")
-        base = f"https://docs.zenml.io/v/{__version__}"
-        url = f"{base}/component-gallery/{component_type}/{name}"
-
-        return url
+        return None
 
     @property
     @abstractmethod
-    def logo_url(self) -> str:
+    def logo_url(self) -> Optional[str]:
         """A url to represent the flavor in the dashboard.
 
         Returns:
@@ -134,6 +127,24 @@ class Flavor:
             config_schema=self.config_schema,
             integration=integration,
             logo_url=self.logo_url,
-            flavor_docs_url=self.flavor_docs_url,
+            docs_url=self.docs_url,
         )
         return model
+
+    def generate_default_docs_url(self) -> str:
+        """Generate the doc urls for all inbuilt and integration flavors.
+
+        Note that this method is not going to be useful for custom flavors,
+        which do not have any docs in the main zenml docs.
+
+        Returns:
+            The complete url to the zenml docs
+        """
+        from zenml import __version__
+
+        component_type = self.type.plural.replace("_", "-")
+        name = self.name.replace("_", "-")
+        base = f"https://docs.zenml.io/v/{__version__}"
+        url = f"{base}/component-gallery/{component_type}/{name}"
+
+        return url

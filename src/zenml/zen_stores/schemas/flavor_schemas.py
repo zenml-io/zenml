@@ -66,7 +66,7 @@ class FlavorSchema(NamedSchema, table=True):
 
     logo_url: Optional[str] = Field()
 
-    flavor_docs_url: Optional[str] = Field()
+    docs_url: Optional[str] = Field()
 
     def to_model(self) -> FlavorResponseModel:
         """Converts a flavor schema to a flavor model.
@@ -86,5 +86,5 @@ class FlavorSchema(NamedSchema, table=True):
             created=self.created,
             updated=self.updated,
             logo_url=self.logo_url,
-            flavor_docs_url=self.flavor_docs_url,
+            docs_url=self.docs_url,
         )

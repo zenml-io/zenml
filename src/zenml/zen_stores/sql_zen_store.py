@@ -1539,7 +1539,7 @@ class SqlZenStore(BaseZenStore):
                     workspace_id=flavor.workspace,
                     user_id=flavor.user,
                     logo_url=flavor.logo_url,
-                    flavor_docs_url=flavor.flavor_docs_url,
+                    docs_url=flavor.docs_url,
                 )
                 session.add(new_flavor)
                 session.commit()

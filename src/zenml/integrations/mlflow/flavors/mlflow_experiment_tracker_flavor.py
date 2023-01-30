@@ -195,6 +195,15 @@ class MLFlowExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
         return MLFLOW_MODEL_EXPERIMENT_TRACKER_FLAVOR
 
     @property
+    def docs_url(self) -> Optional[str]:
+        """A url to point at docs explaining this flavor.
+
+        Returns:
+            A flavor docs url.
+        """
+        return self.generate_default_docs_url()
+
+    @property
     def logo_url(self) -> str:
         """A url to represent the flavor in the dashboard.
 

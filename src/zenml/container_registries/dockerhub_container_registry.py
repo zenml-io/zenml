@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of a DockerHub Container Registry class."""
-
+from typing import Optional
 
 from zenml.container_registries.base_container_registry import (
     BaseContainerRegistryFlavor,
@@ -31,6 +31,15 @@ class DockerHubContainerRegistryFlavor(BaseContainerRegistryFlavor):
             The name of the flavor.
         """
         return ContainerRegistryFlavor.DOCKERHUB.value
+
+    @property
+    def docs_url(self) -> Optional[str]:
+        """A url to point at docs explaining this flavor.
+
+        Returns:
+            A flavor docs url.
+        """
+        return self.generate_default_docs_url()
 
     @property
     def logo_url(self) -> str:
