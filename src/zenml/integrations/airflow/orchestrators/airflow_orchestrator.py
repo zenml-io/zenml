@@ -531,8 +531,6 @@ class AirflowOrchestrator(BaseOrchestrator):
                 "to run Airflow locally.",
             )
 
-                            
-
     def deprovision(self) -> None:
         """Stops the airflow daemon if necessary and tears down resources."""
         if not self.config.local:
