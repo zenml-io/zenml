@@ -19,6 +19,7 @@ from typing import ClassVar, Dict, List, Optional, Type, cast
 from uuid import UUID
 
 from zenml.config.global_config import GlobalConfiguration
+from zenml.config.step_run_info import StepRunInfo
 from zenml.constants import DEFAULT_SERVICE_START_STOP_TIMEOUT
 from zenml.integrations.bentoml.constants import BENTOML_DEFAULT_PORT
 from zenml.integrations.bentoml.flavors.bentoml_model_deployer_flavor import (
@@ -30,6 +31,7 @@ from zenml.integrations.bentoml.services.bentoml_deployment import (
     BentoMLDeploymentService,
 )
 from zenml.logger import get_logger
+from zenml.metadata.metadata_types import MetadataType, Uri
 from zenml.model_deployers import BaseModelDeployer, BaseModelDeployerFlavor
 from zenml.services import ServiceRegistry
 from zenml.services.local.local_service import SERVICE_DAEMON_CONFIG_FILE_NAME
@@ -455,3 +457,27 @@ class BentoMLModelDeployer(BaseModelDeployer):
             self._clean_up_existing_service(
                 existing_service=service, timeout=timeout, force=force
             )
+
+    def get_step_run_metadata(
+        self, info: "StepRunInfo"
+    ) -> Dict[str, "MetadataType"]:
+        """Get component- and step-specific metadata after a step ran.
+
+        Args:
+            info: Info about the step that was executed.
+
+        Returns:
+            A dictionary of metadata.
+        """
+        existing_services = self.find_model_server(
+            pipeline_run_id=info.run_name,
+        )
+        if existing_services:
+            existing_service = existing_services[0]
+            if existing_service.is_running:
+                return {
+                    "bentoml_deployed_model_uri": Uri(
+                        existing_service.prediction_url
+                    ),
+                }
+        return {}
