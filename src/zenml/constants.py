@@ -219,3 +219,6 @@ PAGE_SIZE_MAXIMUM: int = handle_int_env_var(
     ENV_ZENML_PAGINATION_DEFAULT_LIMIT, default=10000
 )
 FILTERING_DATETIME_FORMAT: str = "%Y-%m-%d %H:%M:%S"
+
+# Metadata constants
+METADATA_ORCHESTRATOR_URL = "orchestrator_url"

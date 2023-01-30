@@ -49,6 +49,7 @@ from zenml.config.base_settings import BaseSettings
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
     ENV_ZENML_LOCAL_STORES_PATH,
+    METADATA_ORCHESTRATOR_URL,
     ORCHESTRATOR_DOCKER_IMAGE_KEY,
 )
 from zenml.container_registries.base_container_registry import (
@@ -70,11 +71,12 @@ from zenml.integrations.kubeflow.orchestrators.local_deployment_utils import (
 from zenml.integrations.kubeflow.utils import apply_pod_settings
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.metadata.metadata_types import MetadataType, Uri
 from zenml.orchestrators import BaseOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 from zenml.stack.stack_component import StackComponent
-from zenml.utils import io_utils, networking_utils
+from zenml.utils import io_utils, networking_utils, settings_utils
 from zenml.utils.pipeline_docker_image_builder import (
     PipelineDockerImageBuilder,
 )
@@ -1255,3 +1257,49 @@ class KubeflowOrchestrator(BaseOrchestrator):
             local_deployment_utils.stop_k3d_cluster(
                 cluster_name=self._k3d_cluster_name
             )
+
+    def get_pipeline_run_metadata(
+        self, run_id: UUID
+    ) -> Dict[str, "MetadataType"]:
+        """Get general component-specific metadata for a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run.
+
+        Returns:
+            A dictionary of metadata.
+        """
+        hostname = self.config.kubeflow_hostname
+        if not hostname:
+            return {}
+
+        hostname = hostname.rstrip("/")
+        pipeline_suffix = "/pipeline"
+        if hostname.endswith(pipeline_suffix):
+            hostname = hostname[: -len(pipeline_suffix)]
+
+        run = Client().get_pipeline_run(run_id)
+
+        settings_key = settings_utils.get_stack_component_setting_key(self)
+        run_settings = cast(
+            KubeflowOrchestratorSettings,
+            self.settings_class.parse_obj(
+                run.pipeline_configuration.get(settings_key, self.config)
+            ),
+        )
+        user_namespace = run_settings.user_namespace
+
+        if user_namespace:
+            run_id = self.get_orchestrator_run_id()
+            run_url = (
+                f"{hostname}/_/pipeline/?ns={user_namespace}#"
+                f"/runs/details/{run_id}"
+            )
+
+            return {
+                METADATA_ORCHESTRATOR_URL: Uri(run_url),
+            }
+        else:
+            return {
+                METADATA_ORCHESTRATOR_URL: Uri(f"{hostname}"),
+            }
