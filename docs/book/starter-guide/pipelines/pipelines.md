@@ -50,9 +50,12 @@ a pipeline, as we will see [in a later chapter](./fetching-pipelines.md).
 {% hint style="info" %}
 The inputs and outputs of a step are *artifacts* that are automatically tracked
 and stored by ZenML in the artifact store. Artifacts are produced by steps
-whenever your step returns an object or a value. If you want to dynamically
-update the hyperparameters of your pipeline, you can use a subclass of
-`BaseParams` for that purpose and which is explained fully [here](./parameters-and-caching.md).
+whenever your step returns an object or a value. If a step returns only a single
+thing (value or object etc) there is no need to use the `Output` class.
+
+If you want to dynamically update the hyperparameters of your pipeline, you can
+use a subclass of `BaseParams` for that purpose (explained in full detail
+[here](./parameters-and-caching.md)).
 {% endhint %}
 
 Let's come up with a second step that consumes the output of our first step and
