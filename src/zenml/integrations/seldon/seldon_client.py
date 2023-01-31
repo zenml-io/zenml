@@ -299,6 +299,7 @@ class SeldonDeployment(BaseModel):
         model_uri: Optional[str] = None,
         model_name: Optional[str] = None,
         implementation: Optional[str] = None,
+        parameters: Optional[SeldonDeploymentPredictorParameter] = None,
         secret_name: Optional[str] = None,
         labels: Optional[Dict[str, str]] = None,
         annotations: Optional[Dict[str, str]] = None,
@@ -341,6 +342,7 @@ class SeldonDeployment(BaseModel):
                     graph=SeldonDeploymentPredictiveUnit(
                         name="classifier",
                         type=SeldonDeploymentPredictiveUnitType.MODEL,
+                        parameters=parameters,
                     ),
                     componentSpecs=[
                         SeldonDeploymentComponentSpecs(
