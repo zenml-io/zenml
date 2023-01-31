@@ -56,7 +56,7 @@ class ImageBuilderContextUploader:
                 hash_.update(data)
 
             filename = f"{hash_.hexdigest()}.tar.gz"
-            filepath = os.path.join(parent_path, filename)
+            filepath = f"{parent_path}/{filename}"
             if not fileio.exists(filepath):
                 logger.info("Uploading build context to `%s`.", filepath)
                 fileio.copy(f.name, filepath)
