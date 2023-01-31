@@ -20,13 +20,17 @@ from pytest_mock import MockFixture
 
 from zenml.client import Client
 from zenml.config.compiler import Compiler
-from zenml.config.pipeline_configurations import PipelineRunConfiguration
+from zenml.config.pipeline_configurations import (
+    PipelineRunConfiguration,
+    PipelineSpec,
+)
 from zenml.config.pipeline_deployment import PipelineDeployment
 from zenml.exceptions import (
     PipelineConfigurationError,
     PipelineInterfaceError,
     StackValidationError,
 )
+from zenml.models.page_model import Page
 from zenml.pipelines import BasePipeline, pipeline
 from zenml.steps import BaseParameters, step
 from zenml.utils.yaml_utils import write_yaml
@@ -492,3 +496,283 @@ def test_setting_enable_cache_at_run_level_overrides_all_decorator_values(
     )
     pipeline_instance.run(unlisted=True, enable_cache=False)
     assert cache_disabled_mock.call_count == 1
+
+
+def test_unique_identifier_considers_spec(empty_step):
+    """Tests that the unique pipeline ID depends on the pipeline spec."""
+
+    @pipeline
+    def p(s1, s2):
+        s1()
+        s2()
+        s2.after(s1)
+
+    step_1 = empty_step(name="step_1")
+    step_2 = empty_step(name="step_2")
+    pipeline_instance = p(step_1, step_2)
+
+    spec = Compiler().compile_spec(pipeline=pipeline_instance)
+    id_ = pipeline_instance._compute_unique_identifier(spec)
+
+    # Change step name -> new spec -> new ID
+    step_1.configure(name="different_name")
+    new_spec = Compiler().compile_spec(pipeline=pipeline_instance)
+    new_id = pipeline_instance._compute_unique_identifier(new_spec)
+
+    assert spec != new_spec
+    assert id_ != new_id
+
+
+def test_unique_identifier_considers_step_source_code(
+    one_step_pipeline, empty_step, mocker
+):
+    """Tests that the unique pipeline ID depends on the step source code."""
+    step_instance = empty_step()
+    pipeline_instance = one_step_pipeline(step_instance)
+
+    spec = Compiler().compile_spec(pipeline=pipeline_instance)
+    id_ = pipeline_instance._compute_unique_identifier(spec)
+
+    # Change step source -> new ID
+    mocker.patch(
+        "zenml.steps.base_step.BaseStep.source_code",
+        new_callable=mocker.PropertyMock,
+        return_value="step_source_code",
+    )
+
+    new_id = pipeline_instance._compute_unique_identifier(spec)
+    assert id_ != new_id
+
+
+def test_latest_version_fetching(
+    mocker, empty_pipeline, create_pipeline_model
+):
+    """Tests fetching the latest pipeline version."""
+    mock_list_pipelines = mocker.patch(
+        "zenml.client.Client.list_pipelines",
+        return_value=Page(
+            page=1,
+            size=1,
+            total_pages=1,
+            total=0,
+            items=[],
+        ),
+    )
+
+    pipeline_instance = empty_pipeline()
+    assert pipeline_instance._get_latest_version() is None
+    mock_list_pipelines.assert_called_with(
+        name=pipeline_instance.name, sort_by="desc:created", size=1
+    )
+
+    pipeline_model = create_pipeline_model(version="3")
+    mock_list_pipelines = mocker.patch(
+        "zenml.client.Client.list_pipelines",
+        return_value=Page(
+            page=1,
+            size=1,
+            total_pages=1,
+            total=1,
+            items=[pipeline_model],
+        ),
+    )
+
+    assert pipeline_instance._get_latest_version() is 3
+
+
+def test_registering_new_pipeline_version(mocker, empty_pipeline):
+    """Tests registering a new pipeline version."""
+    mocker.patch(
+        "zenml.client.Client.list_pipelines",
+        return_value=Page(
+            page=1,
+            size=1,
+            total_pages=1,
+            total=0,
+            items=[],
+        ),
+    )
+    mock_create_pipeline = mocker.patch(
+        "zenml.zen_stores.sql_zen_store.SqlZenStore.create_pipeline",
+    )
+
+    pipeline_instance = empty_pipeline()
+    pipeline_instance.register()
+    _, call_kwargs = mock_create_pipeline.call_args
+    assert call_kwargs["pipeline"].version == "1"
+    mock_create_pipeline.reset_mock()
+
+    mocker.patch.object(BasePipeline, "_get_latest_version", return_value=3)
+    pipeline_instance.register()
+    _, call_kwargs = mock_create_pipeline.call_args
+    assert call_kwargs["pipeline"].version == "4"
+
+
+def test_reusing_pipeline_version(
+    mocker, empty_pipeline, create_pipeline_model
+):
+    """Tests reusing an already registered pipeline version."""
+    pipeline_model = create_pipeline_model(version="3")
+    mocker.patch(
+        "zenml.client.Client.list_pipelines",
+        return_value=Page(
+            page=1,
+            size=1,
+            total_pages=1,
+            total=1,
+            items=[pipeline_model],
+        ),
+    )
+
+    pipeline_instance = empty_pipeline()
+    result = pipeline_instance.register()
+
+    assert result == pipeline_model
+
+
+def test_loading_pipeline_from_model(clean_workspace, create_pipeline_model):
+    """Tests loading and running a pipeline from a model."""
+    with open("my_steps.py", "w") as f:
+        f.write(
+            (
+                "from zenml.steps import step\n"
+                "@step\n"
+                "def s1() -> int:\n"
+                "  return 1\n\n"
+                "@step\n"
+                "def s2(inp: int) -> None:\n"
+                "  pass"
+            )
+        )
+
+    spec = PipelineSpec.parse_obj(
+        {
+            "steps": [
+                {
+                    "source": "my_steps.s1",
+                    "upstream_steps": [],
+                    "pipeline_parameter_name": "step_1",
+                },
+                {
+                    "source": "my_steps.s2",
+                    "upstream_steps": ["s1"],
+                    "inputs": {
+                        "inp": {"step_name": "s1", "output_name": "output"}
+                    },
+                    "pipeline_parameter_name": "step_2",
+                },
+            ]
+        }
+    )
+    pipeline_model = create_pipeline_model(spec=spec)
+
+    pipeline_instance = BasePipeline.from_model(pipeline_model)
+    assert Compiler().compile_spec(pipeline_instance) == spec
+    assert pipeline_instance.name == pipeline_model.name
+
+    with does_not_raise():
+        pipeline_instance.run()
+
+    # Reconfigure step name
+    pipeline_instance.steps["step_1"].configure(name="new_name")
+    with pytest.raises(RuntimeError):
+        pipeline_instance.run()
+
+    # Invalid source
+    spec = PipelineSpec.parse_obj(
+        {
+            "steps": [
+                {
+                    "source": "WRONG_MODULE.s1",
+                    "upstream_steps": [],
+                    "pipeline_parameter_name": "step_1",
+                },
+            ]
+        }
+    )
+    pipeline_model = create_pipeline_model(spec=spec)
+
+    with pytest.raises(ImportError):
+        pipeline_instance = BasePipeline.from_model(pipeline_model)
+
+    # Missing upstream step
+    spec = PipelineSpec.parse_obj(
+        {
+            "steps": [
+                {
+                    "source": "my_steps.s1",
+                    "upstream_steps": ["NONEXISTENT"],
+                    "pipeline_parameter_name": "step_1",
+                }
+            ]
+        }
+    )
+    pipeline_model = create_pipeline_model(spec=spec)
+
+    with pytest.raises(RuntimeError):
+        pipeline_instance = BasePipeline.from_model(pipeline_model)
+
+    # Missing output
+    spec = PipelineSpec.parse_obj(
+        {
+            "steps": [
+                {
+                    "source": "my_steps.s1",
+                    "upstream_steps": [],
+                    "pipeline_parameter_name": "step_1",
+                },
+                {
+                    "source": "my_steps.s2",
+                    "upstream_steps": ["s1"],
+                    "inputs": {
+                        "inp": {
+                            "step_name": "s1",
+                            "output_name": "NONEXISTENT",
+                        }
+                    },
+                    "pipeline_parameter_name": "step_2",
+                },
+            ]
+        }
+    )
+    pipeline_model = create_pipeline_model(spec=spec)
+
+    with pytest.raises(RuntimeError):
+        pipeline_instance = BasePipeline.from_model(pipeline_model)
+
+    # Wrong inputs
+    spec = PipelineSpec.parse_obj(
+        {
+            "steps": [
+                {
+                    "source": "my_steps.s1",
+                    "upstream_steps": [],
+                    "pipeline_parameter_name": "step_1",
+                },
+                {
+                    "source": "my_steps.s2",
+                    "upstream_steps": ["s1"],
+                    "inputs": {
+                        "WRONG_INPUT_NAME": {
+                            "step_name": "s1",
+                            "output_name": "output",
+                        }
+                    },
+                    "pipeline_parameter_name": "step_2",
+                },
+            ]
+        }
+    )
+    pipeline_model = create_pipeline_model(spec=spec)
+
+    with pytest.raises(RuntimeError):
+        pipeline_instance = BasePipeline.from_model(pipeline_model)
+
+
+def test_loading_pipeline_from_old_spec_fails(create_pipeline_model):
+    """Tests that loading a pipeline from a spec version <0.2 fails."""
+    old_spec = PipelineSpec(version="0.1", steps=[])
+    model = create_pipeline_model(spec=old_spec)
+
+    with pytest.raises(ValueError):
+        BasePipeline.from_model(model)

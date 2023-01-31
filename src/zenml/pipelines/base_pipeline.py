@@ -949,7 +949,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
             docstring=self.__doc__,
         )
 
-        registered_pipeline = client.zen_store.create_pipeline(request)
+        registered_pipeline = client.zen_store.create_pipeline(
+            pipeline=request
+        )
         logger.info(
             "Registered pipeline `%s` (version %s).",
             registered_pipeline.name,
@@ -969,8 +971,10 @@ class BasePipeline(metaclass=BasePipelineMeta):
         hash_ = hashlib.md5()
         hash_.update(pipeline_spec.json(sort_keys=False).encode())
 
-        for step_name, _ in pipeline_spec.steps:
-            step_source = self.steps[step_name].source_code
+        for step_spec in pipeline_spec.steps:
+            step_source = self.steps[
+                step_spec.pipeline_parameter_name
+            ].source_code
             hash_.update(step_source.encode())
 
         return hash_.hexdigest()

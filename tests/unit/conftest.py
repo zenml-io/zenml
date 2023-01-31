@@ -23,6 +23,7 @@ from zenml.artifact_stores.local_artifact_store import (
     LocalArtifactStoreConfig,
 )
 from zenml.client import Client
+from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.config.step_configurations import Step
 from zenml.container_registries.base_container_registry import (
     BaseContainerRegistry,
@@ -32,6 +33,7 @@ from zenml.enums import ArtifactType, ExecutionStatus
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.models import (
     ArtifactResponseModel,
+    PipelineResponseModel,
     PipelineRunResponseModel,
     StepRunResponseModel,
     UserResponseModel,
@@ -505,5 +507,33 @@ def create_step_run(
             **kwargs,
         }
         return StepRunResponseModel(**model_args)
+
+    return f
+
+
+@pytest.fixture
+def create_pipeline_model(
+    sample_user_model: UserResponseModel,
+    sample_workspace_model: WorkspaceResponseModel,
+) -> Callable[..., PipelineResponseModel]:
+    """Fixture that returns a function which can be used to create a
+    customizable PipelineResponseModel."""
+
+    def f(
+        **kwargs: Any,
+    ) -> PipelineResponseModel:
+        model_args = {
+            "id": uuid4(),
+            "name": "sample_pipeline",
+            "version": 1,
+            "version_hash": "",
+            "created": datetime.now(),
+            "updated": datetime.now(),
+            "workspace": sample_workspace_model,
+            "user": sample_user_model,
+            "spec": PipelineSpec(steps=[]),
+            **kwargs,
+        }
+        return PipelineResponseModel(**model_args)
 
     return f
