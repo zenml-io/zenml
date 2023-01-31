@@ -187,30 +187,6 @@ def get_run_steps(
 
 
 @router.get(
-    "/{run_id}" + COMPONENT_SIDE_EFFECTS,
-    response_model=Dict,
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def get_run_component_side_effects(
-    run_id: UUID,
-    component_id: Optional[UUID] = None,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Dict[str, Any]:
-    """Get the component side effects for a given pipeline run.
-
-    Args:
-        run_id: ID of the pipeline run to use to get the component side effects.
-        component_id: ID of the component to use to get the component
-            side effects.
-
-    Returns:
-        The component side effects for a given pipeline run.
-    """
-    return {}
-
-
-@router.get(
     "/{run_id}" + PIPELINE_CONFIGURATION,
     response_model=Dict[str, Any],
     responses={401: error_response, 404: error_response, 422: error_response},
