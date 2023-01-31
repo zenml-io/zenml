@@ -2442,21 +2442,53 @@ class Client(metaclass=ClientMetaClass):
         )
 
     def get_pipeline(
-        self, name_id_or_prefix: Union[str, UUID]
+        self,
+        id: Optional[UUID] = None,
+        name: Optional[str] = None,
+        version: Optional[str] = None,
     ) -> PipelineResponseModel:
         """Get a pipeline by name, id or prefix.
 
         Args:
-            name_id_or_prefix: The name, id or prefix of the pipeline.
+            id: The id of the pipeline.
+            name: The name of the pipeline.
+            version: The pipeline version. If left empty, will return
+                the latest version.
 
         Returns:
             The pipeline.
+
+        Raises:
+            ValueError: If both name and ID are unset.
+            KeyError: If no pipelines were found for the given name and version.
         """
-        return self._get_entity_by_id_or_name_or_prefix(
-            get_method=self.zen_store.get_pipeline,
-            list_method=self.list_pipelines,
-            name_id_or_prefix=name_id_or_prefix,
-        )
+        if id and (name or version):
+            logger.warning(
+                "You specified both an ID as well as name/version of the "
+                "pipeline to get. Ignoring name and version and fetching the "
+                "pipeline by ID."
+            )
+            name = None
+            version = None
+        if not (id or name):
+            raise ValueError(
+                "Please specify either the ID or the name of the pipeline to "
+                "get."
+            )
+
+        if id:
+            return self.zen_store.get_pipeline(id)
+        else:
+            pipelines = self.list_pipelines(
+                size=1, sort_by="desc:created", name=name, version=version
+            )
+            if pipelines.total == 0:
+                version_suffix = f" (version {version})" if version else ""
+                raise KeyError(
+                    f"No pipelines found for name {name}{version_suffix}."
+                )
+
+            return pipelines.items[0]
 
     def delete_pipeline(self, name_id_or_prefix: Union[str, UUID]) -> None:
         """Delete a pipeline.
