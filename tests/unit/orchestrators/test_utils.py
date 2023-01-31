@@ -15,7 +15,7 @@ from zenml.orchestrators.utils import is_setting_enabled
 
 
 def test_is_setting_enabled():
-    """Unit test for `is_cache_enabled()`.
+    """Unit test for `is_setting_enabled()`.
 
     Tests that:
     - caching is enabled by default (when neither step nor pipeline set it),
