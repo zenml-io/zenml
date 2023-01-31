@@ -33,8 +33,6 @@ from zenml.models import (
     ComponentFilterModel,
     ComponentUpdateModel,
     PipelineRunFilterModel,
-    ProjectFilterModel,
-    ProjectUpdateModel,
     RoleFilterModel,
     RoleRequestModel,
     RoleUpdateModel,
@@ -46,16 +44,18 @@ from zenml.models import (
     UserRequestModel,
     UserRoleAssignmentRequestModel,
     UserUpdateModel,
+    WorkspaceFilterModel,
+    WorkspaceUpdateModel,
 )
 from zenml.models.base_models import (
-    ProjectScopedRequestModel,
+    WorkspaceScopedRequestModel,
 )
 from zenml.zen_stores.base_zen_store import (
     DEFAULT_ADMIN_ROLE,
     DEFAULT_GUEST_ROLE,
-    DEFAULT_PROJECT_NAME,
     DEFAULT_STACK_NAME,
     DEFAULT_USERNAME,
+    DEFAULT_WORKSPACE_NAME,
 )
 
 DEFAULT_NAME = "default"
@@ -76,9 +76,9 @@ def test_basic_crud_for_entity(crud_test_config: CrudTestConfig):
 
     # Create the entity
     create_model = crud_test_config.create_model
-    if isinstance(create_model, ProjectScopedRequestModel):
+    if isinstance(create_model, WorkspaceScopedRequestModel):
         create_model.user = client.active_user.id
-        create_model.project = client.active_project.id
+        create_model.workspace = client.active_workspace.id
     # Test the creation
     created_entity = crud_test_config.create_method(create_model)
     # Filter by name to verify the entity was actually created
@@ -134,9 +134,9 @@ def test_create_entity_twice_fails(crud_test_config: CrudTestConfig):
     client = Client()
     # Create the entity
     create_model = crud_test_config.create_model
-    if isinstance(create_model, ProjectScopedRequestModel):
+    if isinstance(create_model, WorkspaceScopedRequestModel):
         create_model.user = client.active_user.id
-        create_model.project = client.active_project.id
+        create_model.workspace = client.active_workspace.id
     # First creation is successful
     created_entity = crud_test_config.create_method(
         crud_test_config.create_model
@@ -188,49 +188,54 @@ def test_updating_nonexisting_entity_raises_error(
     list_of_entities,
     ids=[e.entity_name for e in list_of_entities],
 )
-def test_deleting_nonexistent_project_raises_error(
+def test_deleting_nonexistent_workspace_raises_error(
     crud_test_config: CrudTestConfig,
 ):
-    """Tests deleting a nonexistent project raises an error."""
+    """Tests deleting a nonexistent workspace raises an error."""
     with pytest.raises(KeyError):
         crud_test_config.delete_method(uuid.uuid4())
 
 
 # .----------.
-# | PROJECTS |
+# | WORKSPACES |
 # '----------'
 
 
-def test_only_one_default_project_present():
-    """Tests that one and only one default project is present."""
+def test_only_one_default_workspace_present():
+    """Tests that one and only one default workspace is present."""
     client = Client()
     assert (
-        len(client.zen_store.list_projects(ProjectFilterModel(name="default")))
+        len(
+            client.zen_store.list_workspaces(
+                WorkspaceFilterModel(name="default")
+            )
+        )
         == 1
     )
 
 
-def test_updating_default_project_fails():
-    """Tests updating the default project."""
+def test_updating_default_workspace_fails():
+    """Tests updating the default workspace."""
     client = Client()
 
-    default_project = client.zen_store.get_project(DEFAULT_PROJECT_NAME)
-    assert default_project.name == DEFAULT_PROJECT_NAME
-    project_update = ProjectUpdateModel(
-        name="aria_project",
-        description="Aria has taken possession of this project.",
+    default_workspace = client.zen_store.get_workspace(DEFAULT_WORKSPACE_NAME)
+    assert default_workspace.name == DEFAULT_WORKSPACE_NAME
+    workspace_update = WorkspaceUpdateModel(
+        name="aria_workspace",
+        description="Aria has taken possession of this workspace.",
     )
     with pytest.raises(IllegalOperationError):
-        client.zen_store.update_project(
-            project_id=default_project.id, project_update=project_update
+        client.zen_store.update_workspace(
+            workspace_id=default_workspace.id,
+            workspace_update=workspace_update,
         )
 
 
-def test_deleting_default_project_fails():
-    """Tests deleting the default project."""
+def test_deleting_default_workspace_fails():
+    """Tests deleting the default workspace."""
     client = Client()
     with pytest.raises(IllegalOperationError):
-        client.zen_store.delete_project(DEFAULT_NAME)
+        client.zen_store.delete_workspace(DEFAULT_NAME)
 
 
 # .-------.-.
@@ -242,7 +247,7 @@ def test_adding_user_to_team():
     """Tests adding a user to a team."""
     zen_store = Client().zen_store
     team_name = "arias_team"
-    with UserContext as created_user:
+    with UserContext() as created_user:
         try:
             new_team = TeamRequestModel(name=team_name)
             new_team = zen_store.create_team(new_team)
@@ -298,7 +303,7 @@ def test_removing_user_from_team_succeeds():
     zen_store = Client().zen_store
     team_name = sample_name("arias_team")
 
-    with UserContext as created_user:
+    with UserContext() as created_user:
         try:
             new_team = TeamRequestModel(
                 name=team_name, users=[created_user.id]
@@ -417,7 +422,7 @@ def test_deleting_assigned_role_fails():
     role_assignment = UserRoleAssignmentRequestModel(
         role=created_role.id,
         user=created_user.id,
-        project=None,
+        workspace=None,
     )
     with does_not_raise():
         (zen_store.create_user_role_assignment(role_assignment))
@@ -445,7 +450,7 @@ def test_assigning_role_to_user_succeeds():
             role_assignment = UserRoleAssignmentRequestModel(
                 role=created_role.id,
                 user=created_user.id,
-                project=None,
+                workspace=None,
             )
             with does_not_raise():
                 assignment = zen_store.create_user_role_assignment(
@@ -466,7 +471,7 @@ def test_assigning_role_to_team_succeeds():
             role_assignment = TeamRoleAssignmentRequestModel(
                 role=created_role.id,
                 team=created_team.id,
-                project=None,
+                workspace=None,
             )
             with does_not_raise():
                 assignment = zen_store.create_team_role_assignment(
@@ -487,7 +492,7 @@ def test_assigning_role_if_assignment_already_exists_fails():
             role_assignment = UserRoleAssignmentRequestModel(
                 role=created_role.id,
                 user=created_user.id,
-                project=None,
+                workspace=None,
             )
             with does_not_raise():
                 (zen_store.create_user_role_assignment(role_assignment))
@@ -504,7 +509,7 @@ def test_revoking_role_for_user_succeeds():
             role_assignment = UserRoleAssignmentRequestModel(
                 role=created_role.id,
                 user=created_user.id,
-                project=None,
+                workspace=None,
             )
             with does_not_raise():
                 role_assignment = zen_store.create_user_role_assignment(
@@ -528,7 +533,7 @@ def test_revoking_role_for_team_succeeds():
             role_assignment = TeamRoleAssignmentRequestModel(
                 role=created_role.id,
                 team=created_team.id,
-                project=None,
+                workspace=None,
             )
             with does_not_raise():
                 role_assignment = zen_store.create_team_role_assignment(
@@ -569,7 +574,7 @@ def test_update_default_stack_component_fails():
     store = client.zen_store
     default_artifact_store = store.list_stack_components(
         ComponentFilterModel(
-            project_id=client.active_project.id,
+            workspace_id=client.active_workspace.id,
             type=StackComponentType.ARTIFACT_STORE,
             name="default",
         )
@@ -577,7 +582,7 @@ def test_update_default_stack_component_fails():
 
     default_orchestrator = store.list_stack_components(
         ComponentFilterModel(
-            project_id=client.active_project.id,
+            workspace_id=client.active_workspace.id,
             type=StackComponentType.ORCHESTRATOR,
             name="default",
         )
@@ -604,7 +609,7 @@ def test_delete_default_stack_component_fails():
     store = client.zen_store
     default_artifact_store = store.list_stack_components(
         ComponentFilterModel(
-            project_id=client.active_project.id,
+            workspace_id=client.active_workspace.id,
             type=StackComponentType.ARTIFACT_STORE,
             name="default",
         )
@@ -612,7 +617,7 @@ def test_delete_default_stack_component_fails():
 
     default_orchestrator = store.list_stack_components(
         ComponentFilterModel(
-            project_id=client.active_project.id,
+            workspace_id=client.active_workspace.id,
             type=StackComponentType.ORCHESTRATOR,
             name="default",
         )
@@ -639,7 +644,7 @@ def test_updating_default_stack_fails():
     client = Client()
 
     default_stack = client.get_stack(DEFAULT_STACK_NAME)
-    assert default_stack.name == DEFAULT_PROJECT_NAME
+    assert default_stack.name == DEFAULT_WORKSPACE_NAME
     stack_update = StackUpdateModel(name="axls_stack")
     with pytest.raises(IllegalOperationError):
         client.zen_store.update_stack(
@@ -663,12 +668,12 @@ def test_deleting_default_stack_fails():
 #     assert len(sql_store["store"].list_stacks()) == 1
 #
 #
-# def test_list_stacks_fails_with_nonexistent_project(
+# def test_list_stacks_fails_with_nonexistent_workspace(
 #     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 # ):
-#     """Tests listing stacks fails with nonexistent project."""
+#     """Tests listing stacks fails with nonexistent workspace."""
 #     with pytest.raises(KeyError):
-#         sql_store["store"].list_stacks(project_name_or_id=uuid.uuid4())
+#         sql_store["store"].list_stacks(workspace_name_or_id=uuid.uuid4())
 #
 #
 # def test_get_stack_succeeds(
@@ -695,10 +700,10 @@ def test_deleting_default_stack_fails():
 #     new_stack = StackRequestModel(
 #         name="arias_stack",
 #         components={},
-#         project=sql_store["default_project"].id,
+#         workspace=sql_store["default_workspace"].id,
 #         user=sql_store["active_user"].id,
 #     )
-#     # TODO: [server] inject user and project into stack as well
+#     # TODO: [server] inject user and workspace into stack as well
 #     sql_store["store"].create_stack(
 #         stack=new_stack,
 #     )
@@ -714,11 +719,11 @@ def test_deleting_default_stack_fails():
 #     new_stack = StackRequestModel(
 #         name=DEFAULT_NAME,
 #         components={},
-#         project=sql_store["default_project"].id,
+#         workspace=sql_store["default_workspace"].id,
 #         user=sql_store["active_user"].id,
 #     )
 #     with pytest.raises(StackExistsError):
-#         # TODO: [server] inject user and project into stack as well
+#         # TODO: [server] inject user and workspace into stack as well
 #         sql_store["store"].create_stack(
 #             stack=new_stack,
 #         )
@@ -732,7 +737,7 @@ def test_deleting_default_stack_fails():
 #         name="arias_stack",
 #         description="Aria likes her stacks.",
 #         components={},
-#         project=sql_store["default_project"].id,
+#         workspace=sql_store["default_workspace"].id,
 #         user=sql_store["active_user"].id,
 #     )
 #     new_stack = sql_store["store"].create_stack(
@@ -777,7 +782,7 @@ def test_deleting_default_stack_fails():
 #     new_stack = StackRequestModel(
 #         name="arias_stack",
 #         components={},
-#         project=sql_store["default_project"].id,
+#         workspace=sql_store["default_workspace"].id,
 #         user=sql_store["active_user"].id,
 #     )
 #     new_stack = sql_store["store"].create_stack(
@@ -801,17 +806,17 @@ def test_deleting_default_stack_fails():
 #     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 # ):
 #     """Tests deleting stack."""
-#     # TODO: [server] inject user and project into stack as well
+#     # TODO: [server] inject user and workspace into stack as well
 #     new_stack = StackRequestModel(
 #         name="arias_stack",
 #         components={},
-#         project=sql_store["default_project"].id,
+#         workspace=sql_store["default_workspace"].id,
 #         user=sql_store["active_user"].id,
 #     )
 #     sql_store["store"].create_stack(
 #         stack=new_stack,
 #     )
-#     stacks = sql_store["store"].list_stacks(project_name_or_id=DEFAULT_NAME)
+#     stacks = sql_store["store"].list_stacks(workspace_name_or_id=DEFAULT_NAME)
 #     assert len(stacks) == 2
 #     new_stack = [stack for stack in stacks if stack.name == "arias_stack"][0]
 #     sql_store["store"].delete_stack(new_stack.id)

@@ -33,9 +33,6 @@ from zenml.models import (
     PipelineRunRequestModel,
     PipelineRunUpdateModel,
     PipelineUpdateModel,
-    ProjectFilterModel,
-    ProjectRequestModel,
-    ProjectUpdateModel,
     RoleFilterModel,
     RoleRequestModel,
     RoleUpdateModel,
@@ -46,6 +43,9 @@ from zenml.models import (
     UserFilterModel,
     UserRequestModel,
     UserUpdateModel,
+    WorkspaceFilterModel,
+    WorkspaceRequestModel,
+    WorkspaceUpdateModel,
 )
 from zenml.models.base_models import BaseRequestModel, BaseResponseModel
 from zenml.models.page_model import Page
@@ -218,13 +218,13 @@ class CrudTestConfig(BaseModel):
         return getattr(store, f"update_{self.entity_name}")
 
 
-project_crud_test_config = CrudTestConfig(
-    create_model=ProjectRequestModel(name=sample_name("sample_project")),
-    update_model=ProjectUpdateModel(
-        name=sample_name("updated_sample_project")
+workspace_crud_test_config = CrudTestConfig(
+    create_model=WorkspaceRequestModel(name=sample_name("sample_workspace")),
+    update_model=WorkspaceUpdateModel(
+        name=sample_name("updated_sample_workspace")
     ),
-    filter_model=ProjectFilterModel,
-    entity_name="project",
+    filter_model=WorkspaceFilterModel,
+    entity_name="workspace",
 )
 user_crud_test_config = CrudTestConfig(
     create_model=UserRequestModel(name=sample_name("sample_user")),
@@ -254,7 +254,7 @@ flavor_crud_test_config = CrudTestConfig(
         source="",
         config_schema="",
         user=uuid.uuid4(),
-        project=uuid.uuid4(),
+        workspace=uuid.uuid4(),
     ),
     filter_model=FlavorFilterModel,
     entity_name="flavor",
@@ -266,7 +266,7 @@ component_crud_test_config = CrudTestConfig(
         flavor="local",
         configuration={},
         user=uuid.uuid4(),
-        project=uuid.uuid4(),
+        workspace=uuid.uuid4(),
     ),
     update_model=ComponentUpdateModel(
         name=sample_name("updated_sample_component")
@@ -279,7 +279,7 @@ pipeline_crud_test_config = CrudTestConfig(
         name=sample_name("sample_pipeline"),
         spec=PipelineSpec(steps=[]),
         user=uuid.uuid4(),
-        project=uuid.uuid4(),
+        workspace=uuid.uuid4(),
     ),
     update_model=PipelineUpdateModel(
         name=sample_name("updated_sample_pipeline")
@@ -294,7 +294,7 @@ pipeline_run_crud_test_config = CrudTestConfig(
         status=ExecutionStatus.COMPLETED,
         pipeline_configuration={},
         user=uuid.uuid4(),
-        project=uuid.uuid4(),
+        workspace=uuid.uuid4(),
     ),
     update_model=PipelineRunUpdateModel(status=ExecutionStatus.COMPLETED),
     filter_model=PipelineRunFilterModel,
@@ -308,7 +308,7 @@ artifact_crud_test_config = CrudTestConfig(
         type=ArtifactType.DATA,
         uri="",
         user=uuid.uuid4(),
-        project=uuid.uuid4(),
+        workspace=uuid.uuid4(),
     ),
     filter_model=ArtifactFilterModel,
     entity_name="artifact",
@@ -323,7 +323,7 @@ artifact_crud_test_config = CrudTestConfig(
 #         ),
 #         status=ExecutionStatus.RUNNING,
 #         user=uuid.uuid4(),
-#         project=uuid.uuid4(),
+#         workspace=uuid.uuid4(),
 #         pipeline_run_id=uuid.uuid4()   # Pipeline run with id needs to exist
 #     ),
 #     update_model=StepRunUpdateModel(status=ExecutionStatus.COMPLETED),
@@ -333,7 +333,7 @@ artifact_crud_test_config = CrudTestConfig(
 
 
 list_of_entities = [
-    project_crud_test_config,
+    workspace_crud_test_config,
     user_crud_test_config,
     role_crud_test_config,
     team_crud_test_config,
