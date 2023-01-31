@@ -727,14 +727,13 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         Returns:
             A dictionary of metadata.
         """
-        run_id = self.get_orchestrator_run_id()
         run_url = (
             f"https://console.cloud.google.com/vertex-ai/locations/"
-            f"{self.config.location}/pipelines/runs/{run_id}"
+            f"{self.config.location}/pipelines/runs/"
+            f"{self.get_orchestrator_run_id()}"
         )
         if self.config.project:
             run_url += f"?project={self.config.project}"
-
         return {
             METADATA_ORCHESTRATOR_URL: Uri(run_url),
         }

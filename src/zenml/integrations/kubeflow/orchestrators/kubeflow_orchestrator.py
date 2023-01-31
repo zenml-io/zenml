@@ -45,7 +45,6 @@ from kubernetes import config as k8s_config
 
 from zenml.artifact_stores import LocalArtifactStore
 from zenml.client import Client
-from zenml.config.base_settings import BaseSettings
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
     ENV_ZENML_LOCAL_STORES_PATH,
@@ -167,7 +166,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         return context_names, active_context_name
 
     @property
-    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+    def settings_class(self) -> Type[KubeflowOrchestratorSettings]:
         """Settings class for the Kubeflow orchestrator.
 
         Returns:
@@ -1281,21 +1280,16 @@ class KubeflowOrchestrator(BaseOrchestrator):
         run = Client().get_pipeline_run(run_id)
 
         settings_key = settings_utils.get_stack_component_setting_key(self)
-        run_settings = cast(
-            KubeflowOrchestratorSettings,
-            self.settings_class.parse_obj(
-                run.pipeline_configuration.get(settings_key, self.config)
-            ),
+        run_settings = self.settings_class.parse_obj(
+            run.pipeline_configuration.get(settings_key, self.config)
         )
         user_namespace = run_settings.user_namespace
 
         if user_namespace:
-            run_id = self.get_orchestrator_run_id()
             run_url = (
                 f"{hostname}/_/pipeline/?ns={user_namespace}#"
-                f"/runs/details/{run_id}"
+                f"/runs/details/{self.get_orchestrator_run_id()}"
             )
-
             return {
                 METADATA_ORCHESTRATOR_URL: Uri(run_url),
             }

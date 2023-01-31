@@ -30,6 +30,7 @@ from zenml.client import Client
 from zenml.enums import StackComponentType
 from zenml.metadata.metadata_types import MetadataType, Uri
 from zenml.services import BaseService, ServiceConfig
+from zenml.services.service import BaseDeploymentService
 from zenml.stack import StackComponent
 from zenml.stack.flavor import Flavor
 from zenml.stack.stack_component import StackComponentConfig
@@ -304,7 +305,10 @@ class BaseModelDeployer(StackComponent, ABC):
         )
         if existing_services:
             existing_service = existing_services[0]
-            if existing_service.is_running:
+            if (
+                isinstance(existing_service, BaseDeploymentService)
+                and existing_service.is_running
+            ):
                 return {
                     "deployed_model_uri": Uri(existing_service.prediction_url),
                 }

@@ -35,6 +35,7 @@ from zenml.services import (
     ServiceEndpointProtocol,
     ServiceType,
 )
+from zenml.services.service import BaseDeploymentService
 
 if TYPE_CHECKING:
 
@@ -132,7 +133,7 @@ class BentoMLDeploymentConfig(LocalDaemonServiceConfig):
     )
 
 
-class BentoMLDeploymentService(LocalDaemonService):
+class BentoMLDeploymentService(LocalDaemonService, BaseDeploymentService):
     """BentoML deployment service used to start a local prediction server for BentoML models.
 
     Attributes:
