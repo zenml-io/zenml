@@ -179,43 +179,45 @@ def clean_repo_session(
 
 
 @contextmanager
-def clean_project_session(
+def clean_workspace_session(
     tmp_path_factory: pytest.TempPathFactory,
     clean_repo: bool = False,
 ) -> Generator[Client, None, None]:
-    """Context manager to create, activate and use a separate ZenML project.
+    """Context manager to create, activate and use a separate ZenML workspace.
 
     Args:
         tmp_path_factory: A pytest fixture that provides a temporary directory.
         clean_repo: Whether to create and use a clean repository for the
-            project.
+            workspace.
 
     Yields:
-        A ZenML client configured to use the project.
+        A ZenML client configured to use the workspace.
     """
     from zenml.utils.string_utils import random_str
 
     client = Client()
-    original_project = client.active_project.id
+    original_workspace = client.active_workspace.id
 
-    project_name = f"pytest_{random_str(8)}"
-    client.create_project(name=project_name, description="pytest test project")
+    workspace_name = f"pytest_{random_str(8)}"
+    client.create_workspace(
+        name=workspace_name, description="pytest test workspace"
+    )
 
     if clean_repo:
         with clean_repo_session(tmp_path_factory) as repo_client:
-            repo_client.set_active_project(project_name)
+            repo_client.set_active_workspace(workspace_name)
 
-            logging.info(f"Tests are running in project: '{project_name}'")
+            logging.info(f"Tests are running in workspace: '{workspace_name}'")
             yield repo_client
     else:
-        client.set_active_project(project_name)
+        client.set_active_workspace(workspace_name)
 
-        logging.info(f"Tests are running in project: '{project_name}'")
+        logging.info(f"Tests are running in workspace: '{workspace_name}'")
         yield client
 
-    # change the active project back to what it was
-    client.set_active_project(original_project)
-    client.delete_project(project_name)
+    # change the active workspace back to what it was
+    client.set_active_workspace(original_workspace)
+    client.delete_workspace(workspace_name)
 
 
 @contextmanager

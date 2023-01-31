@@ -513,8 +513,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
             # registering the schedule
             if schedule:
                 if not schedule.name:
-                    date = datetime.now().strftime("%Y_%m_%d")
-                    time = datetime.now().strftime("%H_%M_%S_%f")
+                    date = datetime.utcnow().strftime("%Y_%m_%d")
+                    time = datetime.utcnow().strftime("%H_%M_%S_%f")
                     schedule.name = pipeline_deployment.run_name.format(
                         date=date, time=time
                     )
@@ -524,7 +524,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 components = Client().active_stack_model.components
                 orchestrator = components[StackComponentType.ORCHESTRATOR][0]
                 schedule_model = ScheduleRequestModel(
-                    project=Client().active_project.id,
+                    workspace=Client().active_workspace.id,
                     user=Client().active_user.id,
                     pipeline_id=pipeline_id,
                     orchestrator_id=orchestrator.id,

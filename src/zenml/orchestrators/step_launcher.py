@@ -157,7 +157,7 @@ class StepLauncher:
                 source_code=source_code,
                 start_time=datetime.utcnow(),
                 user=client.active_user.id,
-                project=client.active_project.id,
+                workspace=client.active_workspace.id,
             )
             try:
                 execution_needed, step_run_response = self._prepare(
@@ -236,7 +236,7 @@ class StepLauncher:
             name=run_name,
             orchestrator_run_id=self._orchestrator_run_id,
             user=client.active_user.id,
-            project=client.active_project.id,
+            workspace=client.active_workspace.id,
             stack=self._deployment.stack_id,
             pipeline=self._deployment.pipeline_id,
             schedule_id=self._deployment.schedule_id,
@@ -246,6 +246,7 @@ class StepLauncher:
             num_steps=len(self._deployment.steps),
             client_environment=self._deployment.client_environment,
             orchestrator_environment=get_run_environment_dict(),
+            start_time=datetime.utcnow(),
         )
         return client.zen_store.get_or_create_run(pipeline_run)
 
@@ -273,7 +274,7 @@ class StepLauncher:
             step=self._step,
             input_artifact_ids=input_artifact_ids,
             artifact_store=self._stack.artifact_store,
-            project_id=Client().active_project.id,
+            workspace_id=Client().active_workspace.id,
         )
 
         step_run.input_artifacts = input_artifact_ids

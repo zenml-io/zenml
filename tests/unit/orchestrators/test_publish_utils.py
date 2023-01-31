@@ -31,7 +31,7 @@ def test_publish_output_artifacts(clean_client):
         type=ArtifactType.DATA,
         name="some_name",
         user=clean_client.active_user.id,
-        project=clean_client.active_project.id,
+        workspace=clean_client.active_workspace.id,
     )
     artifact_2 = ArtifactRequestModel(
         uri="some/uri/def/",
@@ -40,7 +40,7 @@ def test_publish_output_artifacts(clean_client):
         type=ArtifactType.DATA,
         name="some_name",
         user=clean_client.active_user.id,
-        project=clean_client.active_project.id,
+        workspace=clean_client.active_workspace.id,
     )
     artifact_3 = ArtifactRequestModel(
         uri="some/uri/ghi/",
@@ -49,7 +49,7 @@ def test_publish_output_artifacts(clean_client):
         type=ArtifactType.MODEL,
         name="some_name",
         user=clean_client.active_user.id,
-        project=clean_client.active_project.id,
+        workspace=clean_client.active_workspace.id,
     )
 
     assert len(clean_client.list_artifacts()) == 0

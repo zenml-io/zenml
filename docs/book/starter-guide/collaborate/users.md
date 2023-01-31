@@ -14,9 +14,9 @@ You can go to the settings page from the bottom of the side bar or top right of 
 
 ![Personal Settings](../../assets/starter_guide/collaboration/01_personal_settings.png)
 
-## Project Settings
+## Workspace Settings
 
-![Project Settings](../../assets/starter_guide/collaboration/02_project_settings.png)
+![Workspace Settings](../../assets/starter_guide/collaboration/02_project_settings.png)
 
 In project settings, you can see a list of users who are invited or signed up for this ZenML deployment. You can go ahead and invite a new user here with a
 unique username. The dashboard will generate a new token for you, in the form of a URL that you can copy and send to your teammate.
