@@ -35,7 +35,7 @@ SELDON_DEPLOYMENT_KIND = "SeldonDeployment"
 SELDON_DEPLOYMENT_API_VERSION = "machinelearning.seldon.io/v1"
 
 
-class SeldonDeploymentPredictorParameter:
+class SeldonDeploymentPredictorParameter(BaseModel):
     name: str
     type: str
     value: str
