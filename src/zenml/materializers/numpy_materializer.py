@@ -129,12 +129,20 @@ class NumpyMaterializer(BaseMaterializer):
             The extracted metadata as a dictionary.
         """
         base_metadata = super().extract_metadata(arr)
+
+        # These functions are untyped for numpy versions supporting python
+        # 3.7, but typed for numpy versions installed on python 3.8+.
+        # We need to cast them to Any here so that numpy doesn't complain
+        # about either an untyped function call or an unused ignore statement.
+        min_val = cast(Any, np.min)(arr).item()
+        max_val = cast(Any, np.max)(arr).item()
+
         numpy_metadata: Dict[str, "MetadataType"] = {
             "shape": tuple(arr.shape),
             "dtype": DType(arr.dtype.type),
             "mean": np.mean(arr).item(),
             "std": np.std(arr).item(),
-            "min": np.min(arr).item(),
-            "max": np.max(arr).item(),
+            "min": min_val,
+            "max": max_val,
         }
         return {**base_metadata, **numpy_metadata}
