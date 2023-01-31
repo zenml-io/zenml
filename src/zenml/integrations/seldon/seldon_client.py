@@ -36,9 +36,17 @@ SELDON_DEPLOYMENT_API_VERSION = "machinelearning.seldon.io/v1"
 
 
 class SeldonDeploymentPredictorParameter(BaseModel):
-    name: str
-    type: str
-    value: str
+    name: str = ""
+    type: str = ""
+    value: str = ""
+
+    class Config:
+        """Pydantic configuration class."""
+
+        # validate attribute assignments
+        validate_assignment = True
+        # Ignore extra attributes from the CRD that are not reflected here
+        extra = "ignore"
 
 
 class SeldonDeploymentMetadata(BaseModel):
