@@ -121,7 +121,6 @@ class AirflowOrchestrator(BaseOrchestrator):
             "airflow",
             str(self.id),
         )
-        self._dag_path: Optional[str] = None
         self._set_env()
 
     @property
@@ -328,7 +327,6 @@ class AirflowOrchestrator(BaseOrchestrator):
             try:
                 fileio.copy(local_zip_path, remote_zip_path)
                 logger.info("Copied DAG definition to `%s`.", remote_zip_path)
-                self._dag_path = remote_zip_path
             except Exception as e:
                 logger.exception(e)
                 logger.error(
@@ -341,7 +339,6 @@ class AirflowOrchestrator(BaseOrchestrator):
         else:
             zip_path = os.path.join(output_dir, dag_filename)
             _write_zip(zip_path)
-            self._dag_path = zip_path
 
     def get_orchestrator_run_id(self) -> str:
         """Returns the active orchestrator run id.

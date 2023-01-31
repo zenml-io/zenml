@@ -30,24 +30,8 @@ class DType(str):
     """Special string class to indicate a data type."""
 
 
-def human_readable_size(num_bytes: int) -> str:
-    """Converts a number of bytes to a human-readable string.
-
-    Args:
-        num_bytes: The number of bytes.
-
-    Returns:
-        A human-readable string representation of the data size.
-    """
-    for unit in ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB"]:
-        if abs(num_bytes) < 1000:
-            return f"{num_bytes}{unit}"
-        num_bytes = num_bytes // 1000
-    return f"{num_bytes}YB"
-
-
 class StorageSize(int):
-    """Storage size of an artifact in number of bytes."""
+    """Special int class to indicate the storage size in number of bytes."""
 
 
 # Union of all types that can be used as metadata. Used for type annotations.

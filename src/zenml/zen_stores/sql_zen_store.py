@@ -3513,9 +3513,6 @@ class SqlZenStore(BaseZenStore):
     ) -> RunMetadataResponseModel:
         """Creates run metadata.
 
-        If run metadata with the same key already exists for the given run,
-        the existing metadata will be overwritten.
-
         Args:
             run_metadata: The run metadata to create.
 

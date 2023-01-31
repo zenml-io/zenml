@@ -841,11 +841,17 @@ class Stack:
         """
         pipeline_run_metadata: Dict[UUID, Dict[str, MetadataType]] = {}
         for component in self.components.values():
-            component_metadata = component.get_pipeline_run_metadata(
-                run_id=run_id
-            )
-            if component_metadata:
-                pipeline_run_metadata[component.id] = component_metadata
+            try:
+                component_metadata = component.get_pipeline_run_metadata(
+                    run_id=run_id
+                )
+                if component_metadata:
+                    pipeline_run_metadata[component.id] = component_metadata
+            except Exception as e:
+                logger.warning(
+                    f"Extracting pipeline run metadata failed for component "
+                    f"'{component.name}' of type '{component.type}': {e}"
+                )
         return pipeline_run_metadata
 
     def get_step_run_metadata(
@@ -863,9 +869,15 @@ class Stack:
         for component in self._get_active_components_for_step(
             info.config
         ).values():
-            component_metadata = component.get_step_run_metadata(info=info)
-            if component_metadata:
-                step_run_metadata[component.id] = component_metadata
+            try:
+                component_metadata = component.get_step_run_metadata(info=info)
+                if component_metadata:
+                    step_run_metadata[component.id] = component_metadata
+            except Exception as e:
+                logger.warning(
+                    f"Extracting step run metadata failed for component "
+                    f"'{component.name}' of type '{component.type}': {e}"
+                )
         return step_run_metadata
 
     def cleanup_step_run(self, info: "StepRunInfo", step_failed: bool) -> None:

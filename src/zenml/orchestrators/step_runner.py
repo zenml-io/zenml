@@ -392,8 +392,17 @@ class StepRunner:
             materializer = materializer_class(uri)
             materializer.save(return_value)
             if artifact_metadata_enabled:
-                artifact_metadata = materializer.extract_metadata(return_value)
-                output_artifact_metadata[output_name] = artifact_metadata
+                try:
+                    artifact_metadata = materializer.extract_metadata(
+                        return_value
+                    )
+                    output_artifact_metadata[output_name] = artifact_metadata
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to extract metadata for output artifact "
+                        f"'{output_name}' of step '{self.configuration.name}': "
+                        f"{e}"
+                    )
             output_artifact = ArtifactRequestModel(
                 name=output_name,
                 type=materializer_class.ASSOCIATED_ARTIFACT_TYPE,
