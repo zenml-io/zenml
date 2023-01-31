@@ -79,7 +79,7 @@ You can also pass in a directory path manually using the
 ```bash
 zenml init --path /path/to/dir
 
-If you wish to delete all data relating to your project from the
+If you wish to delete all data relating to your workspace from the
 directory, use the ``zenml clean`` command. This will:
 
 -  delete all pipelines and pipeline runs
@@ -201,7 +201,7 @@ zenml artifact-store register ARTIFACT_STORE_NAME --flavor=ARTIFACT_STORE_FLAVOR
 ```
 
 If you wish to list the artifact stores that have already been
-registered within your ZenML project / repository, type:
+registered within your ZenML workspace / repository, type:
 
 ```bash
 zenml artifact-store list
@@ -232,7 +232,7 @@ zenml orchestrator register ORCHESTRATOR_NAME --flavor=ORCHESTRATOR_FLAVOR [--OR
 ```
 
 If you wish to list the orchestrators that have already been registered
-within your ZenML project / repository, type:
+within your ZenML workspace / repository, type:
 
 ```bash
 zenml orchestrator list
@@ -369,8 +369,9 @@ zenml step-operator delete STEP_OPERATOR_NAME
 Setting up a Secrets Manager
 ----------------------------
 
-ZenML offers a way to securely store secrets associated with your project. To
-set up a local file-based secrets manager, use the following CLI command:
+ZenML offers a way to securely store secrets associated with your other
+stack components and infrastructure. To set up a local file-based
+secrets manager, use the following CLI command:
 
 ```bash
 zenml secrets-manager register SECRETS_MANAGER_NAME --flavor=local
@@ -477,14 +478,14 @@ zenml model-deployer register MODEL_DEPLOYER_NAME --flavor=MODEL_DEPLOYER_FLAVOR
 ```
 
 If you wish to list the model-deployers that have already been registered
-within your ZenML project / repository, type:
+within your ZenML workspace / repository, type:
 
 ```bash
 zenml model-deployer list
 ```
 
 If you wish to get more detailed information about a particular model deployer
-within your ZenML project / repository, type:
+within your ZenML workspace / repository, type:
 
 ```bash
 zenml model-deployer describe MODEL_DEPLOYER_NAME
@@ -595,7 +596,7 @@ zenml stack share STACK_NAME
 ```
 
 To list the stacks that you have registered within your current ZenML
-project, type:
+workspace, type:
 
 ```bash
 zenml stack list
@@ -743,6 +744,24 @@ To delete a pipeline run, use:
 ```bash
 zenml pipeline runs delete <PIPELINE_RUN_NAME_OR_ID>
 ```
+
+If you run any of your pipelines with `pipeline.run(schedule=...)`, ZenML keeps
+track of the schedule and you can list all schedules via:
+
+```bash
+zenml pipeline schedule list
+```
+
+To delete a schedule, use:
+
+```bash
+zenml pipeline schedule delete <SCHEDULE_NAME_OR_ID>
+```
+
+Note, however, that this will only delete the reference saved in ZenML and does
+NOT stop/delete the schedule in the respective orchestrator. This still needs to
+be done manually. For example, using the Airflow orchestrator you would have 
+to open the web UI to manually click to stop the schedule from executing.
 
 Each pipeline run automatically saves its artifacts in the artifact store. To
 list all artifacts that have been saved, use:
@@ -939,7 +958,7 @@ Example output:
 Running without an active repository root.
 Connected to a ZenML server: 'https://ac8ef63af203226194a7725ee71d85a-7635928635.us-east-1.elb.amazonaws.com'
 The current user is: 'default'
-The active project is: 'default' (global)
+The active workspace is: 'default' (global)
 The active stack is: 'default' (global)
 The status of the local dashboard:
               ZenML server 'local'              
@@ -985,11 +1004,11 @@ ssl_key: null
 ssl_verify_server_cert: false
 ```
 
-Managing users, teams, projects and roles
+Managing users, teams, workspaces and roles
 -----------------------------------------
 
 When using the ZenML service, you can manage permissions by managing users,
-teams, projects and roles using the CLI.
+teams, workspaces and roles using the CLI.
 If you want to create a new user or delete an existing one, run either
 
 ```bash
@@ -1181,7 +1200,7 @@ from zenml.cli.feature import *  # noqa
 from zenml.cli.integration import *  # noqa
 from zenml.cli.model import *  # noqa
 from zenml.cli.pipeline import *  # noqa
-from zenml.cli.project import *  # noqa
+from zenml.cli.workspace import *  # noqa
 from zenml.cli.role import *  # noqa
 from zenml.cli.secret import *  # noqa
 from zenml.cli.server import *  # noqa

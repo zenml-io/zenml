@@ -30,7 +30,7 @@ from zenml.stack.stack_component import StackComponent
 NOT_STACK_COMPONENTS = ["abc", "my_other_cat_is_called_blupus", "stack123"]
 
 
-def test_update_stack_component_succeeds(clean_project) -> None:
+def test_update_stack_component_succeeds(clean_workspace) -> None:
     """Test that valid stack component update succeeds."""
     register_command = cli.commands["container-registry"].commands["register"]
     update_command = cli.commands["container-registry"].commands["update"]
@@ -48,7 +48,7 @@ def test_update_stack_component_succeeds(clean_project) -> None:
     assert register_result.exit_code == 0
     assert (
         StackComponent.from_model(
-            clean_project.get_stack_component(
+            clean_workspace.get_stack_component(
                 name_id_or_prefix="new_container_registry",
                 component_type=StackComponentType.CONTAINER_REGISTRY,
             )
@@ -66,7 +66,7 @@ def test_update_stack_component_succeeds(clean_project) -> None:
     assert update_result.exit_code == 0
     assert (
         StackComponent.from_model(
-            clean_project.get_stack_component(
+            clean_workspace.get_stack_component(
                 name_id_or_prefix="new_container_registry",
                 component_type=StackComponentType.CONTAINER_REGISTRY,
             )
@@ -76,7 +76,7 @@ def test_update_stack_component_succeeds(clean_project) -> None:
 
 
 def test_update_stack_component_for_nonexistent_component_fails(
-    clean_project,
+    clean_workspace,
 ) -> None:
     """Test stack update of nonexistent stack fails."""
     update_command = cli.commands["orchestrator"].commands["update"]
@@ -88,7 +88,9 @@ def test_update_stack_component_for_nonexistent_component_fails(
     assert result.exit_code == 1
 
 
-def test_update_stack_component_with_name_or_uuid_fails(clean_project) -> None:
+def test_update_stack_component_with_name_or_uuid_fails(
+    clean_workspace,
+) -> None:
     """Test that updating stack component name or uuid fails."""
     register_container_registry_command = cli.commands[
         "container-registry"
@@ -118,7 +120,7 @@ def test_update_stack_component_with_name_or_uuid_fails(clean_project) -> None:
     )
     assert update_result1.exit_code == 1
     with does_not_raise():
-        clean_project.get_stack_component(
+        clean_workspace.get_stack_component(
             name_id_or_prefix="new_container_registry",
             component_type=StackComponentType.CONTAINER_REGISTRY,
         )
@@ -132,14 +134,14 @@ def test_update_stack_component_with_name_or_uuid_fails(clean_project) -> None:
     )
     assert update_result2.exit_code == 1
     with does_not_raise():
-        clean_project.get_stack_component(
+        clean_workspace.get_stack_component(
             name_id_or_prefix="new_container_registry",
             component_type=StackComponentType.CONTAINER_REGISTRY,
         )
 
 
 def test_update_stack_component_with_non_configured_property_fails(
-    clean_project,
+    clean_workspace,
 ) -> None:
     """Updating stack component with aa non-configured property fails."""
     register_container_registry_command = cli.commands[
@@ -170,7 +172,7 @@ def test_update_stack_component_with_non_configured_property_fails(
     )
     assert update_result.exit_code == 1
     with pytest.raises(AttributeError):
-        clean_project.get_stack_component(
+        clean_workspace.get_stack_component(
             name_id_or_prefix="new_container_registry",
             component_type=StackComponentType.CONTAINER_REGISTRY,
         ).__getattribute__("favorite_cat")
@@ -179,7 +181,6 @@ def test_update_stack_component_with_non_configured_property_fails(
 @pytest.fixture
 def test_flavor() -> Iterator[FlavorRequestModel]:
     """Create a flavor for testing."""
-
     aria_flavor = AriaOrchestratorFlavor()
     flavor_registry._register_flavor(aria_flavor.to_model())
     yield aria_flavor
@@ -187,10 +188,9 @@ def test_flavor() -> Iterator[FlavorRequestModel]:
 
 
 def test_remove_attribute_component_succeeds(
-    clean_project, test_flavor
+    clean_workspace, test_flavor
 ) -> None:
     """Removing an optional attribute from a stack component succeeds."""
-
     orchestrator = test_flavor.implementation_class(
         name="arias_orchestrator",
         id=uuid4(),
@@ -200,13 +200,13 @@ def test_remove_attribute_component_succeeds(
         ),
         flavor=test_flavor.name,
         type=test_flavor.type,
-        user=clean_project.active_user.id,
-        project=clean_project.active_project.id,
+        user=clean_workspace.active_user.id,
+        workspace=clean_workspace.active_workspace.id,
         created=datetime.now(),
         updated=datetime.now(),
     )
 
-    orchestrator_response = clean_project.create_stack_component(
+    orchestrator_response = clean_workspace.create_stack_component(
         name=orchestrator.name,
         component_type=orchestrator.type,
         flavor=orchestrator.flavor,
@@ -231,7 +231,7 @@ def test_remove_attribute_component_succeeds(
     )
     assert remove_attribute.exit_code == 0
 
-    orchestrator_response = clean_project.get_stack_component(
+    orchestrator_response = clean_workspace.get_stack_component(
         name_id_or_prefix=orchestrator_response.id,
         component_type=StackComponentType.ORCHESTRATOR,
     )
@@ -243,7 +243,7 @@ def test_remove_attribute_component_succeeds(
 
 
 def test_remove_attribute_component_non_existent_attributes_fail(
-    clean_project,
+    clean_workspace,
 ) -> None:
     """Removing a nonexistent component attribute fails."""
     runner = CliRunner()
@@ -262,7 +262,7 @@ def test_remove_attribute_component_non_existent_attributes_fail(
 
 
 def test_remove_attribute_component_nonexistent_component_fails(
-    clean_project,
+    clean_workspace,
 ) -> None:
     """Removing an attribute from a nonexistent stack component fails."""
     runner = CliRunner()
@@ -281,7 +281,7 @@ def test_remove_attribute_component_nonexistent_component_fails(
 
 
 def test_remove_attribute_component_required_attribute_fails(
-    clean_project, test_flavor
+    clean_workspace, test_flavor
 ) -> None:
     """Removing a required attribute from a stack component fails."""
     orchestrator = test_flavor.implementation_class(
@@ -293,13 +293,13 @@ def test_remove_attribute_component_required_attribute_fails(
         ),
         flavor=test_flavor.name,
         type=test_flavor.type,
-        user=clean_project.active_user.id,
-        project=clean_project.active_project.id,
+        user=clean_workspace.active_user.id,
+        workspace=clean_workspace.active_workspace.id,
         created=datetime.now(),
         updated=datetime.now(),
     )
 
-    orchestrator_response = clean_project.create_stack_component(
+    orchestrator_response = clean_workspace.create_stack_component(
         name=orchestrator.name,
         component_type=orchestrator.type,
         flavor=orchestrator.flavor,
@@ -321,7 +321,7 @@ def test_remove_attribute_component_required_attribute_fails(
 
 
 def test_rename_stack_component_to_preexisting_name_fails(
-    clean_project,
+    clean_workspace,
 ) -> None:
     """Renaming a component to a name that already is occupied fails."""
     register_orchestrator_command = cli.commands["orchestrator"].commands[
@@ -349,14 +349,14 @@ def test_rename_stack_component_to_preexisting_name_fails(
     )
     assert result.exit_code == 1
     with does_not_raise():
-        clean_project.get_stack_component(
+        clean_workspace.get_stack_component(
             name_id_or_prefix="new_orchestrator",
             component_type=StackComponentType.ORCHESTRATOR,
         )
 
 
 def test_rename_stack_component_nonexistent_component_fails(
-    clean_project,
+    clean_workspace,
 ) -> None:
     """Renaming nonexistent stack component fails."""
     rename_container_registry_command = cli.commands[
@@ -369,18 +369,18 @@ def test_rename_stack_component_nonexistent_component_fails(
     )
     assert result.exit_code == 1
     with pytest.raises(KeyError):
-        clean_project.get_stack_component(
+        clean_workspace.get_stack_component(
             name_id_or_prefix="arias_container_registry",
             component_type=StackComponentType.ORCHESTRATOR,
         )
     with pytest.raises(KeyError):
-        clean_project.get_stack_component(
+        clean_workspace.get_stack_component(
             name_id_or_prefix="arias_container_registry",
             component_type=StackComponentType.ORCHESTRATOR,
         )
 
 
-def test_renaming_non_core_component_succeeds(clean_project) -> None:
+def test_renaming_non_core_component_succeeds(clean_workspace) -> None:
     """Test renaming a non-core stack component succeeds."""
     new_component_name = "arias_container_registry"
     register_container_registry_command = cli.commands[
@@ -409,20 +409,19 @@ def test_renaming_non_core_component_succeeds(clean_project) -> None:
     )
     assert result.exit_code == 0
     with pytest.raises(KeyError):
-        clean_project.get_stack_component(
+        clean_workspace.get_stack_component(
             name_id_or_prefix="some_container_registry",
             component_type=StackComponentType.CONTAINER_REGISTRY,
         )
     with does_not_raise():
-        clean_project.get_stack_component(
+        clean_workspace.get_stack_component(
             name_id_or_prefix=new_component_name,
             component_type=StackComponentType.CONTAINER_REGISTRY,
         )
 
 
-def test_renaming_core_component_succeeds(clean_project) -> None:
+def test_renaming_core_component_succeeds(clean_workspace) -> None:
     """Test renaming a core stack component succeeds."""
-
     new_component_name = "arias_orchestrator"
     register_orchestrator_command = cli.commands["orchestrator"].commands[
         "register"
@@ -451,18 +450,18 @@ def test_renaming_core_component_succeeds(clean_project) -> None:
     )
     assert result.exit_code == 0
     with pytest.raises(KeyError):
-        clean_project.get_stack_component(
+        clean_workspace.get_stack_component(
             name_id_or_prefix="some_orchestrator",
             component_type=StackComponentType.ORCHESTRATOR,
         )
     with does_not_raise():
-        clean_project.get_stack_component(
+        clean_workspace.get_stack_component(
             name_id_or_prefix=new_component_name,
             component_type=StackComponentType.ORCHESTRATOR,
         )
 
 
-def test_renaming_default_component_fails(clean_project) -> None:
+def test_renaming_default_component_fails(clean_workspace) -> None:
     """Test renaming a default stack component fails."""
     new_component_name = "aria"
 
@@ -474,12 +473,12 @@ def test_renaming_default_component_fails(clean_project) -> None:
     )
     assert result.exit_code == 1
     with does_not_raise():
-        clean_project.get_stack_component(
+        clean_workspace.get_stack_component(
             name_id_or_prefix="default",
             component_type=StackComponentType.ORCHESTRATOR,
         )
     with pytest.raises(KeyError):
-        clean_project.get_stack_component(
+        clean_workspace.get_stack_component(
             name_id_or_prefix=new_component_name,
             component_type=StackComponentType.ORCHESTRATOR,
         )
@@ -491,18 +490,18 @@ def test_renaming_default_component_fails(clean_project) -> None:
     )
     assert result.exit_code == 1
     with does_not_raise():
-        clean_project.get_stack_component(
+        clean_workspace.get_stack_component(
             name_id_or_prefix="default",
             component_type=StackComponentType.ARTIFACT_STORE,
         )
     with pytest.raises(KeyError):
-        clean_project.get_stack_component(
+        clean_workspace.get_stack_component(
             name_id_or_prefix=new_component_name,
             component_type=StackComponentType.ARTIFACT_STORE,
         )
 
 
-def test_delete_default_component_fails(clean_project) -> None:
+def test_delete_default_component_fails(clean_workspace) -> None:
     """Test deleting a default stack component fails."""
     runner = CliRunner()
     delete_command = cli.commands["orchestrator"].commands["delete"]
@@ -512,7 +511,7 @@ def test_delete_default_component_fails(clean_project) -> None:
     )
     assert result.exit_code == 1
     with does_not_raise():
-        clean_project.get_stack_component(
+        clean_workspace.get_stack_component(
             name_id_or_prefix="default",
             component_type=StackComponentType.ORCHESTRATOR,
         )
@@ -523,7 +522,7 @@ def test_delete_default_component_fails(clean_project) -> None:
     )
     assert result.exit_code == 1
     with does_not_raise():
-        clean_project.get_stack_component(
+        clean_workspace.get_stack_component(
             name_id_or_prefix="default",
             component_type=StackComponentType.ARTIFACT_STORE,
         )

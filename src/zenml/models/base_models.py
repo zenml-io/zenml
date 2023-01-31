@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Base domain model definitions."""
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, Any, Dict, Type, TypeVar, Union
 from uuid import UUID
 
 from pydantic import Field
@@ -21,8 +21,8 @@ from pydantic import Field
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 
 if TYPE_CHECKING:
-    from zenml.models.project_models import ProjectResponseModel
     from zenml.models.user_models import UserResponseModel
+    from zenml.models.workspace_models import WorkspaceResponseModel
 
 
 # --------------- #
@@ -43,7 +43,14 @@ class BaseResponseModel(AnalyticsTrackedModelMixin):
     id: UUID = Field(title="The unique resource id.")
 
     created: datetime = Field(title="Time when this resource was created.")
-    updated: datetime = Field(title="Time when this resource was last updated.")
+    updated: datetime = Field(
+        title="Time when this resource was last updated."
+    )
+
+    class Config:
+        """Allow extras on Response Models."""
+
+        extra = "allow"
 
     def __hash__(self) -> int:
         """Implementation of hash magic method.
@@ -84,7 +91,7 @@ class UserScopedResponseModel(BaseResponseModel):
     Used as a base class for all domain models that are "owned" by a user.
     """
 
-    user: Optional["UserResponseModel"] = Field(
+    user: Union["UserResponseModel", None] = Field(
         title="The user that created this resource.", nullable=True
     )
 
@@ -100,43 +107,43 @@ class UserScopedResponseModel(BaseResponseModel):
         return metadata
 
 
-class ProjectScopedResponseModel(UserScopedResponseModel):
-    """Base project-scoped domain model.
+class WorkspaceScopedResponseModel(UserScopedResponseModel):
+    """Base workspace-scoped domain model.
 
-    Used as a base class for all domain models that are project-scoped.
+    Used as a base class for all domain models that are workspace-scoped.
     """
 
-    project: "ProjectResponseModel" = Field(
-        title="The project of this resource."
+    workspace: "WorkspaceResponseModel" = Field(
+        title="The workspace of this resource."
     )
 
     def get_analytics_metadata(self) -> Dict[str, Any]:
-        """Fetches the analytics metadata for project scoped models.
+        """Fetches the analytics metadata for workspace scoped models.
 
         Returns:
             The analytics metadata.
         """
         metadata = super().get_analytics_metadata()
-        metadata["project_id"] = self.project.id
+        metadata["workspace_id"] = self.workspace.id
         return metadata
 
 
-class ShareableResponseModel(ProjectScopedResponseModel):
-    """Base shareable project-scoped domain model.
+class ShareableResponseModel(WorkspaceScopedResponseModel):
+    """Base shareable workspace-scoped domain model.
 
-    Used as a base class for all domain models that are project-scoped and are
+    Used as a base class for all domain models that are workspace-scoped and are
     shareable.
     """
 
     is_shared: bool = Field(
         title=(
             "Flag describing if this resource is shared with other users in "
-            "the same project."
+            "the same workspace."
         ),
     )
 
     def get_analytics_metadata(self) -> Dict[str, Any]:
-        """Fetches the analytics metadata for project scoped models.
+        """Fetches the analytics metadata for workspace scoped models.
 
         Returns:
             The analytics metadata.
@@ -177,29 +184,31 @@ class UserScopedRequestModel(BaseRequestModel):
         return metadata
 
 
-class ProjectScopedRequestModel(UserScopedRequestModel):
-    """Base project-scoped request domain model.
+class WorkspaceScopedRequestModel(UserScopedRequestModel):
+    """Base workspace-scoped request domain model.
 
-    Used as a base class for all domain models that are project-scoped.
+    Used as a base class for all domain models that are workspace-scoped.
     """
 
-    project: UUID = Field(title="The project to which this resource belongs.")
+    workspace: UUID = Field(
+        title="The workspace to which this resource belongs."
+    )
 
     def get_analytics_metadata(self) -> Dict[str, Any]:
-        """Fetches the analytics metadata for project scoped models.
+        """Fetches the analytics metadata for workspace scoped models.
 
         Returns:
             The analytics metadata.
         """
         metadata = super().get_analytics_metadata()
-        metadata["project_id"] = self.project
+        metadata["workspace_id"] = self.workspace
         return metadata
 
 
-class ShareableRequestModel(ProjectScopedRequestModel):
-    """Base shareable project-scoped domain model.
+class ShareableRequestModel(WorkspaceScopedRequestModel):
+    """Base shareable workspace-scoped domain model.
 
-    Used as a base class for all domain models that are project-scoped and are
+    Used as a base class for all domain models that are workspace-scoped and are
     shareable.
     """
 
@@ -207,12 +216,12 @@ class ShareableRequestModel(ProjectScopedRequestModel):
         default=False,
         title=(
             "Flag describing if this resource is shared with other users in "
-            "the same project."
+            "the same workspace."
         ),
     )
 
     def get_analytics_metadata(self) -> Dict[str, Any]:
-        """Fetches the analytics metadata for project scoped models.
+        """Fetches the analytics metadata for workspace scoped models.
 
         Returns:
             The analytics metadata.

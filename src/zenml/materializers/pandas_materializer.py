@@ -88,7 +88,7 @@ class PandasMaterializer(BaseMaterializer):
                 )
         else:
             with fileio.open(self.csv_path, mode="rb") as f:
-                df = pd.read_csv(f)
+                df = pd.read_csv(f, index_col=0, parse_dates=True)
 
         # validate the type of the data.
         def is_dataframe_or_series(
@@ -122,6 +122,7 @@ class PandasMaterializer(BaseMaterializer):
         super().save(df)
 
         if isinstance(df, pd.Series):
+
             df = df.to_frame(name="series")
 
         if self.pyarrow_exists:
@@ -129,4 +130,4 @@ class PandasMaterializer(BaseMaterializer):
                 df.to_parquet(f, compression=COMPRESSION_TYPE)
         else:
             with fileio.open(self.csv_path, mode="wb") as f:
-                df.to_csv(f, index=False)
+                df.to_csv(f, index=True)

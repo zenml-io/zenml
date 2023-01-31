@@ -13,18 +13,20 @@
 #  permissions and limitations under the License.
 """Models representing pipelines."""
 
-from typing import List, Optional
+from typing import List, Optional, Union
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
 from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.enums import ExecutionStatus
 from zenml.models.base_models import (
-    ProjectScopedRequestModel,
-    ProjectScopedResponseModel,
+    WorkspaceScopedRequestModel,
+    WorkspaceScopedResponseModel,
     update_model,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
+from zenml.models.filter_models import WorkspaceScopedFilterModel
 from zenml.models.pipeline_run_models import PipelineRunResponseModel
 
 # ---- #
@@ -52,8 +54,8 @@ class PipelineBaseModel(BaseModel):
 # -------- #
 
 
-class PipelineResponseModel(PipelineBaseModel, ProjectScopedResponseModel):
-    """Pipeline response model user, project, runs, and status hydrated."""
+class PipelineResponseModel(PipelineBaseModel, WorkspaceScopedResponseModel):
+    """Pipeline response model user, workspace, runs, and status hydrated."""
 
     runs: Optional[List["PipelineRunResponseModel"]] = Field(
         title="A list of the last x Pipeline Runs."
@@ -63,12 +65,35 @@ class PipelineResponseModel(PipelineBaseModel, ProjectScopedResponseModel):
     )
 
 
+# ------ #
+# FILTER #
+# ------ #
+
+
+class PipelineFilterModel(WorkspaceScopedFilterModel):
+    """Model to enable advanced filtering of all Workspaces."""
+
+    name: str = Field(
+        default=None,
+        description="Name of the Pipeline",
+    )
+    docstring: str = Field(
+        default=None,
+        description="Docstring of the Pipeline",
+    )
+
+    workspace_id: Union[UUID, str] = Field(
+        default=None, description="Workspace of the Pipeline"
+    )
+    user_id: Union[UUID, str] = Field(None, description="User of the Pipeline")
+
+
 # ------- #
 # REQUEST #
 # ------- #
 
 
-class PipelineRequestModel(PipelineBaseModel, ProjectScopedRequestModel):
+class PipelineRequestModel(PipelineBaseModel, WorkspaceScopedRequestModel):
     """Pipeline request model."""
 
 

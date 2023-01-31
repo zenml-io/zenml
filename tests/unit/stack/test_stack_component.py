@@ -32,8 +32,7 @@ from zenml.stack.flavor_registry import flavor_registry
 
 
 def test_stack_component_default_method_implementations(stub_component):
-    """Tests the return values for default implementations of some
-    StackComponent methods."""
+    """Tests the return values for default implementations of some StackComponent methods."""
     assert stub_component.validator is None
     assert stub_component.log_file is None
     assert stub_component.settings_class is None
@@ -58,17 +57,17 @@ def test_stack_component_default_method_implementations(stub_component):
 def test_stack_component_dict_only_contains_public_attributes(
     stub_component_config,
 ):
-    """Tests that the `dict()` method which is used to serialize stack
-    components does not include private attributes."""
+    """Tests that the `dict()` method which is used to serialize stack components does not include private attributes."""
     assert stub_component_config._some_private_attribute_name == "Also Aria"
 
     expected_dict_keys = {"some_public_attribute_name"}
     assert set(stub_component_config.dict().keys()) == expected_dict_keys
 
 
-def test_stack_component_public_attributes_are_immutable(stub_component_config):
-    """Tests that stack component public attributes are immutable but private
-    attribute can be modified."""
+def test_stack_component_public_attributes_are_immutable(
+    stub_component_config,
+):
+    """Tests that stack component public attributes are immutable but private attribute can be modified."""
     with pytest.raises(TypeError):
         stub_component_config.some_public_attribute_name = "Not Aria"
 
@@ -129,7 +128,7 @@ def _get_stub_orchestrator(name, repo=None, **kwargs) -> ComponentRequestModel:
         flavor="TEST",
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4() if repo is None else repo.active_user.id,
-        project=uuid4() if repo is None else repo.active_project.id,
+        workspace=uuid4() if repo is None else repo.active_workspace.id,
     )
 
 
@@ -146,9 +145,7 @@ def register_stub_orchestrator_flavor() -> None:
 def test_stack_component_prevents_secret_references_for_some_attributes(
     clean_client, register_stub_orchestrator_flavor
 ):
-    """Tests that the stack component prevents secret references for the name
-    attribute and all attributes with associated pydantic validators."""
-
+    """Tests that the stack component prevents secret references for the name attribute and all attributes with associated pydantic validators."""
     with pytest.raises(ValueError):
         # Can't have a secret reference for the name
         _get_stub_orchestrator(name="{{secret.key}}")
@@ -176,7 +173,6 @@ def test_stack_component_secret_reference_resolving(
     clean_client, register_stub_orchestrator_flavor
 ):
     """Tests that the stack component resolves secrets if possible."""
-
     from zenml.artifact_stores import LocalArtifactStoreConfig
 
     new_artifact_store = clean_client.create_stack_component(
@@ -260,8 +256,7 @@ def test_stack_component_secret_reference_resolving(
 def test_stack_component_serialization_does_not_resolve_secrets(
     clean_client, register_stub_orchestrator_flavor
 ):
-    """Tests that all the serialization methods of a stack component don't
-    resolve secret references."""
+    """Tests that all the serialization methods of a stack component don't resolve secret references."""
     secret_ref = "{{name.key}}"
 
     new_orchestrator = clean_client.create_stack_component(

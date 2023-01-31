@@ -48,11 +48,11 @@ def daemonize(
     Use this decorator to easily transform any function into a daemon
     process.
 
-    Example:
+    For example,
 
     ```python
     import time
-    from zenml.utils.daemonizer import daemonize
+    from zenml.utils.daemon import daemonize
 
 
     @daemonize(log_file='/tmp/daemon.log', pid_file='/tmp/daemon.pid')
@@ -68,7 +68,7 @@ def daemonize(
     ```
 
     Args:
-        pid_file: an optional file where the PID of the daemon process will
+        pid_file: a file where the PID of the daemon process will
             be stored.
         log_file: file where stdout and stderr are redirected for the daemon
             process. If not supplied, the daemon will be silenced (i.e. have
@@ -91,7 +91,6 @@ def daemonize(
                 **kwargs: Keyword arguments to be passed to the decorated
                     function.
             """
-            # flake8: noqa: C901
             if sys.platform == "win32":
                 logger.error(
                     "Daemon functionality is currently not supported on Windows."
@@ -111,7 +110,6 @@ def daemonize(
     return inner_decorator
 
 
-# flake8: noqa: C901
 if sys.platform == "win32":
     logger.warning(
         "Daemon functionality is currently not supported on Windows."
@@ -131,7 +129,9 @@ else:
         children = parent.children(recursive=False)
 
         for p in children:
-            sys.stderr.write(f"Terminating child process with PID {p.pid}...\n")
+            sys.stderr.write(
+                f"Terminating child process with PID {p.pid}...\n"
+            )
             p.terminate()
         _, alive = psutil.wait_procs(
             children, timeout=CHILD_PROCESS_WAIT_TIMEOUT

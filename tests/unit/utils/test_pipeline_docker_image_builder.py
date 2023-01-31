@@ -17,24 +17,8 @@ from pathlib import Path
 from zenml.config import DockerSettings
 from zenml.integrations.sklearn import SKLEARN, SklearnIntegration
 from zenml.utils.pipeline_docker_image_builder import (
-    DOCKER_IMAGE_ZENML_CONFIG_DIR,
     PipelineDockerImageBuilder,
-    _include_global_config,
 )
-
-
-def test_including_global_config_in_build_context(tmp_path: Path):
-    """Tests that the context manager includes the global configuration in the
-    build context."""
-    root = tmp_path / "build_context"
-    config_path = root / DOCKER_IMAGE_ZENML_CONFIG_DIR
-
-    assert not config_path.exists()
-
-    with _include_global_config(build_context_root=str(root)):
-        assert config_path.exists()
-
-    assert not config_path.exists()
 
 
 def test_check_user_is_set():
@@ -45,7 +29,7 @@ def test_check_user_is_set():
             "image:tag", config
         )
     )
-    assert all(["USER" not in line for line in generated_dockerfile])
+    assert "USER" not in generated_dockerfile
 
     config = DockerSettings(user="test_user")
     generated_dockerfile = (
@@ -57,8 +41,7 @@ def test_check_user_is_set():
 
 
 def test_requirements_file_generation(mocker, local_stack, tmp_path: Path):
-    """Tests that the requirements get included in the correct order and only
-    when configured."""
+    """Tests that the requirements get included in the correct order and only when configured."""
     mocker.patch("subprocess.check_output", return_value=b"local_requirements")
 
     mocker.patch.object(

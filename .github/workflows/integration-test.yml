@@ -51,18 +51,44 @@ on:
         description: 'The test environment'
         type: choice
         options:
+          # Default ZenML deployments
           - default
           - default-docker-orchestrator
           - default-kubeflow-orchestrator
           - default-airflow-orchestrator
+          # Local ZenML server deployments
           - local-server
           - local-server-docker-orchestrator
           - local-server-kubeflow-orchestrator
           - local-server-airflow-orchestrator
+          # Local ZenML docker-compose server deployments
           - docker-server
           - docker-server-docker-orchestrator
           - docker-server-kubeflow-orchestrator
           - docker-server-airflow-orchestrator
+          # AWS ZenML server deployment with local components
+          - aws-local-orchestrator
+          - aws-docker-orchestrator
+          - aws-kubeflow-orchestrator
+          - aws-airflow-orchestrator
+          # AWS ZenML server deployment with AWS cloud components
+          - aws-cloud-local-orchestrator
+          - aws-cloud-docker-orchestrator
+          - aws-cloud-kubeflow-orchestrator
+          - aws-cloud-kubernetes-orchestrator
+          - aws-cloud-tekton-orchestrator
+          # GCP ZenML server deployment with local components
+          - gcp-local-orchestrator
+          - gcp-docker-orchestrator
+          - gcp-kubeflow-orchestrator
+          - gcp-airflow-orchestrator
+          # GCP ZenML server deployment with GCP cloud components
+          - gcp-cloud-local-orchestrator
+          - gcp-cloud-docker-orchestrator
+          - gcp-cloud-kubeflow-orchestrator
+          - gcp-cloud-kubernetes-orchestrator
+          - gcp-cloud-tekton-orchestrator
+          - gcp-cloud-vertex-ai-orchestrator
         required: false
         default: 'default'
       enable_tmate:
@@ -76,7 +102,7 @@ on:
         required: false
         default: 'no'
       tmate_timeout:
-        description: 'Timeout for tmate session'
+        description: 'Timeout for tmate session (minutes)'
         type: number
         required: false
         default: 30
@@ -95,13 +121,21 @@ jobs:
       # for more information: http://sealiesoftware.com/blog/archive/2017/6/5/Objective-C_and_fork_in_macOS_1013.html)
       OBJC_DISABLE_INITIALIZE_FORK_SAFETY: 'YES'
 
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_US_EAST_1_ENV_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_US_EAST_1_ENV_SECRET_ACCESS_KEY }}
+      AWS_US_EAST_1_SERVER_URL: ${{ secrets.AWS_US_EAST_1_SERVER_URL }}
+      AWS_US_EAST_1_SERVER_USERNAME: ${{ secrets.AWS_US_EAST_1_SERVER_USERNAME }}
+      AWS_US_EAST_1_SERVER_PASSWORD: ${{ secrets.AWS_US_EAST_1_SERVER_PASSWORD }}
+      GCP_US_EAST4_SERVER_URL: ${{ secrets.GCP_US_EAST4_SERVER_URL }}
+      GCP_US_EAST4_SERVER_USERNAME: ${{ secrets.GCP_US_EAST4_SERVER_USERNAME }}
+      GCP_US_EAST4_SERVER_PASSWORD: ${{ secrets.GCP_US_EAST4_SERVER_PASSWORD }}
 
     defaults:
       run:
         shell: bash
 
     steps:
-      - name: Maximize build space
+      - name: Maximize space for Docker
         uses: easimon/maximize-build-space@master
         with:
           root-reserve-mb: 20000
@@ -110,14 +144,33 @@ jobs:
           remove-android: 'true'
           remove-haskell: 'true'
           build-mount-path: /var/lib/docker
-        if: runner.os=='Linux' && (contains(inputs.test_environment, 'docker') || contains(inputs.test_environment, 'kubeflow'))
+        if: runner.os=='Linux' && (contains(inputs.test_environment, 'docker') || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment, 'airflow') || contains(inputs.test_environment, 'kubernetes'))
 
       - name: Reload Docker
         run:
           sudo systemctl restart docker
-        if: runner.os=='Linux' && (contains(inputs.test_environment, 'docker') || contains(inputs.test_environment, 'kubeflow'))
+        if: runner.os=='Linux' && (contains(inputs.test_environment, 'docker') || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment, 'airflow') || contains(inputs.test_environment, 'kubernetes'))
 
       - uses: actions/checkout@v2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ secrets.AWS_US_EAST_1_ENV_ROLE_ARN }}
+          aws-region: us-east-1
+        if: contains(inputs.test_environment, 'aws')
+
+      - name: Configure GCP credentials
+        uses: 'google-github-actions/auth@v1'
+        with:
+          credentials_json: '${{ secrets.GCP_US_EAST4_ENV_CREDENTIALS }}'
+        if: contains(inputs.test_environment, 'gcp')
+
+      - name: 'Set up gcloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v1'
+        with:
+          install_components: 'gke-gcloud-auth-plugin'
+        if: contains(inputs.test_environment, 'gcp')
 
       - name: Setup environment with Poetry
         uses: ./.github/actions/setup_environment
@@ -166,22 +219,70 @@ jobs:
       - name: Install K3D
         run: |
           curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
-        if: runner.os!='Windows'
+        if: runner.os!='Windows' && contains(inputs.test_environment, 'kubeflow')
 
-      - name: Install Prerequisites
+      - name: Install Prerequisites - Stage 1
         run: |
           source $VENV
-          zenml integration export-requirements --output-file requirements.txt kubeflow s3 gcp azure vault pillow evidently deepchecks great_expectations huggingface lightgbm neural_prophet pytorch tensorflow whylogs xgboost mlflow neptune
+          # install integrations: round 1
+          zenml integration export-requirements --output-file requirements.txt --ignore-integration feast --ignore-integration label_studio --ignore-integration bentoml --ignore-integration seldon --ignore-integration kserve
           pip install -r requirements.txt
           rm requirements.txt
+
+      # - name: Install Prerequisites - Stage 2
+      #   run: |
+      #     source $VENV
+      #     # install integrations: round 2, needed because:
+      #     #  - kserve requires a tritonclient version that is lower that the one needed by mlflow
+      #     #  - seldon requires a prometheus-client version that is lower that the one needed by bentoml
+      #     #  - kserve requires a ray version that is not available on python 3.10
+      #     zenml integration export-requirements --output-file requirements.txt seldon kserve
+      #     pip install -r requirements.txt
+      #     rm requirements.txt
+      #   if: inputs.python-version != '3.10'
+
+      - name: Install Prerequisites - Stage 3
+        run: |
+          source $VENV
           # re-install zenml to be sure
           poetry install --extras server
+          # install airflow requirements
+          pip install "numpy>=1.21.0,<1.24.0"
+          pip install apache-airflow-providers-docker
+          # Version 4.2.1 raises: AttributeError: type object 'Draft7Validator' has no attribute 'FORMAT_CHECKER'
+          pip install altair==4.2.0
 
       - name: Check Python Env ahead of tests
         run: |
           source $VENV
           zenml integration list
           pip list
+          pip check || true
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        run: |
+          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 715803424590.dkr.ecr.us-east-1.amazonaws.com
+        if: contains(inputs.test_environment, 'aws')
+
+      - name: Login to Amazon EKS
+        id: login-eks
+        run: |
+          aws eks --region us-east-1 update-kubeconfig --name zenml-ci-cluster --alias zenml-ci-aws-us-east-1
+        if: contains(inputs.test_environment, 'aws')
+
+      - name: Login to Google ECR
+        run: |
+          gcloud auth configure-docker --project zenml-ci
+        if: contains(inputs.test_environment, 'gcp')
+
+      - name: Login to Google GKE
+        uses: google-github-actions/get-gke-credentials@v0
+        with:
+          cluster_name: zenml-ci-cluster
+          location: us-east4
+          project_id: zenml-ci
+        if: contains(inputs.test_environment, 'gcp')
 
       - name: Setup tmate session before tests
         if: ${{ inputs.enable_tmate == 'before-tests' }}
@@ -204,4 +305,5 @@ jobs:
         run: |
           source $VENV
           zenml integration list
-
+          pip list
+          pip check || true

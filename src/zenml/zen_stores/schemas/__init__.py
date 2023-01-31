@@ -20,13 +20,14 @@ from zenml.zen_stores.schemas.flavor_schemas import FlavorSchema
 from zenml.zen_stores.schemas.identity_schemas import IdentitySchema
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
-from zenml.zen_stores.schemas.project_schemas import ProjectSchema
+from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 from zenml.zen_stores.schemas.role_schemas import (
     RolePermissionSchema,
     RoleSchema,
     TeamRoleAssignmentSchema,
     UserRoleAssignmentSchema,
 )
+from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
 from zenml.zen_stores.schemas.stack_schemas import (
     StackCompositionSchema,
     StackSchema,
@@ -51,9 +52,10 @@ __all__ = [
     "IdentitySchema",
     "PipelineRunSchema",
     "PipelineSchema",
-    "ProjectSchema",
+    "WorkspaceSchema",
     "RoleSchema",
     "RolePermissionSchema",
+    "ScheduleSchema",
     "StackSchema",
     "StackComponentSchema",
     "StackCompositionSchema",

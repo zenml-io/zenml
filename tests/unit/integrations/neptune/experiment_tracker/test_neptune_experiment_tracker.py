@@ -41,7 +41,7 @@ def neptune_experiment_tracker() -> NeptuneExperimentTracker:
         flavor="neptune",
         type=StackComponentType.EXPERIMENT_TRACKER,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -56,7 +56,7 @@ def local_orchestrator() -> LocalOrchestrator:
         flavor="local",
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -71,7 +71,7 @@ def local_artifact_store() -> LocalArtifactStore:
         flavor="local",
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -80,10 +80,10 @@ def local_artifact_store() -> LocalArtifactStore:
 def test_neptune_experiment_tracker_attributes(
     neptune_experiment_tracker,
 ) -> None:
-    """Tests that the basic attributes of the neptune experiment tracker are set
-    correctly."""
+    """Tests that the basic attributes of the neptune experiment tracker are set correctly."""
     assert (
-        neptune_experiment_tracker.type == StackComponentType.EXPERIMENT_TRACKER
+        neptune_experiment_tracker.type
+        == StackComponentType.EXPERIMENT_TRACKER
     )
     assert neptune_experiment_tracker.flavor == "neptune"
 
@@ -116,7 +116,7 @@ def test_neptune_experiment_tracker_does_not_need_explicit_api_token_or_project(
             flavor="neptune",
             type=StackComponentType.EXPERIMENT_TRACKER,
             user=uuid4(),
-            project=uuid4(),
+            workspace=uuid4(),
             created=datetime.now(),
             updated=datetime.now(),
         )

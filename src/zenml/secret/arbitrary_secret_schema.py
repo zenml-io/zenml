@@ -29,7 +29,9 @@ class ArbitrarySecretSchema(BaseSecretSchema):
     arbitrary_kv_pairs: Dict[str, Any]
 
     @root_validator(pre=True)
-    def build_arbitrary_kv_pairs(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def build_arbitrary_kv_pairs(
+        cls, values: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Pydantic root_validator for the Secret Schemas.
 
         It takes all unused passed kwargs and passes them into the

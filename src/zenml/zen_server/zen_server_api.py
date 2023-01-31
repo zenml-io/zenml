@@ -30,16 +30,17 @@ from zenml.zen_server.routers import (
     auth_endpoints,
     flavors_endpoints,
     pipelines_endpoints,
-    projects_endpoints,
     role_assignments_endpoints,
     roles_endpoints,
     runs_endpoints,
+    schedule_endpoints,
     server_endpoints,
     stack_components_endpoints,
     stacks_endpoints,
     steps_endpoints,
     teams_endpoints,
     users_endpoints,
+    workspaces_endpoints,
 )
 from zenml.zen_server.utils import ROOT_URL_PATH, initialize_zen_store
 
@@ -131,11 +132,12 @@ def dashboard(request: Request) -> Any:
 
 app.include_router(auth_endpoints.router)
 app.include_router(pipelines_endpoints.router)
-app.include_router(projects_endpoints.router)
+app.include_router(workspaces_endpoints.router)
 app.include_router(flavors_endpoints.router)
 app.include_router(roles_endpoints.router)
 app.include_router(role_assignments_endpoints.router)
 app.include_router(runs_endpoints.router)
+app.include_router(schedule_endpoints.router)
 app.include_router(server_endpoints.router)
 app.include_router(stacks_endpoints.router)
 app.include_router(stack_components_endpoints.router)

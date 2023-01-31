@@ -83,7 +83,9 @@ class Flavor:
         flavor = load_source_path_class(flavor_model.source)()  # noqa
         return cast(Flavor, flavor)
 
-    def to_model(self, integration: Optional[str] = None) -> FlavorRequestModel:
+    def to_model(
+        self, integration: Optional[str] = None
+    ) -> FlavorRequestModel:
         """Converts a flavor to a model.
 
         Args:
@@ -97,7 +99,7 @@ class Flavor:
         client = Client()
         model = FlavorRequestModel(
             user=client.active_user.id,
-            project=client.active_project.id,
+            workspace=client.active_workspace.id,
             name=self.name,
             type=self.type,
             source=resolve_class(self.__class__),  # noqa

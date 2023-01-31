@@ -12,8 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """CLI functionality to interact with artifacts."""
-
-
+from functools import partial
+from typing import Any
 from uuid import UUID
 
 import click
@@ -23,6 +23,7 @@ from zenml.cli.cli import TagGroup, cli
 from zenml.client import Client
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
+from zenml.models.artifact_models import ArtifactFilterModel
 
 logger = get_logger(__name__)
 
@@ -32,11 +33,12 @@ def artifact() -> None:
     """List or delete artifacts."""
 
 
+@cli_utils.list_options(ArtifactFilterModel)
 @artifact.command("list", help="List all artifacts.")
-def list_artifacts() -> None:
+def list_artifacts(**kwargs: Any) -> None:
     """List all artifacts."""
     cli_utils.print_active_config()
-    artifacts = Client().list_artifacts()
+    artifacts = Client().list_artifacts(**kwargs)
 
     if not artifacts:
         logger.info("No artifacts found.")
@@ -48,7 +50,7 @@ def list_artifacts() -> None:
             "created",
             "updated",
             "user",
-            "project",
+            "workspace",
             "producer_step_run_id",
         ],
     )
@@ -141,7 +143,10 @@ def prune_artifacts(
     """
     cli_utils.print_active_config()
 
-    unused_artifacts = Client().list_artifacts(only_unused=True)
+    client = Client()
+    unused_artifacts = client.depaginate(
+        partial(client.list_artifacts, only_unused=True)
+    )
 
     if not unused_artifacts:
         cli_utils.declare("No unused artifacts found.")

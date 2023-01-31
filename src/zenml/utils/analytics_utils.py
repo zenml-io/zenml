@@ -93,12 +93,12 @@ class AnalyticsEvent(str, Enum):
     UPDATED_TEAM = "Team updated"
     DELETED_TEAM = "Team deleted"
 
-    # Projects
-    CREATED_PROJECT = "Project created"
-    CREATED_DEFAULT_PROJECT = "Default project created"
-    UPDATED_PROJECT = "Project updated"
-    DELETED_PROJECT = "Project deleted"
-    SET_PROJECT = "Project set"
+    # Workspaces
+    CREATED_WORKSPACE = "Workspace created"
+    CREATED_DEFAULT_WORKSPACE = "Default workspace created"
+    UPDATED_WORKSPACE = "Workspace updated"
+    DELETED_WORKSPACE = "Workspace deleted"
+    SET_WORKSPACE = "Workspace set"
 
     # Role
     CREATED_ROLE = "Role created"
@@ -428,7 +428,7 @@ def track_event(
 def parametrized(
     dec: Callable[..., Callable[..., Any]]
 ) -> Callable[..., Callable[[Callable[..., Any]], Callable[..., Any]]]:
-    """This is a meta-decorator, that is, a decorator for decorators.
+    """A meta-decorator, that is, a decorator for decorators.
 
     As a decorator is a function, it actually works as a regular decorator
     with arguments.
@@ -627,10 +627,7 @@ class event_handler(object):
         if type_ is not None:
             self.metadata.update({"event_error_type": type_.__name__})
 
-        try:
-            if self.tracker:
-                self.tracker.track_event(self.event, self.metadata)
-            else:
-                track_event(self.event, self.metadata)
-        except Exception as e:
-            logger.debug(f"Analytics tracking failure: {e}")
+        if self.tracker:
+            self.tracker.track_event(self.event, self.metadata)
+        else:
+            track_event(self.event, self.metadata)

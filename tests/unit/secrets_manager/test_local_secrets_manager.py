@@ -38,7 +38,7 @@ def local_secrets_manager():
         flavor="default",
         type=StackComponentType.SECRETS_MANAGER,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -47,15 +47,13 @@ def local_secrets_manager():
 
 
 def test_local_secrets_manager_attributes(local_secrets_manager):
-    """Tests that the basic attributes of the local secrets manager are set
-    correctly."""
+    """Tests that the basic attributes of the local secrets manager are set correctly."""
     assert local_secrets_manager.type == StackComponentType.SECRETS_MANAGER
     assert local_secrets_manager.flavor == "default"
 
 
 def test_local_secrets_manager_creates_file(local_secrets_manager):
-    """Tests that the initialization of the local secrets manager creates
-    a yaml file at the right location."""
+    """Tests that the initialization of the local secrets manager creates a yaml file at the right location."""
     name = "test_name"
     key = "test_key"
     value = "test_value"

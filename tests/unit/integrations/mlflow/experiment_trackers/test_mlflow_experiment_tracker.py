@@ -47,8 +47,7 @@ from zenml.stack.stack_component import StackComponentConfig
 
 
 def test_mlflow_experiment_tracker_attributes() -> None:
-    """Tests that the basic attributes of the MLflow experiment tracker are set
-    correctly."""
+    """Tests that the basic attributes of the MLflow experiment tracker are set correctly."""
     experiment_tracker = MLFlowExperimentTracker(
         name="",
         id=uuid4(),
@@ -63,7 +62,7 @@ def test_mlflow_experiment_tracker_attributes() -> None:
         flavor="mlflow",
         type=StackComponentType.EXPERIMENT_TRACKER,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -73,8 +72,7 @@ def test_mlflow_experiment_tracker_attributes() -> None:
 
 
 def test_mlflow_experiment_tracker_stack_validation() -> None:
-    """Tests that the MLflow experiment tracker validates that it's stack has a
-    `LocalArtifactStore` if no tracking URI is set."""
+    """Tests that the MLflow experiment tracker validates that its stack has a `LocalArtifactStore` if no tracking URI is set."""
     experiment_tracker = MLFlowExperimentTracker(
         name="",
         id=uuid4(),
@@ -82,7 +80,7 @@ def test_mlflow_experiment_tracker_stack_validation() -> None:
         flavor="mlflow",
         type=StackComponentType.EXPERIMENT_TRACKER,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -94,7 +92,7 @@ def test_mlflow_experiment_tracker_stack_validation() -> None:
         flavor="local",
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -105,7 +103,7 @@ def test_mlflow_experiment_tracker_stack_validation() -> None:
         flavor="local",
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -116,7 +114,7 @@ def test_mlflow_experiment_tracker_stack_validation() -> None:
         flavor="gcp",
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -141,9 +139,7 @@ def test_mlflow_experiment_tracker_stack_validation() -> None:
 
 
 def test_mlflow_experiment_tracker_authentication() -> None:
-    """Tests that the MLflow experiment tracker validates the authentication
-    parameters."""
-
+    """Tests that the MLflow experiment tracker validates the authentication parameters."""
     # should raise because no authentication parameters are set
     with pytest.raises(ValidationError):
         MLFlowExperimentTracker(
@@ -155,7 +151,7 @@ def test_mlflow_experiment_tracker_authentication() -> None:
             flavor="mlflow",
             type=StackComponentType.EXPERIMENT_TRACKER,
             user=uuid4(),
-            project=uuid4(),
+            workspace=uuid4(),
             created=datetime.now(),
             updated=datetime.now(),
         )
@@ -171,7 +167,7 @@ def test_mlflow_experiment_tracker_authentication() -> None:
             flavor="mlflow",
             type=StackComponentType.EXPERIMENT_TRACKER,
             user=uuid4(),
-            project=uuid4(),
+            workspace=uuid4(),
             created=datetime.now(),
             updated=datetime.now(),
         )
@@ -189,7 +185,7 @@ def test_mlflow_experiment_tracker_authentication() -> None:
             flavor="mlflow",
             type=StackComponentType.EXPERIMENT_TRACKER,
             user=uuid4(),
-            project=uuid4(),
+            workspace=uuid4(),
             created=datetime.now(),
             updated=datetime.now(),
         )
@@ -207,7 +203,7 @@ def test_mlflow_experiment_tracker_authentication() -> None:
             flavor="mlflow",
             type=StackComponentType.EXPERIMENT_TRACKER,
             user=uuid4(),
-            project=uuid4(),
+            workspace=uuid4(),
             created=datetime.now(),
             updated=datetime.now(),
         )
@@ -224,7 +220,7 @@ def test_mlflow_experiment_tracker_authentication() -> None:
             flavor="mlflow",
             type=StackComponentType.EXPERIMENT_TRACKER,
             user=uuid4(),
-            project=uuid4(),
+            workspace=uuid4(),
             created=datetime.now(),
             updated=datetime.now(),
         )
@@ -241,15 +237,14 @@ def test_mlflow_experiment_tracker_authentication() -> None:
             flavor="mlflow",
             type=StackComponentType.EXPERIMENT_TRACKER,
             user=uuid4(),
-            project=uuid4(),
+            workspace=uuid4(),
             created=datetime.now(),
             updated=datetime.now(),
         )
 
 
 def test_mlflow_experiment_tracker_set_config(local_stack: Stack) -> None:
-    """Tests that the MLflow experiment tracker sets the MLflow configuration
-    correctly."""
+    """Tests that the MLflow experiment tracker sets the MLflow configuration correctly."""
     local_stack._experiment_tracker = MLFlowExperimentTracker(
         name="",
         id=uuid4(),
@@ -263,7 +258,7 @@ def test_mlflow_experiment_tracker_set_config(local_stack: Stack) -> None:
         flavor="mlflow",
         type=StackComponentType.EXPERIMENT_TRACKER,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -288,7 +283,7 @@ def test_mlflow_experiment_tracker_set_config(local_stack: Stack) -> None:
         flavor="mlflow",
         type=StackComponentType.EXPERIMENT_TRACKER,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )

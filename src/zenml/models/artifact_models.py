@@ -13,18 +13,19 @@
 #  permissions and limitations under the License.
 """Models representing artifacts."""
 
-from typing import Optional
+from typing import ClassVar, List, Optional, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field
 
 from zenml.enums import ArtifactType
 from zenml.models.base_models import (
-    ProjectScopedRequestModel,
-    ProjectScopedResponseModel,
+    WorkspaceScopedRequestModel,
+    WorkspaceScopedResponseModel,
     update_model,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
+from zenml.models.filter_models import WorkspaceScopedFilterModel
 
 # ---- #
 # BASE #
@@ -59,10 +60,57 @@ class ArtifactBaseModel(BaseModel):
 # -------- #
 
 
-class ArtifactResponseModel(ArtifactBaseModel, ProjectScopedResponseModel):
+class ArtifactResponseModel(ArtifactBaseModel, WorkspaceScopedResponseModel):
     """Response model for artifacts."""
 
     producer_step_run_id: Optional[UUID]
+
+
+# ------ #
+# FILTER #
+# ------ #
+
+
+class ArtifactFilterModel(WorkspaceScopedFilterModel):
+    """Model to enable advanced filtering of all Artifacts."""
+
+    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *WorkspaceScopedFilterModel.FILTER_EXCLUDE_FIELDS,
+        "only_unused",
+    ]
+
+    name: str = Field(
+        default=None,
+        description="Name of the artifact",
+    )
+    uri: str = Field(
+        default=None,
+        description="Uri of the artifact",
+    )
+    materializer: str = Field(
+        default=None,
+        description="Materializer used to produce the artifact",
+    )
+    type: str = Field(
+        default=None,
+        description="Type of the artifact",
+    )
+    data_type: str = Field(
+        default=None,
+        description="Datatype of the artifact",
+    )
+    artifact_store_id: Union[UUID, str] = Field(
+        default=None, description="Artifact store for this artifact"
+    )
+    workspace_id: Union[UUID, str] = Field(
+        default=None, description="Workspace for this artifact"
+    )
+    user_id: Union[UUID, str] = Field(
+        default=None, description="User that produced this artifact"
+    )
+    only_unused: bool = Field(
+        default=False, description="Filter only for unused artifacts"
+    )
 
 
 # ------- #
@@ -70,7 +118,7 @@ class ArtifactResponseModel(ArtifactBaseModel, ProjectScopedResponseModel):
 # ------- #
 
 
-class ArtifactRequestModel(ArtifactBaseModel, ProjectScopedRequestModel):
+class ArtifactRequestModel(ArtifactBaseModel, WorkspaceScopedRequestModel):
     """Request model for artifacts."""
 
 

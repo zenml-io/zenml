@@ -101,7 +101,7 @@ class BaseOrchestrator(StackComponent, ABC):
         deployment: "PipelineDeployment",
         stack: "Stack",
     ) -> Any:
-        """This method needs to be implemented by the respective orchestrator.
+        """The method needs to be implemented by the respective orchestrator.
 
         Depending on the type of orchestrator you'll have to perform slightly
         different operations.

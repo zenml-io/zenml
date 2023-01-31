@@ -28,13 +28,15 @@ from zenml.config.strict_base_model import StrictBaseModel
 class PipelineDeployment(StrictBaseModel):
     """Class representing the deployment of a ZenML pipeline."""
 
-    zenml_version: str = zenml.__version__
     run_name: str
     schedule: Optional[Schedule] = None
+    schedule_id: Optional[UUID] = None
     stack_id: UUID
     pipeline: PipelineConfiguration
     pipeline_id: Optional[UUID] = None
     steps: Dict[str, Step] = {}
+    zenml_version: str = zenml.__version__
+    client_environment: Dict[str, str] = {}
 
     def add_extra(self, key: str, value: Any) -> None:
         """Adds an extra key-value pair to the pipeline configuration.

@@ -36,15 +36,14 @@ def _get_gcp_artifact_store(**kwargs):
         flavor="gcp",
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
 
 
 def test_must_be_gcs_path():
-    """Checks that a gcp artifact store can only be initialized with a gcs
-    path."""
+    """Checks that a gcp artifact store can only be initialized with a gcspath."""
     with pytest.raises(ArtifactStoreInterfaceError):
         _get_gcp_artifact_store(path="/local/path")
 

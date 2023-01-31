@@ -20,10 +20,10 @@ from zenml.cli.utils import parse_name_and_extra_arguments
 from zenml.client import Client
 from zenml.enums import PermissionType
 from zenml.models import (
-    ProjectResponseModel,
     RoleResponseModel,
     TeamResponseModel,
     UserResponseModel,
+    WorkspaceResponseModel,
 )
 from zenml.utils.string_utils import random_str
 
@@ -94,13 +94,12 @@ def sample_team_name() -> str:
 
 
 def create_sample_team() -> TeamResponseModel:
-    """Fixture to get a clean global configuration and repository for an
-    individual test."""
+    """Fixture to get a clean global configuration and repository for an individual test."""
     return Client().create_team(name=sample_team_name())
 
 
 def test_parse_name_and_extra_arguments_returns_a_dict_of_known_options() -> None:
-    """Check that parse_name_and_extra_arguments returns a dict of known options"""
+    """Check that parse_name_and_extra_arguments returns a dict of known options."""
     name, parsed_sample_args = parse_name_and_extra_arguments(
         SAMPLE_CUSTOM_ARGUMENTS
     )
@@ -123,15 +122,15 @@ def create_sample_role() -> RoleResponseModel:
     )
 
 
-def sample_project_name() -> str:
-    """Function to get random project name."""
+def sample_workspace_name() -> str:
+    """Function to get random workspace name."""
     return f"cat_prj_{random_str(4)}"
 
 
-def create_sample_project() -> ProjectResponseModel:
+def create_sample_workspace() -> WorkspaceResponseModel:
     """Fixture to get a global configuration with a  role."""
-    return Client().create_project(
-        name=sample_project_name(),
-        description="This project aims to ensure world domination for all "
+    return Client().create_workspace(
+        name=sample_workspace_name(),
+        description="This workspace aims to ensure world domination for all "
         "cat-kind.",
     )

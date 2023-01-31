@@ -43,7 +43,9 @@ if TYPE_CHECKING:
     from zenml.integrations.s3.artifact_stores import S3ArtifactStore
 
 
-class S3ArtifactStoreConfig(BaseArtifactStoreConfig, AuthenticationConfigMixin):
+class S3ArtifactStoreConfig(
+    BaseArtifactStoreConfig, AuthenticationConfigMixin
+):
     """Configuration for the S3 Artifact Store.
 
     All attributes of this class except `path` will be passed to the

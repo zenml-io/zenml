@@ -12,19 +12,28 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for role assignments."""
-from typing import List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Security
+from fastapi import APIRouter, Depends, Security
 
-from zenml.constants import API, ROLE_ASSIGNMENTS, VERSION_1
+from zenml.constants import API, USER_ROLE_ASSIGNMENTS, VERSION_1
 from zenml.enums import PermissionType
-from zenml.models import RoleAssignmentRequestModel, RoleAssignmentResponseModel
+from zenml.models import (
+    UserRoleAssignmentFilterModel,
+    UserRoleAssignmentRequestModel,
+    UserRoleAssignmentResponseModel,
+)
+from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
-from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
+from zenml.zen_server.utils import (
+    error_response,
+    handle_exceptions,
+    make_dependable,
+    zen_store,
+)
 
 router = APIRouter(
-    prefix=API + VERSION_1 + ROLE_ASSIGNMENTS,
+    prefix=API + VERSION_1 + USER_ROLE_ASSIGNMENTS,
     tags=["role_assignments"],
     responses={401: error_response},
 )
@@ -32,50 +41,39 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=List[RoleAssignmentResponseModel],
+    response_model=Page[UserRoleAssignmentResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def list_role_assignments(
-    project_name_or_id: Optional[Union[str, UUID]] = None,
-    role_name_or_id: Optional[Union[str, UUID]] = None,
-    team_name_or_id: Optional[Union[str, UUID]] = None,
-    user_name_or_id: Optional[Union[str, UUID]] = None,
+def list_user_role_assignments(
+    user_role_assignment_filter_model: UserRoleAssignmentFilterModel = Depends(
+        make_dependable(UserRoleAssignmentFilterModel)
+    ),
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> List[RoleAssignmentResponseModel]:
+) -> Page[UserRoleAssignmentResponseModel]:
     """Returns a list of all role assignments.
 
     Args:
-        project_name_or_id: If provided, only list assignments for the given
-            project
-        role_name_or_id: If provided, only list assignments of the given
-            role
-        team_name_or_id: If provided, only list assignments for the given
-            team
-        user_name_or_id: If provided, only list assignments for the given
-            user
+        user_role_assignment_filter_model: filter models for user role assignments
 
     Returns:
         List of all role assignments.
     """
-    return zen_store().list_role_assignments(
-        project_name_or_id=project_name_or_id,
-        role_name_or_id=role_name_or_id,
-        team_name_or_id=team_name_or_id,
-        user_name_or_id=user_name_or_id,
+    return zen_store().list_user_role_assignments(
+        user_role_assignment_filter_model=user_role_assignment_filter_model
     )
 
 
 @router.post(
     "",
-    response_model=RoleAssignmentResponseModel,
+    response_model=UserRoleAssignmentResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
 def create_role_assignment(
-    role_assignment: RoleAssignmentRequestModel,
+    role_assignment: UserRoleAssignmentRequestModel,
     _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
-) -> RoleAssignmentResponseModel:
+) -> UserRoleAssignmentResponseModel:
     """Creates a role assignment.
 
     # noqa: DAR401
@@ -86,19 +84,21 @@ def create_role_assignment(
     Returns:
         The created role assignment.
     """
-    return zen_store().create_role_assignment(role_assignment=role_assignment)
+    return zen_store().create_user_role_assignment(
+        user_role_assignment=role_assignment
+    )
 
 
 @router.get(
     "/{role_assignment_id}",
-    response_model=RoleAssignmentResponseModel,
+    response_model=UserRoleAssignmentResponseModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_role_assignment(
     role_assignment_id: UUID,
     _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> RoleAssignmentResponseModel:
+) -> UserRoleAssignmentResponseModel:
     """Returns a specific role assignment.
 
     Args:
@@ -107,8 +107,8 @@ def get_role_assignment(
     Returns:
         A specific role assignment.
     """
-    return zen_store().get_role_assignment(
-        role_assignment_id=role_assignment_id
+    return zen_store().get_user_role_assignment(
+        user_role_assignment_id=role_assignment_id
     )
 
 
@@ -126,4 +126,6 @@ def delete_role_assignment(
     Args:
         role_assignment_id: The ID of the role assignment.
     """
-    zen_store().delete_role_assignment(role_assignment_id=role_assignment_id)
+    zen_store().delete_user_role_assignment(
+        user_role_assignment_id=role_assignment_id
+    )

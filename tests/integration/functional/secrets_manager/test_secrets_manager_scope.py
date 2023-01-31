@@ -32,7 +32,9 @@ def test_scope_defaults_to_component(
     default_secrets_manager: BaseSecretsManager,
 ):
     """Tests that secrets managers are component-scoped by default."""
-    assert default_secrets_manager.config.scope == SecretsManagerScope.COMPONENT
+    assert (
+        default_secrets_manager.config.scope == SecretsManagerScope.COMPONENT
+    )
 
 
 def test_scope_namespace_required(request: pytest.FixtureRequest):
@@ -232,7 +234,6 @@ def test_secrets_shared_at_scope_level(
     that the secrets added, updated and deleted in one instance are immediately
     visible in the second instance.
     """
-
     # secrets managers using component scope also have to share the same ID
     # value to be in the same scope, which is not possible
     if secrets_manager.config.scope == SecretsManagerScope.COMPONENT:

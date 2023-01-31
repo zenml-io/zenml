@@ -52,6 +52,7 @@ class FlavorRegistry:
             GCPContainerRegistryFlavor,
             GitHubContainerRegistryFlavor,
         )
+        from zenml.image_builders import LocalImageBuilderFlavor
         from zenml.orchestrators import (
             LocalDockerOrchestratorFlavor,
             LocalOrchestratorFlavor,
@@ -68,6 +69,7 @@ class FlavorRegistry:
             GCPContainerRegistryFlavor,
             GitHubContainerRegistryFlavor,
             LocalSecretsManagerFlavor,
+            LocalImageBuilderFlavor,
         )
         for flavor in default_flavors:
             flavor_instance = flavor()  # type: ignore[abstract]
@@ -114,7 +116,7 @@ class FlavorRegistry:
             # This is a small trick to convert the request to response
             id=UUID(int=0),
             user=client.active_user,
-            project=client.active_project,
+            workspace=client.active_workspace,
             created=datetime.utcnow(),
             updated=datetime.utcnow(),
         )
