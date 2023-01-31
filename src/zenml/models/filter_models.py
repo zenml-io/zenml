@@ -78,6 +78,12 @@ class Filter(BaseModel, ABC):
 
         Args:
             op: The operation of this filter.
+
+        Returns:
+            The operation if it is valid.
+
+        Raises:
+            ValueError: If the operation is not valid for this field type.
         """
         if op not in cls.ALLOWED_OPS:
             raise ValueError(
@@ -279,7 +285,18 @@ class BaseFilterModel(BaseModel):
 
     @validator("sort_by", pre=True)
     def validate_sort_by(cls, v: str) -> str:
-        """Validate that the sort_column is a valid column with a valid operand."""
+        """Validate that the sort_column is a valid column with a valid operand.
+
+        Args:
+            v: The sort_by field value.
+
+        Returns:
+            The validated sort_by field value.
+
+        Raises:
+            ValidationError: If the sort_by field is not a string.
+            ValueError: If the resource can't be sorted by this field.
+        """
         # Somehow pydantic allows you to pass in int values, which will be
         #  interpreted as string, however within the validator they are still
         #  integers, which don't have a .split() method
@@ -316,20 +333,35 @@ class BaseFilterModel(BaseModel):
 
     @root_validator(pre=True)
     def filter_ops(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """Parse incoming filters to ensure all filters are legal."""
+        """Parse incoming filters to ensure all filters are legal.
+
+        Args:
+            values: The values of the class.
+
+        Returns:
+            The values of the class.
+        """
         cls._generate_filter_list(values)
         return values
 
     @property
     def list_of_filters(self) -> List[Filter]:
-        """Converts the class variables into a list of usable Filter Models."""
+        """Converts the class variables into a list of usable Filter Models.
+
+        Returns:
+            A list of Filter models.
+        """
         return self._generate_filter_list(
             {key: getattr(self, key) for key in self.__fields__}
         )
 
     @property
     def sorting_params(self) -> Tuple[str, SorterOps]:
-        """Converts the class variables into a list of usable Filter Models."""
+        """Converts the class variables into a list of usable Filter Models.
+
+        Returns:
+            A tuple of the column to sort by and the sorting operand.
+        """
         column = self.sort_by
         # The default sorting operand is asc
         operator = SorterOps.ASCENDING
@@ -468,27 +500,62 @@ class BaseFilterModel(BaseModel):
 
     @classmethod
     def is_datetime_field(cls, k: str) -> bool:
-        """Checks if it's a datetime field."""
+        """Checks if it's a datetime field.
+
+        Args:
+            k: The key to check.
+
+        Returns:
+            True if the field is a datetime field, False otherwise.
+        """
         return issubclass(datetime, get_args(cls.__fields__[k].type_))
 
     @classmethod
     def is_uuid_field(cls, k: str) -> bool:
-        """Checks if it's a uuid field."""
+        """Checks if it's a uuid field.
+
+        Args:
+            k: The key to check.
+
+        Returns:
+            True if the field is a uuid field, False otherwise.
+        """
         return issubclass(UUID, get_args(cls.__fields__[k].type_))
 
     @classmethod
     def is_int_field(cls, k: str) -> bool:
-        """Checks if it's a int field."""
+        """Checks if it's a int field.
+
+        Args:
+            k: The key to check.
+
+        Returns:
+            True if the field is a int field, False otherwise.
+        """
         return issubclass(int, get_args(cls.__fields__[k].type_))
 
     @classmethod
     def is_bool_field(cls, k: str) -> bool:
-        """Checks if it's a bool field."""
+        """Checks if it's a bool field.
+
+        Args:
+            k: The key to check.
+
+        Returns:
+            True if the field is a bool field, False otherwise.
+        """
         return issubclass(bool, get_args(cls.__fields__[k].type_))
 
     @classmethod
     def is_str_field(cls, k: str) -> bool:
-        """Checks if it's a string field."""
+        """Checks if it's a string field.
+
+        Args:
+            k: The key to check.
+
+        Returns:
+            True if the field is a string field, False otherwise.
+        """
         return (
             issubclass(str, get_args(cls.__fields__[k].type_))
             or cls.__fields__[k].type_ == str
@@ -595,7 +662,12 @@ class BaseFilterModel(BaseModel):
 
     @property
     def offset(self) -> int:
-        """Returns the offset needed for the query on the data persistence layer."""
+        """Returns the offset needed for the query on the data persistence
+        layer.
+
+        Returns:
+            The offset for the query.
+        """
         return self.size * (self.page - 1)
 
     def generate_filter(
@@ -608,6 +680,9 @@ class BaseFilterModel(BaseModel):
 
         Returns:
             The filter expression for the query.
+
+        Raises:
+            RuntimeError: If a valid logical operator is not supplied.
         """
         from sqlalchemy import and_
         from sqlmodel import or_
@@ -642,7 +717,11 @@ class WorkspaceScopedFilterModel(BaseFilterModel):
     )
 
     def set_scope_workspace(self, workspace_id: UUID) -> None:
-        """Set the workspace to scope this response."""
+        """Set the workspace to scope this response.
+
+        Args:
+            workspace_id: The workspace to scope this response to.
+        """
         self.scope_workspace = workspace_id
 
     def generate_filter(
@@ -687,7 +766,11 @@ class ShareableWorkspaceScopedFilterModel(WorkspaceScopedFilterModel):
     )
 
     def set_scope_user(self, user_id: UUID) -> None:
-        """Set the user that is performing the filtering to scope the response."""
+        """Set the user that is performing the filtering to scope the response.
+
+        Args:
+            user_id: The user ID to scope the response to.
+        """
         self.scope_user = user_id
 
     def generate_filter(
