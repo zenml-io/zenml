@@ -99,7 +99,7 @@ class BuiltInMaterializer(BaseMaterializer):
         base_metadata = super().extract_metadata(data)
         builtin_metadata: Dict[str, "MetadataType"] = {}
 
-        # For bools and numbers, add the string representation as metadata.
+        # For boolean and numbers, add the string representation as metadata.
         # We don't to this for strings because they can be arbitrarily long.
         if isinstance(data, (bool, float, int)):
             builtin_metadata["string_representation"] = str(data)
