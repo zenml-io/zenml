@@ -119,6 +119,7 @@ Bentos
 Bing
 Bitbucket
 BluePill
+Blupus
 BuildContext
 CIDR
 CLI
@@ -450,6 +451,7 @@ MjYxMzI
 ModelArtifact
 ModelMesh
 ModelRun
+ModelServer
 ModuleNotFoundError
 MyAlerterConfig
 MyArtifacStoreFlavor
@@ -548,6 +550,7 @@ ProfileConfiguration
 ProfileVisualizer
 ProgrammingError
 ProvisioningError
+ps
 PutObject
 PyPI
 PyPi

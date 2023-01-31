@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -14,15 +14,14 @@
 """Implementation of the post-execution pipeline run class."""
 
 from collections import OrderedDict
-from datetime import datetime
 from functools import partial
 from typing import Any, Dict, List, Optional, cast
-from uuid import UUID
 
 from zenml.client import Client
 from zenml.enums import ExecutionStatus
 from zenml.logger import get_apidocs_link, get_logger
 from zenml.models import PipelineRunResponseModel
+from zenml.post_execution.base_view import BaseView
 from zenml.post_execution.step import StepView
 
 logger = get_logger(__name__)
@@ -59,7 +58,7 @@ def get_run(name: str) -> "PipelineRunView":
 
 
 def get_unlisted_runs() -> List["PipelineRunView"]:
-    """Fetches post-execution views the most recent 50 unlisted runs.
+    """Fetches the post-execution views of the 50 most recent unlisted runs.
 
     Unlisted runs are runs that are not associated with any pipeline.
 
@@ -73,12 +72,15 @@ def get_unlisted_runs() -> List["PipelineRunView"]:
     return [PipelineRunView(model) for model in runs.items]
 
 
-class PipelineRunView:
+class PipelineRunView(BaseView):
     """Post-execution pipeline run class.
 
     This can be used to query steps and artifact information associated with a
     pipeline execution.
     """
+
+    MODEL_CLASS = PipelineRunResponseModel
+    REPR_KEYS = ["id", "name"]
 
     def __init__(self, model: PipelineRunResponseModel):
         """Initializes a post-execution pipeline run object.
@@ -89,45 +91,17 @@ class PipelineRunView:
         Args:
             model: The model to initialize this object from.
         """
-        self._model = model
+        super().__init__(model)
         self._steps: Dict[str, StepView] = OrderedDict()
 
     @property
-    def id(self) -> UUID:
-        """Returns the ID of this pipeline run.
+    def model(self) -> PipelineRunResponseModel:
+        """Returns the underlying `PipelineRunResponseModel`.
 
         Returns:
-            The ID of this pipeline run.
+            The underlying `PipelineRunResponseModel`.
         """
-        assert self._model.id is not None
-        return self._model.id
-
-    @property
-    def name(self) -> str:
-        """Returns the name of the pipeline run.
-
-        Returns:
-            The name of the pipeline run.
-        """
-        return self._model.name
-
-    @property
-    def pipeline_configuration(self) -> Dict[str, Any]:
-        """Returns the pipeline configuration.
-
-        Returns:
-            The pipeline configuration.
-        """
-        return self._model.pipeline_configuration
-
-    @property
-    def schedule_id(self) -> Optional[UUID]:
-        """Returns the ID of the schedule that triggered this pipeline run.
-
-        Returns:
-            The ID of the schedule that triggered this pipeline run.
-        """
-        return self._model.schedule_id
+        return cast(PipelineRunResponseModel, self._model)
 
     @property
     def settings(self) -> Dict[str, Any]:
@@ -139,7 +113,7 @@ class PipelineRunView:
         Returns:
             The pipeline settings.
         """
-        settings = self.pipeline_configuration["settings"]
+        settings = self.model.pipeline_configuration["settings"]
         return cast(Dict[str, Any], settings)
 
     @property
@@ -152,7 +126,7 @@ class PipelineRunView:
         Returns:
             The pipeline extras.
         """
-        extra = self.pipeline_configuration["extra"]
+        extra = self.model.pipeline_configuration["extra"]
         return cast(Dict[str, Any], extra)
 
     @property
@@ -164,46 +138,7 @@ class PipelineRunView:
         """
         from zenml.pipelines.base_pipeline import PARAM_ENABLE_CACHE
 
-        return self.pipeline_configuration.get(PARAM_ENABLE_CACHE)
-
-    @property
-    def zenml_version(self) -> Optional[str]:
-        """Version of ZenML that this pipeline run was performed with.
-
-        Returns:
-            The version of ZenML that this pipeline run was performed with.
-        """
-        return self._model.zenml_version
-
-    @property
-    def client_environment(self) -> Dict[str, str]:
-        """Environment of the client that initiated this pipeline run.
-
-        Returns:
-            The environment of the client that initiated this pipeline run.
-        """
-        return self._model.client_environment
-
-    @property
-    def orchestrator_environment(self) -> Dict[str, str]:
-        """Environment of the orchestrator that executed this pipeline run.
-
-        Returns:
-            The environment of the orchestrator that executed this pipeline run.
-        """
-        return self._model.orchestrator_environment
-
-    @property
-    def git_sha(self) -> Optional[str]:
-        """Git commit SHA that this pipeline run was performed on.
-
-        This will only be set if the pipeline code is in a git repository and
-        there are no dirty files when running the pipeline.
-
-        Returns:
-            The git commit SHA that this pipeline run was performed on.
-        """
-        return self._model.git_sha
+        return self.model.pipeline_configuration.get(PARAM_ENABLE_CACHE)
 
     @property
     def status(self) -> ExecutionStatus:
@@ -214,16 +149,7 @@ class PipelineRunView:
         """
         # Query the run again since the status might have changed since this
         # object was created.
-        return Client().get_pipeline_run(self.id).status
-
-    @property
-    def created(self) -> datetime:
-        """Returns the creation time of the pipeline run.
-
-        Returns:
-            The creation time of the pipeline run.
-        """
-        return self._model.created
+        return Client().get_pipeline_run(self.model.id).status
 
     @property
     def steps(self) -> List[StepView]:
@@ -317,34 +243,9 @@ class PipelineRunView:
             # we already fetched the steps, no need to do anything
             return
 
-        assert self._model.id is not None
         client = Client()
         steps = client.depaginate(
-            partial(client.list_run_steps, pipeline_run_id=self._model.id)
+            partial(client.list_run_steps, pipeline_run_id=self.model.id)
         )
 
         self._steps = {step.name: StepView(step) for step in steps}
-
-    def __repr__(self) -> str:
-        """Returns a string representation of this pipeline run.
-
-        Returns:
-            A string representation of this pipeline run.
-        """
-        return (
-            f"{self.__class__.__qualname__}(id={self.id}, "
-            f"name='{self.name}')"
-        )
-
-    def __eq__(self, other: Any) -> bool:
-        """Returns whether the other object is referring to the same pipeline run.
-
-        Args:
-            other: The other object to compare to.
-
-        Returns:
-            True if the other object is referring to the same pipeline run.
-        """
-        if isinstance(other, PipelineRunView):
-            return self.id == other.id
-        return NotImplemented
