@@ -512,8 +512,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
             # registering the schedule
             if schedule:
                 if not schedule.name:
-                    date = datetime.now().strftime("%Y_%m_%d")
-                    time = datetime.now().strftime("%H_%M_%S_%f")
+                    date = datetime.utcnow().strftime("%Y_%m_%d")
+                    time = datetime.utcnow().strftime("%H_%M_%S_%f")
                     schedule.name = pipeline_deployment.run_name.format(
                         date=date, time=time
                     )

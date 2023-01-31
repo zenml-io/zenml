@@ -21,6 +21,7 @@ import requests
 from mlflow.pyfunc.backend import PyFuncBackend
 from mlflow.version import VERSION as MLFLOW_VERSION
 
+from zenml.constants import DEFAULT_SERVICE_START_STOP_TIMEOUT
 from zenml.logger import get_logger
 from zenml.services import (
     HTTPEndpointHealthMonitor,
@@ -89,12 +90,14 @@ class MLFlowDeploymentConfig(LocalDaemonServiceConfig):
         mlserver: set to True to use the MLflow MLServer backend (see
             https://github.com/SeldonIO/MLServer). If False, the
             MLflow built-in scoring server will be used.
+        timeout: timeout in seconds for starting and stopping the service
     """
 
     model_uri: str
     model_name: str
     workers: int = 1
     mlserver: bool = False
+    timeout: int = DEFAULT_SERVICE_START_STOP_TIMEOUT
 
 
 class MLFlowDeploymentService(LocalDaemonService):
@@ -167,19 +170,24 @@ class MLFlowDeploymentService(LocalDaemonService):
         )
 
         self.endpoint.prepare_for_start()
-
         try:
+            backend_kwargs: Dict[str, Any] = {}
             serve_kwargs: Dict[str, Any] = {}
+            mlflow_version = MLFLOW_VERSION.split(".")
             # MLflow version 1.26 introduces an additional mandatory
             # `timeout` argument to the `PyFuncBackend.serve` function
-            if int(MLFLOW_VERSION.split(".")[1]) >= 26:
+            if int(mlflow_version[1]) >= 26 or int(mlflow_version[0]) >= 2:
                 serve_kwargs["timeout"] = None
-
+            # Mlflow 2.0+ requires the env_manager to be set to "local"
+            # to run the deploy the model on the local running environment
+            if int(mlflow_version[0]) >= 2:
+                backend_kwargs["env_manager"] = "local"
             backend = PyFuncBackend(
                 config={},
                 no_conda=True,
                 workers=self.config.workers,
                 install_mlflow=False,
+                **backend_kwargs,
             )
             backend.serve(
                 model_uri=self.config.model_uri,
@@ -232,4 +240,9 @@ class MLFlowDeploymentService(LocalDaemonService):
         else:
             raise ValueError("No endpoint known for prediction.")
         response.raise_for_status()
-        return np.array(response.json())
+        if int(MLFLOW_VERSION.split(".")[0]) <= 1:
+            return np.array(response.json())
+        else:
+            # Mlflow 2.0+ returns a dictionary with the predictions
+            # under the "predictions" key
+            return np.array(response.json()["predictions"])
