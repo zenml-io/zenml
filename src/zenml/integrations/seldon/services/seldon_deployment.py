@@ -15,7 +15,7 @@
 
 import json
 import os
-from typing import Any, Dict, Generator, Optional, Tuple, cast
+from typing import Any, Dict, Generator, List, Optional, Tuple, cast
 from uuid import UUID
 
 import requests
