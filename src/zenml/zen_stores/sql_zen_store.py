@@ -1550,7 +1550,7 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             flavor_filter_model: All filter parameters including pagination
-            params
+                params
 
         Returns:
             List of all the stack component flavors matching the given criteria.
