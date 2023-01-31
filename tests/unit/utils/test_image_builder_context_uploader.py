@@ -11,8 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import tempfile
-
 from zenml.image_builders import BuildContext
 from zenml.io import fileio
 from zenml.utils.image_builder_context_uploader import (
@@ -29,10 +27,9 @@ def _get_build_context() -> BuildContext:
     return BuildContext(root=".", dockerignore_file=None)
 
 
-def test_upload_build_context() -> None:
+def test_upload_build_context(tmp_path) -> None:
     """Test that the build context is uploaded correctly."""
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        filepath = ImageBuilderContextUploader.upload_build_context(
-            build_context=_get_build_context(), parent_path=tmp_dir
-        )
-        assert fileio.exists(filepath)
+    filepath = ImageBuilderContextUploader.upload_build_context(
+        build_context=_get_build_context(), parent_path=tmp_path
+    )
+    assert fileio.exists(filepath)
