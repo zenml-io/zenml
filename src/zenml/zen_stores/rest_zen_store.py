@@ -22,6 +22,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Tuple,
     Type,
     TypeVar,
     Union,
@@ -43,6 +44,7 @@ from zenml.constants import (
     DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     FLAVORS,
+    GET_OR_CREATE,
     INFO,
     LOGIN,
     PIPELINES,
@@ -1358,7 +1360,7 @@ class RestZenStore(BaseZenStore):
 
     def get_or_create_run(
         self, pipeline_run: PipelineRunRequestModel
-    ) -> PipelineRunResponseModel:
+    ) -> Tuple[PipelineRunResponseModel, bool]:
         """Gets or creates a pipeline run.
 
         If a run with the same ID or name already exists, it is returned.
@@ -1368,13 +1370,13 @@ class RestZenStore(BaseZenStore):
             pipeline_run: The pipeline run to get or create.
 
         Returns:
-            The pipeline run.
+            The pipeline run, and a boolean indicating whether the run was
+            created or not.
         """
-        return self._create_workspace_scoped_resource(
+        return self._get_or_create_workspace_scoped_resource(
             resource=pipeline_run,
             route=RUNS,
             response_model=PipelineRunResponseModel,
-            params={"get_if_exists": True},
         )
 
     def list_runs(
@@ -1955,6 +1957,83 @@ class RestZenStore(BaseZenStore):
             The created resource.
         """
         return self._create_resource(
+            resource=resource,
+            response_model=response_model,
+            route=f"{WORKSPACES}/{str(resource.workspace)}{route}",
+            params=params,
+        )
+
+    def _get_or_create_resource(
+        self,
+        resource: BaseRequestModel,
+        response_model: Type[AnyResponseModel],
+        route: str,
+        params: Optional[Dict[str, Any]] = None,
+    ) -> Tuple[AnyResponseModel, bool]:
+        """Get or create a resource.
+
+        Args:
+            resource: The resource to get or create.
+            route: The resource REST API route to use.
+            response_model: Optional model to use to deserialize the response
+                body. If not provided, the resource class itself will be used.
+            params: Optional query parameters to pass to the endpoint.
+
+        Returns:
+            The created resource, and a boolean indicating whether the resource
+            was created or not.
+
+        Raises:
+            ValueError: If the response body is not a list with 2 elements
+                where the first element is the resource and the second element
+                a boolean indicating whether the resource was created or not.
+        """
+        response_body = self.post(
+            f"{route}{GET_OR_CREATE}",
+            body=resource,
+            params=params,
+        )
+        if not isinstance(response_body, list):
+            raise ValueError(
+                f"Expected a list response from the {route}{GET_OR_CREATE} "
+                f"endpoint but got {type(response_body)} instead."
+            )
+        if len(response_body) != 2:
+            raise ValueError(
+                f"Expected a list response with 2 elements from the "
+                f"{route}{GET_OR_CREATE} endpoint but got {len(response_body)} "
+                f"elements instead."
+            )
+        model_json, was_created = response_body
+        if not isinstance(was_created, bool):
+            raise ValueError(
+                f"Expected a boolean as the second element of the list "
+                f"response from the {route}{GET_OR_CREATE} endpoint but got "
+                f"{type(was_created)} instead."
+            )
+        return response_model.parse_obj(model_json), was_created
+
+    def _get_or_create_workspace_scoped_resource(
+        self,
+        resource: WorkspaceScopedRequestModel,
+        response_model: Type[AnyProjestResponseModel],
+        route: str,
+        params: Optional[Dict[str, Any]] = None,
+    ) -> Tuple[AnyProjestResponseModel, bool]:
+        """Get or create a workspace scoped resource.
+
+        Args:
+            resource: The resource to get or create.
+            route: The resource REST API route to use.
+            response_model: Optional model to use to deserialize the response
+                body. If not provided, the resource class itself will be used.
+            params: Optional query parameters to pass to the endpoint.
+
+        Returns:
+            The created resource, and a boolean indicating whether the resource
+            was created or not.
+        """
+        return self._get_or_create_resource(
             resource=resource,
             response_model=response_model,
             route=f"{WORKSPACES}/{str(resource.workspace)}{route}",

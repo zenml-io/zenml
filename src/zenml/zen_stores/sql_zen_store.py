@@ -2884,7 +2884,7 @@ class SqlZenStore(BaseZenStore):
 
     def get_or_create_run(
         self, pipeline_run: PipelineRunRequestModel
-    ) -> PipelineRunResponseModel:
+    ) -> Tuple[PipelineRunResponseModel, bool]:
         """Gets or creates a pipeline run.
 
         If a run with the same ID or name already exists, it is returned.
@@ -2894,20 +2894,21 @@ class SqlZenStore(BaseZenStore):
             pipeline_run: The pipeline run to get or create.
 
         Returns:
-            The pipeline run.
+            The pipeline run, and a boolean indicating whether the run was
+            created or not.
         """
         # We want to have the 'create' statement in the try block since running
         # it first will reduce concurrency issues.
         try:
-            return self.create_run(pipeline_run)
+            return self.create_run(pipeline_run), True
         except EntityExistsError:
             # Currently, an `EntityExistsError` is raised if either the run ID
             # or the run name already exists. Therefore, we need to have another
             # try block since getting the run by ID might still fail.
             try:
-                return self.get_run(pipeline_run.id)
+                return self.get_run(pipeline_run.id), False
             except KeyError:
-                return self.get_run(pipeline_run.name)
+                return self.get_run(pipeline_run.name), False
 
     def list_runs(
         self, runs_filter_model: PipelineRunFilterModel

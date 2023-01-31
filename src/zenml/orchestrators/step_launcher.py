@@ -258,9 +258,7 @@ class StepLauncher:
             client_environment=self._deployment.client_environment,
             orchestrator_environment=get_run_environment_dict(),
         )
-        run_response = client.zen_store.get_or_create_run(pipeline_run)
-        run_was_created = run_response.name == run_name
-        return run_response, run_was_created
+        return client.zen_store.get_or_create_run(pipeline_run)
 
     def _prepare(
         self, step_run: StepRunRequestModel

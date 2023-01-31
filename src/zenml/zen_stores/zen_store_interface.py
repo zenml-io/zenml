@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """ZenML Store interface."""
 from abc import ABC, abstractmethod
-from typing import Optional, Union
+from typing import Optional, Tuple, Union
 from uuid import UUID
 
 from zenml.models import (
@@ -1005,7 +1005,7 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def get_or_create_run(
         self, pipeline_run: PipelineRunRequestModel
-    ) -> PipelineRunResponseModel:
+    ) -> Tuple[PipelineRunResponseModel, bool]:
         """Gets or creates a pipeline run.
 
         If a run with the same ID or name already exists, it is returned.
@@ -1015,7 +1015,8 @@ class ZenStoreInterface(ABC):
             pipeline_run: The pipeline run to get or create.
 
         Returns:
-            The pipeline run.
+            The pipeline run, and a boolean indicating whether the run was
+            created or not.
         """
 
     @abstractmethod
