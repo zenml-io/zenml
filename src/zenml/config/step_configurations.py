@@ -133,6 +133,8 @@ class StepSpec(StrictBaseModel):
     source: str
     upstream_steps: List[str]
     inputs: Dict[str, InputSpec] = {}
+    # The default value is to ensure compatability with specs of version <0.2
+    pipeline_parameter_name: str = ""
 
     @property
     def module_name(self) -> str:
@@ -174,6 +176,9 @@ class StepSpec(StrictBaseModel):
                 return False
 
             if self.inputs != other.inputs:
+                return False
+
+            if self.pipeline_parameter_name != other.pipeline_parameter_name:
                 return False
 
             # Remove internal version pin from older sources for backwards

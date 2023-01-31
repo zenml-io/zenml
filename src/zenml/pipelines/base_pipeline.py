@@ -804,7 +804,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         steps = {}
         available_outputs: Dict[str, Set[str]] = {}
 
-        for pipeline_parameter_name, step_spec in pipeline_spec.steps:
+        for step_spec in pipeline_spec.steps:
             for upstream_step in step_spec.upstream_steps:
                 if upstream_step not in available_outputs:
                     raise RuntimeError(
@@ -834,7 +834,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     f"`{input_names}`, spec inputs: `{spec_input_names}`."
                 )
 
-            steps[pipeline_parameter_name] = step
+            steps[step_spec.pipeline_parameter_name] = step
             available_outputs[step.name] = set(step.OUTPUT_SIGNATURE.keys())
 
         return steps
@@ -856,8 +856,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
             inspect.signature(connect).bind(**steps)
 
             step_outputs: Dict[str, Dict[str, BaseStep._OutputArtifact]] = {}
-            for pipeline_parameter_name, step_spec in model.spec.steps:
-                step = steps[pipeline_parameter_name]
+            for step_spec in model.spec.steps:
+                step = steps[step_spec.pipeline_parameter_name]
 
                 step_inputs = {}
                 for input_name, input_ in step_spec.inputs.items():
@@ -886,10 +886,10 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
         parameters = [
             inspect.Parameter(
-                name=pipeline_parameter_name,
+                name=step_spec.pipeline_parameter_name,
                 kind=inspect.Parameter.POSITIONAL_OR_KEYWORD,
             )
-            for pipeline_parameter_name, _ in model.spec.steps
+            for step_spec in model.spec.steps
         ]
         signature = inspect.Signature(parameters=parameters)
         connect.__signature__ = signature  # type: ignore[attr-defined]
@@ -920,7 +920,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
             pipeline_spec=pipeline_spec
         )
 
-        matching_pipelines = Client().list_pipelines(
+        client = Client()
+        matching_pipelines = client.list_pipelines(
             name=self.name,
             version_hash=version_hash,
             size=1,
@@ -938,7 +939,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
         latest_version = self._get_latest_version() or 0
         version = str(latest_version + 1)
 
-        client = Client()
         request = PipelineRequestModel(
             workspace=client.active_workspace.id,
             user=client.active_user.id,

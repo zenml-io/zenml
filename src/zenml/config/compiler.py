@@ -115,7 +115,7 @@ class Compiler:
             client_environment=get_run_environment_dict(),
         )
 
-        step_specs = [(name, step.spec) for name, step in steps.items()]
+        step_specs = [step.spec for step in steps.values()]
         pipeline_spec = PipelineSpec(steps=step_specs)
         logger.debug("Compiled pipeline deployment: %s", deployment)
         logger.debug("Compiled pipeline spec: %s", pipeline_spec)
@@ -141,8 +141,8 @@ class Compiler:
         pipeline.connect(**pipeline.steps)
 
         steps = [
-            (name, self._get_step_spec(step))
-            for name, step in self._get_sorted_steps(steps=pipeline.steps)
+            self._get_step_spec(step)
+            for _, step in self._get_sorted_steps(steps=pipeline.steps)
         ]
         pipeline_spec = PipelineSpec(steps=steps)
         logger.debug("Compiled pipeline spec: %s", pipeline_spec)
@@ -327,10 +327,13 @@ class Compiler:
         Returns:
             The step spec.
         """
+        assert step.pipeline_parameter_name
+
         return StepSpec(
             source=source_utils.resolve_class(step.__class__),
             upstream_steps=sorted(step.upstream_steps),
             inputs=step.inputs,
+            pipeline_parameter_name=step.pipeline_parameter_name,
         )
 
     def _compile_step(
