@@ -11,8 +11,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from zenml.client import Client
-from zenml.models import PipelineRunFilterModel, StepRunFilterModel, \
-    ArtifactFilterModel, UserRequestModel, RoleRequestModel, TeamRequestModel
+from zenml.models import (
+    PipelineRunFilterModel,
+    RoleRequestModel,
+    StepRunFilterModel,
+    TeamRequestModel,
+    UserRequestModel,
+)
 from zenml.pipelines import pipeline
 from zenml.steps import step
 from zenml.utils.string_utils import random_str
@@ -43,6 +48,7 @@ pipeline_instance = connected_two_step_pipeline(
 
 class PipelineRunContext:
     """Context manager that creates pipeline runs and cleans them up afterwards."""
+
     def __init__(self, num_runs: int):
         self.num_runs = num_runs
         self.client = Client()
@@ -50,7 +56,9 @@ class PipelineRunContext:
 
     def __enter__(self):
         for i in range(self.num_runs):
-            pipeline_instance.run(run_name=f"sample_pipeline_run_{i}", unlisted=True)
+            pipeline_instance.run(
+                run_name=f"sample_pipeline_run_{i}", unlisted=True
+            )
 
         # persist which runs, steps and artifacts were produced, in case
         #  the test ends up deleting some or all of these, this allows for a
@@ -118,7 +126,9 @@ class RoleContext:
         self.store = self.client.zen_store
 
     def __enter__(self):
-        new_role = RoleRequestModel(name=sample_name(self.role_name), permissions=set())
+        new_role = RoleRequestModel(
+            name=sample_name(self.role_name), permissions=set()
+        )
         self.created_role = self.store.create_role(new_role)
         return self.created_role
 

@@ -20,8 +20,13 @@ from tests.integration.functional.zen_stores.conftest import (
     CrudTestConfig,
     list_of_entities,
 )
-from tests.integration.functional.zen_stores.utils import pipeline_instance, \
-    PipelineRunContext, sample_name, UserContext, RoleContext, TeamContext
+from tests.integration.functional.zen_stores.utils import (
+    PipelineRunContext,
+    RoleContext,
+    TeamContext,
+    UserContext,
+    sample_name,
+)
 from zenml.client import Client
 from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import EntityExistsError, IllegalOperationError
@@ -230,46 +235,38 @@ def test_deleting_default_project_fails():
         client.zen_store.delete_project(DEFAULT_NAME)
 
 
-# .-------.
-# | TEAMS |
-# '-------'
+# .-------.-.
+# | TEAMS | |
+# '-------'-'
 
 
 def test_adding_user_to_team():
     """Tests adding a user to a team."""
     zen_store = Client().zen_store
-    user_name = "aria"
     team_name = "arias_team"
-    try:
-        new_user = UserRequestModel(name=user_name)
-        new_user = zen_store.create_user(new_user)
-        new_team = TeamRequestModel(name=team_name)
-        new_team = zen_store.create_team(new_team)
-
-        team_update = TeamUpdateModel(users=[new_user.id])
-        team_update = zen_store.update_team(
-            team_id=new_team.id, team_update=team_update
-        )
-
-        assert new_user.id in team_update.user_ids
-        assert len(team_update.users) == 1
-
-        # Make sure the team name has not been inadvertently changed
-        assert zen_store.get_team(new_team.id).name == team_name
-    # Cleanup no matter what
-    finally:
+    with UserContext as created_user:
         try:
-            user = zen_store.get_user(user_name_or_id=user_name)
-        except KeyError:
-            pass
-        else:
-            zen_store.delete_user(user.id)
-        try:
-            team = zen_store.get_team(team_name_or_id=team_name)
-        except KeyError:
-            pass
-        else:
-            zen_store.delete_team(team.id)
+            new_team = TeamRequestModel(name=team_name)
+            new_team = zen_store.create_team(new_team)
+
+            team_update = TeamUpdateModel(users=[created_user.id])
+            team_update = zen_store.update_team(
+                team_id=new_team.id, team_update=team_update
+            )
+
+            assert created_user.id in team_update.user_ids
+            assert len(team_update.users) == 1
+
+            # Make sure the team name has not been inadvertently changed
+            assert zen_store.get_team(new_team.id).name == team_name
+        # Cleanup no matter what
+        finally:
+            try:
+                team = zen_store.get_team(team_name_or_id=team_name)
+            except KeyError:
+                pass
+            else:
+                zen_store.delete_team(team.id)
 
 
 def test_adding_nonexistent_user_to_real_team_raises_error():
@@ -301,35 +298,30 @@ def test_removing_user_from_team_succeeds():
     """Tests removing a user from a team."""
 
     zen_store = Client().zen_store
-    user_name = sample_name("aria")
     team_name = sample_name("arias_team")
-    try:
-        new_user = UserRequestModel(name=user_name)
-        new_user = zen_store.create_user(new_user)
-        new_team = TeamRequestModel(name=team_name, users=[new_user.id])
-        new_team = zen_store.create_team(new_team)
-        assert new_user.id in new_team.user_ids
 
-        team_update = TeamUpdateModel(users=[])
-        team_update = zen_store.update_team(
-            team_id=new_team.id, team_update=team_update
-        )
+    with UserContext as created_user:
+        try:
+            new_team = TeamRequestModel(
+                name=team_name, users=[created_user.id]
+            )
+            new_team = zen_store.create_team(new_team)
+            assert created_user.id in new_team.user_ids
 
-        assert new_user.id not in team_update.user_ids
-    # Cleanup no matter what
-    finally:
-        try:
-            user = zen_store.get_user(user_name_or_id=user_name)
-        except KeyError:
-            pass
-        else:
-            zen_store.delete_user(user.id)
-        try:
-            team = zen_store.get_team(team_name_or_id=team_name)
-        except KeyError:
-            pass
-        else:
-            zen_store.delete_team(team.id)
+            team_update = TeamUpdateModel(users=[])
+            team_update = zen_store.update_team(
+                team_id=new_team.id, team_update=team_update
+            )
+
+            assert created_user.id not in team_update.user_ids
+        # Cleanup no matter what
+        finally:
+            try:
+                team = zen_store.get_team(team_name_or_id=team_name)
+            except KeyError:
+                pass
+            else:
+                zen_store.delete_team(team.id)
 
 
 #  .------.
@@ -369,7 +361,7 @@ def test_deleting_default_user_fails():
         zen_store.delete_user("default")
 
 
-#  .------.
+# .-------.
 # | ROLES |
 # '-------'
 
@@ -458,7 +450,9 @@ def test_assigning_role_to_user_succeeds():
                 project=None,
             )
             with does_not_raise():
-                assignment = zen_store.create_user_role_assignment(role_assignment)
+                assignment = zen_store.create_user_role_assignment(
+                    role_assignment
+                )
 
     # With user and role deleted the assignment should be deleted as well
     with pytest.raises(KeyError):
@@ -477,10 +471,13 @@ def test_assigning_role_to_team_succeeds():
                 project=None,
             )
             with does_not_raise():
-                assignment = zen_store.create_team_role_assignment(role_assignment)
+                assignment = zen_store.create_team_role_assignment(
+                    role_assignment
+                )
     # With user and role deleted the assignment should be deleted as well
     with pytest.raises(KeyError):
         zen_store.delete_team_role_assignment(assignment.id)
+
 
 def test_assigning_role_if_assignment_already_exists_fails():
     """Tests assigning a role to a user if the assignment already exists."""
@@ -824,13 +821,14 @@ def test_deleting_default_stack_fails():
 #         sql_store["store"].get_stack(new_stack.id)
 
 
-# ---------
-# Pipelines
-# ---------
+# .-----------.
+# | Pipelines |
+# '-----------'
 
-# --------------
-# Pipeline runs
-# --------------
+# .----------------.
+# | Pipeline runs  |
+# '----------------'
+
 
 def test_list_runs_is_ordered():
     """Tests listing runs returns ordered runs."""
@@ -864,17 +862,19 @@ def test_deleting_run_deletes_steps():
     with PipelineRunContext(num_runs):
         steps = store.list_run_steps(StepRunFilterModel())
 
-        assert steps.total == num_steps_before + num_runs*2
+        assert steps.total == num_steps_before + num_runs * 2
         pipelines = store.list_runs(PipelineRunFilterModel())
         assert pipelines.total == num_pipelines_before + num_runs
         run_id = pipelines[0].id
         store.delete_run(run_id)
-        assert len(store.list_run_steps(StepRunFilterModel())) == num_steps_before
+        assert (
+            len(store.list_run_steps(StepRunFilterModel())) == num_steps_before
+        )
 
 
-# ------------------
-# Pipeline run steps
-# ------------------
+# .--------------------.
+# | Pipeline run steps |
+# '--------------------'
 
 
 def test_get_run_step_outputs_succeeds():
@@ -903,9 +903,9 @@ def test_get_run_step_inputs_succeeds():
             assert len(run_step_inputs) == 1
 
 
-# ---------
-# Artifacts
-# ---------
+# .-----------.
+# | Artifacts |
+# '-----------'
 
 
 def test_list_unused_artifacts():
@@ -914,7 +914,9 @@ def test_list_unused_artifacts():
     store = client.zen_store
 
     num_artifacts_before = store.list_artifacts(ArtifactFilterModel()).total
-    num_unused_artifacts_before = store.list_artifacts(ArtifactFilterModel(only_unused=True)).total
+    num_unused_artifacts_before = store.list_artifacts(
+        ArtifactFilterModel(only_unused=True)
+    ).total
     num_runs = 1
     with PipelineRunContext(num_runs):
 
