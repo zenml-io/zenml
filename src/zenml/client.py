@@ -2682,7 +2682,7 @@ class Client(metaclass=ClientMetaClass):
             workspace_id: The id of the workspace to filter by.
             pipeline_id: The id of the pipeline to filter by.
             user_id: The  id of the user to filter by.
-            stack_id: The  id of the stack to filter by.
+            stack_id: The id of the stack to filter by.
             schedule_id: The id of the schedule to filter by.
             orchestrator_run_id: The run id of the orchestrator to filter by.
             name: The name of the run to filter by.
