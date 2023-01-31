@@ -16,6 +16,7 @@ from typing import Callable, Optional, Type, TypeVar
 
 from pydantic import BaseModel
 
+from tests.integration.functional.zen_stores.utils import sample_name
 from zenml.client import Client
 from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.enums import ArtifactType, ExecutionStatus, StackComponentType
@@ -52,13 +53,6 @@ from zenml.models.base_models import (
     BaseResponseModel,
 )
 from zenml.models.page_model import Page
-from zenml.utils.string_utils import random_str
-
-
-def sample_name(prefix: str = "aria") -> str:
-    """Function to get random username."""
-    return f"{prefix}_{random_str(4)}"
-
 
 AnyRequestModel = TypeVar("AnyRequestModel", bound=BaseRequestModel)
 AnyResponseModel = TypeVar("AnyResponseModel", bound=BaseResponseModel)

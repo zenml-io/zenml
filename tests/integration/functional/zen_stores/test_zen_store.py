@@ -19,9 +19,9 @@ import pytest
 from tests.integration.functional.zen_stores.conftest import (
     CrudTestConfig,
     list_of_entities,
-    sample_name,
 )
-from tests.integration.functional.zen_stores.utils import pipeline_instance
+from tests.integration.functional.zen_stores.utils import pipeline_instance, \
+    PipelineRunContext, sample_name, UserContext, RoleContext, TeamContext
 from zenml.client import Client
 from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import EntityExistsError, IllegalOperationError
@@ -441,7 +441,7 @@ def test_deleting_assigned_role_fails():
         zen_store.delete_role(created_role.id)
 
 
-#  .-----------------.
+# .------------------.
 # | ROLE ASSIGNMENTS |
 # '------------------'
 
@@ -450,138 +450,102 @@ def test_assigning_role_to_user_succeeds():
     """Tests assigning a role to a user."""
     zen_store = Client().zen_store
 
-    new_role = RoleRequestModel(name=sample_name("cat"), permissions=set())
-    created_role = zen_store.create_role(new_role)
+    with RoleContext() as created_role:
+        with UserContext() as created_user:
+            role_assignment = UserRoleAssignmentRequestModel(
+                role=created_role.id,
+                user=created_user.id,
+                project=None,
+            )
+            with does_not_raise():
+                assignment = zen_store.create_user_role_assignment(role_assignment)
 
-    new_user = UserRequestModel(name=sample_name("aria"))
-    created_user = zen_store.create_user(new_user)
-
-    role_assignment = UserRoleAssignmentRequestModel(
-        role=created_role.id,
-        user=created_user.id,
-        project=None,
-    )
-    with does_not_raise():
-        (zen_store.create_user_role_assignment(role_assignment))
-    # Cleanup
-    with does_not_raise():
-        zen_store.delete_user(created_user.id)
-        zen_store.delete_role(created_role.id)
+    # With user and role deleted the assignment should be deleted as well
+    with pytest.raises(KeyError):
+        zen_store.delete_user_role_assignment(assignment.id)
 
 
 def test_assigning_role_to_team_succeeds():
     """Tests assigning a role to a user."""
     zen_store = Client().zen_store
 
-    new_role = RoleRequestModel(name=sample_name("cat"), permissions=set())
-    created_role = zen_store.create_role(new_role)
-
-    new_team = TeamRequestModel(name=sample_name("cats"))
-    created_team = zen_store.create_team(new_team)
-
-    role_assignment = TeamRoleAssignmentRequestModel(
-        role=created_role.id,
-        team=created_team.id,
-        project=None,
-    )
-    with does_not_raise():
-        (zen_store.create_team_role_assignment(role_assignment))
-    # Cleanup
-    with does_not_raise():
-        zen_store.delete_team(created_team.id)
-        zen_store.delete_role(created_role.id)
-
+    with RoleContext() as created_role:
+        with TeamContext() as created_team:
+            role_assignment = TeamRoleAssignmentRequestModel(
+                role=created_role.id,
+                team=created_team.id,
+                project=None,
+            )
+            with does_not_raise():
+                assignment = zen_store.create_team_role_assignment(role_assignment)
+    # With user and role deleted the assignment should be deleted as well
+    with pytest.raises(KeyError):
+        zen_store.delete_team_role_assignment(assignment.id)
 
 def test_assigning_role_if_assignment_already_exists_fails():
     """Tests assigning a role to a user if the assignment already exists."""
     zen_store = Client().zen_store
 
-    new_role = RoleRequestModel(name=sample_name("cat"), permissions=set())
-    created_role = zen_store.create_role(new_role)
+    with RoleContext() as created_role:
+        with UserContext() as created_user:
 
-    new_user = UserRequestModel(name=sample_name("aria"))
-    created_user = zen_store.create_user(new_user)
-
-    role_assignment = UserRoleAssignmentRequestModel(
-        role=created_role.id,
-        user=created_user.id,
-        project=None,
-    )
-    with does_not_raise():
-        (zen_store.create_user_role_assignment(role_assignment))
-    with pytest.raises(EntityExistsError):
-        (zen_store.create_user_role_assignment(role_assignment))
-
-    # Cleanup
-    with does_not_raise():
-        zen_store.delete_user(created_user.id)
-        zen_store.delete_role(created_role.id)
+            role_assignment = UserRoleAssignmentRequestModel(
+                role=created_role.id,
+                user=created_user.id,
+                project=None,
+            )
+            with does_not_raise():
+                (zen_store.create_user_role_assignment(role_assignment))
+            with pytest.raises(EntityExistsError):
+                (zen_store.create_user_role_assignment(role_assignment))
 
 
 def test_revoking_role_for_user_succeeds():
     """Tests revoking a role for a user."""
     zen_store = Client().zen_store
 
-    new_role = RoleRequestModel(name=sample_name("cat"), permissions=set())
-    created_role = zen_store.create_role(new_role)
-
-    new_user = UserRequestModel(name=sample_name("aria"))
-    created_user = zen_store.create_user(new_user)
-
-    role_assignment = UserRoleAssignmentRequestModel(
-        role=created_role.id,
-        user=created_user.id,
-        project=None,
-    )
-    with does_not_raise():
-        role_assignment = zen_store.create_user_role_assignment(
-            role_assignment
-        )
-        zen_store.delete_user_role_assignment(
-            user_role_assignment_id=role_assignment.id
-        )
-    with pytest.raises(KeyError):
-        zen_store.get_user_role_assignment(
-            user_role_assignment_id=role_assignment.id
-        )
-
-    # Cleanup
-    with does_not_raise():
-        zen_store.delete_user(created_user.id)
-        zen_store.delete_role(created_role.id)
+    with RoleContext() as created_role:
+        with UserContext() as created_user:
+            role_assignment = UserRoleAssignmentRequestModel(
+                role=created_role.id,
+                user=created_user.id,
+                project=None,
+            )
+            with does_not_raise():
+                role_assignment = zen_store.create_user_role_assignment(
+                    role_assignment
+                )
+                zen_store.delete_user_role_assignment(
+                    user_role_assignment_id=role_assignment.id
+                )
+            with pytest.raises(KeyError):
+                zen_store.get_user_role_assignment(
+                    user_role_assignment_id=role_assignment.id
+                )
 
 
 def test_revoking_role_for_team_succeeds():
     """Tests revoking a role for a team."""
     zen_store = Client().zen_store
 
-    new_role = RoleRequestModel(name=sample_name("cat"), permissions=set())
-    created_role = zen_store.create_role(new_role)
-
-    new_team = TeamRequestModel(name=sample_name("cats"))
-    created_team = zen_store.create_team(new_team)
-
-    role_assignment = TeamRoleAssignmentRequestModel(
-        role=created_role.id,
-        team=created_team.id,
-        project=None,
-    )
-    with does_not_raise():
-        role_assignment = zen_store.create_team_role_assignment(
-            role_assignment
-        )
-        zen_store.delete_team_role_assignment(
-            team_role_assignment_id=role_assignment.id
-        )
-    with pytest.raises(KeyError):
-        zen_store.get_team_role_assignment(
-            team_role_assignment_id=role_assignment.id
-        )
-
-    # Cleanup
-    with does_not_raise():
-        zen_store.delete_team(created_team.id)
-        zen_store.delete_role(created_role.id)
+    with RoleContext() as created_role:
+        with TeamContext() as created_team:
+            role_assignment = TeamRoleAssignmentRequestModel(
+                role=created_role.id,
+                team=created_team.id,
+                project=None,
+            )
+            with does_not_raise():
+                role_assignment = zen_store.create_team_role_assignment(
+                    role_assignment
+                )
+                zen_store.delete_team_role_assignment(
+                    team_role_assignment_id=role_assignment.id
+                )
+            with pytest.raises(KeyError):
+                zen_store.get_team_role_assignment(
+                    team_role_assignment_id=role_assignment.id
+                )
 
 
 def test_revoking_nonexistent_role_fails():
@@ -597,9 +561,9 @@ def test_revoking_nonexistent_role_fails():
         )
 
 
-# -----------------.
-# Stack components |
-# -----------------'
+# .------------------.
+# | Stack components |
+# '------------------'
 
 # TODO: tests regarding sharing of components missing
 
@@ -666,11 +630,11 @@ def test_delete_default_stack_component_fails():
         store.delete_stack_component(default_orchestrator.id)
 
 
-# ------------------------.
-# Stack component flavors |
-# ------------------------'
+# .-------------------------.
+# | Stack component flavors |
+# '-------------------------'
 
-#  .-------.
+# .--------.
 # | STACKS |
 # '--------'
 
@@ -864,11 +828,9 @@ def test_deleting_default_stack_fails():
 # Pipelines
 # ---------
 
-
 # --------------
 # Pipeline runs
 # --------------
-
 
 def test_list_runs_is_ordered():
     """Tests listing runs returns ordered runs."""
@@ -877,19 +839,15 @@ def test_list_runs_is_ordered():
 
     num_pipelines_before = store.list_runs(PipelineRunFilterModel()).total
 
-    for _ in range(10):
-        pipeline_instance.run(unlisted=True)
+    num_runs = 5
+    with PipelineRunContext(num_runs):
 
-    pipelines = store.list_runs(PipelineRunFilterModel()).items
-    assert len(pipelines) == num_pipelines_before + 10
-    assert all(
-        pipelines[i].created <= pipelines[i + 1].created
-        for i in range(len(pipelines) - 1)
-    )
-    # Cleanup
-    for p in pipelines:
-        run_id = p.id
-        store.delete_run(run_id)
+        pipelines = store.list_runs(PipelineRunFilterModel()).items
+        assert len(pipelines) == num_pipelines_before + num_runs
+        assert all(
+            pipelines[i].created <= pipelines[i + 1].created
+            for i in range(len(pipelines) - 1)
+        )
 
 
 def test_deleting_run_deletes_steps():
@@ -897,19 +855,21 @@ def test_deleting_run_deletes_steps():
     client = Client()
     store = client.zen_store
 
-    # Here we assume the test db is not in a clean state
+    # Just in case the test db is not in a clean state we compare relative
     num_steps_before = store.list_run_steps(StepRunFilterModel()).total
     num_pipelines_before = store.list_runs(PipelineRunFilterModel()).total
 
-    pipeline_instance.run(unlisted=True)
-    steps = store.list_run_steps(StepRunFilterModel())
+    num_runs = 1
 
-    assert steps.total == num_steps_before + 2
-    pipelines = store.list_runs(PipelineRunFilterModel())
-    assert pipelines.total == num_pipelines_before + 1
-    run_id = pipelines[0].id
-    store.delete_run(run_id)
-    assert len(store.list_run_steps(StepRunFilterModel())) == num_steps_before
+    with PipelineRunContext(num_runs):
+        steps = store.list_run_steps(StepRunFilterModel())
+
+        assert steps.total == num_steps_before + num_runs*2
+        pipelines = store.list_runs(PipelineRunFilterModel())
+        assert pipelines.total == num_pipelines_before + num_runs
+        run_id = pipelines[0].id
+        store.delete_run(run_id)
+        assert len(store.list_run_steps(StepRunFilterModel())) == num_steps_before
 
 
 # ------------------
@@ -922,12 +882,12 @@ def test_get_run_step_outputs_succeeds():
     client = Client()
     store = client.zen_store
 
-    pipeline_instance.run(unlisted=True)
-    steps = store.list_run_steps(StepRunFilterModel(name="step_2"))
+    with PipelineRunContext(1):
+        steps = store.list_run_steps(StepRunFilterModel(name="step_2"))
 
-    for step in steps.items:
-        run_step_outputs = store.get_run_step(step.id).output_artifacts
-        assert len(run_step_outputs) == 1
+        for step in steps.items:
+            run_step_outputs = store.get_run_step(step.id).output_artifacts
+            assert len(run_step_outputs) == 1
 
 
 def test_get_run_step_inputs_succeeds():
@@ -935,12 +895,12 @@ def test_get_run_step_inputs_succeeds():
     client = Client()
     store = client.zen_store
 
-    pipeline_instance.run(unlisted=True)
+    with PipelineRunContext(1):
 
-    steps = store.list_run_steps(StepRunFilterModel(name="step_2"))
-    for step in steps.items:
-        run_step_inputs = store.get_run_step(step.id).input_artifacts
-        assert len(run_step_inputs) == 1
+        steps = store.list_run_steps(StepRunFilterModel(name="step_2"))
+        for step in steps.items:
+            run_step_inputs = store.get_run_step(step.id).input_artifacts
+            assert len(run_step_inputs) == 1
 
 
 # ---------
@@ -953,17 +913,34 @@ def test_list_unused_artifacts():
     client = Client()
     store = client.zen_store
 
-    pipeline_instance.run(unlisted=True)
+    num_artifacts_before = store.list_artifacts(ArtifactFilterModel()).total
+    num_unused_artifacts_before = store.list_artifacts(ArtifactFilterModel(only_unused=True)).total
+    num_runs = 1
+    with PipelineRunContext(num_runs):
 
-    artifacts = store.list_artifacts(ArtifactFilterModel())
-    assert len(artifacts) == 2
-    artifacts = store.list_artifacts(ArtifactFilterModel(only_unused=True))
-    assert len(artifacts) == 0
+        artifacts = store.list_artifacts(ArtifactFilterModel())
+        assert artifacts.total == num_artifacts_before + num_runs * 2
 
-    # Cleanup
-    pipelines = store.list_runs(PipelineRunFilterModel()).items
-    for p in pipelines:
-        store.delete_run(p.id)
+        artifacts = store.list_artifacts(ArtifactFilterModel(only_unused=True))
+        assert artifacts.total == num_unused_artifacts_before
 
-    artifacts = store.list_artifacts(ArtifactFilterModel(only_unused=True))
-    assert len(artifacts) == 2
+
+def test_artifacts_are_not_deleted_with_run():
+    """Tests listing with `unused=True` only returns unused artifacts."""
+    client = Client()
+    store = client.zen_store
+
+    num_artifacts_before = store.list_artifacts(ArtifactFilterModel()).total
+    num_runs = 1
+    with PipelineRunContext(num_runs):
+
+        artifacts = store.list_artifacts(ArtifactFilterModel())
+        assert artifacts.total == num_artifacts_before + num_runs * 2
+
+        # Cleanup
+        pipelines = store.list_runs(PipelineRunFilterModel()).items
+        for p in pipelines:
+            store.delete_run(p.id)
+
+        artifacts = store.list_artifacts(ArtifactFilterModel())
+        assert artifacts.total == num_artifacts_before + num_runs * 2
