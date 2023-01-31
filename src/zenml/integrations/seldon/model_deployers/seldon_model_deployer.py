@@ -19,7 +19,6 @@ from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional, Type, cast
 from uuid import UUID
 
 from zenml.client import Client
-from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import StackComponentType
 from zenml.integrations.seldon.constants import (
     SELDON_CUSTOM_DEPLOYMENT,
@@ -35,7 +34,6 @@ from zenml.integrations.seldon.services.seldon_deployment import (
     SeldonDeploymentService,
 )
 from zenml.logger import get_logger
-from zenml.metadata.metadata_types import MetadataType, Uri
 from zenml.model_deployers import BaseModelDeployer, BaseModelDeployerFlavor
 from zenml.secrets_managers import BaseSecretsManager
 from zenml.services.service import BaseService, ServiceConfig
@@ -499,27 +497,3 @@ class SeldonModelDeployer(BaseModelDeployer):
         # secret used to store the authentication information for the Seldon
         # Core model server storage initializer
         self._delete_kubernetes_secret()
-
-    def get_step_run_metadata(
-        self, info: "StepRunInfo"
-    ) -> Dict[str, "MetadataType"]:
-        """Get component- and step-specific metadata after a step ran.
-
-        Args:
-            info: Info about the step that was executed.
-
-        Returns:
-            A dictionary of metadata.
-        """
-        existing_services = self.find_model_server(
-            pipeline_run_id=info.run_name,
-        )
-        if existing_services:
-            existing_service = existing_services[0]
-            if existing_service.is_running:
-                return {
-                    "seldon_deployed_model_uri": Uri(
-                        existing_service.prediction_url
-                    ),
-                }
-        return {}

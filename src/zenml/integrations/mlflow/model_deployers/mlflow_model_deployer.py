@@ -20,7 +20,6 @@ from typing import ClassVar, Dict, List, Optional, Type, cast
 from uuid import UUID
 
 from zenml.config.global_config import GlobalConfiguration
-from zenml.config.step_run_info import StepRunInfo
 from zenml.constants import DEFAULT_SERVICE_START_STOP_TIMEOUT
 from zenml.integrations.mlflow.flavors.mlflow_model_deployer_flavor import (
     MLFlowModelDeployerConfig,
@@ -31,7 +30,6 @@ from zenml.integrations.mlflow.services.mlflow_deployment import (
     MLFlowDeploymentService,
 )
 from zenml.logger import get_logger
-from zenml.metadata.metadata_types import MetadataType, Uri
 from zenml.model_deployers import BaseModelDeployer, BaseModelDeployerFlavor
 from zenml.services import ServiceRegistry
 from zenml.services.local.local_service import SERVICE_DAEMON_CONFIG_FILE_NAME
@@ -438,27 +436,3 @@ class MLFlowModelDeployer(BaseModelDeployer):
             self._clean_up_existing_service(
                 existing_service=service, timeout=timeout, force=force
             )
-
-    def get_step_run_metadata(
-        self, info: "StepRunInfo"
-    ) -> Dict[str, "MetadataType"]:
-        """Get component- and step-specific metadata after a step ran.
-
-        Args:
-            info: Info about the step that was executed.
-
-        Returns:
-            A dictionary of metadata.
-        """
-        existing_services = self.find_model_server(
-            pipeline_run_id=info.run_name,
-        )
-        if existing_services:
-            existing_service = existing_services[0]
-            if existing_service.is_running:
-                return {
-                    "mlflow_deployed_model_uri": Uri(
-                        existing_service.prediction_url
-                    ),
-                }
-        return {}

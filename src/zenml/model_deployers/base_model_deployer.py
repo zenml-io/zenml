@@ -14,15 +14,29 @@
 """Base class for all ZenML model deployers."""
 
 from abc import ABC, abstractmethod
-from typing import ClassVar, Dict, Generator, List, Optional, Type, cast
+from typing import (
+    TYPE_CHECKING,
+    ClassVar,
+    Dict,
+    Generator,
+    List,
+    Optional,
+    Type,
+    cast,
+)
 from uuid import UUID
 
 from zenml.client import Client
 from zenml.enums import StackComponentType
+from zenml.metadata.metadata_types import MetadataType, Uri
 from zenml.services import BaseService, ServiceConfig
 from zenml.stack import StackComponent
 from zenml.stack.flavor import Flavor
 from zenml.stack.stack_component import StackComponentConfig
+
+if TYPE_CHECKING:
+    from zenml.config.step_run_info import StepRunInfo
+
 
 DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT = 300
 
@@ -270,6 +284,31 @@ class BaseModelDeployer(StackComponent, ABC):
         if len(services) == 0:
             raise RuntimeError(f"No model server found with UUID {uuid}")
         return services[0].get_logs(follow=follow, tail=tail)
+
+    def get_step_run_metadata(
+        self, info: "StepRunInfo"
+    ) -> Dict[str, "MetadataType"]:
+        """Get component- and step-specific metadata after a step ran.
+
+        For model deployers, this extracts the prediction URL of the deployed
+        model.
+
+        Args:
+            info: Info about the step that was executed.
+
+        Returns:
+            A dictionary of metadata.
+        """
+        existing_services = self.find_model_server(
+            pipeline_run_id=info.run_name,
+        )
+        if existing_services:
+            existing_service = existing_services[0]
+            if existing_service.is_running:
+                return {
+                    "deployed_model_uri": Uri(existing_service.prediction_url),
+                }
+        return {}
 
 
 class BaseModelDeployerFlavor(Flavor):
