@@ -11,13 +11,12 @@ Machine learning pipelines are rerun many times over throughout their developmen
 In order to iterate quickly, one must be able to quickly tweak pipeline runs by changing various 
 parameters for the steps that make up your pipeline.
 
-You can configure your pipelines at runtime in the following ways:
-
-- `BaseParameters`: Runtime configuration passed down to steps as parameters.
-- `BaseSettings`: Runtime settings passed down to stack components and pipelines.
-
-In this section, we will focus on `BaseParameters`, and in the Advanced Guide we will 
-[dive deeper into `BaseSettings`](../../advanced-guide/pipelines/pipelines.md).
+{% hint style="info" %}
+If you want to configure runtime settings of pipelines and stack components,
+you'll want to [read the part of the Advanced
+Guide](../../advanced-guide/pipelines/settings.md) where we dive into how to do
+this with `BaseSettings`.
+{% endhint %}
 
 You can parameterize a step by creating a subclass of the `BaseParameters`. When such a 
 config object is passed to a step, it is not treated like other artifacts. Instead, it 
