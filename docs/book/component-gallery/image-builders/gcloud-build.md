@@ -11,11 +11,11 @@ to build container images.
 You should use the Google Cloud image builder if:
 * you're **unable** to install or use [Docker](https://www.docker.com) on your client machine.
 * you're already using GCP.
-* your stack is conformed mainly by other Google Cloud components such as the [GCS Artifact Store](../artifact-stores/gcloud-gcs.md) or the [Vertex Orchestrator](../orchestrators/gcloud-vertexai.md).
+* your stack is mainly composed of other Google Cloud components such as the [GCS Artifact Store](../artifact-stores/gcloud-gcs.md) or the [Vertex Orchestrator](../orchestrators/gcloud-vertexai.md).
 
 ## How to deploy it
 
-In order to use the ZenML Google Cloud image builder is enabling Google Cloud Build relevant APIs on the Google Cloud project.
+In order to use the ZenML Google Cloud image builder you need to enable Google Cloud Build relevant APIs on the Google Cloud project.
 
 ## How to use it
 
