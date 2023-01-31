@@ -87,7 +87,7 @@ def test_stack_validation(
         ).validate()
 
     with does_not_raise():
-        # valid stack with remote container registry and GCP artifact store
+        # valid stack with GCP container registry and GCP artifact store
         Stack(
             id=uuid4(),
             name="",
