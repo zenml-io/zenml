@@ -3063,12 +3063,25 @@ class Client(metaclass=ClientMetaClass):
 
         created_metadata_list: List[RunMetadataResponseModel] = []
         for key, value in metadata.items():
+
+            # Skip metadata that is too large to be stored in the database.
             if len(json.dumps(value)) > TEXT_FIELD_MAX_LENGTH:
                 logger.warning(
                     f"Metadata value for key '{key}' is too large to be "
                     "stored in the database. Skipping."
                 )
                 continue
+
+            # Skip metadata that is not of a supported type.
+            try:
+                metadata_type = get_metadata_type(value)
+            except ValueError as e:
+                logger.warning(
+                    f"Metadata value for key '{key}' is not of a supported "
+                    f"type. Skipping. Full error: {e}"
+                )
+                continue
+
             run_metadata = RunMetadataRequestModel(
                 workspace=self.active_workspace.id,
                 user=self.active_user.id,
@@ -3078,7 +3091,7 @@ class Client(metaclass=ClientMetaClass):
                 stack_component_id=stack_component_id,
                 key=key,
                 value=value,
-                type=get_metadata_type(value),
+                type=metadata_type,
             )
             created_metadata = self.zen_store.create_run_metadata(run_metadata)
             created_metadata_list.append(created_metadata)
