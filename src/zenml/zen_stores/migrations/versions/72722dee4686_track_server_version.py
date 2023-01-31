@@ -30,7 +30,7 @@ def upgrade() -> None:
         batch_op.alter_column(
             column_name="zenml_version",
             new_column_name="client_version",
-            existing_type=sa.VARCHAR(),
+            existing_type=sqlmodel.sql.sqltypes.AutoString(),
         )
 
     # ### end Alembic commands ###
@@ -44,7 +44,7 @@ def downgrade() -> None:
         batch_op.alter_column(
             column_name="client_version",
             new_column_name="zenml_version",
-            existing_type=sa.VARCHAR(),
+            existing_type=sqlmodel.sql.sqltypes.AutoString(),
         )
 
     # ### end Alembic commands ###
