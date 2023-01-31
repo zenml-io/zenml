@@ -4,12 +4,12 @@ description: Iteration is native to ZenML.
 
 # Quickly iterating in ZenML
 
-Machine learning pipelines are rerun many times over throughout their development lifecycle. 
+Machine learning pipelines are rerun many times over throughout their development lifecycle.
 
 ## Parameterizing steps
 
-In order to iterate quickly, one must be able to quickly tweak pipeline runs by changing various 
-parameters for the steps that make up your pipeline.
+In order to iterate quickly, one must be able to quickly tweak pipeline runs by
+changing various parameters for the steps that make up your pipeline.
 
 {% hint style="info" %}
 If you want to configure runtime settings of pipelines and stack components,
@@ -18,9 +18,11 @@ Guide](../../advanced-guide/pipelines/settings.md) where we dive into how to do
 this with `BaseSettings`.
 {% endhint %}
 
-You can parameterize a step by creating a subclass of the `BaseParameters`. When such a 
-config object is passed to a step, it is not treated like other artifacts. Instead, it 
-gets passed into the step when the pipeline is instantiated.
+You can parameterize a step by creating a subclass of the `BaseParameters`. When
+an object like this is passed to a step, it is not treated like other artifacts
+within ZenML. (Artifacts are the inputs and outputs of steps, but these
+parameters objects are handled differently.) Instead, it gets passed into the
+step when the pipeline is instantiated.
 
 ```python
 import numpy as np
@@ -47,8 +49,9 @@ def svc_trainer(
     return model
 ```
 
-The default value for the `gamma` parameter is set to `0.001`. However, when
-the pipeline is instantiated you can override the default like this:
+The default value for the `gamma` parameter is set to `0.001` inside the
+`SVCTrainerParams` object. However, when the pipeline is instantiated you can
+override the default like this:
 
 ```python
 first_pipeline_instance = first_pipeline(
@@ -58,6 +61,10 @@ first_pipeline_instance = first_pipeline(
 
 first_pipeline_instance.run()
 ```
+
+By passing the `SVCTrainerParams` object to the instance of the pipeline, you
+can amend and override the default values of the parameters. This is a very
+powerful tool to quickly iterate over your pipeline.
 
 {% hint style="info" %}
 Behind the scenes, `BaseParameters` is implemented as a 
@@ -70,7 +77,9 @@ is also supported as an attribute type in the `BaseParameters`.
 Try running the above pipeline, and changing the parameter `gamma` through many runs. 
 In essence, each pipeline can be viewed as an experiment, and each run is a trial of 
 the experiment, defined by the `BaseParameters`. You can always get the parameters again 
-when you [fetch pipeline runs](./fetching-pipelines.md), to compare various runs.
+when you [fetch pipeline runs](./fetching-pipelines.md), to compare various
+runs, and of course all this information is also available in the ZenML
+Dashboard.
 
 ## Caching in ZenML
 
