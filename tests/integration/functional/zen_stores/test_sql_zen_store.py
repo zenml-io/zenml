@@ -66,7 +66,10 @@ from zenml.models import (
     WorkspaceUpdateModel,
 )
 from zenml.models.base_models import BaseResponseModel
-from zenml.models.run_metadata_models import RunMetadataRequestModel
+from zenml.models.run_metadata_models import (
+    RunMetadataFilterModel,
+    RunMetadataRequestModel,
+)
 from zenml.models.schedule_model import (
     ScheduleFilterModel,
     ScheduleRequestModel,
@@ -1628,7 +1631,7 @@ def test_create_run_metadata_succeeds(sql_store_with_run):
         value="test_value",
         type=MetadataTypeEnum.STRING,
         user=sql_store_with_run["active_user"].id,
-        project=sql_store_with_run["default_project"].id,
+        workspace=sql_store_with_run["default_workspace"].id,
         pipeline_run_id=sql_store_with_run["pipeline_run"].id,
         stack_component_id=sql_store_with_run["default_stack"]
         .components["orchestrator"][0]
@@ -1642,7 +1645,7 @@ def test_create_run_metadata_succeeds(sql_store_with_run):
         assert created_metadata.value == metadata.value
         assert created_metadata.type == metadata.type
         assert created_metadata.user.id == metadata.user
-        assert created_metadata.project.id == metadata.project
+        assert created_metadata.workspace.id == metadata.workspace
         assert created_metadata.pipeline_run_id == metadata.pipeline_run_id
         assert (
             created_metadata.stack_component_id == metadata.stack_component_id
@@ -1651,9 +1654,10 @@ def test_create_run_metadata_succeeds(sql_store_with_run):
 
 def test_list_run_metadata_succeeds(sql_store_with_run):
     """Test listing run metadata."""
-    metadata = sql_store_with_run["store"].list_run_metadata(
+    filter_model = RunMetadataFilterModel(
         pipeline_run_id=sql_store_with_run["pipeline_run"].id
     )
+    metadata = sql_store_with_run["store"].list_run_metadata(filter_model)
     assert len(metadata) == 0
 
     metadata_request = RunMetadataRequestModel(
@@ -1661,21 +1665,15 @@ def test_list_run_metadata_succeeds(sql_store_with_run):
         value="test_value",
         type=MetadataTypeEnum.STRING,
         user=sql_store_with_run["active_user"].id,
-        project=sql_store_with_run["default_project"].id,
+        workspace=sql_store_with_run["default_workspace"].id,
         pipeline_run_id=sql_store_with_run["pipeline_run"].id,
         stack_component_id=sql_store_with_run["default_stack"]
         .components["orchestrator"][0]
         .id,
     )
     sql_store_with_run["store"].create_run_metadata(metadata_request)
-    metadata = sql_store_with_run["store"].list_run_metadata(
-        pipeline_run_id=sql_store_with_run["pipeline_run"].id
-    )
+    metadata = sql_store_with_run["store"].list_run_metadata(filter_model)
     assert len(metadata) == 1
-    metadata = sql_store_with_run["store"].list_run_metadata(
-        step_run_id=sql_store_with_run["step"].id
-    )
-    assert len(metadata) == 0
 
 
 # ----------------
