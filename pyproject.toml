@@ -89,7 +89,6 @@ mypy = "^0.991"
 ruff = "^0.0.238"
 coverage = { extras = ["toml"], version = "^5.5" }
 pre-commit = "^2.14.0"
-autoflake = "^1.4"
 pyment = "^0.3.3"
 tox = "^3.24.3"
 hypothesis = "^6.43.1"
