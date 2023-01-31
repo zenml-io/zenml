@@ -23,7 +23,9 @@ from click.testing import CliRunner
 from zenml.cli.cli import cli
 from zenml.client import Client
 from zenml.enums import ExecutionStatus
+from zenml.pipelines import pipeline
 from zenml.post_execution.pipeline import get_pipeline
+from zenml.steps import step
 
 PIPELINE_NAME = "some_pipe"
 STEP_NAME = "some_step"
@@ -191,3 +193,57 @@ def test_pipeline_schedule_delete(clean_workspace_with_scheduled_run):
         clean_workspace_with_scheduled_run.get_schedule(schedule_name)
     existing_schedules = clean_workspace_with_scheduled_run.list_schedules()
     assert len(existing_schedules) == 0
+
+
+@step
+def s() -> None:
+    pass
+
+
+@pipeline
+def p(s1):
+    s1()
+
+
+step_instance = s()
+pipeline_instance = p(step_instance)
+
+
+def test_pipeline_registration_without_repo():
+    """Tests that the register command outside of a repo fails."""
+    runner = CliRunner()
+    register_command = cli.commands["pipeline"].commands["register"]
+
+    result = runner.invoke(
+        register_command, [f"{pipeline_instance.__module__}.pipeline_instance"]
+    )
+    assert result.exit_code == 1
+
+
+def test_pipeline_registration_with_repo(clean_workspace):
+    """Tests the register command inside a repo."""
+    runner = CliRunner()
+    register_command = cli.commands["pipeline"].commands["register"]
+
+    # Invalid source string
+    result = runner.invoke(register_command, ["INVALID_SOURCE"])
+    assert result.exit_code == 1
+
+    # Invalid module
+    result = runner.invoke(
+        register_command, ["invalid_module.pipeline_instance"]
+    )
+    assert result.exit_code == 1
+
+    # Not a pipeline instance
+    result = runner.invoke(
+        register_command, [f"{pipeline_instance.__module__}.step_instace"]
+    )
+    assert result.exit_code == 1
+
+    # Correct source
+    result = runner.invoke(
+        register_command, [f"{pipeline_instance.__module__}.pipeline_instance"]
+    )
+    assert result.exit_code == 0
+    assert clean_workspace.list_pipelines(name="p").total == 1
