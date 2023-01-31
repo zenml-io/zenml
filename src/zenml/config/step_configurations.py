@@ -133,7 +133,7 @@ class StepSpec(StrictBaseModel):
     source: str
     upstream_steps: List[str]
     inputs: Dict[str, InputSpec] = {}
-    # The default value is to ensure compatability with specs of version <0.2
+    # The default value is to ensure compatibility with specs of version <0.2
     pipeline_parameter_name: str = ""
 
     @property

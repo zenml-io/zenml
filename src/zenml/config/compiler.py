@@ -134,7 +134,7 @@ class Compiler:
         logger.debug(
             "Compiling pipeline spec for pipeline `%s`.", pipeline.name
         )
-        # Copy the pipeline before we connec the steps so we don't mess with
+        # Copy the pipeline before we connect the steps so we don't mess with
         # the pipeline object/step objects in any way
         pipeline = copy.deepcopy(pipeline)
         self._verify_distinct_step_names(pipeline=pipeline)
