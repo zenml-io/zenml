@@ -47,6 +47,14 @@ As this step has multiple outputs, we need to use the
 These names can be used to directly access the outputs of steps after running
 a pipeline, as we will see [in a later chapter](./fetching-pipelines.md).
 
+{% hint style="info" %}
+The inputs and outputs of a step are *artifacts* that are automatically tracked
+and stored by ZenML in the artifact store. Artifacts are produced by steps
+whenever your step returns an object or a value. If you want to dynamically
+update the hyperparameters of your pipeline, you can use a subclass of
+`BaseParams` for that purpose and which is explained fully [here](./parameters-and-caching.md).
+{% endhint %}
+
 Let's come up with a second step that consumes the output of our first step and
 performs some sort of transformation on it. In this case, let's train a support
 vector machine classifier on the training data using sklearn:
