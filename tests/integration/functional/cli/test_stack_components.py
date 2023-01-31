@@ -14,17 +14,13 @@
 
 from contextlib import ExitStack as does_not_raise
 from datetime import datetime
-from typing import Iterator
 from uuid import uuid4
 
 import pytest
 from click.testing import CliRunner
 
-from tests.unit.test_flavor import AriaOrchestratorFlavor
 from zenml.cli.cli import cli
 from zenml.enums import StackComponentType
-from zenml.models import FlavorRequestModel
-from zenml.stack.flavor_registry import FlavorRegistry
 from zenml.stack.stack_component import StackComponent
 
 NOT_STACK_COMPONENTS = ["abc", "my_other_cat_is_called_blupus", "stack123"]
