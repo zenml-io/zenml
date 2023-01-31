@@ -15,7 +15,6 @@
 
 import os
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
-from uuid import UUID
 
 import mlflow
 from mlflow.entities import Experiment, Run
@@ -25,6 +24,7 @@ import zenml
 from zenml.artifact_stores import LocalArtifactStore
 from zenml.client import Client
 from zenml.config.base_settings import BaseSettings
+from zenml.constants import METADATA_EXPERIMENT_TRACKER_URL
 from zenml.experiment_trackers.base_experiment_tracker import (
     BaseExperimentTracker,
 )
@@ -167,21 +167,6 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         """
         return self.config.tracking_uri or self._local_mlflow_backend()
 
-    def get_pipeline_run_metadata(
-        self, run_id: UUID
-    ) -> Dict[str, "MetadataType"]:
-        """Get general component-specific metadata for a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run.
-
-        Returns:
-            A dictionary of metadata.
-        """
-        return {
-            "mlflow_tracking_uri": Uri(self.get_tracking_uri()),
-        }
-
     def prepare_step_run(self, info: "StepRunInfo") -> None:
         """Sets the MLflow tracking uri and credentials.
 
@@ -225,6 +210,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
             A dictionary of metadata.
         """
         return {
+            METADATA_EXPERIMENT_TRACKER_URL: Uri(self.get_tracking_uri()),
             "mlflow_run_id": mlflow.active_run().info.run_id,
             "mlflow_experiment_id": mlflow.active_run().info.experiment_id,
         }

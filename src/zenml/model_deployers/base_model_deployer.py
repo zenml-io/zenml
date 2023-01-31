@@ -27,8 +27,9 @@ from typing import (
 from uuid import UUID
 
 from zenml.client import Client
+from zenml.constants import METADATA_DEPLOYED_MODEL_URL
 from zenml.enums import StackComponentType
-from zenml.metadata.metadata_types import MetadataType, Uri
+from zenml.metadata.metadata_types import Uri
 from zenml.services import BaseService, ServiceConfig
 from zenml.services.service import BaseDeploymentService
 from zenml.stack import StackComponent
@@ -37,6 +38,7 @@ from zenml.stack.stack_component import StackComponentConfig
 
 if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
+    from zenml.metadata.metadata_types import MetadataType
 
 
 DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT = 300
@@ -309,9 +311,8 @@ class BaseModelDeployer(StackComponent, ABC):
                 isinstance(existing_service, BaseDeploymentService)
                 and existing_service.is_running
             ):
-                return {
-                    "deployed_model_uri": Uri(existing_service.prediction_url),
-                }
+                deployed_model_url = existing_service.prediction_url
+                return {METADATA_DEPLOYED_MODEL_URL: Uri(deployed_model_url)}
         return {}
 
 
