@@ -78,7 +78,6 @@ class RunMetadataFilterModel(WorkspaceScopedFilterModel):
     artifact_id: Optional[Union[str, UUID]] = None
     stack_component_id: Optional[Union[str, UUID]] = None
     key: Optional[str] = None
-    value: Optional[Union[str, MetadataType]] = None
     type: Optional[Union[str, MetadataTypeEnum]] = None
 
 
