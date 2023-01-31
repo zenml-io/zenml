@@ -362,6 +362,7 @@ class SeldonDeployment(BaseModel):
                         modelUri=model_uri or "",
                         implementation=implementation or "",
                         envSecretRefName=secret_name,
+                        parameters=parameters,
                     ),
                 )
             ]
