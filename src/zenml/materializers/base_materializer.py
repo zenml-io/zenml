@@ -24,7 +24,7 @@ from zenml.logger import get_logger
 from zenml.materializers.default_materializer_registry import (
     default_materializer_registry,
 )
-from zenml.metadata.metadata_types import DType, MetadataType
+from zenml.metadata.metadata_types import MetadataType
 
 logger = get_logger(__name__)
 
@@ -286,13 +286,10 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
                 f"types: {self.ASSOCIATED_TYPES}."
             )
 
-        metadata: Dict[str, "MetadataType"] = {
-            "runtime_data_type": DType(type(data))
-        }
         storage_size = fileio.size(self.uri)
         if storage_size:
-            metadata["storage_size"] = StorageSize(storage_size)
-        return metadata
+            return {"storage_size": StorageSize(storage_size)}
+        return {}
 
     def handle_input(self, data_type: Type[Any]) -> Any:
         """Deprecated method to load the data of an artifact.
