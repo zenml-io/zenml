@@ -32,7 +32,10 @@ from typing import (
 from uuid import UUID
 
 from zenml.config.global_config import GlobalConfiguration
-from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
+from zenml.constants import (
+    METADATA_ORCHESTRATOR_URL,
+    ORCHESTRATOR_DOCKER_IMAGE_KEY,
+)
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.enums import StackComponentType
 from zenml.integrations.airflow.flavors.airflow_orchestrator_flavor import (
@@ -41,7 +44,7 @@ from zenml.integrations.airflow.flavors.airflow_orchestrator_flavor import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.metadata.metadata_types import Path, Uri
+from zenml.metadata.metadata_types import Uri
 from zenml.orchestrators import BaseOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
@@ -610,9 +613,8 @@ class AirflowOrchestrator(BaseOrchestrator):
         Returns:
             A dictionary of metadata.
         """
-        run_metadata = {}
-        if self._dag_path:
-            run_metadata["airflow_dag_path"] = Path(self._dag_path)
         if self.config.local:
-            run_metadata["airflow_uri"] = Uri("http://localhost:8080")
-        return run_metadata
+            return {
+                METADATA_ORCHESTRATOR_URL: Uri("http://localhost:8080"),
+            }
+        return {}
