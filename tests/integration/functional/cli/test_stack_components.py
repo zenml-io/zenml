@@ -24,7 +24,7 @@ from tests.unit.test_flavor import AriaOrchestratorFlavor
 from zenml.cli.cli import cli
 from zenml.enums import StackComponentType
 from zenml.models import FlavorRequestModel
-from zenml.stack.flavor_registry import flavor_registry
+from zenml.stack.flavor_registry import FlavorRegistry
 from zenml.stack.stack_component import StackComponent
 
 NOT_STACK_COMPONENTS = ["abc", "my_other_cat_is_called_blupus", "stack123"]
@@ -176,15 +176,6 @@ def test_update_stack_component_with_non_configured_property_fails(
             name_id_or_prefix="new_container_registry",
             component_type=StackComponentType.CONTAINER_REGISTRY,
         ).__getattribute__("favorite_cat")
-
-
-@pytest.fixture
-def test_flavor() -> Iterator[FlavorRequestModel]:
-    """Create a flavor for testing."""
-    aria_flavor = AriaOrchestratorFlavor()
-    flavor_registry._register_flavor(aria_flavor.to_model())
-    yield aria_flavor
-    flavor_registry._flavors[aria_flavor.type].pop(aria_flavor.name)
 
 
 def test_remove_attribute_component_succeeds(
