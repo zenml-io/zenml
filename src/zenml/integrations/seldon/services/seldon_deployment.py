@@ -294,6 +294,7 @@ class SeldonDeploymentService(BaseService):
             model_uri=self.config.model_uri,
             model_name=self.config.model_name,
             implementation=self.config.implementation,
+            parameters=self.config.parameters,
             secret_name=self.config.secret_name,
             labels=self._get_seldon_deployment_labels(),
             annotations=self.config.get_seldon_deployment_annotations(),

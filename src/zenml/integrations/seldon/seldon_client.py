@@ -299,7 +299,7 @@ class SeldonDeployment(BaseModel):
         model_uri: Optional[str] = None,
         model_name: Optional[str] = None,
         implementation: Optional[str] = None,
-        parameters: Optional[SeldonDeploymentPredictorParameter] = None,
+        parameters: SeldonDeploymentPredictorParameter = Field(default_factory=list),
         secret_name: Optional[str] = None,
         labels: Optional[Dict[str, str]] = None,
         annotations: Optional[Dict[str, str]] = None,
