@@ -35,6 +35,12 @@ SELDON_DEPLOYMENT_KIND = "SeldonDeployment"
 SELDON_DEPLOYMENT_API_VERSION = "machinelearning.seldon.io/v1"
 
 
+class SeldonDeploymentPredictorParameter:
+    name: str
+    type: str
+    value: str
+
+
 class SeldonDeploymentMetadata(BaseModel):
     """Metadata for a Seldon Deployment.
 
@@ -93,6 +99,9 @@ class SeldonDeploymentPredictiveUnit(BaseModel):
     ] = SeldonDeploymentPredictiveUnitType.MODEL
     implementation: Optional[str]
     modelUri: Optional[str]
+    parameters: List[SeldonDeploymentPredictorParameter] = Field(
+        default_factory=list
+    )
     serviceAccountName: Optional[str]
     envSecretRefName: Optional[str]
     children: List["SeldonDeploymentPredictiveUnit"] = Field(
