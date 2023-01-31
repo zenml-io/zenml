@@ -16,15 +16,13 @@ from contextlib import ExitStack as does_not_raise
 
 import pytest
 
-from tests.integration.functional.zen_stores.conftest import (
-    CrudTestConfig,
-    list_of_entities,
-)
 from tests.integration.functional.zen_stores.utils import (
+    CrudTestConfig,
     PipelineRunContext,
     RoleContext,
     TeamContext,
     UserContext,
+    list_of_entities,
     sample_name,
 )
 from zenml.client import Client
