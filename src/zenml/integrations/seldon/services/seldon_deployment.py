@@ -26,6 +26,7 @@ from zenml.integrations.seldon.seldon_client import (
     SeldonClient,
     SeldonDeployment,
     SeldonDeploymentNotFoundError,
+    SeldonDeploymentPredictorParameter
 )
 from zenml.logger import get_logger
 from zenml.services.service import BaseService, ServiceConfig
