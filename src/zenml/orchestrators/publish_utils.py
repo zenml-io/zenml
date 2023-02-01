@@ -193,8 +193,9 @@ def publish_pipeline_run_metadata(
         pipeline_run_metadata: A dictionary mapping stack component IDs to the
             metadata they created.
     """
+    client = Client()
     for stack_component_id, metadata in pipeline_run_metadata.items():
-        Client().create_run_metadata(
+        client.create_run_metadata(
             metadata=metadata,
             pipeline_run_id=pipeline_run_id,
             stack_component_id=stack_component_id,
@@ -212,8 +213,9 @@ def publish_step_run_metadata(
         step_run_metadata: A dictionary mapping stack component IDs to the
             metadata they created.
     """
+    client = Client()
     for stack_component_id, metadata in step_run_metadata.items():
-        Client().create_run_metadata(
+        client.create_run_metadata(
             metadata=metadata,
             step_run_id=step_run_id,
             stack_component_id=stack_component_id,

@@ -78,8 +78,8 @@ class StepRunResponseModel(StepRunBaseModel, WorkspaceScopedResponseModel):
 
     input_artifacts: Dict[str, "ArtifactResponseModel"] = {}
     output_artifacts: Dict[str, "ArtifactResponseModel"] = {}
-    metadata: List["RunMetadataResponseModel"] = Field(
-        default=[],
+    metadata: Dict[str, "RunMetadataResponseModel"] = Field(
+        default={},
         title="Metadata associated with this step run.",
     )
 

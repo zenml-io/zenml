@@ -179,6 +179,10 @@ class PipelineRunSchema(NamedSchema, table=True):
             if self.orchestrator_environment
             else {}
         )
+        metadata = {
+            metadata_schema.key: metadata_schema.to_model()
+            for metadata_schema in self.run_metadata
+        }
 
         if _block_recursion:
             return PipelineRunResponseModel(
@@ -201,7 +205,7 @@ class PipelineRunSchema(NamedSchema, table=True):
                 orchestrator_environment=orchestrator_environment,
                 created=self.created,
                 updated=self.updated,
-                metadata=[m.to_model() for m in self.run_metadata],
+                metadata=metadata,
             )
         else:
             return PipelineRunResponseModel(
@@ -228,7 +232,7 @@ class PipelineRunSchema(NamedSchema, table=True):
                 orchestrator_environment=orchestrator_environment,
                 created=self.created,
                 updated=self.updated,
-                metadata=[m.to_model() for m in self.run_metadata],
+                metadata=metadata,
             )
 
     def update(

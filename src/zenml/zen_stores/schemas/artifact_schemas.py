@@ -122,6 +122,10 @@ class ArtifactSchema(NamedSchema, table=True):
         Returns:
             The created `ArtifactModel`.
         """
+        metadata = {
+            metadata_schema.key: metadata_schema.to_model()
+            for metadata_schema in self.run_metadata
+        }
         return ArtifactResponseModel(
             id=self.id,
             name=self.name,
@@ -135,5 +139,5 @@ class ArtifactSchema(NamedSchema, table=True):
             created=self.created,
             updated=self.updated,
             producer_step_run_id=producer_step_run_id,
-            metadata=[metadata.to_model() for metadata in self.run_metadata],
+            metadata=metadata,
         )

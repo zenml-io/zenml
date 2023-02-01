@@ -3020,7 +3020,7 @@ class Client(metaclass=ClientMetaClass):
         step_run_id: Optional[UUID] = None,
         artifact_id: Optional[UUID] = None,
         stack_component_id: Optional[UUID] = None,
-    ) -> List[RunMetadataResponseModel]:
+    ) -> Dict[str, RunMetadataResponseModel]:
         """Create run metadata.
 
         Args:
@@ -3038,7 +3038,7 @@ class Client(metaclass=ClientMetaClass):
                 the metadata.
 
         Returns:
-            The created metadata.
+            The created metadata, as string to model dictionary.
 
         Raises:
             ValueError: If not exactly one of either `pipeline_run_id`,
@@ -3063,7 +3063,7 @@ class Client(metaclass=ClientMetaClass):
                 "`step_run_id` or only an `artifact_id`."
             )
 
-        created_metadata_list: List[RunMetadataResponseModel] = []
+        created_metadata: Dict[str, RunMetadataResponseModel] = {}
         for key, value in metadata.items():
 
             # Skip metadata that is too large to be stored in the database.
@@ -3095,9 +3095,9 @@ class Client(metaclass=ClientMetaClass):
                 value=value,
                 type=metadata_type,
             )
-            created_metadata = self.zen_store.create_run_metadata(run_metadata)
-            created_metadata_list.append(created_metadata)
-        return created_metadata_list
+            metadata_model = self.zen_store.create_run_metadata(run_metadata)
+            created_metadata[key] = metadata_model
+        return created_metadata
 
     def list_run_metadata(
         self,

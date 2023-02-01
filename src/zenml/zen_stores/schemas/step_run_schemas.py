@@ -187,6 +187,10 @@ class StepRunSchema(NamedSchema, table=True):
         Returns:
             The created StepRunModel.
         """
+        metadata = {
+            metadata_schema.key: metadata_schema.to_model()
+            for metadata_schema in self.run_metadata
+        }
         return StepRunResponseModel(
             id=self.id,
             name=self.name,
@@ -208,7 +212,7 @@ class StepRunSchema(NamedSchema, table=True):
             updated=self.updated,
             input_artifacts=input_artifacts,
             output_artifacts=output_artifacts,
-            metadata=[m.to_model() for m in self.run_metadata],
+            metadata=metadata,
         )
 
     def update(self, step_update: StepRunUpdateModel) -> "StepRunSchema":

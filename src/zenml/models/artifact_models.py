@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing artifacts."""
 
-from typing import TYPE_CHECKING, ClassVar, List, Optional, Union
+from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -65,8 +65,8 @@ class ArtifactResponseModel(ArtifactBaseModel, WorkspaceScopedResponseModel):
     """Response model for artifacts."""
 
     producer_step_run_id: Optional[UUID]
-    metadata: List["RunMetadataResponseModel"] = Field(
-        default=[], title="Metadata of the artifact."
+    metadata: Dict[str, "RunMetadataResponseModel"] = Field(
+        default={}, title="Metadata of the artifact."
     )
 
 
