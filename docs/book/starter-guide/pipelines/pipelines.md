@@ -47,17 +47,6 @@ As this step has multiple outputs, we need to use the
 These names can be used to directly access the outputs of steps after running
 a pipeline, as we will see [in a later chapter](./fetching-pipelines.md).
 
-{% hint style="info" %}
-The inputs and outputs of a step are *artifacts* that are automatically tracked
-and stored by ZenML in the artifact store. Artifacts are produced by steps
-whenever your step returns an object or a value. If a step returns only a single
-thing (value or object etc) there is no need to use the `Output` class.
-
-If you want to dynamically update the hyperparameters of your pipeline, you can
-use a subclass of `BaseParams` for that purpose (explained in full detail
-[here](./parameters-and-caching.md)).
-{% endhint %}
-
 Let's come up with a second step that consumes the output of our first step and
 performs some sort of transformation on it. In this case, let's train a support
 vector machine classifier on the training data using sklearn:
@@ -93,7 +82,6 @@ svc_trainer.entrypoint(X_train=..., y_train=...)
 ```
 {% endhint %}
 
-
 <details>
 <summary>Using the Class-based API</summary>
 
@@ -127,6 +115,18 @@ class SVCTrainerStep(BaseStep):
         return model
 ```
 </details>
+
+### Artifacts
+
+The inputs and outputs of a step are *artifacts* that are automatically tracked
+and stored by ZenML in the artifact store. Artifacts are produced by and
+circulated among steps whenever your step returns an object or a value. If a
+step returns only a single thing (value or object etc) there is no need to use
+the `Output` class as shown above. 
+
+If you want to dynamically update the hyperparameters of your pipeline, you can
+use a subclass of `BaseParams` for that purpose (explained in full detail
+[here](./parameters-and-caching.md)).
 
 ## Pipeline
 

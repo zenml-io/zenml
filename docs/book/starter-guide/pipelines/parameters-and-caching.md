@@ -19,10 +19,11 @@ this with `BaseSettings`.
 {% endhint %}
 
 You can parameterize a step by creating a subclass of the `BaseParameters`. When
-an object like this is passed to a step, it is not treated like other artifacts
-within ZenML. (Artifacts are the inputs and outputs of steps, but these
-parameters objects are handled differently.) Instead, it gets passed into the
-step when the pipeline is instantiated.
+an object like this is passed to a step, it is not handled like other artifacts
+within ZenML. ([Visit this
+page](../../starter-guide/pipelines/pipelines.md#artifacts) to learn more about
+the difference between artifacts and parameters in ZenML.) Instead, it gets
+passed into the step when the pipeline is instantiated.
 
 ```python
 import numpy as np
@@ -80,6 +81,73 @@ the experiment, defined by the `BaseParameters`. You can always get the paramete
 when you [fetch pipeline runs](./fetching-pipelines.md), to compare various
 runs, and of course all this information is also available in the ZenML
 Dashboard.
+
+<details>
+<summary>How-To: Parameterization of a step</summary>
+A practical example of how you might parameterize a step is shown below. We can start with a version of a step that has yet to be parameterized. You can see how arguments for `gamma`, `C` and `kernel` are passed in and are hard-coded in the step definition.
+
+```python
+@step
+def svc_trainer(
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+) -> ClassifierMixin:
+    """Train a sklearn SVC classifier."""
+    model = SVC(gamma=0.001, C=2.5, kernel='rbf')
+    model.fit(X_train, y_train)
+    return model
+```
+
+If you are in the early stages of prototyping, you might want to quickly iterate
+over different values for `gamma`, `C` and `kernel`. Moreover, you might want to
+store these as specific hyperparameters that are tracked alongside the rest of
+the artifacts stored by ZenML. This is where `BaseParameters` comes in handy.
+
+```python
+class SVCTrainerParams(BaseParameters):
+    """Trainer params"""
+    gamma: float = 0.001
+    C: float = 1.0
+    kernel: str = 'rbf'
+```
+
+Now, you can pass the `SVCTrainerParams` object to the step, and the values
+inside the object will be used instead of the hard-coded values.
+
+```python
+@step
+def svc_trainer(
+    params: SVCTrainerParams,
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+) -> ClassifierMixin:
+    """Train a sklearn SVC classifier."""
+    model = SVC(gamma=params.gamma, C=params.C, kernel=params.kernel)
+    model.fit(X_train, y_train)
+    return model
+```
+
+Finally, you can pass the `SVCTrainerParams` object to the instance of the
+pipeline, and override the default values of the parameters.
+
+```python
+first_pipeline_instance = first_pipeline(
+    step_1=digits_data_loader(),
+    step_2=svc_trainer(SVCTrainerParams(gamma=0.01, C=2.5, kernel='linear')),
+)
+```
+
+Parameterizing steps in ML pipelines is a crucial aspect of efficient and
+effective machine learning. By separating the configuration from the code, data
+scientists and machine learning engineers have greater control over the behavior
+of each step in the pipeline. This makes it easier to tune and optimize each
+step, as well as to reuse the code in different pipelines or experiments.
+Additionally, parameterization helps to make the pipelines more robust and
+reproducible, as the configuration can be stored and versioned alongside the
+code. Ultimately, parameterizing steps in ML pipelines can lead to improved
+model performance, reduced development time, and increased collaboration among
+team members.
+</details>
 
 ## Caching in ZenML
 
