@@ -1478,8 +1478,7 @@ class Client(metaclass=ClientMetaClass):
         if not stack:
             raise RuntimeError(
                 "No active stack is configured. Run "
-                "`zenml stack set WORKSPACE_NAME` to set the active "
-                "stack."
+                "`zenml stack set STACK_NAME` to set the active stack."
             )
 
         return stack
@@ -3027,11 +3026,14 @@ class Client(metaclass=ClientMetaClass):
         Args:
             metadata: The metadata to create as a dictionary of key-value pairs.
             pipeline_run_id: The ID of the pipeline run during which the
-                metadata was produced.
+                metadata was produced. If provided, `step_run_id` and
+                `artifact_id` must be None.
             step_run_id: The ID of the step run during which the metadata was
-                produced.
+                produced. If provided, `pipeline_run_id` and `artifact_id` must
+                be None.
             artifact_id: The ID of the artifact for which the metadata was
-                produced.
+                produced. If provided, `pipeline_run_id` and `step_run_id` must
+                be None.
             stack_component_id: The ID of the stack component that produced
                 the metadata.
 

@@ -722,15 +722,6 @@ class BaseStep(metaclass=BaseStepMeta):
         return self.configuration.enable_cache
 
     @property
-    def enable_artifact_metadata(self) -> Optional[bool]:
-        """If artifact metadata is enabled for the step.
-
-        Returns:
-            If artifact metadata is enabled for the step.
-        """
-        return self.configuration.enable_artifact_metadata
-
-    @property
     def configuration(self) -> PartialStepConfiguration:
         """The configuration of the step.
 
