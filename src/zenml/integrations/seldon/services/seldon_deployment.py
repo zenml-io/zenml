@@ -19,6 +19,7 @@ from typing import Any, Dict, Generator, List, Optional, Tuple, cast
 from uuid import UUID
 
 import requests
+from kubernetes.client.models import V1ResourceRequirements
 from pydantic import Field, ValidationError
 
 from zenml import __version__
@@ -65,6 +66,7 @@ class SeldonDeploymentConfig(ServiceConfig):
     parameters: List[SeldonDeploymentPredictorParameter] = Field(
         default_factory=list
     )
+    engineResources: Optional[V1ResourceRequirements] = (None,)
     replicas: int = 1
     secret_name: Optional[str]
     model_metadata: Dict[str, Any] = Field(default_factory=dict)
@@ -295,6 +297,7 @@ class SeldonDeploymentService(BaseService):
             model_name=self.config.model_name,
             implementation=self.config.implementation,
             parameters=self.config.parameters,
+            engineResources=self.config.resources,
             secret_name=self.config.secret_name,
             labels=self._get_seldon_deployment_labels(),
             annotations=self.config.get_seldon_deployment_annotations(),

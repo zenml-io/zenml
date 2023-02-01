@@ -21,6 +21,7 @@ from typing import Any, Dict, Generator, List, Optional
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
+from kubernetes.client.models import V1ResourceRequirements
 from pydantic import BaseModel, Field, ValidationError
 
 from zenml.logger import get_logger
@@ -43,6 +44,7 @@ class SeldonDeploymentPredictorParameter(BaseModel):
         type: parameter, can be INT, FLOAT, DOUBLE, STRING, BOOL
         value: parameter value
     """
+
     name: str = ""
     type: str = ""
     value: str = ""
@@ -164,6 +166,9 @@ class SeldonDeploymentPredictor(BaseModel):
     replicas: int = 1
     graph: Optional[SeldonDeploymentPredictiveUnit] = Field(
         default_factory=SeldonDeploymentPredictiveUnit
+    )
+    engineResources: Optional[V1ResourceRequirements] = Field(
+        default_factory=V1ResourceRequirements
     )
     componentSpecs: Optional[List[SeldonDeploymentComponentSpecs]]
 
@@ -309,6 +314,7 @@ class SeldonDeployment(BaseModel):
         parameters: SeldonDeploymentPredictorParameter = Field(
             default_factory=list
         ),
+        engineResources: Optional[V1ResourceRequirements] = None,
         secret_name: Optional[str] = None,
         labels: Optional[Dict[str, str]] = None,
         annotations: Optional[Dict[str, str]] = None,
@@ -324,6 +330,7 @@ class SeldonDeployment(BaseModel):
             model_name: The name of the model.
             implementation: The implementation of the model.
             parameters: The predictor graph parameters.
+            engineResources: The resources to be allocated to the model.
             secret_name: The name of the Kubernetes secret containing
                 environment variable values (e.g. with credentials for the
                 artifact store) to use with the deployment service.
@@ -354,6 +361,7 @@ class SeldonDeployment(BaseModel):
                         type=SeldonDeploymentPredictiveUnitType.MODEL,
                         parameters=parameters,
                     ),
+                    engineResources=engineResources,
                     componentSpecs=[
                         SeldonDeploymentComponentSpecs(
                             spec=spec
@@ -374,6 +382,7 @@ class SeldonDeployment(BaseModel):
                         envSecretRefName=secret_name,
                         parameters=parameters,
                     ),
+                    engineResources=engineResources,
                 )
             ]
 
