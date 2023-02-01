@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the Evidently data validator."""
 
-from typing import Any, ClassVar, Dict, List, Optional, Sequence, Tuple, Type
+from typing import Any, ClassVar, Dict, List, Optional, Sequence, Tuple, Type, Union
 
 import pandas as pd
 from evidently.dashboard import Dashboard  # type: ignore
@@ -26,6 +26,10 @@ from evidently.dashboard.tabs import (  # type: ignore
     ProbClassificationPerformanceTab,
     RegressionPerformanceTab,
 )
+from evidently.base_metric import Metric
+from evidently.metric_preset.metric_preset import MetricPreset
+from evidently.utils.generators import BaseGenerator
+from evidently.report import Report  # type: ignore
 from evidently.dashboard.tabs.base_tab import Tab  # type: ignore
 from evidently.model_profile import Profile  # type: ignore
 from evidently.model_profile.sections import (  # type: ignore
@@ -50,62 +54,6 @@ from zenml.logger import get_logger
 from zenml.utils.source_utils import load_source_path_class
 
 logger = get_logger(__name__)
-
-
-profile_mapper = {
-    "datadrift": DataDriftProfileSection,
-    "categoricaltargetdrift": CatTargetDriftProfileSection,
-    "numericaltargetdrift": NumTargetDriftProfileSection,
-    "dataquality": DataQualityProfileSection,
-    "classificationmodelperformance": ClassificationPerformanceProfileSection,
-    "regressionmodelperformance": RegressionPerformanceProfileSection,
-    "probabilisticmodelperformance": ProbClassificationPerformanceProfileSection,
-}
-
-dashboard_mapper = {
-    "dataquality": DataQualityTab,
-    "datadrift": DataDriftTab,
-    "categoricaltargetdrift": CatTargetDriftTab,
-    "numericaltargetdrift": NumTargetDriftTab,
-    "classificationmodelperformance": ClassificationPerformanceTab,
-    "regressionmodelperformance": RegressionPerformanceTab,
-    "probabilisticmodelperformance": ProbClassificationPerformanceTab,
-}
-
-
-def get_profile_sections_and_tabs(
-    profile_list: Optional[Sequence[str]],
-    verbose_level: int = 1,
-) -> Tuple[List[ProfileSection], List[Tab]]:
-    """Get the profile sections and dashboard tabs for a profile list.
-
-    Args:
-        profile_list: List of identifiers for Evidently profiles.
-        verbose_level: Verbosity level for the rendered dashboard. Use
-            0 for a brief dashboard, 1 for a detailed dashboard.
-
-    Returns:
-        A tuple of two lists of profile sections and tabs.
-
-    Raises:
-        ValueError: if the profile_section is not supported.
-    """
-    profile_list = profile_list or list(profile_mapper.keys())
-    try:
-        return (
-            [profile_mapper[profile]() for profile in profile_list],
-            [
-                dashboard_mapper[profile](verbose_level=verbose_level)
-                for profile in profile_list
-            ],
-        )
-    except KeyError as e:
-        nl = "\n"
-        raise ValueError(
-            f"Invalid profile sections: {profile_list} \n\n"
-            f"Valid and supported options are: {nl}- "
-            f'{f"{nl}- ".join(list(profile_mapper.keys()))}'
-        ) from e
 
 
 class EvidentlyDataValidator(BaseDataValidator):
@@ -188,11 +136,9 @@ class EvidentlyDataValidator(BaseDataValidator):
         self,
         dataset: pd.DataFrame,
         comparison_dataset: Optional[pd.DataFrame] = None,
-        profile_list: Optional[Sequence[str]] = None,
+        metric_list: List[Union[Metric, MetricPreset, BaseGenerator]] = None,
         column_mapping: Optional[ColumnMapping] = None,
-        verbose_level: int = 1,
-        profile_options: Sequence[Tuple[str, Dict[str, Any]]] = [],
-        dashboard_options: Sequence[Tuple[str, Dict[str, Any]]] = [],
+        report_options: Sequence[Tuple[str, Dict[str, Any]]] = [],
         **kwargs: Any,
     ) -> Tuple[Profile, Dashboard]:
         """Analyze a dataset and generate a data profile with Evidently.
@@ -222,37 +168,23 @@ class EvidentlyDataValidator(BaseDataValidator):
             dataset: Target dataset to be profiled.
             comparison_dataset: Optional dataset to be used for data profiles
                 that require a baseline for comparison (e.g data drift profiles).
-            profile_list: Optional list identifying the categories of Evidently
+            metric_list: Optional list identifying the categories of Evidently
                 data profiles to be generated.
             column_mapping: Properties of the DataFrame columns used
-            verbose_level: Level of verbosity for the Evidently dashboards. Use
-                0 for a brief dashboard, 1 for a detailed dashboard.
-            profile_options: Optional list of options to pass to the
-                profile constructor.
-            dashboard_options: Optional list of options to pass to the
-                dashboard constructor.
+            report_options: List of Evidently options to be passed to the
+                report constructor.
             **kwargs: Extra keyword arguments (unused).
 
         Returns:
-            The Evidently Profile and Dashboard objects corresponding to the set
-            of generated profiles.
+            The Evidently Report as JSON object and as HTML.
         """
-        sections, tabs = get_profile_sections_and_tabs(
-            profile_list, verbose_level
-        )
-        unpacked_profile_options = self._unpack_options(profile_options)
-        unpacked_dashboard_options = self._unpack_options(dashboard_options)
+        unpacked_report_options = self._unpack_options(report_options)
 
-        dashboard = Dashboard(tabs=tabs, options=unpacked_dashboard_options)
-        dashboard.calculate(
+        report = Report(metrics=metric_list, options=unpacked_report_options)
+        report.run(
             reference_data=dataset,
             current_data=comparison_dataset,
             column_mapping=column_mapping,
         )
-        profile = Profile(sections=sections, options=unpacked_profile_options)
-        profile.calculate(
-            reference_data=dataset,
-            current_data=comparison_dataset,
-            column_mapping=column_mapping,
-        )
-        return profile, dashboard
+
+        return report.json(), report
