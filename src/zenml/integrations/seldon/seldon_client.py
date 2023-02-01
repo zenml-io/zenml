@@ -36,6 +36,13 @@ SELDON_DEPLOYMENT_API_VERSION = "machinelearning.seldon.io/v1"
 
 
 class SeldonDeploymentPredictorParameter(BaseModel):
+    """Parameter for Seldon Deployment predictor.
+
+    Attributes:
+        name: parameter name
+        type: parameter, can be INT, FLOAT, DOUBLE, STRING, BOOL
+        value: parameter value
+    """
     name: str = ""
     type: str = ""
     value: str = ""
@@ -299,7 +306,9 @@ class SeldonDeployment(BaseModel):
         model_uri: Optional[str] = None,
         model_name: Optional[str] = None,
         implementation: Optional[str] = None,
-        parameters: SeldonDeploymentPredictorParameter = Field(default_factory=list),
+        parameters: SeldonDeploymentPredictorParameter = Field(
+            default_factory=list
+        ),
         secret_name: Optional[str] = None,
         labels: Optional[Dict[str, str]] = None,
         annotations: Optional[Dict[str, str]] = None,
@@ -314,6 +323,7 @@ class SeldonDeployment(BaseModel):
             model_uri: The URI of the model.
             model_name: The name of the model.
             implementation: The implementation of the model.
+            parameters: The predictor graph parameters.
             secret_name: The name of the Kubernetes secret containing
                 environment variable values (e.g. with credentials for the
                 artifact store) to use with the deployment service.
