@@ -467,8 +467,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             integration_registry.activate_integrations()
 
             if config_path:
-                config_dict = yaml_utils.read_yaml(config_path)
-                run_config = PipelineRunConfiguration.parse_obj(config_dict)
+                run_config = PipelineRunConfiguration.from_yaml(config_path)
             else:
                 run_config = PipelineRunConfiguration()
 

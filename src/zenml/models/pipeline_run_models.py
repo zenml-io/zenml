@@ -100,9 +100,13 @@ class PipelineRunBaseModel(BaseModel):
     status: ExecutionStatus
     pipeline_configuration: Dict[str, Any]
     num_steps: Optional[int]
-    zenml_version: Optional[str] = Field(
-        title="ZenML version.",
+    client_version: Optional[str] = Field(
+        title="Client version.",
         default=current_zenml_version,
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    server_version: Optional[str] = Field(
+        title="Server version.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     client_environment: Dict[str, str] = Field(
