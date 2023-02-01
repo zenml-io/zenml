@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the ZenML Stack class."""
 
+import itertools
 import os
 from typing import (
     TYPE_CHECKING,
@@ -28,6 +29,7 @@ from typing import (
 from uuid import UUID
 
 from zenml.client import Client
+from zenml.config.build_configuration import BuildConfiguration, BuildOutput
 from zenml.constants import (
     ENV_ZENML_SECRET_VALIDATION_LEVEL,
     ENV_ZENML_SKIP_IMAGE_BUILDER_DEFAULT,
@@ -781,7 +783,76 @@ class Stack:
                 deployment=deployment, stack=self
             )
 
-    def deploy_pipeline(self, deployment: "PipelineDeployment") -> Any:
+    def get_docker_builds(
+        self, deployment: "PipelineDeployment"
+    ) -> List["BuildConfiguration"]:
+        return itertools.chain.from_iterable(
+            component.get_docker_builds(deployment=deployment)
+            for component in self.components.values()
+        )
+
+    def build(self, deployment: "PipelineDeployment") -> Optional[BuildOutput]:
+        logger.info(
+            "Building Docker image(s) for pipeline `%s`.",
+            deployment.pipeline.name,
+        )
+
+        required_builds = self.get_docker_builds(deployment=deployment)
+        if not required_builds:
+            return None
+
+        from collections import defaultdict
+
+        from zenml.utils.pipeline_docker_image_builder import (
+            PipelineDockerImageBuilder,
+        )
+
+        docker_image_builder = PipelineDockerImageBuilder()
+        pipeline_images = {}
+        step_images = defaultdict(dict)
+        is_local = self.container_registry is None
+
+        for build in required_builds:
+            # TODO: this won't work if building multiple images with the same
+            # tag locally
+
+            if build.step_name:
+                if build.key in step_images[build.step_name]:
+                    logger.warning(
+                        "Step image with key %s already exists", build.key
+                    )
+                    continue
+            else:
+                if build.key in pipeline_images:
+                    logger.warning(
+                        "Pipeline image with key %s already exists", build.key
+                    )
+                    continue
+
+            image_name_or_digest = docker_image_builder.new_build_docker_image(
+                deployment=deployment,
+                docker_settings=build.settings,
+                stack=self,
+                default_tag=build.default_tag,
+                entrypoint=build.entrypoint,
+            )
+
+            if build.step_name:
+                step_images[build.step_name][build.key] = image_name_or_digest
+            else:
+                pipeline_images[build.key] = image_name_or_digest
+
+        logger.info("Finished building Docker image(s).")
+
+        return BuildOutput(
+            is_local=is_local,
+            pipeline_images=pipeline_images,
+            step_images=step_images,
+        )
+
+    def deploy_pipeline(
+        self, deployment: "PipelineDeployment", builds: Optional["BuildOutput"]
+    ) -> Any:
         """Deploys a pipeline on this stack.
 
         Args:
@@ -790,7 +861,24 @@ class Stack:
         Returns:
             The return value of the call to `orchestrator.run_pipeline(...)`.
         """
-        return self.orchestrator.run(deployment=deployment, stack=self)
+        self._validate_build(deployment=deployment, builds=builds)
+        return self.orchestrator.run(
+            deployment=deployment, stack=self, builds=builds
+        )
+
+    def _validate_build(
+        self, deployment: "PipelineDeployment", builds: Optional["BuildOutput"]
+    ) -> None:
+        required_builds = self.get_docker_builds(deployment=deployment)
+
+        if required_builds and not builds:
+            raise RuntimeError("Missing docker builds.")
+
+        for build in required_builds:
+            try:
+                builds.get_image(key=build.key, step=build.step_name)
+            except KeyError:
+                raise RuntimeError(f"Missing build for key: {build.key}.")
 
     def _get_active_components_for_step(
         self, step_config: "StepConfiguration"

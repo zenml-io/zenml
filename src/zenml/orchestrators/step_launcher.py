@@ -249,6 +249,7 @@ class StepLauncher:
             workspace=client.active_workspace.id,
             stack=self._deployment.stack_id,
             pipeline=self._deployment.pipeline_id,
+            build=self._deployment.build_id,
             schedule_id=self._deployment.schedule_id,
             enable_cache=self._deployment.pipeline.enable_cache,
             enable_artifact_metadata=self._deployment.pipeline.enable_artifact_metadata,

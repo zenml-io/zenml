@@ -18,6 +18,11 @@ from zenml.models.artifact_models import (
     ArtifactRequestModel,
     ArtifactResponseModel,
 )
+from zenml.models.build_output_models import (
+    BuildOutputFilterModel,
+    BuildOutputRequestModel,
+    BuildOutputResponseModel,
+)
 from zenml.models.component_models import (
     ComponentFilterModel,
     ComponentRequestModel,
@@ -148,6 +153,12 @@ ScheduleResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
     WorkspaceResponseModel=WorkspaceResponseModel,
 )
+BuildOutputResponseModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
+    PipelineResponseModel=PipelineResponseModel,
+    StackResponseModel=StackResponseModel,
+)
 
 PipelineRunResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
@@ -155,6 +166,7 @@ PipelineRunResponseModel.update_forward_refs(
     PipelineResponseModel=PipelineResponseModel,
     StackResponseModel=StackResponseModel,
     RunMetadataResponseModel=RunMetadataResponseModel,
+    BuildOutputResponseModel=BuildOutputResponseModel,
 )
 
 StepRunResponseModel.update_forward_refs(
@@ -174,6 +186,9 @@ __all__ = [
     "ArtifactRequestModel",
     "ArtifactResponseModel",
     "ArtifactFilterModel",
+    "BuildOutputFilterModel",
+    "BuildOutputRequestModel",
+    "BuildOutputResponseModel",
     "ComponentRequestModel",
     "ComponentResponseModel",
     "ComponentUpdateModel",

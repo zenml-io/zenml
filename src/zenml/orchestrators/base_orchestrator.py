@@ -23,6 +23,7 @@ from zenml.orchestrators.step_launcher import StepLauncher
 from zenml.stack import Flavor, Stack, StackComponent, StackComponentConfig
 
 if TYPE_CHECKING:
+    from zenml.config.build_configuration import BuildOutput
     from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.config.step_configurations import Step
 
@@ -100,6 +101,7 @@ class BaseOrchestrator(StackComponent, ABC):
         self,
         deployment: "PipelineDeployment",
         stack: "Stack",
+        builds: Optional["BuildOutput"],
     ) -> Any:
         """The method needs to be implemented by the respective orchestrator.
 
@@ -139,7 +141,12 @@ class BaseOrchestrator(StackComponent, ABC):
             `pipeline_instance.run()` call when someone is running a pipeline.
         """
 
-    def run(self, deployment: "PipelineDeployment", stack: "Stack") -> Any:
+    def run(
+        self,
+        deployment: "PipelineDeployment",
+        stack: "Stack",
+        builds: Optional["BuildOutput"],
+    ) -> Any:
         """Runs a pipeline on a stack.
 
         Args:
@@ -152,7 +159,7 @@ class BaseOrchestrator(StackComponent, ABC):
         self._prepare_run(deployment=deployment)
         try:
             result = self.prepare_or_run_pipeline(
-                deployment=deployment, stack=stack
+                deployment=deployment, stack=stack, builds=builds
             )
         finally:
             self._cleanup_run()

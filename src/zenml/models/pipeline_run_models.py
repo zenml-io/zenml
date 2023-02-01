@@ -42,6 +42,7 @@ if TYPE_CHECKING:
     from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
     from sqlmodel import SQLModel
 
+    from zenml.models.build_output_models import BuildOutputResponseModel
     from zenml.models.pipeline_models import PipelineResponseModel
     from zenml.models.run_metadata_models import RunMetadataResponseModel
     from zenml.models.stack_models import StackResponseModel
@@ -146,9 +147,15 @@ class PipelineRunResponseModel(
     stack: Optional["StackResponseModel"] = Field(
         title="The stack that was used for this run."
     )
+
     metadata: Dict[str, "RunMetadataResponseModel"] = Field(
         default={},
         title="Metadata associated with this pipeline run.",
+    )
+
+    build: Optional["BuildOutputResponseModel"] = Field(
+        title="The build output that was used for this run."
+
     )
 
 
@@ -175,18 +182,23 @@ class PipelineRunFilterModel(WorkspaceScopedFilterModel):
     )
 
     pipeline_id: Union[UUID, str] = Field(
-        default=None, description="Pipeline associated with the Pipeline"
+        default=None, description="Pipeline associated with the Pipeline Run"
     )
     workspace_id: Union[UUID, str] = Field(
-        default=None, description="Workspace of the Pipeline"
+        default=None, description="Workspace of the Pipeline Run"
     )
-    user_id: Union[UUID, str] = Field(None, description="User of the Pipeline")
+    user_id: Union[UUID, str] = Field(
+        None, description="User that created the Pipeline Run"
+    )
 
     stack_id: Union[UUID, str] = Field(
         default=None, description="Stack used for the Pipeline Run"
     )
     schedule_id: Union[UUID, str] = Field(
         default=None, description="Schedule that triggered the Pipeline Run"
+    )
+    build_id: Union[UUID, str] = Field(
+        default=None, description="Build output used for the Pipeline Run"
     )
 
     status: str = Field(
@@ -249,6 +261,7 @@ class PipelineRunRequestModel(
     id: UUID
     stack: Optional[UUID]  # Might become None if the stack is deleted.
     pipeline: Optional[UUID]  # Unlisted runs have this as None.
+    build: Optional[UUID]
 
 
 # ------ #

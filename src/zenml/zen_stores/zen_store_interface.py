@@ -20,6 +20,9 @@ from zenml.models import (
     ArtifactFilterModel,
     ArtifactRequestModel,
     ArtifactResponseModel,
+    BuildOutputFilterModel,
+    BuildOutputRequestModel,
+    BuildOutputResponseModel,
     ComponentFilterModel,
     ComponentRequestModel,
     ComponentResponseModel,
@@ -903,6 +906,67 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: if the pipeline doesn't exist.
+        """
+
+    # ---------
+    # Builds
+    # ---------
+
+    @abstractmethod
+    def create_build(
+        self,
+        build: BuildOutputRequestModel,
+    ) -> BuildOutputResponseModel:
+        """Creates a new build in a workspace.
+
+        Args:
+            build: The build to create.
+
+        Returns:
+            The newly created build.
+
+        Raises:
+            KeyError: If the workspace does not exist.
+            EntityExistsError: If an identical build already exists.
+        """
+
+    @abstractmethod
+    def get_build(self, build_id: UUID) -> BuildOutputResponseModel:
+        """Get a build with a given ID.
+
+        Args:
+            build_id: ID of the build.
+
+        Returns:
+            The build.
+
+        Raises:
+            KeyError: If the build does not exist.
+        """
+
+    @abstractmethod
+    def list_builds(
+        self, build_filter_model: BuildOutputFilterModel
+    ) -> Page[BuildOutputResponseModel]:
+        """List all builds matching the given filter criteria.
+
+        Args:
+            build_filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all builds matching the filter criteria.
+        """
+
+    @abstractmethod
+    def delete_build(self, build_id: UUID) -> None:
+        """Deletes a build.
+
+        Args:
+            build_id: The ID of the build to delete.
+
+        Raises:
+            KeyError: if the build doesn't exist.
         """
 
     # ---------

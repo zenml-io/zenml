@@ -32,19 +32,17 @@ from zenml.constants import (
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
-from zenml.orchestrators import BaseOrchestrator
-from zenml.orchestrators import utils as orchestrator_utils
-from zenml.orchestrators.base_orchestrator import (
+from zenml.orchestrators import (
     BaseOrchestratorConfig,
     BaseOrchestratorFlavor,
+    ContainerizedOrchestrator,
 )
+from zenml.orchestrators import utils as orchestrator_utils
 from zenml.stack import Stack, StackValidator
 from zenml.utils import string_utils
-from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilder,
-)
 
 if TYPE_CHECKING:
+    from zenml.config.build_configuration import BuildOutput
     from zenml.config.pipeline_deployment import PipelineDeployment
 
 logger = get_logger(__name__)
@@ -52,7 +50,7 @@ logger = get_logger(__name__)
 ENV_ZENML_DOCKER_ORCHESTRATOR_RUN_ID = "ZENML_DOCKER_ORCHESTRATOR_RUN_ID"
 
 
-class LocalDockerOrchestrator(BaseOrchestrator):
+class LocalDockerOrchestrator(ContainerizedOrchestrator):
     """Orchestrator responsible for running pipelines locally using Docker.
 
     This orchestrator does not allow for concurrent execution of steps and also
@@ -79,24 +77,24 @@ class LocalDockerOrchestrator(BaseOrchestrator):
             required_components={StackComponentType.IMAGE_BUILDER}
         )
 
-    def prepare_pipeline_deployment(
-        self,
-        deployment: "PipelineDeployment",
-        stack: "Stack",
-    ) -> None:
-        """Build a Docker image and (maybe) push it to the container registry.
+    # def prepare_pipeline_deployment(
+    #     self,
+    #     deployment: "PipelineDeployment",
+    #     stack: "Stack",
+    # ) -> None:
+    #     """Build a Docker image and (maybe) push it to the container registry.
 
-        Args:
-            deployment: The pipeline deployment configuration.
-            stack: The stack on which the pipeline will be deployed.
-        """
-        docker_image_builder = PipelineDockerImageBuilder()
-        image_name_or_digest = docker_image_builder.build_docker_image(
-            deployment=deployment, stack=stack
-        )
-        deployment.add_extra(
-            ORCHESTRATOR_DOCKER_IMAGE_KEY, image_name_or_digest
-        )
+    #     Args:
+    #         deployment: The pipeline deployment configuration.
+    #         stack: The stack on which the pipeline will be deployed.
+    #     """
+    #     docker_image_builder = PipelineDockerImageBuilder()
+    #     image_name_or_digest = docker_image_builder.build_docker_image(
+    #         deployment=deployment, stack=stack
+    #     )
+    #     deployment.add_extra(
+    #         ORCHESTRATOR_DOCKER_IMAGE_KEY, image_name_or_digest
+    #     )
 
     def get_orchestrator_run_id(self) -> str:
         """Returns the active orchestrator run id.
@@ -120,6 +118,7 @@ class LocalDockerOrchestrator(BaseOrchestrator):
         self,
         deployment: "PipelineDeployment",
         stack: "Stack",
+        builds: Optional["BuildOutput"],
     ) -> Any:
         """Sequentially runs all pipeline steps in local Docker containers.
 
@@ -127,6 +126,7 @@ class LocalDockerOrchestrator(BaseOrchestrator):
             deployment: The pipeline deployment to prepare or run.
             stack: The stack the pipeline will run on.
         """
+        assert builds
         if deployment.schedule:
             logger.warning(
                 "Local Docker Orchestrator currently does not support the"
@@ -137,7 +137,7 @@ class LocalDockerOrchestrator(BaseOrchestrator):
         from docker.client import DockerClient
 
         docker_client = DockerClient.from_env()
-        image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
+        # image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
         entrypoint = StepEntrypointConfiguration.get_entrypoint_command()
 
         # Add the local stores path as a volume mount
@@ -173,6 +173,9 @@ class LocalDockerOrchestrator(BaseOrchestrator):
             settings = cast(
                 LocalDockerOrchestratorSettings,
                 self.get_settings(step),
+            )
+            image_name = builds.get_image(
+                key=ORCHESTRATOR_DOCKER_IMAGE_KEY, step=step_name
             )
 
             user = None

@@ -33,12 +33,14 @@ from typing import (
     Union,
     cast,
 )
+from uuid import UUID, uuid4
 
 import yaml
 from packaging import version
 
 from zenml import constants
 from zenml.client import Client
+from zenml.config.build_configuration import BuildOutput
 from zenml.config.compiler import Compiler
 from zenml.config.config_keys import (
     PipelineConfigurationKeys,
@@ -56,7 +58,12 @@ from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.enums import StackComponentType
 from zenml.exceptions import PipelineConfigurationError, PipelineInterfaceError
 from zenml.logger import get_logger
-from zenml.models import PipelineRequestModel, PipelineResponseModel
+from zenml.models import (
+    BuildOutputRequestModel,
+    BuildOutputResponseModel,
+    PipelineRequestModel,
+    PipelineResponseModel,
+)
 from zenml.models.schedule_model import ScheduleRequestModel
 from zenml.stack import Stack
 from zenml.steps import BaseStep
@@ -433,6 +440,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         extra: Optional[Dict[str, Any]] = None,
         config_path: Optional[str] = None,
         unlisted: bool = False,
+        build_output: Union["UUID", "BuildOutput", None] = None,
     ) -> Any:
         """Runs the pipeline on the active stack of the current repository.
 
@@ -471,37 +479,15 @@ class BasePipeline(metaclass=BasePipelineMeta):
             return
 
         with event_handler(AnalyticsEvent.RUN_PIPELINE) as analytics_handler:
-            stack = Client().active_stack
-
-            # Activating the built-in integrations through lazy loading
-            from zenml.integrations.registry import integration_registry
-
-            integration_registry.activate_integrations()
-
-            if config_path:
-                run_config = PipelineRunConfiguration.from_yaml(config_path)
-            else:
-                run_config = PipelineRunConfiguration()
-
-            new_values = dict_utils.remove_none_values(
-                {
-                    "run_name": run_name,
-                    "enable_cache": enable_cache,
-                    "enable_artifact_metadata": enable_artifact_metadata,
-                    "steps": step_configurations,
-                    "settings": settings,
-                    "schedule": schedule,
-                    "extra": extra,
-                }
-            )
-
-            # Update with the values in code so they take precedence
-            run_config = pydantic_utils.update_model(
-                run_config, update=new_values
-            )
-
-            pipeline_deployment, pipeline_spec = Compiler().compile(
-                pipeline=self, stack=stack, run_configuration=run_config
+            pipeline_deployment, pipeline_spec = self._compile(
+                config_path=config_path,
+                run_name=run_name,
+                enable_cache=enable_cache,
+                enable_artifact_metadata=enable_artifact_metadata,
+                steps=step_configurations,
+                settings=settings,
+                schedule=schedule,
+                extra=extra,
             )
 
             skip_pipeline_registration = constants.handle_bool_env_var(
@@ -555,6 +541,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     update={"schedule_id": schedule_id}
                 )
 
+            stack = Client().active_stack
             analytics_handler.metadata = self._get_pipeline_analytics_metadata(
                 deployment=pipeline_deployment, stack=stack
             )
@@ -574,11 +561,25 @@ class BasePipeline(metaclass=BasePipelineMeta):
             )
             stack.prepare_pipeline_deployment(deployment=pipeline_deployment)
 
+            if isinstance(build_output, UUID):
+                build_output = (
+                    Client()
+                    .zen_store.get_build(build_id=build_output)
+                    .configuration
+                )
+            elif not build_output:
+                build = self._build(deployment=pipeline_deployment)
+                if build:
+                    build_output = build.configuration
+
             # Prevent execution of nested pipelines which might lead to
             # unexpected behavior
             constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True
             try:
-                return_value = stack.deploy_pipeline(pipeline_deployment)
+                return_value = stack.deploy_pipeline(
+                    deployment=pipeline_deployment,
+                    builds=build_output,
+                )
             finally:
                 constants.SHOULD_PREVENT_PIPELINE_EXECUTION = False
 
@@ -919,6 +920,30 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
         return connect
 
+    def _compile(
+        self, config_path: Optional[str] = None, **run_configuration_args: Any
+    ) -> Tuple["PipelineDeployment", "PipelineSpec"]:
+        # Activating the built-in integrations to load all materializers
+        from zenml.integrations.registry import integration_registry
+
+        integration_registry.activate_integrations()
+
+        if config_path:
+            run_config = PipelineRunConfiguration.from_yaml(config_path)
+        else:
+            run_config = PipelineRunConfiguration()
+
+        new_values = dict_utils.remove_none_values(run_configuration_args)
+
+        # Update with the values in code so they take precedence
+        run_config = pydantic_utils.update_model(run_config, update=new_values)
+
+        return Compiler().compile(
+            pipeline=self,
+            stack=Client().active_stack,
+            run_configuration=run_config,
+        )
+
     def register(self) -> "PipelineResponseModel":
         """Register the pipeline in the server.
 
@@ -1016,5 +1041,37 @@ class BasePipeline(metaclass=BasePipelineMeta):
             if pipeline.version == "UNVERSIONED":
                 return None
             return int(all_pipelines.items[0].version)
+        else:
+            return None
+
+    def build(self) -> Optional["BuildOutputResponseModel"]:
+        deployment, pipeline_spec = self._compile()
+        pipeline_id = self._register(pipeline_spec=pipeline_spec).id
+        deployment = deployment.copy(update={"pipeline_id": pipeline_id})
+
+        return self._build(deployment=deployment)
+
+    def _build(
+        self, deployment: "PipelineDeployment"
+    ) -> Optional["BuildOutputResponseModel"]:
+        # Currently our Docker builds include the deployment, but the deployment
+        # also needs to include the finished build ID so we can associate it
+        # with the pipeline run. We therefore generate the ID first and make
+        # sure our build is registered in the database with this ID.
+        build_id = uuid4()
+        deployment = deployment.copy(update={"build_id": build_id})
+
+        client = Client()
+        output = client.active_stack.build(deployment=deployment)
+        if output:
+            build = BuildOutputRequestModel(
+                id=build_id,
+                user=client.active_user.id,
+                workspace=client.active_workspace.id,
+                stack=client.active_stack_model.id,
+                pipeline=deployment.pipeline_id,
+                configuration=output,
+            )
+            return Client().zen_store.create_build(build)
         else:
             return None

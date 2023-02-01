@@ -17,13 +17,13 @@ from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional
 from pydantic import root_validator
 
 from zenml.config.base_settings import BaseSettings, SettingsOrDict
-from zenml.config.constants import RESOURCE_SETTINGS_KEY
+from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
 from zenml.config.strict_base_model import StrictBaseModel
 from zenml.logger import get_logger
 from zenml.utils import source_utils
 
 if TYPE_CHECKING:
-    from zenml.config import ResourceSettings
+    from zenml.config import DockerSettings, ResourceSettings
 
 logger = get_logger(__name__)
 
@@ -119,6 +119,20 @@ class StepConfiguration(PartialStepConfiguration):
             RESOURCE_SETTINGS_KEY, {}
         )
         return ResourceSettings.parse_obj(model_or_dict)
+
+    @property
+    def docker_settings(self) -> "DockerSettings":
+        """Docker settings of this step configuration.
+
+        Returns:
+            The Docker settings of this step configuration.
+        """
+        from zenml.config import DockerSettings
+
+        model_or_dict: SettingsOrDict = self.settings.get(
+            DOCKER_SETTINGS_KEY, {}
+        )
+        return DockerSettings.parse_obj(model_or_dict)
 
 
 class InputSpec(StrictBaseModel):

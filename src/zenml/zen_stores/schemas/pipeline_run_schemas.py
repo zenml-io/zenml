@@ -28,6 +28,7 @@ from zenml.models import (
     PipelineRunUpdateModel,
 )
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
+from zenml.zen_stores.schemas.build_output_schemas import BuildOutputSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
 from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
@@ -64,6 +65,16 @@ class PipelineRunSchema(NamedSchema, table=True):
         nullable=True,
     )
     pipeline: "PipelineSchema" = Relationship(back_populates="runs")
+
+    build_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=BuildOutputSchema.__tablename__,
+        source_column="build_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+    build: Optional["BuildOutputSchema"] = Relationship(back_populates="runs")
 
     schedule_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -147,6 +158,7 @@ class PipelineRunSchema(NamedSchema, table=True):
             workspace_id=request.workspace,
             user_id=request.user,
             pipeline_id=request.pipeline,
+            build_id=request.build,
             schedule_id=request.schedule_id,
             enable_cache=request.enable_cache,
             start_time=request.start_time,
@@ -226,6 +238,7 @@ class PipelineRunSchema(NamedSchema, table=True):
                 pipeline=(
                     self.pipeline.to_model(False) if self.pipeline else None
                 ),
+                build=self.build.to_model() if self.build else None,
                 schedule_id=self.schedule_id,
                 pipeline_configuration=json.loads(self.pipeline_configuration),
                 num_steps=self.num_steps,

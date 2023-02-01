@@ -32,6 +32,7 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
+    from zenml.zen_stores.schemas.build_output_schemas import BuildOutputSchema
     from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
     from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
 
@@ -72,6 +73,9 @@ class PipelineSchema(NamedSchema, table=True):
         back_populates="pipeline",
     )
     runs: List["PipelineRunSchema"] = Relationship(
+        back_populates="pipeline", sa_relationship_kwargs={"cascade": "delete"}
+    )
+    builds: List["BuildOutputSchema"] = Relationship(
         back_populates="pipeline", sa_relationship_kwargs={"cascade": "delete"}
     )
 

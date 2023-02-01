@@ -71,6 +71,9 @@ from zenml.models import (
     ArtifactRequestModel,
     ArtifactResponseModel,
     BaseFilterModel,
+    BuildOutputFilterModel,
+    BuildOutputRequestModel,
+    BuildOutputResponseModel,
     ComponentFilterModel,
     ComponentRequestModel,
     ComponentResponseModel,
@@ -151,6 +154,7 @@ from zenml.zen_stores.migrations.alembic import (
 from zenml.zen_stores.schemas import (
     ArtifactSchema,
     BaseSchema,
+    BuildOutputSchema,
     FlavorSchema,
     IdentitySchema,
     NamedSchema,
@@ -2725,6 +2729,108 @@ class SqlZenStore(BaseZenStore):
                 )
 
             session.delete(pipeline)
+            session.commit()
+
+    # ---------
+    # Builds
+    # ---------
+
+    def create_build(
+        self,
+        build: BuildOutputRequestModel,
+    ) -> BuildOutputResponseModel:
+        """Creates a new build in a workspace.
+
+        Args:
+            build: The build to create.
+
+        Returns:
+            The newly created build.
+
+        Raises:
+            KeyError: If the workspace does not exist.
+            EntityExistsError: If an identical build already exists.
+        """
+        with Session(self.engine) as session:
+            # Create the build
+            new_build = BuildOutputSchema.from_request(build)
+            session.add(new_build)
+            session.commit()
+            session.refresh(new_build)
+
+            return new_build.to_model()
+
+    def get_build(self, build_id: UUID) -> BuildOutputResponseModel:
+        """Get a build with a given ID.
+
+        Args:
+            build_id: ID of the build.
+
+        Returns:
+            The build.
+
+        Raises:
+            KeyError: If the build does not exist.
+        """
+        with Session(self.engine) as session:
+            # Check if build with the given ID exists
+            build = session.exec(
+                select(BuildOutputSchema).where(
+                    BuildOutputSchema.id == build_id
+                )
+            ).first()
+            if build is None:
+                raise KeyError(
+                    f"Unable to get build with ID '{build_id}': "
+                    "No build with this ID found."
+                )
+
+            return build.to_model()
+
+    def list_builds(
+        self, build_filter_model: BuildOutputFilterModel
+    ) -> Page[BuildOutputResponseModel]:
+        """List all builds matching the given filter criteria.
+
+        Args:
+            build_filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all builds matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            query = select(BuildOutputSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=BuildOutputSchema,
+                filter_model=build_filter_model,
+            )
+
+    def delete_build(self, build_id: UUID) -> None:
+        """Deletes a build.
+
+        Args:
+            build_id: The ID of the build to delete.
+
+        Raises:
+            KeyError: if the build doesn't exist.
+        """
+        with Session(self.engine) as session:
+            # Check if build with the given ID exists
+            build = session.exec(
+                select(BuildOutputSchema).where(
+                    BuildOutputSchema.id == build_id
+                )
+            ).first()
+            if build is None:
+                raise KeyError(
+                    f"Unable to delete build with ID {build_id}: "
+                    f"No build with this ID found."
+                )
+
+            session.delete(build)
             session.commit()
 
     # ---------

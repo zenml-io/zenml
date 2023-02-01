@@ -18,7 +18,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from pydantic import Extra
 
-from zenml.config.base_settings import BaseSettings, ConfigurationLevel
+from zenml.config.base_settings import BaseSettings
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -106,6 +106,7 @@ class DockerSettings(BaseSettings):
             image should be pushed. This repository will be appended to the
             registry URI of the container registry of your stack and should
             therefore **not** include any registry.
+        tag: The tag to use for the image.
         replicate_local_python_environment: If not `None`, ZenML will use the
             specified method to generate a requirements file that replicates
             the packages installed in the currently running python environment.
@@ -143,14 +144,13 @@ class DockerSettings(BaseSettings):
             entrypoint as this user.
     """
 
-    LEVEL = ConfigurationLevel.PIPELINE
-
     parent_image: Optional[str] = None
     dockerfile: Optional[str] = None
     build_context_root: Optional[str] = None
     build_options: Dict[str, Any] = {}
 
     target_repository: str = "zenml"
+    tag: Optional[str] = None
 
     replicate_local_python_environment: Optional[
         Union[List[str], PythonEnvironmentExportMethod]

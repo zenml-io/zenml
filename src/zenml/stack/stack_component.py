@@ -19,6 +19,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Extra
 
+from zenml.config.build_configuration import BuildConfiguration
 from zenml.config.pipeline_deployment import PipelineDeployment
 from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
@@ -486,6 +487,11 @@ class StackComponent:
             persistent information.
         """
         return None
+
+    def get_docker_builds(
+        self, deployment: "PipelineDeployment"
+    ) -> List["BuildConfiguration"]:
+        return []
 
     def prepare_pipeline_deployment(
         self,

@@ -25,6 +25,7 @@ from zenml.zen_stores.schemas.team_schemas import TeamAssignmentSchema
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
         ArtifactSchema,
+        BuildOutputSchema,
         FlavorSchema,
         PipelineRunSchema,
         PipelineSchema,
@@ -68,6 +69,7 @@ class UserSchema(NamedSchema, table=True):
     )
     runs: List["PipelineRunSchema"] = Relationship(back_populates="user")
     step_runs: List["StepRunSchema"] = Relationship(back_populates="user")
+    builds: List["BuildOutputSchema"] = Relationship(back_populates="user")
     artifacts: List["ArtifactSchema"] = Relationship(back_populates="user")
     run_metadata: List["RunMetadataSchema"] = Relationship(
         back_populates="user"
