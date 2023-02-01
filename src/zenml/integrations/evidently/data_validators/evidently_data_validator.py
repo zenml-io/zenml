@@ -13,39 +13,27 @@
 #  permissions and limitations under the License.
 """Implementation of the Evidently data validator."""
 
-from typing import Any, ClassVar, Dict, List, Optional, Sequence, Tuple, Type, Union
+from typing import (
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+    Union,
+)
 
 import pandas as pd
-from evidently.dashboard import Dashboard  # type: ignore
-from evidently.dashboard.tabs import (  # type: ignore
-    CatTargetDriftTab,
-    ClassificationPerformanceTab,
-    DataDriftTab,
-    DataQualityTab,
-    NumTargetDriftTab,
-    ProbClassificationPerformanceTab,
-    RegressionPerformanceTab,
-)
 from evidently.base_metric import Metric
 from evidently.metric_preset.metric_preset import MetricPreset
 from evidently.utils.generators import BaseGenerator
 from evidently.report import Report  # type: ignore
-from evidently.dashboard.tabs.base_tab import Tab  # type: ignore
-from evidently.model_profile import Profile  # type: ignore
-from evidently.model_profile.sections import (  # type: ignore
-    CatTargetDriftProfileSection,
-    ClassificationPerformanceProfileSection,
-    DataDriftProfileSection,
-    DataQualityProfileSection,
-    NumTargetDriftProfileSection,
-    ProbClassificationPerformanceProfileSection,
-    RegressionPerformanceProfileSection,
-)
-from evidently.model_profile.sections.base_profile_section import (  # type: ignore
-    ProfileSection,
-)
+import evidently.metric_preset as metric_preset  # type: ignore
 from evidently.pipeline.column_mapping import ColumnMapping  # type: ignore
-
+from evidently.metrics.base_metric import generate_column_metrics
+import evidently.metrics as metrics  # type: ignore
 from zenml.data_validators import BaseDataValidator, BaseDataValidatorFlavor
 from zenml.integrations.evidently.flavors.evidently_data_validator_flavor import (
     EvidentlyDataValidatorFlavor,
@@ -54,6 +42,75 @@ from zenml.logger import get_logger
 from zenml.utils.source_utils import load_source_path_class
 
 logger = get_logger(__name__)
+
+
+def get_class_from_mapping(metric: str) -> Union[Metric, MetricPreset]:
+    """Get the Evidently metric or metric preset class from a string.
+
+    Args:
+        metric: Name of the metric or metric preset.
+
+    Returns:
+        The Evidently metric or metric preset class.
+
+    Raises:
+        ValueError: If the metric or metric preset is not a valid Evidently metric or metric preset.
+    """
+    # metric_mapping = {
+    #     "DataQualityPreset": metric_preset.DataQualityPreset,
+    #     "DataDriftPreset": metric_preset.DataDriftPreset,
+    #     "ClassificationPreset": metric_preset.ClassificationPreset,
+    #     "RegressionPreset": metric_preset.RegressionPreset,
+    #     "TargetDriftPreset": metric_preset.TargetDriftPreset,
+    #     "TextOverviewPreset": metric_preset.TextOverviewPreset,
+    #     "DatasetSummaryMetric": metrics.DatasetSummaryMetric,
+    #     "DatasetMissingValuesMetric": metrics.DatasetMissingValuesMetric,
+    #      ...
+    # }
+    try:
+        # if metric contains preset in name, return an object of the class of same name from metric_preset
+        if "Preset" in metric:
+            return getattr(metric_preset, metric)
+        # else return class of same name from metrics
+        else:
+            return getattr(metrics, metric)
+    except AttributeError:
+        raise ValueError(
+            f"Metric or MetricPreset {metric} is not a "
+            f"valid Evidently metric or metric preset."
+        )
+
+
+def get_metrics(
+    metric_list: List[Union[str, Dict[str, Any]]]
+) -> List[Union[Metric, MetricPreset, BaseGenerator]]:
+    """Get a list of Evidently metrics from a list of metric names and/or
+    dictionaries.
+
+    Args:
+        metric_list: List of metric names and/or dictionaries.
+
+    Returns:
+        List of Evidently metrics.
+    """
+    metrics = []
+    for metric in metric_list:
+        if isinstance(metric, str):
+            metrics.append(get_class_from_mapping(metric)())
+        elif isinstance(metric, dict):
+            metrics.append(
+                generate_column_metrics(
+                    get_class_from_mapping(metric["metric"]),
+                    metric["columns"],
+                    metric["parameters"] if "parameters" in metric else None,
+                )
+            )
+        else:
+            raise ValueError(
+                f"Invalid metric type: {type(metric)}. "
+                f"Expected str or dict, got {type(metric)}."
+            )
+    return metrics
 
 
 class EvidentlyDataValidator(BaseDataValidator):
@@ -136,7 +193,7 @@ class EvidentlyDataValidator(BaseDataValidator):
         self,
         dataset: pd.DataFrame,
         comparison_dataset: Optional[pd.DataFrame] = None,
-        metric_list: List[Union[Metric, MetricPreset, BaseGenerator]] = None,
+        metric_list: List[Union[str, Dict[str, Any]]] = None,
         column_mapping: Optional[ColumnMapping] = None,
         report_options: Sequence[Tuple[str, Dict[str, Any]]] = [],
         **kwargs: Any,
@@ -178,9 +235,10 @@ class EvidentlyDataValidator(BaseDataValidator):
         Returns:
             The Evidently Report as JSON object and as HTML.
         """
+        metrics = get_metrics(metric_list)
         unpacked_report_options = self._unpack_options(report_options)
 
-        report = Report(metrics=metric_list, options=unpacked_report_options)
+        report = Report(metrics=metrics, options=unpacked_report_options)
         report.run(
             reference_data=dataset,
             current_data=comparison_dataset,
