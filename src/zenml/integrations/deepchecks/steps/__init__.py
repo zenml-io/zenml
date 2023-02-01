@@ -19,8 +19,8 @@ from zenml.integrations.deepchecks.steps.deepchecks_data_drift import (
     deepchecks_data_drift_check_step,
 )
 from zenml.integrations.deepchecks.steps.deepchecks_data_integrity import (
-    DeepchecksDataIntegrityCheckStep,
-    DeepchecksDataIntegrityCheckStepParameters,
+    DeepchecksDataValidationCheckStep,
+    DeepchecksDataValidationCheckStepParameters,
     deepchecks_data_integrity_check_step,
 )
 from zenml.integrations.deepchecks.steps.deepchecks_model_drift import (

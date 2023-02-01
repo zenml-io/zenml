@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -19,10 +19,10 @@ import pandas as pd
 from deepchecks.core.suite import SuiteResult
 from pydantic import Field
 
-from zenml.integrations.deepchecks.data_validators.deepchecks_data_validator import (
-    DeepchecksDataValidator,
+from zenml.integrations.deepchecks.data_validators.base_deepchecks_data_validator import (
+    BaseDeepchecksDataValidator,
 )
-from zenml.integrations.deepchecks.validation_checks import (
+from zenml.integrations.deepchecks.validation_checks.base_validation_checks import (
     DeepchecksDataDriftCheck,
 )
 from zenml.steps import BaseParameters
@@ -73,8 +73,8 @@ class DeepchecksDataDriftCheckStep(BaseStep):
             A Deepchecks suite result with the validation results.
         """
         data_validator = cast(
-            DeepchecksDataValidator,
-            DeepchecksDataValidator.get_active_data_validator(),
+            BaseDeepchecksDataValidator,
+            BaseDeepchecksDataValidator.get_active_data_validator(),
         )
 
         return data_validator.data_validation(

@@ -13,8 +13,18 @@
 #  permissions and limitations under the License.
 """Initialization of the Deepchecks data validator for ZenML."""
 
-from zenml.integrations.deepchecks.data_validators.deepchecks_data_validator import (
-    DeepchecksDataValidator,
+from zenml.integrations.deepchecks.data_validators.deepchecks_tabular_data_validator import (
+    DeepchecksTabularDataValidator,
+)
+from zenml.integrations.deepchecks.data_validators.deepchecks_vision_data_validator import (
+    DeepchecksVisionDataValidator,
+)
+from zenml.integrations.deepchecks.data_validators.deepchecks_dynamic_data_validator import (
+    DeepchecksDynamicDataValidator,
 )
 
-__all__ = ["DeepchecksDataValidator"]
+__all__ = [
+    "DeepchecksTabularDataValidator",
+    "DeepchecksVisionDataValidator",
+    "DeepchecksDynamicDataValidator",
+]

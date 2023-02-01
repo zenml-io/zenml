@@ -16,15 +16,17 @@
 from typing import TYPE_CHECKING, Type
 
 from zenml.data_validators.base_data_validator import BaseDataValidatorFlavor
-from zenml.integrations.deepchecks import DEEPCHECKS_DATA_VALIDATOR_FLAVOR
+from zenml.integrations.deepchecks import (
+    DEEPCHECKS_TABULAR_DATA_VALIDATOR_FLAVOR,
+)
 
 if TYPE_CHECKING:
-    from zenml.integrations.deepchecks.data_validators.deepchecks_dynamic_data_validator import (
-        DeepchecksDynamicDataValidator,
+    from zenml.integrations.deepchecks.data_validators import (
+        DeepchecksTabularDataValidator,
     )
 
 
-class DeepchecksDataValidatorFlavor(BaseDataValidatorFlavor):
+class DeepchecksTabularDataValidatorFlavor(BaseDataValidatorFlavor):
     """Flavor of the Deepchecks data validator."""
 
     @property
@@ -34,17 +36,17 @@ class DeepchecksDataValidatorFlavor(BaseDataValidatorFlavor):
         Returns:
             The name of the flavor.
         """
-        return DEEPCHECKS_DATA_VALIDATOR_FLAVOR
+        return DEEPCHECKS_TABULAR_DATA_VALIDATOR_FLAVOR
 
     @property
-    def implementation_class(self) -> Type["DeepchecksDynamicDataValidator"]:
+    def implementation_class(self) -> Type["DeepchecksTabularDataValidator"]:
         """Implementation class.
 
         Returns:
             The implementation class.
         """
-        from zenml.integrations.deepchecks.data_validators.deepchecks_dynamic_data_validator import (
-            DeepchecksDynamicDataValidator,
+        from zenml.integrations.deepchecks.data_validators.deepchecks_tabular_data_validator import (
+            DeepchecksTabularDataValidator,
         )
 
-        return DeepchecksDynamicDataValidator
+        return DeepchecksTabularDataValidator

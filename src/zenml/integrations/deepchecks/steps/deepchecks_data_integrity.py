@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -19,21 +19,24 @@ import pandas as pd
 from deepchecks.core.suite import SuiteResult
 from pydantic import Field
 
-from zenml.integrations.deepchecks.data_validators.deepchecks_data_validator import (
-    DeepchecksDataValidator,
+from zenml.integrations.deepchecks.data_validators.base_deepchecks_data_validator import (
+    BaseDeepchecksDataValidator,
 )
-from zenml.integrations.deepchecks.validation_checks import (
-    DeepchecksDataIntegrityCheck,
+from zenml.integrations.deepchecks.validation_checks.base_validation_checks import (
+    DeepchecksDataValidationCheck,
 )
+from zenml.logger import get_logger
 from zenml.steps import BaseParameters
 from zenml.steps.base_step import BaseStep
 
+logger = get_logger(__name__)
 
-class DeepchecksDataIntegrityCheckStepParameters(BaseParameters):
+
+class DeepchecksDataValidationCheckStepParameters(BaseParameters):
     """Parameters class for the Deepchecks data integrity validator step.
 
     Attributes:
-        check_list: Optional list of DeepchecksDataIntegrityCheck identifiers
+        check_list: Optional list of DeepchecksDataValidationCheck identifiers
             specifying the subset of Deepchecks data integrity checks to be
             performed. If not supplied, the entire set of data integrity checks
             will be performed.
@@ -47,21 +50,21 @@ class DeepchecksDataIntegrityCheckStepParameters(BaseParameters):
             Deepchecks Suite `run` method.
     """
 
-    check_list: Optional[Sequence[DeepchecksDataIntegrityCheck]] = None
+    check_list: Optional[Sequence[DeepchecksDataValidationCheck]] = None
     dataset_kwargs: Dict[str, Any] = Field(default_factory=dict)
     check_kwargs: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
     run_kwargs: Dict[str, Any] = Field(default_factory=dict)
 
 
-class DeepchecksDataIntegrityCheckStep(BaseStep):
-    """Deepchecks data integrity validator step."""
+class DeepchecksDataValidationCheckStep(BaseStep):
+    """Deepchecks data validation step."""
 
     def entrypoint(
         self,
         dataset: pd.DataFrame,
-        params: DeepchecksDataIntegrityCheckStepParameters,
+        params: DeepchecksDataValidationCheckStepParameters,
     ) -> SuiteResult:
-        """Main entrypoint for the Deepchecks data integrity validator step.
+        """Main entrypoint for the Deepchecks data validation step.
 
         Args:
             dataset: a Pandas DataFrame to validate
@@ -71,8 +74,8 @@ class DeepchecksDataIntegrityCheckStep(BaseStep):
             A Deepchecks suite result with the validation results.
         """
         data_validator = cast(
-            DeepchecksDataValidator,
-            DeepchecksDataValidator.get_active_data_validator(),
+            BaseDeepchecksDataValidator,
+            BaseDeepchecksDataValidator.get_active_data_validator(),
         )
 
         return data_validator.data_validation(
@@ -84,21 +87,61 @@ class DeepchecksDataIntegrityCheckStep(BaseStep):
         )
 
 
-def deepchecks_data_integrity_check_step(
+def deepchecks_data_validation_check_step(
     step_name: str,
-    params: DeepchecksDataIntegrityCheckStepParameters,
+    params: DeepchecksDataValidationCheckStepParameters,
 ) -> BaseStep:
-    """Shortcut function to create a new instance of the DeepchecksDataIntegrityCheckStep step.
+    """Shortcut function to create a new data validation step.
 
-    The returned DeepchecksDataIntegrityCheckStep can be used in a pipeline to
-    run data integrity checks on an input pd.DataFrame and return the results
-    as a Deepchecks SuiteResult object.
+    The returned `DeepchecksDataValidationCheckStep` can be used in a pipeline
+    to run data validation checks on an input `pd.DataFrame` and return the
+    results as a Deepchecks `SuiteResult` object.
 
     Args:
         step_name: The name of the step
         params: The parameters for the step
 
     Returns:
-        a DeepchecksDataIntegrityCheckStep step instance
+        a `DeepchecksDataValidationCheckStep` step instance
     """
-    return DeepchecksDataIntegrityCheckStep(name=step_name, params=params)
+    return DeepchecksDataValidationCheckStep(name=step_name, params=params)
+
+
+class DeepchecksDataIntegrityCheckStep(DeepchecksDataValidationCheckStep):
+    """Deprecated data validation step."""
+
+    def entrypoint(
+        self,
+        dataset: pd.DataFrame,
+        params: DeepchecksDataValidationCheckStepParameters,
+    ) -> SuiteResult:
+        """We override this entrypoint so we can log a deprecation warning.
+
+        Args:
+            dataset: a Pandas DataFrame to validate
+            params: The parameters for the step
+
+        Returns:
+            A Deepchecks suite result with the validation results.
+        """
+        logger.warning(...)  # TODO
+        super().entrypoint(dataset=dataset, params=params)
+
+
+def deepchecks_data_integrity_check_step(
+    step_name: str,
+    params: DeepchecksDataValidationCheckStepParameters,
+) -> BaseStep:
+    """Deprecated method to generate a data validation step.
+
+    Args:
+        step_name: The name of the step
+        params: The parameters for the step
+
+    Returns:
+        a `DeepchecksDataValidationCheckStep` step instance
+    """
+    logger.warning(...)  # TODO
+    return deepchecks_data_validation_check_step(
+        step_name=step_name, params=params
+    )

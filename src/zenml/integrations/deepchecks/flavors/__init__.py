@@ -13,8 +13,18 @@
 #  permissions and limitations under the License.
 """Deepchecks integration flavors."""
 
+from zenml.integrations.deepchecks.flavors.deepchecks_tabular_data_validator_flavor import (
+    DeepchecksTabularDataValidatorFlavor,
+)
+from zenml.integrations.deepchecks.flavors.deepchecks_vision_data_validator_flavor import (
+    DeepchecksVisionDataValidatorFlavor,
+)
 from zenml.integrations.deepchecks.flavors.deepchecks_data_validator_flavor import (
     DeepchecksDataValidatorFlavor,
 )
 
-__all__ = ["DeepchecksDataValidatorFlavor"]
+__all__ = [
+    "DeepchecksTabularDataValidatorFlavor",
+    "DeepchecksVisionDataValidatorFlavor",
+    "DeepchecksDataValidatorFlavor",
+]

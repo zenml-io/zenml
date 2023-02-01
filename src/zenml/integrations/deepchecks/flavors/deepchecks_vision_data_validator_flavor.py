@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,20 +11,22 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Deepchecks data validator flavor."""
+"""Deepchecks Vision data validator flavor."""
 
 from typing import TYPE_CHECKING, Type
 
 from zenml.data_validators.base_data_validator import BaseDataValidatorFlavor
-from zenml.integrations.deepchecks import DEEPCHECKS_DATA_VALIDATOR_FLAVOR
+from zenml.integrations.deepchecks import (
+    DEEPCHECKS_VISION_DATA_VALIDATOR_FLAVOR,
+)
 
 if TYPE_CHECKING:
-    from zenml.integrations.deepchecks.data_validators.deepchecks_dynamic_data_validator import (
-        DeepchecksDynamicDataValidator,
+    from zenml.integrations.deepchecks.data_validators import (
+        DeepchecksVisionDataValidator,
     )
 
 
-class DeepchecksDataValidatorFlavor(BaseDataValidatorFlavor):
+class DeepchecksVisionDataValidatorFlavor(BaseDataValidatorFlavor):
     """Flavor of the Deepchecks data validator."""
 
     @property
@@ -34,17 +36,17 @@ class DeepchecksDataValidatorFlavor(BaseDataValidatorFlavor):
         Returns:
             The name of the flavor.
         """
-        return DEEPCHECKS_DATA_VALIDATOR_FLAVOR
+        return DEEPCHECKS_VISION_DATA_VALIDATOR_FLAVOR
 
     @property
-    def implementation_class(self) -> Type["DeepchecksDynamicDataValidator"]:
+    def implementation_class(self) -> Type["DeepchecksVisionDataValidator"]:
         """Implementation class.
 
         Returns:
             The implementation class.
         """
-        from zenml.integrations.deepchecks.data_validators.deepchecks_dynamic_data_validator import (
-            DeepchecksDynamicDataValidator,
+        from zenml.integrations.deepchecks.data_validators.deepchecks_vision_data_validator import (
+            DeepchecksVisionDataValidator,
         )
 
-        return DeepchecksDynamicDataValidator
+        return DeepchecksVisionDataValidator

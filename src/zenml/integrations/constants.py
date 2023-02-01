@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ AZUREML = "azureml"
 BENTOML = "bentoml"
 DASH = "dash"
 DEEPCHECKS = "deepchecks"
+DEEPCHECKS_TABULAR = "deepchecks-tabular"
+DEEPCHECKS_VISION = "deepchecks-vision"
 EVIDENTLY = "evidently"
 FACETS = "facets"
 FEAST = "feast"
