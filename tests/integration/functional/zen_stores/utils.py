@@ -95,7 +95,7 @@ class PipelineRunContext:
         #  the test ends up deleting some or all of these, this allows for a
         #  thorough cleanup nonetheless
         self.runs = self.store.list_runs(
-            PipelineRunFilterModel(name=f"startswith:sample_pipeline_run_")
+            PipelineRunFilterModel(name="startswith:sample_pipeline_run_")
         ).items
         self.steps = list()
         self.artifacts = list()
@@ -103,9 +103,9 @@ class PipelineRunContext:
             self.steps += self.store.list_run_steps(
                 StepRunFilterModel(pipeline_run_id=run.id)
             ).items
-            for step in self.steps:
-                self.artifacts += [a for a in step.output_artifacts.values()]
-        return self
+            for s in self.steps:
+                self.artifacts += [a for a in s.output_artifacts.values()]
+        return self.runs
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
         for artifact in self.artifacts:

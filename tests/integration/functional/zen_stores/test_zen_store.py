@@ -862,13 +862,13 @@ def test_deleting_run_deletes_steps():
 
     num_runs = 1
 
-    with PipelineRunContext(num_runs):
+    with PipelineRunContext(num_runs) as runs:
         steps = store.list_run_steps(StepRunFilterModel())
 
         assert steps.total == num_steps_before + num_runs * 2
         pipelines = store.list_runs(PipelineRunFilterModel())
         assert pipelines.total == num_pipelines_before + num_runs
-        run_id = pipelines[0].id
+        run_id = runs[0].id
         store.delete_run(run_id)
         assert (
             len(store.list_run_steps(StepRunFilterModel())) == num_steps_before
