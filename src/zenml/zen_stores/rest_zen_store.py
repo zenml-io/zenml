@@ -600,8 +600,7 @@ class RestZenStore(BaseZenStore):
 
         Args:
             flavor_filter_model: All filter parameters including pagination
-            params
-
+                params
 
         Returns:
             List of all the stack component flavors matching the given criteria.
@@ -1011,9 +1010,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The requested role assignment.
-
-        Raises:
-            KeyError: If no role assignment with the given ID exists.
         """
         return self._get_resource(
             resource_id=team_role_assignment_id,

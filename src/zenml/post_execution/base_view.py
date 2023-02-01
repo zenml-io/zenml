@@ -37,6 +37,10 @@ class BaseView(ABC):
 
         Args:
             model: The model to create a view for.
+
+        Raises:
+            TypeError: If the model is not of the correct type.
+            ValueError: If any of the `REPR_KEYS` are not valid.
         """
         # Check that the model is of the correct type.
         if not isinstance(model, self.MODEL_CLASS):

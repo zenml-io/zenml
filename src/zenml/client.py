@@ -789,6 +789,7 @@ class Client(metaclass=ClientMetaClass):
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
             name: Use the team name for filtering
+
         Returns:
             The Team
         """
@@ -947,6 +948,7 @@ class Client(metaclass=ClientMetaClass):
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
             name: Use the role name for filtering
+
         Returns:
             The Role
         """
@@ -1073,9 +1075,6 @@ class Client(metaclass=ClientMetaClass):
 
         Returns:
             The role assignment.
-
-        Raises:
-            RuntimeError: If the role assignment does not exist.
         """
         return self.zen_store.get_user_role_assignment(
             user_role_assignment_id=role_assignment_id
@@ -1182,9 +1181,6 @@ class Client(metaclass=ClientMetaClass):
 
         Returns:
             The role assignment.
-
-        Raises:
-            RuntimeError: If the role assignment does not exist.
         """
         return self.zen_store.get_team_role_assignment(
             team_role_assignment_id=team_role_assignment_id
@@ -1362,6 +1358,7 @@ class Client(metaclass=ClientMetaClass):
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
             name: Use the team name for filtering
+
         Returns:
             The Team
         """
@@ -1773,6 +1770,7 @@ class Client(metaclass=ClientMetaClass):
 
         Raises:
             KeyError: If the stack is not registered.
+            ZenKeyError: If the stack is not registered.
         """
         # Make sure the stack is registered
         try:
@@ -2797,6 +2795,7 @@ class Client(metaclass=ClientMetaClass):
             cache_key: The cache_key of the run to filter by.
             status: The name of the run to filter by.
             num_outputs: The number of outputs for the step run
+
         Returns:
             A page with Pipeline fitting the filter description
         """

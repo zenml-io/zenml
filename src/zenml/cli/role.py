@@ -35,7 +35,11 @@ def role() -> None:
 @role.command("list")
 @list_options(RoleFilterModel)
 def list_roles(**kwargs: Any) -> None:
-    """List all roles that fulfill the filter requirements."""
+    """List all roles that fulfill the filter requirements.
+
+    Args:
+        **kwargs: Keyword arguments to filter the list of roles.
+    """
     cli_utils.print_active_config()
     client = Client()
     with console.status("Listing roles...\n"):
@@ -287,7 +291,11 @@ def assignment() -> None:
 @assignment.command("list")
 @list_options(UserRoleAssignmentFilterModel)
 def list_role_assignments(**kwargs: Any) -> None:
-    """List all user role assignments that fulfill the filter requirements."""
+    """List all user role assignments that fulfill the filter requirements.
+
+    Args:
+        kwargs: Keyword arguments.
+    """
     cli_utils.print_active_config()
     client = Client()
     with console.status("Listing roles...\n"):
