@@ -93,7 +93,7 @@ class LineageGraph(BaseModel):
                         uri=artifact.uri,
                         metadata=[
                             (m.key, str(m.value), str(m.type))
-                            for m in artifact.metadata
+                            for m in artifact.metadata.values()
                         ],
                     ),
                 )

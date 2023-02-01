@@ -420,14 +420,16 @@ def test_create_run_metadata_for_pipeline_run(clean_client_with_run):
     new_metadata = clean_client_with_run.create_run_metadata(
         metadata={"axel": "is awesome"}, pipeline_run_id=pipeline_run.id
     )
+    assert isinstance(new_metadata, dict)
     assert len(new_metadata) == 1
-    assert new_metadata[0].key == "axel"
-    assert new_metadata[0].value == "is awesome"
-    assert new_metadata[0].type == MetadataTypeEnum.STRING
-    assert new_metadata[0].pipeline_run_id == pipeline_run.id
-    assert new_metadata[0].step_run_id is None
-    assert new_metadata[0].artifact_id is None
-    assert new_metadata[0].stack_component_id is None
+    assert "axel" in new_metadata
+    assert new_metadata["axel"].key == "axel"
+    assert new_metadata["axel"].value == "is awesome"
+    assert new_metadata["axel"].type == MetadataTypeEnum.STRING
+    assert new_metadata["axel"].pipeline_run_id == pipeline_run.id
+    assert new_metadata["axel"].step_run_id is None
+    assert new_metadata["axel"].artifact_id is None
+    assert new_metadata["axel"].stack_component_id is None
 
     # Assert new metadata is linked to the pipeline run
     all_metadata = clean_client_with_run.list_run_metadata(
@@ -457,14 +459,16 @@ def test_create_run_metadata_for_pipeline_run_and_component(
         pipeline_run_id=pipeline_run.id,
         stack_component_id=orchestrator_id,
     )
+    assert isinstance(new_metadata, dict)
     assert len(new_metadata) == 1
-    assert new_metadata[0].key == "aria"
-    assert new_metadata[0].value == "is awesome too"
-    assert new_metadata[0].type == MetadataTypeEnum.STRING
-    assert new_metadata[0].pipeline_run_id == pipeline_run.id
-    assert new_metadata[0].step_run_id is None
-    assert new_metadata[0].artifact_id is None
-    assert new_metadata[0].stack_component_id == orchestrator_id
+    assert "aria" in new_metadata
+    assert new_metadata["aria"].key == "aria"
+    assert new_metadata["aria"].value == "is awesome too"
+    assert new_metadata["aria"].type == MetadataTypeEnum.STRING
+    assert new_metadata["aria"].pipeline_run_id == pipeline_run.id
+    assert new_metadata["aria"].step_run_id is None
+    assert new_metadata["aria"].artifact_id is None
+    assert new_metadata["aria"].stack_component_id == orchestrator_id
 
     # Assert new metadata is linked to the pipeline run
     registered_metadata = clean_client_with_run.list_run_metadata(
@@ -493,14 +497,16 @@ def test_create_run_metadata_for_step_run(clean_client_with_run):
     new_metadata = clean_client_with_run.create_run_metadata(
         metadata={"axel": "is awesome"}, step_run_id=step_run.id
     )
+    assert isinstance(new_metadata, dict)
     assert len(new_metadata) == 1
-    assert new_metadata[0].key == "axel"
-    assert new_metadata[0].value == "is awesome"
-    assert new_metadata[0].type == MetadataTypeEnum.STRING
-    assert new_metadata[0].pipeline_run_id is None
-    assert new_metadata[0].step_run_id == step_run.id
-    assert new_metadata[0].artifact_id is None
-    assert new_metadata[0].stack_component_id is None
+    assert "axel" in new_metadata
+    assert new_metadata["axel"].key == "axel"
+    assert new_metadata["axel"].value == "is awesome"
+    assert new_metadata["axel"].type == MetadataTypeEnum.STRING
+    assert new_metadata["axel"].pipeline_run_id is None
+    assert new_metadata["axel"].step_run_id == step_run.id
+    assert new_metadata["axel"].artifact_id is None
+    assert new_metadata["axel"].stack_component_id is None
 
     # Assert new metadata is linked to the step run
     registered_metadata = clean_client_with_run.list_run_metadata(
@@ -528,14 +534,16 @@ def test_create_run_metadata_for_step_run_and_component(clean_client_with_run):
         step_run_id=step_run.id,
         stack_component_id=orchestrator_id,
     )
+    assert isinstance(new_metadata, dict)
     assert len(new_metadata) == 1
-    assert new_metadata[0].key == "aria"
-    assert new_metadata[0].value == "is awesome too"
-    assert new_metadata[0].type == MetadataTypeEnum.STRING
-    assert new_metadata[0].pipeline_run_id is None
-    assert new_metadata[0].step_run_id == step_run.id
-    assert new_metadata[0].artifact_id is None
-    assert new_metadata[0].stack_component_id == orchestrator_id
+    assert "aria" in new_metadata
+    assert new_metadata["aria"].key == "aria"
+    assert new_metadata["aria"].value == "is awesome too"
+    assert new_metadata["aria"].type == MetadataTypeEnum.STRING
+    assert new_metadata["aria"].pipeline_run_id is None
+    assert new_metadata["aria"].step_run_id == step_run.id
+    assert new_metadata["aria"].artifact_id is None
+    assert new_metadata["aria"].stack_component_id == orchestrator_id
 
     # Assert new metadata is linked to the step run
     registered_metadata = clean_client_with_run.list_run_metadata(
@@ -564,14 +572,16 @@ def test_create_run_metadata_for_artifact(clean_client_with_run):
     new_metadata = clean_client_with_run.create_run_metadata(
         metadata={"axel": "is awesome"}, artifact_id=artifact.id
     )
+    assert isinstance(new_metadata, dict)
     assert len(new_metadata) == 1
-    assert new_metadata[0].key == "axel"
-    assert new_metadata[0].value == "is awesome"
-    assert new_metadata[0].type == MetadataTypeEnum.STRING
-    assert new_metadata[0].pipeline_run_id is None
-    assert new_metadata[0].step_run_id is None
-    assert new_metadata[0].artifact_id == artifact.id
-    assert new_metadata[0].stack_component_id is None
+    assert "axel" in new_metadata
+    assert new_metadata["axel"].key == "axel"
+    assert new_metadata["axel"].value == "is awesome"
+    assert new_metadata["axel"].type == MetadataTypeEnum.STRING
+    assert new_metadata["axel"].pipeline_run_id is None
+    assert new_metadata["axel"].step_run_id is None
+    assert new_metadata["axel"].artifact_id == artifact.id
+    assert new_metadata["axel"].stack_component_id is None
 
     # Assert new metadata is linked to the artifact
     registered_metadata = clean_client_with_run.list_run_metadata(
