@@ -19,10 +19,7 @@ this with `BaseSettings`.
 {% endhint %}
 
 You can parameterize a step by creating a subclass of the `BaseParameters`. When
-an object like this is passed to a step, it is not handled like other artifacts
-within ZenML. ([Visit this
-page](../../starter-guide/pipelines/pipelines.md#artifacts) to learn more about
-the difference between artifacts and parameters in ZenML.) Instead, it gets
+an object like this is passed to a step, it is not handled like other [Artifacts](../../starter-guide/pipelines/pipelines.md#artifacts) within ZenML. Instead, it gets
 passed into the step when the pipeline is instantiated.
 
 ```python
