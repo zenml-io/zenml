@@ -128,8 +128,7 @@ class ComponentFilterModel(ShareableWorkspaceScopedFilterModel):
     user_id: Union[UUID, str] = Field(None, description="User of the stack")
 
     def set_scope_type(self, component_type: str) -> None:
-        """Set the type of component on which to perform the filtering to scope
-        the response.
+        """Set the type of component on which to perform the filtering to scope the response.
 
         Args:
             component_type: The type of component to scope the query to.

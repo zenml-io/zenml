@@ -662,8 +662,7 @@ class BaseFilterModel(BaseModel):
 
     @property
     def offset(self) -> int:
-        """Returns the offset needed for the query on the data persistence
-        layer.
+        """Returns the offset needed for the query on the data persistence layer.
 
         Returns:
             The offset for the query.
