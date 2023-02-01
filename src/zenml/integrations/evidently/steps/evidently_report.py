@@ -30,7 +30,6 @@ from zenml.steps import Output
 from zenml.steps.base_parameters import BaseParameters
 from zenml.steps.base_step import BaseStep
 
-
 class EvidentlyColumnMapping(BaseModel):
     """Column mapping configuration for Evidently.
 
@@ -109,10 +108,13 @@ class EvidentlyReportParameters(BaseParameters):
 
     column_mapping: Optional[EvidentlyColumnMapping] = None
     ignored_cols: Optional[List[str]] = None
-    metrics: List[Union[Metric, MetricPreset, BaseGenerator]] = None
+    metrics: List[Union[str, Dict[str, Any]]] = None
     report_options: Sequence[Tuple[str, Dict[str, Any]]] = Field(
         default_factory=list
     )
+
+    class Config:
+        arbitrary_types_allowed = True
 
 
 class EvidentlyReportStep(BaseStep):
@@ -184,7 +186,7 @@ class EvidentlyReportStep(BaseStep):
             column_mapping=column_mapping,
             report_options=params.report_options,
         )
-        return [report.json(), report.show()]
+        return [report.json(), report.show().data]
 
 
 def evidently_report_step(
