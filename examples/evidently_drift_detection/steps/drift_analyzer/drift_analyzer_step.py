@@ -10,15 +10,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from evidently.model_profile import Profile  # type: ignore
-
+import json
 from zenml.steps import step
 
 
 @step
 def analyze_drift(
-    profile: Profile,
+    report: str,
 ) -> bool:
     """Analyze the Evidently drift report and return a true/false value
     indicating whether data drift was detected."""
-    return profile.object()["data_drift"]["data"]["metrics"]["dataset_drift"]
+    return json.loads(report)["metrics"][0]["result"]["dataset_drift"]

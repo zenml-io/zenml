@@ -12,22 +12,23 @@
 #  permissions and limitations under the License.
 from zenml.integrations.evidently.steps import (
     EvidentlyColumnMapping,
-    EvidentlyProfileParameters,
-    evidently_profile_step,
+    EvidentlyReportParameters,
+    evidently_report_step,
 )
 
-drift_detector = evidently_profile_step(
+drift_detector = evidently_report_step(
     step_name="drift_detector",
-    params=EvidentlyProfileParameters(
+    params=EvidentlyReportParameters(
         column_mapping=EvidentlyColumnMapping(
             target="class", prediction="class"
         ),
-        profile_sections=[
-            "dataquality",
-            "categoricaltargetdrift",
-            "numericaltargetdrift",
-            "datadrift",
-        ],
-        verbose_level=1,
+        metrics=[
+            "DataDriftPreset",
+            {
+                "metric": "ColumnQuantileMetric",
+                "parameters": {'quantile':0.25},
+                "columns": ["class"],
+            }
+        ]
     ),
 )
