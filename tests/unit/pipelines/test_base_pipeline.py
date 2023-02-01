@@ -577,7 +577,7 @@ def test_latest_version_fetching(
         ),
     )
 
-    assert pipeline_instance._get_latest_version() is 3
+    assert pipeline_instance._get_latest_version() == 3
 
 
 def test_registering_new_pipeline_version(mocker, empty_pipeline):

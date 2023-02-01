@@ -2490,14 +2490,21 @@ class Client(metaclass=ClientMetaClass):
 
             return pipelines.items[0]
 
-    def delete_pipeline(self, name_id_or_prefix: Union[str, UUID]) -> None:
+    def delete_pipeline(
+        self,
+        id: Optional[UUID] = None,
+        name: Optional[str] = None,
+        version: Optional[str] = None,
+    ) -> None:
         """Delete a pipeline.
 
         Args:
-            name_id_or_prefix: The name, id or prefix id of the pipeline
-                to delete.
+            id: The id of the pipeline.
+            name: The name of the pipeline.
+            version: The pipeline version. If left empty, will delete
+                the latest version.
         """
-        pipeline = self.get_pipeline(name_id_or_prefix=name_id_or_prefix)
+        pipeline = self.get_pipeline(id=id, name=name, version=version)
         self.zen_store.delete_pipeline(pipeline_id=pipeline.id)
 
     # -------------
