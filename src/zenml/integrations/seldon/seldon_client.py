@@ -21,7 +21,6 @@ from typing import Any, Dict, Generator, List, Optional
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
-from kubernetes.client.models import V1ResourceRequirements
 from pydantic import BaseModel, Field, ValidationError
 
 from zenml.logger import get_logger
@@ -56,6 +55,18 @@ class SeldonDeploymentPredictorParameter(BaseModel):
         validate_assignment = True
         # Ignore extra attributes from the CRD that are not reflected here
         extra = "ignore"
+
+
+class SeldonResourceRequirements(BaseModel):
+    """Resource requirements for a Seldon deployed model.
+
+    Attributes:
+        limits: an upper limit of resources to be used by the model
+        requests: resources requested by the model
+    """
+
+    limits: Dict[str, str] = Field(default_factory=dict)
+    requests: Dict[str, str] = Field(default_factory=dict)
 
 
 class SeldonDeploymentMetadata(BaseModel):
@@ -167,8 +178,8 @@ class SeldonDeploymentPredictor(BaseModel):
     graph: Optional[SeldonDeploymentPredictiveUnit] = Field(
         default_factory=SeldonDeploymentPredictiveUnit
     )
-    engineResources: Optional[V1ResourceRequirements] = Field(
-        default_factory=V1ResourceRequirements
+    engineResources: Optional[SeldonResourceRequirements] = Field(
+        default_factory=SeldonResourceRequirements
     )
     componentSpecs: Optional[List[SeldonDeploymentComponentSpecs]]
 
@@ -311,10 +322,10 @@ class SeldonDeployment(BaseModel):
         model_uri: Optional[str] = None,
         model_name: Optional[str] = None,
         implementation: Optional[str] = None,
-        parameters: SeldonDeploymentPredictorParameter = Field(
+        parameters: List[SeldonDeploymentPredictorParameter] = Field(
             default_factory=list
         ),
-        engineResources: Optional[V1ResourceRequirements] = None,
+        engineResources: Optional[SeldonResourceRequirements] = None,
         secret_name: Optional[str] = None,
         labels: Optional[Dict[str, str]] = None,
         annotations: Optional[Dict[str, str]] = None,
