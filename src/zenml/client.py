@@ -2294,7 +2294,6 @@ class Client(metaclass=ClientMetaClass):
             size=size,
             sort_by=sort_by,
             logical_operator=logical_operator,
-            workspace_id=workspace_id or self.active_workspace.id,
             user_id=user_id,
             name=name,
             type=type,
@@ -2322,7 +2321,6 @@ class Client(metaclass=ClientMetaClass):
         logger.debug(f"Fetching the flavors of type {component_type}.")
 
         return self.list_flavors(
-            workspace_id=self.active_workspace.id,
             type=component_type,
         )
 
@@ -2346,7 +2344,6 @@ class Client(metaclass=ClientMetaClass):
         )
 
         flavors = self.list_flavors(
-            workspace_id=self.active_workspace.id,
             type=component_type,
             name=name,
         ).items

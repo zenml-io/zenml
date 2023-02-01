@@ -28,7 +28,6 @@ from zenml.orchestrators.base_orchestrator import (
 from zenml.secrets_managers.local.local_secrets_manager import (
     LocalSecretsManagerConfig,
 )
-from zenml.stack.flavor_registry import flavor_registry
 
 
 def test_stack_component_default_method_implementations(stub_component):
@@ -130,16 +129,6 @@ def _get_stub_orchestrator(name, repo=None, **kwargs) -> ComponentRequestModel:
         user=uuid4() if repo is None else repo.active_user.id,
         workspace=uuid4() if repo is None else repo.active_workspace.id,
     )
-
-
-@pytest.fixture
-def register_stub_orchestrator_flavor() -> None:
-    """Create the stub orchestrator flavor temporarily."""
-    flavor = StubOrchestratorFlavor()
-
-    flavor_registry._register_flavor(flavor.to_model())
-    yield None
-    flavor_registry._flavors[flavor.type].pop(flavor.name)
 
 
 def test_stack_component_prevents_secret_references_for_some_attributes(
