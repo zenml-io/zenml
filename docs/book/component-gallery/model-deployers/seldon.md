@@ -238,6 +238,11 @@ Within the `SeldonDeploymentConfig` you can configure:
    * `implementation`: the type of Seldon inference server to use for the model. The
     implementation type can be one of the following: `TENSORFLOW_SERVER`, 
     `SKLEARN_SERVER`, `XGBOOST_SERVER`, `custom`.
+   * `parameters`: an optional list of parameters (`SeldonDeploymentPredictorParameter`) 
+    to pass to the deployment predictor in a form of:
+     * `name`
+     * `type`
+     * `value`
    * `resources`: the resources to be allocated to the model. This can be 
     configured by passing a dictionary with the `requests` and `limits` keys. 
     The values for these keys can be a dictionary with the `cpu` and `memory` 
