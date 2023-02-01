@@ -1,7 +1,7 @@
 """Pipeline Versioning [e65aa6708ff7].
 
 Revision ID: e65aa6708ff7
-Revises: 3944116bbd56
+Revises: 72722dee4686
 Create Date: 2023-01-27 10:33:30.974448
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "e65aa6708ff7"
-down_revision = "3944116bbd56"
+down_revision = "72722dee4686"
 branch_labels = None
 depends_on = None
 
