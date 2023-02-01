@@ -3,7 +3,7 @@ name: Docstring Check
 on: workflow_call
 
 jobs:
-  spellcheck:
+  docstring:
     name: docstringcheck
     runs-on: ubuntu-latest
     env:
