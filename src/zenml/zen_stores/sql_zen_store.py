@@ -154,6 +154,7 @@ from zenml.zen_stores.schemas import (
     RoleSchema,
     ScheduleSchema,
     StackComponentSchema,
+    StackCompositionSchema,
     StackSchema,
     StepRunInputArtifactSchema,
     StepRunOutputArtifactSchema,
@@ -969,6 +970,13 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             query = select(StackSchema)
+            if stack_filter_model.component_id:
+                query = query.where(
+                    StackCompositionSchema.stack_id == StackSchema.id
+                ).where(
+                    StackCompositionSchema.component_id
+                    == stack_filter_model.component_id
+                )
             return self.filter_and_paginate(
                 session=session,
                 query=query,
