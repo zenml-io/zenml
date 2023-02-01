@@ -565,7 +565,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             The newly created flavor.
         """
-        return self._create_workspace_scoped_resource(
+        return self._create_resource(
             resource=flavor,
             route=FLAVORS,
             response_model=FlavorResponseModel,
