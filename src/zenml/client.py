@@ -2267,7 +2267,6 @@ class Client(metaclass=ClientMetaClass):
         name: Optional[str] = None,
         type: Optional[str] = None,
         integration: Optional[str] = None,
-        workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
     ) -> Page[FlavorResponseModel]:
         """Fetches all the flavor models.
@@ -2280,7 +2279,6 @@ class Client(metaclass=ClientMetaClass):
             id: Use the id of flavors to filter by.
             created: Use to flavors by time of creation
             updated: Use the last updated date for filtering
-            workspace_id: The id of the workspace to filter by.
             user_id: The  id of the user to filter by.
             name: The name of the flavor to filter by.
             type: The type of the flavor to filter by.

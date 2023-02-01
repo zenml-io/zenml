@@ -105,12 +105,16 @@ class Flavor:
         return cast(Flavor, flavor)
 
     def to_model(
-        self, integration: Optional[str] = None
+        self,
+        integration: Optional[str] = None,
+        scoped_by_workspace: bool = True
     ) -> FlavorRequestModel:
         """Converts a flavor to a model.
 
         Args:
             integration: The integration to use for the model.
+            scoped_by_workspace: Whether this flavor should live in the scope
+                of the active workspace
 
         Returns:
             The model.
@@ -120,7 +124,7 @@ class Flavor:
         client = Client()
         model = FlavorRequestModel(
             user=client.active_user.id,
-            workspace=client.active_workspace.id,
+            workspace=client.active_workspace.id if scoped_by_workspace else None,
             name=self.name,
             type=self.type,
             source=resolve_class(self.__class__),  # noqa

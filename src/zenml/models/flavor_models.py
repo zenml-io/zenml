@@ -21,7 +21,7 @@ from pydantic import BaseModel, Field
 from zenml.enums import StackComponentType
 from zenml.models.base_models import (
     UserScopedResponseModel,
-    WorkspaceScopedRequestModel,
+    WorkspaceScopedRequestModel, UserScopedRequestModel,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.filter_models import WorkspaceScopedFilterModel
@@ -113,10 +113,14 @@ class FlavorFilterModel(WorkspaceScopedFilterModel):
 # ------- #
 
 
-class FlavorRequestModel(FlavorBaseModel, WorkspaceScopedRequestModel):
+class FlavorRequestModel(FlavorBaseModel, UserScopedRequestModel):
     """Request model for stack component flavors."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
         "type",
         "integration",
     ]
+
+    workspace: Optional[UUID] = Field(
+        title="The workspace to which this resource belongs."
+    )
