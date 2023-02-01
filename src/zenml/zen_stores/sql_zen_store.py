@@ -1629,7 +1629,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             non_custom_flavors = session.exec(
                 select(FlavorSchema).where(
-                    FlavorSchema.integration is not None
+                    FlavorSchema.is_custom is False
                 )
             ).all()
             for flavor in non_custom_flavors:

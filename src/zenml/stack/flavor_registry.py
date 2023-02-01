@@ -93,7 +93,7 @@ class FlavorRegistry:
         """Registers the default built-in flavors."""
         for flavor in self.builtin_flavors:
             flavor_request_model = flavor().to_model(
-                integration="built-in", scoped_by_workspace=False
+                integration="built-in", scoped_by_workspace=False, is_custom=False
             )
             store.create_flavor(flavor_request_model)
 
@@ -104,6 +104,6 @@ class FlavorRegistry:
             integrated_flavors = integration.flavors()
             for flavor in integrated_flavors:
                 flavor_request_model = flavor().to_model(
-                    integration=name, scoped_by_workspace=False
+                    integration=name, scoped_by_workspace=False, is_custom=False
                 )
                 store.create_flavor(flavor_request_model)

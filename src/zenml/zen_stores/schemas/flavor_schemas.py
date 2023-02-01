@@ -68,6 +68,8 @@ class FlavorSchema(NamedSchema, table=True):
 
     docs_url: Optional[str] = Field()
 
+    is_custom: bool = Field(default=True)
+
     def to_model(self) -> FlavorResponseModel:
         """Converts a flavor schema to a flavor model.
 
@@ -87,4 +89,5 @@ class FlavorSchema(NamedSchema, table=True):
             updated=self.updated,
             logo_url=self.logo_url,
             docs_url=self.docs_url,
+            is_custom=self.is_custom,
         )

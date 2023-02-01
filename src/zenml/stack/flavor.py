@@ -108,6 +108,7 @@ class Flavor:
         self,
         integration: Optional[str] = None,
         scoped_by_workspace: bool = True,
+        is_custom: bool = True
     ) -> FlavorRequestModel:
         """Converts a flavor to a model.
 
@@ -134,6 +135,7 @@ class Flavor:
             integration=integration,
             logo_url=self.logo_url,
             docs_url=self.docs_url,
+            is_custom=is_custom
         )
         return model
 

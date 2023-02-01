@@ -61,7 +61,10 @@ class FlavorBaseModel(BaseModel):
     docs_url: Optional[str] = Field(
         title="Optionally, a url pointing to docs," "within docs.zenml.io."
     )
-
+    is_custom: bool = Field(
+        title="Whether or not this flavor is a custom, user created flavor.",
+        default=True
+    )
 
 # -------- #
 # RESPONSE #
