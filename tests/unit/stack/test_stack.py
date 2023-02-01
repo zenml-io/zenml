@@ -456,3 +456,145 @@ def test_deployment_server_validation(mocker, stack_with_mock_components):
     )
     with pytest.raises(RuntimeError):
         stack_with_mock_components.prepare_pipeline_deployment(deployment)
+
+
+def test_get_pipeline_run_metadata(
+    mocker, local_orchestrator, local_artifact_store
+):
+    """Unit test for `Stack.get_pipeline_run_metadata()`."""
+    stack = Stack(
+        id=uuid4(),
+        name="",
+        orchestrator=local_orchestrator,
+        artifact_store=local_artifact_store,
+    )
+    orchestrator_metadata = {
+        "orchstrator_key": "orchestrator_value",
+        "pi": 3.14,
+    }
+    orchestrator_get_pipeline_run_mock = mocker.patch.object(
+        local_orchestrator,
+        "get_pipeline_run_metadata",
+        return_value=orchestrator_metadata,
+    )
+    artifact_store_metadata = {"artifact_store_key": 42}
+    artifact_store_get_pipeline_run_mock = mocker.patch.object(
+        local_artifact_store,
+        "get_pipeline_run_metadata",
+        return_value=artifact_store_metadata,
+    )
+    run_metadata = stack.get_pipeline_run_metadata(run_id=uuid4())
+    assert len(run_metadata) == 2
+    assert run_metadata[local_orchestrator.id] == orchestrator_metadata
+    assert run_metadata[local_artifact_store.id] == artifact_store_metadata
+    assert orchestrator_get_pipeline_run_mock.call_count == 1
+    assert artifact_store_get_pipeline_run_mock.call_count == 1
+
+
+def test_get_pipeline_never_raises_errors(
+    mocker, local_orchestrator, local_artifact_store
+):
+    """Test that `get_pipeline_run_metadata()` never raises errors."""
+    stack = Stack(
+        id=uuid4(),
+        name="",
+        orchestrator=local_orchestrator,
+        artifact_store=local_artifact_store,
+    )
+    orchestrator_get_pipeline_run_mock = mocker.patch.object(
+        local_orchestrator,
+        "get_pipeline_run_metadata",
+        side_effect=Exception("Orchestrator error"),
+    )
+    artifact_store_get_pipeline_run_mock = mocker.patch.object(
+        local_artifact_store,
+        "get_pipeline_run_metadata",
+        side_effect=Exception("Artifact store error"),
+    )
+    run_metadata = stack.get_pipeline_run_metadata(run_id=uuid4())
+    assert len(run_metadata) == 0
+    assert orchestrator_get_pipeline_run_mock.call_count == 1
+    assert artifact_store_get_pipeline_run_mock.call_count == 1
+
+
+def test_get_step_run_metadata(
+    mocker, local_orchestrator, local_artifact_store
+):
+    """Unit test for `Stack.get_step_run_metadata()`."""
+    stack = Stack(
+        id=uuid4(),
+        name="",
+        orchestrator=local_orchestrator,
+        artifact_store=local_artifact_store,
+    )
+    orchestrator_metadata = {
+        "orchstrator_key": "orchestrator_value",
+        "pi": 3.14,
+    }
+    orchestrator_get_step_run_mock = mocker.patch.object(
+        local_orchestrator,
+        "get_step_run_metadata",
+        return_value=orchestrator_metadata,
+    )
+    artifact_store_metadata = {"artifact_store_key": 42}
+    artifact_store_get_step_run_mock = mocker.patch.object(
+        local_artifact_store,
+        "get_step_run_metadata",
+        return_value=artifact_store_metadata,
+    )
+
+    class MockStepInfo:
+        config = {}
+
+    mocker.patch.object(
+        stack,
+        "_get_active_components_for_step",
+        return_value={
+            StackComponentType.ORCHESTRATOR: local_orchestrator,
+            StackComponentType.ARTIFACT_STORE: local_artifact_store,
+        },
+    )
+    run_metadata = stack.get_step_run_metadata(info=MockStepInfo())
+    assert len(run_metadata) == 2
+    assert run_metadata[local_orchestrator.id] == orchestrator_metadata
+    assert run_metadata[local_artifact_store.id] == artifact_store_metadata
+    assert orchestrator_get_step_run_mock.call_count == 1
+    assert artifact_store_get_step_run_mock.call_count == 1
+
+
+def test_get_step_run_never_raises_errors(
+    mocker, local_orchestrator, local_artifact_store
+):
+    """Test that `get_step_run_metadata()` never raises errors."""
+    stack = Stack(
+        id=uuid4(),
+        name="",
+        orchestrator=local_orchestrator,
+        artifact_store=local_artifact_store,
+    )
+    orchestrator_get_step_run_mock = mocker.patch.object(
+        local_orchestrator,
+        "get_step_run_metadata",
+        side_effect=Exception("Orchestrator error"),
+    )
+    artifact_store_get_step_run_mock = mocker.patch.object(
+        local_artifact_store,
+        "get_step_run_metadata",
+        side_effect=Exception("Artifact store error"),
+    )
+
+    class MockStepInfo:
+        config = {}
+
+    mocker.patch.object(
+        stack,
+        "_get_active_components_for_step",
+        return_value={
+            StackComponentType.ORCHESTRATOR: local_orchestrator,
+            StackComponentType.ARTIFACT_STORE: local_artifact_store,
+        },
+    )
+    run_metadata = stack.get_step_run_metadata(info=MockStepInfo())
+    assert len(run_metadata) == 0
+    assert orchestrator_get_step_run_mock.call_count == 1
+    assert artifact_store_get_step_run_mock.call_count == 1
