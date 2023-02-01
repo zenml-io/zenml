@@ -107,7 +107,7 @@ class Flavor:
     def to_model(
         self,
         integration: Optional[str] = None,
-        scoped_by_workspace: bool = True
+        scoped_by_workspace: bool = True,
     ) -> FlavorRequestModel:
         """Converts a flavor to a model.
 
@@ -124,7 +124,9 @@ class Flavor:
         client = Client()
         model = FlavorRequestModel(
             user=client.active_user.id,
-            workspace=client.active_workspace.id if scoped_by_workspace else None,
+            workspace=client.active_workspace.id
+            if scoped_by_workspace
+            else None,
             name=self.name,
             type=self.type,
             source=resolve_class(self.__class__),  # noqa

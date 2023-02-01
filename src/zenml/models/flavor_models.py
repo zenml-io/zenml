@@ -20,8 +20,8 @@ from pydantic import BaseModel, Field
 
 from zenml.enums import StackComponentType
 from zenml.models.base_models import (
+    UserScopedRequestModel,
     UserScopedResponseModel,
-    WorkspaceScopedRequestModel, UserScopedRequestModel,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.filter_models import WorkspaceScopedFilterModel

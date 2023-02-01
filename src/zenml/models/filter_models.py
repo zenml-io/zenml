@@ -667,7 +667,7 @@ class WorkspaceScopedFilterModel(BaseFilterModel):
         if self.scope_workspace:
             workspace_filter = or_(
                 getattr(table, "workspace_id") == self.scope_workspace,
-                getattr(table, "workspace_id").is_(None)
+                getattr(table, "workspace_id").is_(None),
             )
             return and_(base_filter, workspace_filter)
         return base_filter
