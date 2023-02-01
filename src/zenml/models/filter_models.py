@@ -167,9 +167,9 @@ class StrFilter(Filter):
         if self.operation == GenericFilterOps.CONTAINS:
             return column.like(f"%{self.value}%")
         if self.operation == GenericFilterOps.STARTSWITH:
-            return column.startswith(f"%{self.value}%")
+            return column.startswith(f"{self.value}")
         if self.operation == GenericFilterOps.ENDSWITH:
-            return column.endswith(f"%{self.value}%")
+            return column.endswith(f"{self.value}")
         return column == self.value
 
 
