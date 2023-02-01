@@ -11,7 +11,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import uuid
-from typing import Callable, Optional, Type, TypeVar
+from typing import Any, Callable, Dict, List, Optional, Type, TypeVar
 
 from pydantic import BaseModel
 
@@ -36,6 +36,7 @@ from zenml.models import (
     RoleFilterModel,
     RoleRequestModel,
     RoleUpdateModel,
+    StackRequestModel,
     StepRunFilterModel,
     TeamFilterModel,
     TeamRequestModel,
@@ -122,49 +123,124 @@ class PipelineRunContext:
 
 class UserContext:
     def __init__(self, user_name: str = "aria"):
-        self.user_name = user_name
+        self.user_name = sample_name(user_name)
         self.client = Client()
         self.store = self.client.zen_store
 
     def __enter__(self):
-        new_user = UserRequestModel(name=sample_name(self.user_name))
+        new_user = UserRequestModel(name=self.user_name)
         self.created_user = self.store.create_user(new_user)
         return self.created_user
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
-        self.store.delete_user(self.created_user.id)
+        try:
+            self.store.delete_user(self.created_user.id)
+        except KeyError:
+            pass
+
+
+class StackContext:
+    def __init__(
+        self,
+        components: Dict[StackComponentType, List[uuid.UUID]],
+        stack_name: str = "aria",
+        user_id: Optional[uuid.UUID] = None,
+    ):
+        self.stack_name = sample_name(stack_name)
+        self.user_id = user_id
+        self.components = components
+        self.client = Client()
+        self.store = self.client.zen_store
+
+    def __enter__(self):
+        new_stack = StackRequestModel(
+            user=self.user_id if self.user_id else self.client.active_user.id,
+            workspace=self.client.active_workspace.id,
+            name=self.stack_name,
+            components=self.components,
+        )
+        self.created_stack = self.store.create_stack(new_stack)
+        return self.created_stack
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        try:
+            self.store.delete_stack(self.created_stack.id)
+        except:
+            pass
+
+
+class ComponentContext:
+    def __init__(
+        self,
+        c_type: StackComponentType,
+        config: Dict[str, Any],
+        flavor: str,
+        component_name: str = "aria",
+        user_id: Optional[uuid.UUID] = None,
+    ):
+        self.component_name = sample_name(component_name)
+        self.flavor = flavor
+        self.component_type = c_type
+        self.config = config
+        self.user_id = user_id
+        self.client = Client()
+        self.store = self.client.zen_store
+
+    def __enter__(self):
+        new_component = ComponentRequestModel(
+            user=self.user_id if self.user_id else self.client.active_user.id,
+            workspace=self.client.active_workspace.id,
+            name=self.component_name,
+            type=self.component_type,
+            flavor=self.flavor,
+            configuration=self.config,
+        )
+        self.created_component = self.store.create_stack_component(
+            new_component
+        )
+        return self.created_component
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        try:
+            self.store.delete_stack_component(self.created_component.id)
+        except:
+            pass
 
 
 class TeamContext:
     def __init__(self, team_name: str = "arias_fanclub"):
-        self.team_name = team_name
+        self.team_name = sample_name(team_name)
         self.client = Client()
         self.store = self.client.zen_store
 
     def __enter__(self):
-        new_team = TeamRequestModel(name=sample_name(self.team_name))
+        new_team = TeamRequestModel(name=self.team_name)
         self.created_team = self.store.create_team(new_team)
         return self.created_team
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
-        self.store.delete_team(self.created_team.id)
+        try:
+            self.store.delete_team(self.created_team.id),
+        except:
+            pass
 
 
 class RoleContext:
     def __init__(self, role_name: str = "aria_tamer"):
-        self.role_name = role_name
+        self.role_name = sample_name(role_name)
         self.client = Client()
         self.store = self.client.zen_store
 
     def __enter__(self):
-        new_role = RoleRequestModel(
-            name=sample_name(self.role_name), permissions=set()
-        )
+        new_role = RoleRequestModel(name=self.role_name, permissions=set())
         self.created_role = self.store.create_role(new_role)
         return self.created_role
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
-        self.store.delete_role(self.created_role.id)
+        try:
+            self.store.delete_role(self.created_role.id)
+        except:
+            pass
 
 
 def sample_name(prefix: str = "aria") -> str:

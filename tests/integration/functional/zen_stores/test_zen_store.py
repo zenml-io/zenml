@@ -17,9 +17,11 @@ from contextlib import ExitStack as does_not_raise
 import pytest
 
 from tests.integration.functional.zen_stores.utils import (
+    ComponentContext,
     CrudTestConfig,
     PipelineRunContext,
     RoleContext,
+    StackContext,
     TeamContext,
     UserContext,
     list_of_entities,
@@ -27,7 +29,11 @@ from tests.integration.functional.zen_stores.utils import (
 )
 from zenml.client import Client
 from zenml.enums import StackComponentType, StoreType
-from zenml.exceptions import EntityExistsError, IllegalOperationError
+from zenml.exceptions import (
+    EntityExistsError,
+    IllegalOperationError,
+    StackExistsError,
+)
 from zenml.models import (
     ArtifactFilterModel,
     ComponentFilterModel,
@@ -36,6 +42,8 @@ from zenml.models import (
     RoleFilterModel,
     RoleRequestModel,
     RoleUpdateModel,
+    StackFilterModel,
+    StackRequestModel,
     StackUpdateModel,
     StepRunFilterModel,
     TeamRequestModel,
@@ -661,167 +669,199 @@ def test_deleting_default_stack_fails():
         client.zen_store.delete_stack(default_stack.id)
 
 
-# def test_list_stacks_succeeds(
-#     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-# ):
-#     """Tests listing stacks."""
-#     assert len(sql_store["store"].list_stacks()) == 1
-#
-#
-# def test_list_stacks_fails_with_nonexistent_workspace(
-#     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-# ):
-#     """Tests listing stacks fails with nonexistent workspace."""
-#     with pytest.raises(KeyError):
-#         sql_store["store"].list_stacks(workspace_name_or_id=uuid.uuid4())
-#
-#
-# def test_get_stack_succeeds(
-#     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-# ):
-#     """Tests getting stack."""
-#     current_stack_id = sql_store["store"].list_stacks()[0].id
-#     stack = sql_store["store"].get_stack(stack_id=current_stack_id)
-#     assert stack is not None
-#
-#
-# def test_get_stack_fails_with_nonexistent_stack_id(
-#     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-# ):
-#     """Tests getting stack fails with nonexistent stack id."""
-#     with pytest.raises(KeyError):
-#         sql_store["store"].get_stack(uuid.uuid4())
-#
-#
-# def test_register_stack_succeeds(
-#     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-# ):
-#     """Tests registering stack."""
-#     new_stack = StackRequestModel(
-#         name="arias_stack",
-#         components={},
-#         workspace=sql_store["default_workspace"].id,
-#         user=sql_store["active_user"].id,
-#     )
-#     # TODO: [server] inject user and workspace into stack as well
-#     sql_store["store"].create_stack(
-#         stack=new_stack,
-#     )
-#     stacks = sql_store["store"].list_stacks(DEFAULT_NAME)
-#     assert len(stacks) == 2
-#     assert sql_store["store"].get_stack(stacks[0].id) is not None
-#
-#
-# def test_register_stack_fails_when_stack_exists(
-#     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-# ):
-#     """Tests registering stack fails when stack exists."""
-#     new_stack = StackRequestModel(
-#         name=DEFAULT_NAME,
-#         components={},
-#         workspace=sql_store["default_workspace"].id,
-#         user=sql_store["active_user"].id,
-#     )
-#     with pytest.raises(StackExistsError):
-#         # TODO: [server] inject user and workspace into stack as well
-#         sql_store["store"].create_stack(
-#             stack=new_stack,
-#         )
-#
-#
-# def test_updating_stack_succeeds(
-#     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-# ):
-#     """Tests updating stack."""
-#     new_stack = StackRequestModel(
-#         name="arias_stack",
-#         description="Aria likes her stacks.",
-#         components={},
-#         workspace=sql_store["default_workspace"].id,
-#         user=sql_store["active_user"].id,
-#     )
-#     new_stack = sql_store["store"].create_stack(
-#         stack=new_stack,
-#     )
-#     new_stack_name = "axls_stack"
-#     stack_update = StackUpdateModel(name=new_stack_name)
-#     sql_store["store"].update_stack(
-#         stack_id=new_stack.id, stack_update=stack_update
-#     )
-#     assert sql_store["store"].get_stack(new_stack.id) is not None
-#     assert sql_store["store"].get_stack(new_stack.id).name == new_stack_name
-#     # Ensure unset fields of the `UpdateModel` are not changed
-#     assert (
-#         sql_store["store"].get_stack(new_stack.id).description
-#         == new_stack.description
-#     )
-#
-#
-#
-# def test_updating_nonexistent_stack_fails(
-#     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-# ):
-#     """Tests updating nonexistent stack fails."""
-#     current_stack_id = sql_store["default_stack"].id
-#     new_stack_name = "axls_stack"
-#     stack_update = StackUpdateModel(name=new_stack_name)
-#     nonexistent_id = uuid.uuid4()
-#     with pytest.raises(KeyError):
-#         sql_store["store"].update_stack(
-#             stack_id=nonexistent_id, stack_update=stack_update
-#         )
-#     with pytest.raises(KeyError):
-#         sql_store["store"].get_stack(nonexistent_id)
-#     assert sql_store["store"].get_stack(current_stack_id).name != "arias_stack"
-#
-#
-# def test_deleting_stack_succeeds(
-#     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-# ):
-#     """Tests deleting stack."""
-#     new_stack = StackRequestModel(
-#         name="arias_stack",
-#         components={},
-#         workspace=sql_store["default_workspace"].id,
-#         user=sql_store["active_user"].id,
-#     )
-#     new_stack = sql_store["store"].create_stack(
-#         stack=new_stack,
-#     )
-#     sql_store["store"].delete_stack(new_stack.id)
-#     with pytest.raises(KeyError):
-#         sql_store["store"].get_stack(new_stack.id)
-#
-#
-# def test_deleting_nonexistent_stack_fails(
-#     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-# ):
-#     """Tests deleting nonexistent stack fails."""
-#     non_existent_stack_id = uuid.uuid4()
-#     with pytest.raises(KeyError):
-#         sql_store["store"].delete_stack(non_existent_stack_id)
-#
-#
-# def test_deleting_a_stack_succeeds(
-#     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
-# ):
-#     """Tests deleting stack."""
-#     # TODO: [server] inject user and workspace into stack as well
-#     new_stack = StackRequestModel(
-#         name="arias_stack",
-#         components={},
-#         workspace=sql_store["default_workspace"].id,
-#         user=sql_store["active_user"].id,
-#     )
-#     sql_store["store"].create_stack(
-#         stack=new_stack,
-#     )
-#     stacks = sql_store["store"].list_stacks(workspace_name_or_id=DEFAULT_NAME)
-#     assert len(stacks) == 2
-#     new_stack = [stack for stack in stacks if stack.name == "arias_stack"][0]
-#     sql_store["store"].delete_stack(new_stack.id)
-#     with pytest.raises(KeyError):
-#         sql_store["store"].get_stack(new_stack.id)
+def test_get_stack_fails_with_nonexistent_stack_id():
+    """Tests getting stack fails with nonexistent stack id."""
+    client = Client()
+    store = client.zen_store
+
+    with pytest.raises(KeyError):
+        store.get_stack(uuid.uuid4())
+
+
+def test_filter_stack_succeeds():
+    """Tests getting stack."""
+    client = Client()
+    store = client.zen_store
+
+    with ComponentContext(
+        c_type=StackComponentType.ORCHESTRATOR, flavor="local", config={}
+    ) as orchestrator:
+        with ComponentContext(
+            c_type=StackComponentType.ARTIFACT_STORE, flavor="local", config={}
+        ) as artifact_store:
+            components = {
+                StackComponentType.ORCHESTRATOR: [orchestrator.id],
+                StackComponentType.ARTIFACT_STORE: [artifact_store.id],
+            }
+            with StackContext(components=components) as stack:
+                returned_stacks = store.list_stacks(
+                    StackFilterModel(name=stack.name)
+                )
+                assert returned_stacks
+
+
+def test_crud_on_stack_succeeds():
+    """Tests getting stack."""
+    client = Client()
+    store = client.zen_store
+
+    with ComponentContext(
+        c_type=StackComponentType.ORCHESTRATOR, flavor="local", config={}
+    ) as orchestrator:
+        with ComponentContext(
+            c_type=StackComponentType.ARTIFACT_STORE, flavor="local", config={}
+        ) as artifact_store:
+            components = {
+                StackComponentType.ORCHESTRATOR: [orchestrator.id],
+                StackComponentType.ARTIFACT_STORE: [artifact_store.id],
+            }
+            new_stack = StackRequestModel(
+                name="arias_stack",
+                components=components,
+                workspace=client.active_workspace.id,
+                user=client.active_user.id,
+            )
+            created_stack = store.create_stack(stack=new_stack)
+
+            stacks = store.list_stacks(StackFilterModel(name="arias_stack"))
+            assert len(stacks) == 1
+
+            with does_not_raise():
+                stack = store.get_stack(created_stack.id)
+                assert stack is not None
+
+            # Update
+            stack_update = StackUpdateModel(name="axls_stack")
+            store.update_stack(stack_id=stack.id, stack_update=stack_update)
+
+            stacks = store.list_stacks(StackFilterModel(name="axls_stack"))
+            assert len(stacks) == 1
+            stacks = store.list_stacks(StackFilterModel(name="arias_stack"))
+            assert len(stacks) == 0
+
+            # Cleanup
+            store.delete_stack(created_stack.id)
+            with pytest.raises(KeyError):
+                store.get_stack(created_stack.id)
+
+
+def test_register_stack_fails_when_stack_exists():
+    """Tests registering stack fails when stack exists."""
+    client = Client()
+    store = client.zen_store
+
+    with ComponentContext(
+        c_type=StackComponentType.ORCHESTRATOR, flavor="local", config={}
+    ) as orchestrator:
+        with ComponentContext(
+            c_type=StackComponentType.ARTIFACT_STORE, flavor="local", config={}
+        ) as artifact_store:
+            components = {
+                StackComponentType.ORCHESTRATOR: [orchestrator.id],
+                StackComponentType.ARTIFACT_STORE: [artifact_store.id],
+            }
+            with StackContext(components=components) as stack:
+
+                new_stack = StackRequestModel(
+                    name=stack.name,
+                    components=components,
+                    workspace=client.active_workspace.id,
+                    user=client.active_user.id,
+                )
+                with pytest.raises(StackExistsError):
+                    # TODO: [server] inject user and workspace into stack as well
+                    store.create_stack(
+                        stack=new_stack,
+                    )
+
+
+def test_updating_nonexistent_stack_fails():
+    """Tests updating nonexistent stack fails."""
+    client = Client()
+    store = client.zen_store
+
+    stack_update = StackUpdateModel(name="axls_stack")
+    nonexistent_id = uuid.uuid4()
+    with pytest.raises(KeyError):
+        store.update_stack(stack_id=nonexistent_id, stack_update=stack_update)
+    with pytest.raises(KeyError):
+        store.get_stack(nonexistent_id)
+
+
+def test_deleting_nonexistent_stack_fails():
+    """Tests deleting nonexistent stack fails."""
+    client = Client()
+    store = client.zen_store
+    non_existent_stack_id = uuid.uuid4()
+    with pytest.raises(KeyError):
+        store.delete_stack(non_existent_stack_id)
+
+
+def test_deleting_a_stack_succeeds():
+    """Tests deleting stack."""
+    client = Client()
+    store = client.zen_store
+
+    with ComponentContext(
+        c_type=StackComponentType.ORCHESTRATOR, flavor="local", config={}
+    ) as orchestrator:
+        with ComponentContext(
+            c_type=StackComponentType.ARTIFACT_STORE, flavor="local", config={}
+        ) as artifact_store:
+            components = {
+                StackComponentType.ORCHESTRATOR: [orchestrator.id],
+                StackComponentType.ARTIFACT_STORE: [artifact_store.id],
+            }
+            with StackContext(components=components) as stack:
+                store.delete_stack(stack.id)
+                with pytest.raises(KeyError):
+                    store.get_stack(stack.id)
+
+
+def test_scoping_a_stack_succeeds():
+    """Tests stack scoping via sharing on rest zen stores."""
+    client = Client()
+    store = client.zen_store
+    if store.type == StoreType.SQL:
+        pytest.skip("SQL Zen Stores do not support stack scoping")
+
+    with UserContext() as user:
+        with ComponentContext(
+            c_type=StackComponentType.ORCHESTRATOR,
+            flavor="local",
+            config={},
+            user_id=user.id,
+        ) as orchestrator:
+            with ComponentContext(
+                c_type=StackComponentType.ARTIFACT_STORE,
+                flavor="local",
+                config={},
+                user_id=user.id,
+            ) as artifact_store:
+                components = {
+                    StackComponentType.ORCHESTRATOR: [orchestrator.id],
+                    StackComponentType.ARTIFACT_STORE: [artifact_store.id],
+                }
+                with StackContext(
+                    components=components, user_id=user.id
+                ) as stack:
+                    # Unshared stack should be invisible to the current user
+
+                    filtered_stacks = store.list_stacks(
+                        StackFilterModel(name=stack.name)
+                    )
+                    assert len(filtered_stacks) == 0
+
+                    # Update
+                    stack_update = StackUpdateModel(is_shared=True)
+                    store.update_stack(
+                        stack_id=stack.id, stack_update=stack_update
+                    )
+
+                    filtered_stacks = store.list_stacks(
+                        StackFilterModel(name=stack.name)
+                    )
+                    assert len(filtered_stacks) == 1
 
 
 # .-----------.
