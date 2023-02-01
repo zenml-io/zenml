@@ -244,8 +244,8 @@ Within the `SeldonDeploymentConfig` you can configure:
      * `type`
      * `value`
    * `resources`: the resources to be allocated to the model. This can be 
-    configured by passing a dictionary with the `requests` and `limits` keys. 
-    The values for these keys can be a dictionary with the `cpu` and `memory` 
+    configured by passing a `SeldonResourceRequirements` object with the `requests` and `limits` properties. 
+    The values for these properties can be a dictionary with the `cpu` and `memory` 
     keys. The values for these keys can be a string with the amount of CPU and 
     memory to be allocated to the model.
 
