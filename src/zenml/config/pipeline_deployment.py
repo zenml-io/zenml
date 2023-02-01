@@ -12,20 +12,20 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Pipeline deployment."""
-import json
-from typing import Any, Dict, Optional, cast
+from typing import Any, Dict, Optional
 from uuid import UUID
-
-import yaml
 
 import zenml
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.schedule import Schedule
 from zenml.config.step_configurations import Step
 from zenml.config.strict_base_model import StrictBaseModel
+from zenml.utils import pydantic_utils
 
 
-class PipelineDeployment(StrictBaseModel):
+class PipelineDeployment(
+    StrictBaseModel, pydantic_utils.YAMLSerializationMixin
+):
     """Class representing the deployment of a ZenML pipeline."""
 
     run_name: str
@@ -46,15 +46,3 @@ class PipelineDeployment(StrictBaseModel):
             value: The extra value.
         """
         self.pipeline.extra[key] = value
-
-    def yaml(self, **kwargs: Any) -> str:
-        """Yaml representation of the deployment.
-
-        Args:
-            **kwargs: Kwargs to pass to the pydantic json(...) method.
-
-        Returns:
-            Yaml string representation of the deployment.
-        """
-        dict_ = json.loads(self.json(**kwargs, sort_keys=False))
-        return cast(str, yaml.dump(dict_, sort_keys=False))

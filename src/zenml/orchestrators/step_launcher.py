@@ -246,6 +246,7 @@ class StepLauncher:
             num_steps=len(self._deployment.steps),
             client_environment=self._deployment.client_environment,
             orchestrator_environment=get_run_environment_dict(),
+            server_version=client.zen_store.get_store_info().version,
             start_time=datetime.utcnow(),
         )
         return client.zen_store.get_or_create_run(pipeline_run)
