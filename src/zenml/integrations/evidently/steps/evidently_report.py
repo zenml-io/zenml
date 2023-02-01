@@ -16,7 +16,9 @@
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union, cast
 
 import pandas as pd
-from evidently.model_profile import Profile  # type: ignore[import]
+from evidently.base_metric import Metric
+from evidently.metric_preset.metric_preset import MetricPreset
+from evidently.utils.generators import BaseGenerator
 from evidently.pipeline.column_mapping import (  # type: ignore[import]
     ColumnMapping,
 )
@@ -87,13 +89,13 @@ class EvidentlyColumnMapping(BaseModel):
         return column_mapping
 
 
-class EvidentlyProfileParameters(BaseParameters):
+class EvidentlyReportParameters(BaseParameters):
     """Parameters class for Evidently profile steps.
 
     Attributes:
         column_mapping: properties of the DataFrame columns used
         ignored_cols: columns to ignore during the Evidently profile step
-        profile_sections: a list identifying the Evidently profile sections to be
+        metrics: a list identifying the Evidently profile sections to be
             used. The following are valid options supported by Evidently:
             - "datadrift"
             - "categoricaltargetdrift"
@@ -101,36 +103,28 @@ class EvidentlyProfileParameters(BaseParameters):
             - "classificationmodelperformance"
             - "regressionmodelperformance"
             - "probabilisticmodelperformance"
-        verbose_level: Verbosity level for the Evidently dashboards. Use
-            0 for a brief dashboard, 1 for a detailed dashboard.
-        profile_options: Optional list of options to pass to the
-            profile constructor. See `EvidentlyDataValidator._unpack_options`.
-        dashboard_options: Optional list of options to pass to the
-            dashboard constructor. See `EvidentlyDataValidator._unpack_options`.
+        report_options: a list of tuples containing the name of the report
+            and a dictionary of options for the report.
     """
 
     column_mapping: Optional[EvidentlyColumnMapping] = None
     ignored_cols: Optional[List[str]] = None
-    profile_sections: Optional[Sequence[str]] = None
-    verbose_level: int = 1
-    profile_options: Sequence[Tuple[str, Dict[str, Any]]] = Field(
-        default_factory=list
-    )
-    dashboard_options: Sequence[Tuple[str, Dict[str, Any]]] = Field(
+    metrics: List[Union[Metric, MetricPreset, BaseGenerator]] = None
+    report_options: Sequence[Tuple[str, Dict[str, Any]]] = Field(
         default_factory=list
     )
 
 
-class EvidentlyProfileStep(BaseStep):
-    """Step implementation implementing an Evidently Profile Step."""
+class EvidentlyReportStep(BaseStep):
+    """Step implementation implementing an Evidently Report Step."""
 
     def entrypoint(
         self,
         reference_dataset: pd.DataFrame,
         comparison_dataset: pd.DataFrame,
-        params: EvidentlyProfileParameters,
+        params: EvidentlyReportParameters,
     ) -> Output(  # type:ignore[valid-type]
-        profile=Profile, dashboard=str
+        report_json=str, report_html=str
     ):
         """Main entrypoint for the Evidently categorical target drift detection step.
 
@@ -146,9 +140,7 @@ class EvidentlyProfileStep(BaseStep):
                 dataset
 
         Returns:
-            profile: Evidently Profile generated for the data drift
-            dashboard: HTML report extracted from an Evidently Dashboard
-              generated for the data drift
+            An Evidently Report object.
         """
         data_validator = cast(
             EvidentlyDataValidator,
@@ -185,21 +177,19 @@ class EvidentlyProfileStep(BaseStep):
             column_mapping = (
                 params.column_mapping.to_evidently_column_mapping()
             )
-        profile, dashboard = data_validator.data_profiling(
+        report = data_validator.data_profiling(
             dataset=reference_dataset,
             comparison_dataset=comparison_dataset,
-            profile_list=params.profile_sections,
+            metric_list=params.metrics,
             column_mapping=column_mapping,
-            verbose_level=params.verbose_level,
-            profile_options=params.profile_options,
-            dashboard_options=params.dashboard_options,
+            report_options=params.report_options,
         )
-        return [profile, dashboard.html()]
+        return [report.json(), report.show()]
 
 
-def evidently_profile_step(
+def evidently_report_step(
     step_name: str,
-    params: EvidentlyProfileParameters,
+    params: EvidentlyReportParameters,
 ) -> BaseStep:
     """Shortcut function to create a new instance of the EvidentlyProfileConfig step.
 
@@ -214,4 +204,4 @@ def evidently_profile_step(
     Returns:
         a EvidentlyProfileStep step instance
     """
-    return EvidentlyProfileStep(name=step_name, params=params)
+    return EvidentlyReportStep(name=step_name, params=params)

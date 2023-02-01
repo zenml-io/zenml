@@ -140,7 +140,7 @@ class EvidentlyDataValidator(BaseDataValidator):
         column_mapping: Optional[ColumnMapping] = None,
         report_options: Sequence[Tuple[str, Dict[str, Any]]] = [],
         **kwargs: Any,
-    ) -> Tuple[Profile, Dashboard]:
+    ) -> Report:
         """Analyze a dataset and generate a data profile with Evidently.
 
         The method takes in an optional list of Evidently options to be passed
@@ -187,4 +187,4 @@ class EvidentlyDataValidator(BaseDataValidator):
             column_mapping=column_mapping,
         )
 
-        return report.json(), report
+        return report
