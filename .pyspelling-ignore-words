@@ -688,6 +688,7 @@ StackSchema
 StackValidationError
 StackValidator
 StackWrapper
+StackUpdateModel
 StandaloneCommand
 StandardScaler
 Standards
