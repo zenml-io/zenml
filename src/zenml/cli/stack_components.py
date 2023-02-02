@@ -136,7 +136,11 @@ def generate_stack_component_list_command(
 
     @list_options(ComponentFilterModel)
     def list_stack_components_command(**kwargs: Any) -> None:
-        """Prints a table of stack components."""
+        """Prints a table of stack components.
+
+        Args:
+            kwargs: Keyword arguments to filter the components.
+        """
         client = Client()
         with console.status(f"Listing {component_type.plural}..."):
             kwargs["type"] = component_type

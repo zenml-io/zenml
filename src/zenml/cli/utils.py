@@ -1063,7 +1063,11 @@ def warn_unsupported_non_default_workspace() -> None:
 
 
 def print_page_info(page: Page[T]) -> None:
-    """Print all information pertaining to a page to show the amount of items and pages."""
+    """Print all page information showing the number of items and pages.
+
+    Args:
+        page: The page to print the information for.
+    """
     declare(
         f"Page `({page.page}/{page.total_pages})`, `{page.total}` items "
         f"found for the applied filters."
@@ -1173,6 +1177,9 @@ def list_options(filter_model: Type[BaseFilterModel]) -> Callable[[F], F]:
 
     Args:
         filter_model: The filter model based on which to decorate the function.
+
+    Returns:
+        The inner decorator.
     """
 
     def inner_decorator(func: F) -> F:
