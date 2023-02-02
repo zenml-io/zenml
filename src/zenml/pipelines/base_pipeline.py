@@ -761,6 +761,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
         Returns:
             The pipeline instance.
+
+        Raises:
+            ValueError: If the spec version of the given model is <0.2
         """
         if version.parse(model.spec.version) < version.parse("0.2"):
             raise ValueError(
