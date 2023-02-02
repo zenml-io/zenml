@@ -21,6 +21,7 @@ from uuid import uuid4
 import pytest
 
 from zenml.client import Client
+from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.enums import StackComponentType
 from zenml.exceptions import (
     IllegalOperationError,
@@ -29,7 +30,11 @@ from zenml.exceptions import (
     StackExistsError,
 )
 from zenml.io import fileio
-from zenml.models import ComponentResponseModel, StackResponseModel
+from zenml.models import (
+    ComponentResponseModel,
+    PipelineRequestModel,
+    StackResponseModel,
+)
 from zenml.utils import io_utils
 
 
@@ -406,3 +411,82 @@ def test_deregistering_a_stack_component_that_is_part_of_a_registered_stack(
             name_id_or_prefix=component.id,
             component_type=StackComponentType.ORCHESTRATOR,
         )
+
+
+def test_getting_a_pipeline(clean_client):
+    """Tests fetching of a pipeline."""
+    # Missing ID or name
+    with pytest.raises(ValueError):
+        clean_client.get_pipeline()
+
+    # Non-existent ID
+    with pytest.raises(KeyError):
+        clean_client.get_pipeline(id=uuid4())
+
+    # Non-existent name
+    with pytest.raises(KeyError):
+        clean_client.get_pipeline(name="non_existent")
+
+    request = PipelineRequestModel(
+        user=clean_client.active_user.id,
+        workspace=clean_client.active_workspace.id,
+        name="pipeline",
+        version="1",
+        version_hash="",
+        spec=PipelineSpec(steps=[]),
+    )
+    response_1 = clean_client.zen_store.create_pipeline(request)
+
+    pipeline = clean_client.get_pipeline(id=response_1.id)
+    assert pipeline == response_1
+
+    pipeline = clean_client.get_pipeline(name="pipeline")
+    assert pipeline == response_1
+
+    pipeline = clean_client.get_pipeline(name="pipeline", version="1")
+    assert pipeline == response_1
+
+    # Non-existent version
+    with pytest.raises(KeyError):
+        clean_client.get_pipeline(name="pipeline", version="2")
+
+    request.version = "2"
+    response_2 = clean_client.zen_store.create_pipeline(request)
+
+    # Gets latest version
+    pipeline = clean_client.get_pipeline(name="pipeline")
+    assert pipeline == response_2
+
+
+def test_listing_pipelines(clean_client):
+    """Tests listing of pipelines."""
+    assert clean_client.list_pipelines().total == 0
+
+    request = PipelineRequestModel(
+        user=clean_client.active_user.id,
+        workspace=clean_client.active_workspace.id,
+        name="pipeline",
+        version="1",
+        version_hash="",
+        spec=PipelineSpec(steps=[]),
+    )
+    response_1 = clean_client.zen_store.create_pipeline(request)
+    request.name = "other_pipeline"
+    request.version = "2"
+    response_2 = clean_client.zen_store.create_pipeline(request)
+
+    assert clean_client.list_pipelines().total == 2
+
+    assert clean_client.list_pipelines(name="pipeline").total == 1
+    assert clean_client.list_pipelines(name="pipeline").items[0] == response_1
+
+    assert clean_client.list_pipelines(version="1").total == 1
+    assert clean_client.list_pipelines(version="1").items[0] == response_1
+
+    assert clean_client.list_pipelines(version="2").total == 1
+    assert clean_client.list_pipelines(version="2").items[0] == response_2
+
+    assert (
+        clean_client.list_pipelines(name="other_pipeline", version="3").total
+        == 0
+    )

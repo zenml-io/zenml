@@ -45,7 +45,11 @@ def pipeline() -> None:
 )
 @click.argument("source")
 def register_pipeline(source: str) -> None:
-    """Register a pipeline."""
+    """Register a pipeline.
+
+    Args:
+        source: Importable source resolving to a pipeline instance.
+    """
     cli_utils.print_active_config()
 
     if "." not in source:
