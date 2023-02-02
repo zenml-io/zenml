@@ -36,7 +36,7 @@ class DeepchecksDataValidationCheckStepParameters(BaseParameters):
     """Parameters class for the Deepchecks data integrity validator step.
 
     Attributes:
-        check_list: Optional list of DeepchecksDataValidationCheck identifiers
+        check_list: Optional list of `DeepchecksDataValidationCheck` identifiers
             specifying the subset of Deepchecks data integrity checks to be
             performed. If not supplied, the entire set of data integrity checks
             will be performed.
