@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Implementation of the Evidently Report Step."""
+"""Implementation of the Evidently Test Step."""
 
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union, cast
 
@@ -23,91 +23,28 @@ from pydantic import BaseModel, Field
 from typing_extensions import Literal
 
 from zenml.integrations.evidently.data_validators import EvidentlyDataValidator
+from zenml.integrations.evidently.steps.evidently_report import EvidentlyColumnMapping
 from zenml.steps import Output
 from zenml.steps.base_parameters import BaseParameters
 from zenml.steps.base_step import BaseStep
 
 
-class EvidentlyColumnMapping(BaseModel):
-    """Column mapping configuration for Evidently.
-
-    This class is a 1-to-1 serializable analog of Evidently's
-    ColumnMapping data type that can be used as a step configuration field
-    (see https://docs.evidentlyai.com/features/dashboards/column_mapping).
-
-    Attributes:
-        target: target column
-        prediction: target column
-        datetime: datetime column
-        id: id column
-        numerical_features: numerical features
-        categorical_features: categorical features
-        datetime_features: datetime features
-        target_names: target column names
-        task: model task (regression or classification)
-    """
-
-    target: Optional[str] = None
-    prediction: Optional[Union[str, Sequence[str]]] = None
-    datetime: Optional[str] = None
-    id: Optional[str] = None
-    numerical_features: Optional[List[str]] = None
-    categorical_features: Optional[List[str]] = None
-    datetime_features: Optional[List[str]] = None
-    target_names: Optional[List[str]] = None
-    task: Optional[Literal["classification", "regression"]] = None
-
-    def to_evidently_column_mapping(self) -> ColumnMapping:
-        """Convert this Pydantic object to an Evidently ColumnMapping object.
-
-        Returns:
-            An Evidently column mapping converted from this Pydantic object.
-        """
-        column_mapping = ColumnMapping()
-
-        # preserve the Evidently defaults where possible
-        column_mapping.target = self.target or column_mapping.target
-        column_mapping.prediction = (
-            self.prediction or column_mapping.prediction
-        )
-        column_mapping.datetime = self.datetime or column_mapping.datetime
-        column_mapping.id = self.id or column_mapping.id
-        column_mapping.numerical_features = (
-            self.numerical_features or column_mapping.numerical_features
-        )
-        column_mapping.datetime_features = (
-            self.datetime_features or column_mapping.datetime_features
-        )
-        column_mapping.target_names = (
-            self.target_names or column_mapping.target_names
-        )
-        column_mapping.task = self.task or column_mapping.task
-
-        return column_mapping
-
-
-class EvidentlyReportParameters(BaseParameters):
+class EvidentlyTestParameters(BaseParameters):
     """Parameters class for Evidently profile steps.
 
     Attributes:
         column_mapping: properties of the DataFrame columns used
         ignored_cols: columns to ignore during the Evidently profile step
-        metrics: a list identifying the Evidently profile sections to be
-            used. The following are valid options supported by Evidently:
-            - "datadrift"
-            - "categoricaltargetdrift"
-            - "numericaltargetdrift"
-            - "classificationmodelperformance"
-            - "regressionmodelperformance"
-            - "probabilisticmodelperformance"
-        report_options: a list of tuples containing the name of the report
-            and a dictionary of options for the report.
+        tests: a list identifying the Evidently tests to be
+            used.
+        test_options: a list of tuples containing the name of the test
+            and a dictionary of options for the test.
     """
 
     column_mapping: Optional[EvidentlyColumnMapping] = None
     ignored_cols: Optional[List[str]] = None
-    metrics: List[Union[str, Dict[str, Any]]] = None
-    report_options: Sequence[Tuple[str, Dict[str, Any]]] = Field(
+    tests: List[Union[str, Dict[str, Any]]] = None
+    test_options: Sequence[Tuple[str, Dict[str, Any]]] = Field(
         default_factory=list
     )
 
@@ -115,16 +52,16 @@ class EvidentlyReportParameters(BaseParameters):
         arbitrary_types_allowed = True
 
 
-class EvidentlyReportStep(BaseStep):
-    """Step implementation implementing an Evidently Report Step."""
+class EvidentlyTestStep(BaseStep):
+    """Step implementation implementing an Evidently Test Step."""
 
     def entrypoint(
         self,
         reference_dataset: pd.DataFrame,
         comparison_dataset: pd.DataFrame,
-        params: EvidentlyReportParameters,
+        params: EvidentlyTestParameters,
     ) -> Output(  # type:ignore[valid-type]
-        report_json=str, report_html=str
+        test_json=str, test_html=str
     ):
         """Main entrypoint for the Evidently categorical target drift detection step.
 
@@ -140,7 +77,7 @@ class EvidentlyReportStep(BaseStep):
                 dataset
 
         Returns:
-            A tuple containing the Evidently report in JSON and HTML
+            A tuple containing the test json and html
         """
         data_validator = cast(
             EvidentlyDataValidator,
@@ -177,21 +114,21 @@ class EvidentlyReportStep(BaseStep):
             column_mapping = (
                 params.column_mapping.to_evidently_column_mapping()
             )
-        report = data_validator.data_profiling(
+        test_suite = data_validator.data_validation(
             dataset=reference_dataset,
             comparison_dataset=comparison_dataset,
-            metric_list=params.metrics,
+            check_list=params.tests,
             column_mapping=column_mapping,
-            report_options=params.report_options,
+            test_options=params.test_options,
         )
-        return [report.json(), report.show().data]
+        return [test_suite.json(), test_suite.show().data]
 
 
-def evidently_report_step(
+def evidently_test_step(
     step_name: str,
-    params: EvidentlyReportParameters,
+    params: EvidentlyTestParameters,
 ) -> BaseStep:
-    """Shortcut function to create a new instance of the EvidentlyProfileConfig step.
+    """Shortcut function to create a new instance of the EvidentlyTestConfig step.
 
     The returned EvidentlyProfileStep can be used in a pipeline to
     run model drift analyses on two input pd.DataFrame datasets and return the
@@ -204,4 +141,4 @@ def evidently_report_step(
     Returns:
         a EvidentlyProfileStep step instance
     """
-    return EvidentlyReportStep(name=step_name, params=params)
+    return EvidentlyTestStep(name=step_name, params=params)

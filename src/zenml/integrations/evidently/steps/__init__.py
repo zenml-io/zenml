@@ -19,3 +19,8 @@ from zenml.integrations.evidently.steps.evidently_report import (
     EvidentlyReportStep,
     evidently_report_step,
 )
+from zenml.integrations.evidently.steps.evidently_test import (
+    EvidentlyTestParameters,
+    EvidentlyTestStep,
+    evidently_test_step,
+)

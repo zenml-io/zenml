@@ -26,6 +26,12 @@ from typing import (
 )
 
 import pandas as pd
+from evidently.tests.base_test import Test
+import evidently.test_preset as test_preset  # type: ignore
+import evidently.tests as tests  # type: ignore
+from evidently.test_preset.test_preset import TestPreset
+from evidently.test_suite import TestSuite  # type: ignore
+from evidently.tests.base_test import generate_column_tests
 from evidently.base_metric import Metric
 from evidently.metric_preset.metric_preset import MetricPreset
 from evidently.utils.generators import BaseGenerator
@@ -44,7 +50,7 @@ from zenml.utils.source_utils import load_source_path_class
 logger = get_logger(__name__)
 
 
-def get_class_from_mapping(metric: str) -> Union[Metric, MetricPreset]:
+def get_metric_class_from_mapping(metric: str) -> Union[Metric, MetricPreset]:
     """Get the Evidently metric or metric preset class from a string.
 
     Args:
@@ -81,6 +87,30 @@ def get_class_from_mapping(metric: str) -> Union[Metric, MetricPreset]:
         )
 
 
+def get_test_class_from_mapping(test: str) -> Union[Test, TestPreset]:
+    """Get the Evidently test or test preset class from a string.
+
+    Args:
+        test: Name of the test or test preset.
+
+    Returns:
+        The Evidently test or test preset class.
+
+    Raises:
+        ValueError: If the test or test preset is not a valid Evidently test or test preset.
+    """
+    try:
+        if "Preset" in test:
+            return getattr(test_preset, test)
+        else:
+            return getattr(tests, test)
+    except AttributeError:
+        raise ValueError(
+            f"Test or TestPreset {test} is not a "
+            f"valid Evidently test or test preset."
+        )
+
+
 def get_metrics(
     metric_list: List[Union[str, Dict[str, Any]]]
 ) -> List[Union[Metric, MetricPreset, BaseGenerator]]:
@@ -96,11 +126,11 @@ def get_metrics(
     metrics = []
     for metric in metric_list:
         if isinstance(metric, str):
-            metrics.append(get_class_from_mapping(metric)())
+            metrics.append(get_metric_class_from_mapping(metric)())
         elif isinstance(metric, dict):
             metrics.append(
                 generate_column_metrics(
-                    get_class_from_mapping(metric["metric"]),
+                    get_metric_class_from_mapping(metric["metric"]),
                     metric["columns"],
                     metric["parameters"] if "parameters" in metric else None,
                 )
@@ -111,6 +141,29 @@ def get_metrics(
                 f"Expected str or dict, got {type(metric)}."
             )
     return metrics
+
+
+def get_tests(
+    test_list: List[Union[str, Dict[str, Any]]]
+) -> List[Union[Test, TestPreset, BaseGenerator]]:
+    tests = []
+    for test in test_list:
+        if isinstance(test, str):
+            tests.append(get_test_class_from_mapping(test)())
+        elif isinstance(test, dict):
+            tests.append(
+                generate_column_tests(
+                    get_test_class_from_mapping(test["test"]),
+                    test["columns"],
+                    test["parameters"] if "parameters" in test else None,
+                )
+            )
+        else:
+            raise ValueError(
+                f"Invalid metric type: {type(test)}. "
+                f"Expected str or dict, got {type(test)}."
+            )
+    return tests
 
 
 class EvidentlyDataValidator(BaseDataValidator):
@@ -246,3 +299,38 @@ class EvidentlyDataValidator(BaseDataValidator):
         )
 
         return report
+
+    def data_validation(
+        self,
+        dataset: Any,
+        comparison_dataset: Optional[Any] = None,
+        check_list: List[Union[str, Dict[str, Any]]] = None,
+        test_options: Sequence[Tuple[str, Dict[str, Any]]] = [],
+        column_mapping: Optional[ColumnMapping] = None,
+        **kwargs: Any,
+    ) -> TestSuite:
+        """Validate a dataset with Evidently.
+
+        Args:
+            dataset: Target dataset to be validated.
+            comparison_dataset: Optional dataset to be used for data validation
+                that require a baseline for comparison (e.g data drift
+                validation).
+            check_list: Optional list identifying the categories of Evidently
+                data validation checks to be generated.
+            test_options: List of Evidently options to be passed to the
+                test suite constructor.
+            column_mapping: Properties of the DataFrame columns used
+            **kwargs: Extra keyword arguments (unused).
+        """
+        tests = get_tests(check_list)
+        unpacked_test_options = self._unpack_options(test_options)
+
+        test_suite = TestSuite(tests=tests, options=unpacked_test_options)
+        test_suite.run(
+            reference_data=dataset,
+            current_data=comparison_dataset,
+            column_mapping=column_mapping,
+        )
+
+        return test_suite
