@@ -19,11 +19,12 @@ import pandas as pd
 from evidently.pipeline.column_mapping import (  # type: ignore[import]
     ColumnMapping,
 )
-from pydantic import BaseModel, Field
-from typing_extensions import Literal
+from pydantic import Field
 
 from zenml.integrations.evidently.data_validators import EvidentlyDataValidator
-from zenml.integrations.evidently.steps.evidently_report import EvidentlyColumnMapping
+from zenml.integrations.evidently.steps.evidently_report import (
+    EvidentlyColumnMapping,
+)
 from zenml.steps import Output
 from zenml.steps.base_parameters import BaseParameters
 from zenml.steps.base_step import BaseStep
@@ -35,8 +36,18 @@ class EvidentlyTestParameters(BaseParameters):
     Attributes:
         column_mapping: properties of the DataFrame columns used
         ignored_cols: columns to ignore during the Evidently profile step
-        tests: a list identifying the Evidently tests to be
-            used.
+        tests: a list of tests, test presets or a dictionary of
+            tests to use with the gnerate_column_tests method.
+
+            The tests and the test presets should be strings with the exact
+            names as in the evidently library. The dictionary should be used when
+            you want to choose a test for more than one columns. The structure
+            of the dictionary should be as follows:
+            {
+                "test": "test_name",
+                "parameters": {},
+                "columns": ["column1", "column2"]
+            }
         test_options: a list of tuples containing the name of the test
             and a dictionary of options for the test.
     """
@@ -49,6 +60,8 @@ class EvidentlyTestParameters(BaseParameters):
     )
 
     class Config:
+        """Pydantic config class."""
+
         arbitrary_types_allowed = True
 
 
@@ -63,7 +76,7 @@ class EvidentlyTestStep(BaseStep):
     ) -> Output(  # type:ignore[valid-type]
         test_json=str, test_html=str
     ):
-        """Main entrypoint for the Evidently categorical target drift detection step.
+        """Main entrypoint for the Evidently test step.
 
         Args:
             reference_dataset: a Pandas DataFrame
@@ -128,17 +141,17 @@ def evidently_test_step(
     step_name: str,
     params: EvidentlyTestParameters,
 ) -> BaseStep:
-    """Shortcut function to create a new instance of the EvidentlyTestConfig step.
+    """Shortcut function to create a new instance of the EvidentlyTestStep.
 
-    The returned EvidentlyProfileStep can be used in a pipeline to
-    run model drift analyses on two input pd.DataFrame datasets and return the
-    results as an Evidently profile object and a rendered dashboard object.
+    The returned EvidentlyTestStep can be used in a pipeline to
+    run model tests on two input pd.DataFrame datasets and return the
+    results as an Evidently TestSuite object in JSON and HTML formats.
 
     Args:
         step_name: The name of the step
         params: The parameters for the step
 
     Returns:
-        a EvidentlyProfileStep step instance
+        a EvidentlyTestStep step instance
     """
     return EvidentlyTestStep(name=step_name, params=params)

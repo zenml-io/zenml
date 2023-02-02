@@ -20,7 +20,6 @@ from evidently.pipeline.column_mapping import (  # type: ignore[import]
     ColumnMapping,
 )
 from pydantic import BaseModel, Field
-from typing_extensions import Literal
 
 from zenml.integrations.evidently.data_validators import EvidentlyDataValidator
 from zenml.steps import Output
@@ -33,7 +32,7 @@ class EvidentlyColumnMapping(BaseModel):
 
     This class is a 1-to-1 serializable analog of Evidently's
     ColumnMapping data type that can be used as a step configuration field
-    (see https://docs.evidentlyai.com/features/dashboards/column_mapping).
+    (see https://docs.evidentlyai.com/user-guide/input-data/column-mapping).
 
     Attributes:
         target: target column
@@ -44,18 +43,22 @@ class EvidentlyColumnMapping(BaseModel):
         categorical_features: categorical features
         datetime_features: datetime features
         target_names: target column names
-        task: model task (regression or classification)
+        task: model task
+        pos_label: positive label
+        text_features: text features
     """
 
     target: Optional[str] = None
-    prediction: Optional[Union[str, Sequence[str]]] = None
+    prediction: Optional[Union[str, Sequence[str]]] = "prediction"
     datetime: Optional[str] = None
     id: Optional[str] = None
     numerical_features: Optional[List[str]] = None
     categorical_features: Optional[List[str]] = None
     datetime_features: Optional[List[str]] = None
     target_names: Optional[List[str]] = None
-    task: Optional[Literal["classification", "regression"]] = None
+    task: Optional[str] = None
+    pos_label: Optional[Union[str, int]] = 1
+    text_features: Optional[List[str]] = None
 
     def to_evidently_column_mapping(self) -> ColumnMapping:
         """Convert this Pydantic object to an Evidently ColumnMapping object.
@@ -82,6 +85,10 @@ class EvidentlyColumnMapping(BaseModel):
             self.target_names or column_mapping.target_names
         )
         column_mapping.task = self.task or column_mapping.task
+        column_mapping.pos_label = self.pos_label or column_mapping.pos_label
+        column_mapping.text_features = (
+            self.text_features or column_mapping.text_features
+        )
 
         return column_mapping
 
@@ -91,15 +98,20 @@ class EvidentlyReportParameters(BaseParameters):
 
     Attributes:
         column_mapping: properties of the DataFrame columns used
-        ignored_cols: columns to ignore during the Evidently profile step
-        metrics: a list identifying the Evidently profile sections to be
-            used. The following are valid options supported by Evidently:
-            - "datadrift"
-            - "categoricaltargetdrift"
-            - "numericaltargetdrift"
-            - "classificationmodelperformance"
-            - "regressionmodelperformance"
-            - "probabilisticmodelperformance"
+        ignored_cols: columns to ignore during the Evidently report step
+        metrics: a list of metrics, metrics presets or a dictionary of
+            metrics to use with the gnerate_column_metrics method.
+
+            The metrics and the metric presets should be strings with the exact
+            names as in the evidently library. The dictionary should be used when
+            you want to choose a metric for more than one columns. The structure
+            of the dictionary should be as follows:
+            {
+                "metric": "metric_name",
+                "parameters": {},
+                "columns": ["column1", "column2"]
+            }
+
         report_options: a list of tuples containing the name of the report
             and a dictionary of options for the report.
     """
@@ -112,6 +124,8 @@ class EvidentlyReportParameters(BaseParameters):
     )
 
     class Config:
+        """Pydantic config class."""
+
         arbitrary_types_allowed = True
 
 
@@ -126,7 +140,7 @@ class EvidentlyReportStep(BaseStep):
     ) -> Output(  # type:ignore[valid-type]
         report_json=str, report_html=str
     ):
-        """Main entrypoint for the Evidently categorical target drift detection step.
+        """Main entrypoint for the Evidently report step.
 
         Args:
             reference_dataset: a Pandas DataFrame
@@ -191,17 +205,17 @@ def evidently_report_step(
     step_name: str,
     params: EvidentlyReportParameters,
 ) -> BaseStep:
-    """Shortcut function to create a new instance of the EvidentlyProfileConfig step.
+    """Shortcut function to create a new instance of the EvidentlyReportStep.
 
-    The returned EvidentlyProfileStep can be used in a pipeline to
+    The returned EvidentlyReportStep can be used in a pipeline to
     run model drift analyses on two input pd.DataFrame datasets and return the
-    results as an Evidently profile object and a rendered dashboard object.
+    results as an Evidently Report object in JSON and HTML formats.
 
     Args:
         step_name: The name of the step
         params: The parameters for the step
 
     Returns:
-        a EvidentlyProfileStep step instance
+        a EvidentlyReportStep step instance
     """
     return EvidentlyReportStep(name=step_name, params=params)

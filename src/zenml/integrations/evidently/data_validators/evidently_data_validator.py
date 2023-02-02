@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -25,21 +25,20 @@ from typing import (
     Union,
 )
 
-import pandas as pd
-from evidently.tests.base_test import Test
+import evidently.metric_preset as metric_preset  # type: ignore
+import evidently.metrics as metrics  # type: ignore
 import evidently.test_preset as test_preset  # type: ignore
 import evidently.tests as tests  # type: ignore
+import pandas as pd
+from evidently.metric_preset.metric_preset import MetricPreset
+from evidently.metrics.base_metric import Metric, generate_column_metrics
+from evidently.pipeline.column_mapping import ColumnMapping  # type: ignore
+from evidently.report import Report  # type: ignore
 from evidently.test_preset.test_preset import TestPreset
 from evidently.test_suite import TestSuite  # type: ignore
-from evidently.tests.base_test import generate_column_tests
-from evidently.base_metric import Metric
-from evidently.metric_preset.metric_preset import MetricPreset
+from evidently.tests.base_test import Test, generate_column_tests
 from evidently.utils.generators import BaseGenerator
-from evidently.report import Report  # type: ignore
-import evidently.metric_preset as metric_preset  # type: ignore
-from evidently.pipeline.column_mapping import ColumnMapping  # type: ignore
-from evidently.metrics.base_metric import generate_column_metrics
-import evidently.metrics as metrics  # type: ignore
+
 from zenml.data_validators import BaseDataValidator, BaseDataValidatorFlavor
 from zenml.integrations.evidently.flavors.evidently_data_validator_flavor import (
     EvidentlyDataValidatorFlavor,
@@ -146,6 +145,18 @@ def get_metrics(
 def get_tests(
     test_list: List[Union[str, Dict[str, Any]]]
 ) -> List[Union[Test, TestPreset, BaseGenerator]]:
+    """Get a list of Evidently tests from a list of test names and/or
+    dictionaries.
+
+    Args:
+        test_list: List of test names and/or dictionaries.
+
+    Returns:
+        List of Evidently tests.
+
+    Raises:
+        ValueError: If the test or test preset is not a valid Evidently test or test preset.
+    """
     tests = []
     for test in test_list:
         if isinstance(test, str):
@@ -251,11 +262,10 @@ class EvidentlyDataValidator(BaseDataValidator):
         report_options: Sequence[Tuple[str, Dict[str, Any]]] = [],
         **kwargs: Any,
     ) -> Report:
-        """Analyze a dataset and generate a data profile with Evidently.
+        """Analyze a dataset and generate a data report with Evidently.
 
         The method takes in an optional list of Evidently options to be passed
-        to the profile constructor (`profile_options`) and the dashboard
-        constructor (`dashboard_options`). Each element in the list must be
+        to the report constructor (`report_options`). Each element in the list must be
         composed of two items: the first is a full class path of an Evidently
         option `dataclass`, the second is a dictionary of kwargs with the actual
         option parameters, e.g.:
