@@ -14,7 +14,7 @@
 """Implementation of the Great Expectations materializers."""
 
 import os
-from typing import Any, Dict, Type
+from typing import TYPE_CHECKING, Any, Dict, Type, Union
 
 from great_expectations.checkpoint.types.checkpoint_result import (  # type: ignore[import]
     CheckpointResult,
@@ -37,6 +37,9 @@ from zenml.enums import ArtifactType
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import yaml_utils
 from zenml.utils.source_utils import import_class_by_path
+
+if TYPE_CHECKING:
+    from zenml.metadata.metadata_types import MetadataType
 
 ARTIFACT_FILENAME = "artifact.json"
 
@@ -120,3 +123,27 @@ class GreatExpectationsMaterializer(BaseMaterializer):
             "data_type"
         ] = f"{artifact_type.__module__}.{artifact_type.__name__}"
         yaml_utils.write_json(filepath, artifact_dict)
+
+    def extract_metadata(
+        self, data: Union[ExpectationSuite, CheckpointResult]
+    ) -> Dict[str, "MetadataType"]:
+        """Extract metadata from the given Great Expectations object.
+
+        Args:
+            data: The Great Expectations object to extract metadata from.
+
+        Returns:
+            The extracted metadata as a dictionary.
+        """
+        base_metadata = super().extract_metadata(data)
+        ge_metadata: Dict[str, "MetadataType"] = {}
+        if isinstance(data, CheckpointResult):
+            ge_metadata = {
+                "checkpoint_result_name": data.name,
+                "checkpoint_result_passed": data.success,
+            }
+        elif isinstance(data, ExpectationSuite):
+            ge_metadata = {
+                "expectation_suite_name": data.name,
+            }
+        return {**base_metadata, **ge_metadata}

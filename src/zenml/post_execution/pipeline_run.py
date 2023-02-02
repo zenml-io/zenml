@@ -141,6 +141,21 @@ class PipelineRunView(BaseView):
         return self.model.pipeline_configuration.get(PARAM_ENABLE_CACHE)
 
     @property
+    def enable_artifact_metadata(self) -> Optional[bool]:
+        """Returns whether artifact metadata is enabled for this pipeline run.
+
+        Returns:
+            True if artifact metadata is enabled for this pipeline run.
+        """
+        from zenml.pipelines.base_pipeline import (
+            PARAM_ENABLE_ARTIFACT_METADATA,
+        )
+
+        return self.model.pipeline_configuration.get(
+            PARAM_ENABLE_ARTIFACT_METADATA
+        )
+
+    @property
     def status(self) -> ExecutionStatus:
         """Returns the current status of the pipeline run.
 

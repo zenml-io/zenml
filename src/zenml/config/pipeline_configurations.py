@@ -34,6 +34,7 @@ class PipelineConfigurationUpdate(StrictBaseModel):
     """Class for pipeline configuration updates."""
 
     enable_cache: Optional[bool] = None
+    enable_artifact_metadata: Optional[bool] = None
     settings: Dict[str, BaseSettings] = {}
     extra: Dict[str, Any] = {}
 
@@ -85,6 +86,7 @@ class PipelineRunConfiguration(
 
     run_name: Optional[str] = None
     enable_cache: Optional[bool] = None
+    enable_artifact_metadata: Optional[bool] = None
     schedule: Optional[Schedule] = None
     steps: Dict[str, StepConfigurationUpdate] = {}
     settings: Dict[str, BaseSettings] = {}

@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Client implementation."""
+import json
 import os
 from abc import ABCMeta
 from datetime import datetime
@@ -76,6 +77,8 @@ from zenml.models import (
     RoleRequestModel,
     RoleResponseModel,
     RoleUpdateModel,
+    RunMetadataRequestModel,
+    RunMetadataResponseModel,
     StackFilterModel,
     StackRequestModel,
     StackResponseModel,
@@ -106,7 +109,9 @@ from zenml.models.artifact_models import (
     ArtifactResponseModel,
 )
 from zenml.models.base_models import BaseResponseModel
+from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.models.page_model import Page
+from zenml.models.run_metadata_models import RunMetadataFilterModel
 from zenml.models.schedule_model import (
     ScheduleFilterModel,
     ScheduleResponseModel,
@@ -117,6 +122,7 @@ from zenml.utils.filesync_model import FileSyncModel
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_configurations import PipelineSpec
+    from zenml.metadata.metadata_types import MetadataType
     from zenml.stack import Stack, StackComponentConfig
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
@@ -146,7 +152,7 @@ class ClientConfiguration(FileSyncModel):
         else:
             raise RuntimeError(
                 "No active workspace is configured. Run "
-                "`zenml workspace set PROJECT_NAME` to set the active "
+                "`zenml workspace set WORKSPACE_NAME` to set the active "
                 "workspace."
             )
 
@@ -1273,9 +1279,9 @@ class Client(metaclass=ClientMetaClass):
             )
         )
 
-    # ------- #
-    # PROJECT #
-    # ------- #
+    # --------- #
+    # WORKSPACE #
+    # --------- #
 
     @property
     def active_workspace(self) -> "WorkspaceResponseModel":
@@ -1300,7 +1306,7 @@ class Client(metaclass=ClientMetaClass):
         if not workspace:
             raise RuntimeError(
                 "No active workspace is configured. Run "
-                "`zenml workspace set PROJECT_NAME` to set the active "
+                "`zenml workspace set WORKSPACE_NAME` to set the active "
                 "workspace."
             )
 
@@ -1326,7 +1332,7 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix: The name or ID of the workspace.
 
         Returns:
-            The Project
+            The workspace
         """
         if not name_id_or_prefix:
             return self.active_workspace
@@ -1431,8 +1437,9 @@ class Client(metaclass=ClientMetaClass):
         workspace = self.zen_store.get_workspace(workspace_name_or_id)
         if self.active_workspace.id == workspace.id:
             raise IllegalOperationError(
-                f"Project '{workspace_name_or_id}' cannot be deleted since it is "
-                "currently active. Please set another workspace as active first."
+                f"Workspace '{workspace_name_or_id}' cannot be deleted since "
+                "it is currently active. Please set another workspace as "
+                "active first."
             )
         self.zen_store.delete_workspace(
             workspace_name_or_id=workspace_name_or_id
@@ -1468,8 +1475,7 @@ class Client(metaclass=ClientMetaClass):
         if not stack:
             raise RuntimeError(
                 "No active stack is configured. Run "
-                "`zenml stack set PROJECT_NAME` to set the active "
-                "stack."
+                "`zenml stack set STACK_NAME` to set the active stack."
             )
 
         return stack
@@ -3001,6 +3007,160 @@ class Client(metaclass=ClientMetaClass):
             )
         self.zen_store.delete_artifact(artifact.id)
         logger.info(f"Deleted metadata of artifact '{artifact.uri}'.")
+
+    # ----------------
+    # - Run Metadata -
+    # ----------------
+
+    def create_run_metadata(
+        self,
+        metadata: Dict[str, "MetadataType"],
+        pipeline_run_id: Optional[UUID] = None,
+        step_run_id: Optional[UUID] = None,
+        artifact_id: Optional[UUID] = None,
+        stack_component_id: Optional[UUID] = None,
+    ) -> Dict[str, RunMetadataResponseModel]:
+        """Create run metadata.
+
+        Args:
+            metadata: The metadata to create as a dictionary of key-value pairs.
+            pipeline_run_id: The ID of the pipeline run during which the
+                metadata was produced. If provided, `step_run_id` and
+                `artifact_id` must be None.
+            step_run_id: The ID of the step run during which the metadata was
+                produced. If provided, `pipeline_run_id` and `artifact_id` must
+                be None.
+            artifact_id: The ID of the artifact for which the metadata was
+                produced. If provided, `pipeline_run_id` and `step_run_id` must
+                be None.
+            stack_component_id: The ID of the stack component that produced
+                the metadata.
+
+        Returns:
+            The created metadata, as string to model dictionary.
+
+        Raises:
+            ValueError: If not exactly one of either `pipeline_run_id`,
+                `step_run_id`, or `artifact_id` is provided.
+        """
+        from zenml.metadata.metadata_types import get_metadata_type
+
+        if not (pipeline_run_id or step_run_id or artifact_id):
+            raise ValueError(
+                "Cannot create run metadata without linking it to any entity. "
+                "Please provide either a `pipeline_run_id`, `step_run_id`, or "
+                "`artifact_id`."
+            )
+        if (
+            (pipeline_run_id and step_run_id)
+            or (pipeline_run_id and artifact_id)
+            or (step_run_id and artifact_id)
+        ):
+            raise ValueError(
+                "Cannot create run metadata linked to multiple entities. "
+                "Please provide only a `pipeline_run_id` or only a "
+                "`step_run_id` or only an `artifact_id`."
+            )
+
+        created_metadata: Dict[str, RunMetadataResponseModel] = {}
+        for key, value in metadata.items():
+
+            # Skip metadata that is too large to be stored in the database.
+            if len(json.dumps(value)) > TEXT_FIELD_MAX_LENGTH:
+                logger.warning(
+                    f"Metadata value for key '{key}' is too large to be "
+                    "stored in the database. Skipping."
+                )
+                continue
+
+            # Skip metadata that is not of a supported type.
+            try:
+                metadata_type = get_metadata_type(value)
+            except ValueError as e:
+                logger.warning(
+                    f"Metadata value for key '{key}' is not of a supported "
+                    f"type. Skipping. Full error: {e}"
+                )
+                continue
+
+            run_metadata = RunMetadataRequestModel(
+                workspace=self.active_workspace.id,
+                user=self.active_user.id,
+                pipeline_run_id=pipeline_run_id,
+                step_run_id=step_run_id,
+                artifact_id=artifact_id,
+                stack_component_id=stack_component_id,
+                key=key,
+                value=value,
+                type=metadata_type,
+            )
+            metadata_model = self.zen_store.create_run_metadata(run_metadata)
+            created_metadata[key] = metadata_model
+        return created_metadata
+
+    def list_run_metadata(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        workspace_id: Optional[UUID] = None,
+        user_id: Optional[UUID] = None,
+        pipeline_run_id: Optional[UUID] = None,
+        step_run_id: Optional[UUID] = None,
+        artifact_id: Optional[UUID] = None,
+        stack_component_id: Optional[UUID] = None,
+        key: Optional[str] = None,
+        value: Optional["MetadataType"] = None,
+        type: Optional[str] = None,
+    ) -> Page[RunMetadataResponseModel]:
+        """List run metadata.
+
+        Args:
+            sort_by: The field to sort the results by.
+            page: The page number to return.
+            size: The number of results to return per page.
+            logical_operator: The logical operator to use for filtering.
+            id: The ID of the metadata.
+            created: The creation time of the metadata.
+            updated: The last update time of the metadata.
+            workspace_id: The ID of the workspace the metadata belongs to.
+            user_id: The ID of the user that created the metadata.
+            pipeline_run_id: The ID of the pipeline run the metadata belongs to.
+            step_run_id: The ID of the step run the metadata belongs to.
+            artifact_id: The ID of the artifact the metadata belongs to.
+            stack_component_id: The ID of the stack component that produced
+                the metadata.
+            key: The key of the metadata.
+            value: The value of the metadata.
+            type: The type of the metadata.
+
+        Returns:
+            The run metadata.
+        """
+        metadata_filter_model = RunMetadataFilterModel(
+            sort_by=sort_by,
+            page=page,
+            size=size,
+            logical_operator=logical_operator,
+            id=id,
+            created=created,
+            updated=updated,
+            workspace_id=workspace_id,
+            user_id=user_id,
+            pipeline_run_id=pipeline_run_id,
+            step_run_id=step_run_id,
+            artifact_id=artifact_id,
+            stack_component_id=stack_component_id,
+            key=key,
+            value=value,
+            type=type,
+        )
+        metadata_filter_model.set_scope_workspace(self.active_workspace.id)
+        return self.zen_store.list_run_metadata(metadata_filter_model)
 
     # ---- utility prefix matching get functions -----
 

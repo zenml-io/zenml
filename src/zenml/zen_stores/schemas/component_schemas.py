@@ -34,6 +34,7 @@ from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import StackSchema
+    from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import ScheduleSchema
@@ -73,6 +74,10 @@ class StackComponentSchema(ShareableSchema, table=True):
     )
     schedules: List["ScheduleSchema"] = Relationship(
         back_populates="orchestrator",
+    )
+
+    run_metadata: List["RunMetadataSchema"] = Relationship(
+        back_populates="stack_component",
     )
 
     def update(
