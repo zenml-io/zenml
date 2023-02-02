@@ -86,8 +86,6 @@ from zenml.utils.pipeline_docker_image_builder import (
 )
 
 if TYPE_CHECKING:
-    from google.auth.credentials import Credentials
-
     from zenml.config.base_settings import BaseSettings
     from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.config.schedule import Schedule
@@ -230,30 +228,6 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
             Path to the pipeline directory.
         """
         return os.path.join(self.root_directory, "pipelines")
-
-    def _get_authentication(self) -> Tuple["Credentials", str]:
-        """Get GCP credentials and the project ID associated with the credentials.
-
-        This function is the same as the super function except that it also checks
-        against the value of the `config` class of this orchestrator.
-
-        Returns:
-            A tuple containing the credentials and the project ID associated to
-            the credentials.
-        """
-        credentials, project_id = super()._get_authentication()
-        if self.config.project and self.config.project != project_id:
-            logger.warning(
-                "Authenticated with project `%s`, but this orchestrator is "
-                "configured to use the project `%s`.",
-                project_id,
-                self.config.project,
-            )
-
-        # If the project was set in the configuration, use it. Otherwise, use
-        # the project that was used to authenticate.
-        project_id = self.config.project if self.config.project else project_id
-        return credentials, project_id
 
     def prepare_pipeline_deployment(
         self,

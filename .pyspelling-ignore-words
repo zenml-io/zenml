@@ -288,6 +288,7 @@ GBDT
 GBM
 GCP
 GCPArtifactStore
+GCPImageBuilder
 GCPArtifactStoreConfig
 GCPContainerRegistry
 GCPSecretsManagerConfig
@@ -1638,3 +1639,4 @@ privateKeySecretRef
 workspaces
 Workspaces
 WORKSPACES
+uploader
