@@ -80,7 +80,7 @@ class PipelineSchema(NamedSchema, table=True):
         cls,
         pipeline_request: "PipelineRequestModel",
     ) -> "PipelineSchema":
-        """Convert an `PipelineRequestModel` to an `PipelineSchema`.
+        """Convert a `PipelineRequestModel` to a `PipelineSchema`.
 
         Args:
             pipeline_request: The request model to convert.

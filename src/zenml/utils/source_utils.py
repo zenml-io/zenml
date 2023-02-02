@@ -431,7 +431,7 @@ def import_class_by_path(class_path: str) -> Type[Any]:
     """Imports a class based on a given path.
 
     Args:
-        class_path: Class_source e.g. this.module.Class
+        class_path: Class source, e.g., `this.module.Class`
 
     Returns:
         the given class
