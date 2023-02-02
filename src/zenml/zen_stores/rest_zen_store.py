@@ -2005,10 +2005,10 @@ class RestZenStore(BaseZenStore):
     def _get_or_create_workspace_scoped_resource(
         self,
         resource: WorkspaceScopedRequestModel,
-        response_model: Type[AnyProjestResponseModel],
+        response_model: Type[AnyResponseModel],
         route: str,
         params: Optional[Dict[str, Any]] = None,
-    ) -> Tuple[AnyProjestResponseModel, bool]:
+    ) -> Tuple[AnyResponseModel, bool]:
         """Get or create a workspace scoped resource.
 
         Args:

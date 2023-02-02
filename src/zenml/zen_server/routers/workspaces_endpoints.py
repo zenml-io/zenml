@@ -12,14 +12,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for workspaces."""
-from typing import Dict, Optional, Tuple, Union
+from typing import Dict, Tuple, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import (
     API,
-    FLAVORS,
     GET_OR_CREATE,
     PIPELINES,
     RUN_METADATA,

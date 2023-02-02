@@ -1643,7 +1643,7 @@ class SqlZenStore(BaseZenStore):
         """Delete all non-custom flavors."""
         with Session(self.engine) as session:
             non_custom_flavors = session.exec(
-                select(FlavorSchema).where(FlavorSchema.is_custom.is_(False))
+                select(FlavorSchema).where(FlavorSchema.is_custom is False)
             ).all()
             for flavor in non_custom_flavors:
                 session.delete(flavor)
