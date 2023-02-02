@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 from typing import cast
+
 import pytest
 
 from tests.integration.examples.utils import run_example
