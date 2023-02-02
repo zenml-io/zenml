@@ -40,6 +40,8 @@ def downgrade() -> None:
     with op.batch_alter_table("flavor", schema=None) as batch_op:
 
         batch_op.drop_column("logo_url")
+        batch_op.drop_column("docs_url")
+        batch_op.drop_column("is_custom")
 
         # TODO: all columns that don't conform to this will need to be dropped
         batch_op.alter_column(

@@ -1624,7 +1624,7 @@ class SqlZenStore(BaseZenStore):
                     raise IllegalOperationError(
                         f"Stack Component `{flavor_in_db.name}` of type "
                         f"`{flavor_in_db.type} cannot be "
-                        f"deleted as it is used by"
+                        f"deleted as it is used by "
                         f"{len(components_of_flavor)} "
                         f"components. Before deleting this "
                         f"flavor, make sure to delete all "
@@ -1639,7 +1639,7 @@ class SqlZenStore(BaseZenStore):
         """Delete all non-custom flavors."""
         with Session(self.engine) as session:
             non_custom_flavors = session.exec(
-                select(FlavorSchema).where(FlavorSchema.is_custom is False)
+                select(FlavorSchema).where(FlavorSchema.is_custom.is_(False))
             ).all()
             for flavor in non_custom_flavors:
                 session.delete(flavor)

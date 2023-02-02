@@ -44,13 +44,13 @@ class Flavor:
         return None
 
     @property
-    @abstractmethod
     def logo_url(self) -> Optional[str]:
         """A url to represent the flavor in the dashboard.
 
         Returns:
             The flavor logo.
         """
+        return None
 
     @property
     @abstractmethod
