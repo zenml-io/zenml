@@ -125,6 +125,9 @@ class Compiler:
     def compile_spec(self, pipeline: "BasePipeline") -> PipelineSpec:
         """Compiles a ZenML pipeline to a pipeline spec.
 
+        This method can be used when a pipeline spec is needed but the full
+        deployment including stack information is not required.
+
         Args:
             pipeline: The pipeline to compile.
 

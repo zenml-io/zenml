@@ -852,6 +852,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
         """
 
         def connect(**steps: BaseStep) -> None:
+            # Bind **steps to the connect signature assigned to this method
+            # below. This ensures that the method inputs get verified and only
+            # the arguments defined in the signature are allowed
             inspect.signature(connect).bind(**steps)
 
             step_outputs: Dict[str, Dict[str, BaseStep._OutputArtifact]] = {}
@@ -861,9 +864,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 step_inputs = {}
                 for input_name, input_ in step_spec.inputs.items():
                     try:
-                        step_inputs[input_name] = step_outputs[
-                            input_.step_name
-                        ][input_.output_name]
+                        upstream_step = step_outputs[input_.step_name]
+                        step_input = upstream_step[input_.output_name]
+                        step_inputs[input_name] = step_input
                     except KeyError:
                         raise RuntimeError(
                             f"Unable to find upstream step "
@@ -883,6 +886,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     key: step_output[i] for i, key in enumerate(output_keys)
                 }
 
+        # Create the connect method signature based on the expected steps
         parameters = [
             inspect.Parameter(
                 name=step_spec.pipeline_parameter_name,
