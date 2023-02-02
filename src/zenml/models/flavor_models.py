@@ -63,8 +63,9 @@ class FlavorBaseModel(BaseModel):
     )
     is_custom: bool = Field(
         title="Whether or not this flavor is a custom, user created flavor.",
-        default=True
+        default=True,
     )
+
 
 # -------- #
 # RESPONSE #

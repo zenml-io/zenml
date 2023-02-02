@@ -22,10 +22,9 @@ def upgrade() -> None:
 
         batch_op.add_column(sa.Column("logo_url", sa.TEXT(), nullable=True))
         batch_op.add_column(sa.Column("docs_url", sa.TEXT(), nullable=True))
-        batch_op.add_column(sa.Column("is_custom",
-                                      sa.BOOLEAN(),
-                                      nullable=False,
-                                      default=True))
+        batch_op.add_column(
+            sa.Column("is_custom", sa.BOOLEAN(), nullable=False, default=True)
+        )
 
         batch_op.alter_column(
             "workspace_id", existing_type=sa.CHAR(length=32), nullable=True
