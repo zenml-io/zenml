@@ -1081,6 +1081,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         *,
         run_name: Optional[str] = None,
         enable_cache: Optional[bool] = None,
+        enable_artifact_metadata: Optional[bool] = None,
         schedule: Optional[Schedule] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         step_configurations: Optional[
@@ -1093,6 +1094,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             config_path=config_path,
             run_name=run_name,
             enable_cache=enable_cache,
+            enable_artifact_metadata=enable_artifact_metadata,
             steps=step_configurations,
             settings=settings,
             schedule=schedule,
