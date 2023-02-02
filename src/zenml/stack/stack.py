@@ -786,20 +786,23 @@ class Stack:
     def get_docker_builds(
         self, deployment: "PipelineDeployment"
     ) -> List["BuildConfiguration"]:
-        return itertools.chain.from_iterable(
-            component.get_docker_builds(deployment=deployment)
-            for component in self.components.values()
+        return list(
+            itertools.chain.from_iterable(
+                component.get_docker_builds(deployment=deployment)
+                for component in self.components.values()
+            )
         )
 
     def build(self, deployment: "PipelineDeployment") -> Optional[BuildOutput]:
+        required_builds = self.get_docker_builds(deployment=deployment)
+        if not required_builds:
+            logger.debug("No docker builds required.")
+            return None
+
         logger.info(
             "Building Docker image(s) for pipeline `%s`.",
             deployment.pipeline.name,
         )
-
-        required_builds = self.get_docker_builds(deployment=deployment)
-        if not required_builds:
-            return None
 
         from collections import defaultdict
 
