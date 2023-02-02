@@ -67,7 +67,7 @@ from zenml.zen_server.utils import (
 
 # This is a workaround to slowly deprecate the workspaces routes. This along with
 #  all the decorators using it, can be removed in a few releases.
-PROJECTS = "/workspaces"
+PROJECTS = "/projects"
 
 
 router = APIRouter(
