@@ -30,6 +30,7 @@ from zenml.steps import BaseStep
 from zenml.steps.utils import (
     INSTANCE_CONFIGURATION,
     PARAM_CREATED_BY_FUNCTIONAL_API,
+    PARAM_ENABLE_ARTIFACT_METADATA,
     PARAM_ENABLE_CACHE,
     PARAM_EXPERIMENT_TRACKER,
     PARAM_EXTRA_OPTIONS,
@@ -68,6 +69,7 @@ def step(
     *,
     name: Optional[str] = None,
     enable_cache: Optional[bool] = None,
+    enable_artifact_metadata: Optional[bool] = None,
     experiment_tracker: Optional[str] = None,
     step_operator: Optional[str] = None,
     output_artifacts: Optional["OutputArtifactsSpecification"] = None,
@@ -83,6 +85,7 @@ def step(
     *,
     name: Optional[str] = None,
     enable_cache: Optional[bool] = None,
+    enable_artifact_metadata: Optional[bool] = None,
     experiment_tracker: Optional[str] = None,
     step_operator: Optional[str] = None,
     output_artifacts: Optional["OutputArtifactsSpecification"] = None,
@@ -103,6 +106,8 @@ def step(
             value is passed, caching is enabled by default unless the step
             requires a `StepContext` (see
             `zenml.steps.step_context.StepContext` for more information).
+        enable_artifact_metadata: Specify whether metadata is enabled for this
+            step. If no value is passed, metadata is enabled by default.
         experiment_tracker: The experiment tracker to use for this step.
         step_operator: The step operator to use for this step.
         output_materializers: Output materializers for this step. If
@@ -140,6 +145,7 @@ def step(
                     PARAM_STEP_NAME: name,
                     PARAM_CREATED_BY_FUNCTIONAL_API: True,
                     PARAM_ENABLE_CACHE: enable_cache,
+                    PARAM_ENABLE_ARTIFACT_METADATA: enable_artifact_metadata,
                     PARAM_EXPERIMENT_TRACKER: experiment_tracker,
                     PARAM_STEP_OPERATOR: step_operator,
                     PARAM_OUTPUT_ARTIFACTS: output_artifacts,

@@ -195,7 +195,10 @@ def up(
             config_attrs["image"] = image
         if port is not None:
             config_attrs["port"] = port
-        if ip_address is not None and provider == ServerProviderType.DOCKER:
+        if ip_address is not None and provider in [
+            ServerProviderType.LOCAL,
+            ServerProviderType.DOCKER,
+        ]:
             config_attrs["ip_address"] = ip_address
 
         from zenml.zen_server.deploy.deployment import ServerDeploymentConfig
@@ -225,7 +228,6 @@ def up(
                 and gc.store.type == StoreType.REST
                 and not connect
             ):
-
                 try:
                     if gc.zen_store.is_local_store():
                         connect = True
@@ -716,7 +718,6 @@ def connect(
     verify_ssl = ssl_ca_cert if ssl_ca_cert is not None else not no_verify_ssl
 
     if config:
-
         if os.path.isfile(config):
             store_dict = yaml_utils.read_yaml(config)
         else:

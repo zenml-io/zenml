@@ -43,6 +43,7 @@
   * [Writing Custom Flavors](./advanced-guide/stacks/custom-flavors.md)
   * [Managing Stack Component States](./advanced-guide/stacks/stack-state-management.md)
   * [Managing External Services](./advanced-guide/stacks/manage-external-services.md)
+  * [Tracking Custom Stack Component Metadata](./advanced-guide/stacks/component-metadata.md)
 * [Practical MLOps](./advanced-guide/practical/practical-mlops.md)
   * [Stack Recipes](./advanced-guide/practical/stack-recipes.md)
   * [Switching Orchestration](./advanced-guide/practical/switching-orchestration.md)

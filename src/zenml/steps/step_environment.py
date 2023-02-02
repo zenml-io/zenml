@@ -50,14 +50,17 @@ class StepEnvironment(BaseEnvironmentComponent):
     def __init__(
         self,
         step_run_info: "StepRunInfo",
+        cache_enabled: bool,
     ):
         """Initialize the environment of the currently running step.
 
         Args:
             step_run_info: Info about the currently running step.
+            cache_enabled: Whether caching is enabled for the current step run.
         """
         super().__init__()
         self._step_run_info = step_run_info
+        self._cache_enabled = cache_enabled
 
     @property
     def pipeline_name(self) -> str:
@@ -115,10 +118,4 @@ class StepEnvironment(BaseEnvironmentComponent):
         Returns:
             True if cache is enabled for the step, otherwise False.
         """
-        from zenml.orchestrators import cache_utils
-
-        cache_enabled = cache_utils.is_cache_enabled(
-            step_enable_cache=self._step_run_info.config.enable_cache,
-            pipeline_enable_cache=self._step_run_info.pipeline.enable_cache,
-        )
-        return cache_enabled
+        return self._cache_enabled
