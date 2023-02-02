@@ -18,7 +18,6 @@ from urllib.parse import urlparse
 
 from google.cloud.devtools import cloudbuild_v1
 
-from zenml.client import Client
 from zenml.enums import ContainerRegistryFlavor, StackComponentType
 from zenml.image_builders import BaseImageBuilder
 from zenml.integrations.gcp import GCP_ARTIFACT_STORE_FLAVOR
@@ -28,9 +27,6 @@ from zenml.integrations.gcp.google_credentials_mixin import (
 )
 from zenml.logger import get_logger
 from zenml.stack import StackValidator
-from zenml.utils.image_builder_context_uploader import (
-    ImageBuilderContextUploader,
-)
 
 if TYPE_CHECKING:
     from zenml.container_registries import BaseContainerRegistry
@@ -122,7 +118,8 @@ class GCPImageBuilder(BaseImageBuilder, GoogleCredentialsMixin):
 
         logger.info("Using Cloud Build to build image `%s`", image_name)
         cloud_build_context = self._upload_build_context(
-            build_context=build_context
+            build_context=build_context,
+            parent_path_directory_name="cloud-build-contexts",
         )
         build = self._configure_cloud_build(
             image_name=image_name, cloud_build_context=cloud_build_context
@@ -130,22 +127,6 @@ class GCPImageBuilder(BaseImageBuilder, GoogleCredentialsMixin):
         image_digest = self._run_cloud_build(build=build)
         image_name_with_digest = f"{image_name}@{image_digest}"
         return image_name_with_digest
-
-    @staticmethod
-    def _upload_build_context(build_context: "BuildContext") -> str:
-        """Uploads the build context to the artifact store.
-
-        Args:
-            build_context: The build context to upload.
-
-        Returns:
-            The path to the uploaded build context.
-        """
-        artifact_store = Client().active_stack.artifact_store
-        parent_path = f"{artifact_store.path}/cloud-build-contexts"
-        return ImageBuilderContextUploader.upload_build_context(
-            build_context=build_context, parent_path=parent_path
-        )
 
     def _configure_cloud_build(
         self, image_name: str, cloud_build_context: str

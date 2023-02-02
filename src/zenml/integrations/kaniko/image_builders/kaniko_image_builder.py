@@ -20,15 +20,11 @@ import subprocess
 import tempfile
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, cast
 
-from zenml.client import Client
 from zenml.enums import StackComponentType
 from zenml.image_builders import BaseImageBuilder
 from zenml.integrations.kaniko.flavors import KanikoImageBuilderConfig
 from zenml.logger import get_logger
 from zenml.stack import StackValidator
-from zenml.utils.image_builder_context_uploader import (
-    ImageBuilderContextUploader,
-)
 
 if TYPE_CHECKING:
     from zenml.container_registries import BaseContainerRegistry
@@ -133,7 +129,10 @@ class KanikoImageBuilder(BaseImageBuilder):
         )
         if self.config.store_context_in_artifact_store:
             try:
-                kaniko_context = self._upload_build_context(build_context)
+                kaniko_context = self._upload_build_context(
+                    build_context=build_context,
+                    parent_path_directory_name="kaniko-build-contexts",
+                )
             except Exception:
                 raise RuntimeError(
                     "Uploading the Kaniko build context to the artifact store "
@@ -271,22 +270,6 @@ class KanikoImageBuilder(BaseImageBuilder):
                 "The process that runs the Kaniko build Pod failed. Check the "
                 "log messages above for more information."
             )
-
-    @staticmethod
-    def _upload_build_context(build_context: "BuildContext") -> str:
-        """Uploads a build context to the artifact store.
-
-        Args:
-            build_context: The build context to upload.
-
-        Returns:
-            The path of the uploaded build context.
-        """
-        artifact_store = Client().active_stack.artifact_store
-        parent_path = f"{artifact_store.path}/kaniko-contexts"
-        return ImageBuilderContextUploader.upload_build_context(
-            build_context=build_context, parent_path=parent_path
-        )
 
     @staticmethod
     def _write_build_context(
