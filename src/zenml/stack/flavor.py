@@ -116,6 +116,7 @@ class Flavor:
             integration: The integration to use for the model.
             scoped_by_workspace: Whether this flavor should live in the scope
                 of the active workspace
+            is_custom: Whether the flavor is a custom flavor
 
         Returns:
             The model.
