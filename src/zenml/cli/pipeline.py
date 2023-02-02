@@ -159,9 +159,16 @@ def delete_pipeline(
     """
     cli_utils.print_active_config()
 
-    version_suffix = (
-        f" (version {version})" if version else " (latest version)"
-    )
+    try:
+        id_ = UUID(pipeline_name_or_id, version=4)
+        name = None
+        version_suffix = ""
+    except ValueError:
+        id_ = None
+        name = pipeline_name_or_id
+        version_suffix = (
+            f" (version {version})" if version else " (latest version)"
+        )
 
     if not yes:
         confirmation = cli_utils.confirmation(
@@ -174,13 +181,6 @@ def delete_pipeline(
             return
 
     try:
-        try:
-            id_ = UUID(pipeline_name_or_id, version=4)
-            name = None
-        except:
-            id_ = None
-            name = pipeline_name_or_id
-
         Client().delete_pipeline(id=id_, name=name, version=version)
     except KeyError as e:
         cli_utils.error(str(e))
