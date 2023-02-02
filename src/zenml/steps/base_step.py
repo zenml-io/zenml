@@ -56,6 +56,7 @@ from zenml.steps.step_context import StepContext
 from zenml.steps.utils import (
     INSTANCE_CONFIGURATION,
     PARAM_CREATED_BY_FUNCTIONAL_API,
+    PARAM_ENABLE_ARTIFACT_METADATA,
     PARAM_ENABLE_CACHE,
     PARAM_EXPERIMENT_TRACKER,
     PARAM_EXTRA_OPTIONS,
@@ -223,6 +224,8 @@ class BaseStep(metaclass=BaseStepMeta):
         pipeline_parameter_name: The name of the pipeline parameter for which
             this step was passed as an argument.
         enable_cache: A boolean indicating if caching is enabled for this step.
+        enable_artifact_metadata: A boolean indicating if artifact metadata
+            is enabled for this step.
     """
 
     INPUT_SIGNATURE: ClassVar[Dict[str, Type[Any]]] = None  # type: ignore[assignment] # noqa
@@ -285,12 +288,23 @@ class BaseStep(metaclass=BaseStepMeta):
         logger.debug(
             "Step '%s': Caching %s.",
             name,
-            "enabled" if enable_cache else "disabled",
+            "enabled" if enable_cache is not False else "disabled",
+        )
+
+        enable_artifact_metadata = kwargs.pop(
+            PARAM_ENABLE_ARTIFACT_METADATA, None
+        )
+
+        logger.debug(
+            "Step '%s': Artifact metadata %s.",
+            name,
+            "enabled" if enable_artifact_metadata is not False else "disabled",
         )
 
         self._configuration = PartialStepConfiguration(
             name=name,
             enable_cache=enable_cache,
+            enable_artifact_metadata=enable_artifact_metadata,
         )
         self._apply_class_configuration(kwargs)
         self._verify_and_apply_init_params(*args, **kwargs)
@@ -719,6 +733,7 @@ class BaseStep(metaclass=BaseStepMeta):
         self: T,
         name: Optional[str] = None,
         enable_cache: Optional[bool] = None,
+        enable_artifact_metadata: Optional[bool] = None,
         experiment_tracker: Optional[str] = None,
         step_operator: Optional[str] = None,
         parameters: Optional["ParametersOrDict"] = None,
@@ -745,6 +760,8 @@ class BaseStep(metaclass=BaseStepMeta):
         Args:
             name: The name of the step.
             enable_cache: If caching should be enabled for this step.
+            enable_artifact_metadata: If artifact metadata should be enabled
+                for this step.
             experiment_tracker: The experiment tracker to use for this step.
             step_operator: The step operator to use for this step.
             parameters: Function parameters for this step
@@ -803,6 +820,7 @@ class BaseStep(metaclass=BaseStepMeta):
             {
                 "name": name,
                 "enable_cache": enable_cache,
+                "enable_artifact_metadata": enable_artifact_metadata,
                 "experiment_tracker": experiment_tracker,
                 "step_operator": step_operator,
                 "parameters": parameters,

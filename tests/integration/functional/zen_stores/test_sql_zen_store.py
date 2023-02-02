@@ -32,6 +32,7 @@ from zenml.exceptions import (
     StackComponentExistsError,
     StackExistsError,
 )
+from zenml.metadata.metadata_types import MetadataTypeEnum
 from zenml.models import (
     ArtifactFilterModel,
     ArtifactRequestModel,
@@ -65,6 +66,11 @@ from zenml.models import (
     WorkspaceUpdateModel,
 )
 from zenml.models.base_models import BaseResponseModel
+from zenml.models.pipeline_run_models import PipelineRunRequestModel
+from zenml.models.run_metadata_models import (
+    RunMetadataFilterModel,
+    RunMetadataRequestModel,
+)
 from zenml.models.schedule_model import (
     ScheduleFilterModel,
     ScheduleRequestModel,
@@ -1260,6 +1266,26 @@ def test_deleting_nonexistent_schedule_fails(sql_store_with_scheduled_run):
 # --------------
 
 
+def test_create_run_succeeds(sql_store):
+    """Tests creating run."""
+    workspace_id = sql_store["default_workspace"].id
+    user_id = sql_store["active_user"].id
+    run = PipelineRunRequestModel(
+        id=uuid.uuid4(),
+        name="arias_run",
+        workspace=workspace_id,
+        user=user_id,
+        status=ExecutionStatus.RUNNING,
+        pipeline_configuration={},
+    )
+    runs = sql_store["store"].list_runs(PipelineRunFilterModel())
+    assert len(runs) == 0
+    run = sql_store["store"].create_run(run)
+    assert run.name == "arias_run"
+    runs = sql_store["store"].list_runs(PipelineRunFilterModel())
+    assert len(runs) == 1
+
+
 def test_getting_run_succeeds(
     sql_store_with_run: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
@@ -1269,6 +1295,82 @@ def test_getting_run_succeeds(
         run = sql_store_with_run["store"].get_run(run_id)
         assert run is not None
         assert run.name == sql_store_with_run["pipeline_run"].name
+
+
+def test_get_or_create_run(sql_store):
+    """Test `get_or_create_run`."""
+    # Create a run using `get_or_create_run`
+    workspace_id = sql_store["default_workspace"].id
+    user_id = sql_store["active_user"].id
+    run = PipelineRunRequestModel(
+        id=uuid.uuid4(),
+        name="arias_run",
+        workspace=workspace_id,
+        user=user_id,
+        status=ExecutionStatus.RUNNING,
+        pipeline_configuration={},
+    )
+    runs = sql_store["store"].list_runs(PipelineRunFilterModel())
+    assert len(runs) == 0
+    run, was_created = sql_store["store"].get_or_create_run(run)
+    assert run.name == "arias_run"
+    assert was_created is True
+    runs = sql_store["store"].list_runs(PipelineRunFilterModel())
+    assert len(runs) == 1
+
+    # Try to create the same run again - this should retrieve the existing run
+    run, was_created = sql_store["store"].get_or_create_run(run)
+    assert run.name == "arias_run"
+    assert was_created is False
+    runs = sql_store["store"].list_runs(PipelineRunFilterModel())
+    assert len(runs) == 1
+
+    # Creating a run with the same ID but different name should also retrieve
+    # the existing run
+    run = PipelineRunRequestModel(
+        id=run.id,
+        name="arias_run_2",
+        workspace=workspace_id,
+        user=user_id,
+        status=ExecutionStatus.RUNNING,
+        pipeline_configuration={},
+    )
+    run, was_created = sql_store["store"].get_or_create_run(run)
+    assert run.name == "arias_run"
+    assert was_created is False
+    runs = sql_store["store"].list_runs(PipelineRunFilterModel())
+    assert len(runs) == 1
+
+    # Creating a run with the same name but different ID should also retrieve
+    # the existing run
+    run = PipelineRunRequestModel(
+        id=uuid.uuid4(),
+        name="arias_run",
+        workspace=workspace_id,
+        user=user_id,
+        status=ExecutionStatus.RUNNING,
+        pipeline_configuration={},
+    )
+    run, was_created = sql_store["store"].get_or_create_run(run)
+    assert run.name == "arias_run"
+    assert was_created is False
+    runs = sql_store["store"].list_runs(PipelineRunFilterModel())
+    assert len(runs) == 1
+
+    # Create a run with a different ID and name - this should create a new run
+    run = PipelineRunRequestModel(
+        id=uuid.uuid4(),
+        name="arias_run_2",
+        workspace=workspace_id,
+        user=user_id,
+        status=ExecutionStatus.RUNNING,
+        pipeline_configuration={},
+    )
+    run, was_created = sql_store["store"].get_or_create_run(run)
+    assert run.name == "arias_run_2"
+    assert was_created is True
+    runs = sql_store["store"].list_runs(PipelineRunFilterModel())
+    assert len(runs) == 2
 
 
 def test_getting_nonexistent_run_fails(
@@ -1567,6 +1669,63 @@ def test_delete_artifact_fails_when_artifact_does_not_exist(sql_store):
     """Tests deleting artifact fails when artifact does not exist."""
     with pytest.raises(KeyError):
         sql_store["store"].delete_artifact(artifact_id=uuid.uuid4())
+
+
+# ------------
+# Run Metadata
+# ------------
+
+
+def test_create_run_metadata_succeeds(sql_store_with_run):
+    """Test creating run metadata."""
+    metadata = RunMetadataRequestModel(
+        key="test_key",
+        value="test_value",
+        type=MetadataTypeEnum.STRING,
+        user=sql_store_with_run["active_user"].id,
+        workspace=sql_store_with_run["default_workspace"].id,
+        pipeline_run_id=sql_store_with_run["pipeline_run"].id,
+        stack_component_id=sql_store_with_run["default_stack"]
+        .components["orchestrator"][0]
+        .id,
+    )
+    with does_not_raise():
+        created_metadata = sql_store_with_run["store"].create_run_metadata(
+            metadata
+        )
+        assert created_metadata.key == metadata.key
+        assert created_metadata.value == metadata.value
+        assert created_metadata.type == metadata.type
+        assert created_metadata.user.id == metadata.user
+        assert created_metadata.workspace.id == metadata.workspace
+        assert created_metadata.pipeline_run_id == metadata.pipeline_run_id
+        assert (
+            created_metadata.stack_component_id == metadata.stack_component_id
+        )
+
+
+def test_list_run_metadata_succeeds(sql_store_with_run):
+    """Test listing run metadata."""
+    filter_model = RunMetadataFilterModel(
+        pipeline_run_id=sql_store_with_run["pipeline_run"].id
+    )
+    metadata = sql_store_with_run["store"].list_run_metadata(filter_model)
+    assert len(metadata) == 0
+
+    metadata_request = RunMetadataRequestModel(
+        key="test_key",
+        value="test_value",
+        type=MetadataTypeEnum.STRING,
+        user=sql_store_with_run["active_user"].id,
+        workspace=sql_store_with_run["default_workspace"].id,
+        pipeline_run_id=sql_store_with_run["pipeline_run"].id,
+        stack_component_id=sql_store_with_run["default_stack"]
+        .components["orchestrator"][0]
+        .id,
+    )
+    sql_store_with_run["store"].create_run_metadata(metadata_request)
+    metadata = sql_store_with_run["store"].list_run_metadata(filter_model)
+    assert len(metadata) == 1
 
 
 # ----------------

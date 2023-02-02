@@ -43,6 +43,7 @@ if TYPE_CHECKING:
     from sqlmodel import SQLModel
 
     from zenml.models.pipeline_models import PipelineResponseModel
+    from zenml.models.run_metadata_models import RunMetadataResponseModel
     from zenml.models.stack_models import StackResponseModel
 
 
@@ -95,6 +96,7 @@ class PipelineRunBaseModel(BaseModel):
     )
     schedule_id: Optional[UUID]
     enable_cache: Optional[bool]
+    enable_artifact_metadata: Optional[bool]
     start_time: Optional[datetime]
     end_time: Optional[datetime]
     status: ExecutionStatus
@@ -143,6 +145,10 @@ class PipelineRunResponseModel(
     )
     stack: Optional["StackResponseModel"] = Field(
         title="The stack that was used for this run."
+    )
+    metadata: Dict[str, "RunMetadataResponseModel"] = Field(
+        default={},
+        title="Metadata associated with this pipeline run.",
     )
 
 

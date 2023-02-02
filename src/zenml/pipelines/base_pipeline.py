@@ -81,6 +81,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 PIPELINE_INNER_FUNC_NAME = "connect"
 PARAM_ENABLE_CACHE = "enable_cache"
+PARAM_ENABLE_ARTIFACT_METADATA = "enable_artifact_metadata"
 INSTANCE_CONFIGURATION = "INSTANCE_CONFIGURATION"
 PARAM_SETTINGS = "settings"
 PARAM_EXTRA_OPTIONS = "extra"
@@ -133,6 +134,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
         name: The name of this pipeline.
         enable_cache: A boolean indicating if caching is enabled for this
             pipeline.
+        enable_artifact_metadata: A boolean indicating if artifact metadata
+            is enabled for this pipeline.
     """
 
     STEP_SPEC: ClassVar[Dict[str, Any]] = None  # type: ignore[assignment]
@@ -151,6 +154,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
         self._configuration = PipelineConfiguration(
             name=self.__class__.__name__,
             enable_cache=kwargs.pop(PARAM_ENABLE_CACHE, None),
+            enable_artifact_metadata=kwargs.pop(
+                PARAM_ENABLE_ARTIFACT_METADATA, None
+            ),
         )
         self._apply_class_configuration(kwargs)
 
@@ -196,6 +202,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
     def configure(
         self: T,
         enable_cache: Optional[bool] = None,
+        enable_artifact_metadata: Optional[bool] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         extra: Optional[Dict[str, Any]] = None,
         merge: bool = True,
@@ -214,6 +221,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
         Args:
             enable_cache: If caching should be enabled for this pipeline.
+            enable_artifact_metadata: If artifact metadata should be enabled for
+                this pipeline.
             settings: settings for this pipeline.
             extra: Extra configurations for this pipeline.
             merge: If `True`, will merge the given dictionary configurations
@@ -228,6 +237,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         values = dict_utils.remove_none_values(
             {
                 "enable_cache": enable_cache,
+                "enable_artifact_metadata": enable_artifact_metadata,
                 "settings": settings,
                 "extra": extra,
             }
@@ -414,6 +424,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         *,
         run_name: Optional[str] = None,
         enable_cache: Optional[bool] = None,
+        enable_artifact_metadata: Optional[bool] = None,
         schedule: Optional[Schedule] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         step_configurations: Optional[
@@ -428,6 +439,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
         Args:
             run_name: Name of the pipeline run.
             enable_cache: If caching should be enabled for this pipeline run.
+            enable_artifact_metadata: If artifact metadata should be enabled
+                for this pipeline run.
             schedule: Optional schedule of the pipeline.
             settings: settings for this pipeline run.
             step_configurations: Configurations for steps of the pipeline.
@@ -474,6 +487,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 {
                     "run_name": run_name,
                     "enable_cache": enable_cache,
+                    "enable_artifact_metadata": enable_artifact_metadata,
                     "steps": step_configurations,
                     "settings": settings,
                     "schedule": schedule,
@@ -663,12 +677,16 @@ class BasePipeline(metaclass=BasePipelineMeta):
             step = self.__steps[step_name]
             parameters = step_dict.get(StepConfigurationKeys.PARAMETERS_, {})
             enable_cache = parameters.pop(PARAM_ENABLE_CACHE, None)
+            enable_artifact_metadata = parameters.pop(
+                PARAM_ENABLE_ARTIFACT_METADATA, None
+            )
 
             if not overwrite:
                 parameters.update(step.configuration.parameters)
 
             step.configure(
                 enable_cache=enable_cache,
+                enable_artifact_metadata=enable_artifact_metadata,
                 parameters=parameters,
             )
 

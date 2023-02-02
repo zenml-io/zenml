@@ -15,13 +15,16 @@
 
 import os
 import tempfile
-from typing import Any, Type
+from typing import TYPE_CHECKING, Any, Dict, Type
 
 import xgboost as xgb
 
 from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
+
+if TYPE_CHECKING:
+    from zenml.metadata.metadata_types import MetadataType
 
 DEFAULT_FILENAME = "data.binary"
 
@@ -74,3 +77,19 @@ class XgboostDMatrixMaterializer(BaseMaterializer):
         # Close and remove the temporary file
         f.close()
         fileio.remove(f.name)
+
+    def extract_metadata(
+        self, dataset: xgb.DMatrix
+    ) -> Dict[str, "MetadataType"]:
+        """Extract metadata from the given `Dataset` object.
+
+        Args:
+            dataset: The `Dataset` object to extract metadata from.
+
+        Returns:
+            The extracted metadata as a dictionary.
+        """
+        super().extract_metadata(dataset)
+        return {
+            "shape": (dataset.num_row(), dataset.num_col()),
+        }

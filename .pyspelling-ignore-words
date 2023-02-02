@@ -288,6 +288,7 @@ GCP
 GCPArtifactStore
 GCPArtifactStoreConfig
 GCPContainerRegistry
+GCPImageBuilder
 GCPSecretsManagerConfig
 GCS
 GID
@@ -441,6 +442,7 @@ Mattermost
 Mesos
 MetadataStore
 MetadataStoreClientConfig
+MetadataType
 MiB
 Microsoft
 MinIO
@@ -776,6 +778,7 @@ VisualEditor
 VpcId
 Vpcs
 WORKSPACES
+WandB
 WandbCallback
 WandbExperimentTracker
 WhyLabs
@@ -1561,6 +1564,7 @@ untracked
 untyped
 unvisited
 updatable
+uploader
 uptime
 upvote
 upvoting

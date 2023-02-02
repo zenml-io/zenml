@@ -31,6 +31,7 @@
 
 import os
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type, cast
+from uuid import UUID
 
 import kfp
 from google.api_core import exceptions as google_exceptions
@@ -39,7 +40,10 @@ from kfp import dsl
 from kfp.v2 import dsl as dslv2
 from kfp.v2.compiler import Compiler as KFPV2Compiler
 
-from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
+from zenml.constants import (
+    METADATA_ORCHESTRATOR_URL,
+    ORCHESTRATOR_DOCKER_IMAGE_KEY,
+)
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.enums import StackComponentType
 from zenml.integrations.gcp import GCP_ARTIFACT_STORE_FLAVOR
@@ -72,6 +76,7 @@ from zenml.integrations.gcp.orchestrators.vertex_scheduler.main import (
 from zenml.integrations.kubeflow.utils import apply_pod_settings
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.metadata.metadata_types import MetadataType, Uri
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack.stack_validator import StackValidator
@@ -81,8 +86,6 @@ from zenml.utils.pipeline_docker_image_builder import (
 )
 
 if TYPE_CHECKING:
-    from google.auth.credentials import Credentials
-
     from zenml.config.base_settings import BaseSettings
     from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.config.schedule import Schedule
@@ -225,30 +228,6 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
             Path to the pipeline directory.
         """
         return os.path.join(self.root_directory, "pipelines")
-
-    def _get_authentication(self) -> Tuple["Credentials", str]:
-        """Get GCP credentials and the project ID associated with the credentials.
-
-        This function is the same as the super function except that it also checks
-        against the value of the `config` class of this orchestrator.
-
-        Returns:
-            A tuple containing the credentials and the project ID associated to
-            the credentials.
-        """
-        credentials, project_id = super()._get_authentication()
-        if self.config.project and self.config.project != project_id:
-            logger.warning(
-                "Authenticated with project `%s`, but this orchestrator is "
-                "configured to use the project `%s`.",
-                project_id,
-                self.config.project,
-            )
-
-        # If the project was set in the configuration, use it. Otherwise, use
-        # the project that was used to authenticate.
-        project_id = self.config.project if self.config.project else project_id
-        return credentials, project_id
 
     def prepare_pipeline_deployment(
         self,
@@ -710,3 +689,25 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
                 "Unable to read run id from environment variable "
                 f"{ENV_ZENML_VERTEX_RUN_ID}."
             )
+
+    def get_pipeline_run_metadata(
+        self, run_id: UUID
+    ) -> Dict[str, "MetadataType"]:
+        """Get general component-specific metadata for a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run.
+
+        Returns:
+            A dictionary of metadata.
+        """
+        run_url = (
+            f"https://console.cloud.google.com/vertex-ai/locations/"
+            f"{self.config.location}/pipelines/runs/"
+            f"{self.get_orchestrator_run_id()}"
+        )
+        if self.config.project:
+            run_url += f"?project={self.config.project}"
+        return {
+            METADATA_ORCHESTRATOR_URL: Uri(run_url),
+        }

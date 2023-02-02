@@ -15,7 +15,7 @@
 """Implementation of Deepchecks suite results materializer."""
 
 import os
-from typing import Any, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, Type, Union
 
 from deepchecks.core.check_result import CheckResult
 from deepchecks.core.suite import SuiteResult
@@ -23,6 +23,9 @@ from deepchecks.core.suite import SuiteResult
 from zenml.enums import ArtifactType
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import io_utils
+
+if TYPE_CHECKING:
+    from zenml.metadata.metadata_types import MetadataType
 
 RESULTS_FILENAME = "results.json"
 
@@ -72,3 +75,28 @@ class DeepchecksResultMaterializer(BaseMaterializer):
 
         serialized_json = result.to_json(True)
         io_utils.write_file_contents_as_string(filepath, serialized_json)
+
+    def extract_metadata(
+        self, result: Union[CheckResult, SuiteResult]
+    ) -> Dict[str, "MetadataType"]:
+        """Extract metadata from the given Deepchecks result.
+
+        Args:
+            result: The Deepchecks result to extract metadata from.
+
+        Returns:
+            The extracted metadata as a dictionary.
+        """
+        base_metadata = super().extract_metadata(result)
+        deepchecks_metadata: Dict[str, "MetadataType"] = {}
+        if isinstance(result, CheckResult):
+            deepchecks_metadata = {
+                "deepchecks_check_name": result.get_header(),
+                "deepchecks_check_passed": result.passed_conditions(),
+            }
+        elif isinstance(result, SuiteResult):
+            deepchecks_metadata = {
+                "deepchecks_suite_name": result.name,
+                "deepchecks_suite_passed": result.passed(),
+            }
+        return {**base_metadata, **deepchecks_metadata}

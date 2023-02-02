@@ -165,12 +165,6 @@ variable "zenmlserver_image_tag" {
   type        = string   
 }
 
-variable "zenmlinit_image_tag" {
-  description = "The tag to use for the zenml init docker image."
-  default     = "latest"
-  type        = string   
-}
-
 # variables for creating a ZenML stack configuration file
 variable "zenml-version" {
   description = "The version of ZenML being used"

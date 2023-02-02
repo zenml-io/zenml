@@ -90,6 +90,8 @@ from zenml.models import (
     RoleRequestModel,
     RoleResponseModel,
     RoleUpdateModel,
+    RunMetadataRequestModel,
+    RunMetadataResponseModel,
     ScheduleRequestModel,
     ScheduleResponseModel,
     ScheduleUpdateModel,
@@ -123,6 +125,7 @@ from zenml.models import (
 )
 from zenml.models.base_models import BaseResponseModel
 from zenml.models.page_model import Page
+from zenml.models.run_metadata_models import RunMetadataFilterModel
 from zenml.models.schedule_model import ScheduleFilterModel
 from zenml.models.server_models import ServerDatabaseType, ServerModel
 from zenml.utils import uuid_utils
@@ -152,6 +155,7 @@ from zenml.zen_stores.schemas import (
     PipelineSchema,
     RolePermissionSchema,
     RoleSchema,
+    RunMetadataSchema,
     ScheduleSchema,
     StackComponentSchema,
     StackCompositionSchema,
@@ -2891,7 +2895,7 @@ class SqlZenStore(BaseZenStore):
 
     def get_or_create_run(
         self, pipeline_run: PipelineRunRequestModel
-    ) -> PipelineRunResponseModel:
+    ) -> Tuple[PipelineRunResponseModel, bool]:
         """Gets or creates a pipeline run.
 
         If a run with the same ID or name already exists, it is returned.
@@ -2901,20 +2905,21 @@ class SqlZenStore(BaseZenStore):
             pipeline_run: The pipeline run to get or create.
 
         Returns:
-            The pipeline run.
+            The pipeline run, and a boolean indicating whether the run was
+            created or not.
         """
         # We want to have the 'create' statement in the try block since running
         # it first will reduce concurrency issues.
         try:
-            return self.create_run(pipeline_run)
+            return self.create_run(pipeline_run), True
         except EntityExistsError:
             # Currently, an `EntityExistsError` is raised if either the run ID
             # or the run name already exists. Therefore, we need to have another
             # try block since getting the run by ID might still fail.
             try:
-                return self.get_run(pipeline_run.id)
+                return self.get_run(pipeline_run.id), False
             except KeyError:
-                return self.get_run(pipeline_run.name)
+                return self.get_run(pipeline_run.name), False
 
     def list_runs(
         self, runs_filter_model: PipelineRunFilterModel
@@ -3510,6 +3515,49 @@ class SqlZenStore(BaseZenStore):
                 )
             session.delete(artifact)
             session.commit()
+
+    # ------------
+    # Run Metadata
+    # ------------
+
+    def create_run_metadata(
+        self, run_metadata: RunMetadataRequestModel
+    ) -> RunMetadataResponseModel:
+        """Creates run metadata.
+
+        Args:
+            run_metadata: The run metadata to create.
+
+        Returns:
+            The created run metadata.
+        """
+        with Session(self.engine) as session:
+            run_metadata_schema = RunMetadataSchema.from_request(run_metadata)
+            session.add(run_metadata_schema)
+            session.commit()
+            return run_metadata_schema.to_model()
+
+    def list_run_metadata(
+        self,
+        run_metadata_filter_model: RunMetadataFilterModel,
+    ) -> Page[RunMetadataResponseModel]:
+        """List run metadata.
+
+        Args:
+            run_metadata_filter_model: All filter parameters including
+                pagination params.
+
+        Returns:
+            The run metadata.
+        """
+        with Session(self.engine) as session:
+            query = select(RunMetadataSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=RunMetadataSchema,
+                filter_model=run_metadata_filter_model,
+            )
 
     # =======================
     # Internal helper methods
