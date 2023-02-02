@@ -1,7 +1,7 @@
 """Create Run Metadata Table [ec0d785ca296].
 
 Revision ID: ec0d785ca296
-Revises: 3944116bbd56
+Revises: 72722dee4686
 Create Date: 2022-12-16 11:34:17.005750
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "ec0d785ca296"
-down_revision = "3944116bbd56"
+down_revision = "72722dee4686"
 branch_labels = None
 depends_on = None
 
