@@ -1076,8 +1076,28 @@ class BasePipeline(metaclass=BasePipelineMeta):
         else:
             return None
 
-    def build(self) -> Optional["BuildOutputResponseModel"]:
-        deployment, pipeline_spec = self._compile()
+    def build(
+        self,
+        *,
+        run_name: Optional[str] = None,
+        enable_cache: Optional[bool] = None,
+        schedule: Optional[Schedule] = None,
+        settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
+        step_configurations: Optional[
+            Mapping[str, "StepConfigurationUpdateOrDict"]
+        ] = None,
+        extra: Optional[Dict[str, Any]] = None,
+        config_path: Optional[str] = None,
+    ) -> Optional["BuildOutputResponseModel"]:
+        deployment, pipeline_spec = self._compile(
+            config_path=config_path,
+            run_name=run_name,
+            enable_cache=enable_cache,
+            steps=step_configurations,
+            settings=settings,
+            schedule=schedule,
+            extra=extra,
+        )
         pipeline_id = self._register(pipeline_spec=pipeline_spec).id
         deployment = deployment.copy(update={"pipeline_id": pipeline_id})
 
@@ -1104,6 +1124,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 pipeline=deployment.pipeline_id,
                 configuration=output,
             )
-            return Client().zen_store.create_build(build)
+            return client.zen_store.create_build(build)
         else:
             return None

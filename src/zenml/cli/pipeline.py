@@ -87,6 +87,61 @@ def register_pipeline(source: str) -> None:
     pipeline_instance.register()
 
 
+@pipeline.command(
+    "build",
+)
+@click.argument("name_or_id")
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    required=False,
+)
+@click.option(
+    "--config",
+    "-c",
+    "config_path",
+    type=click.Path(exists=True, dir_okay=False),
+    required=False,
+)
+@click.option(
+    "--output",
+    "-o",
+    "output_path",
+    type=click.Path(exists=False, dir_okay=False),
+    required=False,
+)
+def build_pipeline(
+    name_or_id: str,
+    version: Optional[str] = None,
+    config_path: Optional[str] = None,
+    output_path: Optional[str] = None,
+) -> None:
+    cli_utils.print_active_config()
+
+    if not Client().root:
+        cli_utils.error(
+            "`zenml pipeline build` can only be called within a ZenML "
+            "repository. Run `zenml init` at your source code root and try "
+            "again."
+        )
+
+    try:
+        id_ = UUID(name_or_id, version=4)
+        pipeline_model = Client().get_pipeline(id=id_)
+    except ValueError:
+        pipeline_model = Client().get_pipeline(
+            name=name_or_id, version=version
+        )
+
+    pipeline_instance = BasePipeline.from_model(pipeline_model)
+    build = pipeline_instance.build(config_path=config_path)
+
+    if build and output_path:
+        with open(output_path, "w") as f:
+            f.write(build.configuration.yaml())
+
+
 @pipeline.command("run", help="Run a pipeline with the given configuration.")
 @click.option(
     "--config",
