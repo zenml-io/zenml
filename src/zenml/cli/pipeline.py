@@ -111,7 +111,11 @@ def cli_pipeline_run(python_file: str, config_path: str) -> None:
 @pipeline.command("list", help="List all registered pipelines.")
 @list_options(PipelineFilterModel)
 def list_pipelines(**kwargs: Any) -> None:
-    """List all registered pipelines."""
+    """List all registered pipelines.
+
+    Args:
+        **kwargs: Keyword arguments to filter pipelines.
+    """
     cli_utils.print_active_config()
     client = Client()
     with console.status("Listing pipelines...\n"):
@@ -256,7 +260,11 @@ def runs() -> None:
 @runs.command("list", help="List all registered pipeline runs.")
 @list_options(PipelineRunFilterModel)
 def list_pipeline_runs(**kwargs: Any) -> None:
-    """List all registered pipeline runs for the filter."""
+    """List all registered pipeline runs for the filter.
+
+    Args:
+        **kwargs: Keyword arguments to filter pipeline runs.
+    """
     cli_utils.print_active_config()
 
     client = Client()

@@ -71,7 +71,7 @@ from zenml.zen_server.utils import (
 
 # This is a workaround to slowly deprecate the workspaces routes. This along with
 #  all the decorators using it, can be removed in a few releases.
-PROJECTS = "/workspaces"
+PROJECTS = "/projects"
 
 
 router = APIRouter(
@@ -423,8 +423,7 @@ def list_workspace_stack_components(
         All stack components part of the specified workspace.
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
-    component_filter_model.workspace_id = workspace.id
-
+    component_filter_model.set_scope_workspace(workspace.id)
     component_filter_model.set_scope_user(user_id=auth_context.user.id)
     return zen_store().list_stack_components(
         component_filter_model=component_filter_model
@@ -518,7 +517,7 @@ def list_workspace_flavors(
     """
     if workspace_name_or_id:
         workspace = zen_store().get_workspace(workspace_name_or_id)
-        flavor_filter_model.workspace_id = workspace.id
+        flavor_filter_model.set_scope_workspace(workspace.id)
     return zen_store().list_flavors(flavor_filter_model=flavor_filter_model)
 
 
@@ -608,7 +607,7 @@ def list_workspace_pipelines(
         All pipelines within the workspace.
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
-    pipeline_filter_model.workspace_id = workspace.id
+    pipeline_filter_model.set_scope_workspace(workspace.id)
     return zen_store().list_pipelines(
         pipeline_filter_model=pipeline_filter_model
     )
@@ -695,8 +694,7 @@ def list_runs(
         The pipeline runs according to query filters.
     """
     workspace = zen_store().get_workspace(workspace_name_or_id)
-    runs_filter_model.workspace_id = workspace.id
-
+    runs_filter_model.set_scope_workspace(workspace.id)
     return zen_store().list_runs(runs_filter_model=runs_filter_model)
 
 
