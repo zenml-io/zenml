@@ -31,6 +31,7 @@
 
 import os
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type, cast
+from uuid import UUID
 
 import kfp
 from google.api_core import exceptions as google_exceptions
@@ -39,7 +40,10 @@ from kfp import dsl
 from kfp.v2 import dsl as dslv2
 from kfp.v2.compiler import Compiler as KFPV2Compiler
 
-from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
+from zenml.constants import (
+    METADATA_ORCHESTRATOR_URL,
+    ORCHESTRATOR_DOCKER_IMAGE_KEY,
+)
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.enums import StackComponentType
 from zenml.integrations.gcp import GCP_ARTIFACT_STORE_FLAVOR
@@ -72,6 +76,7 @@ from zenml.integrations.gcp.orchestrators.vertex_scheduler.main import (
 from zenml.integrations.kubeflow.utils import apply_pod_settings
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.metadata.metadata_types import MetadataType, Uri
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack.stack_validator import StackValidator
@@ -710,3 +715,25 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
                 "Unable to read run id from environment variable "
                 f"{ENV_ZENML_VERTEX_RUN_ID}."
             )
+
+    def get_pipeline_run_metadata(
+        self, run_id: UUID
+    ) -> Dict[str, "MetadataType"]:
+        """Get general component-specific metadata for a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run.
+
+        Returns:
+            A dictionary of metadata.
+        """
+        run_url = (
+            f"https://console.cloud.google.com/vertex-ai/locations/"
+            f"{self.config.location}/pipelines/runs/"
+            f"{self.get_orchestrator_run_id()}"
+        )
+        if self.config.project:
+            run_url += f"?project={self.config.project}"
+        return {
+            METADATA_ORCHESTRATOR_URL: Uri(run_url),
+        }

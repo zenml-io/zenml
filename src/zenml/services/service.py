@@ -443,3 +443,16 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
         # all attributes with leading underscore are private and therefore
         # are mutable and not included in serialization
         underscore_attrs_are_private = True
+
+
+class BaseDeploymentService(BaseService):
+    """Base class for deployment services."""
+
+    @property
+    def prediction_url(self) -> Optional[str]:
+        """Gets the prediction URL for the endpoint.
+
+        Returns:
+            the prediction URL for the endpoint
+        """
+        return None

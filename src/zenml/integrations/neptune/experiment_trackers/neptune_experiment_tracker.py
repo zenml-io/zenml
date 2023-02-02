@@ -13,8 +13,9 @@
 #  permissions and limitations under the License.
 """Implementation of Neptune Experiment Tracker."""
 
-from typing import TYPE_CHECKING, Any, Optional, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
 
+from zenml.constants import METADATA_EXPERIMENT_TRACKER_URL
 from zenml.experiment_trackers.base_experiment_tracker import (
     BaseExperimentTracker,
 )
@@ -25,10 +26,12 @@ from zenml.integrations.neptune.flavors import (
     NeptuneExperimentTrackerConfig,
     NeptuneExperimentTrackerSettings,
 )
+from zenml.metadata.metadata_types import Uri
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.config.step_run_info import StepRunInfo
+    from zenml.metadata.metadata_types import MetadataType
 
 
 class NeptuneExperimentTracker(BaseExperimentTracker):
@@ -78,6 +81,22 @@ class NeptuneExperimentTracker(BaseExperimentTracker):
         self.run_state.project = self.config.project
         self.run_state.run_name = info.run_name
         self.run_state.tags = list(settings.tags)
+
+    def get_step_run_metadata(
+        self, info: "StepRunInfo"
+    ) -> Dict[str, "MetadataType"]:
+        """Get component- and step-specific metadata after a step ran.
+
+        Args:
+            info: Info about the step that was executed.
+
+        Returns:
+            A dictionary of metadata.
+        """
+        run_url = self.run_state.active_run.get_url()
+        return {
+            METADATA_EXPERIMENT_TRACKER_URL: Uri(run_url),
+        }
 
     def cleanup_step_run(self, info: "StepRunInfo", step_failed: bool) -> None:
         """Stop the Neptune run.

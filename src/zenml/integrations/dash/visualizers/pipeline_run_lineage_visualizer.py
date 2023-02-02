@@ -207,6 +207,10 @@ class PipelineRunLineageVisualizer(BaseVisualizer):
         app.layout = dbc.Row(
             [
                 dbc.Container(f"Run: {object.name}", class_name="h2"),
+                *[
+                    dbc.Container(f"- {k}: {v} ({type_})" + "\n\n")
+                    for k, v, type_ in graph.run_metadata
+                ],
                 dbc.Row(
                     [
                         dbc.Col(
@@ -328,6 +332,10 @@ class PipelineRunLineageVisualizer(BaseVisualizer):
                         "uri",
                     ]:
                         text += f"**{item}**: {data[item]}" + "\n\n"
+                    if data["metadata"]:
+                        text += "#### Metadata:" + "\n\n"
+                        for k, v, type_ in data["metadata"]:
+                            text += f"**{k}**: {v} ({type_})" + "\n\n"
                 elif data["type"] == "step":
                     text += f"### Step '{data['name']}'" + "\n\n"
                     text += "#### Attributes:" + "\n\n"
@@ -352,6 +360,10 @@ class PipelineRunLineageVisualizer(BaseVisualizer):
                         text += "#### Configuration:" + "\n\n"
                         for k, v in data["configuration"].items():
                             text += f"**{k}**: {v}" + "\n\n"
+                    if data["metadata"]:
+                        text += "#### Metadata:" + "\n\n"
+                        for k, v, type_ in data["metadata"]:
+                            text += f"**{k}**: {v} ({type_})" + "\n\n"
             return text
 
         @app.callback(  # type: ignore[misc]

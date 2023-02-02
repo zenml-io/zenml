@@ -443,6 +443,7 @@ Mattermost
 Mesos
 MetadataStore
 MetadataStoreClientConfig
+MetadataType
 MiB
 Microsoft
 MinIO
@@ -777,6 +778,7 @@ VisionData
 VisualEditor
 VpcId
 Vpcs
+WandB
 WandbCallback
 WandbExperimentTracker
 WhyLabs

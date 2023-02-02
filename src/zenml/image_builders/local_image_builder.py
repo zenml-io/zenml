@@ -34,15 +34,6 @@ if TYPE_CHECKING:
 class LocalImageBuilderConfig(BaseImageBuilderConfig):
     """Local image builder configuration."""
 
-    @property
-    def is_local(self) -> bool:
-        """Checks if this stack component is running locally.
-
-        Returns:
-            True.
-        """
-        return True
-
 
 class LocalImageBuilder(BaseImageBuilder):
     """Local image builder implementation."""

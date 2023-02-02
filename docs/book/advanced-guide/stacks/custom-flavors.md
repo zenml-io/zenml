@@ -251,6 +251,10 @@ zenml stack register <STACK_NAME> \
 If your custom stack component flavor requires special setup before it can be
 used, check out the [Managing Stack Component States](./stack-state-management.md)
 section for more details.
+
+If you would like to automatically track some metadata about your custom stack
+component with each pipeline run, check out the 
+[Tracking Custom Stack Component Metadata](./component-metadata.md) section.
 {% endhint %}
 
 Check out [this short (< 3 minutes) video](https://www.youtube.com/watch?v=CQRVSKbBjtQ) on how to quickly get some more

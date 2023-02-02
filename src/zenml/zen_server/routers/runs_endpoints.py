@@ -12,14 +12,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for pipeline runs."""
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import (
     API,
-    COMPONENT_SIDE_EFFECTS,
     GRAPH,
     PIPELINE_CONFIGURATION,
     RUNS,
@@ -67,8 +66,7 @@ def list_runs(
     """Get pipeline runs according to query filters.
 
     Args:
-        runs_filter_model: Filter model used for pagination, sorting,
-                                   filtering
+        runs_filter_model: Filter model used for pagination, sorting, filtering
 
     Returns:
         The pipeline runs according to query filters.
@@ -185,30 +183,6 @@ def get_run_steps(
         The steps for a given pipeline run.
     """
     return zen_store().list_run_steps(step_run_filter_model)
-
-
-@router.get(
-    "/{run_id}" + COMPONENT_SIDE_EFFECTS,
-    response_model=Dict,
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def get_run_component_side_effects(
-    run_id: UUID,
-    component_id: Optional[UUID] = None,
-    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
-) -> Dict[str, Any]:
-    """Get the component side effects for a given pipeline run.
-
-    Args:
-        run_id: ID of the pipeline run to use to get the component side effects.
-        component_id: ID of the component to use to get the component
-            side effects.
-
-    Returns:
-        The component side effects for a given pipeline run.
-    """
-    return {}
 
 
 @router.get(
