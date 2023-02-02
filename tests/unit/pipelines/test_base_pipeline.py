@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import inspect
 import os
 from contextlib import ExitStack as does_not_raise
 from unittest.mock import ANY
@@ -32,7 +33,7 @@ from zenml.exceptions import (
 )
 from zenml.models.page_model import Page
 from zenml.pipelines import BasePipeline, pipeline
-from zenml.steps import BaseParameters, step
+from zenml.steps import BaseParameters, BaseStep, step
 from zenml.utils.yaml_utils import write_yaml
 
 
@@ -767,6 +768,75 @@ def test_loading_pipeline_from_model(clean_workspace, create_pipeline_model):
 
     with pytest.raises(RuntimeError):
         pipeline_instance = BasePipeline.from_model(pipeline_model)
+
+
+def test_connect_method_generation(clean_workspace, create_pipeline_model):
+    """Tests dynamically generating the connect method from a model."""
+    with open("my_steps.py", "w") as f:
+        f.write(
+            (
+                "from zenml.steps import step\n"
+                "@step\n"
+                "def s1() -> int:\n"
+                "  return 1\n\n"
+                "@step\n"
+                "def s2(inp: int) -> None:\n"
+                "  pass"
+            )
+        )
+
+    spec = PipelineSpec.parse_obj(
+        {
+            "steps": [
+                {
+                    "source": "my_steps.s1",
+                    "upstream_steps": [],
+                    "pipeline_parameter_name": "step_1",
+                },
+                {
+                    "source": "my_steps.s2",
+                    "upstream_steps": ["s1"],
+                    "inputs": {
+                        "inp": {"step_name": "s1", "output_name": "output"}
+                    },
+                    "pipeline_parameter_name": "step_2",
+                },
+            ]
+        }
+    )
+    pipeline_model = create_pipeline_model(spec=spec)
+
+    connect_method = BasePipeline._generate_connect_method(pipeline_model)
+
+    arg_spec = inspect.getfullargspec(connect_method)
+    assert arg_spec.args == ["step_1", "step_2"]
+
+    steps = {
+        "step_1": BaseStep.load_from_source("my_steps.s1"),
+        "step_2": BaseStep.load_from_source("my_steps.s2"),
+    }
+
+    # Missing steps
+    with pytest.raises(TypeError):
+        connect_method()
+
+    # Additional arg
+    wrong_steps = steps.copy()
+    wrong_steps["step_3"] = wrong_steps["step_1"]
+    with pytest.raises(TypeError):
+        connect_method(**wrong_steps)
+
+    with does_not_raise():
+        connect_method(**steps)
+
+    # Reconfigure step name
+    steps = {
+        "step_1": BaseStep.load_from_source("my_steps.s1"),
+        "step_2": BaseStep.load_from_source("my_steps.s2"),
+    }
+    steps["step_1"].configure(name="new_name")
+    with pytest.raises(RuntimeError):
+        connect_method(**steps)
 
 
 def test_loading_pipeline_from_old_spec_fails(create_pipeline_model):
