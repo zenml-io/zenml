@@ -38,7 +38,11 @@ def workspace() -> None:
 @workspace.command("list", hidden=True)
 @list_options(WorkspaceFilterModel)
 def list_workspaces(**kwargs: Any) -> None:
-    """List all workspaces."""
+    """List all workspaces.
+
+    Args:
+        **kwargs: Keyword arguments to filter the list of workspaces.
+    """
     warn_unsupported_non_default_workspace()
     cli_utils.print_active_config()
     client = Client()

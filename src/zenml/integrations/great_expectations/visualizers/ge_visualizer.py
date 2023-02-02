@@ -16,7 +16,7 @@
 
 from typing import Any, cast
 
-import great_expectations as ge  # type: ignore[import]
+import great_expectations as ge  # type: ignore[import] # noqa
 from great_expectations.checkpoint.types.checkpoint_result import (  # type: ignore[import]
     CheckpointResult,
 )
