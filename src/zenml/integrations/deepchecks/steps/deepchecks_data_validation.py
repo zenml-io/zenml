@@ -107,6 +107,15 @@ def deepchecks_data_validation_check_step(
     return DeepchecksDataValidationCheckStep(name=step_name, params=params)
 
 
+# ------ DEPRECATED ------
+
+
+class DeepchecksDataIntegrityCheckStepParameters(
+    DeepchecksDataValidationCheckStepParameters
+):
+    """Deprecated data validation parameters."""
+
+
 class DeepchecksDataIntegrityCheckStep(DeepchecksDataValidationCheckStep):
     """Deprecated data validation step."""
 
@@ -124,7 +133,11 @@ class DeepchecksDataIntegrityCheckStep(DeepchecksDataValidationCheckStep):
         Returns:
             A Deepchecks suite result with the validation results.
         """
-        logger.warning(...)  # TODO
+        logger.warning(
+            "The `DeepchecksDataIntegrityCheckStep` class is deprecated and "
+            "will be removed in a future release. Please use the "
+            "`DeepchecksDataValidationCheckStep` class instead."
+        )
         super().entrypoint(dataset=dataset, params=params)
 
 
@@ -141,7 +154,11 @@ def deepchecks_data_integrity_check_step(
     Returns:
         a `DeepchecksDataValidationCheckStep` step instance
     """
-    logger.warning(...)  # TODO
+    logger.warning(
+        "The `deepchecks_data_integrity_check_step` function is deprecated and "
+        "will be removed in a future release. Please use the "
+        "`deepchecks_data_validation_check_step` function instead."
+    )
     return deepchecks_data_validation_check_step(
         step_name=step_name, params=params
     )

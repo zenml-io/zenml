@@ -18,10 +18,13 @@ from zenml.integrations.deepchecks.steps.deepchecks_data_drift import (
     DeepchecksDataDriftCheckStepParameters,
     deepchecks_data_drift_check_step,
 )
-from zenml.integrations.deepchecks.steps.deepchecks_data_integrity import (
+from zenml.integrations.deepchecks.steps.deepchecks_data_validation import (
     DeepchecksDataValidationCheckStep,
     DeepchecksDataValidationCheckStepParameters,
-    deepchecks_data_integrity_check_step,
+    deepchecks_data_validation_check_step,
+    DeepchecksDataIntegrityCheckStep,  # deprecated
+    DeepchecksDataIntegrityCheckStepParameters,  # deprecated
+    deepchecks_data_integrity_check_step,  # deprecated
 )
 from zenml.integrations.deepchecks.steps.deepchecks_model_drift import (
     DeepchecksModelDriftCheckStep,

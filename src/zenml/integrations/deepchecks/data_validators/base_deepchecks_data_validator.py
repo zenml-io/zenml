@@ -16,6 +16,7 @@
 from abc import ABC, abstractmethod
 from typing import (
     Any,
+    ClassVar,
     Dict,
     List,
     Optional,
@@ -31,8 +32,12 @@ from deepchecks.core.suite import SuiteResult
 
 # not part of deepchecks.tabular.checks
 from zenml.data_validators import BaseDataValidator
+from zenml.data_validators.base_data_validator import BaseDataValidatorFlavor
 from zenml.environment import Environment
 from zenml.integrations.deepchecks.enums import DeepchecksModuleName
+from zenml.integrations.deepchecks.flavors.deepchecks_tabular_data_validator_flavor import (
+    DeepchecksTabularDataValidatorFlavor,
+)
 from zenml.integrations.deepchecks.validation_checks.base_validation_checks import (
     BaseDeepchecksValidationCheck,
     DeepchecksDataDriftCheck,
@@ -49,6 +54,13 @@ logger = get_logger(__name__)
 
 class BaseDeepchecksDataValidator(BaseDataValidator, ABC):
     """Base class for Deepchecks data validators."""
+
+    # We need to set some flavor here, otherwise `get_active_data_validator`
+    # will fail. Since the tabular flavor is the flavor has the fewest
+    # dependencies, we use it here.
+    FLAVOR: ClassVar[
+        Type[BaseDataValidatorFlavor]
+    ] = DeepchecksTabularDataValidatorFlavor
 
     @property
     @abstractmethod
@@ -215,19 +227,25 @@ class BaseDeepchecksDataValidator(BaseDataValidator, ABC):
         """
         # Validate the dataset types
         for dataset in [reference_dataset, comparison_dataset]:
-            if dataset and not isinstance(
+            if dataset is not None and not isinstance(
                 dataset, self.supported_dataset_types
             ):
                 raise TypeError(
                     f"Unsupported dataset data type found: {type(dataset)}. "
-                    f"Supported data types are {self.supported_dataset_types}."
+                    f"The {self.__class__.__name__} data validator can only "
+                    f"handle the following dataset types: "
+                    f"{list(self.supported_dataset_types)}."
                 )
 
         # Validate the model type
-        if model and not isinstance(model, self.supported_model_types):
+        if model is not None and not isinstance(
+            model, self.supported_model_types
+        ):
             raise TypeError(
                 f"Unsupported model data type found: {type(model)}. "
-                f"Supported data types are {self.supported_model_types}."
+                f"The {self.__class__.__name__} data validator can only handle "
+                f"the following model types: "
+                f"{list(self.supported_model_types)}."
             )
 
         if not check_list:

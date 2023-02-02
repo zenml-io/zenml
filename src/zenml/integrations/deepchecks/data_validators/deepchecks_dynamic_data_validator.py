@@ -257,7 +257,7 @@ class DeepchecksDynamicDataValidator(DeepchecksVisionDataValidator):
 
         for attr in [
             "deepchecks_module",
-            "supported_data_types",
+            "supported_dataset_types",
             "supported_model_types",
             "dataset_class",
             "suite_class",
