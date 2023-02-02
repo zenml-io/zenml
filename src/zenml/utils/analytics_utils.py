@@ -335,7 +335,7 @@ class AnalyticsContext:
             zen_store = gc.zen_store
             user = zen_store.get_user()
 
-            if 'user_id' not in properties:
+            if "user_id" not in properties:
                 properties["user_id"] = str(user.id)
 
             if (
