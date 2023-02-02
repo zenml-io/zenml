@@ -78,6 +78,7 @@ from zenml.models import (
     FlavorFilterModel,
     FlavorRequestModel,
     FlavorResponseModel,
+    FlavorUpdateModel,
     PipelineFilterModel,
     PipelineRequestModel,
     PipelineResponseModel,
@@ -871,7 +872,6 @@ class SqlZenStore(BaseZenStore):
 
     def _sync_flavors(self) -> None:
         """Purge all in-built and integration flavors from the DB and sync."""
-        self._purge_non_custom_flavors()
         FlavorRegistry().register_flavors(store=self)
 
     def get_store_info(self) -> ServerModel:
@@ -1502,7 +1502,6 @@ class SqlZenStore(BaseZenStore):
     # Stack component flavors
     # -----------------------
 
-    @track(AnalyticsEvent.CREATED_FLAVOR)
     def create_flavor(self, flavor: FlavorRequestModel) -> FlavorResponseModel:
         """Creates a new stack component flavor.
 
@@ -1518,7 +1517,7 @@ class SqlZenStore(BaseZenStore):
             ValueError: In case the config_schema string exceeds the max length.
         """
         with Session(self.engine) as session:
-            # Check if component with the same domain key (name, type, workspace,
+            # Check if flavor with the same domain key (name, type, workspace,
             # owner) already exists
             existing_flavor = session.exec(
                 select(FlavorSchema)
@@ -1561,6 +1560,31 @@ class SqlZenStore(BaseZenStore):
                 session.commit()
 
                 return new_flavor.to_model()
+
+    def update_flavor(
+        self, flavor_id: UUID, flavor_update: FlavorUpdateModel
+    ) -> FlavorResponseModel:
+        """Updates an existing user.
+
+        Args:
+            flavor_id: The id of the flavor to update.
+            flavor_update: The update to be applied to the flavor.
+
+        Returns:
+            The updated flavor.
+        """
+        with Session(self.engine) as session:
+            existing_flavor = session.exec(
+                select(FlavorSchema).where(FlavorSchema.id == flavor_id)
+            ).first()
+
+            existing_flavor.update(flavor_update=flavor_update)
+            session.add(existing_flavor)
+            session.commit()
+
+            # Refresh the Model that was just created
+            session.refresh(existing_flavor)
+            return existing_flavor.to_model()
 
     def get_flavor(self, flavor_id: UUID) -> FlavorResponseModel:
         """Get a flavor by ID.
@@ -1638,16 +1662,6 @@ class SqlZenStore(BaseZenStore):
                     session.delete(flavor_in_db)
             except NoResultFound as error:
                 raise KeyError from error
-
-    def _purge_non_custom_flavors(self) -> None:
-        """Delete all non-custom flavors."""
-        with Session(self.engine) as session:
-            non_custom_flavors = session.exec(
-                select(FlavorSchema).where(FlavorSchema.is_custom is False)
-            ).all()
-            for flavor in non_custom_flavors:
-                session.delete(flavor)
-            session.commit()
 
     # -----
     # Users

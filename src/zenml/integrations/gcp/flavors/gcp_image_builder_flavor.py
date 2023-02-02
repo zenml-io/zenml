@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Google Cloud image builder flavor."""
 
-from typing import TYPE_CHECKING, Type, Optional
+from typing import TYPE_CHECKING, Optional, Type
 
 from zenml.image_builders import BaseImageBuilderConfig, BaseImageBuilderFlavor
 from zenml.integrations.gcp import GCP_IMAGE_BUILDER_FLAVOR

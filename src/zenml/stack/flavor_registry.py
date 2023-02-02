@@ -19,7 +19,11 @@ from typing import DefaultDict, Dict, List, Type
 from zenml.enums import StackComponentType
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
-from zenml.models import FlavorResponseModel
+from zenml.models import (
+    FlavorFilterModel,
+    FlavorResponseModel,
+    FlavorUpdateModel,
+)
 from zenml.stack import Flavor
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
@@ -109,7 +113,18 @@ class FlavorRegistry:
                 scoped_by_workspace=False,
                 is_custom=False,
             )
-            store.create_flavor(flavor_request_model)
+            existing_flavor = store.list_flavors(
+                FlavorFilterModel(
+                    name="built-in", type=flavor_request_model.type
+                )
+            )
+            if len(existing_flavor) == 0:
+                store.create_flavor(flavor_request_model)
+            else:
+                flavor_update_model = FlavorUpdateModel.parse_obj(
+                    flavor_request_model
+                )
+                store.update_flavor(flavor_update_model)
 
     @staticmethod
     def register_integration_flavors(store: BaseZenStore) -> None:
@@ -126,4 +141,15 @@ class FlavorRegistry:
                     scoped_by_workspace=False,
                     is_custom=False,
                 )
-                store.create_flavor(flavor_request_model)
+                existing_flavor = store.list_flavors(
+                    FlavorFilterModel(
+                        name=name, type=flavor_request_model.type
+                    )
+                )
+                if len(existing_flavor) == 0:
+                    store.create_flavor(flavor_request_model)
+                else:
+                    flavor_update_model = FlavorUpdateModel.parse_obj(
+                        flavor_request_model
+                    )
+                    store.update_flavor(flavor_update_model)

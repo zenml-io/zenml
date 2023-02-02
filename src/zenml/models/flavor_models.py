@@ -22,6 +22,7 @@ from zenml.enums import StackComponentType
 from zenml.models.base_models import (
     UserScopedRequestModel,
     UserScopedResponseModel,
+    update_model,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.filter_models import WorkspaceScopedFilterModel
@@ -128,3 +129,13 @@ class FlavorRequestModel(FlavorBaseModel, UserScopedRequestModel):
     workspace: Optional[UUID] = Field(
         title="The workspace to which this resource belongs."
     )
+
+
+# ------- #
+# Update #
+# ------- #
+
+
+@update_model
+class FlavorUpdateModel(FlavorRequestModel):
+    """Update model for flavors."""

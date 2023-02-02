@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """SQL Model Implementations for Flavors."""
 import json
+from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
@@ -20,7 +21,7 @@ from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
 from zenml.enums import StackComponentType
-from zenml.models.flavor_models import FlavorResponseModel
+from zenml.models.flavor_models import FlavorResponseModel, FlavorUpdateModel
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
@@ -69,6 +70,21 @@ class FlavorSchema(NamedSchema, table=True):
     docs_url: Optional[str] = Field()
 
     is_custom: bool = Field(default=True)
+
+    def update(self, flavor_update: FlavorUpdateModel) -> "FlavorSchema":
+        """Update a `FlavorSchema` from a `FlavorUpdateModel`.
+
+        Args:
+            flavor_update: The `FlavorUpdateModel` from which to update the schema.
+
+        Returns:
+            The updated `FlavorSchema`.
+        """
+        for field, value in flavor_update.dict(exclude_unset=True).items():
+            setattr(self, field, value)
+
+        self.updated = datetime.utcnow()
+        return self
 
     def to_model(self) -> FlavorResponseModel:
         """Converts a flavor schema to a flavor model.

@@ -24,6 +24,7 @@ from zenml.models import (
     FlavorFilterModel,
     FlavorRequestModel,
     FlavorResponseModel,
+    FlavorUpdateModel,
 )
 from zenml.models.page_model import Page
 from zenml.zen_server.auth import AuthContext, authorize
@@ -125,6 +126,33 @@ def create_flavor(
         flavor=flavor,
     )
     return created_flavor
+
+
+@router.put(
+    "/{team_id}",
+    response_model=FlavorResponseModel,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def update_flavor(
+    flavor_id: UUID,
+    flavor_update: FlavorUpdateModel,
+    _: AuthContext = Security(authorize, scopes=[PermissionType.WRITE]),
+) -> FlavorResponseModel:
+    """Updates a flavor.
+
+    # noqa: DAR401
+
+    Args:
+        flavor_id: ID of the team to update.
+        flavor_update: Team update.
+
+    Returns:
+        The updated flavor.
+    """
+    return zen_store().update_flavor(
+        flavor_id=flavor_id, flavor_update=flavor_update
+    )
 
 
 @router.delete(
