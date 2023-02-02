@@ -150,7 +150,7 @@ zenml stack recipe pull k3d-modular
 3. Deploy the stack using the ZenML CLI:
 
 ```shell
-zenml stack recipe deploy k3d-modular
+zenml stack recipe deploy k3d-modular --no-server
 ```
 
 > **Note**
