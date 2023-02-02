@@ -13,8 +13,8 @@ ruff $SRC_NO_TESTS
 # TODO: Fix docstrings in tests and examples and remove the `--extend-ignore D` flag
 ruff $TESTS_EXAMPLES --extend-ignore D
 
-# TODO: remove this once ruff implements the feature
-autoflake --remove-all-unused-imports --recursive --remove-unused-variables --in-place $SRC --exclude=__init__.py --check | ( grep -v "No issues detected" || true )
+# autoflake replacement: checks for unused imports and variables
+ruff $SRC --select F401,F841 --exclude "__init__.py" --isolated
 
 black $SRC  --check
 

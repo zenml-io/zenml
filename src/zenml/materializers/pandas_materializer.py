@@ -46,7 +46,7 @@ class PandasMaterializer(BaseMaterializer):
         """
         super().__init__(uri)
         try:
-            import pyarrow  # type: ignore
+            import pyarrow  # type: ignore # noqa
 
             self.pyarrow_exists = True
         except ImportError:

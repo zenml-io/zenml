@@ -784,10 +784,6 @@ class BaseStep(metaclass=BaseStepMeta):
 
         Returns:
             The step instance that this method was called on.
-
-        Raises:
-            StepInterfaceError: If a materializer or artifact for a non-existent
-                output name are configured.
         """
 
         def _resolve_if_necessary(value: Union[str, Type[Any]]) -> str:

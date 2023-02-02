@@ -795,6 +795,7 @@ class Client(metaclass=ClientMetaClass):
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
             name: Use the team name for filtering
+
         Returns:
             The Team
         """
@@ -953,6 +954,7 @@ class Client(metaclass=ClientMetaClass):
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
             name: Use the role name for filtering
+
         Returns:
             The Role
         """
@@ -1079,9 +1081,6 @@ class Client(metaclass=ClientMetaClass):
 
         Returns:
             The role assignment.
-
-        Raises:
-            RuntimeError: If the role assignment does not exist.
         """
         return self.zen_store.get_user_role_assignment(
             user_role_assignment_id=role_assignment_id
@@ -1188,9 +1187,6 @@ class Client(metaclass=ClientMetaClass):
 
         Returns:
             The role assignment.
-
-        Raises:
-            RuntimeError: If the role assignment does not exist.
         """
         return self.zen_store.get_team_role_assignment(
             team_role_assignment_id=team_role_assignment_id
@@ -1368,6 +1364,7 @@ class Client(metaclass=ClientMetaClass):
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
             name: Use the team name for filtering
+
         Returns:
             The Team
         """
@@ -1779,6 +1776,7 @@ class Client(metaclass=ClientMetaClass):
 
         Raises:
             KeyError: If the stack is not registered.
+            ZenKeyError: If the stack is not registered.
         """
         # Make sure the stack is registered
         try:
@@ -2687,11 +2685,11 @@ class Client(metaclass=ClientMetaClass):
             updated: Use the last updated date for filtering
             workspace_id: The id of the workspace to filter by.
             pipeline_id: The id of the pipeline to filter by.
-            user_id: The  id of the user to filter by.
-            stack_id: The  id of the user to filter by.
+            user_id: The id of the user to filter by.
+            stack_id: The id of the stack to filter by.
             schedule_id: The id of the schedule to filter by.
             orchestrator_run_id: The run id of the orchestrator to filter by.
-            name: The name of the stack to filter by.
+            name: The name of the run to filter by.
             status: The status of the pipeline run
             start_time: The start_time for the pipeline run
             end_time: The end_time for the pipeline run
@@ -2803,6 +2801,7 @@ class Client(metaclass=ClientMetaClass):
             cache_key: The cache_key of the run to filter by.
             status: The name of the run to filter by.
             num_outputs: The number of outputs for the step run
+
         Returns:
             A page with Pipeline fitting the filter description
         """

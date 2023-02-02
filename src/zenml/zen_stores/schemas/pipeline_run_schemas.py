@@ -104,7 +104,8 @@ class PipelineRunSchema(NamedSchema, table=True):
     status: ExecutionStatus
     pipeline_configuration: str = Field(sa_column=Column(TEXT, nullable=False))
     num_steps: Optional[int]
-    zenml_version: str
+    client_version: str
+    server_version: Optional[str] = Field(nullable=True)
     client_environment: Optional[str] = Field(
         sa_column=Column(TEXT, nullable=True)
     )
@@ -153,7 +154,8 @@ class PipelineRunSchema(NamedSchema, table=True):
             pipeline_configuration=configuration,
             num_steps=request.num_steps,
             git_sha=request.git_sha,
-            zenml_version=request.zenml_version,
+            client_version=request.client_version,
+            server_version=request.server_version,
             client_environment=client_environment,
             orchestrator_environment=orchestrator_environment,
         )
@@ -200,7 +202,8 @@ class PipelineRunSchema(NamedSchema, table=True):
                 pipeline_configuration=json.loads(self.pipeline_configuration),
                 num_steps=self.num_steps,
                 git_sha=self.git_sha,
-                zenml_version=self.zenml_version,
+                client_version=self.client_version,
+                server_version=self.server_version,
                 client_environment=client_environment,
                 orchestrator_environment=orchestrator_environment,
                 created=self.created,
@@ -227,7 +230,8 @@ class PipelineRunSchema(NamedSchema, table=True):
                 pipeline_configuration=json.loads(self.pipeline_configuration),
                 num_steps=self.num_steps,
                 git_sha=self.git_sha,
-                zenml_version=self.zenml_version,
+                client_version=self.client_version,
+                server_version=self.server_version,
                 client_environment=client_environment,
                 orchestrator_environment=orchestrator_environment,
                 created=self.created,

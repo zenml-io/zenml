@@ -474,8 +474,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             integration_registry.activate_integrations()
 
             if config_path:
-                config_dict = yaml_utils.read_yaml(config_path)
-                run_config = PipelineRunConfiguration.parse_obj(config_dict)
+                run_config = PipelineRunConfiguration.from_yaml(config_path)
             else:
                 run_config = PipelineRunConfiguration()
 
@@ -527,8 +526,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
             # registering the schedule
             if schedule:
                 if not schedule.name:
-                    date = datetime.now().strftime("%Y_%m_%d")
-                    time = datetime.now().strftime("%H_%M_%S_%f")
+                    date = datetime.utcnow().strftime("%Y_%m_%d")
+                    time = datetime.utcnow().strftime("%H_%M_%S_%f")
                     schedule.name = pipeline_deployment.run_name.format(
                         date=date, time=time
                     )

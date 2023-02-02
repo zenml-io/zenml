@@ -78,6 +78,9 @@ class ArtifactResponseModel(ArtifactBaseModel, WorkspaceScopedResponseModel):
 class ArtifactFilterModel(WorkspaceScopedFilterModel):
     """Model to enable advanced filtering of all Artifacts."""
 
+    # `only_unused` refers to a property of the artifacts relationship
+    #  rather than a field in the db, hence it needs to be handled
+    #  explicitly
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedFilterModel.FILTER_EXCLUDE_FIELDS,
         "only_unused",
