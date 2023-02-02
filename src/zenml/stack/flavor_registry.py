@@ -49,7 +49,11 @@ class FlavorRegistry:
 
     @property
     def builtin_flavors(self) -> List[Type[Flavor]]:
-        """A list of all default in-built flavors."""
+        """A list of all default in-built flavors.
+
+        Returns:
+            A list of builtin flavors.
+        """
         from zenml.artifact_stores import LocalArtifactStoreFlavor
         from zenml.container_registries import (
             AzureContainerRegistryFlavor,
@@ -81,7 +85,11 @@ class FlavorRegistry:
 
     @property
     def integration_flavors(self) -> List[Type[Flavor]]:
-        """A list of all default integration flavors."""
+        """A list of all default integration flavors.
+
+        Returns:
+            A list of integration flavors.
+        """
         integrated_flavors = []
         for _, integration in integration_registry.integrations.items():
             for flavor in integration.flavors():
@@ -90,7 +98,11 @@ class FlavorRegistry:
         return integrated_flavors
 
     def register_builtin_flavors(self, store: BaseZenStore) -> None:
-        """Registers the default built-in flavors."""
+        """Registers the default built-in flavors.
+
+        Args:
+            store: The instance of the zen_store to use
+        """
         for flavor in self.builtin_flavors:
             flavor_request_model = flavor().to_model(
                 integration="built-in",
@@ -101,7 +113,11 @@ class FlavorRegistry:
 
     @staticmethod
     def register_integration_flavors(store: BaseZenStore) -> None:
-        """Registers the flavors implemented by integrations."""
+        """Registers the flavors implemented by integrations.
+
+        Args:
+            store: The instance of the zen_store to use
+        """
         for name, integration in integration_registry.integrations.items():
             integrated_flavors = integration.flavors()
             for flavor in integrated_flavors:

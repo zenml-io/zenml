@@ -2199,6 +2199,9 @@ class Client(metaclass=ClientMetaClass):
 
         Returns:
             The created flavor (in model form).
+
+        Raises:
+            ValueError in case the config_schema of the flavor is too large.
         """
         from zenml.utils.source_utils import validate_flavor_source
 

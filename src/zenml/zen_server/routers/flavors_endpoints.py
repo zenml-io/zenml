@@ -104,7 +104,6 @@ def create_flavor(
     """Creates a stack component flavor.
 
     Args:
-        workspace_name_or_id: Name or ID of the workspace.
         flavor: Stack component flavor to register.
         auth_context: Authentication context.
 
