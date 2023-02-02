@@ -253,7 +253,7 @@ def size(path: "PathType") -> Optional[int]:
             "Cannot get size of file or directory '%s' since the responsible "
             "file system `%s` does not implement the `size` method.",
             path,
-            file_system.__class__.__name__,
+            file_system.__name__,
         )
         return None
 

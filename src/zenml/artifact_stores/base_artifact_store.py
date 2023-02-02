@@ -382,6 +382,7 @@ class BaseArtifactStore(StackComponent):
                 "remove": staticmethod(_sanitize_paths(self.remove)),
                 "rename": staticmethod(_sanitize_paths(self.rename)),
                 "rmtree": staticmethod(_sanitize_paths(self.rmtree)),
+                "size": staticmethod(_sanitize_paths(self.size)),
                 "stat": staticmethod(_sanitize_paths(self.stat)),
                 "walk": staticmethod(_sanitize_paths(self.walk)),
             },
