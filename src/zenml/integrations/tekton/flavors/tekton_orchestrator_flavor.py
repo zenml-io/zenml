@@ -81,8 +81,6 @@ class TektonOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydan
         Returns:
             Values passed to the object constructor
 
-        Raises:
-            ValueError: If the attributes or their values are not valid.
         """
         provisioning_attrs = [
             "tekton_ui_port",
