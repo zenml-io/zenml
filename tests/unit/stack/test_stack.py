@@ -491,7 +491,7 @@ def test_get_pipeline_run_metadata(
     assert artifact_store_get_pipeline_run_mock.call_count == 1
 
 
-def test_get_pipeline_never_raises_errors(
+def test_get_pipeline_run_metadata_never_raises_errors(
     mocker, local_orchestrator, local_artifact_store
 ):
     """Test that `get_pipeline_run_metadata()` never raises errors."""
@@ -562,7 +562,7 @@ def test_get_step_run_metadata(
     assert artifact_store_get_step_run_mock.call_count == 1
 
 
-def test_get_step_run_never_raises_errors(
+def test_get_step_run_metadata_never_raises_errors(
     mocker, local_orchestrator, local_artifact_store
 ):
     """Test that `get_step_run_metadata()` never raises errors."""
