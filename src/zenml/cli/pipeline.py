@@ -50,7 +50,7 @@ def register_pipeline(source: str) -> None:
     if "." not in source:
         cli_utils.error(
             f"The given source path `{source}` is invalid. Make sure it looks "
-            "like `some.module.name_of_pipeline_instance_attribute` and "
+            "like `some.module.name_of_pipeline_instance_variable` and "
             "resolves to a pipeline object."
         )
 
