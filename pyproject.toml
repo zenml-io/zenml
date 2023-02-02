@@ -79,8 +79,16 @@ fastapi-utils = { version = "~0.2.1", optional = true}
 
 # optional dependencies for stack recipes
 
+# Optional dependencies for project templates
+copier = ">=7.0.0"
+jinja2-time = "^0.2.0"
+black = "^22.3.0"
+ruff = "^0.0.238"
+autoflake = "^2.0.1"
+
 [tool.poetry.extras]
 server = ["fastapi", "uvicorn", "python-multipart", "python-jose", "fastapi-utils"]
+templates = ["copier", "jinja2-time", "black", "ruff", "autoflake"]
 
 [tool.poetry.dev-dependencies]
 black = "^22.3.0"
