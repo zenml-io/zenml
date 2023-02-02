@@ -118,6 +118,7 @@ def _compile_step(step: BaseStep) -> Step:
 
     compiler = Compiler()
     return compiler._compile_step(
+        pipeline_parameter_name="",
         step=step,
         pipeline_settings={},
         pipeline_extra={},

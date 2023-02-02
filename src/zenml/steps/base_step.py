@@ -258,7 +258,6 @@ class BaseStep(metaclass=BaseStepMeta):
             *args: Positional arguments passed to the step.
             **kwargs: Keyword arguments passed to the step.
         """
-        self.pipeline_parameter_name: Optional[str] = None
         self._has_been_called = False
         self._upstream_steps: Set[str] = set()
         self._inputs: Dict[str, InputSpec] = {}

@@ -318,7 +318,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     "`second_instance = step_class(name='s2')`."
                 )
 
-            step.pipeline_parameter_name = key
             step_ids[id(step)] = key
             combined_steps[key] = step
 

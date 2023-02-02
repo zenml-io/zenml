@@ -90,6 +90,7 @@ class Compiler:
 
         steps = {
             name: self._compile_step(
+                pipeline_parameter_name=name,
                 step=step,
                 pipeline_settings=settings_to_passdown,
                 pipeline_extra=pipeline.configuration.extra,
@@ -144,8 +145,13 @@ class Compiler:
         pipeline.connect(**pipeline.steps)
 
         steps = [
-            self._get_step_spec(step)
-            for _, step in self._get_sorted_steps(steps=pipeline.steps)
+            self._get_step_spec(
+                pipeline_parameter_name=pipeline_parameter_name,
+                step=step,
+            )
+            for pipeline_parameter_name, step in self._get_sorted_steps(
+                steps=pipeline.steps
+            )
         ]
         pipeline_spec = PipelineSpec(steps=steps)
         logger.debug("Compiled pipeline spec: %s", pipeline_spec)
@@ -321,26 +327,30 @@ class Compiler:
 
         return validated_settings
 
-    def _get_step_spec(self, step: "BaseStep") -> StepSpec:
+    def _get_step_spec(
+        self,
+        pipeline_parameter_name: str,
+        step: "BaseStep",
+    ) -> StepSpec:
         """Gets the spec for a step.
 
         Args:
+            pipeline_parameter_name: Name of the step in the pipeline.
             step: The step for which to get the spec.
 
         Returns:
             The step spec.
         """
-        assert step.pipeline_parameter_name
-
         return StepSpec(
             source=source_utils.resolve_class(step.__class__),
             upstream_steps=sorted(step.upstream_steps),
             inputs=step.inputs,
-            pipeline_parameter_name=step.pipeline_parameter_name,
+            pipeline_parameter_name=pipeline_parameter_name,
         )
 
     def _compile_step(
         self,
+        pipeline_parameter_name: str,
         step: "BaseStep",
         pipeline_settings: Dict[str, "BaseSettings"],
         pipeline_extra: Dict[str, Any],
@@ -349,6 +359,7 @@ class Compiler:
         """Compiles a ZenML step.
 
         Args:
+            pipeline_parameter_name: Name of the step in the pipeline.
             step: The step to compile.
             pipeline_settings: settings configured on the
                 pipeline of the step.
@@ -358,7 +369,9 @@ class Compiler:
         Returns:
             The compiled step.
         """
-        step_spec = self._get_step_spec(step=step)
+        step_spec = self._get_step_spec(
+            pipeline_parameter_name=pipeline_parameter_name, step=step
+        )
         step_settings = self._filter_and_validate_settings(
             settings=step.configuration.settings,
             configuration_level=ConfigurationLevel.STEP,

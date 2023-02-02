@@ -261,16 +261,6 @@ def test_yaml_configuration_allows_enabling_cache(tmp_path):
     assert step_instance.enable_cache == cache_value
 
 
-def test_setting_pipeline_parameter_name_when_initializing_pipeline(
-    one_step_pipeline, empty_step
-):
-    """Tests that initializing a pipeline with a step sets the attribute `pipeline_parameter_name` of the step."""
-    step_instance = empty_step()
-    assert step_instance.pipeline_parameter_name is None
-    one_step_pipeline(step_instance)
-    assert step_instance.pipeline_parameter_name == "step_"
-
-
 def test_calling_a_pipeline_twice_raises_no_exception(
     one_step_pipeline, empty_step
 ):

@@ -236,16 +236,6 @@ def test_enabling_a_custom_step_operator_for_a_step():
     )
 
 
-def test_pipeline_parameter_name_is_empty_when_initializing_a_step():
-    """Tests that the `pipeline_parameter_name` attribute is `None` when a step is initialized."""
-
-    @step
-    def some_step() -> None:
-        pass
-
-    assert some_step().pipeline_parameter_name is None
-
-
 def test_configure_step_with_wrong_materializer_class():
     """Tests that passing a random class as a materializer raises a StepInterfaceError."""
 
