@@ -154,6 +154,7 @@ from zenml.zen_stores.schemas import (
     RoleSchema,
     ScheduleSchema,
     StackComponentSchema,
+    StackCompositionSchema,
     StackSchema,
     StepRunInputArtifactSchema,
     StepRunOutputArtifactSchema,
@@ -643,6 +644,10 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The Domain Model representation of the DB resource
+
+        Raises:
+            ValueError: if the filtered page number is out of bounds.
+            RuntimeError: if the schema does not have a `to_model` method.
         """
         # Filtering
         filters = filter_model.generate_filter(table=table)
@@ -965,6 +970,13 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             query = select(StackSchema)
+            if stack_filter_model.component_id:
+                query = query.where(
+                    StackCompositionSchema.stack_id == StackSchema.id
+                ).where(
+                    StackCompositionSchema.component_id
+                    == stack_filter_model.component_id
+                )
             return self.filter_and_paginate(
                 session=session,
                 query=query,
@@ -1546,8 +1558,7 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             flavor_filter_model: All filter parameters including pagination
-            params
-
+                params
 
         Returns:
             List of all the stack component flavors matching the given criteria.
@@ -2126,7 +2137,7 @@ class SqlZenStore(BaseZenStore):
             The created role assignment.
 
         Raises:
-            ValueError: If neither a user nor a team is specified.
+            EntityExistsError: if the role assignment already exists.
         """
         with Session(self.engine) as session:
             role = self._get_role_schema(
@@ -2237,6 +2248,9 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The newly created role assignment.
+
+        Raises:
+            EntityExistsError: If the role assignment already exists.
         """
         with Session(self.engine) as session:
             role = self._get_role_schema(
@@ -2313,6 +2327,9 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             team_role_assignment_id: The ID of the specific role assignment
+
+        Raises:
+            KeyError: If the role assignment does not exist.
         """
         with Session(self.engine) as session:
             team_role = session.exec(
