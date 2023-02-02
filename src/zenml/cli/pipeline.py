@@ -12,7 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """CLI functionality to interact with pipelines."""
-from typing import Any
+from typing import Any, Optional
+from uuid import UUID
 
 import click
 
@@ -126,36 +127,59 @@ def list_pipelines(**kwargs: Any) -> None:
 @pipeline.command("delete")
 @click.argument("pipeline_name_or_id", type=str, required=True)
 @click.option(
+    "--version",
+    "-v",
+    help="Optional pipeline version.",
+    type=str,
+    required=False,
+)
+@click.option(
     "--yes",
     "-y",
     is_flag=True,
     help="Don't ask for confirmation.",
 )
-def delete_pipeline(pipeline_name_or_id: str, yes: bool = False) -> None:
+def delete_pipeline(
+    pipeline_name_or_id: str, version: Optional[str] = None, yes: bool = False
+) -> None:
     """Delete a pipeline.
 
     Args:
         pipeline_name_or_id: The name or ID of the pipeline to delete.
+        version: The version of the pipeline to delete.
         yes: If set, don't ask for confirmation.
     """
     cli_utils.print_active_config()
 
+    version_suffix = (
+        f" (version {version})" if version else " (latest version)"
+    )
+
     if not yes:
         confirmation = cli_utils.confirmation(
             f"Are you sure you want to delete pipeline "
-            f"`{pipeline_name_or_id}`? This will change all existing runs of "
-            "this pipeline to become unlisted."
+            f"`{pipeline_name_or_id}{version_suffix}`? This will change all "
+            "existing runs of this pipeline to become unlisted."
         )
         if not confirmation:
             cli_utils.declare("Pipeline deletion canceled.")
             return
 
     try:
-        Client().delete_pipeline(name_id_or_prefix=pipeline_name_or_id)
+        try:
+            id_ = UUID(pipeline_name_or_id, version=4)
+            name = None
+        except:
+            id_ = None
+            name = pipeline_name_or_id
+
+        Client().delete_pipeline(id=id_, name=name, version=version)
     except KeyError as e:
         cli_utils.error(str(e))
     else:
-        cli_utils.declare(f"Deleted pipeline '{pipeline_name_or_id}'.")
+        cli_utils.declare(
+            f"Deleted pipeline `{pipeline_name_or_id}{version_suffix}`."
+        )
 
 
 @pipeline.group()
