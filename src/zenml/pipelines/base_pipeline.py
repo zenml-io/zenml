@@ -561,13 +561,45 @@ class BasePipeline(metaclass=BasePipelineMeta):
             )
             stack.prepare_pipeline_deployment(deployment=pipeline_deployment)
 
-            if isinstance(build_output, UUID):
-                build_output = (
-                    Client()
-                    .zen_store.get_build(build_id=build_output)
-                    .configuration
+            if build_output:
+                logger.info(
+                    "Using an old build for a pipeline run can lead to "
+                    "unexpected behavior. This pipeline run will use the code "
+                    "as well as configuration that were included in the Docker "
+                    "images and therefore might not use the current code and "
+                    "configuration of your pipeline."
                 )
-            elif not build_output:
+
+                if isinstance(build_output, UUID):
+                    build = Client().zen_store.get_build(build_id=build_output)
+                    build_output = build.configuration
+
+                    if build.pipeline:
+                        build_hash = build.pipeline.version_hash
+                        current_hash = self._compute_unique_identifier(
+                            pipeline_spec=pipeline_spec
+                        )
+
+                        if build_hash != current_hash:
+                            logger.warning(
+                                "The pipeline associated with the build you "
+                                "specified for this run has a different spec "
+                                "or step code. This might lead to unexpected "
+                                "behavior as this pipeline run will use the "
+                                "code as well as configuration that were "
+                                "included in the Docker images and therefore "
+                                "might not use the current code and "
+                                "configuration of your pipeline."
+                            )
+
+                if build_output.is_local:
+                    logger.warning(
+                        "You're using a local build to run your pipeline. This "
+                        "might lead to errors if the images don't exist on "
+                        "your local machine or the image tags have been "
+                        "overwritten since the original build happened."
+                    )
+            else:
                 build = self._build(deployment=pipeline_deployment)
                 if build:
                     build_output = build.configuration
