@@ -479,7 +479,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             return
 
         with event_handler(AnalyticsEvent.RUN_PIPELINE) as analytics_handler:
-            pipeline_deployment, pipeline_spec = self._compile(
+            deployment, pipeline_spec = self._compile(
                 config_path=config_path,
                 run_name=run_name,
                 enable_cache=enable_cache,
@@ -499,7 +499,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             pipeline_id = None
             if register_pipeline:
                 pipeline_id = self._register(pipeline_spec=pipeline_spec).id
-                pipeline_deployment = pipeline_deployment.copy(
+                deployment = deployment.copy(
                     update={"pipeline_id": pipeline_id}
                 )
 
@@ -509,12 +509,10 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 if not schedule.name:
                     date = datetime.utcnow().strftime("%Y_%m_%d")
                     time = datetime.utcnow().strftime("%H_%M_%S_%f")
-                    schedule.name = pipeline_deployment.run_name.format(
+                    schedule.name = deployment.run_name.format(
                         date=date, time=time
                     )
-                    pipeline_deployment = pipeline_deployment.copy(
-                        update={"schedule": schedule}
-                    )
+                    deployment = deployment.copy(update={"schedule": schedule})
                 components = Client().active_stack_model.components
                 orchestrator = components[StackComponentType.ORCHESTRATOR][0]
                 schedule_model = ScheduleRequestModel(
@@ -535,31 +533,31 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 )
                 logger.info(
                     f"Created schedule '{schedule.name}' for pipeline "
-                    f"{pipeline_deployment.pipeline.name}."
+                    f"{deployment.pipeline.name}."
                 )
-                pipeline_deployment = pipeline_deployment.copy(
+                deployment = deployment.copy(
                     update={"schedule_id": schedule_id}
                 )
 
             stack = Client().active_stack
             analytics_handler.metadata = self._get_pipeline_analytics_metadata(
-                deployment=pipeline_deployment, stack=stack
+                deployment=deployment, stack=stack
             )
             caching_status = (
                 "enabled"
-                if pipeline_deployment.pipeline.enable_cache is not False
+                if deployment.pipeline.enable_cache is not False
                 else "disabled"
             )
             logger.info(
                 "%s %s on stack `%s` (caching %s)",
-                "Scheduling" if pipeline_deployment.schedule else "Running",
-                f"pipeline `{pipeline_deployment.pipeline.name}`"
+                "Scheduling" if deployment.schedule else "Running",
+                f"pipeline `{deployment.pipeline.name}`"
                 if register_pipeline
                 else "unlisted pipeline",
                 stack.name,
                 caching_status,
             )
-            stack.prepare_pipeline_deployment(deployment=pipeline_deployment)
+            stack.prepare_pipeline_deployment(deployment=deployment)
 
             if build_output:
                 logger.info(
@@ -591,6 +589,20 @@ class BasePipeline(metaclass=BasePipelineMeta):
                                 "might not use the current code and "
                                 "configuration of your pipeline."
                             )
+                else:
+                    # TODO: should we even allow this at the moment as the
+                    # deployment inside the container can't possibly have the
+                    # correct build ID and will therefore not produce "correct"
+                    # runs in the DB that store the associated build
+                    build = BuildOutputRequestModel(
+                        id=uuid4(),
+                        user=Client().active_user.id,
+                        workspace=Client().active_workspace.id,
+                        stack=Client().active_stack_model.id,
+                        pipeline=deployment.pipeline_id,
+                        configuration=build_output,
+                    )
+                    Client().zen_store.create_build(build)
 
                 if build_output.is_local:
                     logger.warning(
@@ -600,7 +612,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                         "overwritten since the original build happened."
                     )
             else:
-                build = self._build(deployment=pipeline_deployment)
+                build = self._build(deployment=deployment)
                 if build:
                     build_output = build.configuration
 
@@ -609,7 +621,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True
             try:
                 return_value = stack.deploy_pipeline(
-                    deployment=pipeline_deployment,
+                    deployment=deployment,
                     builds=build_output,
                 )
             finally:
@@ -617,7 +629,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
             # Log the dashboard URL
             dashboard_utils.print_run_url(
-                run_name=pipeline_deployment.run_name, pipeline_id=pipeline_id
+                run_name=deployment.run_name, pipeline_id=pipeline_id
             )
 
             return return_value
