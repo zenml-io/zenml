@@ -130,6 +130,15 @@ class StepView(BaseView):
         return self.step_configuration.enable_cache
 
     @property
+    def enable_artifact_metadata(self) -> Optional[bool]:
+        """Returns whether artifact metadata is enabled for this step.
+
+        Returns:
+            Whether artifact metadata is enabled for this step.
+        """
+        return self.step_configuration.enable_artifact_metadata
+
+    @property
     def step_operator(self) -> Optional[str]:
         """Returns the name of the step operator of the step.
 

@@ -36,6 +36,7 @@ from zenml.constants import (
 from zenml.enums import SecretValidationLevel, StackComponentType
 from zenml.exceptions import ProvisioningError, StackValidationError
 from zenml.logger import get_logger
+from zenml.metadata.metadata_types import MetadataType
 from zenml.models import StackResponseModel
 from zenml.utils import settings_utils
 
@@ -752,6 +753,17 @@ class Stack:
                     f"is not currently running. Please run the following "
                     f"command to provision and start the component:\n\n"
                     f"    `zenml stack up`\n"
+                    f"It is worth noting that the provision command will "
+                    f" be deprecated in the future. ZenML will no longer "
+                    f"be responsible for provisioning infrastructure, "
+                    f"or port-forwarding directly. Instead of managing "
+                    f"the state of the components, ZenML will be utilizing "
+                    f"the already running stack or stack components directly. "
+                    f"Additionally, we are also providing a variety of "
+                    f" deployment recipes for popular Kubernetes-based "
+                    f"integrations such as Kubeflow, Tekton, and Seldon etc."
+                    f"Check out https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes"
+                    f"for more information."
                 )
 
         if self.requires_remote_server and Client().zen_store.is_local_store():
@@ -826,6 +838,58 @@ class Stack:
             info.config
         ).values():
             component.prepare_step_run(info=info)
+
+    def get_pipeline_run_metadata(
+        self, run_id: UUID
+    ) -> Dict[UUID, Dict[str, MetadataType]]:
+        """Get general component-specific metadata for a pipeline run.
+
+        Args:
+            run_id: ID of the pipeline run.
+
+        Returns:
+            A dictionary mapping component IDs to the metadata they created.
+        """
+        pipeline_run_metadata: Dict[UUID, Dict[str, MetadataType]] = {}
+        for component in self.components.values():
+            try:
+                component_metadata = component.get_pipeline_run_metadata(
+                    run_id=run_id
+                )
+                if component_metadata:
+                    pipeline_run_metadata[component.id] = component_metadata
+            except Exception as e:
+                logger.warning(
+                    f"Extracting pipeline run metadata failed for component "
+                    f"'{component.name}' of type '{component.type}': {e}"
+                )
+        return pipeline_run_metadata
+
+    def get_step_run_metadata(
+        self, info: "StepRunInfo"
+    ) -> Dict[UUID, Dict[str, MetadataType]]:
+        """Get component-specific metadata for a step run.
+
+        Args:
+            info: Info about the step that was executed.
+
+        Returns:
+            A dictionary mapping component IDs to the metadata they created.
+        """
+        step_run_metadata: Dict[UUID, Dict[str, MetadataType]] = {}
+        for component in self._get_active_components_for_step(
+            info.config
+        ).values():
+            try:
+                component_metadata = component.get_step_run_metadata(info=info)
+                if component_metadata:
+                    step_run_metadata[component.id] = component_metadata
+            except Exception as e:
+                logger.warning(
+                    f"Extracting step run metadata failed for component "
+                    f"'{component.name}' of type '{component.type}': {e}"
+                )
+        return step_run_metadata
 
     def cleanup_step_run(self, info: "StepRunInfo", step_failed: bool) -> None:
         """Cleans up resources after the step run is finished.

@@ -30,7 +30,7 @@ from zenml.integrations.seldon.seldon_client import (
     SeldonResourceRequirements,
 )
 from zenml.logger import get_logger
-from zenml.services.service import BaseService, ServiceConfig
+from zenml.services.service import BaseDeploymentService, ServiceConfig
 from zenml.services.service_status import ServiceState, ServiceStatus
 from zenml.services.service_type import ServiceType
 
@@ -160,7 +160,7 @@ class SeldonDeploymentServiceStatus(ServiceStatus):
     """Seldon Core deployment service status."""
 
 
-class SeldonDeploymentService(BaseService):
+class SeldonDeploymentService(BaseDeploymentService):
     """A service that represents a Seldon Core deployment server.
 
     Attributes:

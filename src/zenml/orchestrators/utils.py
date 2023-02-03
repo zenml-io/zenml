@@ -14,7 +14,7 @@
 """Utility functions for the orchestrator."""
 
 import random
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 from uuid import UUID
 
 from zenml.client import Client
@@ -57,3 +57,27 @@ def get_run_id_for_orchestrator_run_id(
     """
     run_id_seed = f"{orchestrator.id}-{orchestrator_run_id}"
     return uuid_utils.generate_uuid_from_string(run_id_seed)
+
+
+def is_setting_enabled(
+    is_enabled_on_step: Optional[bool],
+    is_enabled_on_pipeline: Optional[bool],
+) -> bool:
+    """Checks if a certain setting is enabled within a step run.
+
+    This is the case if:
+    - the setting is explicitly enabled for the step, or
+    - the setting is neither explicitly disabled for the step nor the pipeline.
+
+    Args:
+        is_enabled_on_step: The setting of the step.
+        is_enabled_on_pipeline: The setting of the pipeline.
+
+    Returns:
+        True if the setting is enabled within the step run, False otherwise.
+    """
+    if is_enabled_on_step is not None:
+        return is_enabled_on_step
+    if is_enabled_on_pipeline is not None:
+        return is_enabled_on_pipeline
+    return True

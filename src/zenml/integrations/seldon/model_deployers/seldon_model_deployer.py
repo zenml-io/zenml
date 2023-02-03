@@ -128,7 +128,9 @@ class SeldonModelDeployer(BaseModelDeployer):
             The Seldon Core Kubernetes secret name, or None if no secret is
             configured.
         """
-        if not self.config.secret:
+        if self.config.kubernetes_secret_name and not self.config.secret:
+            return self.config.kubernetes_secret_name
+        elif not self.config.secret:
             return None
         return (
             re.sub(
@@ -178,7 +180,9 @@ class SeldonModelDeployer(BaseModelDeployer):
         # if a ZenML secret was configured in the model deployer,
         # create a Kubernetes secret as a means to pass this information
         # to the Seldon Core deployment
-        if self.config.secret:
+        if self.config.kubernetes_secret_name and not self.config.secret:
+            return self.config.kubernetes_secret_name
+        elif self.config.secret:
 
             secret_manager = Client().active_stack.secrets_manager
 
@@ -213,7 +217,11 @@ class SeldonModelDeployer(BaseModelDeployer):
 
         Do this if no Seldon Core deployments are using it.
         """
-        if self.kubernetes_secret_name:
+        if (
+            self.kubernetes_secret_name
+            and self.kubernetes_secret_name
+            != self.config.kubernetes_secret_name
+        ):
 
             # fetch all the Seldon Core deployments that currently
             # configured to use this secret

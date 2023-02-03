@@ -60,13 +60,10 @@ class VertexStepOperatorConfig(  # type: ignore[misc] # https://github.com/pydan
 
     Attributes:
         region: Region name, e.g., `europe-west1`.
-        project: GCP project name. If left None, inferred from the
-            environment.
         encryption_spec_key_name: Encryption spec key name.
     """
 
     region: str
-    project: Optional[str] = None
 
     # customer managed encryption key resource name
     # will be applied to all Vertex AI resources if set

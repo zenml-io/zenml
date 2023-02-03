@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from zenml.integrations.seldon.seldon_client import SeldonResourceRequirements
 from zenml.integrations.seldon.services.seldon_deployment import (
     SeldonDeploymentConfig,
 )
@@ -27,7 +28,9 @@ seldon_tensorflow_custom_deployment = seldon_custom_model_deployer_step(
             model_name="seldon-tensorflow-custom-model",
             replicas=1,
             implementation="custom",
-            resources={"requests": {"cpu": "200m", "memory": "500m"}},
+            resources=SeldonResourceRequirements(
+                limits={"cpu": "200m", "memory": "250Mi"}
+            ),
         ),
         timeout=240,
         custom_deploy_parameters=CustomDeployParameters(

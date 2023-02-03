@@ -54,17 +54,14 @@ on:
           # Default ZenML deployments
           - default
           - default-docker-orchestrator
-          - default-kubeflow-orchestrator
           - default-airflow-orchestrator
           # Local ZenML server deployments
           - local-server
           - local-server-docker-orchestrator
-          - local-server-kubeflow-orchestrator
           - local-server-airflow-orchestrator
           # Local ZenML docker-compose server deployments
           - docker-server
           - docker-server-docker-orchestrator
-          - docker-server-kubeflow-orchestrator
           - docker-server-airflow-orchestrator
           # AWS ZenML server deployment with local components
           - aws-local-orchestrator

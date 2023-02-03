@@ -112,3 +112,21 @@ def test_template_generator_works():
 
     template = pydantic_utils.TemplateGenerator(TestModel).run()
     assert template == {"a": "int", "b": {"c": "int", "d": "str"}}
+
+
+def test_yaml_serialization_mixin(tmp_path):
+    """Tests that the yaml serialization mixin works."""
+
+    class Model(pydantic_utils.YAMLSerializationMixin):
+        b: str
+        a: int
+
+    model = Model(a=1, b="b")
+
+    assert model.yaml() == "b: b\na: 1\n"
+    assert model.yaml(sort_keys=True) == "a: 1\nb: b\n"
+
+    yaml_path = tmp_path / "test.yaml"
+    yaml_path.write_text(model.yaml())
+
+    assert Model.from_yaml(str(yaml_path)) == model
