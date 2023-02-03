@@ -77,16 +77,14 @@ from zenml.integrations.kubeflow.utils import apply_pod_settings
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType, Uri
-from zenml.orchestrators.base_orchestrator import BaseOrchestrator
+from zenml.orchestrators import ContainerizedOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack.stack_validator import StackValidator
 from zenml.utils.io_utils import get_global_config_directory
-from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilder,
-)
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
+    from zenml.config.build_configuration import BuildOutput
     from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.config.schedule import Schedule
     from zenml.stack import Stack
@@ -108,7 +106,7 @@ def _clean_pipeline_name(pipeline_name: str) -> str:
     return pipeline_name.replace("_", "-").lower()
 
 
-class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
+class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
     """Orchestrator responsible for running pipelines on Vertex AI."""
 
     _pipeline_root: str
@@ -261,12 +259,6 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
                     "schedule to a Vertex orchestrator."
                 )
 
-        docker_image_builder = PipelineDockerImageBuilder()
-        repo_digest = docker_image_builder.build_docker_image(
-            deployment=deployment, stack=stack
-        )
-        deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
-
     def _configure_container_resources(
         self,
         container_op: dsl.ContainerOp,
@@ -320,6 +312,7 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         self,
         deployment: "PipelineDeployment",
         stack: "Stack",
+        builds: Optional["BuildOutput"],
     ) -> Any:
         """Creates a KFP JSON pipeline.
 
@@ -360,6 +353,7 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
                 raised if attempting to schedule pipeline run without using the
                 `zenml.integrations.gcp.artifact_store.GCPArtifactStore`.
         """
+        assert builds
         orchestrator_run_name = get_orchestrator_run_name(
             pipeline_name=deployment.pipeline.name
         )
@@ -381,8 +375,6 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         else:
             self._pipeline_root = self.config.pipeline_root
 
-        image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
-
         def _construct_kfp_pipeline() -> None:
             """Create a `ContainerOp` for each step.
 
@@ -400,6 +392,9 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
             step_name_to_container_op: Dict[str, dsl.ContainerOp] = {}
 
             for step_name, step in deployment.steps.items():
+                image = builds.get_image(
+                    key=ORCHESTRATOR_DOCKER_IMAGE_KEY, step=step_name
+                )
                 arguments = (
                     StepEntrypointConfiguration.get_entrypoint_arguments(
                         step_name=step_name,
@@ -414,7 +409,7 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
                     name: {step.config.name}
                     implementation:
                         container:
-                            image: {image_name}
+                            image: {image}
                             command: {command + arguments}"""
                 )()
 

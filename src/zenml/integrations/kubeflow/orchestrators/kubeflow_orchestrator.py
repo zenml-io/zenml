@@ -61,15 +61,13 @@ from zenml.integrations.kubeflow.utils import apply_pod_settings
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType, Uri
-from zenml.orchestrators import BaseOrchestrator
+from zenml.orchestrators import ContainerizedOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 from zenml.utils import io_utils, settings_utils
-from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilder,
-)
 
 if TYPE_CHECKING:
+    from zenml.config.build_configuration import BuildOutput
     from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.stack import Stack
     from zenml.steps import ResourceSettings
@@ -85,7 +83,7 @@ KFP_POD_LABELS = {
 ENV_KFP_RUN_ID = "KFP_RUN_ID"
 
 
-class KubeflowOrchestrator(BaseOrchestrator):
+class KubeflowOrchestrator(ContainerizedOrchestrator):
     """Orchestrator responsible for running pipelines using Kubeflow."""
 
     @property
@@ -275,23 +273,6 @@ class KubeflowOrchestrator(BaseOrchestrator):
         """
         return os.path.join(self.root_directory, "pipelines")
 
-    def prepare_pipeline_deployment(
-        self,
-        deployment: "PipelineDeployment",
-        stack: "Stack",
-    ) -> None:
-        """Build a Docker image and push it to the container registry.
-
-        Args:
-            deployment: The pipeline deployment configuration.
-            stack: The stack on which the pipeline will be deployed.
-        """
-        docker_image_builder = PipelineDockerImageBuilder()
-        repo_digest = docker_image_builder.build_docker_image(
-            deployment=deployment, stack=stack
-        )
-        deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
-
     def _configure_container_op(
         self,
         container_op: dsl.ContainerOp,
@@ -405,6 +386,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         self,
         deployment: "PipelineDeployment",
         stack: "Stack",
+        builds: Optional["BuildOutput"],
     ) -> Any:
         """Creates a kfp yaml file.
 
@@ -438,6 +420,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
             RuntimeError: If trying to run a pipeline in a notebook
                 environment.
         """
+        assert builds
         # First check whether the code running in a notebook
         if Environment.in_notebook():
             raise RuntimeError(
@@ -450,7 +433,6 @@ class KubeflowOrchestrator(BaseOrchestrator):
             )
 
         assert stack.container_registry
-        image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
 
         # Create a callable for future compilation into a dsl.Pipeline.
         def _construct_kfp_pipeline() -> None:
@@ -470,6 +452,10 @@ class KubeflowOrchestrator(BaseOrchestrator):
             step_name_to_container_op: Dict[str, dsl.ContainerOp] = {}
 
             for step_name, step in deployment.steps.items():
+                image = builds.get_image(
+                    key=ORCHESTRATOR_DOCKER_IMAGE_KEY, step=step_name
+                )
+
                 # The command will be needed to eventually call the python step
                 # within the docker container
                 command = StepEntrypointConfiguration.get_entrypoint_command()
@@ -491,7 +477,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 # in the base entrypoint `run()` method.
                 container_op = dsl.ContainerOp(
                     name=step.config.name,
-                    image=image_name,
+                    image=image,
                     command=command,
                     arguments=arguments,
                 )

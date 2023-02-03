@@ -77,25 +77,6 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
             required_components={StackComponentType.IMAGE_BUILDER}
         )
 
-    # def prepare_pipeline_deployment(
-    #     self,
-    #     deployment: "PipelineDeployment",
-    #     stack: "Stack",
-    # ) -> None:
-    #     """Build a Docker image and (maybe) push it to the container registry.
-
-    #     Args:
-    #         deployment: The pipeline deployment configuration.
-    #         stack: The stack on which the pipeline will be deployed.
-    #     """
-    #     docker_image_builder = PipelineDockerImageBuilder()
-    #     image_name_or_digest = docker_image_builder.build_docker_image(
-    #         deployment=deployment, stack=stack
-    #     )
-    #     deployment.add_extra(
-    #         ORCHESTRATOR_DOCKER_IMAGE_KEY, image_name_or_digest
-    #     )
-
     def get_orchestrator_run_id(self) -> str:
         """Returns the active orchestrator run id.
 
@@ -174,7 +155,7 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
                 LocalDockerOrchestratorSettings,
                 self.get_settings(step),
             )
-            image_name = builds.get_image(
+            image = builds.get_image(
                 key=ORCHESTRATOR_DOCKER_IMAGE_KEY, step=step_name
             )
 
@@ -183,7 +164,7 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
                 user = os.getuid()
             logger.info("Running step `%s` in Docker:", step_name)
             logs = docker_client.containers.run(
-                image=image_name,
+                image=image,
                 entrypoint=entrypoint,
                 command=arguments,
                 user=user,

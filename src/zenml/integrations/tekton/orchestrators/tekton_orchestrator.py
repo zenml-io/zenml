@@ -39,16 +39,14 @@ from zenml.integrations.tekton.flavors.tekton_orchestrator_flavor import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.orchestrators import BaseOrchestrator
+from zenml.orchestrators import ContainerizedOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 from zenml.utils import io_utils
-from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilder,
-)
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
+    from zenml.config.build_configuration import BuildOutput
     from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.stack import Stack
     from zenml.steps import ResourceSettings
@@ -59,7 +57,7 @@ logger = get_logger(__name__)
 ENV_ZENML_TEKTON_RUN_ID = "ZENML_TEKTON_RUN_ID"
 
 
-class TektonOrchestrator(BaseOrchestrator):
+class TektonOrchestrator(ContainerizedOrchestrator):
     """Orchestrator responsible for running pipelines using Tekton."""
 
     @property
@@ -205,23 +203,6 @@ class TektonOrchestrator(BaseOrchestrator):
             custom_validation_function=_validate,
         )
 
-    def prepare_pipeline_deployment(
-        self,
-        deployment: "PipelineDeployment",
-        stack: "Stack",
-    ) -> None:
-        """Build a Docker image and push it to the container registry.
-
-        Args:
-            deployment: The pipeline deployment configuration.
-            stack: The stack on which the pipeline will be deployed.
-        """
-        docker_image_builder = PipelineDockerImageBuilder()
-        repo_digest = docker_image_builder.build_docker_image(
-            deployment=deployment, stack=stack
-        )
-        deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
-
     def _configure_container_op(
         self,
         container_op: dsl.ContainerOp,
@@ -316,6 +297,7 @@ class TektonOrchestrator(BaseOrchestrator):
         self,
         deployment: "PipelineDeployment",
         stack: "Stack",
+        builds: Optional["BuildOutput"],
     ) -> Any:
         """Runs the pipeline on Tekton.
 
@@ -329,6 +311,7 @@ class TektonOrchestrator(BaseOrchestrator):
         Raises:
             RuntimeError: If you try to run the pipelines in a notebook environment.
         """
+        assert builds
         # First check whether the code running in a notebook
         if Environment.in_notebook():
             raise RuntimeError(
@@ -341,7 +324,6 @@ class TektonOrchestrator(BaseOrchestrator):
             )
 
         assert stack.container_registry
-        image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
 
         orchestrator_run_name = get_orchestrator_run_name(
             pipeline_name=deployment.pipeline.name
@@ -360,6 +342,10 @@ class TektonOrchestrator(BaseOrchestrator):
             step_name_to_container_op: Dict[str, dsl.ContainerOp] = {}
 
             for step_name, step in deployment.steps.items():
+                image = builds.get_image(
+                    key=ORCHESTRATOR_DOCKER_IMAGE_KEY, step=step_name
+                )
+
                 command = StepEntrypointConfiguration.get_entrypoint_command()
                 arguments = (
                     StepEntrypointConfiguration.get_entrypoint_arguments(
@@ -369,7 +355,7 @@ class TektonOrchestrator(BaseOrchestrator):
 
                 container_op = dsl.ContainerOp(
                     name=step.config.name,
-                    image=image_name,
+                    image=image,
                     command=command,
                     arguments=arguments,
                 )

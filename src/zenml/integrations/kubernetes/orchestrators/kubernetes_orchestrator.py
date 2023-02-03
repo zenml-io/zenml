@@ -53,14 +53,12 @@ from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
     build_pod_manifest,
 )
 from zenml.logger import get_logger
-from zenml.orchestrators import BaseOrchestrator
+from zenml.orchestrators import ContainerizedOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
-from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilder,
-)
 
 if TYPE_CHECKING:
+    from zenml.config.build_configuration import BuildOutput
     from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.stack import Stack
 
@@ -69,7 +67,7 @@ logger = get_logger(__name__)
 ENV_ZENML_KUBERNETES_RUN_ID = "ZENML_KUBERNETES_RUN_ID"
 
 
-class KubernetesOrchestrator(BaseOrchestrator):
+class KubernetesOrchestrator(ContainerizedOrchestrator):
     """Orchestrator for running ZenML pipelines using native Kubernetes."""
 
     _k8s_core_api: k8s_client.CoreV1Api = None
@@ -258,27 +256,11 @@ class KubernetesOrchestrator(BaseOrchestrator):
             custom_validation_function=_validate_local_requirements,
         )
 
-    def prepare_pipeline_deployment(
-        self,
-        deployment: "PipelineDeployment",
-        stack: "Stack",
-    ) -> None:
-        """Build a Docker image and push it to the container registry.
-
-        Args:
-            deployment: The pipeline deployment configuration.
-            stack: The stack on which the pipeline will be deployed.
-        """
-        docker_image_builder = PipelineDockerImageBuilder()
-        repo_digest = docker_image_builder.build_docker_image(
-            deployment=deployment, stack=stack
-        )
-        deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
-
     def prepare_or_run_pipeline(
         self,
         deployment: "PipelineDeployment",
         stack: "Stack",
+        builds: Optional["BuildOutput"],
     ) -> Any:
         """Runs the pipeline in Kubernetes.
 
@@ -289,6 +271,7 @@ class KubernetesOrchestrator(BaseOrchestrator):
         Raises:
             RuntimeError: If trying to run from a Jupyter notebook.
         """
+        assert builds
         # First check whether the code is running in a notebook.
         if Environment.in_notebook():
             raise RuntimeError(
@@ -315,6 +298,8 @@ class KubernetesOrchestrator(BaseOrchestrator):
 
         # Get Docker image name (for all pods).
         assert stack.container_registry
+        # TODO: figure out which image to use for the orchestrator pod, allow
+        # per-step images
         image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
 
         # Build entrypoint command and args for the orchestrator pod.

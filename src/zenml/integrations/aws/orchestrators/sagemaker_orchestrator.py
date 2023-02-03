@@ -32,17 +32,14 @@ from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
 )
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
-from zenml.orchestrators.base_orchestrator import BaseOrchestrator
+from zenml.orchestrators import ContainerizedOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
-from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilder,
-)
 
 if TYPE_CHECKING:
+    from zenml.config.build_configuration import BuildOutput
     from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.stack import Stack
-
 
 ENV_ZENML_SAGEMAKER_RUN_ID = "ZENML_SAGEMAKER_RUN_ID"
 MAX_POLLING_ATTEMPTS = 100
@@ -51,7 +48,7 @@ POLLING_DELAY = 30
 logger = get_logger(__name__)
 
 
-class SagemakerOrchestrator(BaseOrchestrator):
+class SagemakerOrchestrator(ContainerizedOrchestrator):
     """Orchestrator responsible for running pipelines on Sagemaker."""
 
     @property
@@ -120,21 +117,6 @@ class SagemakerOrchestrator(BaseOrchestrator):
                 f"{ENV_ZENML_SAGEMAKER_RUN_ID}."
             )
 
-    def prepare_pipeline_deployment(
-        self, deployment: "PipelineDeployment", stack: "Stack"
-    ) -> None:
-        """Build a Docker image and push it to the container registry.
-
-        Args:
-            deployment: The pipeline deployment configuration.
-            stack: The stack on which the pipeline will be deployed.
-        """
-        docker_image_builder = PipelineDockerImageBuilder()
-        repo_digest = docker_image_builder.build_docker_image(
-            deployment=deployment, stack=stack
-        )
-        deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
-
     @property
     def settings_class(self) -> Optional[Type["BaseSettings"]]:
         """Settings class for the Sagemaker orchestrator.
@@ -145,7 +127,10 @@ class SagemakerOrchestrator(BaseOrchestrator):
         return SagemakerOrchestratorSettings
 
     def prepare_or_run_pipeline(
-        self, deployment: "PipelineDeployment", stack: "Stack"
+        self,
+        deployment: "PipelineDeployment",
+        stack: "Stack",
+        builds: Optional["BuildOutput"],
     ) -> None:
         """Prepares or runs a pipeline on Sagemaker.
 
@@ -153,6 +138,7 @@ class SagemakerOrchestrator(BaseOrchestrator):
             deployment: The deployment to prepare or run.
             stack: The stack to run on.
         """
+        assert builds
         if deployment.schedule:
             logger.warning(
                 "The Sagemaker Orchestrator currently does not support the "
@@ -165,10 +151,12 @@ class SagemakerOrchestrator(BaseOrchestrator):
         ).replace("_", "-")
 
         session = sagemaker.Session(default_bucket=self.config.bucket)
-        image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
 
         sagemaker_steps = []
         for step_name, step in deployment.steps.items():
+            image = builds.get_image(
+                key=ORCHESTRATOR_DOCKER_IMAGE_KEY, step=step_name
+            )
             command = StepEntrypointConfiguration.get_entrypoint_command()
             arguments = StepEntrypointConfiguration.get_entrypoint_arguments(
                 step_name=step_name
@@ -190,7 +178,7 @@ class SagemakerOrchestrator(BaseOrchestrator):
 
             processor = sagemaker.processing.Processor(
                 role=processor_role,
-                image_uri=image_name,
+                image_uri=image,
                 instance_count=1,
                 sagemaker_session=session,
                 instance_type=step_settings.instance_type,

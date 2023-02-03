@@ -45,16 +45,14 @@ from zenml.integrations.airflow.flavors.airflow_orchestrator_flavor import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import Uri
-from zenml.orchestrators import BaseOrchestrator
+from zenml.orchestrators import ContainerizedOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 from zenml.utils import daemon, io_utils
-from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilder,
-)
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
+    from zenml.config.build_configuration import BuildOutput
     from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.integrations.airflow.orchestrators.dag_generator import (
         DagConfiguration,
@@ -63,7 +61,6 @@ if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType
     from zenml.pipelines import Schedule
     from zenml.stack import Stack
-
 
 logger = get_logger(__name__)
 
@@ -106,7 +103,7 @@ def get_dag_generator_values(
     )
 
 
-class AirflowOrchestrator(BaseOrchestrator):
+class AirflowOrchestrator(ContainerizedOrchestrator):
     """Orchestrator responsible for running pipelines using Airflow."""
 
     def __init__(self, **values: Any):
@@ -211,18 +208,11 @@ class AirflowOrchestrator(BaseOrchestrator):
         if self.config.local:
             stack.check_local_paths()
 
-        docker_image_builder = PipelineDockerImageBuilder()
-        image_name_or_digest = docker_image_builder.build_docker_image(
-            deployment=deployment, stack=stack
-        )
-        deployment.add_extra(
-            ORCHESTRATOR_DOCKER_IMAGE_KEY, image_name_or_digest
-        )
-
     def prepare_or_run_pipeline(
         self,
         deployment: "PipelineDeployment",
         stack: "Stack",
+        builds: Optional["BuildOutput"],
     ) -> Any:
         """Creates and writes an Airflow DAG zip file.
 
@@ -230,6 +220,7 @@ class AirflowOrchestrator(BaseOrchestrator):
             deployment: The pipeline deployment to prepare or run.
             stack: The stack the pipeline will run on.
         """
+        assert builds
         pipeline_settings = cast(
             AirflowOrchestratorSettings, self.get_settings(deployment)
         )
@@ -264,13 +255,14 @@ class AirflowOrchestrator(BaseOrchestrator):
             if self.config.local
             else None
         )
-        docker_image = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
+        image = builds.get_image(key=ORCHESTRATOR_DOCKER_IMAGE_KEY)
+
         dag_id = pipeline_settings.dag_id or get_orchestrator_run_name(
             pipeline_name=deployment.pipeline.name
         )
         dag_config = dag_generator_values.dag_configuration_class(
             id=dag_id,
-            docker_image=docker_image,
+            docker_image=image,  # TODO: support per-step images
             local_stores_path=local_stores_path,
             tasks=tasks,
             tags=pipeline_settings.dag_tags,

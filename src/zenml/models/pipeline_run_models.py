@@ -155,7 +155,6 @@ class PipelineRunResponseModel(
 
     build: Optional["BuildOutputResponseModel"] = Field(
         title="The build output that was used for this run."
-
     )
 
 

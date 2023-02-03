@@ -30,6 +30,7 @@ from zenml.container_registries import (
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
 )
+from zenml.enums import StackComponentType
 from zenml.integrations.github.flavors.github_actions_orchestrator_flavor import (
     GitHubActionsOrchestratorConfig,
 )
@@ -39,19 +40,14 @@ from zenml.integrations.github.secrets_managers.github_secrets_manager import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.orchestrators import BaseOrchestrator
+from zenml.orchestrators import ContainerizedOrchestrator
 from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
-from zenml.stack import Stack
+from zenml.stack import Stack, StackValidator
 from zenml.utils import yaml_utils
-from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilder,
-)
 
 if TYPE_CHECKING:
+    from zenml.config.build_configuration import BuildOutput
     from zenml.config.pipeline_deployment import PipelineDeployment
-
-from zenml.enums import StackComponentType
-from zenml.stack import StackValidator
 
 logger = get_logger(__name__)
 
@@ -63,7 +59,7 @@ DOCKER_LOGIN_ACTION = "docker/login-action@v1"
 ENV_ZENML_GH_ACTIONS_RUN_ID = "ZENML_GH_ACTIONS_RUN_ID"
 
 
-class GitHubActionsOrchestrator(BaseOrchestrator):
+class GitHubActionsOrchestrator(ContainerizedOrchestrator):
     """Orchestrator responsible for running pipelines using GitHub Actions."""
 
     _git_repo: Optional[Repo] = None
@@ -319,16 +315,11 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
                 "--skip_dirty_repository_check=true`"
             )
 
-        docker_image_builder = PipelineDockerImageBuilder()
-        repo_digest = docker_image_builder.build_docker_image(
-            deployment=deployment, stack=stack
-        )
-        deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
-
     def prepare_or_run_pipeline(
         self,
         deployment: "PipelineDeployment",
         stack: "Stack",
+        builds: Optional["BuildOutput"],
     ) -> Any:
         """Writes a GitHub Action workflow yaml and optionally pushes it.
 
@@ -340,6 +331,7 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
             ValueError: If a schedule without a cron expression or with an
                 invalid cron expression is passed.
         """
+        assert builds
         schedule = deployment.schedule
 
         workflow_name = deployment.pipeline.name
@@ -405,8 +397,6 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
             )
             workflow_dict["on"] = {"push": {"paths": [workflow_path_in_repo]}}
 
-        image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
-
         # Prepare the step that writes an environment file which will get
         # passed to the docker image
         env_file_name = ".zenml_docker_env"
@@ -425,8 +415,7 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
             "docker",
             "run",
             *docker_run_args,
-            image_name,
-        ] + StepEntrypointConfiguration.get_entrypoint_command()
+        ]
 
         jobs = {}
         for step_name, step in deployment.steps.items():
@@ -447,13 +436,22 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
             if docker_login_step:
                 job_steps.append(copy.deepcopy(docker_login_step))
 
+            image = builds.get_image(
+                key=ORCHESTRATOR_DOCKER_IMAGE_KEY, step=step_name
+            )
+
+            entrypoint_command = (
+                StepEntrypointConfiguration.get_entrypoint_command()
+            )
             entrypoint_args = (
                 StepEntrypointConfiguration.get_entrypoint_arguments(
                     step_name=step_name,
                 )
             )
 
-            command = base_command + entrypoint_args
+            command = (
+                base_command + [image] + entrypoint_command + entrypoint_args
+            )
             docker_run_step = {
                 "name": "Run the docker image",
                 "run": " ".join(command),

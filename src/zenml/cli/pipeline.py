@@ -142,25 +142,47 @@ def build_pipeline(
             f.write(build.configuration.yaml())
 
 
-@pipeline.command("run", help="Run a pipeline with the given configuration.")
+# TODO: allow build output specification and stack specification or allow
+# specifying build output/ID in PipelineRunConfiguration
+@pipeline.command("run")
+@click.argument("name_or_id")
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    required=False,
+)
 @click.option(
     "--config",
     "-c",
     "config_path",
     type=click.Path(exists=True, dir_okay=False),
-    required=True,
+    required=False,
 )
-@click.argument("python_file")
-def cli_pipeline_run(python_file: str, config_path: str) -> None:
-    """Runs pipeline specified by the given config YAML object.
+def run_pipeline(
+    name_or_id: str,
+    version: Optional[str] = None,
+    config_path: Optional[str] = None,
+) -> None:
+    cli_utils.print_active_config()
 
-    Args:
-        python_file: Path to the python file that defines the pipeline.
-        config_path: Path to configuration YAML file.
-    """
-    from zenml.pipelines.run_pipeline import run_pipeline
+    if not Client().root:
+        cli_utils.error(
+            "`zenml pipeline run` can only be called within a ZenML "
+            "repository. Run `zenml init` at your source code root and try "
+            "again."
+        )
 
-    run_pipeline(python_file=python_file, config_path=config_path)
+    try:
+        id_ = UUID(name_or_id, version=4)
+        pipeline_model = Client().get_pipeline(id=id_)
+    except ValueError:
+        pipeline_model = Client().get_pipeline(
+            name=name_or_id, version=version
+        )
+
+    pipeline_instance = BasePipeline.from_model(pipeline_model)
+    pipeline_instance.run(config_path=config_path)
 
 
 @pipeline.command("list", help="List all registered pipelines.")
