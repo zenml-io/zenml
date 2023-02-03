@@ -25,6 +25,7 @@ on your client machine. Additional image builders are provided by integrations:
 |--------------------------------------------------|----------------|--------------|--------------------------------------------------------------------------|
 | [LocalImageBuilder](./local.md)                  | `local`        | _built-in_   | Builds your Docker images locally.                                       |
 | [KanikoImageBuilder](./kaniko.md)                | `kaniko`       | `kaniko`     | Builds your Docker images in Kubernetes using Kaniko.                    |
+| [GCPImageBuilder](./gcloud-build.md)             | `gcp`          | `gcp`        | Builds your Docker images using Google Cloud Build.                      |
 | [Custom Implementation](./custom.md)             | _custom_       |              | Extend the image builder abstraction and provide your own implementation |
 
 If you would like to see the available flavors of image builders, you can 

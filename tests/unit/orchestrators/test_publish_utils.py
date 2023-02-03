@@ -31,7 +31,7 @@ def test_publish_output_artifacts(clean_client):
         type=ArtifactType.DATA,
         name="some_name",
         user=clean_client.active_user.id,
-        project=clean_client.active_project.id,
+        workspace=clean_client.active_workspace.id,
     )
     artifact_2 = ArtifactRequestModel(
         uri="some/uri/def/",
@@ -40,7 +40,7 @@ def test_publish_output_artifacts(clean_client):
         type=ArtifactType.DATA,
         name="some_name",
         user=clean_client.active_user.id,
-        project=clean_client.active_project.id,
+        workspace=clean_client.active_workspace.id,
     )
     artifact_3 = ArtifactRequestModel(
         uri="some/uri/ghi/",
@@ -49,7 +49,7 @@ def test_publish_output_artifacts(clean_client):
         type=ArtifactType.MODEL,
         name="some_name",
         user=clean_client.active_user.id,
-        project=clean_client.active_project.id,
+        workspace=clean_client.active_workspace.id,
     )
 
     assert len(clean_client.list_artifacts()) == 0
@@ -192,3 +192,60 @@ def test_updating_the_pipeline_run_status(
         _, call_kwargs = mock_update_run.call_args
         call_kwargs["run_id"] == sample_pipeline_run_model.id
         call_kwargs["run_update"].status == new_status
+
+
+def test_publish_output_artifact_metadata(mocker):
+    """Unit test for `publish_output_artifact_metadata`."""
+    mock_create_run = mocker.patch(
+        "zenml.zen_stores.sql_zen_store.SqlZenStore.create_run_metadata",
+    )
+    output_artifact_ids = {
+        "output_name": uuid4(),
+        "output_name_2": uuid4(),
+    }
+    output_artifact_metadata = {
+        "output_name": {
+            "key": "value",
+            "key_2": "value_2",
+        },
+        "output_name_2": {"pi": 3.14},
+    }
+    publish_utils.publish_output_artifact_metadata(
+        output_artifact_ids=output_artifact_ids,
+        output_artifact_metadata=output_artifact_metadata,
+    )
+    assert mock_create_run.call_count == 3  # once per key-value pair
+
+
+def test_publish_pipeline_run_metadata(mocker):
+    """Unit test for `publish_pipeline_run_metadata`."""
+    mock_create_run = mocker.patch(
+        "zenml.zen_stores.sql_zen_store.SqlZenStore.create_run_metadata",
+    )
+    pipeline_run_id = uuid4()
+    pipeline_run_metadata = {
+        uuid4(): {"key": "value", "key_2": "value_2"},
+        uuid4(): {"pi": 3.14},
+    }
+    publish_utils.publish_pipeline_run_metadata(
+        pipeline_run_id=pipeline_run_id,
+        pipeline_run_metadata=pipeline_run_metadata,
+    )
+    assert mock_create_run.call_count == 3  # once per key-value pair
+
+
+def test_publish_step_run_metadata(mocker):
+    """Unit test for `publish_step_run_metadata`."""
+    mock_create_run = mocker.patch(
+        "zenml.zen_stores.sql_zen_store.SqlZenStore.create_run_metadata",
+    )
+    step_run_id = uuid4()
+    step_run_metadata = {
+        uuid4(): {"key": "value", "key_2": "value_2"},
+        uuid4(): {"pi": 3.14},
+    }
+    publish_utils.publish_step_run_metadata(
+        step_run_id=step_run_id,
+        step_run_metadata=step_run_metadata,
+    )
+    assert mock_create_run.call_count == 3  # once per key-value pair

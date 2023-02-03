@@ -21,10 +21,10 @@ from pydantic import BaseModel, Field
 
 from zenml.config.schedule import Schedule
 from zenml.models.base_models import (
-    ProjectScopedRequestModel,
-    ProjectScopedResponseModel,
+    WorkspaceScopedRequestModel,
+    WorkspaceScopedResponseModel,
 )
-from zenml.models.filter_models import ShareableProjectScopedFilterModel
+from zenml.models.filter_models import ShareableWorkspaceScopedFilterModel
 
 # ---- #
 # BASE #
@@ -47,8 +47,8 @@ class ScheduleBaseModel(Schedule, BaseModel):
 # -------- #
 
 
-class ScheduleResponseModel(ScheduleBaseModel, ProjectScopedResponseModel):
-    """Schedule response model with project and user hydrated."""
+class ScheduleResponseModel(ScheduleBaseModel, WorkspaceScopedResponseModel):
+    """Schedule response model with workspace and user hydrated."""
 
 
 # ------ #
@@ -56,11 +56,11 @@ class ScheduleResponseModel(ScheduleBaseModel, ProjectScopedResponseModel):
 # ------ #
 
 
-class ScheduleFilterModel(ShareableProjectScopedFilterModel):
+class ScheduleFilterModel(ShareableWorkspaceScopedFilterModel):
     """Model to enable advanced filtering of all Users."""
 
-    project_id: Union[UUID, str] = Field(
-        default=None, description="Project scope of the schedule."
+    workspace_id: Union[UUID, str] = Field(
+        default=None, description="Workspace scope of the schedule."
     )
     user_id: Union[UUID, str] = Field(
         None, description="User that created the schedule"
@@ -101,7 +101,7 @@ class ScheduleFilterModel(ShareableProjectScopedFilterModel):
 # ------- #
 
 
-class ScheduleRequestModel(ScheduleBaseModel, ProjectScopedRequestModel):
+class ScheduleRequestModel(ScheduleBaseModel, WorkspaceScopedRequestModel):
     """Schedule request model."""
 
 

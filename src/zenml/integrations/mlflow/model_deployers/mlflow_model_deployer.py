@@ -352,7 +352,6 @@ class MLFlowModelDeployer(BaseModelDeployer):
             True if the service matches the input criteria.
         """
         existing_service_config = existing_service.config
-
         # check if the existing service matches the input criteria
         if (
             (

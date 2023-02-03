@@ -17,9 +17,9 @@
 ## Starter Guide
 
 * [Pipelines](./starter-guide/pipelines/pipelines.md)
+  * [Step Parameterization and Caching](./starter-guide/pipelines/parameters-and-caching.md)
   * [Dashboard Overview](./starter-guide/pipelines/dashboard.md)
   * [Fetching Pipelines](./starter-guide/pipelines/fetching-pipelines.md)
-  * [Step Parameterization and Caching](./starter-guide/pipelines/parameters-and-caching.md)
 * [Stacks](./starter-guide/stacks/stacks.md)
   * [Registering Stacks](./starter-guide/stacks/registering-stacks.md)
   * [Managing Stacks](./starter-guide/stacks/managing-stacks.md)
@@ -43,6 +43,7 @@
   * [Writing Custom Flavors](./advanced-guide/stacks/custom-flavors.md)
   * [Managing Stack Component States](./advanced-guide/stacks/stack-state-management.md)
   * [Managing External Services](./advanced-guide/stacks/manage-external-services.md)
+  * [Tracking Custom Stack Component Metadata](./advanced-guide/stacks/component-metadata.md)
 * [Practical MLOps](./advanced-guide/practical/practical-mlops.md)
   * [Stack Recipes](./advanced-guide/practical/stack-recipes.md)
   * [Switching Orchestration](./advanced-guide/practical/switching-orchestration.md)
@@ -123,6 +124,7 @@
 * [Image Builders](./component-gallery/image-builders/image-builders.md)
   * [Local Image Builder](./component-gallery/image-builders/local.md)
   * [Kaniko Image Builder](./component-gallery/image-builders/kaniko.md)
+  * [Google Cloud Image Builder](./component-gallery/image-builders/gcloud-build.md)
   * [Develop a Custom Image Builder](./component-gallery/image-builders/custom.md)
 
 ## Guidelines

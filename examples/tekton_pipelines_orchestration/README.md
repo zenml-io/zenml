@@ -143,23 +143,16 @@ zenml stack register gcp_tekton_stack \
     -o gcp_tekton_orchestrator \
     -c gcr_registry \
     --set
-
-# Forward the Tekton pipelines UI so we can access it locally
-zenml stack up
 ```
 
 ### 🏁 See the Tekton Pipelines UI locally
 
-ZenML takes care of forwarding the right ports locally to see the UI. All we 
-need to do is run:
+To get the Tekton Pipelines UI endpoint, we can use the following command:
 
 ```bash
-zenml stack up
+kubectl get ingress -n tekton-pipelines  -o jsonpath='{.items[0].spec.rules[0].host}'
 ```
 
-When the setup is finished, you should see a local URL which you can access in
-your browser and take a look at the Tekton Pipelines UI 
-(usually at http://localhost:8080)
 
 ![Tekton 00](assets/tekton_ui.png)
 
@@ -199,11 +192,9 @@ you're using.
 
 ### 🧽 Clean up
 
-Once you're done experimenting, you can stop the port forwarding and delete 
-the example files by calling:
+Once you're done experimenting, you can delete the example files by calling:
 
 ```bash
-zenml stack down --force
 rm -rf zenml_examples
 ```
 

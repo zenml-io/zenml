@@ -423,11 +423,11 @@ directory that hosts the helm chart:
     ```
 
 > **Info**
-> It is not recommended to change the container image tags in the Helm chart to
+> It is not recommended to change the container image tag in the Helm chart to
 custom values, since every Helm chart version is tested to work only with the
-default image tags, but if you really want to do it, you can do so by setting
-the `zenml.image.tag` and `zenml.initImage.tag` values in your `custom-values.yaml`
-file to the desired ZenML version (e.g. `0.32.0`).
+default image tag, but if you really want to do it, you can do so by setting
+the `zenml.image.tag` value in your `custom-values.yaml` file to the desired
+ZenML version (e.g. `0.32.0`).
 
 > **Warning**
 > If you wish to downgrade a server, make sure that the version of ZenML that

@@ -12,16 +12,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Pipeline configuration classes."""
-import json
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-import yaml
 from pydantic import validator
 
 from zenml.config.constants import DOCKER_SETTINGS_KEY
 from zenml.config.schedule import Schedule
 from zenml.config.step_configurations import StepConfigurationUpdate, StepSpec
 from zenml.config.strict_base_model import StrictBaseModel
+from zenml.utils import pydantic_utils
 
 if TYPE_CHECKING:
     from zenml.config import DockerSettings
@@ -35,6 +34,7 @@ class PipelineConfigurationUpdate(StrictBaseModel):
     """Class for pipeline configuration updates."""
 
     enable_cache: Optional[bool] = None
+    enable_artifact_metadata: Optional[bool] = None
     settings: Dict[str, BaseSettings] = {}
     extra: Dict[str, Any] = {}
 
@@ -79,27 +79,18 @@ class PipelineConfiguration(PipelineConfigurationUpdate):
         return DockerSettings.parse_obj(model_or_dict)
 
 
-class PipelineRunConfiguration(StrictBaseModel):
+class PipelineRunConfiguration(
+    StrictBaseModel, pydantic_utils.YAMLSerializationMixin
+):
     """Class for pipeline run configurations."""
 
     run_name: Optional[str] = None
     enable_cache: Optional[bool] = None
+    enable_artifact_metadata: Optional[bool] = None
     schedule: Optional[Schedule] = None
     steps: Dict[str, StepConfigurationUpdate] = {}
     settings: Dict[str, BaseSettings] = {}
     extra: Dict[str, Any] = {}
-
-    def yaml(self, **kwargs: Any) -> str:
-        """Yaml representation of the run configuration.
-
-        Args:
-            **kwargs: Kwargs to pass to the pydantic json(...) method.
-
-        Returns:
-            Yaml string representation of the run configuration (with unsorted keys).
-        """
-        dict_ = json.loads(self.json(**kwargs, sort_keys=False))
-        return cast(str, yaml.dump(dict_, sort_keys=False))
 
 
 class PipelineSpec(StrictBaseModel):

@@ -14,14 +14,18 @@
 """Implementation of the TensorFlow Keras materializer."""
 
 import tempfile
-from typing import Any, Type
+from typing import TYPE_CHECKING, Any, Dict, Type
 
 from tensorflow import keras
+from tensorflow.python.keras.utils.layer_utils import count_params
 
 from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import io_utils
+
+if TYPE_CHECKING:
+    from zenml.metadata.metadata_types import MetadataType
 
 
 class KerasMaterializer(BaseMaterializer):
@@ -70,3 +74,21 @@ class KerasMaterializer(BaseMaterializer):
 
         # Remove the temporary directory
         fileio.rmtree(temp_dir.name)
+
+    def extract_metadata(
+        self, model: keras.Model
+    ) -> Dict[str, "MetadataType"]:
+        """Extract metadata from the given `Model` object.
+
+        Args:
+            model: The `Model` object to extract metadata from.
+
+        Returns:
+            The extracted metadata as a dictionary.
+        """
+        super().extract_metadata(model)
+        return {
+            "num_layers": len(model.layers),
+            "num_params": count_params(model.weights),
+            "num_trainable_params": count_params(model.trainable_weights),
+        }

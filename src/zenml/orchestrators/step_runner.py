@@ -15,7 +15,7 @@
 """Class to run steps."""
 
 import inspect
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Type
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Tuple, Type
 
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.client import Client
@@ -31,9 +31,12 @@ from zenml.models.artifact_models import (
     ArtifactResponseModel,
 )
 from zenml.orchestrators.publish_utils import (
+    publish_output_artifact_metadata,
     publish_output_artifacts,
+    publish_step_run_metadata,
     publish_successful_step_run,
 )
+from zenml.orchestrators.utils import is_setting_enabled
 from zenml.steps.step_context import StepContext
 from zenml.steps.step_environment import StepEnvironment
 from zenml.steps.utils import (
@@ -44,7 +47,9 @@ from zenml.utils import source_utils
 
 if TYPE_CHECKING:
     from zenml.config.step_configurations import Step
+    from zenml.metadata.metadata_types import MetadataType
     from zenml.stack import Stack
+
 
 logger = get_logger(__name__)
 
@@ -101,8 +106,13 @@ class StepRunner:
         # that the step function code can access to retrieve information about
         # the pipeline runtime, such as the current step name and the current
         # pipeline run ID
+        cache_enabled = is_setting_enabled(
+            is_enabled_on_step=step_run_info.config.enable_cache,
+            is_enabled_on_pipeline=step_run_info.pipeline.enable_cache,
+        )
         with StepEnvironment(
             step_run_info=step_run_info,
+            cache_enabled=cache_enabled,
         ):
             self._stack.prepare_step_run(info=step_run_info)
             step_failed = False
@@ -112,6 +122,13 @@ class StepRunner:
                 step_failed = True
                 raise
             finally:
+                step_run_metadata = self._stack.get_step_run_metadata(
+                    info=step_run_info,
+                )
+                publish_step_run_metadata(
+                    step_run_id=step_run_info.step_run_id,
+                    step_run_metadata=step_run_metadata,
+                )
                 self._stack.cleanup_step_run(
                     info=step_run_info, step_failed=step_failed
                 )
@@ -119,13 +136,22 @@ class StepRunner:
         # Store and publish the output artifacts of the step function.
         output_annotations = parse_return_type_annotations(spec.annotations)
         output_data = self._validate_outputs(return_values, output_annotations)
-        output_artifacts = self._store_output_artifacts(
+        artifact_metadata_enabled = is_setting_enabled(
+            is_enabled_on_step=step_run_info.config.enable_artifact_metadata,
+            is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_metadata,
+        )
+        output_artifacts, artifact_metadata = self._store_output_artifacts(
             output_data=output_data,
             output_artifact_uris=output_artifact_uris,
             output_materializers=output_materializers,
+            artifact_metadata_enabled=artifact_metadata_enabled,
         )
         output_artifact_ids = publish_output_artifacts(
-            output_artifacts=output_artifacts
+            output_artifacts=output_artifacts,
+        )
+        publish_output_artifact_metadata(
+            output_artifact_ids=output_artifact_ids,
+            output_artifact_metadata=artifact_metadata,
         )
 
         # Update the status and output artifacts of the step run.
@@ -329,7 +355,10 @@ class StepRunner:
         output_data: Dict[str, Any],
         output_materializers: Dict[str, Type[BaseMaterializer]],
         output_artifact_uris: Dict[str, str],
-    ) -> Dict[str, ArtifactRequestModel]:
+        artifact_metadata_enabled: bool,
+    ) -> Tuple[
+        Dict[str, ArtifactRequestModel], Dict[str, Dict[str, "MetadataType"]]
+    ]:
         """Stores the output artifacts of the step.
 
         Args:
@@ -337,25 +366,43 @@ class StepRunner:
                 names to return values.
             output_materializers: The output materializers of the step.
             output_artifact_uris: The output artifact URIs of the step.
+            artifact_metadata_enabled: Whether artifact metadata collection is
+                enabled.
 
         Returns:
-            An `ArtifactRequestModel` for each output artifact that was saved.
+            An `ArtifactRequestModel` for each output artifact that was saved,
+            and the metadata of each output artifact.
         """
         client = Client()
         active_user_id = client.active_user.id
-        active_project_id = client.active_project.id
+        active_workspace_id = client.active_workspace.id
         artifact_stores = client.active_stack_model.components.get(
             StackComponentType.ARTIFACT_STORE
         )
         assert artifact_stores  # Every stack has an artifact store.
         artifact_store_id = artifact_stores[0].id
         output_artifacts: Dict[str, ArtifactRequestModel] = {}
+        output_artifact_metadata: Dict[str, Dict[str, "MetadataType"]] = {}
         for output_name, return_value in output_data.items():
             materializer_class = output_materializers[output_name]
             materializer_source = self.configuration.outputs[
                 output_name
             ].materializer_source
             uri = output_artifact_uris[output_name]
+            materializer = materializer_class(uri)
+            materializer.save(return_value)
+            if artifact_metadata_enabled:
+                try:
+                    artifact_metadata = materializer.extract_metadata(
+                        return_value
+                    )
+                    output_artifact_metadata[output_name] = artifact_metadata
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to extract metadata for output artifact "
+                        f"'{output_name}' of step '{self.configuration.name}': "
+                        f"{e}"
+                    )
             output_artifact = ArtifactRequestModel(
                 name=output_name,
                 type=materializer_class.ASSOCIATED_ARTIFACT_TYPE,
@@ -363,9 +410,8 @@ class StepRunner:
                 materializer=materializer_source,
                 data_type=source_utils.resolve_class(type(return_value)),
                 user=active_user_id,
-                project=active_project_id,
+                workspace=active_workspace_id,
                 artifact_store_id=artifact_store_id,
             )
             output_artifacts[output_name] = output_artifact
-            materializer_class(uri).save(return_value)
-        return output_artifacts
+        return output_artifacts, output_artifact_metadata
