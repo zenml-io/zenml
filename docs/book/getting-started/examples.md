@@ -47,7 +47,7 @@ Use one of our ZenML Project Templates to generate ready-to-use scaffolds for
 your own projects, with everything you need to get started: ZenML steps,
 pipelines, stack configurations and other useful resources.
 
-[Click here to go to ZenML Projects](https://github.com/zenml-io/zenml-project-templates)
+[Click here to go to ZenML Project Templates](https://github.com/zenml-io/zenml-project-templates)
 
 ## YouTube Tutorials
 
