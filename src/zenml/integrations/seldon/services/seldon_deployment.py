@@ -63,12 +63,8 @@ class SeldonDeploymentConfig(ServiceConfig):
     model_name: str = "default"
     # TODO [ENG-775]: have an enum of all supported Seldon Core implementations
     implementation: str
-    parameters: List[SeldonDeploymentPredictorParameter] = Field(
-        default_factory=list
-    )
-    resources: Optional[SeldonResourceRequirements] = Field(
-        default_factory=SeldonResourceRequirements
-    )
+    parameters: Optional[List[SeldonDeploymentPredictorParameter]]
+    resources: Optional[SeldonResourceRequirements]
     replicas: int = 1
     secret_name: Optional[str]
     model_metadata: Dict[str, Any] = Field(default_factory=dict)
