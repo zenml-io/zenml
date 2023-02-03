@@ -43,7 +43,7 @@ repository of ZenML.
 
 ## ZenML Project Templates: Generate your own ZenML projects
 
-Use one of our ZenML Project Templates to generate ready-to-use scaffolds for
+Use one of our ZenML Project Templates to generate ready-to-use scaffolding for
 your own projects, with everything you need to get started: ZenML steps,
 pipelines, stack configurations and other useful resources.
 
