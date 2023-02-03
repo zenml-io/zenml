@@ -26,9 +26,9 @@ drift_detector = evidently_report_step(
             "DataDriftPreset",
             {
                 "metric": "ColumnQuantileMetric",
-                "parameters": {'quantile':0.25},
+                "parameters": {"quantile": 0.25},
                 "columns": ["class"],
-            }
-        ]
+            },
+        ],
     ),
 )

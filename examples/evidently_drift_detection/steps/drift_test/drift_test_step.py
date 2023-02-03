@@ -27,7 +27,7 @@ drift_tester = evidently_test_step(
             {
                 "test": "TestMeanInNSigmas",
                 "columns": "num",
-            }
-        ]
+            },
+        ],
     ),
 )
