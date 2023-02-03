@@ -14,33 +14,17 @@
 """Utility functions for the orchestrator."""
 
 import random
-from typing import Optional
-
-from tfx.orchestration.portable import data_types
+from typing import TYPE_CHECKING, Optional
+from uuid import UUID
 
 from zenml.client import Client
 from zenml.logger import get_logger
+from zenml.utils import uuid_utils
+
+if TYPE_CHECKING:
+    from zenml.orchestrators import BaseOrchestrator
 
 logger = get_logger(__name__)
-
-
-def get_cache_status(
-    execution_info: Optional[data_types.ExecutionInfo],
-) -> bool:
-    """Returns whether a cached execution was used or not.
-
-    Args:
-        execution_info: The execution info.
-
-    Returns:
-        `True` if the execution was cached, `False` otherwise.
-    """
-    # An execution output URI is only provided if the step needs to be
-    # executed (= is not cached)
-    if execution_info and execution_info.execution_output_uri is None:
-        return True
-    else:
-        return False
 
 
 def get_orchestrator_run_name(pipeline_name: str) -> str:
@@ -57,3 +41,43 @@ def get_orchestrator_run_name(pipeline_name: str) -> str:
     """
     user_name = Client().active_user.name
     return f"{pipeline_name}_{user_name}_{random.Random().getrandbits(32):08x}"
+
+
+def get_run_id_for_orchestrator_run_id(
+    orchestrator: "BaseOrchestrator", orchestrator_run_id: str
+) -> UUID:
+    """Generates a run ID from an orchestrator run id.
+
+    Args:
+        orchestrator: The orchestrator of the run.
+        orchestrator_run_id: The orchestrator run id.
+
+    Returns:
+        The run id generated from the orchestrator run id.
+    """
+    run_id_seed = f"{orchestrator.id}-{orchestrator_run_id}"
+    return uuid_utils.generate_uuid_from_string(run_id_seed)
+
+
+def is_setting_enabled(
+    is_enabled_on_step: Optional[bool],
+    is_enabled_on_pipeline: Optional[bool],
+) -> bool:
+    """Checks if a certain setting is enabled within a step run.
+
+    This is the case if:
+    - the setting is explicitly enabled for the step, or
+    - the setting is neither explicitly disabled for the step nor the pipeline.
+
+    Args:
+        is_enabled_on_step: The setting of the step.
+        is_enabled_on_pipeline: The setting of the pipeline.
+
+    Returns:
+        True if the setting is enabled within the step run, False otherwise.
+    """
+    if is_enabled_on_step is not None:
+        return is_enabled_on_step
+    if is_enabled_on_pipeline is not None:
+        return is_enabled_on_pipeline
+    return True

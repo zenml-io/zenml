@@ -1,17 +1,26 @@
 ---
-description: A guide into ZenML architecture and into concepts like providers, deployers and more!
+description: A guide on how to deploy ZenML
 ---
 
-ZenML is designed to live at the interface between all the ingredients to your 
-machine learning development environment. As such there is a lot of configuration 
+ZenML is designed to live at the interface between all the ingredients to your
+machine learning development environment. As such there is a lot of configuration
 and metadata to keep track of. This means that ZenML does not only give users an
-easy-to-use abstraction layer on top of their infrastructure and environments, 
-but also needs to act as a collaborative metadata store.
+easy-to-use abstraction layer on top of their infrastructure and environments,
+but also needs to act as a collaborative metadata store. To get a complete overview of
+the architecture of ZenML, read [here](../architecture-diagrams.md).
 
-## How Configurations and Pipeline Runs are tracked
+As with any other service, however, ZenML needs to be deployed first in order to be able
+to use it. This section covers the various scenarios when it comes to deploying ZenML,
+from starting locally to transitioning to the cloud.
+
+**Tip**: In order to skip deploying ZenML completely, or if you just want to get up and running
+quickly, you can use an early version of [ZenML Enterprise](https://zenml.io/pricing)
+where we'll give you a free and managed ZenML server!
+
+## The components of a ZenML Deployment
 
 A ZenML deployment can consist of the following three components:
-- The ZenML client
+- The ZenML client.
 - A SQL database.
 - An optional FastAPI HTTP server that exposes a RESTful API as well as a UI.
 
@@ -66,7 +75,7 @@ the ZenML Dashboard can be loaded to show your available stacks, pipeline runs
 and team settings among other things. If you need to use Docker containers 
 instead, you can find out more about Docker deployments [here](./docker.md).
 
-![ZenML on with Local HTTP Server](../../assets/getting_started/Scenario2.png)
+![ZenML with Local HTTP Server](../../assets/getting_started/Scenario2.png)
 
 ## Deploying ZenML in the Cloud: Remote Deployment of the HTTP server and Database
 
@@ -82,7 +91,7 @@ As such, it is important that you deploy ZenML in a way that is accessible from
 your machine as well as from all stack components that need access to the server.
 > If you are looking for a quick deployment without having to worry about configuring 
 > the right access, the [`zenml deploy` CLI command ](./cli.md) is the way to go!
- 
+
 ### Scenario 3: Server and Database hosted on cloud
 
 This is similar to Scenario 2, with the difference that both the HTTP server

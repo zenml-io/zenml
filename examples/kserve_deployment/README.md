@@ -1,47 +1,74 @@
 # 🚀 KServe Deployment Example - TensorFlow and Pytorch Examples
 
-[KServe](https://kserve.github.io/website) is a Kubernetes-based model inference platform
-built for highly scalable deployment use cases. It provides a standardized inference protocol 
-across ML frameworks while supporting a serverless architecture with autoscaling including Scale to Zero on GPUs.
-KServe uses a simple and pluggable production serving architecture for production ML serving that includes 
-prediction, pre-/post-processing, monitoring and explainability.
+[KServe](https://kserve.github.io/website) is a Kubernetes-based model inference
+platform built for highly scalable deployment use cases. It provides a 
+standardized inference protocol across ML frameworks while supporting a 
+serverless architecture with autoscaling including Scale to Zero on GPUs.
+KServe uses a simple and pluggable production serving architecture for 
+production ML serving that includes prediction, pre-/post-processing, 
+monitoring and explainability.
 
-Following the model deployment story within ZenML, and to make it easier to deploy models with other serving tools, 
-we have created an Integration for KServe. But how does KServe differ from the already-integrated [Seldon Core](../seldon_deployment/)?
+Following the model deployment story within ZenML, and to make it easier to 
+deploy models with other serving tools, we have created an Integration for 
+KServe. But how does KServe differ from the already-integrated 
+[Seldon Core](../seldon_deployment)?
 
-* __**Supported frameworks**__: Standard ML frameworks like TensorFlow, PyTorch, Scikit-learn, XGBoost, Keras, MXNet, etc... are first-class citizens in KServe and can be fairly easily used. While Seldon Core has support for the majority of these ML frameworks, it lacks support for Pytorch even though it could be still used using the custom deployment, albeit with some extra upfront work.
-* __**Custom Deployment**__: Both Seldon Core and KServe have support for custom deployment.
-However Seldon Core offers an extra inference graph that includes custom [TRANSFORMER](https://docs.seldon.io/projects/seldon-core/en/latest/workflow/overview.html) and [ROUTER](https://docs.seldon.io/projects/seldon-core/en/latest/analytics/routers.html?highlight=routers#) which can be used to build more powerful inference graphs.
-* __**Autoscaling**__: KServe has more advanced autoscaling features than Seldon Core.
-With the Knative autoscaling, it is possible to scale up and down the number of replicas of the model deployment based on the number of requests received.
-* __**Predictions interfaces**__: Seldon Core and KServe have built-in support for HTTP-based protocols, However only Seldon Core has support for GRPC-based protocols. While it still can be configured for KServe it requires using manual, custom deployment.
+* __**Supported frameworks**__: Standard ML frameworks like TensorFlow, PyTorch,
+Scikit-learn, XGBoost, Keras, MXNet, etc... are first-class citizens in KServe 
+and can be fairly easily used. While Seldon Core has support for the majority 
+of these ML frameworks, it lacks support for Pytorch even though it could be 
+still used by using the custom deployment, albeit with some extra upfront work.
+* __**Custom Deployment**__: Both Seldon Core and KServe have support for 
+custom deployment. However, Seldon Core offers an extra inference graph that 
+includes custom [TRANSFORMER](https://docs.seldon.io/projects/seldon-core/en/latest/workflow/overview.html) 
+and [ROUTER](https://docs.seldon.io/projects/seldon-core/en/latest/analytics/routers.html?highlight=routers#) 
+which can be used to build more powerful inference graphs.
+* __**Autoscaling**__: KServe has more advanced autoscaling features than 
+Seldon Core. With the Knative autoscaling, it is possible to scale up and 
+down the number of replicas of the model deployment based on the number of 
+requests received.
+* __**Predictions interfaces**__: Seldon Core and KServe have built-in support 
+for HTTP-based protocols, However only Seldon Core has support for GRPC-based 
+protocols. While it still can be configured for KServe it requires using 
+manual, custom deployment.
 
-Now that we have a clear understanding of the different features of KServe compared to Seldon Core, we will go through the deployment process of the model with KServe and focus more on how to deploy the PyTorch model.
+Now that we have a clear understanding of the different features of KServe 
+compared to Seldon Core, we will go through the deployment process of the model 
+with KServe and focus more on how to deploy the PyTorch model.
+
 ## 🗺 Overview
 
 The example uses the [digits dataset](https://keras.io/api/datasets/mnist/) 
 to train a classifier using both [TensorFlow](https://www.tensorflow.org/)
-and [PyTorch](https://pytorch.org/).
-Different hyperparameter values (e.g. the number of epochs and learning rate) 
-can be supplied as command-line arguments to the `run.py` Python script. 
+and [PyTorch](https://pytorch.org/). Different hyperparameter values (e.g. 
+the number of epochs and learning rate) can be supplied as command-line 
+arguments to the `run.py` Python script. 
 
-The example contains three pipelines:
-* `pytorch_training_deployment_pipeline`: trains a classifier using TensorFlow and deploys it to KServe with the TFServing Runtime Server.
-* `pytorch_inference_pipeline`: run some predictions using the deployed PyTorch model.
-
-* `tensorflow_training_deployment_pipeline`: trains a classifier using PyTorch and deploys it to KServe with TorchServe Runtime Server.
-* `tensorflow_inference_pipeline`: runs predictions on the Tensorflow served models.
+The example contains four pipelines:
+* `tensorflow_training_deployment_pipeline`: trains a classifier using TensorFlow 
+and deploys it to KServe with the TFServing Runtime Server.
+* `tensorflow_inference_pipeline`: runs predictions on the Tensorflow-served 
+models.
+* `pytorch_training_deployment_pipeline`: trains a classifier using 
+PyTorch and deploys it to KServe with TorchServe Runtime Server.
+* `pytorch_inference_pipeline`: run some predictions using the deployed 
+PyTorch model.
 
 Running the pipelines to train the classifiers and then deploying them to 
 KServe requires preparing them into an exact format that is expected 
-by the runtime server, then storing them into remote storage or a persistent volume 
-in the cluster and giving the path to KServe as the model URI with the right permissions to be able to retrieve the model artifacts. 
-By default, ZenML's KServe integration will try to handle that for you 
-by automatically loading, preparing and then saving files to the same active Artifact Store 
-within the ZenML stack. However, for some frameworks (e.g. PyTorch) you will still need 
-to provide some additional files that Runtime Server needs to be able to run the model.
+by the runtime server, then storing them into remote storage or a persistent 
+volume in the cluster and giving the path to KServe as the model URI with the 
+right permissions to be able to retrieve the model artifacts. By default, 
+ZenML's KServe integration will try to handle that for you by automatically 
+loading, preparing and then saving files to the same active Artifact Store 
+within the ZenML stack. However, for some frameworks (e.g. PyTorch) you will 
+still need to provide some additional files that Runtime Server needs to be 
+able to run the model.
 
-Note: Pytorch models are deployed with TorchServe Runtime Server. Read more about how to deploy Pytorch models with TorchServe Runtime Server [KServe Pytorch](https://kserve.github.io/website/0.9/modelserving/v1beta1/torchserve/) or in [TorchServe Official documentation](https://pytorch.org/serve/).
+Note: Pytorch models are deployed with TorchServe Runtime Server. Read more 
+about how to deploy Pytorch models with TorchServe Runtime Server 
+[KServe Pytorch](https://kserve.github.io/website/0.9/modelserving/v1beta1/torchserve/) 
+or in [TorchServe Official documentation](https://pytorch.org/serve/).
 
 The KServe deployment server is provisioned remotely as a Kubernetes
 resource that continues to run after the deployment pipeline run is complete.
@@ -57,8 +84,36 @@ deployment server so that the new model is being served instead of the old one.
 The inference pipeline loads the image from the local filesystem and performs 
 online predictions on the running KServe inference service.
 
+# 🏠 Local Stack
 
-# 🖥 Cloud Stack
+## 📄 Infrastructure Requirements (Pre-requisites)
+
+You don't need to set up any infrastructure to run your pipelines with KServe, locally. However, you need the following tools installed:
+  * Docker must be installed on your local machine.
+  * Install k3d by running `curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash`.
+
+## Create a local KServe Stack
+
+To get a stack with KServe and potential other components, you can make use of ZenML's Stack Recipes that are a set of terraform based modules that take care of setting up a cluster with Seldon among other things.
+
+Run the following command to deploy the local KServe stack:
+
+```bash
+zenml stack recipe deploy k3d-modular --install kserve
+```
+
+>**Note**:
+> This recipe comes with MLflow, Kubeflow and Minio enabled by default. If you want any other components like Seldon or Tekton, you can specify that using the `--install/-i` flag.
+
+This will deploy a local Kubernetes cluster with KServe installed. 
+It will also generate a stack YAML file that you can import as a ZenML stack by running 
+
+```bash
+zenml stack import -f <path-to-stack-yaml>
+```
+Once the stack is set, you can then simply proceed to running your pipelines.
+
+# ☁️ Cloud Stack
 
 ### 📄 Prerequisites 
 
@@ -83,73 +138,29 @@ zenml up
 ```
 
 For the ZenML KServe deployer to work, these things are required:
-1. Access to a running [Kubernetes cluster](https://kubernetes.io/). The example accepts a `--kubernetes-context` command-line argument. This Kubernetes context needs to point to the Kubernetes cluster where KServe model servers will be deployed. If the context is not explicitly supplied to the example, it defaults to using the locally active context.
 
-2. KServe must be installed and running on the Kubernetes cluster (More information about how to install KServe can be found below or on the [KServe documentation](https://kserve.github.io/website/)).
+1. Access to a running [Kubernetes cluster](https://kubernetes.io/). The example
+accepts a `--kubernetes-context` command-line argument. This Kubernetes context 
+needs to point to the Kubernetes cluster where KServe model servers will be 
+deployed. If the context is not explicitly supplied to the example, it defaults 
+to using the locally active context.
 
-3. KServe must be able to access whatever storage is used by ZenML to save the artifact. Since  KServe is installed in the Kubernetes cluster, local filesystem storage can't be used. We recommend using a persistent volume or a remote storage service. (e.g. AWS S3, GCS, Azure Blob Storage, etc.).
+2. KServe must be installed and running on the Kubernetes cluster (More 
+information about how to install KServe can be found below or on the 
+[KServe documentation](https://kserve.github.io/website/)).
 
- 
-### 🚅 That seems like a lot of infrastructure work. Is there a Zen 🧘 way to run this example?
-
-Yes! With [ZenML Stack Recipes](../../docs/book/advanced-guide/practical/stack-recipes.md), you can now provision all the infrastructure you need to run your ZenML pipelines with just a few simple commands.
-
-The flow to get started for this example can be the following:
-
-1. Pull the `gcp-kubeflow-kserve` recipe to your local system. Learn more about what this recipe does from its README.
-
-    ```shell
-    zenml stack recipe pull gcp-kubeflow-kserve
-    ```
-2. (Optional) 🎨 Customize your deployment by editing the default values in the `locals.tf` file.
-
-3. 🚀 Deploy the recipe with this simple command.
-
-    ```shell
-    zenml stack recipe deploy gcp-kubeflow-kserve
-    ```
-    > **Note**
-    > This command can also automatically import the resources created as a ZenML stack for you. Just run it with the `--import` flag and optionally provide a `--stack-name` and you're set! Keep in mind, in that case, you'll need all integrations for this example installed before you run this command.
-
-    > **Note**
-    > You should also have [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) and [docker](https://docs.docker.com/engine/install/) installed on your local system with the local [docker client authorized](https://cloud.google.com/sdk/gcloud/reference/auth/configure-docker) to push to your cloud registry.
-    
-4. You'll notice that a ZenML stack configuration file gets created 🤯! You can run the following command to import the resources as a ZenML stack, manually.
-
-    ```shell
-    zenml stack import <STACK_NAME> -f <PATH_TO_THE_CREATED_STACK_CONFIG_YAML>
-
-    # set the imported stack as the active stack
-    zenml stack set <STACK_NAME>
-    ```
-
-5. You should now create a secret for the CloudSQL instance that will allow ZenML to connect to it. Use the following command:
-
-    ```bash
-    zenml secrets-manager secret register gcp_mysql_secret --schema=mysql --user=<DB_USER> --password=<PWD> \
-      --ssl_ca=@</PATH/TO/DOWNLOADED/SERVER-CERT> \
-      --ssl_cert=@</PATH/TO/DOWNLOADED/CLIENT-CERT> \
-      --ssl_key=@</PATH/TO/DOWNLOADED/CLIENT-KEY>
-    ```
-
-    The values for the username and password can be obtained by running the following commands inside your recipe directory.
-
-    ```bash
-    terraform output metadata-db-username
-
-    terraform output metadata-db-password
-    ```
-
-    For the certificates, visit the Google Cloud Console to [create a certificate and download the files](https://cloud.google.com/sql/docs/mysql/configure-ssl-instance#:~:text=Cloud%20SQL%20Instances-,To%20open%20the%20Overview%20page%20of%20an%20instance%2C%20click%20the,Click%20Create%20client%20certificate.) to your system.
-
-
-You can now skip directly to the [part of this guide where you define ZenML secrets](#gcp-authentication-with-kserve_gs-secret-schema) for your Kserve component! 
+3. KServe must be able to access whatever storage is used by ZenML to save the 
+artifact. Since  KServe is installed in the Kubernetes cluster, local filesystem
+storage can't be used. We recommend using a persistent volume or a remote 
+storage service. (e.g. AWS S3, GCS, Azure Blob Storage, etc.).
 
 
 ### Installing KServe (e.g. in an GKE cluster)
 
 This section is a trimmed-up version of the serverless installation guide for KServe,
-[official KServe installation instructions](https://kserve.github.io/website/0.9/admin/serverless/#recommended-version-matrix), applied to a particular type of Kubernetes cluster, GKE in this case. It assumes that a GKE cluster is already set up and accessible.
+[official KServe installation instructions](https://kserve.github.io/website/0.9/admin/serverless/#recommended-version-matrix),
+applied to a particular type of Kubernetes cluster, GKE in this case. It assumes
+that a GKE cluster is already set up and accessible.
 
 To configure GKE cluster access locally, e.g:
 
@@ -159,68 +170,69 @@ gcloud container clusters get-credentials KUBERNETES_CLUSTER_NAME --zone ZONE --
 
 1. Install Istio:
 
-We need to download [istioctl](https://istio.io/latest/docs/setup/getting-started/#download) 
-Install Istio v1.12.1 (required for the latest KServe version):
-
-```bash
-curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.12.1  sh -
-cd istio-1.12.1
-export PATH=$PWD/bin:$PATH
-# Installing Istio without sidecar injection
-istioctl install -y
-```
+   We need to download [istioctl](https://istio.io/latest/docs/setup/getting-started/#download) 
+   Install Istio v1.12.1 (required for the latest KServe version):
+   
+   ```bash
+   curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.12.1  sh -
+   cd istio-1.12.1
+   export PATH=$PWD/bin:$PATH
+   # Installing Istio without sidecar injection
+   istioctl install -y
+   ```
 
 2. Installing the Knative Serving component:
 
-```bash
-# Install the required custom resources
-kubectl apply -f https://github.com/knative/serving/releases/download/knative-v1.6.0/serving-crds.yaml
-# Install the core components of Knative Serving
-kubectl apply -f https://github.com/knative/serving/releases/download/knative-v1.6.0/serving-core.yaml
-```
+   ```bash
+   # Install the required custom resources
+   kubectl apply -f https://github.com/knative/serving/releases/download/knative-v1.6.0/serving-crds.yaml
+   # Install the core components of Knative Serving
+   kubectl apply -f https://github.com/knative/serving/releases/download/knative-v1.6.0/serving-core.yaml
+   ```
+   
+   Install an Istio networking layer:
+   
+   ```bash
+   # Install a properly configured Istio
+   kubectl apply -l knative.dev/crd-install=true -f https://github.com/knative/net-istio/releases/download/knative-v1.6.0/istio.yaml
+   kubectl apply -f https://github.com/knative/net-istio/releases/download/knative-v1.6.0/istio.yaml
+   # Install the Knative Istio controller
+   kubectl apply -f https://github.com/knative/net-istio/releases/download/knative-v1.6.0/net-istio.yaml
+   # Fetch the External IP address or CNAME
+   kubectl --namespace istio-system get service istio-ingressgateway
+   ```
+   
+   Verify the installation:
+   
+   ```bash
+   kubectl get pods -n knative-serving
+   
+   """
+   activator-59bff9d7c8-2mgdv               1/1     Running     0          11h
+   autoscaler-c574c9455-x7rfn               1/1     Running     0          3d
+   controller-59f84c584-mm4pp               1/1     Running     0          3d
+   domain-mapping-75c659dbc7-hbgnl          1/1     Running     0          3d
+   domainmapping-webhook-6d9f5996f9-hcvcb   1/1     Running     0          3d
+   net-istio-controller-76bf75d78f-652fm    1/1     Running     0          11h
+   net-istio-webhook-9bdb8c6b9-nzf86        1/1     Running     0          11h
+   webhook-756688c869-79pqh                 1/1     Running     0          2d22h
+   """
+   ```
 
-Install an Istio networking layer:
-
-```bash
-# Install a properly configured Istio
-kubectl apply -l knative.dev/crd-install=true -f https://github.com/knative/net-istio/releases/download/knative-v1.6.0/istio.yaml
-kubectl apply -f https://github.com/knative/net-istio/releases/download/knative-v1.6.0/istio.yaml
-# Install the Knative Istio controller
-kubectl apply -f https://github.com/knative/net-istio/releases/download/knative-v1.6.0/net-istio.yaml
-# Fetch the External IP address or CNAME
-kubectl --namespace istio-system get service istio-ingressgateway
-```
-
-Verify the installation:
-
-```bash
-kubectl get pods -n knative-serving
-
-"""
-activator-59bff9d7c8-2mgdv               1/1     Running     0          11h
-autoscaler-c574c9455-x7rfn               1/1     Running     0          3d
-controller-59f84c584-mm4pp               1/1     Running     0          3d
-domain-mapping-75c659dbc7-hbgnl          1/1     Running     0          3d
-domainmapping-webhook-6d9f5996f9-hcvcb   1/1     Running     0          3d
-net-istio-controller-76bf75d78f-652fm    1/1     Running     0          11h
-net-istio-webhook-9bdb8c6b9-nzf86        1/1     Running     0          11h
-webhook-756688c869-79pqh                 1/1     Running     0          2d22h
-"""
-```
 3. Install Cert Manager:
 
-```bash
-kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.9.1/cert-manager.yaml
-```
+   ```bash
+   kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.9.1/cert-manager.yaml
+   ```
 
 4. Finally, install KServe:
 
-```bash
-# Install KServe
-kubectl apply -f https://github.com/kserve/kserve/releases/download/v0.9.0/kserve.yaml
-# Install KServe Built-in ClusterServingRuntimes
-kubectl apply -f https://github.com/kserve/kserve/releases/download/v0.9.0/kserve-runtimes.yaml
-```
+   ```bash
+   # Install KServe
+   kubectl apply -f https://github.com/kserve/kserve/releases/download/v0.9.0/kserve.yaml
+   # Install KServe Built-in ClusterServingRuntimes
+   kubectl apply -f https://github.com/kserve/kserve/releases/download/v0.9.0/kserve-runtimes.yaml
+   ```
 
 ### Testing the KServe deployment
 
@@ -229,86 +241,86 @@ deployment:
 
 1. Create a namespace:
 
-```bash
-kubectl create namespace kserve-test
-```
+    ```bash
+    kubectl create namespace kserve-test
+    ```
 
 2. Create an InferenceService:
-
-```bash
-kubectl apply -n kserve-test -f - <<EOF
-apiVersion: "serving.kserve.io/v1beta1"
-kind: "InferenceService"
-metadata:
-  name: "sklearn-iris"
-spec:
-  predictor:
-    model:
-      modelFormat:
-        name: sklearn
-      storageUri: "gs://kfserving-examples/models/sklearn/1.0/model"
-EOF
-```
+    
+    ```bash
+    kubectl apply -n kserve-test -f - <<EOF
+    apiVersion: "serving.kserve.io/v1beta1"
+    kind: "InferenceService"
+    metadata:
+      name: "sklearn-iris"
+    spec:
+      predictor:
+        model:
+          modelFormat:
+            name: sklearn
+          storageUri: "gs://kfserving-examples/models/sklearn/1.0/model"
+    EOF
+    ```
 
 3. Check InferenceService status:
 
-```bash
-kubectl get inferenceservices sklearn-iris -n kserve-test
-
-"""
-NAME           URL                                                 READY   PREV   LATEST   PREVROLLEDOUTREVISION   LATESTREADYREVISION                    AGE
-sklearn-iris   http://sklearn-iris.kserve-test.example.com         True           100                              sklearn-iris-predictor-default-47q2g   7d23h
-"""
-```
+    ```bash
+    kubectl get inferenceservices sklearn-iris -n kserve-test
+    
+    """
+    NAME           URL                                                 READY   PREV   LATEST   PREVROLLEDOUTREVISION   LATESTREADYREVISION                    AGE
+    sklearn-iris   http://sklearn-iris.kserve-test.example.com         True           100                              sklearn-iris-predictor-default-47q2g   7d23h
+    """
+    ```
 
 4. Determine the ingress IP and ports:
 
-```bash
-kubectl get svc istio-ingressgateway -n istio-system
-NAME                   TYPE           CLUSTER-IP       EXTERNAL-IP      PORT(S)   AGE
-istio-ingressgateway   LoadBalancer   172.21.109.129   130.211.10.121   ...       17h
-```
+    ```bash
+    kubectl get svc istio-ingressgateway -n istio-system
+    NAME                   TYPE           CLUSTER-IP       EXTERNAL-IP      PORT(S)   AGE
+    istio-ingressgateway   LoadBalancer   172.21.109.129   130.211.10.121   ...       17h
+    ```
 
-Extract the HOST and PORT where the model server exposes its prediction API:
-
-```bash
-# For GKE clusters, the host is the GKE cluster IP address.
-export INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-# For EKS clusters, the host is the EKS cluster IP hostname.
-export INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-
-export INGRESS_PORT=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="http2")].port}')
-export INGRESS_URL="http://${INGRESS_HOST}:${INGRESS_PORT}"
-
-```
+    Extract the HOST and PORT where the model server exposes its prediction API:
+    
+    ```bash
+    # For GKE clusters, the host is the GKE cluster IP address.
+    export INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+    # For EKS clusters, the host is the EKS cluster IP hostname.
+    export INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+    
+    export INGRESS_PORT=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="http2")].port}')
+    export INGRESS_URL="http://${INGRESS_HOST}:${INGRESS_PORT}"
+    
+    ```
 
 5. Perform inference
 
-Prepare your inference input request inside a file:
-
-```bash
-cat <<EOF > "./iris-input.json"
-{
-  "instances": [
-    [6.8,  2.8,  4.8,  1.4],
-    [6.0,  3.4,  4.5,  1.6]
-  ]
-}
-EOF
-```
-
-Use `curl` to send a test prediction API request to the server:
-
-```bash
-SERVICE_HOSTNAME=$(kubectl get inferenceservice sklearn-iris -n kserve-test -o jsonpath='{.status.url}' | cut -d "/" -f 3)
-curl -v -H "Host: ${SERVICE_HOSTNAME}" http://${INGRESS_HOST}:${INGRESS_PORT}/v1/models/sklearn-iris:predict -d @./iris-input.json
-```
-
-You should see something like this as the prediction response:
-
-```json
-{"predictions": [1, 1]}
-```
+    Prepare your inference input request inside a file:
+    
+    ```bash
+    cat <<EOF > "./iris-input.json"
+    {
+      "instances": [
+        [6.8,  2.8,  4.8,  1.4],
+        [6.0,  3.4,  4.5,  1.6]
+      ]
+    }
+    EOF
+    ```
+    
+    Use `curl` to send a test prediction API request to the server:
+    
+    ```bash
+    SERVICE_HOSTNAME=$(kubectl get inferenceservice sklearn-iris -n kserve-test -o jsonpath='{.status.url}' | cut -d "/" -f 3)
+    curl -v -H "Host: ${SERVICE_HOSTNAME}" http://${INGRESS_HOST}:${INGRESS_PORT}/v1/models/sklearn-iris:predict -d @./iris-input.json
+    ```
+    
+    You should see something like this as the prediction response:
+    
+    ```json
+    {"predictions": [1, 1]}
+    ```
 
 ### 🥞 Setting up the ZenML Stack
 
@@ -324,7 +336,6 @@ This stack consists of the following components:
 
 * a GCP artifact store
 * the local orchestrator
-* the local metadata store
 * a KServe model deployer
 * a local secret manager used to store the credentials needed by KServe to
 access the GCP artifact store
@@ -378,11 +389,16 @@ zenml stack register local_gcp_kserve_stack -a gcp_artifact_store -o default -d 
 
 ##### KServe and Remote orchestrator like Kubeflow
 
-ZenML will manage the KServe deployments inside the same `kubeflow`
-namespace where the Kubeflow pipelines are running. You also have to update the set of
-permissions granted by Kubeflow to the Kubernetes service account in the context
-of which Kubeflow pipelines are running to allow the ZenML workloads to create,
-update and delete KServe InferenceServices, Secrets and ServiceAccounts. 
+In order to run this example with a remote orchestrator such as Kubeflow, the 
+first thing that you would require is a remote ZenML server deployed to the 
+cloud. See the [deployment guide](https://docs.zenml.io/getting-started/deploying-zenml) 
+for more information.
+
+Moreover, ZenML will manage the KServe deployments inside the same `kubeflow` 
+namespace where the Kubeflow pipelines are running. You also have to update the 
+set of permissions granted by Kubeflow to the Kubernetes service account in the 
+context of which Kubeflow pipelines are running to allow the ZenML workloads to 
+create, update and delete KServe InferenceServices, Secrets and ServiceAccounts. 
 You can do so with the following command.
 
 ```shell
@@ -415,12 +431,8 @@ subjects:
 EOF
 ```
 
-As the last step in setting up the stack, we need to configure a ZenML secret
-with the credentials needed by KServe to access the Artifact Store. This is
-covered in the [Managing KServe Credentials section](#managing-kserve-credentials).
-
-The next sections cover how to set GCP Artifact Store credentials for the KServe model deployer,   
-Please look up the variables relevant to your use case in the
+The next sections cover how to set GCP Artifact Store credentials for the KServe
+model deployer. Please look up the variables relevant to your use case in the
 [official KServe Storage Credentials](https://kserve.github.io/website/0.8/sdk_docs/docs/KServeClient/#parameters)
 and set them accordingly for your ZenML secret.
 
@@ -459,25 +471,41 @@ zenml secrets-manager secret get kserve_secret
 
 ## 🔦 Run TensorFlow Pipeline
 
-[TFServing](https://www.tensorflow.org/tfx/guide/serving) TensorFlow Serving is a flexible, high-performance serving system for machine learning models, designed for production environments. TensorFlow Serving makes it easy to deploy new algorithms and experiments while keeping the same server architecture and APIs. TensorFlow Serving provides out-of-the-box integration with TensorFlow models but can be easily extended to serve other types of models and data.
+[TFServing](https://www.tensorflow.org/tfx/guide/serving) TensorFlow Serving 
+is a flexible, high-performance serving system for machine learning models, 
+designed for production environments. TensorFlow Serving makes it easy to 
+deploy new algorithms and experiments while keeping the same server architecture
+and APIs. TensorFlow Serving provides out-of-the-box integration with TensorFlow
+models but can be easily extended to serve other types of models and data.
 
 The TensorFlow pipeline consists of the following steps:
-* importer - Load the MNIST handwritten digits dataset from the TensorFlow library
+* importer - Load the MNIST handwritten digits dataset from the TensorFlow 
+library
 * train - Train a Support Vector Classifier model using the training dataset.
 * evaluate - Evaluate the model using the test dataset.
-* deployment_trigger - Verify if the newly trained model exceeds the threshold and if so, deploy the model.
-* model_deployer - Deploy the TensorFlow model to the KServe model server using the TFServing runtime server. the model_deployer is a ZenML built-in step that takes care of the preparing of the model to the [right format](https://www.tensorflow.org/guide/saved_model) for the runtime servers. In this case, the ZenML will be saving a file with the name `tf.saved_model` in the artifact store which is the format that the runtime servers expect.
+* deployment_trigger - Verify if the newly trained model exceeds the threshold 
+and if so, deploy the model.
+* model_deployer - Deploy the TensorFlow model to the KServe model server using 
+the TFServing runtime server. the model_deployer is a ZenML built-in step that 
+takes care of the preparing of the model to the 
+[right format](https://www.tensorflow.org/guide/saved_model) for the runtime 
+servers. In this case, the ZenML will be saving a file with the name 
+`tf.saved_model` in the artifact store which is the format that the 
+runtime servers expect.
 
-Note: The ZenML built-in model deployer step has a set of parameters that can be used to define the type of kserve used server and used Kubernetes resources.
-Some of the parameters Within the `KServeDeploymentConfig` you can configure:
-   * `model_name`: the name of the model in the KServe cluster and in ZenML.
-   * `replicas`: the number of replicas with which to deploy the model
-   * `predictor`: the type of predictor to use for the model. The
-    predictor type can be one of the following: `tensorflow`, `pytorch`, `sklearn`, `xgboost`, `custom`.
-   * `resources`: This can be configured by passing a dictionary with the
-    `requests` and `limits` keys. The values for these keys can be a dictionary
-    with the `cpu` and `memory` keys. The values for these keys can be a string
-    with the amount of CPU and memory to be allocated to the model.
+Note: The ZenML built-in model deployer step has a set of parameters that can 
+be used to define the type of kserve used server and used Kubernetes resources.
+Some parameters within the `KServeDeploymentConfig` you can configure:
+
+* `model_name`: the name of the model in the KServe cluster and in ZenML.
+* `replicas`: the number of replicas with which to deploy the model
+* `predictor`: the type of predictor to use for the model. The
+predictor type can be one of the following: `tensorflow`, `pytorch`, `sklearn`, 
+`xgboost`, `custom`.
+* `resources`: This can be configured by passing a dictionary with the
+`requests` and `limits` keys. The values for these keys can be a dictionary
+with the `cpu` and `memory` keys. The values for these keys can be a string
+with the amount of CPU and memory to be allocated to the model.
 
 ### 🏃️ Run the code
 To run the training/deployment TensorFlow pipeline:
@@ -518,7 +546,8 @@ Step `kserve_model_deployer_step` has finished in 29.502s.
 Pipeline run `tensorflow_training_deployment_pipeline-24_Jul_22-23_57_50_176513` has finished in 31.799s.
 ``` 
 
-Example of the Tensorflow training/deployment pipeline when run with the remote Kubeflow stack:
+Example of the Tensorflow training/deployment pipeline when run with the 
+remote Kubeflow stack:
 
 ![Tensorflow Training/Deployment Pipeline](assets/tensorflow_train_deploy_remote.png)
 
@@ -546,45 +575,70 @@ The KServe prediction server is running remotely as a Kubernetes service and acc
 To stop the service, run `zenml model-deployer models delete a9e967a1-9b26-4d5c-855c-e5abba0b020b`.
 ```
 
-Example of the Tensorflow inference pipeline when run with the remote Kubeflow stack:
+Example of the Tensorflow inference pipeline when run with the remote Kubeflow 
+stack:
 
 ![Tensorflow Inference Pipeline](assets/tensorflow_inference_remote.png)
 
 
-To stop the service, re-run the same command and supply the `--stop-service` argument.
+To stop the service, re-run the same command and supply the `--stop-service` 
+argument.
 
 ## 🖥 Run PyTorch Pipeline
 
 As PyTorch becomes more of a standard framework for writing Computer Vision
 and Natural Language Processing models, especially in the research domain,
 it is becoming more and more important to have a robust and easy to not only 
-[build ML pipelines with Pytorch](../pytorch/) but also to deploy the models built with it.
+[build ML pipelines with Pytorch](../pytorch/) but also to deploy the models 
+built with it.
 
 [TorchServe](https://github.com/pytorch/serve) is an open-source model serving 
-framework for PyTorch that makes it easy to deploy Pytorch models at a production 
-scale with low latency and high throughput, it provides default handlers for the most 
-common applications such as object detection and text classification, so you can write
-as little code as possible to deploy your custom models.
+framework for PyTorch that makes it easy to deploy Pytorch models at a 
+production scale with low latency and high throughput, it provides default 
+handlers for the most common applications such as object detection and text 
+classification, so you can write as little code as possible to deploy your 
+custom models.
 
 The PyTorch Training/Deployment pipeline consists of the following steps:
-* importer - Load the MNIST handwritten digits dataset from the TorchVision library
-* train - Train a neural network using the training set. The network is defined in the `mnist.py` file in the PyTorch folder.
-* evaluate - Evaluate the model using the test set.
-* deployment_trigger - Verify if the newly trained model exceeds the threshold and if so, deploy the model.
-* model_deployer - Deploy the trained model to the KServe model server using the TorchServe runtime.
-Just like the TFServing runtime, the `model_deployer` is a ZenML built-in step that takes care of the preparing of the model to the right format for the runtime servers. But in this case, the user must provide some extra files to the config parameters of the `model_deployer` step.
-Some of the parameters that TorchServe expects are:
-    - `model_class_file`:   Python script containing model architecture class.
-    - `handler`:            TorchServe's handler file to handle custom TorchServe inference logic.
-    - `torch_config`:       TorchServe configuration file. By default, ZenML generates a config file for you. You can also provide your config file.
 
-For more information about the TorchServe runtime, please refer to the [TorchServe InferenceService](https://kserve.github.io/website/0.8/modelserving/v1beta1/torchserve/#create-the-torchserve-inferenceservice). Or the [TorchServe Github Repository](https://github.com/pytorch/serve).
+* importer - Load the MNIST handwritten digits dataset from the TorchVision 
+library
+* train - Train a neural network using the training set. The network is defined 
+in the `mnist.py` file in the PyTorch folder.
+* evaluate - Evaluate the model using the test set.
+* deployment_trigger - Verify if the newly trained model exceeds the threshold 
+and if so, deploy the model.
+* model_deployer - Deploy the trained model to the KServe model server using 
+the TorchServe runtime.
+
+Just like the TFServing runtime, the `model_deployer` is a ZenML built-in step 
+that takes care of the preparing of the model to the right format for the 
+runtime servers. But in this case, the user must provide some extra files to 
+the config parameters of the `model_deployer` step.
+
+Some of the parameters that TorchServe expects are:
+
+- `model_class_file`: Python script containing model architecture class.
+- `handler`: TorchServe's handler file to handle custom TorchServe inference 
+logic.
+- `torch_config`: TorchServe configuration file. By default, ZenML generates 
+a config file for you. You can also provide your config file.
+
+For more information about the TorchServe runtime, please refer to the 
+[TorchServe InferenceService](https://kserve.github.io/website/0.8/modelserving/v1beta1/torchserve/#create-the-torchserve-inferenceservice) 
+or the [TorchServe Github Repository](https://github.com/pytorch/serve).
 
 The PyTorch Inference pipeline consists of the following steps:
-* pytorch_inference_processor - Load a digits image from URL (must be 28x28) and convert it to a byte array.
-* prediction_service_loader - Load the prediction service into KServeDeploymentService to perform the inference.
-* predictor - Perform inference on the image using the built-in predict function of the prediction service.
+
+* pytorch_inference_processor - Load a digits image from URL (must be 28x28) 
+and convert it to a byte array.
+* prediction_service_loader - Load the prediction service into 
+KServeDeploymentService to perform the inference.
+* predictor - Perform inference on the image using the built-in predict 
+function of the prediction service.
+
 ### 🏃️ Run the code
+
 To run the PyTorch training/deployment pipeline:
 
 ```shell
@@ -625,7 +679,8 @@ The KServe prediction server is running remotely as a Kubernetes service and acc
 To stop the service, run `zenml model-deployer models delete e7595ac9-7fcf-42c2-82ac-a9e40ee95090`.
 ```
 
-Example of the PyTorch training/deployment pipeline when run with the remote Kubeflow stack:
+Example of the PyTorch training/deployment pipeline when run with the remote 
+Kubeflow stack:
 
 ![PyTorch Training/Deployment Pipeline](assets/pytorch_train_deploy_remote.png)
 
@@ -656,14 +711,16 @@ The KServe prediction server is running remotely as a Kubernetes service and acc
 To stop the service, run `zenml model-deployer models delete e7595ac9-7fcf-42c2-82ac-a9e40ee95090`.
 ```
 
-Example of the PyTorch inference pipeline when run with the remote Kubeflow stack:
+Example of the PyTorch inference pipeline when run with the remote Kubeflow 
+stack:
 
 ![PyTorch Inference Pipeline](assets/pytorch_inference_remote.png)
 
 
 ## 🎮 ZenML Served Models CLI
 
-The `zenml model-deployer models list` CLI command can be run to list the active model servers:
+The `zenml model-deployer models list` CLI command can be run to list the 
+active model servers:
 
 ```shell
 $ zenml model-deployer models list
@@ -676,8 +733,8 @@ $ zenml model-deployer models list
 ┗━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┛
 ```
 
-To get more information about a specific model server, such as the prediction URL,
-the `zenml model-deployer models describe <uuid>` CLI command can be run:
+To get more information about a specific model server, such as the prediction 
+URL, the `zenml model-deployer models describe <uuid>` CLI command can be run:
 
 ```shell
 $ zenml model-deployer models describe a9e967a1-9b26-4d5c-855c-e5abba0b020b
@@ -744,7 +801,9 @@ rm -rf zenml_examples
 
 # 📜 Learn more
 
-Our docs regarding the KServe deployment integration can be found [here](https://docs.zenml.io/component-gallery/model-deployers/kserve).
+Our docs regarding the KServe deployment integration can be found 
+[here](https://docs.zenml.io/component-gallery/model-deployers/kserve).
 
-If you want to learn more about deployment in ZenML in general or about how to build your own deployer steps in ZenML
-check out our [docs](https://docs.zenml.io/component-gallery/model-deployers/custom).
+If you want to learn more about deployment in ZenML in general or about how 
+to build your own deployer steps in ZenML check out our 
+[docs](https://docs.zenml.io/component-gallery/model-deployers/custom).

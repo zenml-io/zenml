@@ -17,6 +17,9 @@ import tensorflow as tf
 from neptune.new.integrations.tensorflow_keras import NeptuneCallback
 
 from zenml.client import Client
+from zenml.integrations.neptune.experiment_trackers import (
+    NeptuneExperimentTracker,
+)
 from zenml.integrations.neptune.experiment_trackers.run_state import (
     get_neptune_run,
 )
@@ -26,9 +29,19 @@ from zenml.integrations.tensorflow.materializers.keras_materializer import (
 )
 from zenml.steps import BaseParameters, step
 
+experiment_tracker = Client().active_stack.experiment_tracker
+
+if not experiment_tracker or not isinstance(
+    experiment_tracker, NeptuneExperimentTracker
+):
+    raise RuntimeError(
+        "Your active stack needs to contain a Neptune experiment tracker for "
+        "this example to work."
+    )
+
 
 class TrainerParameters(BaseParameters):
-    """Trainer params"""
+    """Trainer params."""
 
     epochs: int = 1
     lr: float = 0.001
@@ -39,7 +52,7 @@ settings = NeptuneExperimentTrackerSettings(tags={"keras", "mnist"})
 
 @step(
     enable_cache=False,
-    experiment_tracker=Client().active_stack.experiment_tracker.name,
+    experiment_tracker=experiment_tracker.name,
     output_materializers=KerasMaterializer,
     settings={"experiment_tracker.neptune": settings},
 )
@@ -49,7 +62,7 @@ def tf_trainer(
     y_train: np.ndarray,
 ) -> tf.keras.Model:
     """Train a neural net from scratch to recognize MNIST digits return our
-    model or the learner"""
+    model or the learner."""
     neptune_run = get_neptune_run()
     neptune_run["params/lr"] = params.lr
 

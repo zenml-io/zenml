@@ -15,7 +15,7 @@
 
 import time
 from importlib import import_module
-from typing import Callable, List, Optional
+from typing import Any, Callable, List, Optional
 
 import click
 from rich.markdown import Markdown
@@ -26,13 +26,18 @@ from zenml.cli.cli import TagGroup, cli
 from zenml.cli.feature import register_feature_store_subcommands
 from zenml.cli.model import register_model_deployer_subcommands
 from zenml.cli.secret import register_secrets_manager_subcommands
-from zenml.cli.utils import _component_display_name
+from zenml.cli.utils import (
+    _component_display_name,
+    list_options,
+    print_page_info,
+)
 from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
 from zenml.exceptions import IllegalOperationError
 from zenml.io import fileio
-from zenml.utils.analytics_utils import AnalyticsEvent, track_event
+from zenml.models import ComponentFilterModel
+from zenml.utils.analytics_utils import AnalyticsEvent, track
 
 
 def generate_stack_component_get_command(
@@ -93,11 +98,13 @@ def generate_stack_component_describe_command(
             name_id_or_prefix: Name or id of the component to describe.
         """
         client = Client()
-
-        component_ = client.get_stack_component(
-            name_id_or_prefix=name_id_or_prefix,
-            component_type=component_type,
-        )
+        try:
+            component_ = client.get_stack_component(
+                name_id_or_prefix=name_id_or_prefix,
+                component_type=component_type,
+            )
+        except KeyError as err:
+            cli_utils.error(str(err))
 
         with console.status(f"Describing component '{component_.name}'..."):
             active_component_id = None
@@ -127,20 +134,27 @@ def generate_stack_component_list_command(
         A function that can be used as a `click` command.
     """
 
-    def list_stack_components_command() -> None:
-        """Prints a table of stack components."""
-        client = Client()
+    @list_options(ComponentFilterModel)
+    def list_stack_components_command(**kwargs: Any) -> None:
+        """Prints a table of stack components.
 
+        Args:
+            kwargs: Keyword arguments to filter the components.
+        """
+        client = Client()
         with console.status(f"Listing {component_type.plural}..."):
-            components = client.list_stack_components(
-                component_type=component_type
-            )
+            kwargs["type"] = component_type
+            components = client.list_stack_components(**kwargs)
+            if not components:
+                cli_utils.declare("No components found for the given filters.")
+                return
 
             cli_utils.print_components_table(
                 client=client,
                 component_type=component_type,
-                components=components,
+                components=components.items,
             )
+            print_page_info(components)
 
     return list_stack_components_command
 
@@ -262,15 +276,19 @@ def generate_stack_component_update_command(
             name_mandatory=False,
         )
 
-        with console.status(f"Updating {display_name} '{name_or_id}'...\n"):
-            client.update_stack_component(
-                name_id_or_prefix=name_or_id,
-                component_type=component_type,
-                configuration=parsed_args,
-            )
+        with console.status(f"Updating {display_name}...\n"):
+            try:
+                updated_component = client.update_stack_component(
+                    name_id_or_prefix=name_or_id,
+                    component_type=component_type,
+                    configuration=parsed_args,
+                )
+            except KeyError as err:
+                cli_utils.error(str(err))
 
             cli_utils.declare(
-                f"Successfully updated {display_name} `{name_or_id}`."
+                f"Successfully updated {display_name} "
+                f"`{updated_component.name}`."
             )
 
     return update_stack_component_command
@@ -313,11 +331,12 @@ def generate_stack_component_share_command(
                     component_type=component_type,
                     is_shared=True,
                 )
-            except IllegalOperationError as err:
+            except (KeyError, IllegalOperationError) as err:
                 cli_utils.error(str(err))
 
             cli_utils.declare(
-                f"Successfully shared {display_name} " f"`{name_id_or_prefix}`."
+                f"Successfully shared {display_name} "
+                f"`{name_id_or_prefix}`."
             )
 
     return share_stack_component_command
@@ -363,7 +382,7 @@ def generate_stack_component_remove_attribute_command(
                     component_type=component_type,
                     configuration={k: None for k in args},
                 )
-            except IllegalOperationError as err:
+            except (KeyError, IllegalOperationError) as err:
                 cli_utils.error(str(err))
 
             cli_utils.declare(
@@ -416,7 +435,7 @@ def generate_stack_component_rename_command(
                     component_type=component_type,
                     name=new_name,
                 )
-            except IllegalOperationError as err:
+            except (KeyError, IllegalOperationError) as err:
                 cli_utils.error(str(err))
 
             cli_utils.declare(
@@ -457,7 +476,7 @@ def generate_stack_component_delete_command(
                     name_id_or_prefix=name_id_or_prefix,
                     component_type=component_type,
                 )
-            except IllegalOperationError as err:
+            except (KeyError, IllegalOperationError) as err:
                 cli_utils.error(str(err))
             cli_utils.declare(f"Deleted {display_name}: {name_id_or_prefix}")
 
@@ -481,6 +500,7 @@ def generate_stack_component_copy_command(
         "source_component_name_id_or_prefix", type=str, required=True
     )
     @click.argument("target_component", type=str, required=True)
+    @track(AnalyticsEvent.COPIED_STACK_COMPONENT)
     def copy_stack_component_command(
         source_component_name_id_or_prefix: str,
         target_component: str,
@@ -492,18 +512,19 @@ def generate_stack_component_copy_command(
                                          component to copy.
             target_component: Name of the copied component.
         """
-        track_event(AnalyticsEvent.COPIED_STACK_COMPONENT)
-
         client = Client()
 
         with console.status(
             f"Copying {display_name} "
             f"`{source_component_name_id_or_prefix}`..\n"
         ):
-            component_to_copy = client.get_stack_component(
-                name_id_or_prefix=source_component_name_id_or_prefix,
-                component_type=component_type,
-            )
+            try:
+                component_to_copy = client.get_stack_component(
+                    name_id_or_prefix=source_component_name_id_or_prefix,
+                    component_type=component_type,
+                )
+            except KeyError as err:
+                cli_utils.error(str(err))
 
             client.create_stack_component(
                 name=target_component,
@@ -541,11 +562,13 @@ def generate_stack_component_up_command(
         with console.status(
             f"Provisioning {display_name} '{name_id_or_prefix}' locally...\n"
         ):
-
-            component_model = client.get_stack_component(
-                name_id_or_prefix=name_id_or_prefix,
-                component_type=component_type,
-            )
+            try:
+                component_model = client.get_stack_component(
+                    name_id_or_prefix=name_id_or_prefix,
+                    component_type=component_type,
+                )
+            except KeyError as err:
+                cli_utils.error(str(err))
 
             from zenml.stack import StackComponent
 
@@ -620,10 +643,13 @@ def generate_stack_component_down_command(
         with console.status(
             f"De-provisioning {display_name} '{name_id_or_prefix}' locally...\n"
         ):
-            component_model = client.get_stack_component(
-                name_id_or_prefix=name_id_or_prefix,
-                component_type=component_type,
-            )
+            try:
+                component_model = client.get_stack_component(
+                    name_id_or_prefix=name_id_or_prefix,
+                    component_type=component_type,
+                )
+            except KeyError as err:
+                cli_utils.error(str(err))
 
             from zenml.stack import StackComponent
 
@@ -704,11 +730,13 @@ def generate_stack_component_logs_command(
             f"Fetching the logs for the {display_name} "
             f"'{name_id_or_prefix}'...\n"
         ):
-
-            component_model = client.get_stack_component(
-                name_id_or_prefix=name_id_or_prefix,
-                component_type=component_type,
-            )
+            try:
+                component_model = client.get_stack_component(
+                    name_id_or_prefix=name_id_or_prefix,
+                    component_type=component_type,
+                )
+            except KeyError as err:
+                cli_utils.error(str(err))
 
             from zenml.stack import StackComponent
 
@@ -952,7 +980,9 @@ def register_single_stack_component_cli_commands(
     )(get_command)
 
     # zenml stack-component describe
-    describe_command = generate_stack_component_describe_command(component_type)
+    describe_command = generate_stack_component_describe_command(
+        component_type
+    )
     command_group.command(
         "describe",
         help=f"Show details about the (active) {singular_display_name}.",
@@ -965,7 +995,9 @@ def register_single_stack_component_cli_commands(
     )(list_command)
 
     # zenml stack-component register
-    register_command = generate_stack_component_register_command(component_type)
+    register_command = generate_stack_component_register_command(
+        component_type
+    )
     context_settings = {"ignore_unknown_options": True}
     command_group.command(
         "register",

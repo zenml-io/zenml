@@ -12,30 +12,31 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Pipeline deployment."""
-import json
-from typing import Any, Dict, Optional, cast
+from typing import Any, Dict, Optional
 from uuid import UUID
-
-import yaml
 
 import zenml
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.schedule import Schedule
 from zenml.config.step_configurations import Step
 from zenml.config.strict_base_model import StrictBaseModel
+from zenml.utils import pydantic_utils
 
 
-class PipelineDeployment(StrictBaseModel):
+class PipelineDeployment(
+    StrictBaseModel, pydantic_utils.YAMLSerializationMixin
+):
     """Class representing the deployment of a ZenML pipeline."""
 
-    zenml_version: str = zenml.__version__
     run_name: str
     schedule: Optional[Schedule] = None
+    schedule_id: Optional[UUID] = None
     stack_id: UUID
     pipeline: PipelineConfiguration
     pipeline_id: Optional[UUID] = None
-    proto_pipeline: str
     steps: Dict[str, Step] = {}
+    zenml_version: str = zenml.__version__
+    client_environment: Dict[str, str] = {}
 
     def add_extra(self, key: str, value: Any) -> None:
         """Adds an extra key-value pair to the pipeline configuration.
@@ -45,15 +46,3 @@ class PipelineDeployment(StrictBaseModel):
             value: The extra value.
         """
         self.pipeline.extra[key] = value
-
-    def yaml(self, **kwargs: Any) -> str:
-        """Yaml representation of the deployment.
-
-        Args:
-            **kwargs: Kwargs to pass to the pydantic json(...) method.
-
-        Returns:
-            Yaml string representation of the deployment.
-        """
-        dict_ = json.loads(self.json(**kwargs, sort_keys=False))
-        return cast(str, yaml.dump(dict_, sort_keys=False))

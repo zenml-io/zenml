@@ -13,16 +13,18 @@
 #  permissions and limitations under the License.
 """Models representing stack component flavors."""
 
-from typing import ClassVar, List, Optional
+from typing import ClassVar, List, Optional, Union
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
 from zenml.enums import StackComponentType
 from zenml.models.base_models import (
-    ProjectScopedRequestModel,
-    ProjectScopedResponseModel,
+    WorkspaceScopedRequestModel,
+    WorkspaceScopedResponseModel,
 )
-from zenml.models.constants import MODEL_CONFIG_SCHEMA_MAX_LENGTH
+from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
+from zenml.models.filter_models import WorkspaceScopedFilterModel
 
 # ---- #
 # BASE #
@@ -34,19 +36,20 @@ class FlavorBaseModel(BaseModel):
 
     name: str = Field(
         title="The name of the Flavor.",
+        max_length=STR_FIELD_MAX_LENGTH,
     )
-    type: StackComponentType = Field(
-        title="The type of the Flavor.",
-    )
+    type: StackComponentType = Field(title="The type of the Flavor.")
     config_schema: str = Field(
         title="The JSON schema of this flavor's corresponding configuration.",
-        max_length=MODEL_CONFIG_SCHEMA_MAX_LENGTH,
+        max_length=TEXT_FIELD_MAX_LENGTH,
     )
     source: str = Field(
-        title="The path to the module which contains this Flavor."
+        title="The path to the module which contains this Flavor.",
+        max_length=STR_FIELD_MAX_LENGTH,
     )
     integration: Optional[str] = Field(
-        title="The name of the integration that the Flavor belongs to."
+        title="The name of the integration that the Flavor belongs to.",
+        max_length=STR_FIELD_MAX_LENGTH,
     )
 
 
@@ -55,16 +58,40 @@ class FlavorBaseModel(BaseModel):
 # -------- #
 
 
-class FlavorResponseModel(FlavorBaseModel, ProjectScopedResponseModel):
+class FlavorResponseModel(FlavorBaseModel, WorkspaceScopedResponseModel):
     """Response model for stack component flavors."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
         "id",
         "type",
         "integration",
-        "project",
-        "user",
     ]
+
+
+# ------ #
+# FILTER #
+# ------ #
+
+
+class FlavorFilterModel(WorkspaceScopedFilterModel):
+    """Model to enable advanced filtering of all Flavors."""
+
+    name: str = Field(
+        default=None,
+        description="Name of the flavor",
+    )
+    type: str = Field(
+        default=None,
+        description="Stack Component Type of the stack flavor",
+    )
+    integration: str = Field(
+        default=None,
+        description="Integration associated with the flavor",
+    )
+    workspace_id: Union[UUID, str] = Field(
+        default=None, description="Workspace of the stack"
+    )
+    user_id: Union[UUID, str] = Field(None, description="User of the stack")
 
 
 # ------- #
@@ -72,12 +99,10 @@ class FlavorResponseModel(FlavorBaseModel, ProjectScopedResponseModel):
 # ------- #
 
 
-class FlavorRequestModel(FlavorBaseModel, ProjectScopedRequestModel):
+class FlavorRequestModel(FlavorBaseModel, WorkspaceScopedRequestModel):
     """Request model for stack component flavors."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
         "type",
         "integration",
-        "project",
-        "user",
     ]

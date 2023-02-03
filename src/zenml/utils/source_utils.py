@@ -376,7 +376,7 @@ def resolve_class(class_: Type[Any], replace_main_module: bool = True) -> str:
 
     try:
         file_path = inspect.getfile(class_)
-    except TypeError:
+    except (TypeError, OSError):
         # builtin file
         return initial_source
 
@@ -574,7 +574,10 @@ def validate_flavor_source(
             StackComponent which has the right component type.
     """
     from zenml.stack.flavor import Flavor
-    from zenml.stack.stack_component import StackComponent, StackComponentConfig
+    from zenml.stack.stack_component import (
+        StackComponent,
+        StackComponentConfig,
+    )
 
     try:
         flavor_class = load_source_path_class(source)

@@ -309,8 +309,10 @@ class MLFlowModelDeployer(BaseModelDeployer):
                     existing_service_config = None
                     with open(service_config_path, "r") as f:
                         existing_service_config = f.read()
-                    existing_service = ServiceRegistry().load_service_from_json(
-                        existing_service_config
+                    existing_service = (
+                        ServiceRegistry().load_service_from_json(
+                            existing_service_config
+                        )
                     )
                     if not isinstance(
                         existing_service, MLFlowDeploymentService
@@ -322,7 +324,9 @@ class MLFlowModelDeployer(BaseModelDeployer):
                     existing_service.update_status()
                     if self._matches_search_criteria(existing_service, config):
                         if not running or existing_service.is_running:
-                            services.append(cast(BaseService, existing_service))
+                            services.append(
+                                cast(BaseService, existing_service)
+                            )
 
         return services
 
@@ -348,12 +352,12 @@ class MLFlowModelDeployer(BaseModelDeployer):
             True if the service matches the input criteria.
         """
         existing_service_config = existing_service.config
-
         # check if the existing service matches the input criteria
         if (
             (
                 not config.pipeline_name
-                or existing_service_config.pipeline_name == config.pipeline_name
+                or existing_service_config.pipeline_name
+                == config.pipeline_name
             )
             and (
                 not config.model_name

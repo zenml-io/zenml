@@ -56,7 +56,7 @@ class DeepchecksModelDriftCheckStepParameters(BaseParameters):
 class DeepchecksModelDriftCheckStep(BaseStep):
     """Deepchecks model drift step."""
 
-    def entrypoint(  # type: ignore[override]
+    def entrypoint(
         self,
         reference_dataset: pd.DataFrame,
         target_dataset: pd.DataFrame,

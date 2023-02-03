@@ -13,19 +13,23 @@
 #  permissions and limitations under the License.
 """Base classes for SQLModel schemas."""
 
-
 from datetime import datetime
+from typing import TypeVar
 from uuid import UUID, uuid4
 
 from sqlmodel import Field, SQLModel
+
+from zenml.models.base_models import BaseResponseModel
+
+B = TypeVar("B", bound=BaseResponseModel)
 
 
 class BaseSchema(SQLModel):
     """Base SQL Model for ZenML entities."""
 
     id: UUID = Field(default_factory=uuid4, primary_key=True)
-    created: datetime = Field(default_factory=datetime.now)
-    updated: datetime = Field(default_factory=datetime.now)
+    created: datetime = Field(default_factory=datetime.utcnow)
+    updated: datetime = Field(default_factory=datetime.utcnow)
 
 
 class NamedSchema(BaseSchema):

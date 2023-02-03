@@ -3,7 +3,8 @@
 Build your first ML pipelines with ZenML.
 
 ## :question: Coming from `zenml go` ?
-Then open [notebooks/quickstart.ipynb](notebooks/quickstart.ipynb) to get started.
+Then open [notebooks/quickstart.ipynb](notebooks/quickstart.ipynb) to get 
+started.
 
 ## :earth_americas: Overview
 

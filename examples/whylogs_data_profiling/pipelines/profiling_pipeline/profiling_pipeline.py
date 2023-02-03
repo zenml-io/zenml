@@ -25,7 +25,7 @@ def data_profiling_pipeline(
     train_data_profiler,
     test_data_profiler,
 ):
-    """Links all the steps together in a pipeline"""
+    """Links all the steps together in a pipeline."""
     data, _ = data_loader()
     train, test = data_splitter(data)
     train_data_profiler(train)

@@ -192,9 +192,9 @@ include:
 Label Studio requires the use of what it calls 'label config' when you are
 creating/registering your dataset. These are strings containing HTML-like syntax
 that allow you to define a custom interface for your annotation. ZenML provides
-two helper functions that will construct these label config strings in the case
-of object detection and image classification. See the
-`integrations.label_studio.label_config_generators` module for those two
+three helper functions that will construct these label config strings in the case
+of object detection, image classification and OCR. See the
+`integrations.label_studio.label_config_generators` module for those three
 functions.
 
 A concrete example of using the Label Studio annotator can be found

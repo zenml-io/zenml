@@ -28,8 +28,7 @@ from zenml.integrations.azure.flavors.azure_artifact_store_flavor import (
 
 
 def test_azure_artifact_store_attributes():
-    """Tests that the basic attributes of the azure artifact store are set
-    correctly."""
+    """Tests that the basic attributes of the azure artifact store are set correctly."""
     artifact_store = AzureArtifactStore(
         name="",
         id=uuid4(),
@@ -37,7 +36,7 @@ def test_azure_artifact_store_attributes():
         flavor="azure",
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -56,7 +55,7 @@ def test_must_be_azure_path():
             flavor="azure",
             type=StackComponentType.ARTIFACT_STORE,
             user=uuid4(),
-            project=uuid4(),
+            workspace=uuid4(),
             created=datetime.now(),
             updated=datetime.now(),
         )
@@ -69,7 +68,7 @@ def test_must_be_azure_path():
             flavor="azure",
             type=StackComponentType.ARTIFACT_STORE,
             user=uuid4(),
-            project=uuid4(),
+            workspace=uuid4(),
             created=datetime.now(),
             updated=datetime.now(),
         )
@@ -81,7 +80,7 @@ def test_must_be_azure_path():
         flavor="azure",
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -94,7 +93,7 @@ def test_must_be_azure_path():
         flavor="azure",
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )

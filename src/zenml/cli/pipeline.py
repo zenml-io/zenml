@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2020. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,16 +12,19 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """CLI functionality to interact with pipelines."""
-
+from typing import Any
 
 import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
+from zenml.cli.utils import list_options
 from zenml.client import Client
+from zenml.console import console
 from zenml.enums import CliCategories
-from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
+from zenml.models import PipelineFilterModel, PipelineRunFilterModel
+from zenml.models.schedule_model import ScheduleFilterModel
 
 logger = get_logger(__name__)
 
@@ -53,44 +56,124 @@ def cli_pipeline_run(python_file: str, config_path: str) -> None:
 
 
 @pipeline.command("list", help="List all registered pipelines.")
-def list_pipelines() -> None:
-    """List all registered pipelines."""
+@list_options(PipelineFilterModel)
+def list_pipelines(**kwargs: Any) -> None:
+    """List all registered pipelines.
+
+    Args:
+        **kwargs: Keyword arguments to filter pipelines.
+    """
     cli_utils.print_active_config()
-    pipelines = Client().list_pipelines()
+    client = Client()
+    with console.status("Listing pipelines...\n"):
 
-    if not pipelines:
-        cli_utils.declare("No piplines registered.")
-        return
+        pipelines = client.list_pipelines(**kwargs)
 
-    cli_utils.print_pydantic_models(
-        pipelines,
-        exclude_columns=["id", "created", "updated", "user", "project"],
-    )
+        if not pipelines.items:
+            cli_utils.declare("No pipelines found for this filter.")
+            return
+
+        cli_utils.print_pydantic_models(
+            pipelines,
+            exclude_columns=["id", "created", "updated", "user", "workspace"],
+        )
 
 
 @pipeline.command("delete")
 @click.argument("pipeline_name_or_id", type=str, required=True)
-def delete_pipeline(pipeline_name_or_id: str) -> None:
+@click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    help="Don't ask for confirmation.",
+)
+def delete_pipeline(pipeline_name_or_id: str, yes: bool = False) -> None:
     """Delete a pipeline.
 
     Args:
         pipeline_name_or_id: The name or ID of the pipeline to delete.
+        yes: If set, don't ask for confirmation.
     """
     cli_utils.print_active_config()
-    confirmation = cli_utils.confirmation(
-        f"Are you sure you want to delete pipeline `{pipeline_name_or_id}`? "
-        "This will change all existing runs of this pipeline to become "
-        "unlisted."
-    )
-    if not confirmation:
-        cli_utils.declare("Pipeline deletion canceled.")
-        return
+
+    if not yes:
+        confirmation = cli_utils.confirmation(
+            f"Are you sure you want to delete pipeline "
+            f"`{pipeline_name_or_id}`? This will change all existing runs of "
+            "this pipeline to become unlisted."
+        )
+        if not confirmation:
+            cli_utils.declare("Pipeline deletion canceled.")
+            return
+
+    try:
+        Client().delete_pipeline(name_id_or_prefix=pipeline_name_or_id)
+    except KeyError as e:
+        cli_utils.error(str(e))
     else:
-        try:
-            Client().delete_pipeline(name_id_or_prefix=pipeline_name_or_id)
-            cli_utils.declare(f"Deleted pipeline '{pipeline_name_or_id}'.")
-        except KeyError as e:
-            cli_utils.error(str(e))
+        cli_utils.declare(f"Deleted pipeline '{pipeline_name_or_id}'.")
+
+
+@pipeline.group()
+def schedule() -> None:
+    """Commands for pipeline run schedules."""
+
+
+@schedule.command("list", help="List all pipeline schedules.")
+@list_options(ScheduleFilterModel)
+def list_schedules(**kwargs: Any) -> None:
+    """List all pipeline schedules.
+
+    Args:
+        **kwargs: Keyword arguments to filter schedules.
+    """
+    cli_utils.print_active_config()
+    client = Client()
+
+    schedules = client.list_schedules(**kwargs)
+
+    if not schedules:
+        cli_utils.declare("No schedules found for this filter.")
+        return
+
+    cli_utils.print_pydantic_models(
+        schedules,
+        exclude_columns=["id", "created", "updated", "user", "workspace"],
+    )
+
+
+@schedule.command("delete", help="Delete a pipeline schedule.")
+@click.argument("schedule_name_or_id", type=str, required=True)
+@click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    help="Don't ask for confirmation.",
+)
+def delete_schedule(schedule_name_or_id: str, yes: bool = False) -> None:
+    """Delete a pipeline schedule.
+
+    Args:
+        schedule_name_or_id: The name or ID of the schedule to delete.
+        yes: If set, don't ask for confirmation.
+    """
+    cli_utils.print_active_config()
+
+    if not yes:
+        confirmation = cli_utils.confirmation(
+            f"Are you sure you want to delete schedule "
+            f"`{schedule_name_or_id}`?"
+        )
+        if not confirmation:
+            cli_utils.declare("Schedule deletion canceled.")
+            return
+
+    try:
+        Client().delete_schedule(name_id_or_prefix=schedule_name_or_id)
+    except KeyError as e:
+        cli_utils.error(str(e))
+    else:
+        cli_utils.declare(f"Deleted schedule '{schedule_name_or_id}'.")
 
 
 @pipeline.group()
@@ -98,122 +181,66 @@ def runs() -> None:
     """Commands for pipeline runs."""
 
 
-@click.option("--pipeline", "-p", type=str, required=False)
-@click.option("--stack", "-s", type=str, required=False)
-@click.option("--user", "-u", type=str, required=False)
-@click.option("--unlisted", is_flag=True)
 @runs.command("list", help="List all registered pipeline runs.")
-def list_pipeline_runs(
-    pipeline: str, stack: str, user: str, unlisted: bool = False
-) -> None:
-    """List all registered pipeline runs.
+@list_options(PipelineRunFilterModel)
+def list_pipeline_runs(**kwargs: Any) -> None:
+    """List all registered pipeline runs for the filter.
 
     Args:
-        pipeline: If provided, only return runs for this pipeline.
-        stack: If provided, only return runs for this stack.
-        user: If provided, only return runs for this user.
-        unlisted: If True, only return unlisted runs that are not
-            associated with any pipeline.
+        **kwargs: Keyword arguments to filter pipeline runs.
     """
     cli_utils.print_active_config()
+
+    client = Client()
     try:
-        stack_id, pipeline_id, user_id = None, None, None
-        client = Client()
-        if stack:
-            stack_id = client.get_stack(stack).id
-        if pipeline:
-            pipeline_id = client.get_pipeline(pipeline).id
-        if user:
-            user_id = client.get_user(user).id
-        pipeline_runs = client.list_runs(
-            pipeline_id=pipeline_id,
-            stack_id=stack_id,
-            user_name_or_id=user_id,
-            unlisted=unlisted,
-        )
+        with console.status("Listing roles...\n"):
+            pipeline_runs = client.list_runs(**kwargs)
     except KeyError as err:
         cli_utils.error(str(err))
     else:
-        if not pipeline_runs:
-            cli_utils.declare("No pipeline runs registered.")
+        if not pipeline_runs.items:
+            cli_utils.declare("No pipeline runs found for this filter.")
             return
 
-        cli_utils.print_pipeline_runs_table(pipeline_runs=pipeline_runs)
+        cli_utils.print_pipeline_runs_table(pipeline_runs=pipeline_runs.items)
+        cli_utils.print_page_info(pipeline_runs)
 
 
-@runs.command("export", help="Export all pipeline runs to a YAML file.")
-@click.argument("filename", type=str, required=True)
-def export_pipeline_runs(filename: str) -> None:
-    """Export all pipeline runs to a YAML file.
-
-    Args:
-        filename: The filename to export the pipeline runs to.
-    """
-    cli_utils.print_active_config()
-    client = Client()
-    client.export_pipeline_runs(filename=filename)
-
-
-@runs.command("import", help="Import pipeline runs from a YAML file.")
-@click.argument("filename", type=str, required=True)
-def import_pipeline_runs(filename: str) -> None:
-    """Import pipeline runs from a YAML file.
-
-    Args:
-        filename: The filename from which to import the pipeline runs.
-    """
-    cli_utils.print_active_config()
-    client = Client()
-    try:
-        client.import_pipeline_runs(filename=filename)
-    except EntityExistsError as err:
-        cli_utils.error(str(err))
-
-
-@runs.command(
-    "migrate",
-    help="Migrate pipeline runs from an existing metadata store database.",
+@runs.command("delete")
+@click.argument("run_name_or_id", type=str, required=True)
+@click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    help="Don't ask for confirmation.",
 )
-@click.argument("database", type=str, required=True)
-@click.option("--database_type", type=str, default="sqlite", required=False)
-@click.option("--mysql_host", type=str, required=False)
-@click.option("--mysql_port", type=int, default=3306, required=False)
-@click.option("--mysql_username", type=str, required=False)
-@click.option("--mysql_password", type=str, required=False)
-def migrate_pipeline_runs(
-    database: str,
-    database_type: str,
-    mysql_host: str,
-    mysql_port: int,
-    mysql_username: str,
-    mysql_password: str,
+def delete_pipeline_run(
+    run_name_or_id: str,
+    yes: bool = False,
 ) -> None:
-    """Migrate pipeline runs from a metadata store of ZenML < 0.20.0.
+    """Delete a pipeline run.
 
     Args:
-        database: The metadata store database from which to migrate the pipeline
-            runs.
-        database_type: The type of the metadata store database (sqlite | mysql).
-        mysql_host: The host of the MySQL database.
-        mysql_port: The port of the MySQL database.
-        mysql_username: The username of the MySQL database.
-        mysql_password: The password of the MySQL database.
+        run_name_or_id: The name or ID of the pipeline run to delete.
+        yes: If set, don't ask for confirmation.
     """
     cli_utils.print_active_config()
-    client = Client()
-    try:
-        client.migrate_pipeline_runs(
-            database=database,
-            database_type=database_type,
-            mysql_host=mysql_host,
-            mysql_port=mysql_port,
-            mysql_username=mysql_username,
-            mysql_password=mysql_password,
+
+    # Ask for confirmation to delete run.
+    if not yes:
+        confirmation = cli_utils.confirmation(
+            f"Are you sure you want to delete pipeline run `{run_name_or_id}`?"
         )
-    except (
-        EntityExistsError,
-        NotImplementedError,
-        RuntimeError,
-        ValueError,
-    ) as err:
-        cli_utils.error(str(err))
+        if not confirmation:
+            cli_utils.declare("Pipeline run deletion canceled.")
+            return
+
+    # Delete run.
+    try:
+        Client().delete_pipeline_run(
+            name_id_or_prefix=run_name_or_id,
+        )
+    except KeyError as e:
+        cli_utils.error(str(e))
+    else:
+        cli_utils.declare(f"Deleted pipeline run '{run_name_or_id}'.")

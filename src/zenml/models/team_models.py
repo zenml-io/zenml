@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing teams."""
 
-from typing import TYPE_CHECKING, ClassVar, List, Optional
+from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -23,7 +23,8 @@ from zenml.models.base_models import (
     BaseResponseModel,
     update_model,
 )
-from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
+from zenml.models.constants import STR_FIELD_MAX_LENGTH
+from zenml.models.filter_models import BaseFilterModel
 
 if TYPE_CHECKING:
     from zenml.models.user_models import UserResponseModel
@@ -39,7 +40,7 @@ class TeamBaseModel(BaseModel):
 
     name: str = Field(
         title="The unique name of the team.",
-        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+        max_length=STR_FIELD_MAX_LENGTH,
     )
 
 
@@ -50,8 +51,6 @@ class TeamBaseModel(BaseModel):
 
 class TeamResponseModel(TeamBaseModel, BaseResponseModel):
     """Response model for teams."""
-
-    ANALYTICS_FIELDS: ClassVar[List[str]] = ["id"]
 
     users: List["UserResponseModel"] = Field(
         title="The list of users within this team."
@@ -80,6 +79,20 @@ class TeamResponseModel(TeamBaseModel, BaseResponseModel):
             return [u.name for u in self.users]
         else:
             return []
+
+
+# ------ #
+# FILTER #
+# ------ #
+
+
+class TeamFilterModel(BaseFilterModel):
+    """Model to enable advanced filtering of all Teams."""
+
+    name: str = Field(
+        default=None,
+        description="Name of the team",
+    )
 
 
 # ------- #

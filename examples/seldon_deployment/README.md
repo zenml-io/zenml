@@ -64,7 +64,36 @@ The inference pipeline simulates loading data from a dynamic external source,
 then uses that data to perform online predictions using the running Seldon
 Core prediction server.
 
-# 🖥 Run it on Kubernetes
+# 🏠 Local Stack
+
+## 📄 Infrastructure Requirements (Pre-requisites)
+
+You don't need to set up any infrastructure to run your pipelines with Seldon, locally. However, you need the following tools installed:
+  * Docker must be installed on your local machine.
+  * Install k3d by running `curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash`.
+
+## Create a local Seldon Stack
+
+To get a stack with Seldon Core and potential other components, you can make use of ZenML's Stack Recipes that are a set of terraform based modules that take care of setting up a cluster with Seldon among other things.
+
+Run the following command to deploy the local Seldon stack:
+
+```bash
+zenml stack recipe deploy k3d-modular --install seldon
+```
+
+>**Note**:
+> This recipe comes with MLflow, Kubeflow and Minio enabled by default. If you want any other components like KServe or Tekton, you can specify that using the `--install/-i` flag.
+
+This will deploy a local Kubernetes cluster with Seldon installed. 
+It will also generate a stack YAML file that you can import as a ZenML stack by running 
+
+```bash
+zenml stack import -f <path-to-stack-yaml>
+```
+Once the stack is set, you can then simply proceed to running your pipelines.
+
+# ☁️ Cloud Stack
 
 ### 📄 Prerequisites 
 
@@ -102,59 +131,6 @@ cluster (read below for a brief explanation of how to do that).
 3. models deployed with Seldon Core need to be stored in some form of
 persistent shared storage that is accessible from the Kubernetes cluster where
 Seldon Core is installed (e.g. AWS S3, GCS, Azure Blob Storage, etc.).
-
-### 🚅 That seems like a lot of infrastructure work. Is there a Zen 🧘 way to run this example?
-
-Yes! With [ZenML Stack Recipes](../../docs/book/advanced-guide/practical/stack-recipes.md), you can now provision all the infrastructure you need to run your ZenML pipelines with just a few simple commands.
-
-The flow to get started for this example can be the following:
-
-1. Pull the `aws_minimal` recipe to your local system. Learn more about what this recipe does from its README.
-
-    ```shell
-    zenml stack recipe pull aws_minimal
-    ```
-2. (Optional) 🎨 Customize your deployment by editing the default values in the `locals.tf` file.
-
-3. 🚀 Deploy the recipe with this simple command.
-
-    ```shell
-    zenml stack recipe deploy aws_minimal
-    ```
-    > **Note**
-    > This command can also automatically import the resources created as a ZenML stack for you. Just run it with the `--import` flag and optionally provide a `--stack-name` and you're set! Keep in mind, in that case, you'll need all integrations for this example installed before you run this command.
-
-    > **Note**
-    > You should also have [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) and [docker](https://docs.docker.com/engine/install/) installed on your local system with the local [docker client authorized](https://cloud.google.com/sdk/gcloud/reference/auth/configure-docker) to push to your cloud registry.
-    
-4. You'll notice that a ZenML stack configuration file gets created 🤯! You can run the following command to import the resources as a ZenML stack, manually. You either need to have the `aws`, `mlflow` and `seldon` integrations installed before importing the stack or you can go into the YAML file and delete the sections on the `experiment_tracker` and `model_deployer` to not have them importer at all.
-
-    ```shell
-    zenml stack import <STACK_NAME> -f <PATH_TO_THE_CREATED_STACK_CONFIG_YAML>
-
-    # set the imported stack as the active stack
-    zenml stack set <STACK_NAME>
-    ```
-
-5. You should now create a secret for the RDS MySQL instance that will allow ZenML to connect to it. Use the following command:
-
-    ```bash
-    zenml secret register aws_rds_secret \
-        --schema=mysql \
-        --user=<user> \
-        --password=<password>
-    ```
-
-    The values for the username and password can be obtained by running the following commands inside your recipe directory.
-
-    ```bash
-    terraform output metadata-db-username
-
-    terraform output metadata-db-password
-    ```
-
-You can now skip directly to the [part of this guide where you define ZenML secrets](#aws-authentication-with-implicit-iam-access) for Seldon! 
-
 
 #### Installing Seldon Core (e.g. in an EKS cluster)
 
@@ -251,7 +227,6 @@ This stack consists of the following components:
 
 * an AWS S3 artifact store
 * the local orchestrator
-* the local metadata store
 * a Seldon Core model deployer
 * a local secret manager used to store the credentials needed by Seldon Core to
 access the AWS S3 artifact store
@@ -307,13 +282,15 @@ This stack has all components running in the AWS cloud:
 
 * an AWS S3 artifact store
 * a Kubeflow orchestrator installed in an AWS EKS Kubernetes cluster
-* a metadata store that uses the same database as the Kubeflow deployment as
-a backend
 * an AWS ECR container registry
 * an AWS secret manager used to store the credentials needed by Seldon Core to
 access the AWS S3 artifact store
 * a Seldon Core model deployer pointing to the AWS EKS cluster
 
+In order to run this example with a remote orchestrator such as Kubeflow, the 
+first thing that you would require is a remote ZenML server deployed to the 
+cloud. See the [deployment guide](https://docs.zenml.io/getting-started/deploying-zenml) 
+for more information.
 
 To have access to the AWS S3 artifact store from your local workstation, the
 AWS client credentials needs to be properly set up locally as documented in
@@ -362,10 +339,11 @@ zenml stack register aws -a aws -o aws -c aws -d seldon_aws -x aws --set
 ```
 
 ZenML will manage the Seldon Core deployments inside the same `kubeflow`
-namespace where the Kubeflow pipelines are running. You also have to update the set of
-permissions granted by Kubeflow to the Kubernetes service account in the context
-of which Kubeflow pipelines are running to allow the ZenML workloads to create,
-update and delete secrets. You can do so with the below command:
+namespace where the Kubeflow pipelines are running. You also have to update 
+the set of permissions granted by Kubeflow to the Kubernetes service account 
+in the context of which Kubeflow pipelines are running to allow the ZenML 
+workloads to create, update and delete secrets. You can do so with the below 
+command:
 
 ```bash
 kubectl -n kubeflow patch role pipeline-runner --type='json' -p='[{"op": "add", "path": "/rules/0", "value": {"apiGroups": [""], "resources": ["secrets","serviceaccounts"], "verbs": ["*"]}}]'
@@ -381,21 +359,21 @@ The Seldon Core model servers need to access the Artifact Store in the ZenML
 stack to retrieve the model artifacts. This usually involve passing some
 credentials to the Seldon Core model servers required to authenticate with
 the Artifact Store. In ZenML, this is done by creating a ZenML secret with the
-proper credentials and configuring the Seldon Core Model Deployer stack component
-to use it, by passing the `--secret` argument to the CLI command used
+proper credentials and configuring the Seldon Core Model Deployer stack 
+component to use it, by passing the `--secret` argument to the CLI command used
 to register the model deployer. We've already done the latter, now all that is
 left to do is to configure the `s3-store` ZenML secret specified before as a
 Seldon Model Deployer configuration attribute with the credentials needed by
 Seldon Core to access the artifact store.
 
-There are built-in secret schemas that the Seldon Core integration provides which
-can be used to configure credentials for the 3 main types of Artifact Stores
-supported by ZenML: S3, GCS and Azure.
+There are built-in secret schemas that the Seldon Core integration provides 
+which can be used to configure credentials for the 3 main types of Artifact 
+Stores supported by ZenML: S3, GCS and Azure.
 
 For this AWS S3 example, we'll use the standard `seldon_s3` secret schema, but
-you can also use `seldon_gs` for GCS and `seldon_az` for Azure. To read more about
-secrets, secret schemas and how they are used in ZenML, please refer to the
-[ZenML documentation](https://docs.zenml.io/component-gallery/secrets-managers/secrets-managers).
+you can also use `seldon_gs` for GCS and `seldon_az` for Azure. To read more 
+about secrets, secret schemas and how they are used in ZenML, please refer to 
+the [ZenML documentation](https://docs.zenml.io/component-gallery/secrets-managers/secrets-managers).
 
 The next sections cover two cases involving AWS authentication: with and without
 IAM role access.  Please look up the variables relevant to your use-case in the
@@ -436,8 +414,8 @@ INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/c
 ##### AWS Authentication with Explicit Credentials
 
 If IAM access is not configured for your EKS cluster, or you don't know how to
-configure it, you will need to set up credentials explicitly in the ZenML secret,
-e.g.:
+configure it, you will need to set up credentials explicitly in the ZenML 
+secret, e.g.:
 
 ```bash
 $ zenml secrets-manager secret register -s seldon_s3 s3-store \
@@ -535,9 +513,9 @@ python run.py --config deploy --epochs=10 --lr=0.1
 
 If the input hyperparameter argument values are not changed, the pipeline
 caching feature will kick in, a new model will not be re-trained and the Seldon
-Core deployment will not be updated with the new model. Similarly, if a new model
-is trained in the deployment pipeline but the model accuracy doesn't exceed the
-configured accuracy threshold, the new model will not be deployed.
+Core deployment will not be updated with the new model. Similarly, if a new 
+model is trained in the deployment pipeline but the model accuracy doesn't 
+exceed the configured accuracy threshold, the new model will not be deployed.
 
 The inference pipeline will use the currently running Seldon Core deployment
 server to perform an online prediction. To run the inference pipeline:
@@ -611,7 +589,7 @@ $ zenml model-deployer models describe 8cbe671b-9fce-4394-a051-68e001f92765
 ┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
 ┃ MODEL_NAME             │ mnist                                                                                  ┃
 ┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
-┃ MODEL_URI              │ s3://zenfiles/seldon_model_deployer_step/output/884/seldon                             ┃
+┃ MODEL_URI              │ s3://zenprojects/seldon_model_deployer_step/output/884/seldon                          ┃
 ┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
 ┃ PIPELINE_NAME          │ continuous_deployment_pipeline                                                         ┃
 ┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨

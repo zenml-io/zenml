@@ -53,7 +53,7 @@ class GreatExpectationsProfilerStep(BaseStep):
     dataset [as covered in the official GE documentation](https://docs.greatexpectations.io/docs/guides/expectations/how_to_create_and_edit_expectations_with_a_profiler).
     """
 
-    def entrypoint(  # type: ignore[override]
+    def entrypoint(
         self,
         dataset: pd.DataFrame,
         params: GreatExpectationsProfilerParameters,

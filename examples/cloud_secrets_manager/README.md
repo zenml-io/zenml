@@ -14,8 +14,7 @@ this secret and query the secret with the
 unique key: `example_secret_key`.
 
 Similarly, you would be able to pass access keys, password, credentials and so
-on into your pipeline steps to do with as
-you please.
+on into your pipeline steps to do with as you please.
 
 # 🖥 Run it locally
 
@@ -24,9 +23,8 @@ you please.
 ### 📄 Prerequisites
 
 In order to run this example, you need to install and initialize ZenML. Within 
-this example You'll be able to choose between using the
-local yaml based secrets manager, 
-the [AWS Secrets Manager](https://aws.amazon.com/secrets-manager/), 
+this example You'll be able to choose between using the local yaml based 
+secrets manager, the [AWS Secrets Manager](https://aws.amazon.com/secrets-manager/), 
 the [GCP Secret Manager](https://cloud.google.com/secret-manager) or
 the [Azure Key Vault](https://azure.microsoft.com/en-us/services/key-vault/#product-overview)
 
@@ -50,8 +48,7 @@ zenml up
 To get going with aws make sure to have your aws credential set up locally. We
 recommend this
 [guide](https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/setup-credentials.html)
-to make sure everything is
-set up properly.
+to make sure everything is set up properly.
 
 ```shell
 zenml integration install aws
@@ -116,14 +113,13 @@ a recommended location to store sensitive information.
 ### 🤫 Create a secret
 
 Here we are creating a secret called `example_secret` which contains a single
-key-value pair:
-{example_secret_key: example_secret_value}
+key-value pair: {example_secret_key: example_secret_value}
 
 ```shell
 zenml secrets-manager secret register example_secret --example_secret_key=example_secret_value
 ```
 
-Note that Azure's Key Vault store doesn't permit the use of underscore
+Note that Azure's Key Vault store does not permit the use of underscore
 characters in secret names, so you'll need to instead use:
 
 ```shell

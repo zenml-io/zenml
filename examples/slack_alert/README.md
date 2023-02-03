@@ -109,5 +109,6 @@ rm -rf zenml_examples
 
 # 📜 Learn more
 
-If you want to learn more about alerters in zenml in general or about how to build your own alerter steps in ZenML
-check out our [docs](https://docs.zenml.io/component-gallery/alerters/alerters).
+If you want to learn more about alerters in zenml in general or about how to 
+build your own alerter steps in ZenML check out our 
+[docs](https://docs.zenml.io/component-gallery/alerters/alerters).

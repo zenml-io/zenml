@@ -13,13 +13,16 @@
 #  permissions and limitations under the License.
 """Implementation of Deepchecks dataset materializer."""
 
-from typing import Any, Type
+from typing import TYPE_CHECKING, Any, Dict, Type
 
 from deepchecks.tabular import Dataset
 
-from zenml.artifacts import DataArtifact
+from zenml.enums import ArtifactType
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.pandas_materializer import PandasMaterializer
+
+if TYPE_CHECKING:
+    from zenml.metadata.metadata_types import MetadataType
 
 DEFAULT_FILENAME = "data.binary"
 
@@ -28,10 +31,10 @@ class DeepchecksDatasetMaterializer(BaseMaterializer):
     """Materializer to read data to and from Deepchecks dataset."""
 
     ASSOCIATED_TYPES = (Dataset,)
-    ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
 
-    def handle_input(self, data_type: Type[Any]) -> Dataset:
-        """Reads pandas dataframes and creates deepchecks.Dataset from it.
+    def load(self, data_type: Type[Any]) -> Dataset:
+        """Reads pandas dataframes and creates `deepchecks.Dataset` from it.
 
         Args:
             data_type: The type of the data to read.
@@ -39,23 +42,38 @@ class DeepchecksDatasetMaterializer(BaseMaterializer):
         Returns:
             A Deepchecks Dataset.
         """
-        super().handle_input(data_type)
+        super().load(data_type)
 
         # Outsource to pandas
-        pandas_materializer = PandasMaterializer(self.artifact)
-        df = pandas_materializer.handle_input(data_type)
+        pandas_materializer = PandasMaterializer(self.uri)
+        df = pandas_materializer.load(data_type)
 
         # Recreate from pandas dataframe
         return Dataset(df)
 
-    def handle_return(self, df: Dataset) -> None:
-        """Serializes pandas dataframe within a Dataset object.
+    def save(self, df: Dataset) -> None:
+        """Serializes pandas dataframe within a `Dataset` object.
 
         Args:
             df: A deepchecks.Dataset object.
         """
-        super().handle_return(df)
+        super().save(df)
 
         # Outsource to pandas
-        pandas_materializer = PandasMaterializer(self.artifact)
-        pandas_materializer.handle_return(df.data)
+        pandas_materializer = PandasMaterializer(self.uri)
+        pandas_materializer.save(df.data)
+
+    def extract_metadata(self, df: Dataset) -> Dict[str, "MetadataType"]:
+        """Extract metadata from the given `Dataset` object.
+
+        Args:
+            df: The `Dataset` object to extract metadata from.
+
+        Returns:
+            The extracted metadata as a dictionary.
+        """
+        super().extract_metadata(df)
+
+        # Outsource to pandas
+        pandas_materializer = PandasMaterializer(self.uri)
+        return pandas_materializer.extract_metadata(df.data)

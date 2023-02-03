@@ -14,13 +14,16 @@
 """Implementation of a materializer to read and write ZenML service instances."""
 
 import os
-from typing import Any, Type
+from typing import TYPE_CHECKING, Any, Dict, Type
 
-from zenml.artifacts import ServiceArtifact
+from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.services.service import BaseService
 from zenml.services.service_registry import ServiceRegistry
+
+if TYPE_CHECKING:
+    from zenml.metadata.metadata_types import MetadataType
 
 SERVICE_CONFIG_FILENAME = "service.json"
 
@@ -29,9 +32,9 @@ class ServiceMaterializer(BaseMaterializer):
     """Materializer to read/write service instances."""
 
     ASSOCIATED_TYPES = (BaseService,)
-    ASSOCIATED_ARTIFACT_TYPES = (ServiceArtifact,)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.SERVICE
 
-    def handle_input(self, data_type: Type[Any]) -> BaseService:
+    def load(self, data_type: Type[Any]) -> BaseService:
         """Creates and returns a service.
 
         This service is instantiated from the serialized service configuration
@@ -43,13 +46,13 @@ class ServiceMaterializer(BaseMaterializer):
         Returns:
             A ZenML service instance.
         """
-        super().handle_input(data_type)
-        filepath = os.path.join(self.artifact.uri, SERVICE_CONFIG_FILENAME)
+        super().load(data_type)
+        filepath = os.path.join(self.uri, SERVICE_CONFIG_FILENAME)
         with fileio.open(filepath, "r") as f:
             service = ServiceRegistry().load_service_from_json(f.read())
         return service
 
-    def handle_return(self, service: BaseService) -> None:
+    def save(self, service: BaseService) -> None:
         """Writes a ZenML service.
 
         The configuration and last known status of the input service instance
@@ -58,7 +61,26 @@ class ServiceMaterializer(BaseMaterializer):
         Args:
             service: A ZenML service instance.
         """
-        super().handle_return(service)
-        filepath = os.path.join(self.artifact.uri, SERVICE_CONFIG_FILENAME)
+        super().save(service)
+        filepath = os.path.join(self.uri, SERVICE_CONFIG_FILENAME)
         with fileio.open(filepath, "w") as f:
             f.write(service.json(indent=4))
+
+    def extract_metadata(
+        self, service: BaseService
+    ) -> Dict[str, "MetadataType"]:
+        """Extract metadata from the given service.
+
+        Args:
+            service: The service to extract metadata from.
+
+        Returns:
+            The extracted metadata as a dictionary.
+        """
+        from zenml.metadata.metadata_types import Uri
+
+        base_metadata = super().extract_metadata(service)
+        service_metadata: Dict[str, "MetadataType"] = {}
+        if service.endpoint and service.endpoint.status.uri:
+            service_metadata["uri"] = Uri(service.endpoint.status.uri)
+        return {**base_metadata, **service_metadata}

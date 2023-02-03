@@ -16,19 +16,32 @@ import numpy as np
 import tensorflow as tf
 
 from zenml.client import Client
+from zenml.integrations.neptune.experiment_trackers import (
+    NeptuneExperimentTracker,
+)
 from zenml.integrations.neptune.experiment_trackers.run_state import (
     get_neptune_run,
 )
 from zenml.steps import step
 
+experiment_tracker = Client().active_stack.experiment_tracker
 
-@step(experiment_tracker=Client().active_stack.experiment_tracker.name)
+if not experiment_tracker or not isinstance(
+    experiment_tracker, NeptuneExperimentTracker
+):
+    raise RuntimeError(
+        "Your active stack needs to contain a Neptune experiment tracker for "
+        "this example to work."
+    )
+
+
+@step(experiment_tracker=experiment_tracker.name)
 def tf_evaluator(
     x_test: np.ndarray,
     y_test: np.ndarray,
     model: tf.keras.Model,
 ) -> float:
-    """Calculate the loss for the model for each epoch in a graph"""
+    """Calculate the loss for the model for each epoch in a graph."""
     neptune_run = get_neptune_run()
     _, test_acc = model.evaluate(x_test, y_test, verbose=2)
     neptune_run["metrics/val_accuracy"] = test_acc

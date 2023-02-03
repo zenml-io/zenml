@@ -14,7 +14,7 @@
 """Models representing stacks."""
 
 import json
-from typing import Any, ClassVar, Dict, List
+from typing import Any, ClassVar, Dict, List, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -26,10 +26,8 @@ from zenml.models.base_models import (
     update_model,
 )
 from zenml.models.component_models import ComponentResponseModel
-from zenml.models.constants import (
-    MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH,
-    MODEL_NAME_FIELD_MAX_LENGTH,
-)
+from zenml.models.constants import STR_FIELD_MAX_LENGTH
+from zenml.models.filter_models import ShareableWorkspaceScopedFilterModel
 
 # ---- #
 # BASE #
@@ -40,12 +38,12 @@ class StackBaseModel(BaseModel):
     """Base model for stacks."""
 
     name: str = Field(
-        title="The name of the stack.", max_length=MODEL_NAME_FIELD_MAX_LENGTH
+        title="The name of the stack.", max_length=STR_FIELD_MAX_LENGTH
     )
     description: str = Field(
         default="",
         title="The description of the stack",
-        max_length=MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH,
+        max_length=STR_FIELD_MAX_LENGTH,
     )
 
 
@@ -55,14 +53,7 @@ class StackBaseModel(BaseModel):
 
 
 class StackResponseModel(StackBaseModel, ShareableResponseModel):
-    """Stack model with Components, User and Project fully hydrated."""
-
-    ANALYTICS_FIELDS: ClassVar[List[str]] = [
-        "id",
-        "project",
-        "user",
-        "is_shared",
-    ]
+    """Stack model with Components, User and Workspace fully hydrated."""
 
     components: Dict[StackComponentType, List[ComponentResponseModel]] = Field(
         title="A mapping of stack component types to the actual"
@@ -76,7 +67,7 @@ class StackResponseModel(StackBaseModel, ShareableResponseModel):
             Dict of analytics metadata.
         """
         metadata = super().get_analytics_metadata()
-        metadata.update({ct: c[0].id for ct, c in self.components.items()})
+        metadata.update({ct: c[0].flavor for ct, c in self.components.items()})
         return metadata
 
     @property
@@ -116,34 +107,57 @@ class StackResponseModel(StackBaseModel, ShareableResponseModel):
         return yaml_data
 
 
+# ------ #
+# FILTER #
+# ------ #
+
+
+class StackFilterModel(ShareableWorkspaceScopedFilterModel):
+    """Model to enable advanced filtering of all StackModels.
+
+    The Stack Model needs additional scoping. As such the `_scope_user` field
+    can be set to the user that is doing the filtering. The
+    `generate_filter()` method of the baseclass is overwritten to include the
+    scoping.
+    """
+
+    # `component_id` refers to a relationship through a link-table
+    #  rather than a field in the db, hence it needs to be handled
+    #  explicitly
+    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *ShareableWorkspaceScopedFilterModel.FILTER_EXCLUDE_FIELDS,
+        "component_id",  # This is a relationship, not a field
+    ]
+
+    is_shared: Union[bool, str] = Field(
+        default=None, description="If the stack is shared or private"
+    )
+    name: str = Field(
+        default=None,
+        description="Name of the stack",
+    )
+    description: str = Field(None, description="Description of the stack")
+    workspace_id: Union[UUID, str] = Field(
+        default=None, description="Workspace of the stack"
+    )
+    user_id: Union[UUID, str] = Field(None, description="User of the stack")
+    component_id: Union[UUID, str] = Field(
+        default=None, description="Component in the stack"
+    )
+
+
 # ------- #
 # REQUEST #
 # ------- #
 
 
 class StackRequestModel(StackBaseModel, ShareableRequestModel):
-    """Stack model with components, user and project as UUIDs."""
-
-    ANALYTICS_FIELDS: ClassVar[List[str]] = [
-        "project",
-        "user",
-        "is_shared",
-    ]
+    """Stack model with components, user and workspace as UUIDs."""
 
     components: Dict[StackComponentType, List[UUID]] = Field(
         title="A mapping of stack component types to the actual"
         "instances of components of this type."
     )
-
-    def get_analytics_metadata(self) -> Dict[str, Any]:
-        """Add the stack components to the stack analytics metadata.
-
-        Returns:
-            Dict of analytics metadata.
-        """
-        metadata = super().get_analytics_metadata()
-        metadata.update({ct: c[0] for ct, c in self.components.items()})
-        return metadata
 
     @property
     def is_valid(self) -> bool:

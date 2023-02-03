@@ -15,6 +15,7 @@
 
 import inspect
 from abc import abstractmethod
+from datetime import datetime
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -47,8 +48,10 @@ from zenml.config.pipeline_configurations import (
 from zenml.config.pipeline_deployment import PipelineDeployment
 from zenml.config.schedule import Schedule
 from zenml.config.step_configurations import StepConfigurationUpdate
+from zenml.enums import StackComponentType
 from zenml.exceptions import PipelineConfigurationError, PipelineInterfaceError
 from zenml.logger import get_logger
+from zenml.models.schedule_model import ScheduleRequestModel
 from zenml.stack import Stack
 from zenml.steps import BaseStep
 from zenml.steps.base_step import BaseStepMeta
@@ -59,7 +62,7 @@ from zenml.utils import (
     settings_utils,
     yaml_utils,
 )
-from zenml.utils.analytics_utils import AnalyticsEvent, track_event
+from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
@@ -72,6 +75,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 PIPELINE_INNER_FUNC_NAME = "connect"
 PARAM_ENABLE_CACHE = "enable_cache"
+PARAM_ENABLE_ARTIFACT_METADATA = "enable_artifact_metadata"
 INSTANCE_CONFIGURATION = "INSTANCE_CONFIGURATION"
 PARAM_SETTINGS = "settings"
 PARAM_EXTRA_OPTIONS = "extra"
@@ -94,7 +98,9 @@ class BasePipelineMeta(type):
             The class.
         """
         dct.setdefault(INSTANCE_CONFIGURATION, {})
-        cls = cast(Type["BasePipeline"], super().__new__(mcs, name, bases, dct))
+        cls = cast(
+            Type["BasePipeline"], super().__new__(mcs, name, bases, dct)
+        )
 
         cls.STEP_SPEC = {}
 
@@ -122,6 +128,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
         name: The name of this pipeline.
         enable_cache: A boolean indicating if caching is enabled for this
             pipeline.
+        enable_artifact_metadata: A boolean indicating if artifact metadata
+            is enabled for this pipeline.
     """
 
     STEP_SPEC: ClassVar[Dict[str, Any]] = None  # type: ignore[assignment]
@@ -139,7 +147,10 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
         self._configuration = PipelineConfiguration(
             name=self.__class__.__name__,
-            enable_cache=kwargs.pop(PARAM_ENABLE_CACHE, True),
+            enable_cache=kwargs.pop(PARAM_ENABLE_CACHE, None),
+            enable_artifact_metadata=kwargs.pop(
+                PARAM_ENABLE_ARTIFACT_METADATA, None
+            ),
         )
         self._apply_class_configuration(kwargs)
 
@@ -156,7 +167,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         return self.configuration.name
 
     @property
-    def enable_cache(self) -> bool:
+    def enable_cache(self) -> Optional[bool]:
         """If caching is enabled for the pipeline.
 
         Returns:
@@ -185,6 +196,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
     def configure(
         self: T,
         enable_cache: Optional[bool] = None,
+        enable_artifact_metadata: Optional[bool] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         extra: Optional[Dict[str, Any]] = None,
         merge: bool = True,
@@ -203,6 +215,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
         Args:
             enable_cache: If caching should be enabled for this pipeline.
+            enable_artifact_metadata: If artifact metadata should be enabled for
+                this pipeline.
             settings: settings for this pipeline.
             extra: Extra configurations for this pipeline.
             merge: If `True`, will merge the given dictionary configurations
@@ -217,6 +231,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         values = dict_utils.remove_none_values(
             {
                 "enable_cache": enable_cache,
+                "enable_artifact_metadata": enable_artifact_metadata,
                 "settings": settings,
                 "extra": extra,
             }
@@ -362,47 +377,49 @@ class BasePipeline(metaclass=BasePipelineMeta):
         """
         raise NotImplementedError
 
-    def _track_pipeline_deployment(
+    def _get_pipeline_analytics_metadata(
         self,
         deployment: "PipelineDeployment",
         stack: "Stack",
-    ) -> None:
-        """Tracks the pipeline deployment as an analytics event.
+    ) -> Dict[str, Any]:
+        """Returns the pipeline deployment metadata.
 
         Args:
             deployment: The pipeline deployment to track.
             stack: The stack on which the pipeline will be deployed.
+
+        Returns:
+            the metadata about the pipeline deployment
         """
         custom_materializer = False
-        custom_artifact = False
         for step in deployment.steps.values():
             for output in step.config.outputs.values():
                 if not output.materializer_source.startswith("zenml."):
                     custom_materializer = True
-                if not output.artifact_source.startswith("zenml."):
-                    custom_artifact = True
+
+        stack_creator = Client().get_stack(stack.id).user
+        active_user = Client().active_user
+        own_stack = stack_creator and stack_creator.id == active_user.id
 
         stack_metadata = {
             component_type.value: component.flavor
             for component_type, component in stack.components.items()
         }
-        track_event(
-            event=AnalyticsEvent.RUN_PIPELINE,
-            metadata={
-                "store_type": Client().zen_store.type.value,
-                **stack_metadata,
-                "total_steps": len(self.steps),
-                "schedule": bool(deployment.schedule),
-                "custom_materializer": custom_materializer,
-                "custom_artifact": custom_artifact,
-            },
-        )
+        return {
+            "store_type": Client().zen_store.type.value,
+            **stack_metadata,
+            "total_steps": len(self.steps),
+            "schedule": bool(deployment.schedule),
+            "custom_materializer": custom_materializer,
+            "own_stack": own_stack,
+        }
 
     def run(
         self,
         *,
         run_name: Optional[str] = None,
         enable_cache: Optional[bool] = None,
+        enable_artifact_metadata: Optional[bool] = None,
         schedule: Optional[Schedule] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         step_configurations: Optional[
@@ -417,6 +434,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
         Args:
             run_name: Name of the pipeline run.
             enable_cache: If caching should be enabled for this pipeline run.
+            enable_artifact_metadata: If artifact metadata should be enabled
+                for this pipeline run.
             schedule: Optional schedule of the pipeline.
             settings: settings for this pipeline run.
             step_configurations: Configurations for steps of the pipeline.
@@ -446,93 +465,134 @@ class BasePipeline(metaclass=BasePipelineMeta):
             )
             return
 
-        stack = Client().active_stack
+        with event_handler(AnalyticsEvent.RUN_PIPELINE) as analytics_handler:
+            stack = Client().active_stack
 
-        # Activating the built-in integrations through lazy loading
-        from zenml.integrations.registry import integration_registry
+            # Activating the built-in integrations through lazy loading
+            from zenml.integrations.registry import integration_registry
 
-        integration_registry.activate_integrations()
+            integration_registry.activate_integrations()
 
-        if config_path:
-            config_dict = yaml_utils.read_yaml(config_path)
-            run_config = PipelineRunConfiguration.parse_obj(config_dict)
-        else:
-            run_config = PipelineRunConfiguration()
+            if config_path:
+                run_config = PipelineRunConfiguration.from_yaml(config_path)
+            else:
+                run_config = PipelineRunConfiguration()
 
-        new_values = dict_utils.remove_none_values(
-            {
-                "run_name": run_name,
-                "enable_cache": enable_cache,
-                "steps": step_configurations,
-                "settings": settings,
-                "schedule": schedule,
-                "extra": extra,
-            }
-        )
-
-        # Update with the values in code so they take precedence
-        run_config = pydantic_utils.update_model(run_config, update=new_values)
-        from zenml.config.compiler import Compiler
-
-        pipeline_deployment = Compiler().compile(
-            pipeline=self, stack=stack, run_configuration=run_config
-        )
-
-        skip_pipeline_registration = constants.handle_bool_env_var(
-            constants.ENV_ZENML_SKIP_PIPELINE_REGISTRATION, default=False
-        )
-
-        register_pipeline = not (skip_pipeline_registration or unlisted)
-
-        pipeline_id = None
-        if register_pipeline:
-            step_specs = [
-                step.spec for step in pipeline_deployment.steps.values()
-            ]
-            pipeline_spec = PipelineSpec(steps=step_specs)
-
-            pipeline_id = Client().create_pipeline(
-                pipeline_name=pipeline_deployment.pipeline.name,
-                pipeline_spec=pipeline_spec,
-                pipeline_docstring=self.__doc__,
-            )
-            pipeline_deployment = pipeline_deployment.copy(
-                update={"pipeline_id": pipeline_id}
+            new_values = dict_utils.remove_none_values(
+                {
+                    "run_name": run_name,
+                    "enable_cache": enable_cache,
+                    "enable_artifact_metadata": enable_artifact_metadata,
+                    "steps": step_configurations,
+                    "settings": settings,
+                    "schedule": schedule,
+                    "extra": extra,
+                }
             )
 
-        self._track_pipeline_deployment(
-            deployment=pipeline_deployment, stack=stack
-        )
-        caching_status = (
-            "enabled"
-            if pipeline_deployment.pipeline.enable_cache
-            else "disabled"
-        )
-        logger.info(
-            "%s %s on stack `%s` (caching %s)",
-            "Scheduling" if pipeline_deployment.schedule else "Running",
-            f"pipeline `{pipeline_deployment.pipeline.name}`"
-            if register_pipeline
-            else "unlisted pipeline",
-            stack.name,
-            caching_status,
-        )
-        stack.prepare_pipeline_deployment(deployment=pipeline_deployment)
+            # Update with the values in code so they take precedence
+            run_config = pydantic_utils.update_model(
+                run_config, update=new_values
+            )
+            from zenml.config.compiler import Compiler
 
-        # Prevent execution of nested pipelines which might lead to unexpected
-        # behavior
-        constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True
-        try:
-            return_value = stack.deploy_pipeline(pipeline_deployment)
-        finally:
-            constants.SHOULD_PREVENT_PIPELINE_EXECUTION = False
+            pipeline_deployment = Compiler().compile(
+                pipeline=self, stack=stack, run_configuration=run_config
+            )
 
-        # Log the dashboard URL
-        dashboard_utils.print_run_url(
-            run_name=pipeline_deployment.run_name, pipeline_id=pipeline_id
-        )
+            skip_pipeline_registration = constants.handle_bool_env_var(
+                constants.ENV_ZENML_SKIP_PIPELINE_REGISTRATION, default=False
+            )
 
-        return return_value
+            register_pipeline = not (skip_pipeline_registration or unlisted)
+
+            pipeline_id = None
+            if register_pipeline:
+                step_specs = [
+                    step.spec for step in pipeline_deployment.steps.values()
+                ]
+                pipeline_spec = PipelineSpec(steps=step_specs)
+
+                pipeline_id = Client().create_pipeline(
+                    pipeline_name=pipeline_deployment.pipeline.name,
+                    pipeline_spec=pipeline_spec,
+                    pipeline_docstring=self.__doc__,
+                )
+                pipeline_deployment = pipeline_deployment.copy(
+                    update={"pipeline_id": pipeline_id}
+                )
+
+            # TODO: check whether orchestrator even support scheduling before
+            # registering the schedule
+            if schedule:
+                if not schedule.name:
+                    date = datetime.utcnow().strftime("%Y_%m_%d")
+                    time = datetime.utcnow().strftime("%H_%M_%S_%f")
+                    schedule.name = pipeline_deployment.run_name.format(
+                        date=date, time=time
+                    )
+                    pipeline_deployment = pipeline_deployment.copy(
+                        update={"schedule": schedule}
+                    )
+                components = Client().active_stack_model.components
+                orchestrator = components[StackComponentType.ORCHESTRATOR][0]
+                schedule_model = ScheduleRequestModel(
+                    workspace=Client().active_workspace.id,
+                    user=Client().active_user.id,
+                    pipeline_id=pipeline_id,
+                    orchestrator_id=orchestrator.id,
+                    name=schedule.name,
+                    active=True,
+                    cron_expression=schedule.cron_expression,
+                    start_time=schedule.start_time,
+                    end_time=schedule.end_time,
+                    interval_second=schedule.interval_second,
+                    catchup=schedule.catchup,
+                )
+                schedule_id = (
+                    Client().zen_store.create_schedule(schedule_model).id
+                )
+                logger.info(
+                    f"Created schedule '{schedule.name}' for pipeline "
+                    f"{pipeline_deployment.pipeline.name}."
+                )
+                pipeline_deployment = pipeline_deployment.copy(
+                    update={"schedule_id": schedule_id}
+                )
+
+            analytics_handler.metadata = self._get_pipeline_analytics_metadata(
+                deployment=pipeline_deployment, stack=stack
+            )
+            caching_status = (
+                "enabled"
+                if pipeline_deployment.pipeline.enable_cache is not False
+                else "disabled"
+            )
+            logger.info(
+                "%s %s on stack `%s` (caching %s)",
+                "Scheduling" if pipeline_deployment.schedule else "Running",
+                f"pipeline `{pipeline_deployment.pipeline.name}`"
+                if register_pipeline
+                else "unlisted pipeline",
+                stack.name,
+                caching_status,
+            )
+            stack.prepare_pipeline_deployment(deployment=pipeline_deployment)
+
+            # Prevent execution of nested pipelines which might lead to
+            # unexpected behavior
+            constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True
+            try:
+                return_value = stack.deploy_pipeline(pipeline_deployment)
+            finally:
+                constants.SHOULD_PREVENT_PIPELINE_EXECUTION = False
+
+            # Log the dashboard URL
+            dashboard_utils.print_run_url(
+                run_name=pipeline_deployment.run_name, pipeline_id=pipeline_id
+            )
+
+            return return_value
 
     def _apply_configuration(
         self,
@@ -622,12 +682,16 @@ class BasePipeline(metaclass=BasePipelineMeta):
             step = self.__steps[step_name]
             parameters = step_dict.get(StepConfigurationKeys.PARAMETERS_, {})
             enable_cache = parameters.pop(PARAM_ENABLE_CACHE, None)
+            enable_artifact_metadata = parameters.pop(
+                PARAM_ENABLE_ARTIFACT_METADATA, None
+            )
 
             if not overwrite:
                 parameters.update(step.configuration.parameters)
 
             step.configure(
                 enable_cache=enable_cache,
+                enable_artifact_metadata=enable_artifact_metadata,
                 parameters=parameters,
             )
 

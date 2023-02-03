@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 
 import click
-from materializers.pillow_image_materializer import PillowImageMaterializer
 from pipelines import inference_pipeline, training_pipeline
 from steps.convert_annotations_step import convert_annotations
 from steps.deployment_triggers import deployment_trigger
@@ -88,7 +87,7 @@ def main(cloud_platform, pipeline, rerun):
                 params=LoadImageDataParameters(
                     dir_name="batch_2" if rerun else "batch_1"
                 )
-            ).with_return_materializers({"images": PillowImageMaterializer}),
+            ),
             prediction_service_loader=prediction_service_loader(
                 PredictionServiceLoaderParameters()
             ),

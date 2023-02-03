@@ -1,54 +1,180 @@
-name: Integration Test the Examples
+name: Integration Tests
 
-on: workflow_call
+on: 
+  workflow_call:
+    inputs:
+      os:
+        description: 'OS'
+        type: string
+        required: true
+      python-version:
+        description: 'Python version'
+        type: string
+        required: true
+      test_environment:
+        description: 'The test environment'
+        type: string
+        required: true
+      enable_tmate:
+        description: 'Enable tmate session for debugging'
+        type: string
+        required: false
+        default: "never"
+      tmate_timeout:
+        description: 'Timeout for tmate session (minutes)'
+        type: number
+        required: false
+        default: 30
+
+  workflow_dispatch:
+    inputs:
+      os:
+        description: 'OS'
+        type: choice
+        options: 
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+        required: false
+        default: 'ubuntu-latest'
+      python-version:
+        description: 'Python version'
+        type: choice
+        options:
+          - '3.7'
+          - '3.8'
+          - '3.9'
+          - '3.10'
+        required: false
+        default: '3.8'
+      test_environment:
+        description: 'The test environment'
+        type: choice
+        options:
+          # Default ZenML deployments
+          - default
+          - default-docker-orchestrator
+          - default-airflow-orchestrator
+          # Local ZenML server deployments
+          - local-server
+          - local-server-docker-orchestrator
+          - local-server-airflow-orchestrator
+          # Local ZenML docker-compose server deployments
+          - docker-server
+          - docker-server-docker-orchestrator
+          - docker-server-airflow-orchestrator
+          # AWS ZenML server deployment with local components
+          - aws-local-orchestrator
+          - aws-docker-orchestrator
+          - aws-kubeflow-orchestrator
+          - aws-airflow-orchestrator
+          # AWS ZenML server deployment with AWS cloud components
+          - aws-cloud-local-orchestrator
+          - aws-cloud-docker-orchestrator
+          - aws-cloud-kubeflow-orchestrator
+          - aws-cloud-kubernetes-orchestrator
+          - aws-cloud-tekton-orchestrator
+          # GCP ZenML server deployment with local components
+          - gcp-local-orchestrator
+          - gcp-docker-orchestrator
+          - gcp-kubeflow-orchestrator
+          - gcp-airflow-orchestrator
+          # GCP ZenML server deployment with GCP cloud components
+          - gcp-cloud-local-orchestrator
+          - gcp-cloud-docker-orchestrator
+          - gcp-cloud-kubeflow-orchestrator
+          - gcp-cloud-kubernetes-orchestrator
+          - gcp-cloud-tekton-orchestrator
+          - gcp-cloud-vertex-ai-orchestrator
+        required: false
+        default: 'default'
+      enable_tmate:
+        description: 'Enable tmate session for debugging'
+        type: choice
+        options:
+          - 'no'
+          - 'on-failure'
+          - 'always'
+          - 'before-tests'
+        required: false
+        default: 'no'
+      tmate_timeout:
+        description: 'Timeout for tmate session (minutes)'
+        type: number
+        required: false
+        default: 30
 
 jobs:
 
   integrationtest:
     name: integrationtest
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ inputs.os }}
     env:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: 'utf-8'
-    # Exit if its a commit from Gitbook
-    if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
+      # on MAC OS, we need to set this environment variable
+      # to fix problems with the fork() calls (see this thread
+      # for more information: http://sealiesoftware.com/blog/archive/2017/6/5/Objective-C_and_fork_in_macOS_1013.html)
+      OBJC_DISABLE_INITIALIZE_FORK_SAFETY: 'YES'
+
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_US_EAST_1_ENV_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_US_EAST_1_ENV_SECRET_ACCESS_KEY }}
+      AWS_US_EAST_1_SERVER_URL: ${{ secrets.AWS_US_EAST_1_SERVER_URL }}
+      AWS_US_EAST_1_SERVER_USERNAME: ${{ secrets.AWS_US_EAST_1_SERVER_USERNAME }}
+      AWS_US_EAST_1_SERVER_PASSWORD: ${{ secrets.AWS_US_EAST_1_SERVER_PASSWORD }}
+      GCP_US_EAST4_SERVER_URL: ${{ secrets.GCP_US_EAST4_SERVER_URL }}
+      GCP_US_EAST4_SERVER_USERNAME: ${{ secrets.GCP_US_EAST4_SERVER_USERNAME }}
+      GCP_US_EAST4_SERVER_PASSWORD: ${{ secrets.GCP_US_EAST4_SERVER_PASSWORD }}
 
     defaults:
       run:
         shell: bash
 
-    strategy:
-      matrix:
-        # TODO: readd macos-latest once we fix the integration tests
-        os: [ ubuntu-latest, windows-latest ]
-        python-version: [ 3.7, 3.8, 3.9 ]
-      fail-fast: false
-
     steps:
+      - name: Maximize space for Docker
+        uses: easimon/maximize-build-space@master
+        with:
+          root-reserve-mb: 20000
+          swap-size-mb: 1024
+          remove-dotnet: 'true'
+          remove-android: 'true'
+          remove-haskell: 'true'
+          build-mount-path: /var/lib/docker
+        if: runner.os=='Linux' && (contains(inputs.test_environment, 'docker') || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment, 'airflow') || contains(inputs.test_environment, 'kubernetes'))
+
+      - name: Reload Docker
+        run:
+          sudo systemctl restart docker
+        if: runner.os=='Linux' && (contains(inputs.test_environment, 'docker') || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment, 'airflow') || contains(inputs.test_environment, 'kubernetes'))
+
       - uses: actions/checkout@v2
 
-      # Workaround from FuseML (https://github.com/fuseml/fuseml/blob/main/.github/workflows/ci.yml)
-      # as the TF images are too large for the GH action runner disk
-      - name: Free disk space
-        shell: bash
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: |
-          echo "Available storage:"
-          df -h
-          echo
-          echo -n "  Removing: .NET (frees ~22GB)"
-          sudo rm -rf /usr/share/dotnet
-          echo "... done"
-          echo
-          echo "Available storage:"
-          df -h
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ secrets.AWS_US_EAST_1_ENV_ROLE_ARN }}
+          aws-region: us-east-1
+        if: contains(inputs.test_environment, 'aws')
 
+      - name: Configure GCP credentials
+        uses: 'google-github-actions/auth@v1'
+        with:
+          credentials_json: '${{ secrets.GCP_US_EAST4_ENV_CREDENTIALS }}'
+        if: contains(inputs.test_environment, 'gcp')
+
+      - name: 'Set up gcloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v1'
+        with:
+          install_components: 'gke-gcloud-auth-plugin'
+        if: contains(inputs.test_environment, 'gcp')
 
       - name: Setup environment with Poetry
         uses: ./.github/actions/setup_environment
         with:
           cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
+          python-version: ${{ inputs.python-version }}
+          os: ${{ inputs.os }}
 
       - name: Install Linux System Dependencies
         if: runner.os=='Linux'
@@ -62,19 +188,119 @@ jobs:
         if: runner.os=='Windows'
         run: choco install graphviz
 
+      - name: Install Docker and Colima on MacOS
+        if: runner.os=='macOS'
+        run: |
+          brew install docker colima
+
+          # We need to mount the /private/tmp/zenml-test/ folder because
+          # this folder is also mounted in the Docker containers that are
+          # started by local ZenML orchestrators.
+          colima start --mount /private/tmp/zenml-test/:w
+          
+          # This is required for the Docker Python SDK to work
+          sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
+
+      - name: Install kubectl on Linux
+        run: |
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          sudo install -o root -g 0 -m 0755 kubectl /usr/local/bin/kubectl
+        if: runner.os=='Linux'
+
+      - name: Install kubectl on MacOS
+        run: |
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/darwin/amd64/kubectl"
+          sudo install -o root -g 0 -m 0755 kubectl /usr/local/bin/kubectl
+        if: runner.os=='macOS'
+
+      - name: Install K3D
+        run: |
+          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
+        if: runner.os!='Windows' && contains(inputs.test_environment, 'kubeflow')
+
+      - name: Install Prerequisites - Stage 1
+        run: |
+          source $VENV
+          # install integrations: round 1
+          zenml integration export-requirements --output-file requirements.txt --ignore-integration feast --ignore-integration label_studio --ignore-integration bentoml --ignore-integration seldon --ignore-integration kserve
+          pip install -r requirements.txt
+          rm requirements.txt
+
+      # - name: Install Prerequisites - Stage 2
+      #   run: |
+      #     source $VENV
+      #     # install integrations: round 2, needed because:
+      #     #  - kserve requires a tritonclient version that is lower that the one needed by mlflow
+      #     #  - seldon requires a prometheus-client version that is lower that the one needed by bentoml
+      #     #  - kserve requires a ray version that is not available on python 3.10
+      #     zenml integration export-requirements --output-file requirements.txt seldon kserve
+      #     pip install -r requirements.txt
+      #     rm requirements.txt
+      #   if: inputs.python-version != '3.10'
+
+      - name: Install Prerequisites - Stage 3
+        run: |
+          source $VENV
+          # re-install zenml to be sure
+          poetry install --extras server
+          # install airflow requirements
+          pip install "numpy>=1.21.0,<1.24.0"
+          pip install apache-airflow-providers-docker
+          # Version 4.2.1 raises: AttributeError: type object 'Draft7Validator' has no attribute 'FORMAT_CHECKER'
+          pip install altair==4.2.0
+
       - name: Check Python Env ahead of tests
         run: |
           source $VENV
           zenml integration list
           pip list
+          pip check || true
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        run: |
+          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 715803424590.dkr.ecr.us-east-1.amazonaws.com
+        if: contains(inputs.test_environment, 'aws')
+
+      - name: Login to Amazon EKS
+        id: login-eks
+        run: |
+          aws eks --region us-east-1 update-kubeconfig --name zenml-ci-cluster --alias zenml-ci-aws-us-east-1
+        if: contains(inputs.test_environment, 'aws')
+
+      - name: Login to Google ECR
+        run: |
+          gcloud auth configure-docker --project zenml-ci
+        if: contains(inputs.test_environment, 'gcp')
+
+      - name: Login to Google GKE
+        uses: google-github-actions/get-gke-credentials@v0
+        with:
+          cluster_name: zenml-ci-cluster
+          location: us-east4
+          project_id: zenml-ci
+        if: contains(inputs.test_environment, 'gcp')
+
+      - name: Setup tmate session before tests
+        if: ${{ inputs.enable_tmate == 'before-tests' }}
+        uses: mxschmitt/action-tmate@v3
+        with:
+          timeout-minutes: ${{ inputs.tmate_timeout }}
 
       - name: Test
         run: |
           source $VENV
-          bash scripts/test-coverage-xml.sh integration
+          bash scripts/test-coverage-xml.sh integration ${{ inputs.test_environment }}
+
+      - name: Setup tmate session after tests
+        if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
+        uses: mxschmitt/action-tmate@v3
+        with:
+          timeout-minutes: ${{ inputs.tmate_timeout }}
 
       - name: Verify Python Env unaffected
         run: |
           source $VENV
           zenml integration list
-
+          pip list
+          pip check || true

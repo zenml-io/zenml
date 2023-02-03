@@ -30,15 +30,19 @@ from zenml.constants import (
     ORCHESTRATOR_DOCKER_IMAGE_KEY,
 )
 from zenml.entrypoints import StepEntrypointConfiguration
+from zenml.enums import StackComponentType
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
+from zenml.orchestrators import utils as orchestrator_utils
 from zenml.orchestrators.base_orchestrator import (
     BaseOrchestratorConfig,
     BaseOrchestratorFlavor,
 )
-from zenml.stack import Stack
+from zenml.stack import Stack, StackValidator
 from zenml.utils import string_utils
-from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
+from zenml.utils.pipeline_docker_image_builder import (
+    PipelineDockerImageBuilder,
+)
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
@@ -64,6 +68,17 @@ class LocalDockerOrchestrator(BaseOrchestrator):
         """
         return LocalDockerOrchestratorSettings
 
+    @property
+    def validator(self) -> Optional[StackValidator]:
+        """Ensures there is an image builder in the stack.
+
+        Returns:
+            A `StackValidator` instance.
+        """
+        return StackValidator(
+            required_components={StackComponentType.IMAGE_BUILDER}
+        )
+
     def prepare_pipeline_deployment(
         self,
         deployment: "PipelineDeployment",
@@ -76,24 +91,12 @@ class LocalDockerOrchestrator(BaseOrchestrator):
             stack: The stack on which the pipeline will be deployed.
         """
         docker_image_builder = PipelineDockerImageBuilder()
-        if stack.container_registry:
-            repo_digest = docker_image_builder.build_and_push_docker_image(
-                deployment=deployment, stack=stack
-            )
-            deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
-        else:
-            # If there is no container registry, we only build the image
-            target_image_name = docker_image_builder.get_target_image_name(
-                deployment=deployment
-            )
-            docker_image_builder.build_docker_image(
-                target_image_name=target_image_name,
-                deployment=deployment,
-                stack=stack,
-            )
-            deployment.add_extra(
-                ORCHESTRATOR_DOCKER_IMAGE_KEY, target_image_name
-            )
+        image_name_or_digest = docker_image_builder.build_docker_image(
+            deployment=deployment, stack=stack
+        )
+        deployment.add_extra(
+            ORCHESTRATOR_DOCKER_IMAGE_KEY, image_name_or_digest
+        )
 
     def get_orchestrator_run_id(self) -> str:
         """Returns the active orchestrator run id.
@@ -192,7 +195,9 @@ class LocalDockerOrchestrator(BaseOrchestrator):
                 logger.info(line.strip().decode())
 
         run_duration = time.time() - start_time
-        run_id = self.get_run_id_for_orchestrator_run_id(orchestrator_run_id)
+        run_id = orchestrator_utils.get_run_id_for_orchestrator_run_id(
+            orchestrator=self, orchestrator_run_id=orchestrator_run_id
+        )
         run_model = Client().zen_store.get_run(run_id)
         logger.info(
             "Pipeline run `%s` has finished in %s.",

@@ -57,10 +57,6 @@ Selector labels
 app.kubernetes.io/name: {{ include "zenml.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
-{{- define "zenml.metadataSelectorLabels" -}}
-app.kubernetes.io/name: {{ include "zenml.name" . }}-grpc-metadata
-app.kubernetes.io/instance: {{ .Release.Name }}
-{{- end }}
 
 {{/*
 Create the name of the service account to use

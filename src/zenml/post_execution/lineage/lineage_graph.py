@@ -13,10 +13,11 @@
 #  permissions and limitations under the License.
 """Class for lineage graph generation."""
 
-from typing import List, Optional, Union
+from typing import List, Optional, Tuple, Union
 
 from pydantic import BaseModel
 
+from zenml.enums import ExecutionStatus
 from zenml.post_execution.lineage.edge import Edge
 from zenml.post_execution.lineage.node import (
     ArtifactNode,
@@ -37,6 +38,7 @@ class LineageGraph(BaseModel):
     nodes: List[Union[StepNode, ArtifactNode]] = []
     edges: List[Edge] = []
     root_step_id: Optional[str]
+    run_metadata: List[Tuple[str, str, str]] = []
 
     def generate_step_nodes_and_edges(self, step: StepView) -> None:
         """Generates the step nodes and the edges between them.
@@ -47,7 +49,7 @@ class LineageGraph(BaseModel):
         step_id = STEP_PREFIX + str(step.id)
         if self.root_step_id is None:
             self.root_step_id = step_id
-        step_config = step.step_configuration.get("config", {})
+        step_config = step.step_configuration.dict()
         if step_config:
             step_config = {
                 key: value
@@ -66,6 +68,10 @@ class LineageGraph(BaseModel):
                     configuration=step_config,
                     inputs={k: v.uri for k, v in step.inputs.items()},
                     outputs={k: v.uri for k, v in step.outputs.items()},
+                    metadata=[
+                        (m.key, str(m.value), str(m.type))
+                        for m in step.metadata.values()
+                    ],
                 ),
             )
         )
@@ -79,12 +85,16 @@ class LineageGraph(BaseModel):
                         execution_id=str(artifact.id),
                         name=artifact_name,
                         status=step.status,
-                        is_cached=artifact.is_cached,
+                        is_cached=step.status == ExecutionStatus.CACHED,
                         artifact_type=artifact.type,
                         artifact_data_type=artifact.data_type,
-                        parent_step_id=str(artifact.parent_step_id),
-                        producer_step_id=str(artifact.producer_step_id),
+                        parent_step_id=str(step.id),
+                        producer_step_id=str(artifact.producer_step_run_id),
                         uri=artifact.uri,
+                        metadata=[
+                            (m.key, str(m.value), str(m.type))
+                            for m in artifact.metadata.values()
+                        ],
                     ),
                 )
             )
@@ -112,5 +122,8 @@ class LineageGraph(BaseModel):
         Args:
             run: The PipelineRunView to generate the lineage graph for.
         """
+        self.run_metadata = [
+            (m.key, str(m.value), str(m.type)) for m in run.metadata.values()
+        ]
         for step in run.steps:
             self.generate_step_nodes_and_edges(step)

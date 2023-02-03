@@ -14,7 +14,7 @@
 """Base Zen Store implementation."""
 import os
 from abc import ABC
-from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, ClassVar, Dict, Optional, Tuple, Type, Union
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -23,26 +23,28 @@ import zenml
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
-    ENV_ZENML_DEFAULT_PROJECT_NAME,
     ENV_ZENML_DEFAULT_USER_NAME,
     ENV_ZENML_DEFAULT_USER_PASSWORD,
+    ENV_ZENML_DEFAULT_WORKSPACE_NAME,
     ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
 )
 from zenml.enums import PermissionType, StackComponentType, StoreType
 from zenml.logger import get_logger
 from zenml.models import (
     ComponentRequestModel,
-    ProjectRequestModel,
-    ProjectResponseModel,
-    RoleAssignmentRequestModel,
-    RoleAssignmentResponseModel,
+    RoleFilterModel,
     RoleRequestModel,
     RoleResponseModel,
+    StackFilterModel,
     StackRequestModel,
     StackResponseModel,
     UserRequestModel,
     UserResponseModel,
+    UserRoleAssignmentRequestModel,
+    WorkspaceRequestModel,
+    WorkspaceResponseModel,
 )
+from zenml.models.page_model import Page
 from zenml.models.server_models import (
     ServerDatabaseType,
     ServerDeploymentType,
@@ -60,7 +62,7 @@ logger = get_logger(__name__)
 
 DEFAULT_USERNAME = "default"
 DEFAULT_PASSWORD = ""
-DEFAULT_PROJECT_NAME = "default"
+DEFAULT_WORKSPACE_NAME = "default"
 DEFAULT_STACK_NAME = "default"
 DEFAULT_STACK_COMPONENT_NAME = "default"
 DEFAULT_ADMIN_ROLE = "admin"
@@ -77,7 +79,6 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
 
     config: StoreConfiguration
     track_analytics: bool = True
-    _active_user: Optional[UserResponseModel] = None
 
     TYPE: ClassVar[StoreType]
     CONFIG_TYPE: ClassVar[Type[StoreConfiguration]]
@@ -225,16 +226,17 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
 
         config = SqlZenStoreConfiguration(
-            type=StoreType.SQL, url=SqlZenStoreConfiguration.get_local_url(path)
+            type=StoreType.SQL,
+            url=SqlZenStoreConfiguration.get_local_url(path),
         )
         return config
 
     def _initialize_database(self) -> None:
         """Initialize the database on first use."""
         try:
-            default_project = self._default_project
+            default_workspace = self._default_workspace
         except KeyError:
-            default_project = self._create_default_project()
+            default_workspace = self._create_default_workspace()
         try:
             assert self._admin_role
         except KeyError:
@@ -249,12 +251,12 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
             default_user = self._create_default_user()
         try:
             self._get_default_stack(
-                project_name_or_id=default_project.id,
+                workspace_name_or_id=default_workspace.id,
                 user_name_or_id=default_user.id,
             )
         except KeyError:
             self._create_default_stack(
-                project_name_or_id=default_project.id,
+                workspace_name_or_id=default_workspace.id,
                 user_name_or_id=default_user.id,
             )
 
@@ -278,48 +280,50 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
 
     def validate_active_config(
         self,
-        active_project_name_or_id: Optional[Union[str, UUID]] = None,
+        active_workspace_name_or_id: Optional[Union[str, UUID]] = None,
         active_stack_id: Optional[UUID] = None,
         config_name: str = "",
-    ) -> Tuple[ProjectResponseModel, StackResponseModel]:
+    ) -> Tuple[WorkspaceResponseModel, StackResponseModel]:
         """Validate the active configuration.
 
-        Call this method to validate the supplied active project and active
+        Call this method to validate the supplied active workspace and active
         stack values.
 
-        This method is guaranteed to return valid project ID and stack ID
-        values. If the supplied project and stack are not set or are not valid
-        (e.g. they do not exist or are not accessible), the default project and
-        default project stack will be returned in their stead.
+        This method is guaranteed to return valid workspace ID and stack ID
+        values. If the supplied workspace and stack are not set or are not valid
+        (e.g. they do not exist or are not accessible), the default workspace and
+        default workspace stack will be returned in their stead.
 
         Args:
-            active_project_name_or_id: The name or ID of the active project.
+            active_workspace_name_or_id: The name or ID of the active workspace.
             active_stack_id: The ID of the active stack.
             config_name: The name of the configuration to validate (used in the
                 displayed logs/messages).
 
         Returns:
-            A tuple containing the active project and active stack.
+            A tuple containing the active workspace and active stack.
         """
-        active_project: ProjectResponseModel
+        active_workspace: WorkspaceResponseModel
 
-        if active_project_name_or_id:
+        if active_workspace_name_or_id:
             try:
-                active_project = self.get_project(active_project_name_or_id)
+                active_workspace = self.get_workspace(
+                    active_workspace_name_or_id
+                )
             except KeyError:
-                active_project = self._get_or_create_default_project()
+                active_workspace = self._get_or_create_default_workspace()
 
                 logger.warning(
-                    f"The current {config_name} active project is no longer "
-                    f"available. Resetting the active project to "
-                    f"'{active_project.name}'."
+                    f"The current {config_name} active workspace is no longer "
+                    f"available. Resetting the active workspace to "
+                    f"'{active_workspace.name}'."
                 )
         else:
-            active_project = self._get_or_create_default_project()
+            active_workspace = self._get_or_create_default_workspace()
 
             logger.info(
-                f"Setting the {config_name} active project "
-                f"to '{active_project.name}'."
+                f"Setting the {config_name} active workspace "
+                f"to '{active_workspace.name}'."
             )
 
         active_stack: StackResponseModel
@@ -335,20 +339,22 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
                     "Resetting the active stack to default.",
                     config_name,
                 )
-                active_stack = self._get_or_create_default_stack(active_project)
+                active_stack = self._get_or_create_default_stack(
+                    active_workspace
+                )
             else:
-                if active_stack.project.id != active_project.id:
+                if active_stack.workspace.id != active_workspace.id:
                     logger.warning(
                         "The current %s active stack is not part of the active "
-                        "project. Resetting the active stack to default.",
+                        "workspace. Resetting the active stack to default.",
                         config_name,
                     )
                     active_stack = self._get_or_create_default_stack(
-                        active_project
+                        active_workspace
                     )
                 elif not active_stack.is_shared and (
                     not active_stack.user
-                    or (active_stack.user.id != self.active_user.id)
+                    or (active_stack.user.id != self.get_user().id)
                 ):
                     logger.warning(
                         "The current %s active stack is not shared and not "
@@ -357,16 +363,16 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
                         config_name,
                     )
                     active_stack = self._get_or_create_default_stack(
-                        active_project
+                        active_workspace
                     )
         else:
             logger.warning(
                 "Setting the %s active stack to default.",
                 config_name,
             )
-            active_stack = self._get_or_create_default_stack(active_project)
+            active_stack = self._get_or_create_default_stack(active_workspace)
 
-        return active_project, active_stack
+        return active_workspace, active_stack
 
     def get_store_info(self) -> ServerModel:
         """Get information about the store.
@@ -392,24 +398,24 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         return self.get_store_info().is_local()
 
     def _get_or_create_default_stack(
-        self, project: "ProjectResponseModel"
+        self, workspace: "WorkspaceResponseModel"
     ) -> "StackResponseModel":
         try:
             return self._get_default_stack(
-                project_name_or_id=project.id,
-                user_name_or_id=self.active_user.id,
+                workspace_name_or_id=workspace.id,
+                user_name_or_id=self.get_user().id,
             )
         except KeyError:
             return self._create_default_stack(  # type: ignore[no-any-return]
-                project_name_or_id=project.id,
-                user_name_or_id=self.active_user.id,
+                workspace_name_or_id=workspace.id,
+                user_name_or_id=self.get_user().id,
             )
 
-    def _get_or_create_default_project(self) -> "ProjectResponseModel":
+    def _get_or_create_default_workspace(self) -> "WorkspaceResponseModel":
         try:
-            return self._default_project
+            return self._default_workspace
         except KeyError:
-            return self._create_default_project()  # type: ignore[no-any-return]
+            return self._create_default_workspace()  # type: ignore[no-any-return]
 
     # ------
     # Stacks
@@ -418,7 +424,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
     @track(AnalyticsEvent.REGISTERED_DEFAULT_STACK)
     def _create_default_stack(
         self,
-        project_name_or_id: Union[str, UUID],
+        workspace_name_or_id: Union[str, UUID],
         user_name_or_id: Union[str, UUID],
     ) -> StackResponseModel:
         """Create the default stack components and stack.
@@ -427,26 +433,28 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         store.
 
         Args:
-            project_name_or_id: Name or ID of the project to which the stack
+            workspace_name_or_id: Name or ID of the workspace to which the stack
                 belongs.
             user_name_or_id: The name or ID of the user that owns the stack.
 
         Returns:
             The model of the created default stack.
         """
-        project = self.get_project(project_name_or_id=project_name_or_id)
+        workspace = self.get_workspace(
+            workspace_name_or_id=workspace_name_or_id
+        )
         user = self.get_user(user_name_or_id=user_name_or_id)
 
         logger.info(
-            f"Creating default stack for user '{user.name}' in project "
-            f"{project.name}..."
+            f"Creating default stack for user '{user.name}' in workspace "
+            f"{workspace.name}..."
         )
 
         # Register the default orchestrator
         orchestrator = self.create_stack_component(
             component=ComponentRequestModel(
                 user=user.id,
-                project=project.id,
+                workspace=workspace.id,
                 name=DEFAULT_STACK_COMPONENT_NAME,
                 type=StackComponentType.ORCHESTRATOR,
                 flavor="local",
@@ -458,7 +466,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         artifact_store = self.create_stack_component(
             component=ComponentRequestModel(
                 user=user.id,
-                project=project.id,
+                workspace=workspace.id,
                 name=DEFAULT_STACK_COMPONENT_NAME,
                 type=StackComponentType.ARTIFACT_STORE,
                 flavor="local",
@@ -472,39 +480,41 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
             name=DEFAULT_STACK_NAME,
             components=components,
             is_shared=False,
-            project=project.id,
+            workspace=workspace.id,
             user=user.id,
         )
         return self.create_stack(stack=stack)
 
     def _get_default_stack(
         self,
-        project_name_or_id: Union[str, UUID],
+        workspace_name_or_id: Union[str, UUID],
         user_name_or_id: Union[str, UUID],
     ) -> StackResponseModel:
-        """Get the default stack for a user in a project.
+        """Get the default stack for a user in a workspace.
 
         Args:
-            project_name_or_id: Name or ID of the project.
+            workspace_name_or_id: Name or ID of the workspace.
             user_name_or_id: Name or ID of the user.
 
         Returns:
-            The default stack in the project owned by the supplied user.
+            The default stack in the workspace owned by the supplied user.
 
         Raises:
-            KeyError: if the project or default stack doesn't exist.
+            KeyError: if the workspace or default stack doesn't exist.
         """
         default_stacks = self.list_stacks(
-            project_name_or_id=project_name_or_id,
-            user_name_or_id=user_name_or_id,
-            name=DEFAULT_STACK_NAME,
+            StackFilterModel(
+                workspace_id=workspace_name_or_id,
+                user_id=user_name_or_id,
+                name=DEFAULT_STACK_NAME,
+            )
         )
-        if len(default_stacks) == 0:
+        if default_stacks.total == 0:
             raise KeyError(
                 f"No default stack found for user {str(user_name_or_id)} in "
-                f"project {str(project_name_or_id)}"
+                f"workspace {str(workspace_name_or_id)}"
             )
-        return default_stacks[0]
+        return default_stacks.items[0]
 
     # -----
     # Roles
@@ -529,11 +539,11 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         return self.create_role(
             RoleRequestModel(
                 name=DEFAULT_ADMIN_ROLE,
-                permissions=[
+                permissions={
                     PermissionType.READ.value,
                     PermissionType.WRITE.value,
                     PermissionType.ME.value,
-                ],
+                },
             )
         )
 
@@ -557,36 +567,16 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         return self.create_role(
             RoleRequestModel(
                 name=DEFAULT_GUEST_ROLE,
-                permissions=[
+                permissions={
                     PermissionType.READ.value,
                     PermissionType.ME.value,
-                ],
+                },
             )
         )
 
     # -----
     # Users
     # -----
-
-    @property
-    def active_user(self) -> UserResponseModel:
-        """The active user.
-
-        Returns:
-            The active user.
-        """
-        if self._active_user is None:
-            self._active_user = self.get_user(self.active_user_name)
-        return self._active_user
-
-    @property
-    def users(self) -> List[UserResponseModel]:
-        """All existing users.
-
-        Returns:
-            A list of all existing users.
-        """
-        return self.list_users()
 
     @property
     def _default_user_name(self) -> str:
@@ -633,12 +623,11 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
                 password=user_password,
             )
         )
-        self.create_role_assignment(
-            RoleAssignmentRequestModel(
+        self.create_user_role_assignment(
+            UserRoleAssignmentRequestModel(
                 role=self._admin_role.id,
                 user=new_user.id,
-                project=None,
-                is_user=True,
+                workspace=None,
             )
         )
         return new_user
@@ -648,64 +637,59 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
     # -----
 
     @property
-    def roles(self) -> List[RoleResponseModel]:
+    def roles(self) -> Page[RoleResponseModel]:
         """All existing roles.
 
         Returns:
             A list of all existing roles.
         """
-        return self.list_roles()
-
-    @property
-    def role_assignments(self) -> List[RoleAssignmentResponseModel]:
-        """All role assignments.
-
-        Returns:
-            A list of all role assignments.
-        """
-        return self.list_role_assignments(user_name_or_id=self.active_user_name)
+        return self.list_roles(RoleFilterModel())
 
     # --------
-    # Projects
+    # Workspaces
     # --------
 
     @property
-    def _default_project_name(self) -> str:
-        """Get the default project name.
+    def _default_workspace_name(self) -> str:
+        """Get the default workspace name.
 
         Returns:
-            The default project name.
+            The default workspace name.
         """
-        return os.getenv(ENV_ZENML_DEFAULT_PROJECT_NAME, DEFAULT_PROJECT_NAME)
+        return os.getenv(
+            ENV_ZENML_DEFAULT_WORKSPACE_NAME, DEFAULT_WORKSPACE_NAME
+        )
 
     @property
-    def _default_project(self) -> ProjectResponseModel:
-        """Get the default project.
+    def _default_workspace(self) -> WorkspaceResponseModel:
+        """Get the default workspace.
 
         Returns:
-            The default project.
+            The default workspace.
 
         Raises:
-            KeyError: if the default project doesn't exist.
+            KeyError: if the default workspace doesn't exist.
         """
-        project_name = self._default_project_name
+        workspace_name = self._default_workspace_name
         try:
-            return self.get_project(project_name)
+            return self.get_workspace(workspace_name)
         except KeyError:
             raise KeyError(
-                f"The default project '{project_name}' is not configured"
+                f"The default workspace '{workspace_name}' is not configured"
             )
 
-    @track(AnalyticsEvent.CREATED_DEFAULT_PROJECT)
-    def _create_default_project(self) -> ProjectResponseModel:
-        """Creates a default project.
+    @track(AnalyticsEvent.CREATED_DEFAULT_WORKSPACE)
+    def _create_default_workspace(self) -> WorkspaceResponseModel:
+        """Creates a default workspace.
 
         Returns:
-            The default project.
+            The default workspace.
         """
-        project_name = self._default_project_name
-        logger.info(f"Creating default project '{project_name}' ...")
-        return self.create_project(ProjectRequestModel(name=project_name))
+        workspace_name = self._default_workspace_name
+        logger.info(f"Creating default workspace '{workspace_name}' ...")
+        return self.create_workspace(
+            WorkspaceRequestModel(name=workspace_name)
+        )
 
     # ---------
     # Analytics

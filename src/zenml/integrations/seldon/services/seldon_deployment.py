@@ -28,7 +28,7 @@ from zenml.integrations.seldon.seldon_client import (
     SeldonDeploymentNotFoundError,
 )
 from zenml.logger import get_logger
-from zenml.services.service import BaseService, ServiceConfig
+from zenml.services.service import BaseDeploymentService, ServiceConfig
 from zenml.services.service_status import ServiceState, ServiceStatus
 from zenml.services.service_type import ServiceType
 
@@ -152,7 +152,7 @@ class SeldonDeploymentServiceStatus(ServiceStatus):
     """Seldon Core deployment service status."""
 
 
-class SeldonDeploymentService(BaseService):
+class SeldonDeploymentService(BaseDeploymentService):
     """A service that represents a Seldon Core deployment server.
 
     Attributes:
@@ -185,7 +185,8 @@ class SeldonDeploymentService(BaseService):
         )
 
         model_deployer = cast(
-            SeldonModelDeployer, SeldonModelDeployer.get_active_model_deployer()
+            SeldonModelDeployer,
+            SeldonModelDeployer.get_active_model_deployer(),
         )
         return model_deployer.seldon_client
 
@@ -357,7 +358,8 @@ class SeldonDeploymentService(BaseService):
             return None
         namespace = self._get_client().namespace
         model_deployer = cast(
-            SeldonModelDeployer, SeldonModelDeployer.get_active_model_deployer()
+            SeldonModelDeployer,
+            SeldonModelDeployer.get_active_model_deployer(),
         )
         return os.path.join(
             model_deployer.config.base_url,

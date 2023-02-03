@@ -19,7 +19,6 @@ from tests.unit.test_general import _test_materializer
 from zenml.integrations.pillow.materializers.pillow_image_materializer import (
     PillowImageMaterializer,
 )
-from zenml.post_execution.pipeline import PipelineRunView
 
 
 def test_materializer_works_for_pillow_image_objects(clean_client):
@@ -27,9 +26,5 @@ def test_materializer_works_for_pillow_image_objects(clean_client):
     with does_not_raise():
         _test_materializer(
             step_output=Image.new("RGB", (10, 10), color="red"),
-            materializer=PillowImageMaterializer,
+            materializer_class=PillowImageMaterializer,
         )
-
-    last_run = PipelineRunView(clean_client.zen_store.list_runs()[-1])
-    image = last_run.steps[-1].output.read()
-    assert isinstance(image, Image.Image)

@@ -20,14 +20,11 @@ from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 from slack_sdk.rtm import RTMClient
 
-from zenml.alerter.base_alerter import BaseAlerter
+from zenml.alerter.base_alerter import BaseAlerter, BaseAlerterStepParameters
 from zenml.integrations.slack.flavors.slack_alerter_flavor import (
     SlackAlerterConfig,
 )
 from zenml.logger import get_logger
-from zenml.steps.step_interfaces.base_alerter_step import (
-    BaseAlerterStepParameters,
-)
 
 logger = get_logger(__name__)
 
@@ -200,12 +197,12 @@ class SlackAlerter(BaseAlerter):
                     print(f"User {event['user']} approved on slack.")
                     nonlocal approved
                     approved = True
-                    rtm.stop()  # type: ignore
+                    rtm.stop()  # type: ignore[no-untyped-call]
 
                 # disapprove request (return False)
                 elif event["text"] in self._get_disapprove_msg_options(params):
                     print(f"User {event['user']} disapproved on slack.")
-                    rtm.stop()  # type:ignore
+                    rtm.stop()  # type: ignore[no-untyped-call]
 
         # start another thread until `rtm.stop()` is called in handle()
         rtm.start()

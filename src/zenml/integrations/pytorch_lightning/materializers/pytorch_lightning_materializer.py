@@ -18,7 +18,7 @@ from typing import Any, Type
 
 from pytorch_lightning.trainer import Trainer
 
-from zenml.artifacts import ModelArtifact
+from zenml.enums import ArtifactType
 from zenml.materializers.base_materializer import BaseMaterializer
 
 CHECKPOINT_NAME = "final_checkpoint.ckpt"
@@ -28,9 +28,9 @@ class PyTorchLightningMaterializer(BaseMaterializer):
     """Materializer to read/write PyTorch models."""
 
     ASSOCIATED_TYPES = (Trainer,)
-    ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
 
-    def handle_input(self, data_type: Type[Any]) -> Trainer:
+    def load(self, data_type: Type[Any]) -> Trainer:
         """Reads and returns a PyTorch Lightning trainer.
 
         Args:
@@ -39,20 +39,16 @@ class PyTorchLightningMaterializer(BaseMaterializer):
         Returns:
             A PyTorch Lightning trainer object.
         """
-        super().handle_input(data_type)
+        super().load(data_type)
         return Trainer(
-            resume_from_checkpoint=os.path.join(
-                self.artifact.uri, CHECKPOINT_NAME
-            )
+            resume_from_checkpoint=os.path.join(self.uri, CHECKPOINT_NAME)
         )
 
-    def handle_return(self, trainer: Trainer) -> None:
+    def save(self, trainer: Trainer) -> None:
         """Writes a PyTorch Lightning trainer.
 
         Args:
             trainer: A PyTorch Lightning trainer object.
         """
-        super().handle_return(trainer)
-        trainer.save_checkpoint(
-            os.path.join(self.artifact.uri, CHECKPOINT_NAME)
-        )
+        super().save(trainer)
+        trainer.save_checkpoint(os.path.join(self.uri, CHECKPOINT_NAME))

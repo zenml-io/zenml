@@ -16,22 +16,11 @@ zenml:
     # Overrides the image tag whose default is the chart appVersion.
     tag:
 
-  initImage:
-    repository: zenmldocker/zenml
-    pullPolicy: Always
-    # Overrides the image tag whose default is the chart appVersion.
-    tag:
-
   debug: True
 
   # ZenML server deployment type. This field is used for telemetry purposes.
   # Example values are "local", "kubernetes", "aws", "gcp", "azure".
   deploymentType:
-
-  # Unique server UUID. Used to uniquely identify the server in the
-  # telemetry events. If not set, a random UUID will be generated when the helm
-  # chart is installed and reused for all subsequent upgrades.
-  serverId:
 
   # The ZenML authentication scheme. Use one of:
   # 
@@ -40,15 +29,6 @@ zenml:
   # OAUTH2_PASSWORD_BEARER - OAuth2 password bearer with JWT tokens
   authType: OAUTH2_PASSWORD_BEARER
 
-  # The ZenML server periodically syncs metadata information from the MLMD
-  # database into the SQL ZenML store database. This is the frequency of the
-  # sync in seconds. This determines how much time it takes for the status of a
-  # pipeline run to be available in the CLI and UI after it has been recorded in
-  # the MLMD database. If you're planning on having a huge number of pipeline
-  # runs, you may want to increase this value to reduce the load on the ZenML
-  # server.
-  metadataSyncPeriod: 30
-  
   # The secret key used to sign JWT tokens. Only relevant if the
   # OAUTH2_PASSWORD_BEARER authentication scheme is used. This should be set to
   # a random string with a recommended length of at least 32 characters, e.g.:
@@ -90,9 +70,7 @@ zenml:
   defaultPassword: zenml
 
   # MySQL database configuration. If not set, a local sqlite database will be
-  # used, which will not be persisted and cannot be accessed from outside the
-  # cluster, which means that pipeline run metadata information will not be
-  # tracked centrally and available in the dashboard.
+  # used, which will not be persisted across pod restarts.
   # NOTE: the certificate files need to be copied in the helm chart folder and
   # the paths configured here need to be relative to the root of the helm chart.
   database: {}
@@ -132,61 +110,6 @@ zenml:
       secretName: zenml-tls-certs
 
 
-# The gRPC metadata service is an optional component, disabled by default, that
-# can be used by clients and orchestrators as an alternative to accessing the
-# MLMD database directly (e.g. to store or retrieve pipeline run and artifact
-# related information). If enabled, the gRPC service will act as a proxy to the
-# MLMD database. The gRPC service is not required for the ZenML server to work
-# and can be safely disabled, but one advantage it brings is that it may speed
-# up the pipeline execution considerably, especially when the orchestrator is
-# running locally where the client is located and otherwise needs to access the
-# MLMD database over the internet.
-grpcMetadata:
-  enabled: false
-
-  replicaCount: 1
-
-  image:
-    repository: gcr.io/tfx-oss-public/ml_metadata_store_server
-    pullPolicy: Always
-    tag: "1.8.0"
-
-  service:
-    type: ClusterIP
-    port: 8080
-
-  # The external hostname where the gRPC metadata service is accessible.
-  # This is needed if the ingress is not enabled or a host is not set for it
-  # (e.g. this should be set to the LoadBalancer IP address, if an ingress is
-  # not used to expose the gRPC service).
-  externalHostname:
-
-  tls:
-    enabled: true
-    # NOTE: if enabled, this will generate self-signed server and client
-    # certificates during installation. This also requires that the ingress host
-    # or the externalHostname be set to the domain name or IP address used to
-    # access the gRPC server from outside the cluster.
-    generateCerts: true
-    secretName: zenml-grpc-tls-certs
-    clientSecretName: zenml-grpc-client-tls-certs
-
-  ingress:
-    # NOTE: if exposed via an ingress, the gRPC service also needs TLS to be
-    # enabled.
-    enabled: true
-    className: "nginx"
-    annotations:
-      # kubernetes.io/ingress.class: nginx
-      # kubernetes.io/tls-acme: "true"
-      # cert-manager.io/cluster-issuer: "letsencrypt"
-
-    # hint: you can use a service like nip.io to get a wildcard DNS for your
-    # ingress IP address. For example, if your ingress IP is 192.168.0.1, you
-    # can use a host name like grpc-metadata.192.168.0.1.nip.io. This allows you
-    # to reuse the same ingress for multiple deployments and/or services.
-    host:
-
 serviceAccount:
   # Specifies whether a service account should be created
   create: true
@@ -201,13 +124,12 @@ podAnnotations: {}
 podSecurityContext: {}
   # fsGroup: 2000
 
-securityContext: {}
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
   # capabilities:
   #   drop:
   #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
 
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious

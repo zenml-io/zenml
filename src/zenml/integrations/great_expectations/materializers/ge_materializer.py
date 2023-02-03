@@ -14,7 +14,7 @@
 """Implementation of the Great Expectations materializers."""
 
 import os
-from typing import Any, Dict, Type
+from typing import TYPE_CHECKING, Any, Dict, Type, Union
 
 from great_expectations.checkpoint.types.checkpoint_result import (  # type: ignore[import]
     CheckpointResult,
@@ -29,12 +29,17 @@ from great_expectations.data_context.types.base import (  # type: ignore[import]
 from great_expectations.data_context.types.resource_identifiers import (  # type: ignore[import]
     ValidationResultIdentifier,
 )
-from great_expectations.types import SerializableDictDot  # type: ignore[import]
+from great_expectations.types import (  # type: ignore[import]
+    SerializableDictDot,
+)
 
-from zenml.artifacts import DataAnalysisArtifact
+from zenml.enums import ArtifactType
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import yaml_utils
 from zenml.utils.source_utils import import_class_by_path
+
+if TYPE_CHECKING:
+    from zenml.metadata.metadata_types import MetadataType
 
 ARTIFACT_FILENAME = "artifact.json"
 
@@ -46,7 +51,7 @@ class GreatExpectationsMaterializer(BaseMaterializer):
         ExpectationSuite,
         CheckpointResult,
     )
-    ASSOCIATED_ARTIFACT_TYPES = (DataAnalysisArtifact,)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA_ANALYSIS
 
     @staticmethod
     def preprocess_checkpoint_result_dict(
@@ -85,7 +90,7 @@ class GreatExpectationsMaterializer(BaseMaterializer):
             validation_dict[validation_ident] = validation_results
         artifact_dict["run_results"] = validation_dict
 
-    def handle_input(self, data_type: Type[Any]) -> SerializableDictDot:
+    def load(self, data_type: Type[Any]) -> SerializableDictDot:
         """Reads and returns a Great Expectations object.
 
         Args:
@@ -94,8 +99,8 @@ class GreatExpectationsMaterializer(BaseMaterializer):
         Returns:
             A loaded Great Expectations object.
         """
-        super().handle_input(data_type)
-        filepath = os.path.join(self.artifact.uri, ARTIFACT_FILENAME)
+        super().load(data_type)
+        filepath = os.path.join(self.uri, ARTIFACT_FILENAME)
         artifact_dict = yaml_utils.read_json(filepath)
         data_type = import_class_by_path(artifact_dict.pop("data_type"))
 
@@ -104,17 +109,41 @@ class GreatExpectationsMaterializer(BaseMaterializer):
 
         return data_type(**artifact_dict)
 
-    def handle_return(self, obj: SerializableDictDot) -> None:
+    def save(self, obj: SerializableDictDot) -> None:
         """Writes a Great Expectations object.
 
         Args:
             obj: A Great Expectations object.
         """
-        super().handle_return(obj)
-        filepath = os.path.join(self.artifact.uri, ARTIFACT_FILENAME)
+        super().save(obj)
+        filepath = os.path.join(self.uri, ARTIFACT_FILENAME)
         artifact_dict = obj.to_json_dict()
         artifact_type = type(obj)
         artifact_dict[
             "data_type"
         ] = f"{artifact_type.__module__}.{artifact_type.__name__}"
         yaml_utils.write_json(filepath, artifact_dict)
+
+    def extract_metadata(
+        self, data: Union[ExpectationSuite, CheckpointResult]
+    ) -> Dict[str, "MetadataType"]:
+        """Extract metadata from the given Great Expectations object.
+
+        Args:
+            data: The Great Expectations object to extract metadata from.
+
+        Returns:
+            The extracted metadata as a dictionary.
+        """
+        base_metadata = super().extract_metadata(data)
+        ge_metadata: Dict[str, "MetadataType"] = {}
+        if isinstance(data, CheckpointResult):
+            ge_metadata = {
+                "checkpoint_result_name": data.name,
+                "checkpoint_result_passed": data.success,
+            }
+        elif isinstance(data, ExpectationSuite):
+            ge_metadata = {
+                "expectation_suite_name": data.name,
+            }
+        return {**base_metadata, **ge_metadata}

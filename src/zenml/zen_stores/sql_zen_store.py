@@ -16,14 +16,14 @@
 import base64
 import json
 import logging
+import math
 import os
 import re
-from datetime import datetime, timedelta
+from contextvars import ContextVar
 from pathlib import Path, PurePath
-from threading import Lock, get_ident
 from typing import (
-    TYPE_CHECKING,
     Any,
+    Callable,
     ClassVar,
     Dict,
     List,
@@ -32,14 +32,16 @@ from typing import (
     Type,
     TypeVar,
     Union,
+    cast,
 )
 from uuid import UUID
 
+import pymysql
 from pydantic import root_validator
-from sqlalchemy.engine import Engine
-from sqlalchemy.engine.url import make_url
-from sqlalchemy.exc import ArgumentError, NoResultFound
-from sqlalchemy.sql.operators import is_, isnot
+from sqlalchemy import asc, desc, func, text
+from sqlalchemy.engine import URL, Engine, make_url
+from sqlalchemy.exc import ArgumentError, NoResultFound, OperationalError
+from sqlalchemy.orm import noload
 from sqlmodel import Session, create_engine, or_, select
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
@@ -52,6 +54,7 @@ from zenml.constants import (
 from zenml.enums import (
     ExecutionStatus,
     LoggingLevels,
+    SorterOps,
     StackComponentType,
     StoreType,
 )
@@ -64,41 +67,66 @@ from zenml.exceptions import (
 from zenml.io import fileio
 from zenml.logger import get_console_handler, get_logger, get_logging_level
 from zenml.models import (
+    ArtifactFilterModel,
     ArtifactRequestModel,
     ArtifactResponseModel,
+    BaseFilterModel,
+    ComponentFilterModel,
     ComponentRequestModel,
     ComponentResponseModel,
     ComponentUpdateModel,
+    FlavorFilterModel,
     FlavorRequestModel,
     FlavorResponseModel,
+    PipelineFilterModel,
     PipelineRequestModel,
     PipelineResponseModel,
+    PipelineRunFilterModel,
     PipelineRunRequestModel,
     PipelineRunResponseModel,
     PipelineRunUpdateModel,
     PipelineUpdateModel,
-    ProjectRequestModel,
-    ProjectResponseModel,
-    ProjectUpdateModel,
-    RoleAssignmentRequestModel,
-    RoleAssignmentResponseModel,
+    RoleFilterModel,
     RoleRequestModel,
     RoleResponseModel,
     RoleUpdateModel,
+    RunMetadataRequestModel,
+    RunMetadataResponseModel,
+    ScheduleRequestModel,
+    ScheduleResponseModel,
+    ScheduleUpdateModel,
+    StackFilterModel,
     StackRequestModel,
     StackResponseModel,
     StackUpdateModel,
+    StepRunFilterModel,
     StepRunRequestModel,
     StepRunResponseModel,
     StepRunUpdateModel,
+    TeamFilterModel,
     TeamRequestModel,
     TeamResponseModel,
+    TeamRoleAssignmentFilterModel,
+    TeamRoleAssignmentRequestModel,
+    TeamRoleAssignmentResponseModel,
     TeamUpdateModel,
     UserAuthModel,
+    UserFilterModel,
     UserRequestModel,
     UserResponseModel,
+    UserRoleAssignmentFilterModel,
+    UserRoleAssignmentRequestModel,
+    UserRoleAssignmentResponseModel,
     UserUpdateModel,
+    WorkspaceFilterModel,
+    WorkspaceRequestModel,
+    WorkspaceResponseModel,
+    WorkspaceUpdateModel,
 )
+from zenml.models.base_models import BaseResponseModel
+from zenml.models.page_model import Page
+from zenml.models.run_metadata_models import RunMetadataFilterModel
+from zenml.models.schedule_model import ScheduleFilterModel
 from zenml.models.server_models import ServerDatabaseType, ServerModel
 from zenml.utils import uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
@@ -119,39 +147,36 @@ from zenml.zen_stores.migrations.alembic import (
 )
 from zenml.zen_stores.schemas import (
     ArtifactSchema,
+    BaseSchema,
     FlavorSchema,
+    IdentitySchema,
+    NamedSchema,
     PipelineRunSchema,
     PipelineSchema,
-    ProjectSchema,
+    RolePermissionSchema,
     RoleSchema,
+    RunMetadataSchema,
+    ScheduleSchema,
     StackComponentSchema,
+    StackCompositionSchema,
     StackSchema,
     StepRunInputArtifactSchema,
+    StepRunOutputArtifactSchema,
     StepRunParentsSchema,
     StepRunSchema,
     TeamRoleAssignmentSchema,
     TeamSchema,
     UserRoleAssignmentSchema,
     UserSchema,
+    WorkspaceSchema,
 )
-from zenml.zen_stores.schemas.base_schemas import NamedSchema
-from zenml.zen_stores.schemas.role_schemas import RolePermissionSchema
-from zenml.zen_stores.schemas.stack_schemas import StackCompositionSchema
-
-if TYPE_CHECKING:
-    from ml_metadata.proto.metadata_store_pb2 import (
-        ConnectionConfig,
-        MetadataStoreClientConfig,
-    )
-
-    from zenml.zen_stores.metadata_store import (
-        MetadataStore,
-        MLMDArtifactModel,
-        MLMDPipelineRunModel,
-        MLMDStepRunModel,
-    )
 
 AnyNamedSchema = TypeVar("AnyNamedSchema", bound=NamedSchema)
+AnySchema = TypeVar("AnySchema", bound=BaseSchema)
+B = TypeVar("B", bound=BaseResponseModel)
+
+params_value: ContextVar[BaseFilterModel] = ContextVar("params_value")
+
 
 # Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
 # warning
@@ -161,6 +186,24 @@ Select.inherit_cache = True
 logger = get_logger(__name__)
 
 ZENML_SQLITE_DB_FILENAME = "zenml.db"
+
+
+def _is_mysql_missing_database_error(error: OperationalError) -> bool:
+    """Checks if the given error is due to a missing database.
+
+    Args:
+        error: The error to check.
+
+    Returns:
+        If the error if because the MySQL database doesn't exist.
+    """
+    from pymysql.constants.ER import BAD_DB_ERROR
+
+    if not isinstance(error.orig, pymysql.err.OperationalError):
+        return False
+
+    error_code = cast(int, error.orig.args[0])
+    return error_code == BAD_DB_ERROR
 
 
 class SQLDatabaseDriver(StrEnum):
@@ -193,14 +236,6 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             pool.
         max_overflow: The maximum number of connections to allow in the
             SQLAlchemy pool in addition to the pool_size.
-        grpc_metadata_host: The host to use for the gRPC metadata server.
-        grpc_metadata_port: The port to use for the gRPC metadata server.
-        grpc_metadata_ssl_ca: The certificate authority certificate to use for
-            the gRPC metadata server connection.
-        grpc_metadata_ssl_cert: The client certificate to use for the gRPC
-            metadata server connection.
-        grpc_metadata_ssl_key: The client certificate private key to use for
-            the gRPC metadata server connection.
     """
 
     type: StoreType = StoreType.SQL
@@ -216,11 +251,32 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     pool_size: int = 20
     max_overflow: int = 20
 
-    grpc_metadata_host: Optional[str] = None
-    grpc_metadata_port: Optional[int] = None
-    grpc_metadata_ssl_ca: Optional[str] = None
-    grpc_metadata_ssl_key: Optional[str] = None
-    grpc_metadata_ssl_cert: Optional[str] = None
+    @root_validator(pre=True)
+    def _remove_grpc_attributes(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Removes old GRPC attributes.
+
+        Args:
+            values: All model attribute values.
+
+        Returns:
+            The model attribute values
+        """
+        grpc_attribute_keys = [
+            "grpc_metadata_host",
+            "grpc_metadata_port",
+            "grpc_metadata_ssl_ca",
+            "grpc_metadata_ssl_key",
+            "grpc_metadata_ssl_cert",
+        ]
+        grpc_values = [values.pop(key, None) for key in grpc_attribute_keys]
+        if any(grpc_values):
+            logger.warning(
+                "The GRPC attributes %s are unused and will be removed soon. "
+                "Please remove them from SQLZenStore configuration. This will "
+                "become an error in future versions of ZenML."
+            )
+
+        return values
 
     @root_validator
     def _validate_url(cls, values: Dict[str, Any]) -> Dict[str, Any]:
@@ -240,7 +296,6 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             ValueError: If the URL is invalid or the SQL driver is not
                 supported.
         """
-        # flake8: noqa: C901
         url = values.get("url")
         if url is None:
             return values
@@ -435,72 +490,9 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
         return config
 
-    def get_metadata_config(
-        self, expand_certs: bool = False
-    ) -> "ConnectionConfig":
-        """Get the metadata configuration for the SQL ZenML store.
-
-        Args:
-            expand_certs: Whether to expand the certificate paths to their
-                contents.
-
-        Returns:
-            The metadata configuration.
-
-        Raises:
-            NotImplementedError: If the SQL driver is not supported.
-        """
-        from ml_metadata.proto.metadata_store_pb2 import MySQLDatabaseConfig
-        from tfx.orchestration import metadata
-
-        sql_url = make_url(self.url)
-        if sql_url.drivername == SQLDatabaseDriver.SQLITE:
-            assert self.database is not None
-            mlmd_config = metadata.sqlite_metadata_connection_config(
-                self.database
-            )
-        elif sql_url.drivername == SQLDatabaseDriver.MYSQL:
-            # all these are guaranteed by our root validator
-            assert self.database is not None
-            assert self.username is not None
-            assert self.password is not None
-            assert sql_url.host is not None
-
-            mlmd_config = metadata.mysql_metadata_connection_config(
-                host=sql_url.host,
-                port=sql_url.port or 3306,
-                database=self.database,
-                username=self.username,
-                password=self.password,
-            )
-
-            mlmd_ssl_options = {}
-            # Handle certificate params
-            for key in ["ssl_key", "ssl_ca", "ssl_cert"]:
-                ssl_setting = getattr(self, key)
-                if not ssl_setting:
-                    continue
-                if expand_certs and os.path.isfile(ssl_setting):
-                    with open(ssl_setting, "r") as f:
-                        ssl_setting = f.read()
-                mlmd_ssl_options[key.lstrip("ssl_")] = ssl_setting
-
-            # Handle additional params
-            if mlmd_ssl_options:
-                mlmd_ssl_options[
-                    "verify_server_cert"
-                ] = self.ssl_verify_server_cert
-                mlmd_config.mysql.ssl_options.CopyFrom(
-                    MySQLDatabaseConfig.SSLOptions(**mlmd_ssl_options)
-                )
-        else:
-            raise NotImplementedError(
-                f"SQL driver `{sql_url.drivername}` is not supported."
-            )
-
-        return mlmd_config
-
-    def get_sqlmodel_config(self) -> Tuple[str, Dict[str, Any], Dict[str, Any]]:
+    def get_sqlmodel_config(
+        self,
+    ) -> Tuple[str, Dict[str, Any], Dict[str, Any]]:
         """Get the SQLModel engine configuration for the SQL ZenML store.
 
         Returns:
@@ -582,9 +574,6 @@ class SqlZenStore(BaseZenStore):
         TYPE: The type of the store.
         CONFIG_TYPE: The type of the store configuration.
         _engine: The SQLAlchemy engine.
-        _metadata_store: The metadata store.
-        _sync_lock: A thread mutex used to ensure thread safety during the
-            pipeline run synchronization.
     """
 
     config: SqlZenStoreConfiguration
@@ -593,10 +582,7 @@ class SqlZenStore(BaseZenStore):
     CONFIG_TYPE: ClassVar[Type[StoreConfiguration]] = SqlZenStoreConfiguration
 
     _engine: Optional[Engine] = None
-    _metadata_store: Optional["MetadataStore"] = None
-    _highest_synced_run_mlmd_id: int = 0
     _alembic: Optional[Alembic] = None
-    _sync_lock: Optional[Lock] = None
 
     @property
     def engine(self) -> Engine:
@@ -611,20 +597,6 @@ class SqlZenStore(BaseZenStore):
         if not self._engine:
             raise ValueError("Store not initialized")
         return self._engine
-
-    @property
-    def metadata_store(self) -> "MetadataStore":
-        """The metadata store.
-
-        Returns:
-            The metadata store.
-
-        Raises:
-            ValueError: If the store is not initialized.
-        """
-        if not self._metadata_store:
-            raise ValueError("Store not initialized")
-        return self._metadata_store
 
     @property
     def runs_inside_server(self) -> bool:
@@ -651,19 +623,104 @@ class SqlZenStore(BaseZenStore):
             raise ValueError("Store not initialized")
         return self._alembic
 
-    @property
-    def sync_lock(self) -> Lock:
-        """The mutex used to synchronize pipeline runs.
+    @classmethod
+    def filter_and_paginate(
+        cls,
+        session: Session,
+        query: Union[Select[AnySchema], SelectOfScalar[AnySchema]],
+        table: Type[AnySchema],
+        filter_model: BaseFilterModel,
+        custom_schema_to_model_conversion: Optional[
+            Callable[[AnySchema], B]
+        ] = None,
+    ) -> Page[B]:
+        """Given a query, return a Page instance with a list of filtered Models.
+
+        Args:
+            session: The SQLModel Session
+            query: The query to execute
+            table: The table to select from
+            filter_model: The filter to use, including pagination and sorting
+            custom_schema_to_model_conversion: Callable to convert the schema
+                into a model. This is used if the Model contains additional
+                data that is not explicitly stored as a field or relationship
+                on the model.
 
         Returns:
-            The mutex used to synchronize pipeline runs.
+            The Domain Model representation of the DB resource
 
         Raises:
-            ValueError: If the store is not initialized.
+            ValueError: if the filtered page number is out of bounds.
+            RuntimeError: if the schema does not have a `to_model` method.
         """
-        if not self._sync_lock:
-            raise ValueError("Store not initialized")
-        return self._sync_lock
+        # Filtering
+        filters = filter_model.generate_filter(table=table)
+
+        if filters is not None:
+            query = query.where(filters)
+
+        # Get the total amount of items in the database for a given query
+        total = session.scalar(
+            select([func.count("*")]).select_from(
+                query.options(noload("*")).subquery()
+            )
+        )
+
+        # Sorting
+        column, operand = filter_model.sorting_params
+        if operand == SorterOps.DESCENDING:
+            query = query.order_by(desc(getattr(table, column)))
+        else:
+            query = query.order_by(asc(getattr(table, column)))
+
+        # Get the total amount of pages in the database for a given query
+        if total == 0:
+            total_pages = 1
+        else:
+            total_pages = math.ceil(total / filter_model.size)
+
+        if filter_model.page > total_pages:
+            raise ValueError(
+                f"Invalid page {filter_model.page}. The requested page size is "
+                f"{filter_model.size} and there are a total of {total} items "
+                f"for this query. The maximum page value therefore is "
+                f"{total_pages}."
+            )
+
+        # Get a page of the actual data
+        item_schemas: List[AnySchema] = (
+            session.exec(
+                query.limit(filter_model.size).offset(filter_model.offset)
+            )
+            .unique()
+            .all()
+        )
+
+        # Convert this page of items from schemas to models.
+        items: List[B] = []
+        for schema in item_schemas:
+            # If a custom conversion function is provided, use it.
+            if custom_schema_to_model_conversion:
+                items.append(custom_schema_to_model_conversion(schema))
+                continue
+            # Otherwise, try to use the `to_model` method of the schema.
+            to_model = getattr(schema, "to_model", None)
+            if callable(to_model):
+                items.append(to_model())
+                continue
+            # If neither of the above work, raise an error.
+            raise RuntimeError(
+                f"Cannot convert schema `{schema.__class__.__name__}` to model "
+                "since it does not have a `to_model` method."
+            )
+
+        return Page(
+            total=total,
+            total_pages=total_pages,
+            items=items,
+            page=filter_model.page,
+            size=filter_model.size,
+        )
 
     # ====================================
     # ZenML Store interface implementation
@@ -674,18 +731,52 @@ class SqlZenStore(BaseZenStore):
     # --------------------------------
 
     def _initialize(self) -> None:
-        """Initialize the SQL store."""
-        from zenml.zen_stores.metadata_store import MetadataStore
+        """Initialize the SQL store.
 
+        Raises:
+            OperationalError: If connecting to the database failed.
+        """
         logger.debug("Initializing SqlZenStore at %s", self.config.url)
-
-        metadata_config = self.config.get_metadata_config()
-        self._metadata_store = MetadataStore(config=metadata_config)
 
         url, connect_args, engine_args = self.config.get_sqlmodel_config()
         self._engine = create_engine(
             url=url, connect_args=connect_args, **engine_args
         )
+
+        # SQLite: As long as the parent directory exists, SQLAlchemy will
+        # automatically create the database.
+        if (
+            self.config.driver == SQLDatabaseDriver.SQLITE
+            and self.config.database
+            and not fileio.exists(self.config.database)
+        ):
+            fileio.makedirs(os.path.dirname(self.config.database))
+
+        # MySQL: We might need to create the database manually.
+        # To do so, we create a new engine that connects to the `mysql` database
+        # and then create the desired database.
+        # See https://stackoverflow.com/a/8977109
+        if (
+            self.config.driver == SQLDatabaseDriver.MYSQL
+            and self.config.database
+        ):
+            try:
+                self._engine.connect()
+            except OperationalError as e:
+                logger.debug(
+                    "Failed to connect to mysql database `%s`.",
+                    self._engine.url.database,
+                )
+
+                if _is_mysql_missing_database_error(e):
+                    self._create_mysql_database(
+                        url=self._engine.url,
+                        connect_args=connect_args,
+                        engine_args=engine_args,
+                    )
+                else:
+                    raise
+
         self._alembic = Alembic(self.engine)
         if (
             not self.skip_migrations
@@ -693,7 +784,31 @@ class SqlZenStore(BaseZenStore):
         ):
             self.migrate_database()
 
-        self._sync_lock = Lock()
+    def _create_mysql_database(
+        self,
+        url: URL,
+        connect_args: Dict[str, Any],
+        engine_args: Dict[str, Any],
+    ) -> None:
+        """Creates a mysql database.
+
+        Args:
+            url: The URL of the database to create.
+            connect_args: Connect arguments for the SQLAlchemy engine.
+            engine_args: Additional initialization arguments for the SQLAlchemy
+                engine
+        """
+        logger.info("Trying to create database %s.", url.database)
+        master_url = url._replace(database=None)
+        master_engine = create_engine(
+            url=master_url, connect_args=connect_args, **engine_args
+        )
+        query = f"CREATE DATABASE IF NOT EXISTS {self.config.database}"
+        try:
+            connection = master_engine.connect()
+            connection.execute(text(query))
+        finally:
+            connection.close()
 
     def migrate_database(self) -> None:
         """Migrate the database to the head as defined by the python package."""
@@ -749,55 +864,26 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             Information about the store.
+
+        Raises:
+            KeyError: If the deployment ID could not be loaded from the
+                database.
         """
         model = super().get_store_info()
         sql_url = make_url(self.config.url)
         model.database_type = ServerDatabaseType(sql_url.drivername)
+
+        # Fetch the deployment ID from the database and use it to replace the one
+        # fetched from the global configuration
+        with Session(self.engine) as session:
+            identity = session.exec(select(IdentitySchema)).first()
+
+            if identity is None:
+                raise KeyError(
+                    "The deployment ID could not be loaded from the database."
+                )
+            model.id = identity.id
         return model
-
-    # ------------
-    # TFX Metadata
-    # ------------
-
-    def get_metadata_config(
-        self, expand_certs: bool = False
-    ) -> Union["ConnectionConfig", "MetadataStoreClientConfig"]:
-        """Get the TFX metadata config of this ZenStore.
-
-        Args:
-            expand_certs: Whether to expand the certificate paths in the
-                connection config to their value.
-
-        Returns:
-            The TFX metadata config of this ZenStore.
-        """
-        from ml_metadata.proto.metadata_store_pb2 import (
-            MetadataStoreClientConfig,
-        )
-
-        # If the gRPC metadata store connection configuration is present,
-        # advertise it to the client instead of the direct SQL connection
-        # config.
-        if self.config.grpc_metadata_host:
-            mlmd_config = MetadataStoreClientConfig()
-            mlmd_config.host = self.config.grpc_metadata_host
-            mlmd_config.port = self.config.grpc_metadata_port
-            if self.config.grpc_metadata_ssl_ca:
-                mlmd_config.ssl_config.custom_ca = (
-                    self.config.grpc_metadata_ssl_ca
-                )
-            if self.config.grpc_metadata_ssl_cert:
-                mlmd_config.ssl_config.server_cert = (
-                    self.config.grpc_metadata_ssl_cert
-                )
-            if self.config.grpc_metadata_ssl_key:
-                mlmd_config.ssl_config.client_key = (
-                    self.config.grpc_metadata_ssl_key
-                )
-
-            return mlmd_config
-
-        return self.config.get_metadata_config(expand_certs=expand_certs)
 
     # ------
     # Stacks
@@ -839,7 +925,7 @@ class SqlZenStore(BaseZenStore):
             ).all()
 
             new_stack_schema = StackSchema(
-                project_id=stack.project,
+                workspace_id=stack.workspace,
                 user_id=stack.user,
                 is_shared=stack.is_shared,
                 name=stack.name,
@@ -875,50 +961,32 @@ class SqlZenStore(BaseZenStore):
             return stack.to_model()
 
     def list_stacks(
-        self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
-        component_id: Optional[UUID] = None,
-        name: Optional[str] = None,
-        is_shared: Optional[bool] = None,
-    ) -> List[StackResponseModel]:
+        self, stack_filter_model: StackFilterModel
+    ) -> Page[StackResponseModel]:
         """List all stacks matching the given filter criteria.
 
         Args:
-            project_name_or_id: ID or name of the Project containing the stack
-            user_name_or_id: Optionally filter stacks by their owner
-            component_id: Optionally filter for stacks that contain the
-                          component
-            name: Optionally filter stacks by their name
-            is_shared: Optionally filter out stacks by whether they are shared
-                or not
+            stack_filter_model: All filter parameters including pagination
+                params.
 
         Returns:
             A list of all stacks matching the filter criteria.
         """
         with Session(self.engine) as session:
-            # Get a list of all stacks
             query = select(StackSchema)
-            if project_name_or_id:
-                project = self._get_project_schema(
-                    project_name_or_id, session=session
-                )
-                query = query.where(StackSchema.project_id == project.id)
-            if user_name_or_id:
-                user = self._get_user_schema(user_name_or_id, session=session)
-                query = query.where(StackSchema.user_id == user.id)
-            if component_id:
+            if stack_filter_model.component_id:
                 query = query.where(
                     StackCompositionSchema.stack_id == StackSchema.id
-                ).where(StackCompositionSchema.component_id == component_id)
-            if name:
-                query = query.where(StackSchema.name == name)
-            if is_shared is not None:
-                query = query.where(StackSchema.is_shared == is_shared)
-
-            stacks = session.exec(query.order_by(StackSchema.name)).all()
-
-            return [stack.to_model() for stack in stacks]
+                ).where(
+                    StackCompositionSchema.component_id
+                    == stack_filter_model.component_id
+                )
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=StackSchema,
+                filter_model=stack_filter_model,
+            )
 
     @track(AnalyticsEvent.UPDATED_STACK)
     def update_stack(
@@ -938,7 +1006,7 @@ class SqlZenStore(BaseZenStore):
             IllegalOperationError: if the stack is a default stack.
         """
         with Session(self.engine) as session:
-            # Check if stack with the domain key (name, project, owner) already
+            # Check if stack with the domain key (name, workspace, owner) already
             #  exists
             existing_stack = session.exec(
                 select(StackSchema).where(StackSchema.id == stack_id)
@@ -962,7 +1030,7 @@ class SqlZenStore(BaseZenStore):
 
             # Check if stack update makes the stack a shared stack. In that
             # case, check if a stack with the same name is already shared
-            # within the project
+            # within the workspace
             if stack_update.is_shared:
                 if not existing_stack.is_shared and stack_update.is_shared:
                     self._fail_if_stack_with_name_already_shared(
@@ -1038,12 +1106,12 @@ class SqlZenStore(BaseZenStore):
         existing_domain_stack = session.exec(
             select(StackSchema)
             .where(StackSchema.name == stack.name)
-            .where(StackSchema.project_id == stack.project)
+            .where(StackSchema.workspace_id == stack.workspace)
             .where(StackSchema.user_id == stack.user)
         ).first()
         if existing_domain_stack is not None:
-            project = self._get_project_schema(
-                project_name_or_id=stack.project, session=session
+            workspace = self._get_workspace_schema(
+                workspace_name_or_id=stack.workspace, session=session
             )
             user = self._get_user_schema(
                 user_name_or_id=stack.user, session=session
@@ -1051,7 +1119,7 @@ class SqlZenStore(BaseZenStore):
             raise StackExistsError(
                 f"Unable to register stack with name "
                 f"'{stack.name}': Found an existing stack with the same "
-                f"name in the active project, '{project.name}', owned by the "
+                f"name in the active workspace, '{workspace.name}', owned by the "
                 f"same user, '{user.name}'."
             )
         return None
@@ -1072,21 +1140,21 @@ class SqlZenStore(BaseZenStore):
                               by a user.
         """
         # Check if component with the same name, type is already shared
-        # within the project
+        # within the workspace
         existing_shared_stack = session.exec(
             select(StackSchema)
             .where(StackSchema.name == stack.name)
-            .where(StackSchema.project_id == stack.project)
+            .where(StackSchema.workspace_id == stack.workspace)
             .where(StackSchema.is_shared == stack.is_shared)
         ).first()
         if existing_shared_stack is not None:
-            project = self._get_project_schema(
-                project_name_or_id=stack.project, session=session
+            workspace = self._get_workspace_schema(
+                workspace_name_or_id=stack.workspace, session=session
             )
             error_msg = (
                 f"Unable to share stack with name '{stack.name}': Found an "
-                f"existing shared stack with the same name in project "
-                f"'{project.name}'"
+                f"existing shared stack with the same name in workspace "
+                f"'{workspace.name}'"
             )
             if existing_shared_stack.user_id:
                 owner_of_shared = self._get_user_schema(
@@ -1119,7 +1187,7 @@ class SqlZenStore(BaseZenStore):
                 name=component.name,
                 component_type=component.type,
                 user_id=component.user,
-                project_id=component.project,
+                workspace_id=component.workspace,
                 session=session,
             )
 
@@ -1127,14 +1195,14 @@ class SqlZenStore(BaseZenStore):
                 self._fail_if_component_with_name_type_already_shared(
                     name=component.name,
                     component_type=component.type,
-                    project_id=component.project,
+                    workspace_id=component.workspace,
                     session=session,
                 )
 
             # Create the component
             new_component = StackComponentSchema(
                 name=component.name,
-                project_id=component.project,
+                workspace_id=component.workspace,
                 user_id=component.user,
                 is_shared=component.is_shared,
                 type=component.type,
@@ -1151,7 +1219,9 @@ class SqlZenStore(BaseZenStore):
 
             return new_component.to_model()
 
-    def get_stack_component(self, component_id: UUID) -> ComponentResponseModel:
+    def get_stack_component(
+        self, component_id: UUID
+    ) -> ComponentResponseModel:
         """Get a stack component by ID.
 
         Args:
@@ -1178,54 +1248,28 @@ class SqlZenStore(BaseZenStore):
             return stack_component.to_model()
 
     def list_stack_components(
-        self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
-        type: Optional[str] = None,
-        flavor_name: Optional[str] = None,
-        name: Optional[str] = None,
-        is_shared: Optional[bool] = None,
-    ) -> List[ComponentResponseModel]:
+        self, component_filter_model: ComponentFilterModel
+    ) -> Page[ComponentResponseModel]:
         """List all stack components matching the given filter criteria.
 
         Args:
-            project_name_or_id: The ID or name of the Project to which the stack
-                components belong
-            user_name_or_id: Optionally filter stack components by the owner
-            type: Optionally filter by type of stack component
-            flavor_name: Optionally filter by flavor
-            name: Optionally filter stack component by name
-            is_shared: Optionally filter out stack component by whether they are
-                shared or not
+            component_filter_model: All filter parameters including pagination
+                params.
 
         Returns:
             A list of all stack components matching the filter criteria.
         """
         with Session(self.engine) as session:
-            # Get a list of all stacks
             query = select(StackComponentSchema)
-            if project_name_or_id:
-                project = self._get_project_schema(
-                    project_name_or_id, session=session
-                )
-                query = query.where(
-                    StackComponentSchema.project_id == project.id
-                )
-            if user_name_or_id:
-                user = self._get_user_schema(user_name_or_id, session=session)
-                query = query.where(StackComponentSchema.user_id == user.id)
-            if type:
-                query = query.where(StackComponentSchema.type == type)
-            if flavor_name:
-                query = query.where(StackComponentSchema.flavor == flavor_name)
-            if name:
-                query = query.where(StackComponentSchema.name == name)
-            if is_shared is not None:
-                query = query.where(StackComponentSchema.is_shared == is_shared)
-
-            list_of_stack_components_in_db = session.exec(query).all()
-
-            return [comp.to_model() for comp in list_of_stack_components_in_db]
+            paged_components: Page[
+                ComponentResponseModel
+            ] = self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=StackComponentSchema,
+                filter_model=component_filter_model,
+            )
+            return paged_components
 
     @track(AnalyticsEvent.UPDATED_STACK_COMPONENT)
     def update_stack_component(
@@ -1281,14 +1325,14 @@ class SqlZenStore(BaseZenStore):
                     self._fail_if_component_with_name_type_exists_for_user(
                         name=component_update.name,
                         component_type=existing_component.type,
-                        project_id=existing_component.project_id,
+                        workspace_id=existing_component.workspace_id,
                         user_id=existing_component.user_id,
                         session=session,
                     )
 
             # Check if component update makes the component a shared component,
             # In that case check if a component with the same name, type are
-            # already shared within the project
+            # already shared within the workspace
             if component_update.is_shared:
                 if (
                     not existing_component.is_shared
@@ -1297,7 +1341,7 @@ class SqlZenStore(BaseZenStore):
                     self._fail_if_component_with_name_type_already_shared(
                         name=component_update.name or existing_component.name,
                         component_type=existing_component.type,
-                        project_id=existing_component.project_id,
+                        workspace_id=existing_component.workspace_id,
                         session=session,
                     )
 
@@ -1359,7 +1403,7 @@ class SqlZenStore(BaseZenStore):
     def _fail_if_component_with_name_type_exists_for_user(
         name: str,
         component_type: StackComponentType,
-        project_id: UUID,
+        workspace_id: UUID,
         user_id: UUID,
         session: Session,
     ) -> None:
@@ -1368,7 +1412,7 @@ class SqlZenStore(BaseZenStore):
         Args:
             name: The name of the component
             component_type: The type of the component
-            project_id: The ID of the project
+            workspace_id: The ID of the workspace
             user_id: The ID of the user
             session: The Session
 
@@ -1379,21 +1423,25 @@ class SqlZenStore(BaseZenStore):
             StackComponentExistsError: If a component with the given name and
                                        type is already owned by the user
         """
-        # Check if component with the same domain key (name, type, project,
+        assert user_id
+        # Check if component with the same domain key (name, type, workspace,
         # owner) already exists
         existing_domain_component = session.exec(
             select(StackComponentSchema)
             .where(StackComponentSchema.name == name)
-            .where(StackComponentSchema.project_id == project_id)
+            .where(StackComponentSchema.workspace_id == workspace_id)
             .where(StackComponentSchema.user_id == user_id)
             .where(StackComponentSchema.type == component_type)
         ).first()
         if existing_domain_component is not None:
+            # Theoretically the user schema is optional, in this case there is
+            #  no way that it will be None
+            assert existing_domain_component.user
             raise StackComponentExistsError(
                 f"Unable to register '{component_type.value}' component "
                 f"with name '{name}': Found an existing "
                 f"component with the same name and type in the same "
-                f" project, '{existing_domain_component.project.name}', "
+                f" workspace, '{existing_domain_component.workspace.name}', "
                 f"owned by the same user, "
                 f"'{existing_domain_component.user.name}'."
             )
@@ -1403,7 +1451,7 @@ class SqlZenStore(BaseZenStore):
     def _fail_if_component_with_name_type_already_shared(
         name: str,
         component_type: StackComponentType,
-        project_id: UUID,
+        workspace_id: UUID,
         session: Session,
     ) -> None:
         """Raise an exception if a Component with same name/type already shared.
@@ -1411,7 +1459,7 @@ class SqlZenStore(BaseZenStore):
         Args:
             name: The name of the component
             component_type: The type of the component
-            project_id: The ID of the project
+            workspace_id: The ID of the workspace
             session: The Session
 
         Raises:
@@ -1419,20 +1467,20 @@ class SqlZenStore(BaseZenStore):
                 type is already shared by a user
         """
         # Check if component with the same name, type is already shared
-        # within the project
+        # within the workspace
         existing_shared_component = session.exec(
             select(StackComponentSchema)
             .where(StackComponentSchema.name == name)
-            .where(StackComponentSchema.project_id == project_id)
+            .where(StackComponentSchema.workspace_id == workspace_id)
             .where(StackComponentSchema.type == component_type)
-            .where(StackComponentSchema.is_shared == True)
+            .where(StackComponentSchema.is_shared is True)
         ).first()
         if existing_shared_component is not None:
             raise StackComponentExistsError(
                 f"Unable to shared component of type '{component_type.value}' "
                 f"with name '{name}': Found an existing shared "
-                f"component with the same name and type in project "
-                f"'{project_id}'."
+                f"component with the same name and type in workspace "
+                f"'{workspace_id}'."
             )
 
     # -----------------------
@@ -1451,16 +1499,16 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             EntityExistsError: If a flavor with the same name and type
-                is already owned by this user in this project.
+                is already owned by this user in this workspace.
         """
         with Session(self.engine) as session:
-            # Check if component with the same domain key (name, type, project,
+            # Check if component with the same domain key (name, type, workspace,
             # owner) already exists
             existing_flavor = session.exec(
                 select(FlavorSchema)
                 .where(FlavorSchema.name == flavor.name)
                 .where(FlavorSchema.type == flavor.type)
-                .where(FlavorSchema.project_id == flavor.project)
+                .where(FlavorSchema.workspace_id == flavor.workspace)
                 .where(FlavorSchema.user_id == flavor.user)
             ).first()
 
@@ -1469,7 +1517,7 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to register '{flavor.type.value}' flavor "
                     f"with name '{flavor.name}': Found an existing "
                     f"flavor with the same name and type in the same "
-                    f"'{flavor.project}' project owned by the same "
+                    f"'{flavor.workspace}' workspace owned by the same "
                     f"'{flavor.user}' user."
                 )
 
@@ -1479,7 +1527,7 @@ class SqlZenStore(BaseZenStore):
                 source=flavor.source,
                 config_schema=flavor.config_schema,
                 integration=flavor.integration,
-                project_id=flavor.project,
+                workspace_id=flavor.workspace,
                 user_id=flavor.user,
             )
             session.add(new_flavor)
@@ -1508,46 +1556,25 @@ class SqlZenStore(BaseZenStore):
             return flavor_in_db.to_model()
 
     def list_flavors(
-        self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
-        component_type: Optional[StackComponentType] = None,
-        name: Optional[str] = None,
-        is_shared: Optional[bool] = None,
-    ) -> List[FlavorResponseModel]:
+        self, flavor_filter_model: FlavorFilterModel
+    ) -> Page[FlavorResponseModel]:
         """List all stack component flavors matching the given filter criteria.
 
         Args:
-            project_name_or_id: Optionally filter by the Project to which the
-                component flavors belong
-            component_type: Optionally filter by type of stack component
-            user_name_or_id: Optionally filter by the owner
-            component_type: Optionally filter by type of stack component
-            name: Optionally filter flavors by name
-            is_shared: Optionally filter out flavors by whether they are
-                shared or not
+            flavor_filter_model: All filter parameters including pagination
+                params
 
         Returns:
-            List of all the stack component flavors matching the given criteria
+            List of all the stack component flavors matching the given criteria.
         """
         with Session(self.engine) as session:
             query = select(FlavorSchema)
-            if project_name_or_id:
-                project = self._get_project_schema(
-                    project_name_or_id, session=session
-                )
-                query = query.where(FlavorSchema.project_id == project.id)
-            if component_type:
-                query = query.where(FlavorSchema.type == component_type)
-            if name:
-                query = query.where(FlavorSchema.name == name)
-            if user_name_or_id:
-                user = self._get_user_schema(user_name_or_id, session=session)
-                query = query.where(FlavorSchema.user_id == user.id)
-
-            list_of_flavors_in_db = session.exec(query).all()
-
-            return [flavor.to_model() for flavor in list_of_flavors_in_db]
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=FlavorSchema,
+                filter_model=flavor_filter_model,
+            )
 
     @track(AnalyticsEvent.DELETED_FLAVOR)
     def delete_flavor(self, flavor_id: UUID) -> None:
@@ -1591,15 +1618,6 @@ class SqlZenStore(BaseZenStore):
     # Users
     # -----
 
-    @property
-    def active_user_name(self) -> str:
-        """Gets the active username.
-
-        Returns:
-            The active username.
-        """
-        return self._default_user_name
-
     @track(AnalyticsEvent.CREATED_USER)
     def create_user(self, user: UserRequestModel) -> UserResponseModel:
         """Creates a new user.
@@ -1631,21 +1649,33 @@ class SqlZenStore(BaseZenStore):
 
             return new_user.to_model()
 
-    def get_user(self, user_name_or_id: Union[str, UUID]) -> UserResponseModel:
-        """Gets a specific user.
+    def get_user(
+        self,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
+        include_private: bool = False,
+    ) -> UserResponseModel:
+        """Gets a specific user, when no id is specified the active user is returned.
+
+        Raises a KeyError in case a user with that id does not exist.
 
         Args:
             user_name_or_id: The name or ID of the user to get.
+            include_private: Whether to include private user information
 
         Returns:
             The requested user, if it was found.
         """
+        if not user_name_or_id:
+            user_name_or_id = self._default_user_name
+
         with Session(self.engine) as session:
             user = self._get_user_schema(user_name_or_id, session=session)
 
-            return user.to_model()
+            return user.to_model(include_private=include_private)
 
-    def get_auth_user(self, user_name_or_id: Union[str, UUID]) -> UserAuthModel:
+    def get_auth_user(
+        self, user_name_or_id: Union[str, UUID]
+    ) -> UserAuthModel:
         """Gets the auth model to a specific user.
 
         Args:
@@ -1668,22 +1698,27 @@ class SqlZenStore(BaseZenStore):
                 activation_token=user.activation_token,
             )
 
-    def list_users(self, name: Optional[str] = None) -> List[UserResponseModel]:
+    def list_users(
+        self, user_filter_model: UserFilterModel
+    ) -> Page[UserResponseModel]:
         """List all users.
 
         Args:
-            name: Optionally filter by name
+            user_filter_model: All filter parameters including pagination
+                params.
 
         Returns:
             A list of all users.
         """
         with Session(self.engine) as session:
             query = select(UserSchema)
-            if name:
-                query = query.where(UserSchema.name == name)
-            users = session.exec(query.order_by(UserSchema.name)).all()
-
-            return [user.to_model() for user in users]
+            paged_user: Page[UserResponseModel] = self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=UserSchema,
+                filter_model=user_filter_model,
+            )
+            return paged_user
 
     @track(AnalyticsEvent.UPDATED_USER)
     def update_user(
@@ -1771,7 +1806,9 @@ class SqlZenStore(BaseZenStore):
             defined_users = []
             if team.users:
                 # Get the Schemas of all users mentioned
-                filters = [(UserSchema.id == user_id) for user_id in team.users]
+                filters = [
+                    (UserSchema.id == user_id) for user_id in team.users
+                ]
 
                 defined_users = session.exec(
                     select(UserSchema).where(or_(*filters))
@@ -1797,22 +1834,26 @@ class SqlZenStore(BaseZenStore):
             team = self._get_team_schema(team_name_or_id, session=session)
             return team.to_model()
 
-    def list_teams(self, name: Optional[str] = None) -> List[TeamResponseModel]:
-        """List all teams.
+    def list_teams(
+        self, team_filter_model: TeamFilterModel
+    ) -> Page[TeamResponseModel]:
+        """List all teams matching the given filter criteria.
 
         Args:
-            name: Optionally filter by name
+            team_filter_model: All filter parameters including pagination
+                params.
 
         Returns:
-            A list of all teams.
+            A list of all teams matching the filter criteria.
         """
         with Session(self.engine) as session:
             query = select(TeamSchema)
-            if name:
-                query = query.where(TeamSchema.name == name)
-            teams = session.exec(query.order_by(TeamSchema.name)).all()
-
-            return [team.to_model() for team in teams]
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=TeamSchema,
+                filter_model=team_filter_model,
+            )
 
     @track(AnalyticsEvent.UPDATED_TEAM)
     def update_team(
@@ -1925,22 +1966,26 @@ class SqlZenStore(BaseZenStore):
             role = self._get_role_schema(role_name_or_id, session=session)
             return role.to_model()
 
-    def list_roles(self, name: Optional[str] = None) -> List[RoleResponseModel]:
-        """List all roles.
+    def list_roles(
+        self, role_filter_model: RoleFilterModel
+    ) -> Page[RoleResponseModel]:
+        """List all roles matching the given filter criteria.
 
         Args:
-            name: Optionally filter by name
+            role_filter_model: All filter parameters including pagination
+                params.
 
         Returns:
-            A list of all roles.
+            A list of all roles matching the filter criteria.
         """
         with Session(self.engine) as session:
             query = select(RoleSchema)
-            if name:
-                query = query.where(RoleSchema.name == name)
-            roles = session.exec(query.order_by(RoleSchema.name)).all()
-
-            return [role.to_model() for role in roles]
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=RoleSchema,
+                filter_model=role_filter_model,
+            )
 
     @track(AnalyticsEvent.UPDATED_ROLE)
     def update_role(
@@ -1995,7 +2040,8 @@ class SqlZenStore(BaseZenStore):
                             select(RolePermissionSchema)
                             .where(RolePermissionSchema.name == permission)
                             .where(
-                                RolePermissionSchema.role_id == existing_role.id
+                                RolePermissionSchema.role_id
+                                == existing_role.id
                             )
                         ).one_or_none()
                         session.delete(permission_to_delete)
@@ -2062,258 +2108,86 @@ class SqlZenStore(BaseZenStore):
     # Role assignments
     # ----------------
 
-    def _list_user_role_assignments(
-        self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        role_name_or_id: Optional[Union[str, UUID]] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
-    ) -> List[RoleAssignmentResponseModel]:
-        """List all user role assignments.
+    def list_user_role_assignments(
+        self, user_role_assignment_filter_model: UserRoleAssignmentFilterModel
+    ) -> Page[UserRoleAssignmentResponseModel]:
+        """List all roles assignments matching the given filter criteria.
 
         Args:
-            project_name_or_id: If provided, only return role assignments for
-                this project.
-            user_name_or_id: If provided, only list assignments for this user.
-            role_name_or_id: If provided, only list assignments of the given
-                role
+            user_role_assignment_filter_model: All filter parameters including
+                pagination params.
 
         Returns:
-            A list of user role assignments.
+            A list of all roles assignments matching the filter criteria.
         """
         with Session(self.engine) as session:
             query = select(UserRoleAssignmentSchema)
-            if project_name_or_id is not None:
-                project = self._get_project_schema(
-                    project_name_or_id, session=session
-                )
-                query = query.where(
-                    UserRoleAssignmentSchema.project_id == project.id
-                )
-            if role_name_or_id is not None:
-                role = self._get_role_schema(role_name_or_id, session=session)
-                query = query.where(UserRoleAssignmentSchema.role_id == role.id)
-            if user_name_or_id is not None:
-                user = self._get_user_schema(user_name_or_id, session=session)
-                query = query.where(UserRoleAssignmentSchema.user_id == user.id)
-            assignments = session.exec(query).all()
-            return [assignment.to_model() for assignment in assignments]
-
-    def _list_team_role_assignments(
-        self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        team_name_or_id: Optional[Union[str, UUID]] = None,
-        role_name_or_id: Optional[Union[str, UUID]] = None,
-    ) -> List[RoleAssignmentResponseModel]:
-        """List all team role assignments.
-
-        Args:
-            project_name_or_id: If provided, only return role assignments for
-                this project.
-            team_name_or_id: If provided, only list assignments for this team.
-            role_name_or_id: If provided, only list assignments of the given
-                role
-
-        Returns:
-            A list of team role assignments.
-        """
-        with Session(self.engine) as session:
-            query = select(TeamRoleAssignmentSchema)
-            if project_name_or_id is not None:
-                project = self._get_project_schema(
-                    project_name_or_id, session=session
-                )
-                query = query.where(
-                    TeamRoleAssignmentSchema.project_id == project.id
-                )
-            if role_name_or_id is not None:
-                role = self._get_role_schema(role_name_or_id, session=session)
-                query = query.where(TeamRoleAssignmentSchema.role_id == role.id)
-            if team_name_or_id is not None:
-                team = self._get_team_schema(team_name_or_id, session=session)
-                query = query.where(TeamRoleAssignmentSchema.team_id == team.id)
-            assignments = session.exec(query).all()
-            return [assignment.to_model() for assignment in assignments]
-
-    def list_role_assignments(
-        self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        role_name_or_id: Optional[Union[str, UUID]] = None,
-        team_name_or_id: Optional[Union[str, UUID]] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
-    ) -> List[RoleAssignmentResponseModel]:
-        """List all role assignments.
-
-        Args:
-            project_name_or_id: If provided, only return role assignments for
-                this project.
-            role_name_or_id: If provided, only list assignments of the given
-                role
-            team_name_or_id: If provided, only list assignments for this team.
-            user_name_or_id: If provided, only list assignments for this user.
-
-        Returns:
-            A list of all role assignments.
-        """
-        user_role_assignments = self._list_user_role_assignments(
-            project_name_or_id=project_name_or_id,
-            user_name_or_id=user_name_or_id,
-            role_name_or_id=role_name_or_id,
-        )
-        team_role_assignments = self._list_team_role_assignments(
-            project_name_or_id=project_name_or_id,
-            team_name_or_id=team_name_or_id,
-            role_name_or_id=role_name_or_id,
-        )
-        return user_role_assignments + team_role_assignments
-
-    def _assign_role_to_user(
-        self,
-        role_name_or_id: Union[str, UUID],
-        user_name_or_id: Union[str, UUID],
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-    ) -> RoleAssignmentResponseModel:
-        """Assigns a role to a user, potentially scoped to a specific project.
-
-        Args:
-            project_name_or_id: Optional ID of a project in which to assign the
-                role. If this is not provided, the role will be assigned
-                globally.
-            role_name_or_id: Name or ID of the role to assign.
-            user_name_or_id: Name or ID of the user to which to assign the role.
-
-        Returns:
-            A model of the role assignment.
-
-        Raises:
-            EntityExistsError: If the role assignment already exists.
-        """
-        with Session(self.engine) as session:
-            role = self._get_role_schema(role_name_or_id, session=session)
-            project: Optional[ProjectSchema] = None
-            if project_name_or_id:
-                project = self._get_project_schema(
-                    project_name_or_id, session=session
-                )
-            user = self._get_user_schema(user_name_or_id, session=session)
-            query = select(UserRoleAssignmentSchema).where(
-                UserRoleAssignmentSchema.user_id == user.id,
-                UserRoleAssignmentSchema.role_id == role.id,
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=UserRoleAssignmentSchema,
+                filter_model=user_role_assignment_filter_model,
             )
-            if project is not None:
-                query = query.where(
-                    UserRoleAssignmentSchema.project_id == project.id
-                )
-            existing_role_assignment = session.exec(query).first()
-            if existing_role_assignment is not None:
-                raise EntityExistsError(
-                    f"Unable to assign role '{role.name}' to user "
-                    f"'{user.name}': Role already assigned in this project."
-                )
-            role_assignment = UserRoleAssignmentSchema(
-                role_id=role.id,
-                user_id=user.id,
-                project_id=project.id if project else None,
-                role=role,
-                user=user,
-                project=project,
-            )
-            session.add(role_assignment)
-            session.commit()
-            return role_assignment.to_model()
 
-    def _assign_role_to_team(
-        self,
-        role_name_or_id: Union[str, UUID],
-        team_name_or_id: Union[str, UUID],
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-    ) -> RoleAssignmentResponseModel:
-        """Assigns a role to a team, potentially scoped to a specific project.
+    def create_user_role_assignment(
+        self, user_role_assignment: UserRoleAssignmentRequestModel
+    ) -> UserRoleAssignmentResponseModel:
+        """Assigns a role to a user or team, scoped to a specific workspace.
 
         Args:
-            role_name_or_id: Name or ID of the role to assign.
-            team_name_or_id: Name or ID of the team to which to assign the role.
-            project_name_or_id: Optional ID of a project in which to assign the
-                role. If this is not provided, the role will be assigned
-                globally.
-
-        Returns:
-            A model of the role assignment.
-
-        Raises:
-            EntityExistsError: If the role assignment already exists.
-        """
-        with Session(self.engine) as session:
-            role = self._get_role_schema(role_name_or_id, session=session)
-            project: Optional[ProjectSchema] = None
-            if project_name_or_id:
-                project = self._get_project_schema(
-                    project_name_or_id, session=session
-                )
-            team = self._get_team_schema(team_name_or_id, session=session)
-            query = select(TeamRoleAssignmentSchema).where(
-                TeamRoleAssignmentSchema.team_id == team.id,
-                TeamRoleAssignmentSchema.role_id == role.id,
-            )
-            if project is not None:
-                query = query.where(
-                    TeamRoleAssignmentSchema.project_id == project.id
-                )
-            existing_role_assignment = session.exec(query).first()
-            if existing_role_assignment is not None:
-                raise EntityExistsError(
-                    f"Unable to assign role '{role.name}' to team "
-                    f"'{team.name}': Role already assigned in this project."
-                )
-            role_assignment = TeamRoleAssignmentSchema(
-                role_id=role.id,
-                team_id=team.id,
-                project_id=project.id if project else None,
-                role=role,
-                team=team,
-                project=project,
-            )
-            session.add(role_assignment)
-            session.commit()
-
-            return role_assignment.to_model()
-
-    def create_role_assignment(
-        self, role_assignment: RoleAssignmentRequestModel
-    ) -> RoleAssignmentResponseModel:
-        """Assigns a role to a user or team, scoped to a specific project.
-
-        Args:
-            role_assignment: The role assignment to create.
+            user_role_assignment: The role assignment to create.
 
         Returns:
             The created role assignment.
 
         Raises:
-            ValueError: If neither a user nor a team is specified.
+            EntityExistsError: if the role assignment already exists.
         """
-        if role_assignment.user:
-            return self._assign_role_to_user(
-                role_name_or_id=role_assignment.role,
-                user_name_or_id=role_assignment.user,
-                project_name_or_id=role_assignment.project,
+        with Session(self.engine) as session:
+            role = self._get_role_schema(
+                user_role_assignment.role, session=session
             )
-        if role_assignment.team:
-            return self._assign_role_to_team(
-                role_name_or_id=role_assignment.role,
-                team_name_or_id=role_assignment.team,
-                project_name_or_id=role_assignment.project,
+            workspace: Optional[WorkspaceSchema] = None
+            if user_role_assignment.workspace:
+                workspace = self._get_workspace_schema(
+                    user_role_assignment.workspace, session=session
+                )
+            user = self._get_user_schema(
+                user_role_assignment.user, session=session
             )
-        raise ValueError(
-            "Role assignment must be assigned to either a user or a team."
-        )
+            query = select(UserRoleAssignmentSchema).where(
+                UserRoleAssignmentSchema.user_id == user.id,
+                UserRoleAssignmentSchema.role_id == role.id,
+            )
+            if workspace is not None:
+                query = query.where(
+                    UserRoleAssignmentSchema.workspace_id == workspace.id
+                )
+            existing_role_assignment = session.exec(query).first()
+            if existing_role_assignment is not None:
+                raise EntityExistsError(
+                    f"Unable to assign role '{role.name}' to user "
+                    f"'{user.name}': Role already assigned in this workspace."
+                )
+            role_assignment = UserRoleAssignmentSchema(
+                role_id=role.id,
+                user_id=user.id,
+                workspace_id=workspace.id if workspace else None,
+                role=role,
+                user=user,
+                workspace=workspace,
+            )
+            session.add(role_assignment)
+            session.commit()
+            return role_assignment.to_model()
 
-    def get_role_assignment(
-        self, role_assignment_id: UUID
-    ) -> RoleAssignmentResponseModel:
+    def get_user_role_assignment(
+        self, user_role_assignment_id: UUID
+    ) -> UserRoleAssignmentResponseModel:
         """Gets a role assignment by ID.
 
         Args:
-            role_assignment_id: ID of the role assignment to get.
+            user_role_assignment_id: ID of the role assignment to get.
 
         Returns:
             The role assignment.
@@ -2324,31 +2198,26 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             user_role = session.exec(
                 select(UserRoleAssignmentSchema).where(
-                    UserRoleAssignmentSchema.id == role_assignment_id
+                    UserRoleAssignmentSchema.id == user_role_assignment_id
                 )
             ).one_or_none()
 
             if user_role:
                 return user_role.to_model()
-
-            team_role = session.exec(
-                select(TeamRoleAssignmentSchema).where(
-                    TeamRoleAssignmentSchema.id == role_assignment_id
+            else:
+                raise KeyError(
+                    f"Unable to get user role assignment with ID "
+                    f"'{user_role_assignment_id}': No user role assignment "
+                    f"with this ID found."
                 )
-            ).one_or_none()
 
-            if team_role:
-                return team_role.to_model()
-
-            raise KeyError(
-                f"RoleAssignment with ID {role_assignment_id} not found."
-            )
-
-    def delete_role_assignment(self, role_assignment_id: UUID) -> None:
+    def delete_user_role_assignment(
+        self, user_role_assignment_id: UUID
+    ) -> None:
         """Delete a specific role assignment.
 
         Args:
-            role_assignment_id: The ID of the specific role assignment.
+            user_role_assignment_id: The ID of the specific role assignment.
 
         Raises:
             KeyError: If the role assignment does not exist.
@@ -2356,170 +2225,301 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             user_role = session.exec(
                 select(UserRoleAssignmentSchema).where(
-                    UserRoleAssignmentSchema.id == role_assignment_id
+                    UserRoleAssignmentSchema.id == user_role_assignment_id
                 )
             ).one_or_none()
-            if user_role:
-                session.delete(user_role)
+            if not user_role:
+                raise KeyError(
+                    f"No user role assignment with id "
+                    f"{user_role_assignment_id} exists."
+                )
 
+            session.delete(user_role)
+
+            session.commit()
+
+    # ---------------------
+    # Team Role assignments
+    # ---------------------
+
+    def create_team_role_assignment(
+        self, team_role_assignment: TeamRoleAssignmentRequestModel
+    ) -> TeamRoleAssignmentResponseModel:
+        """Creates a new team role assignment.
+
+        Args:
+            team_role_assignment: The role assignment model to create.
+
+        Returns:
+            The newly created role assignment.
+
+        Raises:
+            EntityExistsError: If the role assignment already exists.
+        """
+        with Session(self.engine) as session:
+            role = self._get_role_schema(
+                team_role_assignment.role, session=session
+            )
+            workspace: Optional[WorkspaceSchema] = None
+            if team_role_assignment.workspace:
+                workspace = self._get_workspace_schema(
+                    team_role_assignment.workspace, session=session
+                )
+            team = self._get_team_schema(
+                team_role_assignment.team, session=session
+            )
+            query = select(UserRoleAssignmentSchema).where(
+                UserRoleAssignmentSchema.user_id == team.id,
+                UserRoleAssignmentSchema.role_id == role.id,
+            )
+            if workspace is not None:
+                query = query.where(
+                    UserRoleAssignmentSchema.workspace_id == workspace.id
+                )
+            existing_role_assignment = session.exec(query).first()
+            if existing_role_assignment is not None:
+                raise EntityExistsError(
+                    f"Unable to assign role '{role.name}' to team "
+                    f"'{team.name}': Role already assigned in this workspace."
+                )
+            role_assignment = TeamRoleAssignmentSchema(
+                role_id=role.id,
+                team_id=team.id,
+                workspace_id=workspace.id if workspace else None,
+                role=role,
+                team=team,
+                workspace=workspace,
+            )
+            session.add(role_assignment)
+            session.commit()
+            return role_assignment.to_model()
+
+    def get_team_role_assignment(
+        self, team_role_assignment_id: UUID
+    ) -> TeamRoleAssignmentResponseModel:
+        """Gets a specific role assignment.
+
+        Args:
+            team_role_assignment_id: ID of the role assignment to get.
+
+        Returns:
+            The requested role assignment.
+
+        Raises:
+            KeyError: If no role assignment with the given ID exists.
+        """
+        with Session(self.engine) as session:
             team_role = session.exec(
                 select(TeamRoleAssignmentSchema).where(
-                    TeamRoleAssignmentSchema.id == role_assignment_id
+                    TeamRoleAssignmentSchema.id == team_role_assignment_id
                 )
             ).one_or_none()
 
             if team_role:
-                session.delete(team_role)
-
-            if user_role is None and team_role is None:
-                raise KeyError(
-                    f"RoleAssignment with ID {role_assignment_id} not found."
-                )
+                return team_role.to_model()
             else:
-                session.commit()
+                raise KeyError(
+                    f"Unable to get team role assignment with ID "
+                    f"'{team_role_assignment_id}': No team role assignment "
+                    f"with this ID found."
+                )
 
-    # --------
-    # Projects
-    # --------
-
-    @track(AnalyticsEvent.CREATED_PROJECT)
-    def create_project(
-        self, project: ProjectRequestModel
-    ) -> ProjectResponseModel:
-        """Creates a new project.
+    def delete_team_role_assignment(
+        self, team_role_assignment_id: UUID
+    ) -> None:
+        """Delete a specific role assignment.
 
         Args:
-            project: The project to create.
-
-        Returns:
-            The newly created project.
+            team_role_assignment_id: The ID of the specific role assignment
 
         Raises:
-            EntityExistsError: If a project with the given name already exists.
+            KeyError: If the role assignment does not exist.
         """
         with Session(self.engine) as session:
-            # Check if project with the given name already exists
-            existing_project = session.exec(
-                select(ProjectSchema).where(ProjectSchema.name == project.name)
-            ).first()
-            if existing_project is not None:
-                raise EntityExistsError(
-                    f"Unable to create project {project.name}: "
-                    "A project with this name already exists."
+            team_role = session.exec(
+                select(TeamRoleAssignmentSchema).where(
+                    TeamRoleAssignmentSchema.id == team_role_assignment_id
+                )
+            ).one_or_none()
+            if not team_role:
+                raise KeyError(
+                    f"No team role assignment with id "
+                    f"{team_role_assignment_id} exists."
                 )
 
-            # Create the project
-            new_project = ProjectSchema.from_request(project)
-            session.add(new_project)
+            session.delete(team_role)
+
             session.commit()
 
-            # Explicitly refresh the new_project schema
-            session.refresh(new_project)
-
-            return new_project.to_model()
-
-    def get_project(
-        self, project_name_or_id: Union[str, UUID]
-    ) -> ProjectResponseModel:
-        """Get an existing project by name or ID.
+    def list_team_role_assignments(
+        self, team_role_assignment_filter_model: TeamRoleAssignmentFilterModel
+    ) -> Page[TeamRoleAssignmentResponseModel]:
+        """List all roles assignments matching the given filter criteria.
 
         Args:
-            project_name_or_id: Name or ID of the project to get.
+            team_role_assignment_filter_model: All filter parameters including
+                pagination params.
 
         Returns:
-            The requested project if one was found.
+            A list of all roles assignments matching the filter criteria.
         """
         with Session(self.engine) as session:
-            project = self._get_project_schema(
-                project_name_or_id, session=session
+            query = select(TeamRoleAssignmentSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=TeamRoleAssignmentSchema,
+                filter_model=team_role_assignment_filter_model,
             )
-        return project.to_model()
 
-    def list_projects(
-        self, name: Optional[str] = None
-    ) -> List[ProjectResponseModel]:
-        """List all projects.
+    # --------
+    # Workspaces
+    # --------
 
-        Args:
-            name: Optionally filter by name
-
-        Returns:
-            A list of all projects.
-        """
-        with Session(self.engine) as session:
-            query = select(ProjectSchema)
-            if name:
-                query = query.where(ProjectSchema.name == name)
-            projects = session.exec(query.order_by(ProjectSchema.name)).all()
-
-            return [project.to_model() for project in projects]
-
-    @track(AnalyticsEvent.UPDATED_PROJECT)
-    def update_project(
-        self, project_id: UUID, project_update: ProjectUpdateModel
-    ) -> ProjectResponseModel:
-        """Update an existing project.
+    @track(AnalyticsEvent.CREATED_WORKSPACE)
+    def create_workspace(
+        self, workspace: WorkspaceRequestModel
+    ) -> WorkspaceResponseModel:
+        """Creates a new workspace.
 
         Args:
-            project_id: The ID of the project to be updated.
-            project_update: The update to be applied to the project.
+            workspace: The workspace to create.
 
         Returns:
-            The updated project.
+            The newly created workspace.
 
         Raises:
-            IllegalOperationError: if the project is the default project.
-            KeyError: if the project does not exist.
+            EntityExistsError: If a workspace with the given name already exists.
         """
         with Session(self.engine) as session:
-            existing_project = session.exec(
-                select(ProjectSchema).where(ProjectSchema.id == project_id)
-            ).first()
-            if existing_project is None:
-                raise KeyError(
-                    f"Unable to update project with id "
-                    f"'{project_id}': Found no"
-                    f"existing projects with this id."
+            # Check if workspace with the given name already exists
+            existing_workspace = session.exec(
+                select(WorkspaceSchema).where(
+                    WorkspaceSchema.name == workspace.name
                 )
-            if (
-                existing_project.name == self._default_project_name
-                and "name" in project_update.__fields_set__
-                and project_update.name != existing_project.name
-            ):
-                raise IllegalOperationError(
-                    "The name of the default project cannot be changed."
+            ).first()
+            if existing_workspace is not None:
+                raise EntityExistsError(
+                    f"Unable to create workspace {workspace.name}: "
+                    "A workspace with this name already exists."
                 )
 
-            # Update the project
-            existing_project.update(project_update=project_update)
-            session.add(existing_project)
+            # Create the workspace
+            new_workspace = WorkspaceSchema.from_request(workspace)
+            session.add(new_workspace)
+            session.commit()
+
+            # Explicitly refresh the new_workspace schema
+            session.refresh(new_workspace)
+
+            return new_workspace.to_model()
+
+    def get_workspace(
+        self, workspace_name_or_id: Union[str, UUID]
+    ) -> WorkspaceResponseModel:
+        """Get an existing workspace by name or ID.
+
+        Args:
+            workspace_name_or_id: Name or ID of the workspace to get.
+
+        Returns:
+            The requested workspace if one was found.
+        """
+        with Session(self.engine) as session:
+            workspace = self._get_workspace_schema(
+                workspace_name_or_id, session=session
+            )
+        return workspace.to_model()
+
+    def list_workspaces(
+        self, workspace_filter_model: WorkspaceFilterModel
+    ) -> Page[WorkspaceResponseModel]:
+        """List all workspace matching the given filter criteria.
+
+        Args:
+            workspace_filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A list of all workspace matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            query = select(WorkspaceSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=WorkspaceSchema,
+                filter_model=workspace_filter_model,
+            )
+
+    @track(AnalyticsEvent.UPDATED_WORKSPACE)
+    def update_workspace(
+        self, workspace_id: UUID, workspace_update: WorkspaceUpdateModel
+    ) -> WorkspaceResponseModel:
+        """Update an existing workspace.
+
+        Args:
+            workspace_id: The ID of the workspace to be updated.
+            workspace_update: The update to be applied to the workspace.
+
+        Returns:
+            The updated workspace.
+
+        Raises:
+            IllegalOperationError: if the workspace is the default workspace.
+            KeyError: if the workspace does not exist.
+        """
+        with Session(self.engine) as session:
+            existing_workspace = session.exec(
+                select(WorkspaceSchema).where(
+                    WorkspaceSchema.id == workspace_id
+                )
+            ).first()
+            if existing_workspace is None:
+                raise KeyError(
+                    f"Unable to update workspace with id "
+                    f"'{workspace_id}': Found no"
+                    f"existing workspaces with this id."
+                )
+            if (
+                existing_workspace.name == self._default_workspace_name
+                and "name" in workspace_update.__fields_set__
+                and workspace_update.name != existing_workspace.name
+            ):
+                raise IllegalOperationError(
+                    "The name of the default workspace cannot be changed."
+                )
+
+            # Update the workspace
+            existing_workspace.update(workspace_update=workspace_update)
+            session.add(existing_workspace)
             session.commit()
 
             # Refresh the Model that was just created
-            session.refresh(existing_project)
-            return existing_project.to_model()
+            session.refresh(existing_workspace)
+            return existing_workspace.to_model()
 
-    @track(AnalyticsEvent.DELETED_PROJECT)
-    def delete_project(self, project_name_or_id: Union[str, UUID]) -> None:
-        """Deletes a project.
+    @track(AnalyticsEvent.DELETED_WORKSPACE)
+    def delete_workspace(self, workspace_name_or_id: Union[str, UUID]) -> None:
+        """Deletes a workspace.
 
         Args:
-            project_name_or_id: Name or ID of the project to delete.
+            workspace_name_or_id: Name or ID of the workspace to delete.
 
         Raises:
-            IllegalOperationError: If the project is the default project.
+            IllegalOperationError: If the workspace is the default workspace.
         """
         with Session(self.engine) as session:
-            # Check if project with the given name exists
-            project = self._get_project_schema(
-                project_name_or_id, session=session
+            # Check if workspace with the given name exists
+            workspace = self._get_workspace_schema(
+                workspace_name_or_id, session=session
             )
-            if project.name == self._default_project_name:
+            if workspace.name == self._default_workspace_name:
                 raise IllegalOperationError(
-                    "The default project cannot be deleted."
+                    "The default workspace cannot be deleted."
                 )
 
-            session.delete(project)
+            session.delete(workspace)
             session.commit()
 
     # ---------
@@ -2531,7 +2531,7 @@ class SqlZenStore(BaseZenStore):
         self,
         pipeline: PipelineRequestModel,
     ) -> PipelineResponseModel:
-        """Creates a new pipeline in a project.
+        """Creates a new pipeline in a workspace.
 
         Args:
             pipeline: The pipeline to create.
@@ -2547,19 +2547,19 @@ class SqlZenStore(BaseZenStore):
             existing_pipeline = session.exec(
                 select(PipelineSchema)
                 .where(PipelineSchema.name == pipeline.name)
-                .where(PipelineSchema.project_id == pipeline.project)
+                .where(PipelineSchema.workspace_id == pipeline.workspace)
             ).first()
             if existing_pipeline is not None:
                 raise EntityExistsError(
-                    f"Unable to create pipeline in project "
-                    f"'{pipeline.project}': A pipeline with this name "
+                    f"Unable to create pipeline in workspace "
+                    f"'{pipeline.workspace}': A pipeline with this name "
                     f"already exists."
                 )
 
             # Create the pipeline
             new_pipeline = PipelineSchema(
                 name=pipeline.name,
-                project_id=pipeline.project,
+                workspace_id=pipeline.workspace,
                 user_id=pipeline.user,
                 docstring=pipeline.docstring,
                 spec=pipeline.spec.json(sort_keys=True),
@@ -2597,41 +2597,25 @@ class SqlZenStore(BaseZenStore):
             return pipeline.to_model()
 
     def list_pipelines(
-        self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
-        name: Optional[str] = None,
-    ) -> List[PipelineResponseModel]:
-        """List all pipelines in the project.
+        self, pipeline_filter_model: PipelineFilterModel
+    ) -> Page[PipelineResponseModel]:
+        """List all pipelines matching the given filter criteria.
 
         Args:
-            project_name_or_id: If provided, only list pipelines in this
-                project.
-            user_name_or_id: If provided, only list pipelines from this user.
-            name: If provided, only list pipelines with this name.
+            pipeline_filter_model: All filter parameters including pagination
+                params.
 
         Returns:
-            A list of pipelines.
+            A list of all pipelines matching the filter criteria.
         """
         with Session(self.engine) as session:
-            # Check if project with the given name exists
             query = select(PipelineSchema)
-            if project_name_or_id is not None:
-                project = self._get_project_schema(
-                    project_name_or_id, session=session
-                )
-                query = query.where(PipelineSchema.project_id == project.id)
-
-            if user_name_or_id is not None:
-                user = self._get_user_schema(user_name_or_id, session=session)
-                query = query.where(PipelineSchema.user_id == user.id)
-
-            if name:
-                query = query.where(PipelineSchema.name == name)
-
-            # Get all pipelines in the project
-            pipelines = session.exec(query).all()
-            return [pipeline.to_model() for pipeline in pipelines]
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=PipelineSchema,
+                filter_model=pipeline_filter_model,
+            )
 
     @track(AnalyticsEvent.UPDATE_PIPELINE)
     def update_pipeline(
@@ -2694,6 +2678,132 @@ class SqlZenStore(BaseZenStore):
             session.delete(pipeline)
             session.commit()
 
+    # ---------
+    # Schedules
+    # ---------
+
+    def create_schedule(
+        self, schedule: ScheduleRequestModel
+    ) -> ScheduleResponseModel:
+        """Creates a new schedule.
+
+        Args:
+            schedule: The schedule to create.
+
+        Returns:
+            The newly created schedule.
+        """
+        with Session(self.engine) as session:
+            new_schedule = ScheduleSchema.from_create_model(model=schedule)
+            session.add(new_schedule)
+            session.commit()
+            return new_schedule.to_model()
+
+    def get_schedule(self, schedule_id: UUID) -> ScheduleResponseModel:
+        """Get a schedule with a given ID.
+
+        Args:
+            schedule_id: ID of the schedule.
+
+        Returns:
+            The schedule.
+
+        Raises:
+            KeyError: if the schedule does not exist.
+        """
+        with Session(self.engine) as session:
+            # Check if schedule with the given ID exists
+            schedule = session.exec(
+                select(ScheduleSchema).where(ScheduleSchema.id == schedule_id)
+            ).first()
+            if schedule is None:
+                raise KeyError(
+                    f"Unable to get schedule with ID '{schedule_id}': "
+                    "No schedule with this ID found."
+                )
+            return schedule.to_model()
+
+    def list_schedules(
+        self, schedule_filter_model: ScheduleFilterModel
+    ) -> Page[ScheduleResponseModel]:
+        """List all schedules in the workspace.
+
+        Args:
+            schedule_filter_model: All filter parameters including pagination
+                params
+
+        Returns:
+            A list of schedules.
+        """
+        with Session(self.engine) as session:
+            query = select(ScheduleSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=ScheduleSchema,
+                filter_model=schedule_filter_model,
+            )
+
+    def update_schedule(
+        self,
+        schedule_id: UUID,
+        schedule_update: ScheduleUpdateModel,
+    ) -> ScheduleResponseModel:
+        """Updates a schedule.
+
+        Args:
+            schedule_id: The ID of the schedule to be updated.
+            schedule_update: The update to be applied.
+
+        Returns:
+            The updated schedule.
+
+        Raises:
+            KeyError: if the schedule doesn't exist.
+        """
+        with Session(self.engine) as session:
+            # Check if schedule with the given ID exists
+            existing_schedule = session.exec(
+                select(ScheduleSchema).where(ScheduleSchema.id == schedule_id)
+            ).first()
+            if existing_schedule is None:
+                raise KeyError(
+                    f"Unable to update schedule with ID {schedule_id}: "
+                    f"No schedule with this ID found."
+                )
+
+            # Update the schedule
+            existing_schedule = existing_schedule.from_update_model(
+                schedule_update
+            )
+            session.add(existing_schedule)
+            session.commit()
+            return existing_schedule.to_model()
+
+    def delete_schedule(self, schedule_id: UUID) -> None:
+        """Deletes a schedule.
+
+        Args:
+            schedule_id: The ID of the schedule to delete.
+
+        Raises:
+            KeyError: if the schedule doesn't exist.
+        """
+        with Session(self.engine) as session:
+            # Check if schedule with the given ID exists
+            schedule = session.exec(
+                select(ScheduleSchema).where(ScheduleSchema.id == schedule_id)
+            ).first()
+            if schedule is None:
+                raise KeyError(
+                    f"Unable to delete schedule with ID {schedule_id}: "
+                    f"No schedule with this ID found."
+                )
+
+            # Delete the schedule
+            session.delete(schedule)
+            session.commit()
+
     # --------------
     # Pipeline runs
     # --------------
@@ -2738,19 +2848,6 @@ class SqlZenStore(BaseZenStore):
                     f"'{pipeline_run.id}' already exists."
                 )
 
-            # Check if pipeline run with same name MLMD ID already exists.
-            if pipeline_run.mlmd_id is not None:
-                existing_mlmd_id_run = session.exec(
-                    select(PipelineRunSchema).where(
-                        PipelineRunSchema.mlmd_id == pipeline_run.mlmd_id
-                    )
-                ).first()
-                if existing_mlmd_id_run is not None:
-                    raise EntityExistsError(
-                        f"Unable to create pipeline run: A pipeline run with "
-                        f"MLMD ID '{pipeline_run.mlmd_id}' already exists."
-                    )
-
             # Query stack to ensure it exists in the DB
             stack_id = None
             if pipeline_run.stack is not None:
@@ -2780,25 +2877,8 @@ class SqlZenStore(BaseZenStore):
                         f"'{pipeline_run.name}' as unlisted run."
                     )
 
-            configuration = json.dumps(pipeline_run.pipeline_configuration)
-
-            new_run = PipelineRunSchema(
-                id=pipeline_run.id,
-                name=pipeline_run.name,
-                orchestrator_run_id=pipeline_run.orchestrator_run_id,
-                stack_id=stack_id,
-                project_id=pipeline_run.project,
-                user_id=pipeline_run.user,
-                pipeline_id=pipeline_id,
-                status=pipeline_run.status,
-                pipeline_configuration=configuration,
-                num_steps=pipeline_run.num_steps,
-                git_sha=pipeline_run.git_sha,
-                zenml_version=pipeline_run.zenml_version,
-                mlmd_id=pipeline_run.mlmd_id,
-            )
-
             # Create the pipeline run
+            new_run = PipelineRunSchema.from_request(pipeline_run)
             session.add(new_run)
             session.commit()
 
@@ -2815,15 +2895,13 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The pipeline run.
         """
-        if not self.runs_inside_server:
-            self._sync_runs()
         with Session(self.engine) as session:
             run = self._get_run_schema(run_name_or_id, session=session)
             return run.to_model()
 
     def get_or_create_run(
         self, pipeline_run: PipelineRunRequestModel
-    ) -> PipelineRunResponseModel:
+    ) -> Tuple[PipelineRunResponseModel, bool]:
         """Gets or creates a pipeline run.
 
         If a run with the same ID or name already exists, it is returned.
@@ -2833,77 +2911,42 @@ class SqlZenStore(BaseZenStore):
             pipeline_run: The pipeline run to get or create.
 
         Returns:
-            The pipeline run.
+            The pipeline run, and a boolean indicating whether the run was
+            created or not.
         """
         # We want to have the 'create' statement in the try block since running
         # it first will reduce concurrency issues.
         try:
-            return self.create_run(pipeline_run)
+            return self.create_run(pipeline_run), True
         except EntityExistsError:
             # Currently, an `EntityExistsError` is raised if either the run ID
             # or the run name already exists. Therefore, we need to have another
             # try block since getting the run by ID might still fail.
             try:
-                return self.get_run(pipeline_run.id)
+                return self.get_run(pipeline_run.id), False
             except KeyError:
-                return self.get_run(pipeline_run.name)
+                return self.get_run(pipeline_run.name), False
 
     def list_runs(
-        self,
-        name: Optional[str] = None,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        stack_id: Optional[UUID] = None,
-        component_id: Optional[UUID] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
-        pipeline_id: Optional[UUID] = None,
-        unlisted: bool = False,
-    ) -> List[PipelineRunResponseModel]:
-        """Gets all pipeline runs.
+        self, runs_filter_model: PipelineRunFilterModel
+    ) -> Page[PipelineRunResponseModel]:
+        """List all pipeline runs matching the given filter criteria.
 
         Args:
-            name: Run name if provided
-            project_name_or_id: If provided, only return runs for this project.
-            stack_id: If provided, only return runs for this stack.
-            component_id: Optionally filter for runs that used the
-                          component
-            user_name_or_id: If provided, only return runs for this user.
-            pipeline_id: If provided, only return runs for this pipeline.
-            unlisted: If True, only return unlisted runs that are not
-                associated with any pipeline (filter by pipeline_id==None).
+            runs_filter_model: All filter parameters including pagination
+                params.
 
         Returns:
-            A list of all pipeline runs.
+            A list of all pipeline runs matching the filter criteria.
         """
-        if not self.runs_inside_server:
-            self._sync_runs()
         with Session(self.engine) as session:
             query = select(PipelineRunSchema)
-            if project_name_or_id is not None:
-                project = self._get_project_schema(
-                    project_name_or_id, session=session
-                )
-                query = query.where(PipelineRunSchema.project_id == project.id)
-            if stack_id is not None:
-                query = query.where(PipelineRunSchema.stack_id == stack_id)
-            if component_id:
-                query = query.where(
-                    StackCompositionSchema.stack_id
-                    == PipelineRunSchema.stack_id
-                ).where(StackCompositionSchema.component_id == component_id)
-            if name is not None:
-                query = query.where(PipelineRunSchema.name == name)
-            if pipeline_id is not None:
-                query = query.where(
-                    PipelineRunSchema.pipeline_id == pipeline_id
-                )
-            elif unlisted:
-                query = query.where(is_(PipelineRunSchema.pipeline_id, None))
-            if user_name_or_id is not None:
-                user = self._get_user_schema(user_name_or_id, session=session)
-                query = query.where(PipelineRunSchema.user_id == user.id)
-            query = query.order_by(PipelineRunSchema.created)
-            runs = session.exec(query).all()
-            return [run.to_model() for run in runs]
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=PipelineRunSchema,
+                filter_model=runs_filter_model,
+            )
 
     def update_run(
         self, run_id: UUID, run_update: PipelineRunUpdateModel
@@ -2939,224 +2982,295 @@ class SqlZenStore(BaseZenStore):
             session.refresh(existing_run)
             return existing_run.to_model()
 
+    def delete_run(self, run_id: UUID) -> None:
+        """Deletes a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to delete.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+        with Session(self.engine) as session:
+            # Check if pipeline run with the given ID exists
+            existing_run = session.exec(
+                select(PipelineRunSchema).where(PipelineRunSchema.id == run_id)
+            ).first()
+            if existing_run is None:
+                raise KeyError(
+                    f"Unable to delete pipeline run with ID {run_id}: "
+                    f"No pipeline run with this ID found."
+                )
+
+            # Delete the pipeline run
+            session.delete(existing_run)
+            session.commit()
+
     # ------------------
     # Pipeline run steps
     # ------------------
 
     def create_run_step(
-        self, step: StepRunRequestModel
+        self, step_run: StepRunRequestModel
     ) -> StepRunResponseModel:
-        """Creates a step.
+        """Creates a step run.
 
         Args:
-            step: The step to create.
+            step_run: The step run to create.
 
         Returns:
-            The created step.
+            The created step run.
 
         Raises:
-            EntityExistsError: if the step already exists.
+            EntityExistsError: if the step run already exists.
             KeyError: if the pipeline run doesn't exist.
         """
         with Session(self.engine) as session:
 
-            # Check if the step already exists
-            if step.mlmd_id is not None:
-                existing_step = session.exec(
-                    select(StepRunSchema).where(
-                        StepRunSchema.mlmd_id == step.mlmd_id
-                    )
-                ).first()
-                if existing_step is not None:
-                    raise EntityExistsError(
-                        f"Unable to create step '{step.name}': A step with "
-                        f"MLMD ID '{step.mlmd_id}' already exists."
-                    )
-
             # Check if the pipeline run exists
             run = session.exec(
                 select(PipelineRunSchema).where(
-                    PipelineRunSchema.id == step.pipeline_run_id
+                    PipelineRunSchema.id == step_run.pipeline_run_id
                 )
             ).first()
             if run is None:
                 raise KeyError(
-                    f"Unable to create step '{step.name}': No pipeline run "
-                    f"with ID '{step.pipeline_run_id}' found."
+                    f"Unable to create step '{step_run.name}': No pipeline run "
+                    f"with ID '{step_run.pipeline_run_id}' found."
                 )
 
             # Check if the step name already exists in the pipeline run
-            existing_step = session.exec(
+            existing_step_run = session.exec(
                 select(StepRunSchema)
-                .where(StepRunSchema.name == step.name)
-                .where(StepRunSchema.pipeline_run_id == step.pipeline_run_id)
+                .where(StepRunSchema.name == step_run.name)
+                .where(
+                    StepRunSchema.pipeline_run_id == step_run.pipeline_run_id
+                )
             ).first()
-            if existing_step is not None:
+            if existing_step_run is not None:
                 raise EntityExistsError(
-                    f"Unable to create step '{step.name}': A step with this "
+                    f"Unable to create step '{step_run.name}': A step with this "
                     f"name already exists in the pipeline run with ID "
-                    f"'{step.pipeline_run_id}'."
+                    f"'{step_run.pipeline_run_id}'."
                 )
 
             # Create the step
-            step_schema = StepRunSchema.from_request(step)
+            step_schema = StepRunSchema.from_request(step_run)
             session.add(step_schema)
-            session.commit()
 
             # Save parent step IDs into the database.
-            for parent_step_id in step.parent_step_ids:
+            for parent_step_id in step_run.parent_step_ids:
                 self._set_run_step_parent_step(
-                    child_id=step_schema.id, parent_id=parent_step_id
+                    child_id=step_schema.id,
+                    parent_id=parent_step_id,
+                    session=session,
                 )
 
             # Save input artifact IDs into the database.
-            for input_name, artifact_id in step.input_artifacts.items():
+            for input_name, artifact_id in step_run.input_artifacts.items():
                 self._set_run_step_input_artifact(
-                    step_id=step_schema.id,
+                    run_step_id=step_schema.id,
                     artifact_id=artifact_id,
                     name=input_name,
+                    session=session,
                 )
 
-            return step_schema.to_model(
-                parent_step_ids=step.parent_step_ids,
-                mlmd_parent_step_ids=step.mlmd_parent_step_ids,
-                input_artifacts=step.input_artifacts,
-            )
+            # Save output artifact IDs into the database.
+            for output_name, artifact_id in step_run.output_artifacts.items():
+                self._set_run_step_output_artifact(
+                    step_run_id=step_schema.id,
+                    artifact_id=artifact_id,
+                    name=output_name,
+                    session=session,
+                )
+
+            session.commit()
+
+            return self._run_step_schema_to_model(step_schema)
 
     def _set_run_step_parent_step(
-        self, child_id: UUID, parent_id: UUID
+        self, child_id: UUID, parent_id: UUID, session: Session
     ) -> None:
-        """Sets the parent step for a step.
+        """Sets the parent step run for a step run.
 
         Args:
-            child_id: The ID of the child step to set the parent for.
-            parent_id: The ID of the parent step to set a child for.
+            child_id: The ID of the child step run to set the parent for.
+            parent_id: The ID of the parent step run to set a child for.
+            session: The database session to use.
 
         Raises:
-            KeyError: if the child step or parent step doesn't exist.
+            KeyError: if the child step run or parent step run doesn't exist.
         """
-        with Session(self.engine) as session:
-
-            # Check if the child step exists.
-            child_step = session.exec(
-                select(StepRunSchema).where(StepRunSchema.id == child_id)
-            ).first()
-            if child_step is None:
-                raise KeyError(
-                    f"Unable to set parent step for step with ID "
-                    f"{child_id}: No step with this ID found."
-                )
-
-            # Check if the parent step exists.
-            parent_step = session.exec(
-                select(StepRunSchema).where(StepRunSchema.id == parent_id)
-            ).first()
-            if parent_step is None:
-                raise KeyError(
-                    f"Unable to set parent step for step with ID "
-                    f"{child_id}: No parent step with ID {parent_id} "
-                    "found."
-                )
-
-            # Check if the parent step is already set.
-            assignment = session.exec(
-                select(StepRunParentsSchema)
-                .where(StepRunParentsSchema.child_id == child_id)
-                .where(StepRunParentsSchema.parent_id == parent_id)
-            ).first()
-            if assignment is not None:
-                return
-
-            # Save the parent step assignment in the database.
-            assignment = StepRunParentsSchema(
-                child_id=child_id, parent_id=parent_id
+        # Check if the child step exists.
+        child_step_run = session.exec(
+            select(StepRunSchema).where(StepRunSchema.id == child_id)
+        ).first()
+        if child_step_run is None:
+            raise KeyError(
+                f"Unable to set parent step for step with ID "
+                f"{child_id}: No step with this ID found."
             )
-            session.add(assignment)
-            session.commit()
+
+        # Check if the parent step exists.
+        parent_step_run = session.exec(
+            select(StepRunSchema).where(StepRunSchema.id == parent_id)
+        ).first()
+        if parent_step_run is None:
+            raise KeyError(
+                f"Unable to set parent step for step with ID "
+                f"{child_id}: No parent step with ID {parent_id} "
+                "found."
+            )
+
+        # Check if the parent step is already set.
+        assignment = session.exec(
+            select(StepRunParentsSchema)
+            .where(StepRunParentsSchema.child_id == child_id)
+            .where(StepRunParentsSchema.parent_id == parent_id)
+        ).first()
+        if assignment is not None:
+            return
+
+        # Save the parent step assignment in the database.
+        assignment = StepRunParentsSchema(
+            child_id=child_id, parent_id=parent_id
+        )
+        session.add(assignment)
 
     def _set_run_step_input_artifact(
-        self, step_id: UUID, artifact_id: UUID, name: str
+        self, run_step_id: UUID, artifact_id: UUID, name: str, session: Session
     ) -> None:
-        """Sets an artifact as an input of a step.
+        """Sets an artifact as an input of a step run.
 
         Args:
-            step_id: The ID of the step.
+            run_step_id: The ID of the step run.
             artifact_id: The ID of the artifact.
-            name: The name of the input in the step.
+            name: The name of the input in the step run.
+            session: The database session to use.
 
         Raises:
-            KeyError: if the step or artifact doesn't exist.
+            KeyError: if the step run or artifact doesn't exist.
         """
-        with Session(self.engine) as session:
-
-            # Check if the step exists.
-            step = session.exec(
-                select(StepRunSchema).where(StepRunSchema.id == step_id)
-            ).first()
-            if step is None:
-                raise KeyError(
-                    f"Unable to set input artifact: No step with ID "
-                    f"'{step_id}' found."
-                )
-
-            # Check if the artifact exists.
-            artifact = session.exec(
-                select(ArtifactSchema).where(ArtifactSchema.id == artifact_id)
-            ).first()
-            if artifact is None:
-                raise KeyError(
-                    f"Unable to set input artifact: No artifact with ID "
-                    f"'{artifact_id}' found."
-                )
-
-            # Check if the input is already set.
-            assignment = session.exec(
-                select(StepRunInputArtifactSchema)
-                .where(StepRunInputArtifactSchema.step_id == step_id)
-                .where(StepRunInputArtifactSchema.artifact_id == artifact_id)
-            ).first()
-            if assignment is not None:
-                return
-
-            # Save the input assignment in the database.
-            assignment = StepRunInputArtifactSchema(
-                step_id=step_id, artifact_id=artifact_id, name=name
+        # Check if the step exists.
+        step_run = session.exec(
+            select(StepRunSchema).where(StepRunSchema.id == run_step_id)
+        ).first()
+        if step_run is None:
+            raise KeyError(
+                f"Unable to set input artifact: No step run with ID "
+                f"'{run_step_id}' found."
             )
-            session.add(assignment)
-            session.commit()
 
-    def get_run_step(self, step_id: UUID) -> StepRunResponseModel:
-        """Get a step by ID.
+        # Check if the artifact exists.
+        artifact = session.exec(
+            select(ArtifactSchema).where(ArtifactSchema.id == artifact_id)
+        ).first()
+        if artifact is None:
+            raise KeyError(
+                f"Unable to set input artifact: No artifact with ID "
+                f"'{artifact_id}' found."
+            )
+
+        # Check if the input is already set.
+        assignment = session.exec(
+            select(StepRunInputArtifactSchema)
+            .where(StepRunInputArtifactSchema.step_id == run_step_id)
+            .where(StepRunInputArtifactSchema.artifact_id == artifact_id)
+        ).first()
+        if assignment is not None:
+            return
+
+        # Save the input assignment in the database.
+        assignment = StepRunInputArtifactSchema(
+            step_id=run_step_id, artifact_id=artifact_id, name=name
+        )
+        session.add(assignment)
+
+    def _set_run_step_output_artifact(
+        self,
+        step_run_id: UUID,
+        artifact_id: UUID,
+        name: str,
+        session: Session,
+    ) -> None:
+        """Sets an artifact as an output of a step run.
 
         Args:
-            step_id: The ID of the step to get.
+            step_run_id: The ID of the step run.
+            artifact_id: The ID of the artifact.
+            name: The name of the output in the step run.
+            session: The database session to use.
+
+        Raises:
+            KeyError: if the step run or artifact doesn't exist.
+        """
+        # Check if the step exists.
+        step_run = session.exec(
+            select(StepRunSchema).where(StepRunSchema.id == step_run_id)
+        ).first()
+        if step_run is None:
+            raise KeyError(
+                f"Unable to set output artifact: No step run with ID "
+                f"'{step_run_id}' found."
+            )
+
+        # Check if the artifact exists.
+        artifact = session.exec(
+            select(ArtifactSchema).where(ArtifactSchema.id == artifact_id)
+        ).first()
+        if artifact is None:
+            raise KeyError(
+                f"Unable to set output artifact: No artifact with ID "
+                f"'{artifact_id}' found."
+            )
+
+        # Check if the output is already set.
+        assignment = session.exec(
+            select(StepRunOutputArtifactSchema)
+            .where(StepRunOutputArtifactSchema.step_id == step_run_id)
+            .where(StepRunOutputArtifactSchema.artifact_id == artifact_id)
+        ).first()
+        if assignment is not None:
+            return
+
+        # Save the output assignment in the database.
+        assignment = StepRunOutputArtifactSchema(
+            step_id=step_run_id,
+            artifact_id=artifact_id,
+            name=name,
+        )
+        session.add(assignment)
+
+    def get_run_step(self, step_run_id: UUID) -> StepRunResponseModel:
+        """Get a step run by ID.
+
+        Args:
+            step_run_id: The ID of the step run to get.
 
         Returns:
-            The step.
+            The step run.
 
         Raises:
-            KeyError: if the step doesn't exist.
+            KeyError: if the step run doesn't exist.
         """
-        if not self.runs_inside_server:
-            self._sync_runs()
         with Session(self.engine) as session:
-            step = session.exec(
-                select(StepRunSchema).where(StepRunSchema.id == step_id)
+            step_run = session.exec(
+                select(StepRunSchema).where(StepRunSchema.id == step_run_id)
             ).first()
-            if step is None:
+            if step_run is None:
                 raise KeyError(
-                    f"Unable to get step with ID {step_id}: No step with this "
-                    "ID found."
+                    f"Unable to get step run with ID {step_run_id}: No step "
+                    "run with this ID found."
                 )
-            return self._run_step_schema_to_model(step)
+            return self._run_step_schema_to_model(step_run)
 
     def _run_step_schema_to_model(
-        self, step: StepRunSchema
+        self, step_run: StepRunSchema
     ) -> StepRunResponseModel:
         """Converts a run step schema to a step model.
 
         Args:
-            step: The run step schema to convert.
+            step_run: The run step schema to convert.
 
         Returns:
             The run step model.
@@ -3165,126 +3279,122 @@ class SqlZenStore(BaseZenStore):
             # Get parent steps.
             parent_steps = session.exec(
                 select(StepRunSchema)
-                .where(StepRunParentsSchema.child_id == step.id)
+                .where(StepRunParentsSchema.child_id == step_run.id)
                 .where(StepRunParentsSchema.parent_id == StepRunSchema.id)
             ).all()
             parent_step_ids = [parent_step.id for parent_step in parent_steps]
-            mlmd_parent_step_ids = [
-                parent_step.mlmd_id
-                for parent_step in parent_steps
-                if parent_step.mlmd_id is not None
-            ]
 
             # Get input artifacts.
             input_artifact_list = session.exec(
                 select(
-                    StepRunInputArtifactSchema.artifact_id,
+                    ArtifactSchema,
                     StepRunInputArtifactSchema.name,
-                ).where(StepRunInputArtifactSchema.step_id == step.id)
+                )
+                .where(
+                    ArtifactSchema.id == StepRunInputArtifactSchema.artifact_id
+                )
+                .where(StepRunInputArtifactSchema.step_id == step_run.id)
             ).all()
             input_artifacts = {
-                input_artifact[1]: input_artifact[0]
-                for input_artifact in input_artifact_list
+                input_name: self._artifact_schema_to_model(artifact)
+                for (artifact, input_name) in input_artifact_list
+            }
+
+            # Get output artifacts.
+            output_artifact_list = session.exec(
+                select(
+                    ArtifactSchema,
+                    StepRunOutputArtifactSchema.name,
+                )
+                .where(
+                    ArtifactSchema.id
+                    == StepRunOutputArtifactSchema.artifact_id
+                )
+                .where(StepRunOutputArtifactSchema.step_id == step_run.id)
+            ).all()
+            output_artifacts = {
+                output_name: self._artifact_schema_to_model(artifact)
+                for (artifact, output_name) in output_artifact_list
             }
 
             # Convert to model.
-            return step.to_model(
+            return step_run.to_model(
                 parent_step_ids=parent_step_ids,
-                mlmd_parent_step_ids=mlmd_parent_step_ids,
                 input_artifacts=input_artifacts,
+                output_artifacts=output_artifacts,
             )
 
     def list_run_steps(
-        self, run_id: Optional[UUID] = None
-    ) -> List[StepRunResponseModel]:
-        """Get all run steps.
+        self, step_run_filter_model: StepRunFilterModel
+    ) -> Page[StepRunResponseModel]:
+        """List all step runs matching the given filter criteria.
 
         Args:
-            run_id: If provided, only return steps for this pipeline run.
+            step_run_filter_model: All filter parameters including pagination
+                params.
 
         Returns:
-            A list of all run steps.
+            A list of all step runs matching the filter criteria.
         """
-        if not self.runs_inside_server:
-            self._sync_runs()
-        query = select(StepRunSchema)
-        if run_id is not None:
-            query = query.where(StepRunSchema.pipeline_run_id == run_id)
         with Session(self.engine) as session:
-            steps = session.exec(query).all()
-            return [self._run_step_schema_to_model(step) for step in steps]
+            query = select(StepRunSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=StepRunSchema,
+                filter_model=step_run_filter_model,
+                custom_schema_to_model_conversion=self._run_step_schema_to_model,
+            )
 
     def update_run_step(
         self,
-        step_id: UUID,
-        step_update: StepRunUpdateModel,
+        step_run_id: UUID,
+        step_run_update: StepRunUpdateModel,
     ) -> StepRunResponseModel:
-        """Updates a step.
+        """Updates a step run.
 
         Args:
-            step_id: The ID of the step to update.
-            step_update: The update to be applied to the step.
+            step_run_id: The ID of the step to update.
+            step_run_update: The update to be applied to the step.
 
         Returns:
-            The updated step.
+            The updated step run.
 
         Raises:
-            KeyError: if the step doesn't exist.
+            KeyError: if the step run doesn't exist.
         """
         with Session(self.engine) as session:
+
             # Check if the step exists
-            existing_step = session.exec(
-                select(StepRunSchema).where(StepRunSchema.id == step_id)
+            existing_step_run = session.exec(
+                select(StepRunSchema).where(StepRunSchema.id == step_run_id)
             ).first()
-            if existing_step is None:
+            if existing_step_run is None:
                 raise KeyError(
-                    f"Unable to update step with ID {step_id}: "
+                    f"Unable to update step with ID {step_run_id}: "
                     f"No step with this ID found."
                 )
 
             # Update the step
-            existing_step.update(step_update)
-            session.add(existing_step)
+            existing_step_run.update(step_run_update)
+            session.add(existing_step_run)
+
+            # Update the output artifacts.
+            for name, artifact_id in step_run_update.output_artifacts.items():
+                self._set_run_step_output_artifact(
+                    step_run_id=step_run_id,
+                    artifact_id=artifact_id,
+                    name=name,
+                    session=session,
+                )
+
+            # Input artifacts and parent steps cannot be updated after the
+            # step has been created.
+
             session.commit()
+            session.refresh(existing_step_run)
 
-            session.refresh(existing_step)
-
-            return self._run_step_schema_to_model(existing_step)
-
-    def get_run_step_inputs(
-        self, step_id: UUID
-    ) -> Dict[str, ArtifactResponseModel]:
-        """Get the inputs for a specific step.
-
-        Args:
-            step_id: The id of the step to get inputs for.
-
-        Returns:
-            A dict mapping artifact names to the input artifacts for the step.
-
-        Raises:
-            KeyError: if the step doesn't exist.
-        """
-        with Session(self.engine) as session:
-            step = session.exec(
-                select(StepRunSchema).where(StepRunSchema.id == step_id)
-            ).first()
-            if step is None:
-                raise KeyError(
-                    f"Unable to get input artifacts for step with ID "
-                    f"{step_id}: No step with this ID found."
-                )
-            query_result = session.exec(
-                select(ArtifactSchema, StepRunInputArtifactSchema)
-                .where(
-                    ArtifactSchema.id == StepRunInputArtifactSchema.artifact_id
-                )
-                .where(StepRunInputArtifactSchema.step_id == step_id)
-            ).all()
-            return {
-                step_input_artifact.name: artifact.to_model()
-                for artifact, step_input_artifact in query_result
-            }
+            return self._run_step_schema_to_model(existing_step_run)
 
     # ---------
     # Artifacts
@@ -3300,76 +3410,160 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The created artifact.
-
-        Raises:
-            KeyError: if the parent step doesn't exist.
-            EntityExistsError: if the artifact already exists.
         """
         with Session(self.engine) as session:
-            # Check if the step exists
-            step = session.exec(
-                select(StepRunSchema).where(
-                    StepRunSchema.id == artifact.parent_step_id
-                )
-            ).first()
-            if step is None:
-                raise KeyError(
-                    f"Unable to create artifact: Could not find parent step "
-                    f"with ID '{artifact.parent_step_id}'."
-                )
-
-            # Check if the artifact already exists
-            if artifact.mlmd_id is not None:
-                existing_artifact = session.exec(
-                    select(ArtifactSchema)
-                    .where(ArtifactSchema.mlmd_id == artifact.mlmd_id)
-                    .where(
-                        ArtifactSchema.mlmd_parent_step_id
-                        == artifact.mlmd_parent_step_id
-                    )
-                ).first()
-                if existing_artifact is not None:
-                    raise EntityExistsError(
-                        f"Unable to create artifact: An artifact with MLMD ID "
-                        f"'{artifact.mlmd_id}' already exists as output of "
-                        f"step '{artifact.mlmd_parent_step_id}'."
-                    )
-
-            # Create the artifact
-
             artifact_schema = ArtifactSchema.from_request(artifact)
             session.add(artifact_schema)
             session.commit()
-            return artifact_schema.to_model()
+            return self._artifact_schema_to_model(artifact_schema)
 
-    def list_artifacts(
-        self,
-        artifact_uri: Optional[str] = None,
-        parent_step_id: Optional[UUID] = None,
-    ) -> List[ArtifactResponseModel]:
-        """Lists all artifacts.
+    def _artifact_schema_to_model(
+        self, artifact_schema: ArtifactSchema
+    ) -> ArtifactResponseModel:
+        """Converts an artifact schema to a model.
 
         Args:
-            artifact_uri: If specified, only artifacts with the given URI will
-                be returned.
-            parent_step_id: If specified, only artifacts for the given step run
-                will be returned.
+            artifact_schema: The artifact schema to convert.
 
         Returns:
-            A list of all artifacts.
+            The converted artifact model.
         """
-        if not self.runs_inside_server:
-            self._sync_runs()
+        # Find the producer step run ID.
+        with Session(self.engine) as session:
+            producer_step_run_id = session.exec(
+                select(StepRunOutputArtifactSchema.step_id)
+                .where(
+                    StepRunOutputArtifactSchema.artifact_id
+                    == artifact_schema.id
+                )
+                .where(StepRunOutputArtifactSchema.step_id == StepRunSchema.id)
+                .where(StepRunSchema.status != ExecutionStatus.CACHED)
+            ).first()
+
+            # Convert the artifact schema to a model.
+            return artifact_schema.to_model(
+                producer_step_run_id=producer_step_run_id
+            )
+
+    def get_artifact(self, artifact_id: UUID) -> ArtifactResponseModel:
+        """Gets an artifact.
+
+        Args:
+            artifact_id: The ID of the artifact to get.
+
+        Returns:
+            The artifact.
+
+        Raises:
+            KeyError: if the artifact doesn't exist.
+        """
+        with Session(self.engine) as session:
+            artifact = session.exec(
+                select(ArtifactSchema).where(ArtifactSchema.id == artifact_id)
+            ).first()
+            if artifact is None:
+                raise KeyError(
+                    f"Unable to get artifact with ID {artifact_id}: "
+                    f"No artifact with this ID found."
+                )
+            return self._artifact_schema_to_model(artifact)
+
+    def list_artifacts(
+        self, artifact_filter_model: ArtifactFilterModel
+    ) -> Page[ArtifactResponseModel]:
+        """List all artifacts matching the given filter criteria.
+
+        Args:
+            artifact_filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A list of all artifacts matching the filter criteria.
+        """
         with Session(self.engine) as session:
             query = select(ArtifactSchema)
-            if artifact_uri is not None:
-                query = query.where(ArtifactSchema.uri == artifact_uri)
-            if parent_step_id is not None:
+            if artifact_filter_model.only_unused:
                 query = query.where(
-                    ArtifactSchema.parent_step_id == parent_step_id
+                    ArtifactSchema.id.notin_(  # type: ignore[attr-defined]
+                        select(StepRunOutputArtifactSchema.artifact_id)
+                    )
                 )
-            artifacts = session.exec(query).all()
-            return [artifact.to_model() for artifact in artifacts]
+                query = query.where(
+                    ArtifactSchema.id.notin_(  # type: ignore[attr-defined]
+                        select(StepRunInputArtifactSchema.artifact_id)
+                    )
+                )
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=ArtifactSchema,
+                filter_model=artifact_filter_model,
+                custom_schema_to_model_conversion=self._artifact_schema_to_model,
+            )
+
+    def delete_artifact(self, artifact_id: UUID) -> None:
+        """Deletes an artifact.
+
+        Args:
+            artifact_id: The ID of the artifact to delete.
+
+        Raises:
+            KeyError: if the artifact doesn't exist.
+        """
+        with Session(self.engine) as session:
+            artifact = session.exec(
+                select(ArtifactSchema).where(ArtifactSchema.id == artifact_id)
+            ).first()
+            if artifact is None:
+                raise KeyError(
+                    f"Unable to delete artifact with ID {artifact_id}: "
+                    f"No artifact with this ID found."
+                )
+            session.delete(artifact)
+            session.commit()
+
+    # ------------
+    # Run Metadata
+    # ------------
+
+    def create_run_metadata(
+        self, run_metadata: RunMetadataRequestModel
+    ) -> RunMetadataResponseModel:
+        """Creates run metadata.
+
+        Args:
+            run_metadata: The run metadata to create.
+
+        Returns:
+            The created run metadata.
+        """
+        with Session(self.engine) as session:
+            run_metadata_schema = RunMetadataSchema.from_request(run_metadata)
+            session.add(run_metadata_schema)
+            session.commit()
+            return run_metadata_schema.to_model()
+
+    def list_run_metadata(
+        self,
+        run_metadata_filter_model: RunMetadataFilterModel,
+    ) -> Page[RunMetadataResponseModel]:
+        """List run metadata.
+
+        Args:
+            run_metadata_filter_model: All filter parameters including
+                pagination params.
+
+        Returns:
+            The run metadata.
+        """
+        with Session(self.engine) as session:
+            query = select(RunMetadataSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=RunMetadataSchema,
+                filter_model=run_metadata_filter_model,
+            )
 
     # =======================
     # Internal helper methods
@@ -3385,9 +3579,9 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             object_name_or_id: The name or ID of the object to query.
-            schema_class: The schema class to query. E.g., `ProjectSchema`.
+            schema_class: The schema class to query. E.g., `WorkspaceSchema`.
             schema_name: The name of the schema used for error messages.
-                E.g., "project".
+                E.g., "workspace".
             session: The database session to use.
 
         Returns:
@@ -3416,33 +3610,35 @@ class SqlZenStore(BaseZenStore):
                 f" UUID and no {schema_name} with this name exists."
             )
 
-        schema = session.exec(select(schema_class).where(filter_params)).first()
+        schema = session.exec(
+            select(schema_class).where(filter_params)
+        ).first()
 
         if schema is None:
             raise KeyError(error_msg)
         return schema
 
-    def _get_project_schema(
+    def _get_workspace_schema(
         self,
-        project_name_or_id: Union[str, UUID],
+        workspace_name_or_id: Union[str, UUID],
         session: Session,
-    ) -> ProjectSchema:
-        """Gets a project schema by name or ID.
+    ) -> WorkspaceSchema:
+        """Gets a workspace schema by name or ID.
 
         This is a helper method that is used in various places to find the
-        project associated to some other object.
+        workspace associated to some other object.
 
         Args:
-            project_name_or_id: The name or ID of the project to get.
+            workspace_name_or_id: The name or ID of the workspace to get.
             session: The database session to use.
 
         Returns:
-            The project schema.
+            The workspace schema.
         """
         return self._get_schema_by_name_or_id(
-            object_name_or_id=project_name_or_id,
-            schema_class=ProjectSchema,
-            schema_name="project",
+            object_name_or_id=workspace_name_or_id,
+            schema_class=WorkspaceSchema,
+            schema_name="workspace",
             session=session,
         )
 
@@ -3541,497 +3737,3 @@ class SqlZenStore(BaseZenStore):
             schema_name="run",
             session=session,
         )
-
-    # MLMD Stuff
-
-    def _resolve_mlmd_step_id(self, mlmd_id: int) -> UUID:
-        """Resolves a step ID from MLMD to a ZenML step ID.
-
-        Args:
-            mlmd_id: The MLMD ID of the step.
-
-        Returns:
-            The ZenML step ID.
-
-        Raises:
-            KeyError: if the step couldn't be found.
-        """
-        with Session(self.engine) as session:
-            step = session.exec(
-                select(StepRunSchema).where(StepRunSchema.mlmd_id == mlmd_id)
-            ).first()
-            if step is None:
-                raise KeyError(
-                    f"Unable to resolve MLMD step ID {mlmd_id}: "
-                    f"No step with this ID found."
-                )
-            return step.id
-
-    def _resolve_mlmd_artifact_id(
-        self, mlmd_id: int, mlmd_parent_step_id: int
-    ) -> UUID:
-        """Resolves an artifact ID from MLMD to a ZenML artifact ID.
-
-        Since a single MLMD artifact can map to multiple ZenML artifacts, we
-        also need to know the parent step to resolve this correctly.
-
-        Args:
-            mlmd_id: The MLMD ID of the artifact.
-            mlmd_parent_step_id: The MLMD ID of the parent step.
-
-        Returns:
-            The ZenML artifact ID.
-
-        Raises:
-            KeyError: if the artifact couldn't be found.
-        """
-        with Session(self.engine) as session:
-            artifact = session.exec(
-                select(ArtifactSchema)
-                .where(ArtifactSchema.mlmd_id == mlmd_id)
-                .where(
-                    ArtifactSchema.mlmd_parent_step_id == mlmd_parent_step_id
-                )
-            ).first()
-            if artifact is None:
-                raise KeyError(
-                    f"Unable to resolve MLMD artifact ID {mlmd_id}: "
-                    f"No artifact with this ID found."
-                )
-            return artifact.id
-
-    def _sync_runs(self) -> None:
-        """Sync runs from MLMD into the database.
-
-        This queries all runs from MLMD, checks for each whether it already
-        exists in the database, and if not, creates it.
-        """
-        from zenml.zen_stores.migrations.alembic import AlembicVersion
-        from zenml.zen_stores.rest_zen_store import DEFAULT_HTTP_TIMEOUT
-
-        # This is to synchronize the locally running threads so that only
-        # one thread attempts to sync the runs at any given time.
-        # The timeout is set to be shorter than the default REST client
-        # timeout, so that we don't block the client for too long.
-        logger.debug(f"[{get_ident()}] Trying to acquire sync lock...")
-        if not self.sync_lock.acquire(timeout=DEFAULT_HTTP_TIMEOUT - 10):
-            logger.warning(
-                f"[{get_ident()}] Timed out waiting to acquire pipeline "
-                f"run sync lock. Skipping the sync this time around."
-            )
-            return
-
-        logger.debug(f"[{get_ident()}] Pipeline run sync lock acquired.")
-        try:
-            with Session(self.engine) as session:
-                logger.debug("Syncing pipeline runs...")
-                if self.config.driver != SQLDatabaseDriver.SQLITE:
-                    # This is to synchronize all server processes trying to
-                    # sync the pipeline runs at the same time. We use the
-                    # alembic version table as a shared resource that we can
-                    # lock to prevent multiple processes from syncing runs
-                    # at the same time.
-                    session.query(AlembicVersion).with_for_update().all()
-                self._sync_runs_with_lock(session)
-                logger.debug("Pipeline runs sync complete")
-        except Exception:
-            logger.exception("Failed to sync pipeline runs.")
-        finally:
-            self.sync_lock.release()
-
-    def _sync_runs_with_lock(self, session: Session) -> None:
-        """Sync runs from MLMD into the database while the DB is locked.
-
-        This queries all runs from MLMD, checks for each whether it already
-        exists in the database, and if not, creates it.
-
-        Args:
-            session: The database session to use.
-        """
-        # Find all runs that already have an MLMD ID. These are already
-        # synced and connected to MLMD, so we don't need to query them from
-        # MLMD again.
-        synced_mlmd_ids = session.exec(
-            select(PipelineRunSchema.mlmd_id).where(
-                isnot(PipelineRunSchema.mlmd_id, None)
-            )
-        ).all()
-        logger.debug(f"Found {len(synced_mlmd_ids)} pipeline runs with MLMD ID")
-
-        # Find all runs that have no MLMD ID. These might need to be
-        # connected.
-        runs_without_mlmd_id = session.exec(
-            select(PipelineRunSchema).where(
-                is_(PipelineRunSchema.mlmd_id, None)
-            )
-        ).all()
-        logger.debug(
-            f"Found {len(runs_without_mlmd_id)} pipeline runs without MLMD ID"
-        )
-        runs_without_mlmd_id_dict = {
-            run_.name: run_ for run_ in runs_without_mlmd_id
-        }
-
-        # Sync all MLMD runs that don't exist in ZenML. For performance reasons,
-        # we determine this by explicitly ignoring runs that are already synced.
-        unsynced_mlmd_runs = self.metadata_store.get_all_runs(
-            ignored_ids=[id_ for id_ in synced_mlmd_ids if id_ is not None]
-        )
-        logger.debug(
-            f"Adding {len(unsynced_mlmd_runs)} new pipeline runs from MLMD"
-        )
-        for mlmd_run in unsynced_mlmd_runs:
-
-            # If a run is written in both ZenML and MLMD but doesn't have an
-            # MLMD ID set in the DB, we need to set it to connect the two.
-            if mlmd_run.name in runs_without_mlmd_id_dict:
-                run_model = runs_without_mlmd_id_dict[mlmd_run.name].to_model()
-                run_model.mlmd_id = mlmd_run.mlmd_id
-                try:
-                    self.update_run(
-                        run_id=run_model.id,
-                        run_update=PipelineRunUpdateModel(
-                            mlmd_id=mlmd_run.mlmd_id
-                        ),
-                    )
-                except Exception as err:
-                    logger.warning(
-                        f"Syncing run '{mlmd_run.name}' failed: {str(err)}"
-                    )
-                    continue
-
-            # Create runs that are in MLMD but not in the DB.
-            else:
-                try:
-                    self._sync_run(mlmd_run)
-                except EntityExistsError as exists_err:
-                    logger.debug(
-                        f"Run '{mlmd_run.name}' already exists: "
-                        f"{str(exists_err)}. Skipping sync."
-                    )
-                    continue
-                except Exception as err:
-                    logger.warning(
-                        f"Syncing run '{mlmd_run.name}' failed: {str(err)}"
-                    )
-                    continue
-
-        # Sync steps and status of all unfinished runs.
-        # We also filter out anything older than 1 week to prevent old broken
-        # unfinished runs from being synced over and over again.
-        unfinished_runs = session.exec(
-            select(PipelineRunSchema)
-            .where(PipelineRunSchema.status == ExecutionStatus.RUNNING)
-            .where(
-                PipelineRunSchema.updated >= datetime.now() - timedelta(weeks=1)
-            )
-        ).all()
-        logger.debug(
-            f"Updating {len(unfinished_runs)} unfinished pipeline runs from "
-            "MLMD"
-        )
-        for run_ in unfinished_runs:
-            try:
-                logger.debug(f"Syncing run steps for pipeline run '{run_.id}'")
-                self._sync_run_steps(run_.id)
-                logger.debug(
-                    f"Updating run status for pipeline run '{run_.id}'"
-                )
-                self._sync_run_status(run_.to_model())
-            except Exception as err:
-                logger.warning(f"Syncing run '{run_.name}' failed: {str(err)}")
-
-        logger.debug("Pipeline runs sync complete.")
-
-    def _sync_run(
-        self, mlmd_run: "MLMDPipelineRunModel"
-    ) -> PipelineRunResponseModel:
-        """Sync a single run from MLMD into the database.
-
-        Args:
-            mlmd_run: The MLMD run model to sync.
-
-        Returns:
-            The synced run model.
-        """
-        new_run = PipelineRunRequestModel(
-            name=mlmd_run.name,
-            mlmd_id=mlmd_run.mlmd_id,
-            project=mlmd_run.project or self._default_project.id,  # For legacy
-            user=mlmd_run.user or self._default_user.id,  # For legacy
-            stack=mlmd_run.stack_id,
-            pipeline=mlmd_run.pipeline_id,
-            pipeline_configuration=mlmd_run.pipeline_configuration,
-            num_steps=mlmd_run.num_steps,
-            status=ExecutionStatus.RUNNING,  # Update later.
-        )
-        return self.create_run(new_run)
-
-    def _sync_run_steps(self, run_id: UUID) -> None:
-        """Sync run steps from MLMD into the database.
-
-        Since we do not allow to create steps in the database directly, this is
-        a one-way sync from MLMD to the database.
-
-        Args:
-            run_id: The ID of the pipeline run to sync steps for.
-
-        Raises:
-            KeyError: if the run couldn't be found.
-        """
-        with Session(self.engine) as session:
-            run = session.exec(
-                select(PipelineRunSchema).where(PipelineRunSchema.id == run_id)
-            ).first()
-
-            # If the run doesn't exist, raise an error.
-            if run is None:
-                raise KeyError(
-                    f"Unable to sync run steps for run with ID {run_id}: "
-                    f"No run with this ID found."
-                )
-
-            # If the run didn't come from MLMD, we can't sync artifacts.
-            if run.mlmd_id is None:
-                return
-
-            # Get all steps that already exist in the database.
-            zenml_steps = session.exec(
-                select(StepRunSchema).where(
-                    StepRunSchema.pipeline_run_id == run_id
-                )
-            ).all()
-            zenml_step_dict = {step.name: step for step in zenml_steps}
-
-        # Get all steps from MLMD.
-        mlmd_steps = self.metadata_store.get_pipeline_run_steps(run.mlmd_id)
-
-        # For each step in MLMD, sync it into ZenML if it doesn't exist yet.
-        for step_name, mlmd_step in mlmd_steps.items():
-            if step_name not in zenml_step_dict:
-                try:
-                    step_model = self._sync_run_step(
-                        run_id=run_id, step_name=step_name, mlmd_step=mlmd_step
-                    )
-                except EntityExistsError as exists_err:
-                    logger.debug(
-                        f"Run step '{step_name}' of run {run.name} already "
-                        f"exists: {str(exists_err)}. Skipping sync."
-                    )
-                    continue
-            else:
-                step_schema = zenml_step_dict[step_name]
-                step_model = self._run_step_schema_to_model(step_schema)
-
-            # Sync artifacts and status of all unfinished steps.
-            self._sync_run_step_artifacts(step_model)
-            self._sync_run_step_status(step_model)
-
-    def _sync_run_step(
-        self, run_id: UUID, step_name: str, mlmd_step: "MLMDStepRunModel"
-    ) -> StepRunResponseModel:
-        """Sync a single run step from MLMD into the database.
-
-        Args:
-            run_id: The ID of the pipeline run to sync the step for.
-            step_name: The name of the step to sync.
-            mlmd_step: The MLMD step model to sync.
-
-        Returns:
-            The synced run step model.
-        """
-        # Build dict of input artifacts.
-        mlmd_inputs = self.metadata_store.get_step_input_artifacts(
-            step_id=mlmd_step.mlmd_id,
-            step_parent_step_ids=mlmd_step.mlmd_parent_step_ids,
-        )
-        input_artifacts = {}
-        for input_name, mlmd_artifact in mlmd_inputs.items():
-            artifact_id = self._resolve_mlmd_artifact_id(
-                mlmd_id=mlmd_artifact.mlmd_id,
-                mlmd_parent_step_id=mlmd_artifact.mlmd_parent_step_id,
-            )
-            input_artifacts[input_name] = artifact_id
-
-        # Create step.
-        new_step = StepRunRequestModel(
-            name=step_name,
-            mlmd_id=mlmd_step.mlmd_id,
-            mlmd_parent_step_ids=mlmd_step.mlmd_parent_step_ids,
-            entrypoint_name=mlmd_step.entrypoint_name,
-            parameters=mlmd_step.parameters,
-            step_configuration=mlmd_step.step_configuration,
-            docstring=mlmd_step.docstring,
-            num_outputs=mlmd_step.num_outputs,
-            pipeline_run_id=run_id,
-            parent_step_ids=[
-                self._resolve_mlmd_step_id(parent_step_id)
-                for parent_step_id in mlmd_step.mlmd_parent_step_ids
-            ],
-            input_artifacts=input_artifacts,
-            status=ExecutionStatus.RUNNING,  # Update later.
-        )
-        return self.create_run_step(new_step)
-
-    def _sync_run_step_artifacts(
-        self, step_model: StepRunResponseModel
-    ) -> None:
-        """Sync run step artifacts from MLMD into the database.
-
-        Since we do not allow to create artifacts in the database directly, this
-        is a one-way sync from MLMD to the database.
-
-        Args:
-            step_model: The model of the step run to sync artifacts for.
-        """
-        # If the step didn't come from MLMD, we can't sync artifacts.
-        if step_model.mlmd_id is None:
-            return
-
-        # Get the names of all outputs that are already in ZenML.
-        with Session(self.engine) as session:
-            zenml_output_names = session.exec(
-                select(ArtifactSchema.name).where(
-                    ArtifactSchema.parent_step_id == step_model.id
-                )
-            ).all()
-
-        # Get all MLMD output artifacts.
-        mlmd_outputs = self.metadata_store.get_step_output_artifacts(
-            step_id=step_model.mlmd_id
-        )
-
-        # For each output in MLMD, sync it into ZenML if it doesn't exist yet.
-        for output_name, mlmd_artifact in mlmd_outputs.items():
-            if output_name not in zenml_output_names:
-                try:
-                    self._sync_run_step_artifact(output_name, mlmd_artifact)
-                except EntityExistsError as exists_err:
-                    logger.debug(
-                        f"Artifact {output_name} already exists: "
-                        f"{str(exists_err)}. Skipping sync."
-                    )
-                    continue
-
-    def _sync_run_step_artifact(
-        self, output_name: str, mlmd_artifact: "MLMDArtifactModel"
-    ) -> ArtifactResponseModel:
-        """Sync a single run step artifact from MLMD into the database.
-
-        Args:
-            output_name: The name of the output artifact.
-            mlmd_artifact: The MLMD artifact model to sync.
-
-        Returns:
-            The synced artifact model.
-        """
-        new_artifact = ArtifactRequestModel(
-            name=output_name,
-            mlmd_id=mlmd_artifact.mlmd_id,
-            type=mlmd_artifact.type,
-            uri=mlmd_artifact.uri,
-            materializer=mlmd_artifact.materializer,
-            data_type=mlmd_artifact.data_type,
-            mlmd_parent_step_id=mlmd_artifact.mlmd_parent_step_id,
-            mlmd_producer_step_id=mlmd_artifact.mlmd_producer_step_id,
-            is_cached=mlmd_artifact.is_cached,
-            parent_step_id=self._resolve_mlmd_step_id(
-                mlmd_artifact.mlmd_parent_step_id
-            ),
-            producer_step_id=self._resolve_mlmd_step_id(
-                mlmd_artifact.mlmd_producer_step_id
-            ),
-        )
-        return self.create_artifact(new_artifact)
-
-    def _sync_run_step_status(
-        self, step_model: StepRunResponseModel
-    ) -> StepRunResponseModel:
-        """Updates the status of a step run model.
-
-        In contrast to other update methods, this does not use the status of the
-        model to overwrite the DB. Instead, the status is queried from MLMD.
-
-        Args:
-            step_model: The step run model to update.
-
-        Returns:
-            The step run model with updated status.
-        """
-        # Update status only if the step is running and has an MLMD ID.
-        if (
-            step_model.status != ExecutionStatus.RUNNING
-            or step_model.mlmd_id is None
-        ):
-            return step_model
-
-        # Check if all output artifacts have been synced.
-        all_synced = True
-        if step_model.num_outputs and step_model.num_outputs > 0:
-            with Session(self.engine) as session:
-                outputs = session.exec(
-                    select(ArtifactSchema).where(
-                        ArtifactSchema.parent_step_id == step_model.id
-                    )
-                ).all()
-            if len(outputs) < step_model.num_outputs:
-                all_synced = False
-
-        # Get the status from MLMD and update the model if necessary.
-        status = self.metadata_store.get_step_status(step_model.mlmd_id)
-        is_failed = status == ExecutionStatus.FAILED
-        is_done = status in (ExecutionStatus.COMPLETED, ExecutionStatus.CACHED)
-        if is_failed or (is_done and all_synced):
-            self.update_run_step(
-                step_id=step_model.id,
-                step_update=StepRunUpdateModel(status=status),
-            )
-
-        return step_model
-
-    def _sync_run_status(
-        self, run_model: PipelineRunResponseModel
-    ) -> PipelineRunResponseModel:
-        """Updates the status of a pipeline run model.
-
-        In contrast to other update methods, this does not use the status of the
-        model to overwrite the DB. Instead, the status is computed based on the
-        status of each step, and if that is different from the status in the DB,
-        the DB and model are both updated.
-
-        Args:
-            run_model: The pipeline run model to update.
-
-        Returns:
-            The pipeline run model with updated status.
-        """
-        # Update status only if the run is running.
-        if run_model.status != ExecutionStatus.RUNNING:
-            return run_model
-
-        # Get all steps of the run.
-        with Session(self.engine) as session:
-            steps = session.exec(
-                select(StepRunSchema).where(
-                    StepRunSchema.pipeline_run_id == run_model.id
-                )
-            ).all()
-
-        # Check if all steps have been synced.
-        all_synced = True
-        if run_model.num_steps and run_model.num_steps > 0:
-            if len(steps) < run_model.num_steps:
-                all_synced = False
-
-        # Compute the status of the run based on the status of the steps and
-        # update the model if necessary.
-        status = ExecutionStatus.run_status([step.status for step in steps])
-        is_failed = status == ExecutionStatus.FAILED
-        is_done = status in (ExecutionStatus.COMPLETED, ExecutionStatus.CACHED)
-        if is_failed or (is_done and all_synced):
-            self.update_run(
-                run_id=run_model.id,
-                run_update=PipelineRunUpdateModel(status=status),
-            )
-
-        return run_model

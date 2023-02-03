@@ -16,10 +16,14 @@
 from typing import TYPE_CHECKING
 
 from zenml.environment import BaseEnvironmentComponent
+from zenml.logger import get_logger
 
-STEP_ENVIRONMENT_NAME = "step_environment"
 if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
+
+logger = get_logger(__name__)
+
+STEP_ENVIRONMENT_NAME = "step_environment"
 
 
 class StepEnvironment(BaseEnvironmentComponent):
@@ -45,25 +49,16 @@ class StepEnvironment(BaseEnvironmentComponent):
 
     def __init__(
         self,
-        pipeline_name: str,
-        pipeline_run_id: str,
-        step_name: str,
-        cache_enabled: bool,
         step_run_info: "StepRunInfo",
+        cache_enabled: bool,
     ):
         """Initialize the environment of the currently running step.
 
         Args:
-            pipeline_name: the name of the currently running pipeline
-            pipeline_run_id: the ID of the currently running pipeline
-            step_name: the name of the currently running step
-            cache_enabled: whether cache is enabled for this step
             step_run_info: Info about the currently running step.
+            cache_enabled: Whether caching is enabled for the current step run.
         """
         super().__init__()
-        self._pipeline_name = pipeline_name
-        self._pipeline_run_id = pipeline_run_id
-        self._step_name = step_name
         self._step_run_info = step_run_info
         self._cache_enabled = cache_enabled
 
@@ -74,7 +69,16 @@ class StepEnvironment(BaseEnvironmentComponent):
         Returns:
             The name of the currently running pipeline.
         """
-        return self._pipeline_name
+        return self._step_run_info.pipeline.name
+
+    @property
+    def run_name(self) -> str:
+        """The name of the current pipeline run.
+
+        Returns:
+            The name of the current pipeline run.
+        """
+        return self._step_run_info.run_name
 
     @property
     def pipeline_run_id(self) -> str:
@@ -83,7 +87,11 @@ class StepEnvironment(BaseEnvironmentComponent):
         Returns:
             The ID of the current pipeline run.
         """
-        return self._pipeline_run_id
+        logger.warning(
+            "`StepContext.pipeline_run_id` is deprecated. Use "
+            "`StepContext.run_name` instead."
+        )
+        return self.run_name
 
     @property
     def step_name(self) -> str:
@@ -92,7 +100,7 @@ class StepEnvironment(BaseEnvironmentComponent):
         Returns:
             The name of the currently running step.
         """
-        return self._step_name
+        return self._step_run_info.config.name
 
     @property
     def step_run_info(self) -> "StepRunInfo":

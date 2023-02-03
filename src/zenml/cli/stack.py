@@ -21,7 +21,12 @@ import click
 import zenml
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
-from zenml.cli.utils import _component_display_name, print_stacks_table
+from zenml.cli.utils import (
+    _component_display_name,
+    list_options,
+    print_page_info,
+    print_stacks_table,
+)
 from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
@@ -30,7 +35,8 @@ from zenml.exceptions import (
     ProvisioningError,
     StackExistsError,
 )
-from zenml.utils.analytics_utils import AnalyticsEvent, track_event
+from zenml.models import StackFilterModel
+from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
 
@@ -139,6 +145,14 @@ def stack() -> None:
     required=False,
 )
 @click.option(
+    "-i",
+    "--image_builder",
+    "image_builder",
+    help="Name of the image builder for this stack.",
+    type=str,
+    required=False,
+)
+@click.option(
     "--set",
     "set_stack",
     is_flag=True,
@@ -165,6 +179,7 @@ def register_stack(
     alerter: Optional[str] = None,
     annotator: Optional[str] = None,
     data_validator: Optional[str] = None,
+    image_builder: Optional[str] = None,
     set_stack: bool = False,
     share: bool = False,
 ) -> None:
@@ -183,6 +198,7 @@ def register_stack(
         alerter: Name of the alerter for this stack.
         annotator: Name of the annotator for this stack.
         data_validator: Name of the data validator for this stack.
+        image_builder: Name of the new image builder for this stack.
         set_stack: Immediately set this stack as active.
         share: Share the stack with other users.
     """
@@ -202,6 +218,8 @@ def register_stack(
             components[StackComponentType.DATA_VALIDATOR] = data_validator
         if feature_store:
             components[StackComponentType.FEATURE_STORE] = feature_store
+        if image_builder:
+            components[StackComponentType.IMAGE_BUILDER] = image_builder
         if model_deployer:
             components[StackComponentType.MODEL_DEPLOYER] = model_deployer
         if secrets_manager:
@@ -221,11 +239,14 @@ def register_stack(
         if share is None:
             share = False
 
-        created_stack = client.create_stack(
-            name=stack_name,
-            components=components,
-            is_shared=share,
-        )
+        try:
+            created_stack = client.create_stack(
+                name=stack_name,
+                components=components,
+                is_shared=share,
+            )
+        except (KeyError, IllegalOperationError) as err:
+            cli_utils.error(str(err))
 
         cli_utils.declare(
             f"Stack '{created_stack.name}' successfully registered!"
@@ -235,7 +256,9 @@ def register_stack(
         client.activate_stack(created_stack.id)
 
         scope = "repository" if client.uses_local_configuration else "global"
-        cli_utils.declare(f"Active {scope} stack set to:'{created_stack.name}'")
+        cli_utils.declare(
+            f"Active {scope} stack set to:'{created_stack.name}'"
+        )
 
 
 @stack.command(
@@ -332,6 +355,14 @@ def register_stack(
     type=str,
     required=False,
 )
+@click.option(
+    "-i",
+    "--image_builder",
+    "image_builder",
+    help="Name of the image builder for this stack.",
+    type=str,
+    required=False,
+)
 def update_stack(
     stack_name_or_id: Optional[str] = None,
     artifact_store: Optional[str] = None,
@@ -345,6 +376,7 @@ def update_stack(
     alerter: Optional[str] = None,
     annotator: Optional[str] = None,
     data_validator: Optional[str] = None,
+    image_builder: Optional[str] = None,
 ) -> None:
     """Update a stack.
 
@@ -362,6 +394,7 @@ def update_stack(
         alerter: Name of the new alerter for this stack.
         annotator: Name of the new annotator for this stack.
         data_validator: Name of the new data validator for this stack.
+        image_builder: Name of the new image builder for this stack.
     """
     client = Client()
 
@@ -386,6 +419,8 @@ def update_stack(
             ]
         if feature_store:
             updates[StackComponentType.FEATURE_STORE] = [feature_store]
+        if image_builder:
+            updates[StackComponentType.IMAGE_BUILDER] = [image_builder]
         if model_deployer:
             updates[StackComponentType.MODEL_DEPLOYER] = [model_deployer]
         if orchestrator:
@@ -401,10 +436,12 @@ def update_stack(
                 component_updates=updates,
             )
 
-        except IllegalOperationError as err:
+        except (KeyError, IllegalOperationError) as err:
             cli_utils.error(str(err))
 
-        cli_utils.declare(f"Stack `{updated_stack.name}` successfully updated!")
+        cli_utils.declare(
+            f"Stack `{updated_stack.name}` successfully updated!"
+        )
 
 
 @stack.command(
@@ -448,7 +485,7 @@ def share_stack(
                 name_id_or_prefix=stack_name_or_id,
                 is_shared=True,
             )
-        except (IllegalOperationError, StackExistsError) as err:
+        except (KeyError, IllegalOperationError, StackExistsError) as err:
             cli_utils.error(str(err))
         cli_utils.declare(f"Stack `{updated_stack.name}` successfully shared!")
 
@@ -531,6 +568,14 @@ def share_stack(
     is_flag=True,
     required=False,
 )
+@click.option(
+    "-i",
+    "--image_builder",
+    "image_builder_flag",
+    help="Include this to remove the image builder from this stack.",
+    is_flag=True,
+    required=False,
+)
 def remove_stack_component(
     stack_name_or_id: Optional[str] = None,
     container_registry_flag: Optional[bool] = False,
@@ -542,6 +587,7 @@ def remove_stack_component(
     alerter_flag: Optional[bool] = False,
     annotator_flag: Optional[bool] = False,
     data_validator_flag: Optional[bool] = False,
+    image_builder_flag: Optional[bool] = False,
 ) -> None:
     """Remove stack components from a stack.
 
@@ -558,6 +604,7 @@ def remove_stack_component(
         alerter_flag: To remove the alerter from this stack.
         annotator_flag: To remove the annotator from this stack.
         data_validator_flag: To remove the data validator from this stack.
+        image_builder_flag: To remove the image builder from this stack.
     """
     client = Client()
 
@@ -591,14 +638,19 @@ def remove_stack_component(
         if data_validator_flag:
             stack_component_update[StackComponentType.DATA_VALIDATOR] = []
 
+        if image_builder_flag:
+            stack_component_update[StackComponentType.IMAGE_BUILDER] = []
+
         try:
             updated_stack = client.update_stack(
                 name_id_or_prefix=stack_name_or_id,
                 component_updates=stack_component_update,
             )
-        except IllegalOperationError as err:
+        except (KeyError, IllegalOperationError) as err:
             cli_utils.error(str(err))
-        cli_utils.declare(f"Stack `{updated_stack.name}` successfully updated!")
+        cli_utils.declare(
+            f"Stack `{updated_stack.name}` successfully updated!"
+        )
 
 
 @stack.command("rename", help="Rename a stack.")
@@ -631,21 +683,22 @@ def rename_stack(
 
 
 @stack.command("list")
-@click.option("--just-mine", "-m", is_flag=True, required=False)
-def list_stacks(just_mine: bool = False) -> None:
-    """List all available stacks.
+@list_options(StackFilterModel)
+def list_stacks(**kwargs: Any) -> None:
+    """List all stacks that fulfill the filter requirements.
 
     Args:
-        just_mine: To list only the stacks that the current user has created.
+        kwargs: Keyword arguments to filter the stacks.
     """
     client = Client()
     with console.status("Listing stacks...\n"):
-        if just_mine:
-            stacks = client.list_stacks(user_name_or_id=client.active_user.id)
-        else:
-            stacks = client.list_stacks()
+        stacks = client.list_stacks(**kwargs)
+        if not stacks:
+            cli_utils.declare("No stacks found for the given filters.")
+            return
 
-        print_stacks_table(client, stacks)
+        print_stacks_table(client, stacks.items)
+        print_page_info(stacks)
 
 
 @stack.command(
@@ -665,8 +718,11 @@ def describe_stack(stack_name_or_id: Optional[str] = None) -> None:
     """
     client = Client()
 
-    with console.status(f"Describing stack '{stack_name_or_id}'...\n"):
-        stack_ = client.get_stack(name_id_or_prefix=stack_name_or_id)
+    with console.status("Describing stack...\n"):
+        try:
+            stack_ = client.get_stack(name_id_or_prefix=stack_name_or_id)
+        except KeyError as err:
+            cli_utils.error(str(err))
 
         cli_utils.print_stack_configuration(
             stack=stack_,
@@ -717,7 +773,11 @@ def set_active_stack_command(stack_name_or_id: str) -> None:
     with console.status(
         f"Setting the {scope} active stack to '{stack_name_or_id}'..."
     ):
-        client.activate_stack(stack_name_id_or_prefix=stack_name_or_id)
+        try:
+            client.activate_stack(stack_name_id_or_prefix=stack_name_or_id)
+        except KeyError as err:
+            cli_utils.error(str(err))
+
         cli_utils.declare(
             f"Active {scope} stack set to: "
             f"'{client.active_stack_model.name}'"
@@ -731,9 +791,12 @@ def get_active_stack() -> None:
 
     with console.status("Getting the active stack..."):
         client = Client()
-        cli_utils.declare(
-            f"The {scope} active stack is: '{client.active_stack_model.name}'"
-        )
+        try:
+            cli_utils.declare(
+                f"The {scope} active stack is: '{client.active_stack_model.name}'"
+            )
+        except KeyError as err:
+            cli_utils.error(str(err))
 
 
 @stack.command("up")
@@ -784,6 +847,7 @@ def down_stack(force: bool = False) -> None:
 @stack.command("export", help="Exports a stack to a YAML file.")
 @click.argument("stack_name_or_id", type=str, required=False)
 @click.argument("filename", type=str, required=False)
+@track(AnalyticsEvent.EXPORT_STACK)
 def export_stack(
     stack_name_or_id: Optional[str] = None,
     filename: Optional[str] = None,
@@ -794,12 +858,12 @@ def export_stack(
         stack_name_or_id: The name of the stack to export.
         filename: The filename to export the stack to.
     """
-    track_event(AnalyticsEvent.EXPORT_STACK)
-
     # Get configuration of given stack
     client = Client()
-
-    stack_to_export = client.get_stack(name_id_or_prefix=stack_name_or_id)
+    try:
+        stack_to_export = client.get_stack(name_id_or_prefix=stack_name_or_id)
+    except KeyError as err:
+        cli_utils.error(str(err))
 
     # write zenml version and stack dict to YAML
     yaml_data = stack_to_export.to_yaml()
@@ -870,6 +934,7 @@ def _import_stack_component(
     help="Import stack components even if the installed version of ZenML "
     "is different from the one specified in the stack YAML file",
 )
+@track(AnalyticsEvent.IMPORT_STACK)
 def import_stack(
     stack_name: str,
     filename: Optional[str],
@@ -884,8 +949,6 @@ def import_stack(
             the installed version of ZenML is different from the
             one specified in the stack YAML file.
     """
-    track_event(AnalyticsEvent.IMPORT_STACK)
-
     # handle 'zenml stack import file.yaml' calls
     if stack_name.endswith(".yaml") and filename is None:
         filename = stack_name
@@ -899,7 +962,9 @@ def import_stack(
         if filename is None:
             filename = stack_name + ".yaml"
         data = read_yaml(filename)
-        cli_utils.declare(f"Using '{filename}' to import '{stack_name}' stack.")
+        cli_utils.declare(
+            f"Using '{filename}' to import '{stack_name}' stack."
+        )
 
     # assert zenml version is the same if force is false
     if data["zenml_version"] != zenml.__version__:
@@ -956,6 +1021,7 @@ def import_stack(
     help="Use this flag to share this stack with other users.",
     type=click.BOOL,
 )
+@track(AnalyticsEvent.COPIED_STACK)
 def copy_stack(
     source_stack_name_or_id: str, target_stack: str, share: bool = False
 ) -> None:
@@ -966,14 +1032,15 @@ def copy_stack(
         target_stack: Name of the copied stack.
         share: Share the stack with other users.
     """
-    track_event(AnalyticsEvent.COPIED_STACK)
-
     client = Client()
 
     with console.status(f"Copying stack `{source_stack_name_or_id}`...\n"):
-        stack_to_copy = client.get_stack(
-            name_id_or_prefix=source_stack_name_or_id
-        )
+        try:
+            stack_to_copy = client.get_stack(
+                name_id_or_prefix=source_stack_name_or_id
+            )
+        except KeyError as err:
+            cli_utils.error(str(err))
 
         component_mapping: Dict[StackComponentType, Union[str, UUID]] = {}
 
@@ -1073,7 +1140,9 @@ def register_secrets(
             else:
                 value = None
                 while not value:
-                    value = getpass.getpass(f"Value for secret `{name}.{key}`:")
+                    value = getpass.getpass(
+                        f"Value for secret `{name}.{key}`:"
+                    )
                 value = cli_utils.expand_argument_value_from_file(
                     name=key, value=value
                 )

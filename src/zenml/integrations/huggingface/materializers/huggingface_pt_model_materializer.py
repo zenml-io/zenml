@@ -16,12 +16,14 @@
 import importlib
 import os
 from tempfile import TemporaryDirectory
-from typing import Any, Type
+from typing import Dict, Type
 
 from transformers import AutoConfig, PreTrainedModel  # type: ignore [import]
 
-from zenml.artifacts import ModelArtifact
+from zenml.enums import ArtifactType
+from zenml.integrations.pytorch.utils import count_module_params
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.metadata.metadata_types import DType, MetadataType
 from zenml.utils import io_utils
 
 DEFAULT_PT_MODEL_DIR = "hf_pt_model"
@@ -31,9 +33,9 @@ class HFPTModelMaterializer(BaseMaterializer):
     """Materializer to read torch model to and from huggingface pretrained model."""
 
     ASSOCIATED_TYPES = (PreTrainedModel,)
-    ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
 
-    def handle_input(self, data_type: Type[Any]) -> PreTrainedModel:
+    def load(self, data_type: Type[PreTrainedModel]) -> PreTrainedModel:
         """Reads HFModel.
 
         Args:
@@ -42,29 +44,48 @@ class HFPTModelMaterializer(BaseMaterializer):
         Returns:
             The model read from the specified dir.
         """
-        super().handle_input(data_type)
+        super().load(data_type)
 
         config = AutoConfig.from_pretrained(
-            os.path.join(self.artifact.uri, DEFAULT_PT_MODEL_DIR)
+            os.path.join(self.uri, DEFAULT_PT_MODEL_DIR)
         )
         architecture = config.architectures[0]
         model_cls = getattr(
             importlib.import_module("transformers"), architecture
         )
         return model_cls.from_pretrained(
-            os.path.join(self.artifact.uri, DEFAULT_PT_MODEL_DIR)
+            os.path.join(self.uri, DEFAULT_PT_MODEL_DIR)
         )
 
-    def handle_return(self, model: Type[Any]) -> None:
+    def save(self, model: PreTrainedModel) -> None:
         """Writes a Model to the specified dir.
 
         Args:
             model: The Torch Model to write.
         """
-        super().handle_return(model)
+        super().save(model)
         temp_dir = TemporaryDirectory()
         model.save_pretrained(temp_dir.name)
         io_utils.copy_dir(
             temp_dir.name,
-            os.path.join(self.artifact.uri, DEFAULT_PT_MODEL_DIR),
+            os.path.join(self.uri, DEFAULT_PT_MODEL_DIR),
         )
+
+    def extract_metadata(
+        self, model: PreTrainedModel
+    ) -> Dict[str, "MetadataType"]:
+        """Extract metadata from the given `PreTrainedModel` object.
+
+        Args:
+            model: The `PreTrainedModel` object to extract metadata from.
+
+        Returns:
+            The extracted metadata as a dictionary.
+        """
+        super().extract_metadata(model)
+        module_param_metadata = count_module_params(model)
+        return {
+            **module_param_metadata,
+            "dtype": DType(str(model.dtype)),
+            "device": str(model.device),
+        }

@@ -42,7 +42,7 @@ ZenML comes with a default stack that runs locally, as seen in the following dia
 
 ![ZenML pipelines run on stacks](../assets/core_concepts/02_pipeline_local_stack.png)
 
-In any Stack, there **must** be at least two basic **Stack Components** - and *orchestrator* and an *artifact store*.
+In any Stack, there **must** be at least two basic **Stack Components** - an *orchestrator* and an *artifact store*.
 
 ### Orchestrator
 

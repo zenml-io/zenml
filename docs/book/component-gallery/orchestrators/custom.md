@@ -127,17 +127,6 @@ The orchestrator basically iterates through each step and directly executes
 the step within the same Python process. Obviously all kind of additional
 configuration could be added around this.
 
-## Python Operator based Orchestration
-
-The `airflow` orchestrator has a slightly more complex implementation of the
-`prepare_or_run_pipeline()` method. Instead of immediately
-executing a step, a `PythonOperator` is created which contains a
-`_step_callable`. This `_step_callable` will ultimately execute the
-`self.run_step(...)` method of the orchestrator. The PythonOperators are
-assembled into an AirflowDag which is returned. Through some Airflow magic,
-this DAG is loaded by the connected instance of Airflow and orchestration of
-this DAG is performed either directly or on a set schedule.
-
 ## Container-based Orchestration
 
 The `kubeflow` orchestrator is a great example of container-based orchestration.
@@ -188,7 +177,6 @@ Here is a schematic view of what the `StepEntrypointConfiguration` looks like:
 
 ```python
 from typing import Optional, Set, Any, List
-from tfx.orchestration.portable import data_types
 
 from zenml.entrypoints.base_entrypoint_configuration import (
     BaseEntrypointConfiguration,
@@ -204,7 +192,6 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
         self,
         pipeline_name: str,
         step_name: str,
-        execution_info: Optional[data_types.ExecutionInfo] = None,
     ) -> None:
         """Does cleanup or post-processing after the step finished running."""
 

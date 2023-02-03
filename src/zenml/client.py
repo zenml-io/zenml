@@ -12,8 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Client implementation."""
+import json
 import os
 from abc import ABCMeta
+from datetime import datetime
+from functools import partial
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -24,67 +27,102 @@ from typing import (
     Mapping,
     Optional,
     Set,
-    Type,
     TypeVar,
     Union,
     cast,
 )
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
     ENV_ZENML_ACTIVE_STACK_ID,
     ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
     ENV_ZENML_REPOSITORY_PATH,
+    PAGE_SIZE_DEFAULT,
+    PAGINATION_STARTING_PAGE,
     REPOSITORY_DIRECTORY_NAME,
     handle_bool_env_var,
 )
-from zenml.enums import PermissionType, StackComponentType, StoreType
+from zenml.enums import (
+    ArtifactType,
+    LogicalOperators,
+    PermissionType,
+    StackComponentType,
+    StoreType,
+)
 from zenml.exceptions import (
     AlreadyExistsException,
     EntityExistsError,
     IllegalOperationError,
     InitializationException,
     ValidationError,
+    ZenKeyError,
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import (
-    ArtifactRequestModel,
+    ComponentFilterModel,
     ComponentRequestModel,
+    ComponentResponseModel,
     ComponentUpdateModel,
+    FlavorFilterModel,
     FlavorRequestModel,
+    FlavorResponseModel,
+    PipelineFilterModel,
     PipelineRequestModel,
     PipelineResponseModel,
-    PipelineRunRequestModel,
+    PipelineRunFilterModel,
     PipelineRunResponseModel,
-    ProjectRequestModel,
-    ProjectResponseModel,
-    ProjectUpdateModel,
-    RoleAssignmentRequestModel,
-    RoleAssignmentResponseModel,
+    RoleFilterModel,
     RoleRequestModel,
     RoleResponseModel,
     RoleUpdateModel,
+    RunMetadataRequestModel,
+    RunMetadataResponseModel,
+    StackFilterModel,
     StackRequestModel,
     StackResponseModel,
     StackUpdateModel,
-    StepRunRequestModel,
+    StepRunFilterModel,
+    StepRunResponseModel,
+    TeamFilterModel,
     TeamRequestModel,
     TeamResponseModel,
+    TeamRoleAssignmentFilterModel,
+    TeamRoleAssignmentRequestModel,
+    TeamRoleAssignmentResponseModel,
+    TeamUpdateModel,
+    UserFilterModel,
     UserRequestModel,
     UserResponseModel,
+    UserRoleAssignmentFilterModel,
+    UserRoleAssignmentRequestModel,
+    UserRoleAssignmentResponseModel,
     UserUpdateModel,
+    WorkspaceFilterModel,
+    WorkspaceRequestModel,
+    WorkspaceResponseModel,
+    WorkspaceUpdateModel,
+)
+from zenml.models.artifact_models import (
+    ArtifactFilterModel,
+    ArtifactResponseModel,
 )
 from zenml.models.base_models import BaseResponseModel
-from zenml.models.team_models import TeamUpdateModel
+from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
+from zenml.models.page_model import Page
+from zenml.models.run_metadata_models import RunMetadataFilterModel
+from zenml.models.schedule_model import (
+    ScheduleFilterModel,
+    ScheduleResponseModel,
+)
 from zenml.utils import io_utils
-from zenml.utils.analytics_utils import AnalyticsEvent, track
+from zenml.utils.analytics_utils import AnalyticsEvent, event_handler, track
 from zenml.utils.filesync_model import FileSyncModel
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_configurations import PipelineSpec
-    from zenml.models import ComponentResponseModel, FlavorResponseModel
+    from zenml.metadata.metadata_types import MetadataType
     from zenml.stack import Stack, StackComponentConfig
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
@@ -95,37 +133,39 @@ AnyResponseModel = TypeVar("AnyResponseModel", bound=BaseResponseModel)
 class ClientConfiguration(FileSyncModel):
     """Pydantic object used for serializing client configuration options."""
 
-    _active_project: Optional["ProjectResponseModel"] = None
-    active_project_id: Optional[UUID]
+    _active_workspace: Optional["WorkspaceResponseModel"] = None
+    active_workspace_id: Optional[UUID]
     active_stack_id: Optional[UUID]
 
     @property
-    def active_project(self) -> ProjectResponseModel:
-        """Get the active project for the local client.
+    def active_workspace(self) -> WorkspaceResponseModel:
+        """Get the active workspace for the local client.
 
         Returns:
-            The active project.
+            The active workspace.
 
         Raises:
-            RuntimeError: If no active project is set.
+            RuntimeError: If no active workspace is set.
         """
-        if self._active_project:
-            return self._active_project
+        if self._active_workspace:
+            return self._active_workspace
         else:
             raise RuntimeError(
-                "No active project is configured. Run "
-                "`zenml project set PROJECT_NAME` to set the active "
-                "project."
+                "No active workspace is configured. Run "
+                "`zenml workspace set WORKSPACE_NAME` to set the active "
+                "workspace."
             )
 
-    def set_active_project(self, project: "ProjectResponseModel") -> None:
-        """Set the project for the local client.
+    def set_active_workspace(
+        self, workspace: "WorkspaceResponseModel"
+    ) -> None:
+        """Set the workspace for the local client.
 
         Args:
-            project: The project to set active.
+            workspace: The workspace to set active.
         """
-        self._active_project = project
-        self.active_project_id = project.id
+        self._active_workspace = workspace
+        self.active_workspace_id = workspace.id
 
     def set_active_stack(self, stack: "StackResponseModel") -> None:
         """Set the stack for the local client.
@@ -204,6 +244,8 @@ class Client(metaclass=ClientMetaClass):
     as their components.
     """
 
+    _active_user: Optional[UserResponseModel] = None
+
     def __init__(
         self,
         root: Optional[Path] = None,
@@ -267,7 +309,7 @@ class Client(metaclass=ClientMetaClass):
         If a client configuration is found at the given path or the
         path, it is loaded and used to initialize the client.
         If no client configuration is found, the global configuration is
-        used instead to manage the active stack, project etc.
+        used instead to manage the active stack, workspace etc.
 
         Args:
             root: The path to set as the active repository root. If not set,
@@ -279,9 +321,12 @@ class Client(metaclass=ClientMetaClass):
         enable_warnings = handle_bool_env_var(
             ENV_ZENML_ENABLE_REPO_INIT_WARNINGS, True
         )
-        self._root = self.find_repository(root, enable_warnings=enable_warnings)
+        self._root = self.find_repository(
+            root, enable_warnings=enable_warnings
+        )
 
         if not self._root:
+            self._config = None
             if enable_warnings:
                 logger.info("Running without an active repository root.")
         else:
@@ -308,18 +353,18 @@ class Client(metaclass=ClientMetaClass):
 
         This method is called to ensure that the client configuration
         doesn't contain outdated information, such as an active stack or
-        project that no longer exists.
+        workspace that no longer exists.
         """
         if not self._config:
             return
 
-        active_project, active_stack = self.zen_store.validate_active_config(
-            self._config.active_project_id,
+        active_workspace, active_stack = self.zen_store.validate_active_config(
+            self._config.active_workspace_id,
             self._config.active_stack_id,
             config_name="repo",
         )
         self._config.set_active_stack(active_stack)
-        self._config.set_active_project(active_project)
+        self._config.set_active_workspace(active_workspace)
 
     def _load_config(self) -> Optional[ClientConfiguration]:
         """Loads the client configuration from disk.
@@ -349,7 +394,6 @@ class Client(metaclass=ClientMetaClass):
         return ClientConfiguration(config_path)
 
     @staticmethod
-    @track(event=AnalyticsEvent.INITIALIZE_REPO)
     def initialize(
         root: Optional[Path] = None,
     ) -> None:
@@ -363,17 +407,18 @@ class Client(metaclass=ClientMetaClass):
             InitializationException: If the root directory already contains a
                 ZenML repository.
         """
-        root = root or Path.cwd()
-        logger.debug("Initializing new repository at path %s.", root)
-        if Client.is_repository_directory(root):
-            raise InitializationException(
-                f"Found existing ZenML repository at path '{root}'."
-            )
+        with event_handler(AnalyticsEvent.INITIALIZE_REPO):
+            root = root or Path.cwd()
+            logger.debug("Initializing new repository at path %s.", root)
+            if Client.is_repository_directory(root):
+                raise InitializationException(
+                    f"Found existing ZenML repository at path '{root}'."
+                )
 
-        config_directory = str(root / REPOSITORY_DIRECTORY_NAME)
-        io_utils.create_dir_recursive_if_not_exists(config_directory)
-        # Initialize the repository configuration at the custom path
-        Client(root=root)
+            config_directory = str(root / REPOSITORY_DIRECTORY_NAME)
+            io_utils.create_dir_recursive_if_not_exists(config_directory)
+            # Initialize the repository configuration at the custom path
+            Client(root=root)
 
     @property
     def uses_local_configuration(self) -> bool:
@@ -517,28 +562,31 @@ class Client(metaclass=ClientMetaClass):
         """
         self._set_active_root(root)
 
-    @track(event=AnalyticsEvent.SET_PROJECT)
-    def set_active_project(
-        self, project_name_or_id: Union[str, UUID]
-    ) -> "ProjectResponseModel":
-        """Set the project for the local client.
+    @track(event=AnalyticsEvent.SET_WORKSPACE)
+    def set_active_workspace(
+        self, workspace_name_or_id: Union[str, UUID]
+    ) -> "WorkspaceResponseModel":
+        """Set the workspace for the local client.
 
         Args:
-            project_name_or_id: The name or ID of the project to set active.
+            workspace_name_or_id: The name or ID of the workspace to set active.
 
         Returns:
-            The model of the active project.
+            The model of the active workspace.
         """
-        project = self.zen_store.get_project(
-            project_name_or_id=project_name_or_id
+        workspace = self.zen_store.get_workspace(
+            workspace_name_or_id=workspace_name_or_id
         )  # raises KeyError
         if self._config:
-            self._config.set_active_project(project)
+            self._config.set_active_workspace(workspace)
+            # Sanitize the client configuration to reflect the current
+            # settings
+            self._sanitize_config()
         else:
-            # set the active project globally only if the client doesn't use
+            # set the active workspace globally only if the client doesn't use
             # a local configuration
-            GlobalConfiguration().set_active_project(project)
-        return project
+            GlobalConfiguration().set_active_workspace(workspace)
+        return workspace
 
     # ---- #
     # USER #
@@ -551,7 +599,9 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The active user.
         """
-        return self.zen_store.active_user
+        if self._active_user is None:
+            self._active_user = self.zen_store.get_user(include_private=True)
+        return self._active_user
 
     def create_user(
         self,
@@ -579,11 +629,10 @@ class Client(metaclass=ClientMetaClass):
         created_user = self.zen_store.create_user(user=user)
 
         if initial_role:
-            self.create_role_assignment(
+            self.create_user_role_assignment(
                 role_name_or_id=initial_role,
-                user_or_team_name_or_id=created_user.id,
-                project_name_or_id=None,
-                is_user=True,
+                user_name_or_id=created_user.id,
+                workspace_name_or_id=None,
             )
 
         return created_user
@@ -600,22 +649,61 @@ class Client(metaclass=ClientMetaClass):
             The User
         """
         return self._get_entity_by_id_or_name_or_prefix(
-            response_model=UserResponseModel,
             get_method=self.zen_store.get_user,
-            list_method=self.zen_store.list_users,
+            list_method=self.list_users,
             name_id_or_prefix=name_id_or_prefix,
         )
 
-    def list_users(self, name: Optional[str] = None) -> List[UserResponseModel]:
+    def list_users(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        name: Optional[str] = None,
+        full_name: Optional[str] = None,
+        email: Optional[str] = None,
+        active: Optional[bool] = None,
+        email_opted_in: Optional[bool] = None,
+    ) -> Page[UserResponseModel]:
         """List all users.
 
         Args:
-            name: The name to filter by
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            id: Use the id of stacks to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            name: Use the username for filtering
+            full_name: Use the user full name for filtering
+            email: Use the user email for filtering
+            active: User the user active status for filtering
+            email_opted_in: Use the user opt in status for filtering
 
         Returns:
             The User
         """
-        return self.zen_store.list_users(name=name)
+        return self.zen_store.list_users(
+            UserFilterModel(
+                sort_by=sort_by,
+                page=page,
+                size=size,
+                logical_operator=logical_operator,
+                id=id,
+                created=created,
+                updated=updated,
+                name=name,
+                full_name=full_name,
+                email=email,
+                active=active,
+                email_opted_in=email_opted_in,
+            )
+        )
 
     def delete_user(self, user_name_or_id: str) -> None:
         """Delete a user.
@@ -680,22 +768,49 @@ class Client(metaclass=ClientMetaClass):
             The Team
         """
         return self._get_entity_by_id_or_name_or_prefix(
-            response_model=TeamResponseModel,
             get_method=self.zen_store.get_team,
-            list_method=self.zen_store.list_teams,
+            list_method=self.list_teams,
             name_id_or_prefix=name_id_or_prefix,
         )
 
-    def list_teams(self, name: Optional[str] = None) -> List[TeamResponseModel]:
+    def list_teams(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        name: Optional[str] = None,
+    ) -> Page[TeamResponseModel]:
         """List all teams.
 
         Args:
-            name: The name to filter by
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            id: Use the id of teams to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            name: Use the team name for filtering
 
         Returns:
             The Team
         """
-        return self.zen_store.list_teams(name=name)
+        return self.zen_store.list_teams(
+            TeamFilterModel(
+                sort_by=sort_by,
+                page=page,
+                size=size,
+                logical_operator=logical_operator,
+                id=id,
+                created=created,
+                updated=updated,
+                name=name,
+            )
+        )
 
     def create_team(
         self, name: str, users: Optional[List[str]] = None
@@ -812,22 +927,49 @@ class Client(metaclass=ClientMetaClass):
             The fetched role.
         """
         return self._get_entity_by_id_or_name_or_prefix(
-            response_model=RoleResponseModel,
             get_method=self.zen_store.get_role,
-            list_method=self.zen_store.list_roles,
+            list_method=self.list_roles,
             name_id_or_prefix=name_id_or_prefix,
         )
 
-    def list_roles(self, name: Optional[str] = None) -> List[RoleResponseModel]:
-        """Fetches roles.
+    def list_roles(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        name: Optional[str] = None,
+    ) -> Page[RoleResponseModel]:
+        """List all roles.
 
         Args:
-            name: The name of the roles.
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: The logical operator to use between column filters
+            id: Use the id of roles to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            name: Use the role name for filtering
 
         Returns:
-            The list of roles.
+            The Role
         """
-        return self.zen_store.list_roles(name=name)
+        return self.zen_store.list_roles(
+            RoleFilterModel(
+                sort_by=sort_by,
+                page=page,
+                size=size,
+                logical_operator=logical_operator,
+                id=id,
+                created=created,
+                updated=updated,
+                name=name,
+            )
+        )
 
     def create_role(
         self, name: str, permissions_list: List[str]
@@ -925,273 +1067,383 @@ class Client(metaclass=ClientMetaClass):
         """
         self.zen_store.delete_role(role_name_or_id=name_id_or_prefix)
 
-    # ---------------- #
-    # ROLE ASSIGNMENTS #
-    # ---------------- #
+    # --------------------- #
+    # USER ROLE ASSIGNMENTS #
+    # --------------------- #
 
-    def get_role_assignment(
-        self,
-        role_name_or_id: str,
-        user_or_team_name_or_id: str,
-        is_user: bool,
-        project_name_or_id: Optional[str] = None,
-    ) -> RoleAssignmentResponseModel:
+    def get_user_role_assignment(
+        self, role_assignment_id: UUID
+    ) -> UserRoleAssignmentResponseModel:
         """Get a role assignment.
 
         Args:
-            role_name_or_id: The name or ID of the role.
-            user_or_team_name_or_id: The name or ID of the user or team.
-            is_user: Whether to interpret the `user_or_team_name_or_id` field as
-                user (=True) or team (=False).
-            project_name_or_id: project scope within which to assign the role.
+            role_assignment_id: The id of the role assignments
 
         Returns:
             The role assignment.
-
-        Raises:
-            RuntimeError: If the role assignment does not exist.
         """
-        if is_user:
-            role_assignments = self.zen_store.list_role_assignments(
-                project_name_or_id=project_name_or_id,
-                user_name_or_id=user_or_team_name_or_id,
-                role_name_or_id=role_name_or_id,
-            )
-        else:
-            role_assignments = self.zen_store.list_role_assignments(
-                project_name_or_id=project_name_or_id,
-                user_name_or_id=user_or_team_name_or_id,
-                role_name_or_id=role_name_or_id,
-            )
-        # Implicit assumption is that maximally one such assignment can exist
-        if role_assignments:
-            return role_assignments[0]
-        else:
-            raise RuntimeError(
-                "No such role assignment could be found for "
-                f"user/team : {user_or_team_name_or_id} with "
-                f"role : {role_name_or_id} within "
-                f"project : {project_name_or_id}"
-            )
+        return self.zen_store.get_user_role_assignment(
+            user_role_assignment_id=role_assignment_id
+        )
 
-    def create_role_assignment(
+    def create_user_role_assignment(
         self,
         role_name_or_id: Union[str, UUID],
-        user_or_team_name_or_id: Union[str, UUID],
-        is_user: bool,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-    ) -> RoleAssignmentResponseModel:
+        user_name_or_id: Union[str, UUID],
+        workspace_name_or_id: Optional[Union[str, UUID]] = None,
+    ) -> UserRoleAssignmentResponseModel:
         """Create a role assignment.
 
         Args:
             role_name_or_id: Name or ID of the role to assign.
-            user_or_team_name_or_id: Name or ID of the user or team to assign
+            user_name_or_id: Name or ID of the user or team to assign
                 the role to.
-            is_user: Whether to interpret the `user_or_team_name_or_id` field as
-                user (=True) or team (=False).
-            project_name_or_id: project scope within which to assign the role.
+            workspace_name_or_id: workspace scope within which to assign the role.
 
         Returns:
             The newly created role assignment.
         """
         role = self.get_role(name_id_or_prefix=role_name_or_id)
-        project = None
-        if project_name_or_id:
-            project = self.get_project(name_id_or_prefix=project_name_or_id)
-        if is_user:
-            user = self.get_user(name_id_or_prefix=user_or_team_name_or_id)
-            role_assignment = RoleAssignmentRequestModel(
-                role=role.id,
-                user=user.id,
-                project=project,
-                is_user=True,
+        workspace = None
+        if workspace_name_or_id:
+            workspace = self.get_workspace(
+                name_id_or_prefix=workspace_name_or_id
             )
-        else:
-            team = self.get_team(name_id_or_prefix=user_or_team_name_or_id)
-            role_assignment = RoleAssignmentRequestModel(
-                role=role.id,
-                team=team.id,
-                project=project,
-                is_user=False,
-            )
-
-        return self.zen_store.create_role_assignment(
-            role_assignment=role_assignment
+        user = self.get_user(name_id_or_prefix=user_name_or_id)
+        role_assignment = UserRoleAssignmentRequestModel(
+            role=role.id,
+            user=user.id,
+            workspace=workspace,
+        )
+        return self.zen_store.create_user_role_assignment(
+            user_role_assignment=role_assignment
         )
 
-    def delete_role_assignment(
-        self,
-        role_name_or_id: str,
-        user_or_team_name_or_id: str,
-        is_user: bool,
-        project_name_or_id: Optional[str] = None,
-    ) -> None:
+    def delete_user_role_assignment(self, role_assignment_id: UUID) -> None:
         """Delete a role assignment.
 
         Args:
-            role_name_or_id: Role to assign
-            user_or_team_name_or_id: team to assign the role to
-            is_user: Whether to interpret the user_or_team_name_or_id field as
-                user (=True) or team (=False)
-            project_name_or_id: project scope within which to assign the role
-        """
-        role_assignment = self.get_role_assignment(
-            role_name_or_id=role_name_or_id,
-            user_or_team_name_or_id=user_or_team_name_or_id,
-            is_user=is_user,
-            project_name_or_id=project_name_or_id,
-        )
-        self.zen_store.delete_role_assignment(role_assignment.id)
+            role_assignment_id: The id of the role assignments
 
-    def list_role_assignment(
+        """
+        self.zen_store.delete_user_role_assignment(role_assignment_id)
+
+    def list_user_role_assignment(
         self,
-        role_name_or_id: Optional[str] = None,
-        user_name_or_id: Optional[str] = None,
-        team_name_or_id: Optional[str] = None,
-        project_name_or_id: Optional[str] = None,
-    ) -> List[RoleAssignmentResponseModel]:
-        """List role assignments.
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        workspace_id: Optional[Union[str, UUID]] = None,
+        user_id: Optional[Union[str, UUID]] = None,
+        role_id: Optional[Union[str, UUID]] = None,
+    ) -> Page[UserRoleAssignmentResponseModel]:
+        """List all user role assignments.
 
         Args:
-            role_name_or_id: Only list assignments for this role
-            user_name_or_id: Only list assignments for this user
-            team_name_or_id: Only list assignments for this team
-            project_name_or_id: Only list assignments in this project
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            id: Use the id of the user role assignment to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            workspace_id: The id of the workspace to filter by.
+            user_id: The id of the user to filter by.
+            role_id: The id of the role to filter by.
 
         Returns:
-            List of role assignments
+            The Team
         """
-        return self.zen_store.list_role_assignments(
-            project_name_or_id=project_name_or_id,
-            role_name_or_id=role_name_or_id,
-            user_name_or_id=user_name_or_id,
-            team_name_or_id=team_name_or_id,
+        return self.zen_store.list_user_role_assignments(
+            UserRoleAssignmentFilterModel(
+                sort_by=sort_by,
+                page=page,
+                size=size,
+                logical_operator=logical_operator,
+                id=id,
+                created=created,
+                updated=updated,
+                workspace_id=workspace_id,
+                user_id=user_id,
+                role_id=role_id,
+            )
         )
 
-    # ------- #
-    # PROJECT #
-    # ------- #
+    # --------------------- #
+    # TEAM ROLE ASSIGNMENTS #
+    # --------------------- #
 
-    @property
-    def active_project(self) -> "ProjectResponseModel":
-        """Get the currently active project of the local client.
+    def get_team_role_assignment(
+        self, team_role_assignment_id: UUID
+    ) -> TeamRoleAssignmentResponseModel:
+        """Get a role assignment.
 
-        If no active project is configured locally for the client, the
-        active project in the global configuration is used instead.
+        Args:
+            team_role_assignment_id: The id of the role assignments
 
         Returns:
-            The active project.
+            The role assignment.
+        """
+        return self.zen_store.get_team_role_assignment(
+            team_role_assignment_id=team_role_assignment_id
+        )
+
+    def create_team_role_assignment(
+        self,
+        role_name_or_id: Union[str, UUID],
+        team_name_or_id: Union[str, UUID],
+        workspace_name_or_id: Optional[Union[str, UUID]] = None,
+    ) -> TeamRoleAssignmentResponseModel:
+        """Create a role assignment.
+
+        Args:
+            role_name_or_id: Name or ID of the role to assign.
+            team_name_or_id: Name or ID of the team to assign
+                the role to.
+            workspace_name_or_id: workspace scope within which to assign the role.
+
+        Returns:
+            The newly created role assignment.
+        """
+        role = self.get_role(name_id_or_prefix=role_name_or_id)
+        workspace = None
+        if workspace_name_or_id:
+            workspace = self.get_workspace(
+                name_id_or_prefix=workspace_name_or_id
+            )
+        team = self.get_team(name_id_or_prefix=team_name_or_id)
+        role_assignment = TeamRoleAssignmentRequestModel(
+            role=role.id,
+            team=team.id,
+            workspace=workspace,
+        )
+        return self.zen_store.create_team_role_assignment(
+            team_role_assignment=role_assignment
+        )
+
+    def delete_team_role_assignment(self, role_assignment_id: UUID) -> None:
+        """Delete a role assignment.
+
+        Args:
+            role_assignment_id: The id of the role assignments
+
+        """
+        self.zen_store.delete_team_role_assignment(role_assignment_id)
+
+    def list_team_role_assignment(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        workspace_id: Optional[Union[str, UUID]] = None,
+        team_id: Optional[Union[str, UUID]] = None,
+        role_id: Optional[Union[str, UUID]] = None,
+    ) -> Page[TeamRoleAssignmentResponseModel]:
+        """List all team role assignments.
+
+        Args:
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            id: Use the id of the team role assignment to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            workspace_id: The id of the workspace to filter by.
+            team_id: The id of the team to filter by.
+            role_id: The id of the role to filter by.
+
+        Returns:
+            The Team
+        """
+        return self.zen_store.list_team_role_assignments(
+            TeamRoleAssignmentFilterModel(
+                sort_by=sort_by,
+                page=page,
+                size=size,
+                logical_operator=logical_operator,
+                id=id,
+                created=created,
+                updated=updated,
+                workspace_id=workspace_id,
+                team_id=team_id,
+                role_id=role_id,
+            )
+        )
+
+    # --------- #
+    # WORKSPACE #
+    # --------- #
+
+    @property
+    def active_workspace(self) -> "WorkspaceResponseModel":
+        """Get the currently active workspace of the local client.
+
+        If no active workspace is configured locally for the client, the
+        active workspace in the global configuration is used instead.
+
+        Returns:
+            The active workspace.
 
         Raises:
-            RuntimeError: If the active project is not set.
+            RuntimeError: If the active workspace is not set.
         """
-        project: Optional["ProjectResponseModel"] = None
+        workspace: Optional["WorkspaceResponseModel"] = None
         if self._config:
-            project = self._config.active_project
+            workspace = self._config.active_workspace
 
-        if not project:
-            project = GlobalConfiguration().get_active_project()
+        if not workspace:
+            workspace = GlobalConfiguration().get_active_workspace()
 
-        if not project:
+        if not workspace:
             raise RuntimeError(
-                "No active project is configured. Run "
-                "`zenml project set PROJECT_NAME` to set the active "
-                "project."
+                "No active workspace is configured. Run "
+                "`zenml workspace set WORKSPACE_NAME` to set the active "
+                "workspace."
             )
 
-        from zenml.zen_stores.base_zen_store import DEFAULT_PROJECT_NAME
+        from zenml.zen_stores.base_zen_store import DEFAULT_WORKSPACE_NAME
 
-        if project.name != DEFAULT_PROJECT_NAME:
+        if workspace.name != DEFAULT_WORKSPACE_NAME:
             logger.warning(
-                f"You are running with a non-default project "
-                f"'{project.name}'. Any stacks, components, "
+                f"You are running with a non-default workspace "
+                f"'{workspace.name}'. Any stacks, components, "
                 f"pipelines and pipeline runs produced in this "
-                f"project will currently not be accessible through "
+                f"workspace will currently not be accessible through "
                 f"the dashboard. However, this will be possible "
                 f"in the near future."
             )
-        return project
+        return workspace
 
-    def get_project(
+    def get_workspace(
         self, name_id_or_prefix: Optional[Union[UUID, str]]
-    ) -> ProjectResponseModel:
-        """Gets a project.
+    ) -> WorkspaceResponseModel:
+        """Gets a workspace.
 
         Args:
-            name_id_or_prefix: The name or ID of the project.
+            name_id_or_prefix: The name or ID of the workspace.
 
         Returns:
-            The Project
+            The workspace
         """
         if not name_id_or_prefix:
-            return self.active_project
+            return self.active_workspace
         return self._get_entity_by_id_or_name_or_prefix(
-            response_model=ProjectResponseModel,
-            get_method=self.zen_store.get_project,
-            list_method=self.zen_store.list_projects,
+            get_method=self.zen_store.get_workspace,
+            list_method=self.list_workspaces,
             name_id_or_prefix=name_id_or_prefix,
         )
 
-    def create_project(
-        self, name: str, description: str
-    ) -> "ProjectResponseModel":
-        """Create a new project.
+    def list_workspaces(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        name: Optional[str] = None,
+    ) -> Page[WorkspaceResponseModel]:
+        """List all workspaces.
 
         Args:
-            name: Name of the project.
-            description: Description of the project.
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            id: Use the id of teams to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            name: Use the team name for filtering
 
         Returns:
-            The created project.
+            The Team
         """
-        return self.zen_store.create_project(
-            ProjectRequestModel(name=name, description=description)
+        return self.zen_store.list_workspaces(
+            WorkspaceFilterModel(
+                sort_by=sort_by,
+                page=page,
+                size=size,
+                logical_operator=logical_operator,
+                id=id,
+                created=created,
+                updated=updated,
+                name=name,
+            )
         )
 
-    def update_project(
+    def create_workspace(
+        self, name: str, description: str
+    ) -> "WorkspaceResponseModel":
+        """Create a new workspace.
+
+        Args:
+            name: Name of the workspace.
+            description: Description of the workspace.
+
+        Returns:
+            The created workspace.
+        """
+        return self.zen_store.create_workspace(
+            WorkspaceRequestModel(name=name, description=description)
+        )
+
+    def update_workspace(
         self,
         name_id_or_prefix: Optional[Union[UUID, str]],
         new_name: Optional[str] = None,
         new_description: Optional[str] = None,
-    ) -> "ProjectResponseModel":
-        """Update a project.
+    ) -> "WorkspaceResponseModel":
+        """Update a workspace.
 
         Args:
-            name_id_or_prefix: Name, ID or prefix of the project to update.
-            new_name: New name of the project.
-            new_description: New description of the project.
+            name_id_or_prefix: Name, ID or prefix of the workspace to update.
+            new_name: New name of the workspace.
+            new_description: New description of the workspace.
 
         Returns:
-            The updated project.
+            The updated workspace.
         """
-        project = self.get_project(name_id_or_prefix=name_id_or_prefix)
-        project_update = ProjectUpdateModel()
+        workspace = self.get_workspace(name_id_or_prefix=name_id_or_prefix)
+        workspace_update = WorkspaceUpdateModel()
         if new_name:
-            project_update.name = new_name
+            workspace_update.name = new_name
         if new_description:
-            project_update.description = new_description
-        return self.zen_store.update_project(
-            project_id=project.id,
-            project_update=project_update,
+            workspace_update.description = new_description
+        return self.zen_store.update_workspace(
+            workspace_id=workspace.id,
+            workspace_update=workspace_update,
         )
 
-    def delete_project(self, project_name_or_id: str) -> None:
-        """Delete a project.
+    def delete_workspace(self, workspace_name_or_id: str) -> None:
+        """Delete a workspace.
 
         Args:
-            project_name_or_id: The name or ID of the project to delete.
+            workspace_name_or_id: The name or ID of the workspace to delete.
 
         Raises:
-            IllegalOperationError: If the project to delete is the active
-                project.
+            IllegalOperationError: If the workspace to delete is the active
+                workspace.
         """
-        project = self.zen_store.get_project(project_name_or_id)
-        if self.active_project.id == project.id:
+        workspace = self.zen_store.get_workspace(workspace_name_or_id)
+        if self.active_workspace.id == workspace.id:
             raise IllegalOperationError(
-                f"Project '{project_name_or_id}' cannot be deleted since it is "
-                "currently active. Please set another project as active first."
+                f"Workspace '{workspace_name_or_id}' cannot be deleted since "
+                "it is currently active. Please set another workspace as "
+                "active first."
             )
-        self.zen_store.delete_project(project_name_or_id=project_name_or_id)
+        self.zen_store.delete_workspace(
+            workspace_name_or_id=workspace_name_or_id
+        )
 
     # ------ #
     # STACKS #
@@ -1223,8 +1475,7 @@ class Client(metaclass=ClientMetaClass):
         if not stack:
             raise RuntimeError(
                 "No active stack is configured. Run "
-                "`zenml stack set PROJECT_NAME` to set the active "
-                "stack."
+                "`zenml stack set STACK_NAME` to set the active stack."
             )
 
         return stack
@@ -1255,9 +1506,8 @@ class Client(metaclass=ClientMetaClass):
         """
         if name_id_or_prefix is not None:
             return self._get_entity_by_id_or_name_or_prefix(
-                response_model=StackResponseModel,
                 get_method=self.zen_store.get_stack,
-                list_method=self.zen_store.list_stacks,
+                list_method=self.list_stacks,
                 name_id_or_prefix=name_id_or_prefix,
             )
         else:
@@ -1286,32 +1536,35 @@ class Client(metaclass=ClientMetaClass):
         stack_components = dict()
 
         for c_type, c_identifier in components.items():
-            if c_identifier:
-                component = self.get_stack_component(
-                    name_id_or_prefix=c_identifier,
-                    component_type=c_type,
-                )
-                stack_components[c_type] = [component.id]
 
-                if is_shared:
-                    if not component.is_shared:
-                        raise ValueError(
-                            "You attempted to include a private "
-                            f"{c_type} {name} in a shared stack. This "
-                            f"is not supported. You can either share"
-                            f" the {c_type} with the following "
-                            f"command: \n `zenml {c_type.replace('_', '-')} "
-                            f"share`{component.id}`\n "
-                            f"or create the stack privately and "
-                            f"then share it and all of its components using: "
-                            f"\n `zenml stack share {name} -r`"
-                        )
+            # Skip non-existent components.
+            if not c_identifier:
+                continue
+
+            # Get the component.
+            component = self.get_stack_component(
+                name_id_or_prefix=c_identifier,
+                component_type=c_type,
+            )
+            stack_components[c_type] = [component.id]
+
+            # Raise an error if private components are used in a shared stack.
+            if is_shared and not component.is_shared:
+                raise ValueError(
+                    f"You attempted to include the private {c_type} "
+                    f"'{component.name}' in a shared stack. This is not "
+                    f"supported. You can either share the {c_type} with the "
+                    f"following command:\n"
+                    f"`zenml {c_type.replace('_', '-')} share`{component.id}`\n"
+                    f"or create the stack privately and then share it and all "
+                    f"of its components using:\n`zenml stack share {name} -r`"
+                )
 
         stack = StackRequestModel(
             name=name,
             components=stack_components,
             is_shared=is_shared,
-            project=self.active_project.id,
+            workspace=self.active_workspace.id,
             user=self.active_user.id,
         )
 
@@ -1352,7 +1605,7 @@ class Client(metaclass=ClientMetaClass):
 
         # Create the update model
         update_model = StackUpdateModel(
-            project=self.active_project.id,
+            workspace=self.active_workspace.id,
             user=self.active_user.id,
         )
 
@@ -1405,7 +1658,9 @@ class Client(metaclass=ClientMetaClass):
         if component_updates:
             components_dict = {}
             for component_type, component_list in stack.components.items():
-                components_dict[component_type] = [c.id for c in component_list]
+                components_dict[component_type] = [
+                    c.id for c in component_list
+                ]
 
             for component_type, component_id_list in component_updates.items():
                 if component_id_list is not None:
@@ -1458,34 +1713,62 @@ class Client(metaclass=ClientMetaClass):
 
     def list_stacks(
         self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
-        component_id: Optional[UUID] = None,
-        name: Optional[str] = None,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[datetime] = None,
+        updated: Optional[datetime] = None,
         is_shared: Optional[bool] = None,
-    ) -> List["StackResponseModel"]:
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        workspace_id: Optional[Union[str, UUID]] = None,
+        user_id: Optional[Union[str, UUID]] = None,
+        component_id: Optional[Union[str, UUID]] = None,
+    ) -> Page[StackResponseModel]:
         """Lists all stacks.
 
         Args:
-            project_name_or_id: The name or id of the project to filter by.
-            user_name_or_id: The name or id of the user to filter by.
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            id: Use the id of stacks to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            description: Use the stack description for filtering
+            workspace_id: The id of the workspace to filter by.
+            user_id: The  id of the user to filter by.
             component_id: The id of the component to filter by.
             name: The name of the stack to filter by.
             is_shared: The shared status of the stack to filter by.
 
         Returns:
-            A list of stacks.
+            A page of stacks.
         """
-        return self.zen_store.list_stacks(
-            project_name_or_id=project_name_or_id or self.active_project.id,
-            user_name_or_id=user_name_or_id,
+        stack_filter_model = StackFilterModel(
+            page=page,
+            size=size,
+            sort_by=sort_by,
+            logical_operator=logical_operator,
+            workspace_id=workspace_id,
+            user_id=user_id,
             component_id=component_id,
             name=name,
             is_shared=is_shared,
+            description=description,
+            id=id,
+            created=created,
+            updated=updated,
         )
+        stack_filter_model.set_scope_workspace(self.active_workspace.id)
+        return self.zen_store.list_stacks(stack_filter_model)
 
     @track(event=AnalyticsEvent.SET_STACK)
-    def activate_stack(self, stack_name_id_or_prefix: Union[str, UUID]) -> None:
+    def activate_stack(
+        self, stack_name_id_or_prefix: Union[str, UUID]
+    ) -> None:
         """Sets the stack as active.
 
         Args:
@@ -1493,11 +1776,13 @@ class Client(metaclass=ClientMetaClass):
 
         Raises:
             KeyError: If the stack is not registered.
+            ZenKeyError: If the stack is not registered.
         """
         # Make sure the stack is registered
         try:
             stack = self.get_stack(name_id_or_prefix=stack_name_id_or_prefix)
-
+        except ZenKeyError:
+            raise
         except KeyError:
             raise KeyError(
                 f"Stack '{stack_name_id_or_prefix}' cannot be activated since "
@@ -1512,7 +1797,9 @@ class Client(metaclass=ClientMetaClass):
             # a local configuration
             GlobalConfiguration().set_active_stack(stack=stack)
 
-    def _validate_stack_configuration(self, stack: "StackRequestModel") -> None:
+    def _validate_stack_configuration(
+        self, stack: "StackRequestModel"
+    ) -> None:
         """Validates the configuration of a stack.
 
         Args:
@@ -1602,52 +1889,101 @@ class Client(metaclass=ClientMetaClass):
             KeyError: If no name_id_or_prefix is provided and no such component
                 is part of the active stack.
         """
-        if name_id_or_prefix is not None:
-            return self._get_component_by_id_or_name_or_prefix(
-                name_id_or_prefix=name_id_or_prefix,
-                component_type=component_type,
-            )
-        else:
+        # If no `name_id_or_prefix` provided, try to get the active component.
+        if not name_id_or_prefix:
             components = self.active_stack_model.components.get(
                 component_type, None
             )
-            if components is None:
-                raise KeyError(
-                    "No name_id_or_prefix provided and there is no active "
-                    f"{component_type} in the current active stack."
-                )
+            if components:
+                return components[0]
+            raise KeyError(
+                "No name_id_or_prefix provided and there is no active "
+                f"{component_type} in the current active stack."
+            )
 
-            return components[0]
+        # Else, try to fetch the component with an explicit type filter
+        def type_scoped_list_method(
+            **kwargs: Any,
+        ) -> Page[ComponentResponseModel]:
+            """Call `zen_store.list_stack_components` with type scoping.
+
+            Args:
+                **kwargs: Keyword arguments to pass to `ComponentFilterModel`.
+
+            Returns:
+                The type-scoped list of components.
+            """
+            component_filter_model = ComponentFilterModel(**kwargs)
+            component_filter_model.set_scope_type(
+                component_type=component_type
+            )
+            component_filter_model.set_scope_workspace(
+                self.active_workspace.id
+            )
+            return self.zen_store.list_stack_components(
+                component_filter_model=component_filter_model,
+            )
+
+        return self._get_entity_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_stack_component,
+            list_method=type_scoped_list_method,
+            name_id_or_prefix=name_id_or_prefix,
+        )
 
     def list_stack_components(
         self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
-        component_type: Optional[str] = None,
-        flavor_name: Optional[str] = None,
-        name: Optional[str] = None,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[datetime] = None,
+        updated: Optional[datetime] = None,
         is_shared: Optional[bool] = None,
-    ) -> List["ComponentResponseModel"]:
+        name: Optional[str] = None,
+        flavor: Optional[str] = None,
+        type: Optional[str] = None,
+        workspace_id: Optional[Union[str, UUID]] = None,
+        user_id: Optional[Union[str, UUID]] = None,
+    ) -> Page[ComponentResponseModel]:
         """Lists all registered stack components.
 
         Args:
-            project_name_or_id: The name or id of the project to filter by.
-            user_name_or_id: The name or id of the user to filter by.
-            component_type: The type of the component to filter by.
-            flavor_name: The name of the flavor to filter by.
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            id: Use the id of component to filter by.
+            created: Use to component by time of creation
+            updated: Use the last updated date for filtering
+            flavor: Use the component flavor for filtering
+            type: Use the component type for filtering
+            workspace_id: The id of the workspace to filter by.
+            user_id: The id of the user to filter by.
             name: The name of the component to filter by.
             is_shared: The shared status of the component to filter by.
 
         Returns:
-            A list of stack components.
+            A page of stack components.
         """
-        return self.zen_store.list_stack_components(
-            project_name_or_id=project_name_or_id or self.active_project.id,
-            user_name_or_id=user_name_or_id,
-            type=component_type,
-            flavor_name=flavor_name,
+        component_filter_model = ComponentFilterModel(
+            page=page,
+            size=size,
+            sort_by=sort_by,
+            logical_operator=logical_operator,
+            workspace_id=workspace_id or self.active_workspace.id,
+            user_id=user_id,
             name=name,
             is_shared=is_shared,
+            flavor=flavor,
+            type=type,
+            id=id,
+            created=created,
+            updated=updated,
+        )
+        component_filter_model.set_scope_workspace(self.active_workspace.id)
+        return self.zen_store.list_stack_components(
+            component_filter_model=component_filter_model
         )
 
     def create_stack_component(
@@ -1693,7 +2029,7 @@ class Client(metaclass=ClientMetaClass):
             configuration=configuration,
             is_shared=is_shared,
             user=self.active_user.id,
-            project=self.active_project.id,
+            workspace=self.active_workspace.id,
         )
 
         # Register the new model
@@ -1732,7 +2068,7 @@ class Client(metaclass=ClientMetaClass):
         )
 
         update_model = ComponentUpdateModel(
-            project=self.active_project.id,
+            workspace=self.active_workspace.id,
             user=self.active_user.id,
         )
 
@@ -1742,9 +2078,9 @@ class Client(metaclass=ClientMetaClass):
             existing_components = self.list_stack_components(
                 name=name,
                 is_shared=shared_status,
-                component_type=component_type,
+                type=component_type,
             )
-            if existing_components:
+            if existing_components.total > 0:
                 raise EntityExistsError(
                     f"There are already existing "
                     f"{'shared' if shared_status else 'unshared'} components "
@@ -1755,9 +2091,9 @@ class Client(metaclass=ClientMetaClass):
         if is_shared is not None:
             current_name = update_model.name or component.name
             existing_components = self.list_stack_components(
-                name=current_name, is_shared=True, component_type=component_type
+                name=current_name, is_shared=is_shared, type=component_type
             )
-            if any([e.id != component.id for e in existing_components]):
+            if any([e.id != component.id for e in existing_components.items]):
                 raise EntityExistsError(
                     f"There are already existing shared components with "
                     f"the name '{current_name}'"
@@ -1769,7 +2105,9 @@ class Client(metaclass=ClientMetaClass):
             existing_configuration.update(configuration)
 
             existing_configuration = {
-                k: v for k, v in existing_configuration.items() if v is not None
+                k: v
+                for k, v in existing_configuration.items()
+                if v is not None
             }
 
             flavor_model = self.get_flavor_by_name_and_type(
@@ -1827,18 +2165,10 @@ class Client(metaclass=ClientMetaClass):
             component_type: The type of the component.
             configuration: The component configuration to validate.
         """
-        from zenml.enums import StackComponentType, StoreType
+        from zenml.enums import StoreType
 
         if configuration.is_remote and self.zen_store.is_local_store():
-            if self.zen_store.type == StoreType.REST:
-                logger.warning(
-                    "You are configuring a stack component that is running "
-                    "remotely while using a local database. The component "
-                    "may not be able to reach the local database and will "
-                    "therefore not be functional. Please consider deploying "
-                    "and/or using a remote ZenML server instead."
-                )
-            else:
+            if self.zen_store.type != StoreType.REST:
                 logger.warning(
                     "You are configuring a stack component that is running "
                     "remotely while using a local ZenML server. The component "
@@ -1854,19 +2184,6 @@ class Client(metaclass=ClientMetaClass):
                 "other users. You should consider using a non-local stack "
                 "component alternative instead."
             )
-            if component_type in [
-                StackComponentType.ORCHESTRATOR,
-                StackComponentType.STEP_OPERATOR,
-            ]:
-                logger.warning(
-                    "You are configuring a stack component that is running "
-                    "pipeline code on your local host while connected to a "
-                    "remote ZenML server. This will significantly affect the "
-                    "performance of your pipelines. You will likely encounter "
-                    "long running times caused by network latency. You should "
-                    "consider using a non-local stack component alternative "
-                    "instead."
-                )
 
     # .---------.
     # | FLAVORS |
@@ -1898,6 +2215,8 @@ class Client(metaclass=ClientMetaClass):
             type=flavor.type,
             name=flavor.name,
             config_schema=flavor.config_schema,
+            user=self.active_user.id,
+            workspace=self.active_workspace.id,
         )
 
         return self.zen_store.create_flavor(flavor=create_flavor_request)
@@ -1913,9 +2232,8 @@ class Client(metaclass=ClientMetaClass):
             The stack component flavor.
         """
         return self._get_entity_by_id_or_name_or_prefix(
-            response_model=FlavorResponseModel,
             get_method=self.zen_store.get_flavor,
-            list_method=self.zen_store.list_flavors,
+            list_method=self.list_custom_flavors,
             name_id_or_prefix=name_id_or_prefix,
         )
 
@@ -1931,28 +2249,58 @@ class Client(metaclass=ClientMetaClass):
 
         logger.info(f"Deleted flavor '{flavor.name}' of type '{flavor.type}'.")
 
-    def list_flavors(
+    def list_custom_flavors(
         self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
-    ) -> List["FlavorResponseModel"]:
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[datetime] = None,
+        updated: Optional[datetime] = None,
+        name: Optional[str] = None,
+        type: Optional[str] = None,
+        integration: Optional[str] = None,
+        workspace_id: Optional[Union[str, UUID]] = None,
+        user_id: Optional[Union[str, UUID]] = None,
+    ) -> Page[FlavorResponseModel]:
         """Fetches all the flavor models.
 
         Args:
-            project_name_or_id: The name or id of the project to filter by.
-            user_name_or_id: The name or id of the user to filter by.
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            id: Use the id of flavors to filter by.
+            created: Use to flavors by time of creation
+            updated: Use the last updated date for filtering
+            workspace_id: The id of the workspace to filter by.
+            user_id: The  id of the user to filter by.
+            name: The name of the flavor to filter by.
+            type: The type of the flavor to filter by.
+            integration: The integration of the flavor to filter by.
 
         Returns:
             A list of all the flavor models.
         """
-        from zenml.stack.flavor_registry import flavor_registry
-
-        zenml_flavors = flavor_registry.flavors
-        custom_flavors = self.zen_store.list_flavors(
-            project_name_or_id=project_name_or_id or self.active_project.id,
-            user_name_or_id=user_name_or_id,
+        flavor_filter_model = FlavorFilterModel(
+            page=page,
+            size=size,
+            sort_by=sort_by,
+            logical_operator=logical_operator,
+            workspace_id=workspace_id or self.active_workspace.id,
+            user_id=user_id,
+            name=name,
+            type=type,
+            integration=integration,
+            id=id,
+            created=created,
+            updated=updated,
         )
-        return zenml_flavors + custom_flavors
+        flavor_filter_model.set_scope_workspace(self.active_workspace.id)
+        return self.zen_store.list_flavors(
+            flavor_filter_model=flavor_filter_model
+        )
 
     def get_flavors_by_type(
         self, component_type: "StackComponentType"
@@ -1973,12 +2321,12 @@ class Client(metaclass=ClientMetaClass):
             component_type=component_type
         )
 
-        custom_flavors = self.zen_store.list_flavors(
-            project_name_or_id=self.active_project.id,
-            component_type=component_type,
+        custom_flavors = self.list_custom_flavors(
+            workspace_id=self.active_workspace.id,
+            type=component_type,
         )
 
-        return zenml_flavors + custom_flavors
+        return zenml_flavors + list(custom_flavors.items)
 
     def get_flavor_by_name_and_type(
         self, name: str, component_type: "StackComponentType"
@@ -2009,11 +2357,11 @@ class Client(metaclass=ClientMetaClass):
         except KeyError:
             zenml_flavor = None
 
-        custom_flavors = self.zen_store.list_flavors(
-            project_name_or_id=self.active_project.id,
-            component_type=component_type,
+        custom_flavors = self.list_custom_flavors(
+            workspace_id=self.active_workspace.id,
+            type=component_type,
             name=name,
-        )
+        ).items
 
         if custom_flavors:
             if len(custom_flavors) > 1:
@@ -2050,7 +2398,7 @@ class Client(metaclass=ClientMetaClass):
         pipeline_spec: "PipelineSpec",
         pipeline_docstring: Optional[str],
     ) -> UUID:
-        """Registers a pipeline in the ZenStore within the active project.
+        """Registers a pipeline in the ZenStore within the active workspace.
 
         This will do one of the following three things:
         A) If there is no pipeline with this name, register a new pipeline.
@@ -2067,17 +2415,14 @@ class Client(metaclass=ClientMetaClass):
 
         Raises:
             AlreadyExistsException: If there is an existing pipeline in the
-                project with the same name but a different configuration.
+                workspace with the same name but a different configuration.
         """
-        existing_pipelines = self.zen_store.list_pipelines(
-            name=pipeline_name,
-            project_name_or_id=self.active_project.id,
-        )
+        existing_pipelines = self.list_pipelines(name=pipeline_name)
 
         # A) If there is no pipeline with this name, register a new pipeline.
-        if len(existing_pipelines) == 0:
+        if len(existing_pipelines.items) == 0:
             create_pipeline_request = PipelineRequestModel(
-                project=self.active_project.id,
+                workspace=self.active_workspace.id,
                 user=self.active_user.id,
                 name=pipeline_name,
                 spec=pipeline_spec,
@@ -2090,8 +2435,8 @@ class Client(metaclass=ClientMetaClass):
             return pipeline.id
 
         else:
-            if len(existing_pipelines) == 1:
-                existing_pipeline = existing_pipelines[0]
+            if len(existing_pipelines.items) == 1:
+                existing_pipeline = existing_pipelines.items[0]
                 # B) If a pipeline exists that has the same config, use that
                 # pipeline.
                 if pipeline_spec == existing_pipeline.spec:
@@ -2120,25 +2465,52 @@ class Client(metaclass=ClientMetaClass):
 
     def list_pipelines(
         self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
-    ) -> List[PipelineResponseModel]:
-        """List pipelines.
+        docstring: Optional[str] = None,
+        workspace_id: Optional[Union[str, UUID]] = None,
+        user_id: Optional[Union[str, UUID]] = None,
+    ) -> Page[PipelineResponseModel]:
+        """List all pipelines.
 
         Args:
-            project_name_or_id: If provided, only list pipelines in this
-                project.
-            user_name_or_id: If provided, only list pipelines from this user.
-            name: If provided, only list pipelines with this name.
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            id: Use the id of stacks to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            docstring: Use the stack description for filtering
+            workspace_id: The id of the workspace to filter by.
+            user_id: The  id of the user to filter by.
+            name: The name of the stack to filter by.
 
         Returns:
-            A list of pipelines.
+            A page with Pipeline fitting the filter description
         """
-        return self.zen_store.list_pipelines(
-            project_name_or_id=project_name_or_id or self.active_project.id,
-            user_name_or_id=user_name_or_id,
+        pipeline_filter_model = PipelineFilterModel(
+            sort_by=sort_by,
+            page=page,
+            size=size,
+            logical_operator=logical_operator,
+            id=id,
+            created=created,
+            updated=updated,
             name=name,
+            docstring=docstring,
+            workspace_id=workspace_id,
+            user_id=user_id,
+        )
+        pipeline_filter_model.set_scope_workspace(self.active_workspace.id)
+        return self.zen_store.list_pipelines(
+            pipeline_filter_model=pipeline_filter_model
         )
 
     def get_pipeline(
@@ -2153,9 +2525,8 @@ class Client(metaclass=ClientMetaClass):
             The pipeline.
         """
         return self._get_entity_by_id_or_name_or_prefix(
-            response_model=PipelineResponseModel,
             get_method=self.zen_store.get_pipeline,
-            list_method=self.zen_store.list_pipelines,
+            list_method=self.list_pipelines,
             name_id_or_prefix=name_id_or_prefix,
         )
 
@@ -2169,283 +2540,188 @@ class Client(metaclass=ClientMetaClass):
         pipeline = self.get_pipeline(name_id_or_prefix=name_id_or_prefix)
         self.zen_store.delete_pipeline(pipeline_id=pipeline.id)
 
+    # -------------
+    # - SCHEDULES -
+    # -------------
+
+    def list_schedules(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        name: Optional[str] = None,
+        workspace_id: Optional[Union[str, UUID]] = None,
+        user_id: Optional[Union[str, UUID]] = None,
+        pipeline_id: Optional[Union[str, UUID]] = None,
+        orchestrator_id: Optional[Union[str, UUID]] = None,
+        active: Optional[Union[str, bool]] = None,
+        cron_expression: Optional[str] = None,
+        start_time: Optional[Union[datetime, str]] = None,
+        end_time: Optional[Union[datetime, str]] = None,
+        interval_second: Optional[int] = None,
+        catchup: Optional[Union[str, bool]] = None,
+    ) -> Page[ScheduleResponseModel]:
+        """List schedules.
+
+        Args:
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            id: Use the id of stacks to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            name: The name of the stack to filter by.
+            workspace_id: The id of the workspace to filter by.
+            user_id: The  id of the user to filter by.
+            pipeline_id: The id of the pipeline to filter by.
+            orchestrator_id: The id of the orchestrator to filter by.
+            active: Use to filter by active status.
+            cron_expression: Use to filter by cron expression.
+            start_time: Use to filter by start time.
+            end_time: Use to filter by end time.
+            interval_second: Use to filter by interval second.
+            catchup: Use to filter by catchup.
+
+        Returns:
+            A list of schedules.
+        """
+        schedule_filter_model = ScheduleFilterModel(
+            sort_by=sort_by,
+            page=page,
+            size=size,
+            logical_operator=logical_operator,
+            id=id,
+            created=created,
+            updated=updated,
+            name=name,
+            workspace_id=workspace_id,
+            user_id=user_id,
+            pipeline_id=pipeline_id,
+            orchestrator_id=orchestrator_id,
+            active=active,
+            cron_expression=cron_expression,
+            start_time=start_time,
+            end_time=end_time,
+            interval_second=interval_second,
+            catchup=catchup,
+        )
+        schedule_filter_model.set_scope_workspace(self.active_workspace.id)
+        return self.zen_store.list_schedules(
+            schedule_filter_model=schedule_filter_model
+        )
+
+    def get_schedule(
+        self, name_id_or_prefix: Union[str, UUID]
+    ) -> ScheduleResponseModel:
+        """Get a schedule by name, id or prefix.
+
+        Args:
+            name_id_or_prefix: The name, id or prefix of the schedule.
+
+        Returns:
+            The schedule.
+        """
+        return self._get_entity_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_schedule,
+            list_method=self.list_schedules,
+            name_id_or_prefix=name_id_or_prefix,
+        )
+
+    def delete_schedule(self, name_id_or_prefix: Union[str, UUID]) -> None:
+        """Delete a schedule.
+
+        Args:
+            name_id_or_prefix: The name, id or prefix id of the schedule
+                to delete.
+        """
+        schedule = self.get_schedule(name_id_or_prefix=name_id_or_prefix)
+        logger.warning(
+            f"Deleting schedule '{name_id_or_prefix}'... This will only delete "
+            "the reference of the schedule from ZenML. Please make sure to "
+            "manually stop/delete this schedule in your orchestrator as well!"
+        )
+        self.zen_store.delete_schedule(schedule_id=schedule.id)
+
     # -----------------
     # - PIPELINE RUNS -
     # -----------------
 
-    def export_pipeline_runs(self, filename: str) -> None:
-        """Export all pipeline runs to a YAML file.
-
-        Args:
-            filename: The filename to export the pipeline runs to.
-        """
-        import json
-
-        from zenml.utils.yaml_utils import write_yaml
-
-        pipeline_runs = self.zen_store.list_runs(
-            project_name_or_id=self.active_project.id
-        )
-        if not pipeline_runs:
-            logger.warning("No pipeline runs found. Nothing to export.")
-            return
-        yaml_data = []
-        for pipeline_run in pipeline_runs:
-            run_dict = json.loads(pipeline_run.json())
-            run_dict["steps"] = []
-            steps = self.zen_store.list_run_steps(run_id=pipeline_run.id)
-            for step in steps:
-                step_dict = json.loads(step.json())
-                step_dict["output_artifacts"] = []
-                artifacts = self.zen_store.list_artifacts(
-                    parent_step_id=step.id
-                )
-                for artifact in sorted(artifacts, key=lambda x: x.created):
-                    artifact_dict = json.loads(artifact.json())
-                    step_dict["output_artifacts"].append(artifact_dict)
-                run_dict["steps"].append(step_dict)
-            yaml_data.append(run_dict)
-        write_yaml(filename, yaml_data)
-        logger.info(f"Exported {len(yaml_data)} pipeline runs to {filename}.")
-
-    def import_pipeline_runs(self, filename: str) -> None:
-        """Import pipeline runs from a YAML file.
-
-        Args:
-            filename: The filename from which to import the pipeline runs.
-        """
-        from zenml.utils.yaml_utils import read_yaml
-
-        step_id_mapping: Dict[str, UUID] = {}
-        artifact_id_mapping: Dict[str, UUID] = {}
-        yaml_data = read_yaml(filename)
-        for pipeline_run_dict in yaml_data:
-            steps = pipeline_run_dict.pop("steps")
-            pipeline_run_dict["id"] = uuid4()
-            pipeline_run_dict["user"] = self.active_user.id
-            pipeline_run_dict["project"] = self.active_project.id
-            pipeline_run_dict["stack"] = None
-            pipeline_run_dict["pipeline"] = None
-            pipeline_run = PipelineRunRequestModel.parse_obj(pipeline_run_dict)
-            pipeline_run.mlmd_id = None
-            pipeline_run_response = self.zen_store.create_run(pipeline_run)
-            for step_dict in steps:
-                artifacts = step_dict.pop("output_artifacts")
-                step_id = step_dict.pop("id")
-                step = StepRunRequestModel.parse_obj(step_dict)
-                step.pipeline_run_id = pipeline_run_response.id
-                step.parent_step_ids = [
-                    step_id_mapping[str(parent_step_id)]
-                    for parent_step_id in step.parent_step_ids
-                ]
-                step.input_artifacts = {
-                    input_name: artifact_id_mapping[str(artifact_id)]
-                    for input_name, artifact_id in step.input_artifacts.items()
-                }
-                step.mlmd_id = None
-                step.mlmd_parent_step_ids = []
-                step_response = self.zen_store.create_run_step(step)
-                step_id_mapping[str(step_id)] = step_response.id
-                for artifact_dict in artifacts:
-                    artifact_id = artifact_dict.pop("id")
-                    artifact = ArtifactRequestModel.parse_obj(artifact_dict)
-                    artifact.parent_step_id = step_response.id
-                    artifact.producer_step_id = step_id_mapping[
-                        str(artifact.producer_step_id)
-                    ]
-                    artifact.mlmd_id = None
-                    artifact.mlmd_parent_step_id = None
-                    artifact.mlmd_producer_step_id = None
-                    artifact_response = self.zen_store.create_artifact(artifact)
-                    artifact_id_mapping[str(artifact_id)] = artifact_response.id
-        logger.info(f"Imported {len(yaml_data)} pipeline runs from {filename}.")
-
-    def migrate_pipeline_runs(
-        self,
-        database: str,
-        database_type: str = "sqlite",
-        mysql_host: Optional[str] = None,
-        mysql_port: int = 3306,
-        mysql_username: Optional[str] = None,
-        mysql_password: Optional[str] = None,
-    ) -> None:
-        """Migrate pipeline runs from a metadata store of ZenML < 0.20.0.
-
-        Args:
-            database: The metadata store database from which to migrate the
-                pipeline runs. Either a path to a SQLite database or a database
-                name for a MySQL database.
-            database_type: The type of the metadata store database
-                ("sqlite" | "mysql"). Defaults to "sqlite".
-            mysql_host: The host of the MySQL database.
-            mysql_port: The port of the MySQL database. Defaults to 3306.
-            mysql_username: The username of the MySQL database.
-            mysql_password: The password of the MySQL database.
-
-        Raises:
-            NotImplementedError: If the database type is not supported.
-            RuntimeError: If no pipeline runs exist.
-            ValueError: If the database type is "mysql" but the MySQL host,
-                username or password are not provided.
-        """
-        from tfx.orchestration import metadata
-
-        from zenml.enums import ExecutionStatus
-        from zenml.zen_stores.metadata_store import MetadataStore
-
-        # Define MLMD connection config based on the database type.
-        if database_type == "sqlite":
-            mlmd_config = metadata.sqlite_metadata_connection_config(database)
-        elif database_type == "mysql":
-            if not mysql_host or not mysql_username or mysql_password is None:
-                raise ValueError(
-                    "Migration from MySQL requires username, password and host "
-                    "to be set."
-                )
-            mlmd_config = metadata.mysql_metadata_connection_config(
-                database=database,
-                host=mysql_host,
-                port=mysql_port,
-                username=mysql_username,
-                password=mysql_password,
-            )
-        else:
-            raise NotImplementedError(
-                "Migrating pipeline runs is only supported for SQLite and "
-                "MySQL."
-            )
-
-        metadata_store = MetadataStore(config=mlmd_config)
-
-        # Dicts to keep tracks of MLMD IDs, which we need to resolve later.
-        step_mlmd_id_mapping: Dict[int, UUID] = {}
-        artifact_mlmd_id_mapping: Dict[int, UUID] = {}
-
-        # Get all pipeline runs from the metadata store.
-        pipeline_runs = metadata_store.get_all_runs()
-        if not pipeline_runs:
-            raise RuntimeError("No pipeline runs found in the metadata store.")
-
-        # For each run, first store the pipeline run, then all steps, then all
-        # output artifacts of each step.
-        # Runs, steps, and artifacts need to be sorted chronologically ensure
-        # that the MLMD IDs of producer steps and parent steps can be resolved.
-        for mlmd_run in sorted(pipeline_runs, key=lambda x: x.mlmd_id):
-            steps = metadata_store.get_pipeline_run_steps(
-                mlmd_run.mlmd_id
-            ).values()
-
-            # Mark all steps that haven't finished yet as failed.
-            step_statuses = []
-            for step in steps:
-                status = metadata_store.get_step_status(step.mlmd_id)
-                if status == ExecutionStatus.RUNNING:
-                    status = ExecutionStatus.FAILED
-                step_statuses.append(status)
-
-            num_steps = len(steps)
-            pipeline_run = PipelineRunRequestModel(
-                id=uuid4(),
-                user=self.active_user.id,  # Old user might not exist.
-                project=self.active_project.id,  # Old project might not exist.
-                name=mlmd_run.name,
-                stack=None,  # Stack might not exist in new DB.
-                pipeline=None,  # Pipeline might not exist in new DB.
-                status=ExecutionStatus.run_status(step_statuses),
-                pipeline_configuration=mlmd_run.pipeline_configuration,
-                num_steps=num_steps,
-                mlmd_id=None,  # Run might not exist in new MLMD.
-            )
-            new_run = self.zen_store.create_run(pipeline_run)
-            for step, step_status in sorted(
-                zip(steps, step_statuses), key=lambda x: x[0].mlmd_id
-            ):
-                parent_step_ids = [
-                    step_mlmd_id_mapping[mlmd_parent_step_id]
-                    for mlmd_parent_step_id in step.mlmd_parent_step_ids
-                ]
-                inputs = metadata_store.get_step_input_artifacts(
-                    step_id=step.mlmd_id,
-                    step_parent_step_ids=step.mlmd_parent_step_ids,
-                )
-                outputs = metadata_store.get_step_output_artifacts(
-                    step_id=step.mlmd_id
-                )
-                input_artifacts = {
-                    input_name: artifact_mlmd_id_mapping[mlmd_artifact.mlmd_id]
-                    for input_name, mlmd_artifact in inputs.items()
-                }
-                step_run = StepRunRequestModel(
-                    name=step.name,
-                    pipeline_run_id=new_run.id,
-                    parent_step_ids=parent_step_ids,
-                    input_artifacts=input_artifacts,
-                    status=step_status,
-                    entrypoint_name=step.entrypoint_name,
-                    parameters=step.parameters,
-                    step_configuration={},
-                    mlmd_parent_step_ids=[],
-                    num_outputs=len(outputs),
-                )
-                new_step = self.zen_store.create_run_step(step_run)
-                step_mlmd_id_mapping[step.mlmd_id] = new_step.id
-                for output_name, mlmd_artifact in sorted(
-                    outputs.items(), key=lambda x: x[1].mlmd_id
-                ):
-                    producer_step_id = step_mlmd_id_mapping[
-                        mlmd_artifact.mlmd_producer_step_id
-                    ]
-                    artifact = ArtifactRequestModel(
-                        name=output_name,
-                        parent_step_id=new_step.id,
-                        producer_step_id=producer_step_id,
-                        type=mlmd_artifact.type,
-                        uri=mlmd_artifact.uri,
-                        materializer=mlmd_artifact.materializer,
-                        data_type=mlmd_artifact.data_type,
-                        is_cached=mlmd_artifact.is_cached,
-                    )
-                    new_artifact = self.zen_store.create_artifact(artifact)
-                    artifact_mlmd_id_mapping[
-                        mlmd_artifact.mlmd_id
-                    ] = new_artifact.id
-        logger.info(f"Migrated {len(pipeline_runs)} pipeline runs.")
-
     def list_runs(
         self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        stack_id: Optional[UUID] = None,
-        component_id: Optional[UUID] = None,
-        run_name: Optional[str] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
-        pipeline_id: Optional[UUID] = None,
-        unlisted: bool = False,
-    ) -> List[PipelineRunResponseModel]:
-        """Gets all pipeline runs.
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        name: Optional[str] = None,
+        workspace_id: Optional[Union[str, UUID]] = None,
+        pipeline_id: Optional[Union[str, UUID]] = None,
+        user_id: Optional[Union[str, UUID]] = None,
+        stack_id: Optional[Union[str, UUID]] = None,
+        schedule_id: Optional[Union[str, UUID]] = None,
+        orchestrator_run_id: Optional[str] = None,
+        status: Optional[str] = None,
+        start_time: Optional[Union[datetime, str]] = None,
+        end_time: Optional[Union[datetime, str]] = None,
+        num_steps: Optional[Union[int, str]] = None,
+        unlisted: Optional[bool] = None,
+    ) -> Page[PipelineRunResponseModel]:
+        """List all pipeline runs.
 
         Args:
-            project_name_or_id: If provided, only return runs for this project.
-            stack_id: If provided, only return runs for this stack.
-            component_id: Optionally filter for runs that used the
-                          component
-            run_name: Run name if provided
-            user_name_or_id: If provided, only return runs for this user.
-            pipeline_id: If provided, only return runs for this pipeline.
-            unlisted: If True, only return unlisted runs that are not
-                associated with any pipeline (filter by `pipeline_id==None`).
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            id: The id of the runs to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            workspace_id: The id of the workspace to filter by.
+            pipeline_id: The id of the pipeline to filter by.
+            user_id: The id of the user to filter by.
+            stack_id: The id of the stack to filter by.
+            schedule_id: The id of the schedule to filter by.
+            orchestrator_run_id: The run id of the orchestrator to filter by.
+            name: The name of the run to filter by.
+            status: The status of the pipeline run
+            start_time: The start_time for the pipeline run
+            end_time: The end_time for the pipeline run
+            num_steps: The number of steps for the pipeline run
+            unlisted: If the runs should be unlisted or not.
 
         Returns:
-            A list of all pipeline runs.
+            A page with Pipeline Runs fitting the filter description
         """
-        return self.zen_store.list_runs(
-            project_name_or_id=project_name_or_id or self.active_project.id,
-            user_name_or_id=user_name_or_id,
-            stack_id=stack_id,
-            component_id=component_id,
-            name=run_name,
+        runs_filter_model = PipelineRunFilterModel(
+            sort_by=sort_by,
+            page=page,
+            size=size,
+            logical_operator=logical_operator,
+            id=id,
+            created=created,
+            updated=updated,
+            name=name,
+            workspace_id=workspace_id,
             pipeline_id=pipeline_id,
+            schedule_id=schedule_id,
+            orchestrator_run_id=orchestrator_run_id,
+            user_id=user_id,
+            stack_id=stack_id,
+            status=status,
+            start_time=start_time,
+            end_time=end_time,
+            num_steps=num_steps,
             unlisted=unlisted,
         )
+        runs_filter_model.set_scope_workspace(self.active_workspace.id)
+        return self.zen_store.list_runs(runs_filter_model=runs_filter_model)
 
     def get_pipeline_run(
         self,
@@ -2460,100 +2736,443 @@ class Client(metaclass=ClientMetaClass):
             The pipeline run.
         """
         return self._get_entity_by_id_or_name_or_prefix(
-            response_model=PipelineRunResponseModel,
             get_method=self.zen_store.get_run,
-            list_method=self.zen_store.list_runs,
+            list_method=self.list_runs,
             name_id_or_prefix=name_id_or_prefix,
         )
 
-    # ---- utility prefix matching get functions -----
-
-    # TODO: This prefix matching functionality should be moved to the
-    #   corresponding SQL ZenStore list methods
-
-    def _get_component_by_id_or_name_or_prefix(
+    def delete_pipeline_run(
         self,
         name_id_or_prefix: Union[str, UUID],
-        component_type: StackComponentType,
-    ) -> "ComponentResponseModel":
-        """Fetches a component of given type using the name, id or partial id.
+    ) -> None:
+        """Deletes a pipeline run.
 
         Args:
-            name_id_or_prefix: The id, name or partial id of the component to
-                fetch.
-            component_type: The type of the component to fetch.
+            name_id_or_prefix: Name, ID, or prefix of the pipeline run.
+        """
+        run = self.get_pipeline_run(name_id_or_prefix=name_id_or_prefix)
+        self.zen_store.delete_run(run_id=run.id)
+
+    # -------------
+    # - STEP RUNS -
+    # -------------
+
+    def list_run_steps(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        name: Optional[str] = None,
+        entrypoint_name: Optional[str] = None,
+        code_hash: Optional[str] = None,
+        cache_key: Optional[str] = None,
+        status: Optional[str] = None,
+        start_time: Optional[Union[datetime, str]] = None,
+        end_time: Optional[Union[datetime, str]] = None,
+        pipeline_run_id: Optional[Union[str, UUID]] = None,
+        original_step_run_id: Optional[Union[str, UUID]] = None,
+        workspace_id: Optional[Union[str, UUID]] = None,
+        user_id: Optional[Union[str, UUID]] = None,
+        num_outputs: Optional[Union[int, str]] = None,
+    ) -> Page[StepRunResponseModel]:
+        """List all pipelines.
+
+        Args:
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            id: Use the id of runs to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            start_time: Use to filter by the time when the step started running
+            end_time: Use to filter by the time when the step finished running
+            workspace_id: The id of the workspace to filter by.
+            user_id: The  id of the user to filter by.
+            pipeline_run_id: The  id of the pipeline run to filter by.
+            original_step_run_id: The  id of the pipeline run to filter by.
+            name: The name of the run to filter by.
+            entrypoint_name: The entrypoint_name of the run to filter by.
+            code_hash: The code_hash of the run to filter by.
+            cache_key: The cache_key of the run to filter by.
+            status: The name of the run to filter by.
+            num_outputs: The number of outputs for the step run
 
         Returns:
-            The component with the given name.
-
-        Raises:
-            KeyError: If no stack with the given name exists.
+            A page with Pipeline fitting the filter description
         """
-        # First interpret as full UUID
-        if isinstance(name_id_or_prefix, UUID):
-            return self.zen_store.get_stack_component(name_id_or_prefix)
-        else:
-            try:
-                entity_id = UUID(name_id_or_prefix)
-            except ValueError:
-                pass
-            else:
-                return self.zen_store.get_stack_component(entity_id)
-
-        name_id_or_prefix = str(name_id_or_prefix)
-
-        components = self.zen_store.list_stack_components(
-            name=name_id_or_prefix,
-            type=component_type,
+        step_run_filter_model = StepRunFilterModel(
+            sort_by=sort_by,
+            page=page,
+            size=size,
+            logical_operator=logical_operator,
+            id=id,
+            entrypoint_name=entrypoint_name,
+            code_hash=code_hash,
+            cache_key=cache_key,
+            pipeline_run_id=pipeline_run_id,
+            original_step_run_id=original_step_run_id,
+            status=status,
+            created=created,
+            updated=updated,
+            start_time=start_time,
+            end_time=end_time,
+            name=name,
+            workspace_id=workspace_id,
+            user_id=user_id,
+            num_outputs=num_outputs,
+        )
+        step_run_filter_model.set_scope_workspace(self.active_workspace.id)
+        return self.zen_store.list_run_steps(
+            step_run_filter_model=step_run_filter_model
         )
 
-        if len(components) > 1:
-            raise KeyError(
-                f"Multiple {component_type.value} components have been found "
-                f"for name '{name_id_or_prefix}'. The components listed "
-                f"above all share this name. Please specify the component by "
-                f"full or partial id."
-            )
-        elif len(components) == 1:
-            return components[0]
-
-        logger.debug(
-            f"No component with name '{name_id_or_prefix}' "
-            f"exists. Trying to resolve as partial_id"
-        )
-
-        filtered_comps = [
-            component
-            for component in components
-            if str(component.id).startswith(name_id_or_prefix)
-        ]
-        if len(filtered_comps) > 1:
-            raise KeyError(
-                f"The components listed above all share the provided "
-                f"prefix '{name_id_or_prefix}' on their ids. Please "
-                f"provide more characters to uniquely identify only one "
-                f"component."
-            )
-
-        elif len(filtered_comps) == 1:
-            return filtered_comps[0]
-
-        raise KeyError(
-            f"No component of type `{component_type}` with name or id "
-            f"prefix '{name_id_or_prefix}' exists."
-        )
-
-    def _get_entity_by_id_or_name_or_prefix(
-        self,
-        response_model: Type[AnyResponseModel],
-        get_method: Callable[..., AnyResponseModel],
-        list_method: Callable[..., List[AnyResponseModel]],
-        name_id_or_prefix: Union[str, UUID],
-    ) -> "AnyResponseModel":
-        """Fetches an entity using the name, id or partial id.
+    def get_run_step(self, step_run_id: UUID) -> StepRunResponseModel:
+        """Get a step run by ID.
 
         Args:
-            response_model: The response model to use for the entity.
+            step_run_id: The ID of the step run to get.
+
+        Returns:
+            The step run.
+        """
+        return self.zen_store.get_run_step(step_run_id)
+
+    # -------------
+    # - Artifacts -
+    # -------------
+
+    def list_artifacts(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        name: Optional[str] = None,
+        artifact_store_id: Optional[Union[str, UUID]] = None,
+        type: Optional[ArtifactType] = None,
+        data_type: Optional[str] = None,
+        uri: Optional[str] = None,
+        materializer: Optional[str] = None,
+        workspace_id: Optional[Union[str, UUID]] = None,
+        user_id: Optional[Union[str, UUID]] = None,
+        only_unused: Optional[bool] = False,
+    ) -> Page[ArtifactResponseModel]:
+        """Get all artifacts.
+
+        Args:
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            id: Use the id of runs to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            name: The name of the run to filter by.
+            artifact_store_id: The id of the artifact store to filter by.
+            type: The type of the artifact to filter by.
+            data_type: The data type of the artifact to filter by.
+            uri: The uri of the artifact to filter by.
+            materializer: The materializer of the artifact to filter by.
+            workspace_id: The id of the workspace to filter by.
+            user_id: The  id of the user to filter by.
+            only_unused: Only return artifacts that are not used in any runs.
+
+        Returns:
+            A list of artifacts.
+        """
+        artifact_filter_model = ArtifactFilterModel(
+            sort_by=sort_by,
+            page=page,
+            size=size,
+            logical_operator=logical_operator,
+            id=id,
+            created=created,
+            updated=updated,
+            name=name,
+            artifact_store_id=artifact_store_id,
+            type=type,
+            data_type=data_type,
+            uri=uri,
+            materializer=materializer,
+            workspace_id=workspace_id,
+            user_id=user_id,
+            only_unused=only_unused,
+        )
+        artifact_filter_model.set_scope_workspace(self.active_workspace.id)
+        return self.zen_store.list_artifacts(artifact_filter_model)
+
+    def get_artifact(self, artifact_id: UUID) -> ArtifactResponseModel:
+        """Get an artifact by ID.
+
+        Args:
+            artifact_id: The ID of the artifact to get.
+
+        Returns:
+            The artifact.
+        """
+        return self.zen_store.get_artifact(artifact_id)
+
+    def delete_artifact(
+        self,
+        artifact_id: UUID,
+        delete_metadata: bool = True,
+        delete_from_artifact_store: bool = False,
+    ) -> None:
+        """Delete an artifact.
+
+        By default, this will delete only the metadata of the artifact from the
+        database, not the artifact itself.
+
+        Args:
+            artifact_id: The ID of the artifact to delete.
+            delete_metadata: If True, delete the metadata of the artifact from
+                the database.
+            delete_from_artifact_store: If True, delete the artifact itself from
+                the artifact store.
+        """
+        artifact = self.get_artifact(artifact_id=artifact_id)
+        if delete_from_artifact_store:
+            self._delete_artifact_from_artifact_store(artifact=artifact)
+        if delete_metadata:
+            self._delete_artifact_metadata(artifact=artifact)
+
+    def _delete_artifact_from_artifact_store(
+        self, artifact: ArtifactResponseModel
+    ) -> None:
+        """Delete an artifact from the artifact store.
+
+        Args:
+            artifact: The artifact to delete.
+
+        Raises:
+            Exception: If the artifact store is inaccessible.
+        """
+        from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
+        from zenml.stack.stack_component import StackComponent
+
+        if not artifact.artifact_store_id:
+            logger.warning(
+                f"Artifact '{artifact.uri}' does not have an artifact store "
+                "associated with it. Skipping deletion from artifact store."
+            )
+            return
+        try:
+            artifact_store_model = self.get_stack_component(
+                component_type=StackComponentType.ARTIFACT_STORE,
+                name_id_or_prefix=artifact.artifact_store_id,
+            )
+            artifact_store = StackComponent.from_model(artifact_store_model)
+            assert isinstance(artifact_store, BaseArtifactStore)
+            artifact_store.rmtree(artifact.uri)
+        except Exception as e:
+            logger.error(
+                f"Failed to delete artifact '{artifact.uri}' from the "
+                "artifact store. This might happen if your local client "
+                "does not have access to the artifact store or does not "
+                "have the required integrations installed. Full error: "
+                f"{e}"
+            )
+            raise e
+        else:
+            logger.info(
+                f"Deleted artifact '{artifact.uri}' from the artifact store."
+            )
+
+    def _delete_artifact_metadata(
+        self, artifact: ArtifactResponseModel
+    ) -> None:
+        """Delete the metadata of an artifact from the database.
+
+        Args:
+            artifact: The artifact to delete.
+
+        Raises:
+            ValueError: If the artifact is still used in any runs.
+        """
+        if artifact not in self.depaginate(
+            partial(self.list_artifacts, only_unused=True)
+        ):
+            raise ValueError(
+                "The metadata of artifacts that are used in runs cannot be "
+                "deleted. Please delete all runs that use this artifact "
+                "first."
+            )
+        self.zen_store.delete_artifact(artifact.id)
+        logger.info(f"Deleted metadata of artifact '{artifact.uri}'.")
+
+    # ----------------
+    # - Run Metadata -
+    # ----------------
+
+    def create_run_metadata(
+        self,
+        metadata: Dict[str, "MetadataType"],
+        pipeline_run_id: Optional[UUID] = None,
+        step_run_id: Optional[UUID] = None,
+        artifact_id: Optional[UUID] = None,
+        stack_component_id: Optional[UUID] = None,
+    ) -> Dict[str, RunMetadataResponseModel]:
+        """Create run metadata.
+
+        Args:
+            metadata: The metadata to create as a dictionary of key-value pairs.
+            pipeline_run_id: The ID of the pipeline run during which the
+                metadata was produced. If provided, `step_run_id` and
+                `artifact_id` must be None.
+            step_run_id: The ID of the step run during which the metadata was
+                produced. If provided, `pipeline_run_id` and `artifact_id` must
+                be None.
+            artifact_id: The ID of the artifact for which the metadata was
+                produced. If provided, `pipeline_run_id` and `step_run_id` must
+                be None.
+            stack_component_id: The ID of the stack component that produced
+                the metadata.
+
+        Returns:
+            The created metadata, as string to model dictionary.
+
+        Raises:
+            ValueError: If not exactly one of either `pipeline_run_id`,
+                `step_run_id`, or `artifact_id` is provided.
+        """
+        from zenml.metadata.metadata_types import get_metadata_type
+
+        if not (pipeline_run_id or step_run_id or artifact_id):
+            raise ValueError(
+                "Cannot create run metadata without linking it to any entity. "
+                "Please provide either a `pipeline_run_id`, `step_run_id`, or "
+                "`artifact_id`."
+            )
+        if (
+            (pipeline_run_id and step_run_id)
+            or (pipeline_run_id and artifact_id)
+            or (step_run_id and artifact_id)
+        ):
+            raise ValueError(
+                "Cannot create run metadata linked to multiple entities. "
+                "Please provide only a `pipeline_run_id` or only a "
+                "`step_run_id` or only an `artifact_id`."
+            )
+
+        created_metadata: Dict[str, RunMetadataResponseModel] = {}
+        for key, value in metadata.items():
+
+            # Skip metadata that is too large to be stored in the database.
+            if len(json.dumps(value)) > TEXT_FIELD_MAX_LENGTH:
+                logger.warning(
+                    f"Metadata value for key '{key}' is too large to be "
+                    "stored in the database. Skipping."
+                )
+                continue
+
+            # Skip metadata that is not of a supported type.
+            try:
+                metadata_type = get_metadata_type(value)
+            except ValueError as e:
+                logger.warning(
+                    f"Metadata value for key '{key}' is not of a supported "
+                    f"type. Skipping. Full error: {e}"
+                )
+                continue
+
+            run_metadata = RunMetadataRequestModel(
+                workspace=self.active_workspace.id,
+                user=self.active_user.id,
+                pipeline_run_id=pipeline_run_id,
+                step_run_id=step_run_id,
+                artifact_id=artifact_id,
+                stack_component_id=stack_component_id,
+                key=key,
+                value=value,
+                type=metadata_type,
+            )
+            metadata_model = self.zen_store.create_run_metadata(run_metadata)
+            created_metadata[key] = metadata_model
+        return created_metadata
+
+    def list_run_metadata(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        workspace_id: Optional[UUID] = None,
+        user_id: Optional[UUID] = None,
+        pipeline_run_id: Optional[UUID] = None,
+        step_run_id: Optional[UUID] = None,
+        artifact_id: Optional[UUID] = None,
+        stack_component_id: Optional[UUID] = None,
+        key: Optional[str] = None,
+        value: Optional["MetadataType"] = None,
+        type: Optional[str] = None,
+    ) -> Page[RunMetadataResponseModel]:
+        """List run metadata.
+
+        Args:
+            sort_by: The field to sort the results by.
+            page: The page number to return.
+            size: The number of results to return per page.
+            logical_operator: The logical operator to use for filtering.
+            id: The ID of the metadata.
+            created: The creation time of the metadata.
+            updated: The last update time of the metadata.
+            workspace_id: The ID of the workspace the metadata belongs to.
+            user_id: The ID of the user that created the metadata.
+            pipeline_run_id: The ID of the pipeline run the metadata belongs to.
+            step_run_id: The ID of the step run the metadata belongs to.
+            artifact_id: The ID of the artifact the metadata belongs to.
+            stack_component_id: The ID of the stack component that produced
+                the metadata.
+            key: The key of the metadata.
+            value: The value of the metadata.
+            type: The type of the metadata.
+
+        Returns:
+            The run metadata.
+        """
+        metadata_filter_model = RunMetadataFilterModel(
+            sort_by=sort_by,
+            page=page,
+            size=size,
+            logical_operator=logical_operator,
+            id=id,
+            created=created,
+            updated=updated,
+            workspace_id=workspace_id,
+            user_id=user_id,
+            pipeline_run_id=pipeline_run_id,
+            step_run_id=step_run_id,
+            artifact_id=artifact_id,
+            stack_component_id=stack_component_id,
+            key=key,
+            value=value,
+            type=type,
+        )
+        metadata_filter_model.set_scope_workspace(self.active_workspace.id)
+        return self.zen_store.list_run_metadata(metadata_filter_model)
+
+    # ---- utility prefix matching get functions -----
+
+    @staticmethod
+    def _get_entity_by_id_or_name_or_prefix(
+        get_method: Callable[..., AnyResponseModel],
+        list_method: Callable[..., Page[AnyResponseModel]],
+        name_id_or_prefix: Union[str, UUID],
+    ) -> "AnyResponseModel":
+        """Fetches an entity using the id, name, or partial id/name.
+
+        Args:
             get_method: The method to use to fetch the entity by id.
             list_method: The method to use to fetch all entities.
             name_id_or_prefix: The id, name or partial id of the entity to
@@ -2563,61 +3182,116 @@ class Client(metaclass=ClientMetaClass):
             The entity with the given name, id or partial id.
 
         Raises:
-            KeyError: If no entity with the given name exists.
+            ZenKeyError: If there is more than one entity with that name
+                or id prefix.
         """
+        from zenml.utils.uuid_utils import is_valid_uuid
+
         # First interpret as full UUID
-        if isinstance(name_id_or_prefix, UUID):
+        if is_valid_uuid(name_id_or_prefix):
             return get_method(name_id_or_prefix)
-        else:
-            try:
-                entity_id = UUID(name_id_or_prefix)
-            except ValueError:
-                pass
-            else:
-                return get_method(entity_id)
 
-        if "project" in response_model.__fields__:
-            entities: List[AnyResponseModel] = list_method(
-                name=name_id_or_prefix,
-                project_name_or_id=self.active_project.id,
-            )
-        else:
-            entities = list_method(
-                name=name_id_or_prefix,
+        # If not a UUID, try to find by name
+        assert not isinstance(name_id_or_prefix, UUID)
+        entity = list_method(name=f"equals:{name_id_or_prefix}")
+
+        # If only a single entity is found, return it
+        if entity.total == 1:
+            return entity.items[0]
+
+        # If still no match, try with prefix now
+        if entity.total == 0:
+            return Client._get_entity_by_prefix(
+                get_method=get_method,
+                list_method=list_method,
+                partial_id_or_name=name_id_or_prefix,
             )
 
-        if len(entities) > 1:
+        # If more than one entity with the same name is found, raise an error.
+        entity_label = get_method.__name__.replace("get_", "") + "s"
+        raise ZenKeyError(
+            f"{entity.total} {entity_label} have been found that have "
+            f"a name that matches the provided "
+            f"string '{name_id_or_prefix}':\n"
+            f"{[entity.items]}.\n"
+            f"Please use the id to uniquely identify "
+            f"only one of the {entity_label}s."
+        )
+
+    @staticmethod
+    def _get_entity_by_prefix(
+        get_method: Callable[..., AnyResponseModel],
+        list_method: Callable[..., Page[AnyResponseModel]],
+        partial_id_or_name: str,
+    ) -> "AnyResponseModel":
+        """Fetches an entity using a partial ID or name.
+
+        Args:
+            get_method: The method to use to fetch the entity by id.
+            list_method: The method to use to fetch all entities.
+            partial_id_or_name: The partial ID or name of the entity to fetch.
+
+        Returns:
+            The entity with the given partial ID or name.
+
+        Raises:
+            KeyError: If no entity with the given partial ID or name is found.
+            ZenKeyError: If there is more than one entity with that partial ID
+                or name.
+        """
+        entity = list_method(
+            logical_operator=LogicalOperators.OR,
+            name=f"contains:{partial_id_or_name}",
+            id=f"startswith:{partial_id_or_name}",
+        )
+
+        # If only a single entity is found, return it.
+        if entity.total == 1:
+            return entity.items[0]
+
+        entity_label = get_method.__name__.replace("get_", "") + "s"
+
+        # If no entity is found, raise an error.
+        if entity.total == 0:
             raise KeyError(
-                f"Multiple {response_model} have been found "
-                f"for name '{name_id_or_prefix}'. The {response_model} listed "
-                f"above all share this name. Please specify by "
-                f"full or partial id."
-            )
-        elif len(entities) == 1:
-            return entities[0]
-        else:
-            logger.debug(
-                f"No {response_model} with name '{name_id_or_prefix}' "
-                f"exists. Trying to resolve as partial_id"
+                f"No {entity_label} have been found that have either a name "
+                f"or an id prefix that matches the provided string "
+                f"'{partial_id_or_name}'."
             )
 
-            filtered_entities = [
-                entity
-                for entity in entities
-                if str(entity.id).startswith(name_id_or_prefix)
-            ]
-            if len(filtered_entities) > 1:
-                raise KeyError(
-                    f"The {response_model} listed above all share the provided "
-                    f"prefix '{name_id_or_prefix}' on their ids. Please "
-                    f"provide more characters to uniquely identify only one "
-                    f"{response_model}."
-                )
-
-            elif len(filtered_entities) == 1:
-                return filtered_entities[0]
+        # If more than one entity is found, raise an error.
+        ambiguous_entities: List[str] = []
+        for model in entity.items:
+            model_name = getattr(model, "name", None)
+            if model_name:
+                ambiguous_entities.append(f"{model_name}: {model.id}")
             else:
-                raise KeyError(
-                    f"No {response_model} with name or id "
-                    f"prefix '{name_id_or_prefix}' exists."
-                )
+                ambiguous_entities.append(str(model.id))
+        raise ZenKeyError(
+            f"{entity.total} {entity_label} have been found that have "
+            f"either a name or an id prefix that matches the provided "
+            f"string '{partial_id_or_name}':\n"
+            f"{ambiguous_entities}.\n"
+            f"Please provide more characters to uniquely identify "
+            f"only one of the {entity_label}s."
+        )
+
+    def depaginate(
+        self,
+        list_method: Callable[..., Page[AnyResponseModel]],
+    ) -> List[AnyResponseModel]:
+        """Depaginate the results from a client method that returns pages.
+
+        Args:
+            list_method: The list method to wrap around.
+
+        Returns:
+            A list of the corresponding Response Model.
+        """
+        page = list_method()
+        items = list(page.items)
+        while page.page < page.total_pages:
+            page = list_method(page=page.page + 1)
+            items += list(page.items)
+
+        return items

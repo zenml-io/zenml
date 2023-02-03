@@ -14,16 +14,19 @@
 """Metaclass implementation for registering ZenML BaseMaterializer subclasses."""
 
 import inspect
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type, cast
+from typing import Any, ClassVar, Dict, Optional, Tuple, Type, cast
 
-if TYPE_CHECKING:
-    from zenml.artifacts.base_artifact import BaseArtifact
-
-from zenml.artifacts.type_registry import type_registry
+from zenml.artifacts.base_artifact import BaseArtifact
+from zenml.enums import ArtifactType
 from zenml.exceptions import MaterializerInterfaceError
+from zenml.io import fileio
+from zenml.logger import get_logger
 from zenml.materializers.default_materializer_registry import (
     default_materializer_registry,
 )
+from zenml.metadata.metadata_types import MetadataType
+
+logger = get_logger(__name__)
 
 
 class BaseMaterializerMeta(type):
@@ -51,61 +54,140 @@ class BaseMaterializerMeta(type):
         cls = cast(
             Type["BaseMaterializer"], super().__new__(mcs, name, bases, dct)
         )
-        if name != "BaseMaterializer":
-            from zenml.artifacts.base_artifact import BaseArtifact
 
-            if not cls.ASSOCIATED_TYPES:
+        # Skip the following validation and registration for the base class.
+        if name == "BaseMaterializer":
+            return cls
+
+        # Validate that the class is properly defined.
+        if not cls.ASSOCIATED_TYPES:
+            raise MaterializerInterfaceError(
+                f"Invalid materializer class '{name}'. When creating a "
+                f"custom materializer, make sure to specify at least one "
+                f"type in its ASSOCIATED_TYPES class variable.",
+                url="https://docs.zenml.io/advanced-guide/pipelines/materializers",
+            )
+
+        # Check if the deprecated ASSOCIATED_ARTIFACT_TYPES is used.
+        artifact_type: str = cls.ASSOCIATED_ARTIFACT_TYPE
+        if cls.ASSOCIATED_ARTIFACT_TYPES:
+            logger.warning(
+                "The `materializer.ASSOCIATED_ARTIFACT_TYPES` class variable "
+                "is deprecated and will be removed in a future release. Please "
+                f"adjust your '{name}' materializer to use "
+                "`ASSOCIATED_ARTIFACT_TYPE` instead."
+            )
+            artifact_class = cls.ASSOCIATED_ARTIFACT_TYPES[0]
+            if not (
+                inspect.isclass(artifact_class)
+                and issubclass(artifact_class, BaseArtifact)
+            ):
+                raise MaterializerInterfaceError(
+                    f"ASSOCIATED_ARTIFACT_TYPES value '{artifact_class}' for "
+                    f"materializer '{name}' is not a `BaseArtifact` "
+                    f"subclass.",
+                    url="https://docs.zenml.io/advanced-guide/pipelines/materializers",
+                )
+            artifact_type = artifact_class.TYPE_NAME
+
+        # Validate associated artifact type.
+        if artifact_type:
+            try:
+                cls.ASSOCIATED_ARTIFACT_TYPE = ArtifactType(artifact_type)
+            except ValueError:
                 raise MaterializerInterfaceError(
                     f"Invalid materializer class '{name}'. When creating a "
-                    f"custom materializer, make sure to specify at least one "
-                    f"type in its ASSOCIATED_TYPES class variable.",
+                    f"custom materializer, make sure to specify a valid "
+                    f"artifact type in its ASSOCIATED_ARTIFACT_TYPE class "
+                    f"variable.",
                     url="https://docs.zenml.io/advanced-guide/pipelines/materializers",
                 )
 
-            for artifact_type in cls.ASSOCIATED_ARTIFACT_TYPES:
-                if not (
-                    inspect.isclass(artifact_type)
-                    and issubclass(artifact_type, BaseArtifact)
-                ):
-                    raise MaterializerInterfaceError(
-                        f"Associated artifact type {artifact_type} for "
-                        f"materializer {name} is not a `BaseArtifact` "
-                        f"subclass.",
-                        url="https://docs.zenml.io/advanced-guide/pipelines/materializers",
-                    )
-
-            artifact_types = cls.ASSOCIATED_ARTIFACT_TYPES or (BaseArtifact,)
-            for associated_type in cls.ASSOCIATED_TYPES:
-                if not inspect.isclass(associated_type):
-                    raise MaterializerInterfaceError(
-                        f"Associated type {associated_type} for materializer "
-                        f"{name} is not a class.",
-                        url="https://docs.zenml.io/advanced-guide/pipelines/materializers",
-                    )
-
-                default_materializer_registry.register_materializer_type(
-                    associated_type, cls
+        # Validate associated data types.
+        for associated_type in cls.ASSOCIATED_TYPES:
+            if not inspect.isclass(associated_type):
+                raise MaterializerInterfaceError(
+                    f"Associated type {associated_type} for materializer "
+                    f"{name} is not a class.",
+                    url="https://docs.zenml.io/advanced-guide/pipelines/materializers",
                 )
 
-                type_registry.register_integration(
-                    associated_type, artifact_types
-                )
+        # Register the materializer.
+        for associated_type in cls.ASSOCIATED_TYPES:
+            default_materializer_registry.register_materializer_type(
+                associated_type, cls
+            )
+
         return cls
+
+
+class DeprecatedArtifact:
+    """Mock artifact class to support deprecated `materializer.artifact.uri`."""
+
+    def __init__(self, uri: str) -> None:
+        """Initializes the artifact.
+
+        Args:
+            uri: The URI of the artifact.
+        """
+        self._uri = uri
+
+    @property
+    def uri(self) -> str:
+        """Returns the URI of the artifact.
+
+        Returns:
+            The URI of the artifact.
+        """
+        logger.warning(
+            "Calling `materializer.artifact.uri` is deprecated and will be "
+            "removed in a future release. Please use `materializer.uri` "
+            "instead."
+        )
+        return self._uri
 
 
 class BaseMaterializer(metaclass=BaseMaterializerMeta):
     """Base Materializer to realize artifact data."""
 
-    ASSOCIATED_ARTIFACT_TYPES: ClassVar[Tuple[Type["BaseArtifact"], ...]] = ()
+    ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.BASE
     ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = ()
 
-    def __init__(self, artifact: "BaseArtifact"):
-        """Initializes a materializer with the given artifact.
+    # Deprecated; will be removed in a future release.
+    ASSOCIATED_ARTIFACT_TYPES: ClassVar[Tuple[Type["BaseArtifact"], ...]] = ()
+
+    def __init__(
+        self,
+        uri: Optional[str] = None,
+        artifact: Optional["BaseArtifact"] = None,
+    ):
+        """Initializes a materializer with the given URI.
 
         Args:
-            artifact: The artifact to materialize.
+            uri: The URI where the artifact data is stored.
+            artifact: Deprecated; will be removed in a future release.
+
+        Raises:
+            ValueError: If neither a URI nor an artifact is provided.
         """
-        self.artifact = artifact
+        if isinstance(uri, BaseArtifact):
+            artifact = uri
+        if artifact is not None:
+            logger.warning(
+                "Initializing a materializer with an artifact is deprecated "
+                "and will be removed in a future release. Please initialize "
+                "the materializer with the artifact's URI instead via "
+                "`materializer = MyMaterializer(uri=artifact.uri)`."
+            )
+            self.uri = artifact.uri
+        elif uri is not None:
+            self.uri = uri
+        else:
+            raise ValueError(
+                "Initializing a materializer requires either a URI or an "
+                "artifact."
+            )
+        self.artifact = DeprecatedArtifact(self.uri)
 
     def _can_handle_type(self, data_type: Type[Any]) -> bool:
         """Whether the materializer can read/write a certain type.
@@ -121,14 +203,17 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
             for associated_type in self.ASSOCIATED_TYPES
         )
 
-    def handle_input(self, data_type: Type[Any]) -> Any:
-        """Write logic here to handle input of the step function.
+    def load(self, data_type: Type[Any]) -> Any:
+        """Write logic here to load the data of an artifact.
 
         Args:
-            data_type: What type the input should be materialized as.
+            data_type: What type the artifact data should be loaded as.
+
+        Returns:
+            The data of the artifact.
 
         Raises:
-            TypeError: If the data is not of the correct type.
+            TypeError: If the artifact data is not of the correct type.
         """
         if not self._can_handle_type(data_type):
             raise TypeError(
@@ -137,14 +222,27 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
                 f"{self.ASSOCIATED_TYPES}."
             )
 
-    def handle_return(self, data: Any) -> None:
-        """Write logic here to handle return of the step function.
+        # If `handle_input` is overridden, call it here to not break custom
+        # materializers.
+        if type(self).handle_input != BaseMaterializer.handle_input:
+            logger.warning(
+                "The `materializer.handle_input` method is deprecated and will "
+                "be removed in a future release. Please adjust your "
+                f"'{type(self).__name__}' materializer to override and use "
+                "`materializer.load` instead."
+            )
+            return self.handle_input(data_type)
+
+        return None
+
+    def save(self, data: Any) -> None:
+        """Write logic here to save the data of an artifact.
 
         Args:
-            data: Any object that is specified as an input artifact of the step.
+            data: The data of the artifact to save.
 
         Raises:
-            TypeError: If the data is not of the correct type.
+            TypeError: If the artifact data is not of the correct type.
         """
         data_type = type(data)
         if not self._can_handle_type(data_type):
@@ -152,3 +250,80 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
                 f"Unable to write {data_type}. {self.__class__.__name__} "
                 f"can only write the following types: {self.ASSOCIATED_TYPES}."
             )
+
+        # If `handle_return` is overridden, call it here to not break custom
+        # materializers.
+        if type(self).handle_return != BaseMaterializer.handle_return:
+            logger.warning(
+                "The `materializer.handle_return` method is deprecated and will "
+                "be removed in a future release. Please adjust your "
+                f"'{type(self).__name__}' materializer to override and use "
+                "`materializer.save` instead."
+            )
+            self.handle_return(data)
+
+    def extract_metadata(self, data: Any) -> Dict[str, "MetadataType"]:
+        """Extract metadata from the given data.
+
+        This metadata will be tracked and displayed alongside the artifact.
+
+        Args:
+            data: The data to extract metadata from.
+
+        Returns:
+            A dictionary of metadata.
+
+        Raises:
+            TypeError: If the data is not of the correct type.
+        """
+        from zenml.metadata.metadata_types import StorageSize
+
+        data_type = type(data)
+        if not self._can_handle_type(data_type):
+            raise TypeError(
+                f"Unable to extract metadata from {data_type}. "
+                f"{self.__class__.__name__} can only write the following "
+                f"types: {self.ASSOCIATED_TYPES}."
+            )
+
+        storage_size = fileio.size(self.uri)
+        if storage_size:
+            return {"storage_size": StorageSize(storage_size)}
+        return {}
+
+    def handle_input(self, data_type: Type[Any]) -> Any:
+        """Deprecated method to load the data of an artifact.
+
+        Args:
+            data_type: What type the artifact data should be loaded as.
+
+        Returns:
+            The data of the artifact.
+        """
+        logger.warning(
+            "The `materializer.handle_input` method is deprecated and will "
+            "be removed in a future release. Please use `materializer.load` "
+            "instead."
+        )
+
+        # If `handle_input` is called on a new materializer that does not
+        # override it, call `load` instead.
+        if type(self).handle_input == BaseMaterializer.handle_input:
+            return self.load(data_type)
+
+    def handle_return(self, data: Any) -> None:
+        """Deprecated method to save the data of an artifact.
+
+        Args:
+            data: The data of the artifact to save.
+        """
+        logger.warning(
+            "The `materializer.handle_return` method is deprecated and will "
+            "be removed in a future release. Please use `materializer.save` "
+            "instead."
+        )
+
+        # If `handle_return` is called on a new materializer that does not
+        # override it, call `save` instead.
+        if type(self).handle_return == BaseMaterializer.handle_return:
+            self.save(data)

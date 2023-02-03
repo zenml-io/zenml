@@ -52,7 +52,7 @@ class BaseTypedModelMeta(ModelMetaclass):
                 "subclasses"
             )
         type_name = f"{dct['__module__']}.{dct['__qualname__']}"
-        type_ann = Literal[type_name]  # type: ignore [misc,valid-type]
+        type_ann = Literal[type_name]  # type: ignore[valid-type]
         type = Field(type_name)
         dct.setdefault("__annotations__", dict())["type"] = type_ann
         dct["type"] = type

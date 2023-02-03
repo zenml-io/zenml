@@ -29,6 +29,7 @@ class ServerDeploymentType(StrEnum):
     AWS = "aws"
     GCP = "gcp"
     AZURE = "azure"
+    ALPHA = "alpha"
     OTHER = "other"
 
 

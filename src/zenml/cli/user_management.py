@@ -13,15 +13,18 @@
 #  permissions and limitations under the License.
 """Functionality to administer users of the ZenML CLI and server."""
 
-from typing import List, Optional
+from typing import Any, List, Optional
 
 import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
+from zenml.cli.utils import list_options
 from zenml.client import Client
+from zenml.console import console
 from zenml.enums import CliCategories, StoreType
 from zenml.exceptions import EntityExistsError, IllegalOperationError
+from zenml.models import TeamFilterModel, UserFilterModel
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
@@ -52,9 +55,41 @@ def describe_user(user_name_or_id: Optional[str] = None) -> None:
             ],
         )
     else:
-        user = client.get_user(user_name_or_id)
+        try:
+            user = client.get_user(user_name_or_id)
+        except KeyError as err:
+            cli_utils.error(str(err))
+        else:
+            cli_utils.print_pydantic_models(
+                [user],
+                exclude_columns=[
+                    "created",
+                    "updated",
+                    "email",
+                    "email_opted_in",
+                    "activation_token",
+                ],
+            )
+
+
+@user.command("list")
+@list_options(UserFilterModel)
+def list_users(**kwargs: Any) -> None:
+    """List all users.
+
+    Args:
+        kwargs: Keyword arguments to filter the list of users.
+    """
+    cli_utils.print_active_config()
+    client = Client()
+    with console.status("Listing stacks...\n"):
+        users = client.list_users(**kwargs)
+        if not users:
+            cli_utils.declare("No users found for the given filters.")
+            return
+
         cli_utils.print_pydantic_models(
-            [user],
+            users,
             exclude_columns=[
                 "created",
                 "updated",
@@ -62,29 +97,8 @@ def describe_user(user_name_or_id: Optional[str] = None) -> None:
                 "email_opted_in",
                 "activation_token",
             ],
+            is_active=lambda u: u.name == Client().active_user.name,
         )
-
-
-@user.command("list")
-def list_users() -> None:
-    """List all users."""
-    cli_utils.print_active_config()
-    users = Client().list_users()
-    if not users:
-        cli_utils.declare("No users registered.")
-        return
-
-    cli_utils.print_pydantic_models(
-        users,
-        exclude_columns=[
-            "created",
-            "updated",
-            "email",
-            "email_opted_in",
-            "activation_token",
-        ],
-        is_active=lambda u: u.name == Client().zen_store.active_user_name,
-    )
 
 
 @user.command(
@@ -109,7 +123,7 @@ def list_users() -> None:
     "--role",
     "-r",
     "initial_role",
-    help=("Give the user an initial role."),
+    help="Give the user an initial role.",
     required=False,
     type=str,
     default="admin",
@@ -239,18 +253,28 @@ def team() -> None:
 
 
 @team.command("list")
-def list_teams() -> None:
-    """List all teams."""
-    cli_utils.print_active_config()
-    teams = Client().list_teams()
-    if not teams:
-        cli_utils.declare("No teams registered.")
-        return
+@list_options(TeamFilterModel)
+def list_teams(**kwargs: Any) -> None:
+    """List all teams that fulfill the filter requirements.
 
-    cli_utils.print_pydantic_models(
-        teams,
-        exclude_columns=["id", "created", "updated"],
-    )
+    Args:
+        kwargs: The filter options.
+    """
+    cli_utils.print_active_config()
+    client = Client()
+
+    with console.status("Listing teams...\n"):
+
+        teams = client.list_teams(**kwargs)
+
+        if not teams:
+            cli_utils.declare("No teams found with the given filter.")
+            return
+
+        cli_utils.print_pydantic_models(
+            teams,
+            exclude_columns=["id", "created", "updated"],
+        )
 
 
 @team.command("describe", help="List all users in a team.")
@@ -263,12 +287,12 @@ def describe_team(team_name_or_id: str) -> None:
     """
     cli_utils.print_active_config()
     try:
-        team = Client().get_team(name_id_or_prefix=team_name_or_id)
+        team_ = Client().get_team(name_id_or_prefix=team_name_or_id)
     except KeyError as err:
         cli_utils.error(str(err))
     else:
         cli_utils.print_pydantic_models(
-            [team],
+            [team_],
             exclude_columns=[
                 "created",
                 "updated",
@@ -338,7 +362,7 @@ def update_team(
     """
     cli_utils.print_active_config()
     try:
-        team = Client().update_team(
+        team_ = Client().update_team(
             team_name_or_id=team_name,
             new_name=new_name,
             remove_users=remove_users,
@@ -347,7 +371,7 @@ def update_team(
     except (EntityExistsError, KeyError) as err:
         cli_utils.error(str(err))
     else:
-        cli_utils.declare(f"Updated team '{team.name}'.")
+        cli_utils.declare(f"Updated team '{team_.name}'.")
 
 
 @team.command("delete", help="Delete a team.")

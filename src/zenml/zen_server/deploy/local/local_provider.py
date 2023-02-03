@@ -61,6 +61,9 @@ class LocalServerProvider(BaseServerProvider):
         try:
             # Make sure the ZenML Server dependencies are installed
             import fastapi  # noqa
+            import fastapi_utils  # noqa
+            import jose  # noqa
+            import multipart  # noqa
             import uvicorn  # type: ignore[import] # noqa
         except ImportError:
             # Unable to import the ZenML Server dependencies.
@@ -69,7 +72,7 @@ class LocalServerProvider(BaseServerProvider):
                 "ZenML server requirements seems to be unavailable on your machine. "
                 "This is probably because ZenML was installed without the optional "
                 "ZenML Server dependencies. To install the missing dependencies "
-                f'run `pip install "zenml[server]=={__version__}`".'
+                f'run `pip install "zenml[server]=={__version__}"`.'
             )
 
     @classmethod

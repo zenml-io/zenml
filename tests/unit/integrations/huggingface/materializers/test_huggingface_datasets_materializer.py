@@ -20,23 +20,18 @@ from tests.unit.test_general import _test_materializer
 from zenml.integrations.huggingface.materializers.huggingface_datasets_materializer import (
     HFDatasetMaterializer,
 )
-from zenml.post_execution.pipeline import PipelineRunView
 
 
 def test_huggingface_datasets_materializer(clean_client):
-    """Tests whether the steps work for the Huggingface Datasets
-    materializer."""
+    """Tests whether the steps work for the Huggingface Datasets materializer."""
     sample_dataframe = pd.DataFrame([1, 2, 3])
     dataset = Dataset.from_pandas(sample_dataframe)
     with does_not_raise():
-        _test_materializer(
+        dataset = _test_materializer(
             step_output=dataset,
-            materializer=HFDatasetMaterializer,
+            materializer_class=HFDatasetMaterializer,
         )
 
-    last_run = PipelineRunView(clean_client.zen_store.list_runs()[-1])
-    dataset = last_run.steps[-1].output.read()
-    assert isinstance(dataset, Dataset)
     assert dataset.data.shape == (3, 1)
     data = dataset.data.to_pydict()
     assert "0" in data.keys()

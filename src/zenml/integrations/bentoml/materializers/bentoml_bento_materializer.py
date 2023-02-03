@@ -15,18 +15,21 @@
 
 import os
 import tempfile
-from typing import Type
+from typing import TYPE_CHECKING, Dict, Type
 
 import bentoml
 from bentoml._internal.bento import Bento, bento
 from bentoml.exceptions import BentoMLException
 
-from zenml.artifacts import DataArtifact
+from zenml.enums import ArtifactType
 from zenml.integrations.bentoml.constants import DEFAULT_BENTO_FILENAME
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import io_utils
+
+if TYPE_CHECKING:
+    from zenml.metadata.metadata_types import MetadataType
 
 logger = get_logger(__name__)
 
@@ -35,9 +38,9 @@ class BentoMaterializer(BaseMaterializer):
     """Materializer for Bentoml Bento objects."""
 
     ASSOCIATED_TYPES = (bento.Bento,)
-    ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
 
-    def handle_input(self, data_type: Type[bento.Bento]) -> bento.Bento:
+    def load(self, data_type: Type[bento.Bento]) -> bento.Bento:
         """Read from artifact store and return a Bento object.
 
         Args:
@@ -46,13 +49,13 @@ class BentoMaterializer(BaseMaterializer):
         Returns:
             An bento.Bento object.
         """
-        super().handle_input(data_type)
+        super().load(data_type)
 
         # Create a temporary directory to store the model
         temp_dir = tempfile.TemporaryDirectory()
 
         # Copy from artifact store to temporary directory
-        io_utils.copy_dir(self.artifact.uri, temp_dir.name)
+        io_utils.copy_dir(self.uri, temp_dir.name)
 
         # Load the Bento from the temporary directory
         imported_bento = Bento.import_from(
@@ -66,13 +69,13 @@ class BentoMaterializer(BaseMaterializer):
             imported_bento.save()
         return imported_bento
 
-    def handle_return(self, bento: bento.Bento) -> None:
+    def save(self, bento: bento.Bento) -> None:
         """Write to artifact store.
 
         Args:
             bento: An bento.Bento object.
         """
-        super().handle_return(bento)
+        super().save(bento)
 
         # Create a temporary directory to store the model
         temp_dir = tempfile.TemporaryDirectory(prefix="zenml-temp-")
@@ -82,7 +85,27 @@ class BentoMaterializer(BaseMaterializer):
         bentoml.export_bento(bento.tag, temp_bento_path)
 
         # copy the saved image to the artifact store
-        io_utils.copy_dir(temp_dir.name, self.artifact.uri)
+        io_utils.copy_dir(temp_dir.name, self.uri)
 
         # Remove the temporary directory
         fileio.rmtree(temp_dir.name)
+
+    def extract_metadata(
+        self, bento: bento.Bento
+    ) -> Dict[str, "MetadataType"]:
+        """Extract metadata from the given `Bento` object.
+
+        Args:
+            bento: The `Bento` object to extract metadata from.
+
+        Returns:
+            The extracted metadata as a dictionary.
+        """
+        base_metadata = super().extract_metadata(bento)
+        bento_metadata = {
+            "bento_info_name": bento.info.name,
+            "bento_info_version": bento.info.version,
+            "bento_tag_name": bento.tag.name,
+            "bentoml_version": bento.info.bentoml_version,
+        }
+        return {**base_metadata, **bento_metadata}

@@ -14,19 +14,28 @@
 """SQL Model Implementations."""
 
 from zenml.zen_stores.schemas.artifact_schemas import ArtifactSchema
+from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.flavor_schemas import FlavorSchema
+from zenml.zen_stores.schemas.identity_schemas import IdentitySchema
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
-from zenml.zen_stores.schemas.project_schemas import ProjectSchema
+from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 from zenml.zen_stores.schemas.role_schemas import (
+    RolePermissionSchema,
     RoleSchema,
     TeamRoleAssignmentSchema,
     UserRoleAssignmentSchema,
 )
-from zenml.zen_stores.schemas.stack_schemas import StackSchema
+from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
+from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
+from zenml.zen_stores.schemas.stack_schemas import (
+    StackCompositionSchema,
+    StackSchema,
+)
 from zenml.zen_stores.schemas.step_run_schemas import (
     StepRunInputArtifactSchema,
+    StepRunOutputArtifactSchema,
     StepRunParentsSchema,
     StepRunSchema,
 )
@@ -37,20 +46,28 @@ from zenml.zen_stores.schemas.team_schemas import (
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 
 __all__ = [
-    "StackComponentSchema",
+    "ArtifactSchema",
+    "BaseSchema",
+    "NamedSchema",
     "FlavorSchema",
+    "IdentitySchema",
     "PipelineRunSchema",
     "PipelineSchema",
-    "ProjectSchema",
+    "WorkspaceSchema",
+    "RoleSchema",
+    "RolePermissionSchema",
+    "RunMetadataSchema",
+    "ScheduleSchema",
     "StackSchema",
-    "ArtifactSchema",
+    "StackComponentSchema",
+    "StackCompositionSchema",
     "StepRunInputArtifactSchema",
+    "StepRunOutputArtifactSchema",
     "StepRunParentsSchema",
     "StepRunSchema",
-    "UserSchema",
-    "RoleSchema",
-    "UserRoleAssignmentSchema",
     "TeamRoleAssignmentSchema",
     "TeamSchema",
     "TeamAssignmentSchema",
+    "UserRoleAssignmentSchema",
+    "UserSchema",
 ]

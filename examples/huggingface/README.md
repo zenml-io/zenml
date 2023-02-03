@@ -1,16 +1,20 @@
 # 🤗 Implementation of NLP algorithms using Hugging Face & ZenML
 
-These examples demonstrate how we can use ZenML and Hugging Face transformers to build, train, & test NLP models.
+These examples demonstrate how we can use ZenML and Hugging Face transformers 
+to build, train, & test NLP models.
 
-Huggingface: one of our favorite emoji to express thankfulness, love, or appreciation. In the world of
-AI/ML, [`Hugging Face`](https://huggingface.co/) is a startup in the Natural Language Processing (NLP) domain -- now
-they are expanding to computer vision and RL -- offering its library of SOTA models in particular around Transformers.
-More than a thousand companies use their library in production including Bing, Apple, Microsoft etc. Do checkout
+Huggingface: one of our favorite emoji to express thankfulness, love, or 
+appreciation. In the world of AI/ML, [`Hugging Face`](https://huggingface.co/) 
+is a startup in the Natural Language Processing (NLP) domain -- now
+they are expanding to computer vision and RL -- offering its library of SOTA 
+models in particular around Transformers. More than a thousand companies use 
+their library in production including Bing, Apple, Microsoft etc. Do checkout
 their [`Transformers Library`](https://github.com/huggingface/transformers)
-, [`Datasets Library`](https://github.com/huggingface/datasets) and [`Model Hub`](https://huggingface.co/models).
+, [`Datasets Library`](https://github.com/huggingface/datasets) and 
+[`Model Hub`](https://huggingface.co/models).
 
-NLP is a branch of machine learning that is about helping systems to understand natural text and spoken words in the
-same way that humans do.
+NLP is a branch of machine learning that is about helping systems to understand 
+natural text and spoken words in the same way that humans do.
 
 The following is a list of common NLP tasks:
 
@@ -22,11 +26,13 @@ The following is a list of common NLP tasks:
 
 ## 📝 Sequence Classification
 
-Sequence Classification is an NLP/NLU task, where we assign labels to a given text, i.e. sentiment classification,
-natural language inference etc. In this example, we will train a sentiment classification model using
+Sequence Classification is an NLP/NLU task, where we assign labels to a given 
+text, i.e. sentiment classification, natural language inference etc. In this 
+example, we will train a sentiment classification model using
 the [`imdb`](https://huggingface.co/datasets/imdb) dataset.
 
-- Load dataset: Load sequence-classification dataset in this case it is the `imdb` dataset
+- Load dataset: Load sequence-classification dataset in this case it is the 
+`imdb` dataset
 
 ```python
 from datasets import load_dataset
@@ -36,6 +42,7 @@ print(datasets['train'][0])
 ```
 
 This is what an example entry would look like:
+
 ```json
 {
 "label": 0,  # Sentiment label i.e. 0->Negative 1->Positive
@@ -43,7 +50,8 @@ This is what an example entry would look like:
 }
 ```
 
-- Load pre-trained tokenizer: Load pre-trained tokenizer from Hugging Face transformers.
+- Load pre-trained tokenizer: Load pre-trained tokenizer from Hugging Face 
+transformers.
 
 ```python
 from transformers import AutoTokenizer
@@ -51,19 +59,21 @@ from transformers import AutoTokenizer
 tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
 ```
 
-- Tokenize and prepare dataset for training: Use pre-trained tokenizer to tokenize and encode dataset into ids along
-  with labels.
-- Build and Train Model: You can build model or use pre-trained models from Hugging Face transformers. Use encoded
-  dataset to train model.
+- Tokenize and prepare dataset for training: Use pre-trained tokenizer to 
+tokenize and encode dataset into ids along with labels.
+- Build and Train Model: You can build model or use pre-trained models from 
+Hugging Face transformers. Use encoded dataset to train model.
 - Evaluate: Evaluate model loss and accuracy.
 
 ## 🪙 Token Classification
 
-Token Classification is an NLP/NLU task, where we assign labels to tokens in a text, i.e. Name entity recognition,
-Part of speech tagging etc. In this example, we will train a NER model using the
+Token Classification is an NLP/NLU task, where we assign labels to tokens in a 
+text, i.e. Name entity recognition, Part of speech tagging etc. In this 
+example, we will train a NER model using the
 [`conll2003`](https://huggingface.co/datasets/conll2003) dataset.
 
-- Load dataset: Load token-classification dataset in this case it is `conll2003` dataset
+- Load dataset: Load token-classification dataset in this case it is 
+`conll2003` dataset
 
 ```python
 from datasets import load_dataset
@@ -87,7 +97,8 @@ print(datasets['train'][0])
             "."]}
 ```
 
-- Load pre-trained tokenizer: Load pre-trained tokenizer from Hugging Face transformers.
+- Load pre-trained tokenizer: Load pre-trained tokenizer from Hugging Face 
+transformers.
 
 ```python
 from transformers import AutoTokenizer
@@ -95,10 +106,10 @@ from transformers import AutoTokenizer
 tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
 ```
 
-- Tokenize and prepare dataset for training: Use pre-trained tokenizer to tokenize and encode dataset into ids along
-  with labels.
-- Build and Train Model: You can build model or use pre-trained models from huggingface transformers. Use encoded
-  dataset to train model.
+- Tokenize and prepare dataset for training: Use pre-trained tokenizer to 
+tokenize and encode dataset into ids along with labels.
+- Build and Train Model: You can build model or use pre-trained models from 
+huggingface transformers. Use encoded dataset to train model.
 - Evaluate: Evaluate model loss and accuracy.
 
 # 🖥 Run it locally
@@ -161,13 +172,13 @@ Alternatively, if you want to run based on the config.yaml you can run with:
 zenml pipeline run pipelines/token_classifier_pipeline/token_classifier_pipeline.py -c token_classification_config.yaml
 ```
 
-By default, these will run on a very small subset of their datasets in order to quickly see the complete pipeline in 
-action. If you want to train on the full datasets, just pass `--full_set` as a flag. 
+By default, these will run on a very small subset of their datasets in order to 
+quickly see the complete pipeline in action. If you want to train on the full 
+datasets, just pass `--full_set` as a flag. 
 
 ### 🧪 Test pipeline
 
 ```python
-from zenml.client import Client
 from transformers import pipeline
 from zenml.post_execution import get_pipeline
 

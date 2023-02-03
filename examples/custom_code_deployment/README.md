@@ -1,23 +1,41 @@
 # 🚀 Custom Deployment Example - Seldon Core and KServe 🚀
 
-Both pre and post-processing are very essential to the model deployment process since the majority of the models require a specific input format which requires transforming the data before it is passed to the model and after it is returned from the model. with ZenML 0.13 we can now ship the model with the pre-processing and post-processing code to run within the deployment environment.
-The custom code deployment is only supported for the KServe and Seldon Core model deployer integrations at the moment.
+Both pre- and post-processing are very essential to the model deployment 
+process since the majority of the models require a specific input format 
+which requires transforming the data before it is passed to the model, and 
+after it is returned from the model. With ZenML, we can now ship the model 
+with the pre-processing and post-processing code to run within the deployment 
+environment. The custom code deployment is only supported for the KServe and 
+Seldon Core model deployer integrations at the moment.
 
-Note: As this example can be considered an advanced feature of the deployment process, it is recommended to go through the [KServe deployment example](https://github.com/zenml-io/zenml/tree/main/examples/kserve_deployment) and/or the [Seldon Core deployment example](https://github.com/zenml-io/zenml/tree/main/examples/seldon_deployment) before trying this example. Those examples are more focused on the deployment process and are easier to understand, while also providing a guide on how to install and setup each of the deployment integrations.
+Note: As this example can be considered an advanced feature of the deployment 
+process, it is recommended to go through the 
+[KServe deployment example](https://github.com/zenml-io/zenml/tree/main/examples/kserve_deployment) 
+and/or the [Seldon Core deployment example](https://github.com/zenml-io/zenml/tree/main/examples/seldon_deployment) 
+before trying this example. Those examples are more focused on the deployment 
+process and are easier to understand, while also providing a guide on how to 
+install and setup each of the deployment integrations.
+
 ## 🗺 Overview
 
 This is a quite extended example that uses the [digits dataset](https://keras.io/api/datasets/mnist/) 
-to train a classifier using both [TensorFlow](https://www.tensorflow.org/)
-and [PyTorch](https://pytorch.org/). Then it deploys each of the trained models with the additional pre-processing and post-processing code to both KServe and Seldon Core.
+to train a classifier using both [TensorFlow](https://www.tensorflow.org/) and 
+[PyTorch](https://pytorch.org/). Then, it deploys each of the trained models 
+with the additional pre-processing and post-processing code to both KServe 
+and Seldon Core.
 
-The example is split into four different folders and each folder contains a full code example of digits classification using a specific framework and model deployer integration. (e.g. if you want to run the TensorFlow pipeline within the KServe model deployer integration, you would run the following command: `python run_kserve_tensoflow.py --config deploy`)
+The example is split into four different folders and each folder contains a 
+full code example of digits classification using a specific framework and 
+model deployer integration. (e.g. if you want to run the TensorFlow pipeline 
+within the KServe model deployer integration, you would run the following 
+command: `python run_kserve_tensoflow.py --config deploy`)
 
 Each of these examples consists of two individual pipelines:
 
   * a deployment pipeline that implements a deployment workflow. It
   ingests and processes input data, trains a model and then (re)deploys the
   model with extra code to a prediction server that serves the model if it 
-  meets some evaluation criteria
+  meets some evaluation criteria.
   * an inference pipeline that interacts with the prediction server deployed
   by the deployment pipeline to get online predictions based on an image we 
   provide.
@@ -50,7 +68,7 @@ locally active context.
 2. Seldon Core or KServe needs to be preinstalled and running in the target 
 Kubernetes cluster (read below for a brief explanation of how to do that).
 
-3. models deployed with Seldon Core need to be stored in some form of
+3. Models deployed with Seldon Core need to be stored in some form of
 persistent shared storage that is accessible from the Kubernetes cluster where
 Seldon Core or KServe is installed (e.g. AWS S3, GCS, Azure Blob Storage, etc.).
 
@@ -60,17 +78,18 @@ etc.).
 
 ## Seldon Core / KServe Setup 
 
-For custom code deployment to work, you need to have either a Seldon Core or KServe
-deployed in a Kubernetes cluster. ZenML provides two ways to setup these tools:
+For custom code deployment to work, you need to have either a Seldon Core or 
+KServe deployed in a Kubernetes cluster. ZenML provides two ways to set up 
+these tools:
 
-1. A step-by-step guide on how to setup and deploy a Seldon Core deployment can be found
-in the integration example.
+1. A step-by-step guide on how to set up and deploy a Seldon Core deployment 
+can be found in the integration example.
+
     * [KServe deployment guide](https://github.com/zenml-io/zenml/tree/main/examples/kserve_deployment#installing-kserve-eg-in-an-gke-cluster)
     * [Seldon Core deployment guide](https://github.com/zenml-io/zenml/tree/main/examples/seldon_deployment#installing-seldon-core-eg-in-an-eks-cluster).
 
-2. A Terraform-based recipe to provide all the required resources. More information can be found in the 
-[Open Source MLOps Stack Recipes](https://github.com/zenml-io/mlops-stacks).
-
+2. A Terraform-based recipe to provide all the required resources. More 
+information can be found in the [Open Source MLOps Stack Recipes](https://github.com/zenml-io/mlops-stacks).
 
 Once we have a ready deployment environment, we can start the example.
 
@@ -117,7 +136,6 @@ This stack consists of the following components:
 
 * a GCP artifact store
 * the local orchestrator
-* the local metadata store
 * a KServe model deployer
 * a local secret manager used to store the credentials needed by KServe to
 access the GCP artifact store
@@ -171,11 +189,12 @@ zenml container-registry register gcp_registry --flavor=gcp --uri=eu.gcr.io/cont
 zenml stack register local_gcp_kserve_stack -a gcp_artifact_store -o default -d kserve_gke -c gcp_registry -x local --set
 ```
 
-The next sections cover how to setup the GCP Artifact Store credentials for the KServe model deployer. 
-Please look up the variables relevant to your use case in the
-[official KServe Storage Credentials](https://kserve.github.io/website/0.8/sdk_docs/docs/KServeClient/#parameters)
-and set them accordingly for your ZenML secrets schemas already built for each storage_type.
-You can find the relevant variables in the [Kserve integration secret schemas docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-kserve/#zenml.integrations.kserve.secret_schemas.secret_schemas).
+The next sections cover how to set up the GCP Artifact Store credentials 
+for the KServe model deployer. Please look up the variables relevant to your 
+use case in the [official KServe Storage Credentials](https://kserve.github.io/website/0.8/sdk_docs/docs/KServeClient/#parameters)
+and set them accordingly for your ZenML secrets schemas already built for each 
+storage_type. You can find the relevant variables in the 
+[Kserve integration secret schemas docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-kserve/#zenml.integrations.kserve.secret_schemas.secret_schemas).
 
 #### GCP Authentication with kserve_gs secret schema
 
@@ -185,7 +204,8 @@ You can find the relevant variables in the [Kserve integration secret schemas do
 Before setting ZenML secrets, we need to create a service account key. 
 This service account will be used to access the GCP Artifact
 Store. for more information, see the [Create and manage service account keys](https://cloud.google.com/iam/docs/creating-managing-service-account-keys#iam-service-account-keys-create-gcloud).
-Once we have the service account key, we can create a ZenML secret with the following command:
+Once we have the service account key, we can create a ZenML secret with the 
+following command:
 
 ```bash
 zenml secrets-manager secret register -s kserve_gs kserve_secret \
@@ -216,18 +236,23 @@ The Training/Deployment pipeline consists of the following steps:
 * importer - Load the MNIST handwritten digits dataset.
 * train - Train a classification model using the training dataset.
 * evaluate - Evaluate the model using the test dataset.
-* deployment_trigger - Verify if the newly trained model exceeds the threshold and, if so, deploy the model.
-* model_deployer - In the model deployer step, the custom predicts function is passed to the step configuration 
-  so that it can first be verified and then packaged with the model checkpoint and all the required artifacts/dependencies
-  to be deployed as a custom model.
+* deployment_trigger - Verify if the newly trained model exceeds the threshold
+and, if so, deploy the model.
+* model_deployer - In the model deployer step, the custom predicts function is 
+passed to the step configuration so that it can first be verified and then 
+packaged with the model checkpoint and all the required artifacts/dependencies
+to be deployed as a custom model.
 
 For more information about custom model deployment, please refer to the [KServe integration custom deployment](https://docs.zenml.io/component-gallery/model-deployers/kserve#custom-model-deployment). 
 Or the [KServe Custom Predictor](https://kserve.github.io/website/0.9/modelserving/v1beta1/custom/custom_model/).
 
 The Inference pipeline consists of the following steps:
-* inference_processor - Load a digits image from a URL (must be 28x28) and convert it to a byte array.
-* prediction_service_loader - Load the prediction service into `KServeDeploymentService` to perform the inference.
-* predictor - Perform inference on the image using the built-in predict function of the prediction service.
+* inference_processor - Load a digits image from a URL (must be 28x28) and 
+convert it to a byte array.
+* prediction_service_loader - Load the prediction service into 
+`KServeDeploymentService` to perform the inference.
+* predictor - Perform inference on the image using the built-in predict 
+function of the prediction service.
 
 To run the training/deployment pipeline:
 
@@ -338,7 +363,6 @@ This stack consists of the following components:
 
 * a GCP artifact store
 * the local orchestrator
-* the local metadata store
 * a Seldon Core model deployer
 * a local secrets manager used to store the credentials needed by Seldon Core to
 access the GCP artifact store
@@ -388,18 +412,20 @@ zenml container-registry register gcp_registry --flavor=gcp --uri=eu.gcr.io/cont
 zenml stack register local_gcp_seldon_stack -a gcp_artifact_store -o default -d seldon_eks -c gcp_registry -x local --set
 ```
 
-The next sections cover how to set GCP Artifact Store credentials for the Seldon Core model deployer.  
-Please look up the variables relevant to your use case in the
-[official Seldon Core Storage Credentials](https://kserve.github.io/website/0.8/sdk_docs/docs/KServeClient/#parameters)
-and set them accordingly for your ZenML secrets schemas already built for each storage_type.
-You can find the relevant variables in the [Seldon Integration secret schema](https://apidocs.zenml.io/latest/integration_code_docs/integrations-seldon/#zenml.integrations.seldon.secret_schemas.secret_schemas).
+The next sections cover how to set GCP Artifact Store credentials for the Seldon 
+Core model deployer. Please look up the variables relevant to your use case in 
+the [official Seldon Core Storage Credentials](https://kserve.github.io/website/0.8/sdk_docs/docs/KServeClient/#parameters)
+and set them accordingly for your ZenML secrets schemas already built for each 
+storage_type. You can find the relevant variables in the 
+[Seldon Integration secret schema](https://apidocs.zenml.io/latest/integration_code_docs/integrations-seldon/#zenml.integrations.seldon.secret_schemas.secret_schemas).
 
 #### GCP Authentication with seldon_s3 secret schema
 
 Before setting ZenML secrets, we need to create a service account key. 
 This service account will be used to access the GCP Artifact
 Store. for more information, see the [Create and manage service account keys](https://cloud.google.com/iam/docs/creating-managing-service-account-keys#iam-service-account-keys-create-gcloud).
-Once we have the service account key, we can create a ZenML secret with the following command:
+Once we have the service account key, we can create a ZenML secret with the 
+following command:
 
 ```bash
 $ zenml secrets-manager secret register -s seldon_s3 s3-store \
@@ -444,18 +470,23 @@ The Training/Deployment pipeline consists of the following steps:
 * importer - Load the MNIST handwritten digits dataset.
 * train - Train a classification model using the training dataset.
 * evaluate - Evaluate the model using the test dataset.
-* deployment_trigger - Verify if the newly trained model exceeds the threshold and, if so, deploy the model.
-* model_deployer - In the model deployer step, the custom predicts function is passed to the step configuration 
-  so that it can first be verified and then packaged with the model checkpoint and all the required artifacts/dependencies
-  to be deployed as a custom model.
+* deployment_trigger - Verify if the newly trained model exceeds the threshold 
+and, if so, deploy the model.
+* model_deployer - In the model deployer step, the custom predicts function 
+is passed to the step configuration so that it can first be verified and then 
+packaged with the model checkpoint and all the required artifacts/dependencies 
+to be deployed as a custom model.
 
 For more information about custom model deployment, please refer to the [Seldon Core integration custom deployment](https://docs.zenml.io/component-gallery/model-deployers/seldon#custom-model-deployment). 
 Or the [Seldon Custom Python Model](https://docs.seldon.io/projects/seldon-core/en/latest/python/python_component.html).
 
 The Inference pipeline consists of the following steps:
-* inference_processor - Load a digits image from a URL (must be 28x28) and convert it to a byte array.
-* prediction_service_loader - Load the prediction service into `SeldonDeploymentService` to perform the inference.
-* predictor - Perform inference on the image using the built-in predict function of the prediction service.
+* inference_processor - Load a digits image from a URL (must be 28x28) and 
+convert it to a byte array.
+* prediction_service_loader - Load the prediction service into 
+`SeldonDeploymentService` to perform the inference.
+* predictor - Perform inference on the image using the built-in predict 
+function of the prediction service.
 
 To run the training/deployment pipeline:
 
@@ -537,7 +568,8 @@ To stop the service, run `zenml served-models delete eaa6fc48-cda7-4c4e-8785-dc5
 
 ## 🎮 ZenML Served Models CLI
 
-The `zenml model-deployer models list` CLI command can be run to list the active model servers:
+The `zenml model-deployer models list` CLI command can be run to list the active
+model servers:
 
 ```shell
 $ zenml model-deployer models list
@@ -609,8 +641,8 @@ $ zenml model-deployer models delete eaa6fc48-cda7-4c4e-8785-dc5b85cf0a31
 
 ## 🧽 Clean up
 
-To stop any prediction servers running in the background, use the `zenml model-server list`
-and `zenml model-server delete <uuid>` CLI commands.:
+To stop any prediction servers running in the background, use the 
+`zenml model-server list` and `zenml model-server delete <uuid>` CLI commands.:
 
 ```shell
 zenml model-deployer models delete eaa6fc48-cda7-4c4e-8785-dc5b85cf0a31
@@ -624,7 +656,9 @@ rm -rf zenml_examples
 
 # 📜 Learn more
 
-Our docs regarding the custom model deployment can be found [here](https://docs.zenml.io/component-gallery/model-deployers/model-deployers#custom-pre-processing-and-post-processing).
+Our docs regarding the custom model deployment can be found 
+[here](https://docs.zenml.io/component-gallery/model-deployers/model-deployers#custom-pre-processing-and-post-processing).
 
-If you want to learn more about the deployment in ZenML in general or about how to build your deployer steps in ZenML
-check out our [docs](https://docs.zenml.io/component-gallery/model-deployers/custom).
+If you want to learn more about the deployment in ZenML in general or about 
+how to build your deployer steps in ZenML check out our 
+[docs](https://docs.zenml.io/component-gallery/model-deployers/custom).

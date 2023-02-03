@@ -13,7 +13,18 @@
 #  permissions and limitations under the License.
 """Models representing pipeline runs."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, cast
+from datetime import datetime
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Type,
+    Union,
+    cast,
+)
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -21,14 +32,18 @@ from pydantic import BaseModel, Field
 from zenml import __version__ as current_zenml_version
 from zenml.enums import ExecutionStatus
 from zenml.models.base_models import (
-    ProjectScopedRequestModel,
-    ProjectScopedResponseModel,
-    update_model,
+    WorkspaceScopedRequestModel,
+    WorkspaceScopedResponseModel,
 )
-from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
+from zenml.models.constants import STR_FIELD_MAX_LENGTH
+from zenml.models.filter_models import WorkspaceScopedFilterModel
 
 if TYPE_CHECKING:
+    from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
+    from sqlmodel import SQLModel
+
     from zenml.models.pipeline_models import PipelineResponseModel
+    from zenml.models.run_metadata_models import RunMetadataResponseModel
     from zenml.models.stack_models import StackResponseModel
 
 
@@ -72,19 +87,47 @@ class PipelineRunBaseModel(BaseModel):
 
     name: str = Field(
         title="The name of the pipeline run.",
-        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+        max_length=STR_FIELD_MAX_LENGTH,
     )
-
-    orchestrator_run_id: Optional[str] = None
+    orchestrator_run_id: Optional[str] = Field(
+        title="The orchestrator run ID.",
+        max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
+    )
+    schedule_id: Optional[UUID]
+    enable_cache: Optional[bool]
+    enable_artifact_metadata: Optional[bool]
+    start_time: Optional[datetime]
+    end_time: Optional[datetime]
     status: ExecutionStatus
-
     pipeline_configuration: Dict[str, Any]
     num_steps: Optional[int]
-    zenml_version: Optional[str] = current_zenml_version
-    git_sha: Optional[str] = Field(default_factory=get_git_sha)
-
-    # ID in MLMD - needed for some metadata store methods.
-    mlmd_id: Optional[int]  # Modeled as Optional, so we can remove it later.
+    client_version: Optional[str] = Field(
+        title="Client version.",
+        default=current_zenml_version,
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    server_version: Optional[str] = Field(
+        title="Server version.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    client_environment: Dict[str, str] = Field(
+        default={},
+        title=(
+            "Environment of the client that initiated this pipeline run "
+            "(OS, Python version, etc.)."
+        ),
+    )
+    orchestrator_environment: Dict[str, str] = Field(
+        default={},
+        title=(
+            "Environment of the orchestrator that executed this pipeline run "
+            "(OS, Python version, etc.)."
+        ),
+    )
+    git_sha: Optional[str] = Field(
+        default_factory=get_git_sha, max_length=STR_FIELD_MAX_LENGTH
+    )
 
 
 # -------- #
@@ -93,9 +136,9 @@ class PipelineRunBaseModel(BaseModel):
 
 
 class PipelineRunResponseModel(
-    PipelineRunBaseModel, ProjectScopedResponseModel
+    PipelineRunBaseModel, WorkspaceScopedResponseModel
 ):
-    """Pipeline run model with user, project, pipeline, and stack hydrated."""
+    """Pipeline run model with user, workspace, pipeline, and stack hydrated."""
 
     pipeline: Optional["PipelineResponseModel"] = Field(
         title="The pipeline this run belongs to."
@@ -103,6 +146,94 @@ class PipelineRunResponseModel(
     stack: Optional["StackResponseModel"] = Field(
         title="The stack that was used for this run."
     )
+    metadata: Dict[str, "RunMetadataResponseModel"] = Field(
+        default={},
+        title="Metadata associated with this pipeline run.",
+    )
+
+
+# ------ #
+# FILTER #
+# ------ #
+
+
+class PipelineRunFilterModel(WorkspaceScopedFilterModel):
+    """Model to enable advanced filtering of all Workspaces."""
+
+    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *WorkspaceScopedFilterModel.FILTER_EXCLUDE_FIELDS,
+        "unlisted",
+    ]
+
+    name: str = Field(
+        default=None,
+        description="Name of the Pipeline Run",
+    )
+    orchestrator_run_id: str = Field(
+        default=None,
+        description="Name of the Pipeline Run within the orchestrator",
+    )
+
+    pipeline_id: Union[UUID, str] = Field(
+        default=None, description="Pipeline associated with the Pipeline"
+    )
+    workspace_id: Union[UUID, str] = Field(
+        default=None, description="Workspace of the Pipeline"
+    )
+    user_id: Union[UUID, str] = Field(None, description="User of the Pipeline")
+
+    stack_id: Union[UUID, str] = Field(
+        default=None, description="Stack used for the Pipeline Run"
+    )
+    schedule_id: Union[UUID, str] = Field(
+        default=None, description="Schedule that triggered the Pipeline Run"
+    )
+
+    status: str = Field(
+        default=None,
+        description="Name of the Pipeline Run",
+    )
+    start_time: Union[datetime, str] = Field(
+        default=None, description="Start time for this run"
+    )
+    end_time: Union[datetime, str] = Field(
+        default=None, description="End time for this run"
+    )
+
+    num_steps: int = Field(
+        default=None,
+        description="Amount of steps in the Pipeline Run",
+    )
+
+    unlisted: Optional[bool] = None
+
+    def generate_filter(
+        self, table: Type["SQLModel"]
+    ) -> Union["BinaryExpression[Any]", "BooleanClauseList[Any]"]:
+        """Generate the filter for the query.
+
+        Args:
+            table: The Table that is being queried from.
+
+        Returns:
+            The filter expression for the query.
+        """
+        from sqlalchemy import and_
+
+        base_filter = super().generate_filter(table)
+
+        if self.unlisted is not None:
+            if self.unlisted is True:
+                unlisted_filter = getattr(table, "pipeline_id").is_(None)
+            else:
+                unlisted_filter = getattr(table, "pipeline_id").is_not(None)
+
+            # TODO: make this right
+            # This needs to be an AND right now to work with the workspace
+            # scoping of the superclass
+            return and_(base_filter, unlisted_filter)
+
+        return base_filter
 
 
 # ------- #
@@ -110,8 +241,10 @@ class PipelineRunResponseModel(
 # ------- #
 
 
-class PipelineRunRequestModel(PipelineRunBaseModel, ProjectScopedRequestModel):
-    """Pipeline run model with user, project, pipeline, and stack as UUIDs."""
+class PipelineRunRequestModel(
+    PipelineRunBaseModel, WorkspaceScopedRequestModel
+):
+    """Pipeline run model with user, workspace, pipeline, and stack as UUIDs."""
 
     id: UUID
     stack: Optional[UUID]  # Might become None if the stack is deleted.
@@ -123,6 +256,8 @@ class PipelineRunRequestModel(PipelineRunBaseModel, ProjectScopedRequestModel):
 # ------ #
 
 
-@update_model
-class PipelineRunUpdateModel(PipelineRunRequestModel):
+class PipelineRunUpdateModel(BaseModel):
     """Pipeline run update model."""
+
+    status: Optional[ExecutionStatus] = None
+    end_time: Optional[datetime] = None

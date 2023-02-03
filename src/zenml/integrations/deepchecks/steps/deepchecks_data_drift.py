@@ -56,7 +56,7 @@ class DeepchecksDataDriftCheckStepParameters(BaseParameters):
 class DeepchecksDataDriftCheckStep(BaseStep):
     """Deepchecks data drift validator step."""
 
-    def entrypoint(  # type: ignore[override]
+    def entrypoint(
         self,
         reference_dataset: pd.DataFrame,
         target_dataset: pd.DataFrame,

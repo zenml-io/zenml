@@ -21,7 +21,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]
-        python-version: [3.7, 3.8, 3.9]
+        python-version: [ '3.7', '3.8', '3.9', '3.10' ]
       fail-fast: false
 
     steps:
@@ -31,12 +31,16 @@ jobs:
         uses: ./.github/actions/setup_environment
         with:
           cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
+          python-version: ${{ matrix.python-version }}
+          os: ${{ matrix.os }}
 
       - name: Install Dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: |
           source $VENV
-          zenml integration install -y --ignore-integration feast --ignore-integration label_studio --ignore-integration kserve --ignore-integration bentoml --ignore-integration tekton --ignore-integration airflow
+          zenml integration export-requirements --output-file requirements.txt --ignore-integration feast --ignore-integration label_studio --ignore-integration kserve --ignore-integration bentoml --ignore-integration tekton --ignore-integration airflow
+          pip install -r requirements.txt
+          rm requirements.txt
           pip install click~=8.0.3
         
       - name: Lint

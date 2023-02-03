@@ -13,26 +13,20 @@
 #  permissions and limitations under the License.
 from contextlib import ExitStack as does_not_raise
 
-from sklearn.base import ClassifierMixin
 from sklearn.svm import SVC
 
 from tests.unit.test_general import _test_materializer
 from zenml.integrations.sklearn.materializers.sklearn_materializer import (
     SklearnMaterializer,
 )
-from zenml.post_execution.pipeline import PipelineRunView
 
 
 def test_sklearn_materializer(clean_client):
     """Tests whether the steps work for the Sklearn materializer."""
-
     with does_not_raise():
-        _test_materializer(
+        model = _test_materializer(
             step_output=SVC(gamma="auto"),
-            materializer=SklearnMaterializer,
+            materializer_class=SklearnMaterializer,
         )
 
-    last_run = PipelineRunView(clean_client.zen_store.list_runs()[-1])
-    model = last_run.steps[-1].output.read()
-    assert isinstance(model, ClassifierMixin)
     assert model.gamma == "auto"

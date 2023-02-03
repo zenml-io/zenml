@@ -18,6 +18,7 @@ import socket
 
 from kubernetes import client as k8s_client
 
+from zenml.client import Client
 from zenml.config.pipeline_deployment import PipelineDeployment
 from zenml.constants import DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE
 from zenml.entrypoints.step_entrypoint_configuration import (
@@ -27,9 +28,6 @@ from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import
     KubernetesOrchestratorSettings,
 )
 from zenml.integrations.kubernetes.orchestrators import kube_utils
-from zenml.integrations.kubernetes.orchestrators.dag_runner import (
-    ThreadedDagRunner,
-)
 from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator import (
     ENV_ZENML_KUBERNETES_RUN_ID,
 )
@@ -37,6 +35,7 @@ from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
     build_pod_manifest,
 )
 from zenml.logger import get_logger
+from zenml.orchestrators.dag_runner import ThreadedDagRunner
 from zenml.utils import yaml_utils
 
 logger = get_logger(__name__)
@@ -80,6 +79,9 @@ def main() -> None:
 
     step_command = StepEntrypointConfiguration.get_entrypoint_command()
 
+    active_stack = Client().active_stack
+    mount_local_stores = active_stack.orchestrator.config.is_local
+
     def run_step_on_kubernetes(step_name: str) -> None:
         """Run a pipeline step in a separate Kubernetes pod.
 
@@ -110,6 +112,7 @@ def main() -> None:
             args=step_args,
             env={ENV_ZENML_KUBERNETES_RUN_ID: orchestrator_run_id},
             settings=settings,
+            mount_local_stores=mount_local_stores,
         )
 
         # Create and run pod.

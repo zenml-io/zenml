@@ -11,7 +11,7 @@ pip install zenml
 ```
 
 {% hint style="warning" %}
-Please note that ZenML currently only supports Python 3.7, 3.8, and 3.9.
+Please note that ZenML currently only supports Python 3.7, 3.8, 3.9 and 3.10.
 Please adjust your Python environment accordingly.
 {% endhint %}
 
@@ -19,12 +19,6 @@ ZenML comes bundled with a React-based dashboard that lives inside a [sister rep
 
 ```shell
 pip install "zenml[server]"
-```
-
-If you do not have deployed infrastructure, and want to quickly spin up combinations of tools on the cloud, the [MLOps stack sister repository](https://github.com/zenml-io/mlops-stacks) contains a series of Terraform-based recipes to provision such stacks. These recipes can be used directly with ZenML:
-
-```shell
-pip install "zenml[stacks]"
 ```
 
 ## Virtual Environments
@@ -57,13 +51,6 @@ print(zenml.__version__)
 
 If you would like to learn more about the current release, please visit our 
 [PyPi package page.](https://pypi.org/project/zenml)
-
-## Known installation issues for M1 Mac Users
-
-Since some of ZenML's dependencies are not compatible with the ARM64
-architecture, you need to install ZenML under Rosetta on M1 Macs.
-See the [Installation on M1 Macs](./m1-mac-installation.md) page for detailed 
-instructions.
 
 ## Running with Docker
 

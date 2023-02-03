@@ -19,36 +19,31 @@ from typing import Any, List
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi_utils.tasks import repeat_every
 from genericpath import isfile
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import FileResponse
 
 import zenml
-from zenml.constants import API, ENV_ZENML_SERVER_METADATA_SYNC_PERIOD, HEALTH
+from zenml.constants import API, HEALTH
 from zenml.zen_server.routers import (
     artifacts_endpoints,
     auth_endpoints,
     flavors_endpoints,
-    metadata_config_endpoints,
-    metadata_sync_endpoints,
     pipelines_endpoints,
-    projects_endpoints,
     role_assignments_endpoints,
     roles_endpoints,
+    run_metadata_endpoints,
     runs_endpoints,
+    schedule_endpoints,
     server_endpoints,
     stack_components_endpoints,
     stacks_endpoints,
     steps_endpoints,
     teams_endpoints,
     users_endpoints,
+    workspaces_endpoints,
 )
-from zenml.zen_server.utils import (
-    ROOT_URL_PATH,
-    initialize_zen_store,
-    zen_store,
-)
+from zenml.zen_server.utils import ROOT_URL_PATH, initialize_zen_store
 
 DASHBOARD_DIRECTORY = "dashboard"
 
@@ -86,21 +81,6 @@ def initialize() -> None:
     # IMPORTANT: this needs to be done before the fastapi app starts, to avoid
     # race conditions
     initialize_zen_store()
-    sync_pipeline_runs_on_schedule()
-
-
-@app.on_event("startup")
-@repeat_every(
-    seconds=float(os.getenv(ENV_ZENML_SERVER_METADATA_SYNC_PERIOD, 30)),
-    wait_first=True,
-)
-def sync_pipeline_runs_on_schedule() -> None:
-    """Sync pipeline runs."""
-    logger.info("Syncing pipeline runs in server schedule...")
-    try:
-        zen_store()._sync_runs()
-    except Exception:
-        logger.exception("Failed to sync pipeline runs.")
 
 
 app.mount(
@@ -152,14 +132,14 @@ def dashboard(request: Request) -> Any:
 
 
 app.include_router(auth_endpoints.router)
-app.include_router(metadata_config_endpoints.router)
-app.include_router(metadata_sync_endpoints.router)
 app.include_router(pipelines_endpoints.router)
-app.include_router(projects_endpoints.router)
+app.include_router(workspaces_endpoints.router)
 app.include_router(flavors_endpoints.router)
 app.include_router(roles_endpoints.router)
 app.include_router(role_assignments_endpoints.router)
 app.include_router(runs_endpoints.router)
+app.include_router(run_metadata_endpoints.router)
+app.include_router(schedule_endpoints.router)
 app.include_router(server_endpoints.router)
 app.include_router(stacks_endpoints.router)
 app.include_router(stack_components_endpoints.router)

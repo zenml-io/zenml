@@ -16,9 +16,20 @@ import numpy as np  # type: ignore [import]
 import tensorflow as tf  # type: ignore [import]
 
 from zenml.client import Client
+from zenml.integrations.mlflow.experiment_trackers import (
+    MLFlowExperimentTracker,
+)
 from zenml.steps import step
 
 experiment_tracker = Client().active_stack.experiment_tracker
+
+if not experiment_tracker or not isinstance(
+    experiment_tracker, MLFlowExperimentTracker
+):
+    raise RuntimeError(
+        "Your active stack needs to contain a MLFlow experiment tracker for "
+        "this example to work."
+    )
 
 
 @step(experiment_tracker=experiment_tracker.name)
@@ -27,8 +38,7 @@ def tf_evaluator(
     y_test: np.ndarray,
     model: tf.keras.Model,
 ) -> float:
-    """Calculate the loss for the model for each epoch in a graph"""
-
+    """Calculate the loss for the model for each epoch in a graph."""
     _, test_acc = model.evaluate(x_test, y_test, verbose=2)
     mlflow.log_metric("val_accuracy", test_acc)
     return test_acc

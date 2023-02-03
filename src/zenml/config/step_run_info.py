@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """Step run info."""
 
+from uuid import UUID
+
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import StepConfiguration
 from zenml.config.strict_base_model import StrictBaseModel
@@ -21,6 +23,9 @@ from zenml.config.strict_base_model import StrictBaseModel
 class StepRunInfo(StrictBaseModel):
     """All information necessary to run a step."""
 
+    step_run_id: UUID
+    run_id: UUID
+    run_name: str
+
     config: StepConfiguration
     pipeline: PipelineConfiguration
-    run_name: str

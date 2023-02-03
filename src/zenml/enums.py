@@ -12,10 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """ZenML enums."""
-
 import logging
 from enum import Enum
-from typing import List
 
 from zenml.utils.enum_utils import StrEnum
 
@@ -23,12 +21,12 @@ from zenml.utils.enum_utils import StrEnum
 class ArtifactType(StrEnum):
     """All possible types an artifact can have."""
 
-    DATAANALYSIS = "DataAnalysisArtifact"
+    DATA_ANALYSIS = "DataAnalysisArtifact"
     DATA = "DataArtifact"
     MODEL = "ModelArtifact"
-    SCHEMA = "SchemaArtifact"
+    SCHEMA = "SchemaArtifact"  # deprecated
     SERVICE = "ServiceArtifact"
-    STATISTICS = "StatisticsArtifact"
+    STATISTICS = "StatisticsArtifact"  # deprecated in favor of `DATA_ANALYSIS`
     BASE = "BaseArtifact"
 
 
@@ -39,22 +37,6 @@ class ExecutionStatus(StrEnum):
     COMPLETED = "completed"
     RUNNING = "running"
     CACHED = "cached"
-
-    @staticmethod
-    def run_status(step_statuses: List["ExecutionStatus"]) -> "ExecutionStatus":
-        """Returns the overall run status based on the list of step statuses.
-
-        Args:
-            step_statuses: A list of step statuses.
-
-        Returns:
-            The overall run status.
-        """
-        if ExecutionStatus.FAILED in step_statuses:
-            return ExecutionStatus.FAILED
-        if ExecutionStatus.RUNNING in step_statuses:
-            return ExecutionStatus.RUNNING
-        return ExecutionStatus.COMPLETED
 
 
 class LoggingLevels(Enum):
@@ -78,6 +60,7 @@ class StackComponentType(StrEnum):
     DATA_VALIDATOR = "data_validator"
     EXPERIMENT_TRACKER = "experiment_tracker"
     FEATURE_STORE = "feature_store"
+    IMAGE_BUILDER = "image_builder"
     MODEL_DEPLOYER = "model_deployer"
     ORCHESTRATOR = "orchestrator"
     SECRETS_MANAGER = "secrets_manager"
@@ -133,6 +116,7 @@ class AnnotationTasks(StrEnum):
 
     IMAGE_CLASSIFICATION = "image_classification"
     OBJECT_DETECTION_BOUNDING_BOXES = "object_detection_bounding_boxes"
+    OCR = "optical_character_recognition"
 
 
 class SecretValidationLevel(StrEnum):
@@ -173,4 +157,33 @@ class PermissionType(StrEnum):
     # ANY CHANGES TO THIS ENUM WILL NEED TO BE DONE TOGETHER WITH A DB MIGRATION
     WRITE = "write"  # allows the user to create, update, delete everything
     READ = "read"  # allows the user to read everything
-    ME = "me"  # allows the user to self administrate (change name, password...)
+    ME = (
+        "me"  # allows the user to self administrate (change name, password...)
+    )
+
+
+class GenericFilterOps(StrEnum):
+    """Ops for all filters for string values on list methods."""
+
+    EQUALS = "equals"
+    CONTAINS = "contains"
+    STARTSWITH = "startswith"
+    ENDSWITH = "endswith"
+    GTE = "gte"
+    GT = "gt"
+    LTE = "lte"
+    LT = "lt"
+
+
+class SorterOps(StrEnum):
+    """Ops for all filters for string values on list methods."""
+
+    ASCENDING = "asc"
+    DESCENDING = "desc"
+
+
+class LogicalOperators(StrEnum):
+    """Logical Ops to use to combine filters on list methods."""
+
+    OR = "or"
+    AND = "and"

@@ -19,19 +19,15 @@ from tests.unit.test_general import _test_materializer
 from zenml.integrations.great_expectations.materializers.ge_materializer import (
     GreatExpectationsMaterializer,
 )
-from zenml.post_execution.pipeline import PipelineRunView
 
 
 def test_great_expectations_materializer(clean_client):
     """Tests whether the steps work for the Great Expectations materializer."""
     with does_not_raise():
-        _test_materializer(
+        expectation_suite = _test_materializer(
             step_output=ExpectationSuite("arias_suite"),
-            materializer=GreatExpectationsMaterializer,
+            materializer_class=GreatExpectationsMaterializer,
         )
 
-    last_run = PipelineRunView(clean_client.zen_store.list_runs()[-1])
-    expectation_suite = last_run.steps[-1].output.read()
-    assert isinstance(expectation_suite, ExpectationSuite)
     assert expectation_suite.expectation_suite_name == "arias_suite"
     assert len(expectation_suite.expectations) == 0

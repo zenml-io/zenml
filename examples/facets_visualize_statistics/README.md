@@ -1,12 +1,14 @@
 # 📊 Visualize statistics
 This examples show-cases the built-in `FacetStatisticsVisualizer` using the 
-[Facets Overview](https://pypi.org/project/facets-overview/) integration. [Facets](https://pair-code.github.io/facets/) 
-is an awesome project that helps users visualize large amounts of data in a coherent way.
+[Facets Overview](https://pypi.org/project/facets-overview/) integration. 
+[Facets](https://pair-code.github.io/facets/) is an awesome project that 
+helps users visualize large amounts of data in a coherent way.
 
 ## 🗺 Overview
-Here, we are using the [Boston Housing Price Regression](https://keras.io/api/datasets/boston_housing/) dataset. 
-We create a simple pipeline that returns two pd.DataFrames, one for the training data and one for the test data. 
-In the post-execution workflow we then plug in the visualization class that visualizes the statistics of these 
+Here, we are using the [Boston Housing Price Regression](https://keras.io/api/datasets/boston_housing/) 
+dataset. We create a simple pipeline that returns two pd.DataFrames, one for 
+the training data and one for the test data. In the post-execution workflow 
+we then plug in the visualization class that visualizes the statistics of these 
 DataFrames for us. 
 
 This visualization is produced with the following code:

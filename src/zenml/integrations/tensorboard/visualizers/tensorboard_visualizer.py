@@ -25,7 +25,7 @@ from tensorboard.manager import (  # type: ignore [import]
     get_all,
 )
 
-from zenml.artifacts.model_artifact import ModelArtifact
+from zenml.enums import ArtifactType
 from zenml.environment import Environment
 from zenml.integrations.tensorboard.services.tensorboard_service import (
     TensorboardService,
@@ -87,7 +87,7 @@ class TensorboardVisualizer(BaseVisualizer):
         """
         for _, artifact_view in object.outputs.items():
             # filter out anything but model artifacts
-            if artifact_view.type == ModelArtifact.TYPE_NAME:
+            if artifact_view.type == ArtifactType.MODEL:
                 logdir = os.path.dirname(artifact_view.uri)
 
                 # first check if a TensorBoard server is already running for
@@ -112,7 +112,7 @@ class TensorboardVisualizer(BaseVisualizer):
                             logdir=logdir,
                         )
                     )
-                    service.start(timeout=20)
+                    service.start(timeout=60)
                     if service.endpoint.status.port:
                         self.visualize_tensorboard(
                             service.endpoint.status.port, height
@@ -153,7 +153,7 @@ class TensorboardVisualizer(BaseVisualizer):
         """
         for _, artifact_view in object.outputs.items():
             # filter out anything but model artifacts
-            if artifact_view.type == ModelArtifact.TYPE_NAME:
+            if artifact_view.type == ArtifactType.MODEL:
                 logdir = os.path.dirname(artifact_view.uri)
 
                 # first check if a TensorBoard server is already running for
@@ -193,7 +193,9 @@ def get_step(pipeline_name: str, step_name: str) -> StepView:
     """
     pipeline = get_pipeline(pipeline_name)
     if pipeline is None:
-        raise RuntimeError(f"No pipeline with name `{pipeline_name}` was found")
+        raise RuntimeError(
+            f"No pipeline with name `{pipeline_name}` was found"
+        )
 
     last_run = pipeline.runs[-1]
     step = last_run.get_step(step=step_name)

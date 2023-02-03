@@ -38,27 +38,29 @@ cd zenml_examples/spark_distributed_programming
 ```
 
 In order to follow this example, you need a remote ZenML server Deployment
-and an AWS  account which you can use tospin up a few resources. Additionally, 
-you have to install Spark following the 
-instructions [here](https://spark.apache.org/downloads.html).
+and an AWS account which you can use to spin up a few resources. Additionally, 
+you have to install Spark following the instructions 
+[here](https://spark.apache.org/downloads.html).
 
 #### Recommended versions
+
 - `spark` = 3.2.1
 - `hadoop` = 3.2
 
-
 # Remote ZenML Server
 
-For Advanced use cases where we have a remote orchestrator such as Vertex AI
-or to share stacks and pipelines with the team, we need to have a separate, remote ZenML Server. It should be accessible from your
-machine as well as all stack components that may need access to information or configurations from the server.
-[Read more information about the use case here](https://docs.zenml.io/getting-started/deploying-zenml)
+For Advanced use cases where we have a step operator such as Spark step operator
+or to share stacks and pipelines with the team, we need to have a separate, 
+remote ZenML Server. It should be accessible from your machine as well as all 
+stack components that may need access to information or configurations from the 
+server. [Read more information about the use case here](https://docs.zenml.io/getting-started/deploying-zenml)
 
-In order to achieve this there are two different ways to get access to a remote ZenML Server.
+In order to achieve this there are two different ways to get access to a remote 
+ZenML Server.
 
 1. Deploy and manage the server manually on [your own cloud](https://docs.zenml.io/getting-started/deploying-zenml)/
-2. Sign up for [ZenML Cloud](https://zenml.io/cloud-signup) and get access to a hosted
-   version of the ZenML Server with no setup required.
+2. Sign up for [ZenML Enterprise](https://zenml.io/pricing) and get access to a 
+hosted version of the ZenML Server with no setup required.
 
 # Setting up the AWS resources
 
@@ -239,7 +241,7 @@ zenml step-operator register spark_step_operator \
 ```
 
 Following that, we will register the **secrets manager**, as we will utilize 
-it to register some secrets required by some of the other components:
+it to register some secrets required by some other components:
 
 ```bash
 # Register the secrets manager on AWS

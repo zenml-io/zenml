@@ -19,7 +19,7 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import CliCategories, LoggingLevels
-from zenml.utils.analytics_utils import AnalyticsEvent, track_event
+from zenml.utils.analytics_utils import AnalyticsEvent, track
 
 
 # Analytics
@@ -35,24 +35,26 @@ def is_analytics_opted_in() -> None:
     cli_utils.declare(f"Analytics opt-in: {gc.analytics_opt_in}")
 
 
-@analytics.command("opt-in", context_settings=dict(ignore_unknown_options=True))
+@analytics.command(
+    "opt-in", context_settings=dict(ignore_unknown_options=True)
+)
+@track(AnalyticsEvent.OPT_IN_ANALYTICS)
 def opt_in() -> None:
     """Opt-in to analytics."""
     gc = GlobalConfiguration()
     gc.analytics_opt_in = True
     cli_utils.declare("Opted in to analytics.")
-    track_event(AnalyticsEvent.OPT_IN_ANALYTICS)
 
 
 @analytics.command(
     "opt-out", context_settings=dict(ignore_unknown_options=True)
 )
+@track(AnalyticsEvent.OPT_OUT_ANALYTICS)
 def opt_out() -> None:
     """Opt-out of analytics."""
     gc = GlobalConfiguration()
     gc.analytics_opt_in = False
     cli_utils.declare("Opted out of analytics.")
-    track_event(AnalyticsEvent.OPT_OUT_ANALYTICS)
 
 
 # Logging

@@ -15,13 +15,16 @@
 
 import os
 import tempfile
-from typing import Any, Type
+from typing import TYPE_CHECKING, Any, Dict, Type
 
 import xgboost as xgb
 
-from zenml.artifacts import DataArtifact
+from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
+
+if TYPE_CHECKING:
+    from zenml.metadata.metadata_types import MetadataType
 
 DEFAULT_FILENAME = "data.binary"
 
@@ -30,9 +33,9 @@ class XgboostDMatrixMaterializer(BaseMaterializer):
     """Materializer to read data to and from xgboost.DMatrix."""
 
     ASSOCIATED_TYPES = (xgb.DMatrix,)
-    ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
 
-    def handle_input(self, data_type: Type[Any]) -> xgb.DMatrix:
+    def load(self, data_type: Type[Any]) -> xgb.DMatrix:
         """Reads a xgboost.DMatrix binary file and loads it.
 
         Args:
@@ -41,8 +44,8 @@ class XgboostDMatrixMaterializer(BaseMaterializer):
         Returns:
             Materialized xgboost matrix.
         """
-        super().handle_input(data_type)
-        filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
+        super().load(data_type)
+        filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
         # Create a temporary folder
         temp_dir = tempfile.mkdtemp(prefix="zenml-temp-")
@@ -56,14 +59,14 @@ class XgboostDMatrixMaterializer(BaseMaterializer):
         fileio.rmtree(temp_dir)
         return matrix
 
-    def handle_return(self, matrix: xgb.DMatrix) -> None:
+    def save(self, matrix: xgb.DMatrix) -> None:
         """Creates a binary serialization for a xgboost.DMatrix object.
 
         Args:
             matrix: A xgboost.DMatrix object.
         """
-        super().handle_return(matrix)
-        filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
+        super().save(matrix)
+        filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
         # Make a temporary phantom artifact
         with tempfile.NamedTemporaryFile(mode="wb", delete=False) as f:
@@ -74,3 +77,19 @@ class XgboostDMatrixMaterializer(BaseMaterializer):
         # Close and remove the temporary file
         f.close()
         fileio.remove(f.name)
+
+    def extract_metadata(
+        self, dataset: xgb.DMatrix
+    ) -> Dict[str, "MetadataType"]:
+        """Extract metadata from the given `Dataset` object.
+
+        Args:
+            dataset: The `Dataset` object to extract metadata from.
+
+        Returns:
+            The extracted metadata as a dictionary.
+        """
+        super().extract_metadata(dataset)
+        return {
+            "shape": (dataset.num_row(), dataset.num_col()),
+        }

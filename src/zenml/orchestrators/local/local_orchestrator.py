@@ -20,6 +20,7 @@ from uuid import uuid4
 from zenml.client import Client
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
+from zenml.orchestrators import utils as orchestrator_utils
 from zenml.orchestrators.base_orchestrator import (
     BaseOrchestratorConfig,
     BaseOrchestratorFlavor,
@@ -78,8 +79,8 @@ class LocalOrchestrator(BaseOrchestrator):
             )
 
         run_duration = time.time() - start_time
-        run_id = self.get_run_id_for_orchestrator_run_id(
-            self._orchestrator_run_id
+        run_id = orchestrator_utils.get_run_id_for_orchestrator_run_id(
+            orchestrator=self, orchestrator_run_id=self._orchestrator_run_id
         )
         run_model = Client().zen_store.get_run(run_id)
         logger.info(

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Contains objects that create a Neptune run and store its state throughout the pipeline."""
 
-import hashlib
+from hashlib import md5
 from typing import Any, List, Optional
 
 import neptune.new as neptune  # type: ignore
@@ -115,7 +115,10 @@ class RunProvider(metaclass=SingletonMetaClass):
 
     @property
     def active_run(self) -> neptune.metadata_containers.Run:
-        """Either gets an active Neptune run or initializes a new one.
+        """Initializes a new neptune run every time it is called.
+
+        The run is closed and the active run state is set to stopped
+        after each step is completed.
 
         Returns:
             Neptune run object
@@ -124,12 +127,16 @@ class RunProvider(metaclass=SingletonMetaClass):
             run = neptune.init_run(
                 project=self.project,
                 api_token=self.token,
-                custom_run_id=hashlib.md5(self.run_name.encode()).hexdigest(),  # type: ignore
+                custom_run_id=md5(self.run_name.encode()).hexdigest(),  # type: ignore
                 tags=self.tags,
             )
             run[_INTEGRATION_VERSION_KEY] = zenml.__version__
             self._active_run = run
         return self._active_run
+
+    def reset_active_run(self) -> None:
+        """Resets the active run state to None."""
+        self._active_run = None
 
 
 def get_neptune_run() -> neptune.metadata_containers.Run:

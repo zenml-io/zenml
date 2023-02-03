@@ -16,10 +16,6 @@ resource "helm_release" "zen-server" {
     value = var.zenmlserver_image_tag
   }
   set {
-    name = "zenml.initImage.tag"
-    value = var.zenmlinit_image_tag
-  }  
-  set {
     name  = "zenml.defaultUsername"
     value = var.username
   }
@@ -30,10 +26,6 @@ resource "helm_release" "zen-server" {
   set {
     name  = "zenml.deploymentType"
     value = "azure"
-  }
-  set {
-    name  = "zenml.serverId"
-    value = var.server_id
   }
   
   # set up the right path for ZenML

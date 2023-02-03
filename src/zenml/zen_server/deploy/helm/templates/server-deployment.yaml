@@ -5,8 +5,12 @@ metadata:
   labels:
     {{- include "zenml.labels" . | nindent 4 }}
 spec:
+  {{- if .Values.zenml.database.url }}
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.zenml.replicaCount }}
+  {{- end }}
+  {{- else }}
+  replicas: 1
   {{- end }}
   selector:
     matchLabels:
@@ -28,19 +32,21 @@ spec:
       serviceAccountName: {{ include "zenml.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- if .Values.zenml.database.url }}
       initContainers:
         - name: {{ .Chart.Name }}-db-init
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.zenml.initImage.repository }}:{{ .Values.zenml.initImage.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.zenml.initImage.pullPolicy }}
-          command: ['zenml', 'init']
+          image: "{{ .Values.zenml.image.repository }}:{{ .Values.zenml.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.zenml.image.pullPolicy }}
+          args: ["status"]
+          command: ['zenml']
           env:
             {{- if .Values.zenml.debug }}
             - name: ZENML_LOGGING_VERBOSITY
               value: "DEBUG"
             {{- end }}
-            - name: ANALYTICS_OPT_IN
+            - name: ZENML_ANALYTICS_OPT_IN
               value: "False"
             - name: ZENML_DEFAULT_PROJECT_NAME
               value: {{ .Values.zenml.defaultProject | quote }}
@@ -55,6 +61,7 @@ spec:
           envFrom:
           - secretRef:
               name: {{ include "zenml.fullname" . }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
@@ -66,7 +73,7 @@ spec:
             - name: ZENML_LOGGING_VERBOSITY
               value: "DEBUG"
             {{- end }}
-            - name: ANALYTICS_OPT_IN
+            - name: ZENML_ANALYTICS_OPT_IN
               value: "False"
             - name: ZENML_AUTH_TYPE
               value: {{ .Values.zenml.authType | quote }}
@@ -88,58 +95,12 @@ spec:
             {{- end }}
             - name: ZENML_SERVER_DEPLOYMENT_TYPE
               value: {{ .Values.zenml.deploymentType | default "kubernetes" }}
-            - name: ZENML_SERVER_METADATA_SYNC_PERIOD
-              value: {{ .Values.zenml.metadataSyncPeriod | default 30 | quote }}
-
-            {{- if and .Values.grpcMetadata.enabled .Values.zenml.database.url }}
-
-            {{-   if and .Values.grpcMetadata.ingress.enabled }}
-
-            - name: ZENML_STORE_GRPC_METADATA_HOST
-            {{-     if .Values.grpcMetadata.ingress.host }}
-              value: {{ .Values.grpcMetadata.ingress.host }}
-            {{-     else }}
-              value: {{ .Values.grpcMetadata.externalHostname }}
-            {{-     end }}
-            - name: ZENML_STORE_GRPC_METADATA_PORT
-              value: "443"
-
-            {{-   else }}
-
-            - name: ZENML_STORE_GRPC_METADATA_HOST
-              value: {{ .Values.grpcMetadata.externalHostname }}
-            - name: ZENML_STORE_GRPC_METADATA_PORT
-              value: {{ .Values.grpcMetadata.service.port | quote }}
-
-            {{-   end }}
-
-            {{-   if .Values.grpcMetadata.tls.enabled }}
-            - name: ZENML_STORE_GRPC_METADATA_SSL_CA
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.grpcMetadata.tls.clientSecretName }}
-                  key: ca.crt
-            - name: ZENML_STORE_GRPC_METADATA_SSL_CERT
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.grpcMetadata.tls.clientSecretName }}
-                  key: tls.crt
-            - name: ZENML_STORE_GRPC_METADATA_SSL_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.grpcMetadata.tls.clientSecretName }}
-                  key: tls.key
-            {{-   end }}
-
-
-            {{- end }}
-
           envFrom:
           - secretRef:
               name: {{ include "zenml.fullname" . }}
           ports:
             - name: http
-              containerPort: 80
+              containerPort: 8080
               protocol: TCP
           livenessProbe:
             httpGet:

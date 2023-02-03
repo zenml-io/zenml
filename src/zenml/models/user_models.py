@@ -16,7 +16,16 @@
 import re
 from datetime import datetime, timedelta
 from secrets import token_hex
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Union,
+    cast,
+)
 from uuid import UUID
 
 from pydantic import BaseModel, Field, SecretStr, root_validator
@@ -24,12 +33,13 @@ from pydantic import BaseModel, Field, SecretStr, root_validator
 from zenml.config.global_config import GlobalConfiguration
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
+from zenml.models import BaseFilterModel, RoleResponseModel
 from zenml.models.base_models import (
     BaseRequestModel,
     BaseResponseModel,
     update_model,
 )
-from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
+from zenml.models.constants import STR_FIELD_MAX_LENGTH
 from zenml.utils.enum_utils import StrEnum
 
 if TYPE_CHECKING:
@@ -78,7 +88,7 @@ class JWTToken(BaseModel):
             AuthorizationException: If the token is invalid.
         """
         # import here to keep these dependencies out of the client
-        from jose import JWTError, jwt  # type: ignore[import]
+        from jose import JWTError, jwt
 
         try:
             payload = jwt.decode(
@@ -154,12 +164,12 @@ class UserBaseModel(BaseModel):
 
     name: str = Field(
         title="The unique username for the account.",
-        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+        max_length=STR_FIELD_MAX_LENGTH,
     )
     full_name: str = Field(
         default="",
         title="The full name for the account owner.",
-        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+        max_length=STR_FIELD_MAX_LENGTH,
     )
 
     email_opted_in: Optional[bool] = Field(
@@ -197,21 +207,25 @@ class UserResponseModel(UserBaseModel, BaseResponseModel):
     """
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
-        "id",
         "name",
         "full_name",
         "active",
         "email_opted_in",
     ]
 
-    activation_token: Optional[str] = Field(default=None)
+    activation_token: Optional[str] = Field(
+        default=None, max_length=STR_FIELD_MAX_LENGTH
+    )
     teams: Optional[List["TeamResponseModel"]] = Field(
         title="The list of teams for this user."
+    )
+    roles: Optional[List["RoleResponseModel"]] = Field(
+        title="The list of roles for this user."
     )
     email: Optional[str] = Field(
         default="",
         title="The email address associated with the account.",
-        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+        max_length=STR_FIELD_MAX_LENGTH,
     )
 
     def generate_access_token(self, permissions: List[str]) -> str:
@@ -368,7 +382,9 @@ class UserAuthModel(UserBaseModel, BaseResponseModel):
 
         zen_store = GlobalConfiguration().zen_store
         try:
-            user = zen_store.get_auth_user(user_name_or_id=access_token.user_id)
+            user = zen_store.get_auth_user(
+                user_name_or_id=access_token.user_id
+            )
         except KeyError:
             return None
         else:
@@ -404,6 +420,36 @@ class UserAuthModel(UserBaseModel, BaseResponseModel):
         return cast(bool, pwd_context.verify(activation_token, token_hash))
 
 
+# ------ #
+# FILTER #
+# ------ #
+
+
+class UserFilterModel(BaseFilterModel):
+    """Model to enable advanced filtering of all Users."""
+
+    name: str = Field(
+        default=None,
+        description="Name of the user",
+    )
+    full_name: str = Field(
+        default=None,
+        description="Full Name of the user",
+    )
+    email: str = Field(
+        default=None,
+        description="Full Name of the user",
+    )
+    active: Union[bool, str] = Field(
+        default=None,
+        description="Full Name of the user",
+    )
+    email_opted_in: Union[bool, str] = Field(
+        default=None,
+        description="Full Name of the user",
+    )
+
+
 # ------- #
 # REQUEST #
 # ------- #
@@ -427,11 +473,17 @@ class UserRequestModel(UserBaseModel, BaseRequestModel):
     email: Optional[str] = Field(
         default=None,
         title="The email address associated with the account.",
-        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+        max_length=STR_FIELD_MAX_LENGTH,
     )
 
-    password: Optional[str] = Field(default=None)
-    activation_token: Optional[str] = Field(default=None)
+    password: Optional[str] = Field(
+        default=None,
+        title="A password for the user.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    activation_token: Optional[str] = Field(
+        default=None, max_length=STR_FIELD_MAX_LENGTH
+    )
 
     class Config:
         """Pydantic configuration class."""

@@ -11,8 +11,17 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization for the AWS VM orchestrator."""
+"""Initialization for the AWS VM orchestrator and AWS Sagemaker orchestrator."""
 
 from zenml.integrations.aws.orchestrators.aws_vm_orchestrator import (  # noqa
     AWSVMOrchestrator,
 )
+
+from zenml.integrations.aws.orchestrators.sagemaker_orchestrator import (
+    SagemakerOrchestrator,
+)
+
+__all__ = [
+    "AWSVMOrchestrator",
+    "SagemakerOrchestrator",
+]

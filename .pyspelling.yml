@@ -8,10 +8,10 @@ matrix:
           escapes: \\[\\`~]
           delimiters:
             # Ignore multiline content between fences (fences can have 3 or more back ticks)
-            # ```
+            # ```python
             # content
             # ```
-            - open: "(?s)^(?P<open> *`{3,})$"
+            - open: "(?s)^(?P<open> *`{3,}).*$"
               close: "^(?P=open)$"
             # Ignore text between inline back ticks
             - open: "(?P<open>`+)"

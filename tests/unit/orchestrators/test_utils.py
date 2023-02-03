@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,119 +11,89 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from zenml.orchestrators.utils import is_setting_enabled
 
 
-import json
+def test_is_setting_enabled():
+    """Unit test for `is_setting_enabled()`.
 
-from zenml.client import Client
-from zenml.orchestrators.utils import get_cache_status
-from zenml.pipelines import pipeline
-from zenml.steps import step
-from zenml.utils.proto_utils import (
-    MLMD_CONTEXT_PIPELINE_CONFIG_PROPERTY_NAME,
-    MLMD_CONTEXT_STACK_PROPERTY_NAME,
-    MLMD_CONTEXT_STEP_CONFIG_PROPERTY_NAME,
-    ZENML_MLMD_CONTEXT_TYPE,
-)
-
-
-def test_get_cache_status_raises_no_error_when_none_passed():
-    """Ensure get_cache_status raises no error when None is passed."""
-    get_cache_status(None)
-
-
-def test_get_cache_status_works_when_running_pipeline_twice(
-    clean_client, mocker
-):
-    """Check that steps are cached when a pipeline is run twice successively."""
-    from zenml.pipelines import pipeline
-    from zenml.steps import step
-
-    @step
-    def step_one() -> int:
-        return 1
-
-    @pipeline
-    def some_pipeline(
-        step_one,
-    ):
-        step_one()
-
-    pipeline = some_pipeline(
-        step_one=step_one(),
-    )
-
-    def _expect_not_cached(execution_info):
-        return_value = get_cache_status(execution_info)
-        assert return_value is False
-        return return_value
-
-    def _expect_cached(execution_info):
-        return_value = get_cache_status(execution_info)
-        assert return_value is True
-        return return_value
-
-    mock = mocker.patch(
-        "zenml.orchestrators.base_orchestrator.get_cache_status",
-        side_effect=_expect_not_cached,
-    )
-    pipeline.run()
-    mock.assert_called_once()
-
-    mock = mocker.patch(
-        "zenml.orchestrators.base_orchestrator.get_cache_status",
-        side_effect=_expect_cached,
-    )
-    pipeline.run()
-    mock.assert_called_once()
-
-
-def test_pipeline_storing_context_in_the_metadata_store():
-    """Tests that storing the ZenML context in the metadata store works."""
-
-    @step
-    def some_step_1() -> int:
-        return 3
-
-    @pipeline
-    def p(step_):
-        step_()
-
-    pipeline_ = p(some_step_1())
-    pipeline_.run()
-
-    client = Client()
-    contexts = client.zen_store._metadata_store.store.get_contexts_by_type(
-        ZENML_MLMD_CONTEXT_TYPE
-    )
-
-    assert len(contexts) == 1
-
-    assert contexts[0].custom_properties[
-        MLMD_CONTEXT_STACK_PROPERTY_NAME
-    ].string_value == json.dumps(client.active_stack.dict(), sort_keys=True)
-
-    from zenml.config.compiler import Compiler
-    from zenml.config.pipeline_configurations import PipelineRunConfiguration
-
-    compiled = Compiler().compile(
-        pipeline=pipeline_,
-        stack=client.active_stack,
-        run_configuration=PipelineRunConfiguration(),
-    )
-
-    expected_pipeline_config = compiled.pipeline.json(sort_keys=True)
+    Tests that:
+    - caching is enabled by default (when neither step nor pipeline set it),
+    - caching is always enabled if explicitly enabled for the step,
+    - caching is always disabled if explicitly disabled for the step,
+    - caching is set to the pipeline cache if not configured for the step.
+    """
+    # Caching is enabled by default
     assert (
-        contexts[0]
-        .custom_properties[MLMD_CONTEXT_PIPELINE_CONFIG_PROPERTY_NAME]
-        .string_value
-        == expected_pipeline_config
+        is_setting_enabled(
+            is_enabled_on_step=None, is_enabled_on_pipeline=None
+        )
+        is True
     )
 
-    expected_step_config = compiled.steps["step_"].json(sort_keys=True)
+    # Caching is always enabled if explicitly enabled for the step
     assert (
-        contexts[0]
-        .custom_properties[MLMD_CONTEXT_STEP_CONFIG_PROPERTY_NAME]
-        .string_value
-        == expected_step_config
+        is_setting_enabled(
+            is_enabled_on_step=True,
+            is_enabled_on_pipeline=True,
+        )
+        is True
+    )
+
+    assert (
+        is_setting_enabled(
+            is_enabled_on_step=True,
+            is_enabled_on_pipeline=False,
+        )
+        is True
+    )
+
+    assert (
+        is_setting_enabled(
+            is_enabled_on_step=True,
+            is_enabled_on_pipeline=None,
+        )
+        is True
+    )
+
+    # Caching is always disabled if explicitly disabled for the step
+    assert (
+        is_setting_enabled(
+            is_enabled_on_step=False,
+            is_enabled_on_pipeline=True,
+        )
+        is False
+    )
+
+    assert (
+        is_setting_enabled(
+            is_enabled_on_step=False,
+            is_enabled_on_pipeline=False,
+        )
+        is False
+    )
+
+    assert (
+        is_setting_enabled(
+            is_enabled_on_step=False,
+            is_enabled_on_pipeline=None,
+        )
+        is False
+    )
+
+    # Caching is set to the pipeline cache if not configured for the step
+    assert (
+        is_setting_enabled(
+            is_enabled_on_step=None,
+            is_enabled_on_pipeline=True,
+        )
+        is True
+    )
+
+    assert (
+        is_setting_enabled(
+            is_enabled_on_step=None,
+            is_enabled_on_pipeline=False,
+        )
+        is False
     )

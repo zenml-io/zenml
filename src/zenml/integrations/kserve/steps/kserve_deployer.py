@@ -17,8 +17,6 @@ from typing import List, Optional, cast
 
 from pydantic import BaseModel, validator
 
-from zenml.artifacts.model_artifact import ModelArtifact
-from zenml.client import Client
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.environment import Environment
 from zenml.exceptions import DoesNotExistException
@@ -36,6 +34,7 @@ from zenml.integrations.kserve.services.kserve_deployment import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.materializers import UnmaterializedArtifact
 from zenml.steps import (
     STEP_ENVIRONMENT_NAME,
     BaseParameters,
@@ -226,7 +225,7 @@ def kserve_model_deployer_step(
     deploy_decision: bool,
     params: KServeDeployerStepParameters,
     context: StepContext,
-    model: ModelArtifact,
+    model: UnmaterializedArtifact,
 ) -> KServeDeploymentService:
     """KServe model deployer pipeline step.
 
@@ -249,12 +248,12 @@ def kserve_model_deployer_step(
     # get pipeline name, step name and run id
     step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
     pipeline_name = step_env.pipeline_name
-    pipeline_run_id = step_env.pipeline_run_id
+    run_name = step_env.run_name
     step_name = step_env.step_name
 
     # update the step configuration with the real pipeline runtime information
     params.service_config.pipeline_name = pipeline_name
-    params.service_config.pipeline_run_id = pipeline_run_id
+    params.service_config.pipeline_run_id = run_name
     params.service_config.pipeline_step_name = step_name
 
     # fetch existing services with same pipeline name, step name and
@@ -331,7 +330,7 @@ def kserve_custom_model_deployer_step(
     deploy_decision: bool,
     params: KServeDeployerStepParameters,
     context: StepContext,
-    model: ModelArtifact,
+    model: UnmaterializedArtifact,
 ) -> KServeDeploymentService:
     """KServe custom model deployer pipeline step.
 
@@ -367,12 +366,12 @@ def kserve_custom_model_deployer_step(
     # get pipeline name, step name, run id
     step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
     pipeline_name = step_env.pipeline_name
-    pipeline_run_id = step_env.pipeline_run_id
+    run_name = step_env.run_name
     step_name = step_env.step_name
 
     # update the step configuration with the real pipeline runtime information
     params.service_config.pipeline_name = pipeline_name
-    params.service_config.pipeline_run_id = pipeline_run_id
+    params.service_config.pipeline_run_id = run_name
     params.service_config.pipeline_step_name = step_name
 
     # fetch existing services with same pipeline name, step name and
@@ -425,19 +424,15 @@ def kserve_custom_model_deployer_step(
     ]
 
     # copy the model files to a new specific directory for the deployment
-    served_model_uri = os.path.join(context.get_output_artifact_uri(), "kserve")
+    served_model_uri = os.path.join(
+        context.get_output_artifact_uri(), "kserve"
+    )
     fileio.makedirs(served_model_uri)
     io_utils.copy_dir(model.uri, served_model_uri)
 
-    # Get the model artifact to extract information about the model
-    # and how it can be loaded again later in the deployment environment.
-    artifact = Client().zen_store.list_artifacts(artifact_uri=model.uri)
-    if not artifact:
-        raise DoesNotExistException(f"No artifact found at {model.uri}.")
-
     # save the model artifact metadata to the YAML file and copy it to the
     # deployment directory
-    model_metadata_file = save_model_metadata(artifact[0])
+    model_metadata_file = save_model_metadata(model)
     fileio.copy(
         model_metadata_file,
         os.path.join(served_model_uri, MODEL_METADATA_YAML_FILE_NAME),

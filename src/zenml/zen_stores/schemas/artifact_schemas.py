@@ -14,49 +14,78 @@
 """SQLModel implementation of artifact tables."""
 
 
-from typing import Optional
+from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
-from sqlmodel import Field
+from sqlmodel import Relationship
 
 from zenml.enums import ArtifactType
 from zenml.models import ArtifactRequestModel, ArtifactResponseModel
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
+from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
-from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
+from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
+
+if TYPE_CHECKING:
+    from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
+    from zenml.zen_stores.schemas.step_run_schemas import (
+        StepRunInputArtifactSchema,
+        StepRunOutputArtifactSchema,
+    )
 
 
 class ArtifactSchema(NamedSchema, table=True):
     """SQL Model for artifacts of steps."""
 
-    __tablename__ = "artifacts"
+    __tablename__ = "artifact"
 
-    parent_step_id: UUID = build_foreign_key_field(
+    artifact_store_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
-        target=StepRunSchema.__tablename__,
-        source_column="parent_step_id",
+        target=StackComponentSchema.__tablename__,
+        source_column="artifact_store_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+
+    user_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=UserSchema.__tablename__,
+        source_column="user_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+    user: Optional["UserSchema"] = Relationship(back_populates="artifacts")
+
+    workspace_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=WorkspaceSchema.__tablename__,
+        source_column="workspace_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=False,
     )
-    producer_step_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target=StepRunSchema.__tablename__,
-        source_column="producer_step_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=False,
-    )
+    workspace: "WorkspaceSchema" = Relationship(back_populates="artifacts")
 
     type: ArtifactType
     uri: str
     materializer: str
     data_type: str
-    is_cached: bool
 
-    mlmd_id: Optional[int] = Field(default=None, nullable=True)
-    mlmd_parent_step_id: Optional[int] = Field(default=None, nullable=True)
-    mlmd_producer_step_id: Optional[int] = Field(default=None, nullable=True)
+    run_metadata: List["RunMetadataSchema"] = Relationship(
+        back_populates="artifact",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
+    input_to_step_runs: List["StepRunInputArtifactSchema"] = Relationship(
+        back_populates="artifact",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
+    output_of_step_runs: List["StepRunOutputArtifactSchema"] = Relationship(
+        back_populates="artifact",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
 
     @classmethod
     def from_request(
@@ -72,37 +101,43 @@ class ArtifactSchema(NamedSchema, table=True):
         """
         return cls(
             name=artifact_request.name,
-            parent_step_id=artifact_request.parent_step_id,
-            producer_step_id=artifact_request.producer_step_id,
+            artifact_store_id=artifact_request.artifact_store_id,
+            workspace_id=artifact_request.workspace,
+            user_id=artifact_request.user,
             type=artifact_request.type,
             uri=artifact_request.uri,
             materializer=artifact_request.materializer,
             data_type=artifact_request.data_type,
-            is_cached=artifact_request.is_cached,
-            mlmd_id=artifact_request.mlmd_id,
-            mlmd_parent_step_id=artifact_request.mlmd_parent_step_id,
-            mlmd_producer_step_id=artifact_request.mlmd_producer_step_id,
         )
 
-    def to_model(self) -> ArtifactResponseModel:
+    def to_model(
+        self, producer_step_run_id: Optional[UUID]
+    ) -> ArtifactResponseModel:
         """Convert an `ArtifactSchema` to an `ArtifactModel`.
+
+        Args:
+            producer_step_run_id: The ID of the step run that produced this
+                artifact.
 
         Returns:
             The created `ArtifactModel`.
         """
+        metadata = {
+            metadata_schema.key: metadata_schema.to_model()
+            for metadata_schema in self.run_metadata
+        }
         return ArtifactResponseModel(
             id=self.id,
             name=self.name,
-            parent_step_id=self.parent_step_id,
-            producer_step_id=self.producer_step_id,
+            artifact_store_id=self.artifact_store_id,
+            user=self.user.to_model() if self.user else None,
+            workspace=self.workspace.to_model(),
             type=self.type,
             uri=self.uri,
             materializer=self.materializer,
             data_type=self.data_type,
-            is_cached=self.is_cached,
-            mlmd_id=self.mlmd_id,
-            mlmd_parent_step_id=self.mlmd_parent_step_id,
-            mlmd_producer_step_id=self.mlmd_producer_step_id,
             created=self.created,
             updated=self.updated,
+            producer_step_run_id=producer_step_run_id,
+            metadata=metadata,
         )

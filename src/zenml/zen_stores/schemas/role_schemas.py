@@ -21,17 +21,21 @@ from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.enums import PermissionType
 from zenml.models import (
-    RoleAssignmentRequestModel,
     RoleRequestModel,
     RoleResponseModel,
     RoleUpdateModel,
+    TeamRoleAssignmentRequestModel,
+    TeamRoleAssignmentResponseModel,
+    UserRoleAssignmentRequestModel,
 )
-from zenml.models.role_assignment_models import RoleAssignmentResponseModel
+from zenml.models.user_role_assignment_models import (
+    UserRoleAssignmentResponseModel,
+)
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
-from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.team_schemas import TeamSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 
 class RoleSchema(NamedSchema, table=True):
@@ -75,7 +79,7 @@ class RoleSchema(NamedSchema, table=True):
         ).items():
             setattr(self, field, value)
 
-        self.updated = datetime.now()
+        self.updated = datetime.utcnow()
         return self
 
     def to_model(self) -> RoleResponseModel:
@@ -89,12 +93,12 @@ class RoleSchema(NamedSchema, table=True):
             name=self.name,
             created=self.created,
             updated=self.updated,
-            permissions=[PermissionType(p.name) for p in self.permissions],
+            permissions={PermissionType(p.name) for p in self.permissions},
         )
 
 
 class UserRoleAssignmentSchema(BaseSchema, table=True):
-    """SQL Model for assigning roles to users for a given project."""
+    """SQL Model for assigning roles to users for a given workspace."""
 
     __tablename__ = "user_role_assignment"
 
@@ -115,24 +119,26 @@ class UserRoleAssignmentSchema(BaseSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
-    project_id: Optional[UUID] = build_foreign_key_field(
+    workspace_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
-        target=ProjectSchema.__tablename__,
-        source_column="project_id",
+        target=WorkspaceSchema.__tablename__,
+        source_column="workspace_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=True,
     )
 
     role: RoleSchema = Relationship(back_populates="user_role_assignments")
-    user: "UserSchema" = Relationship(back_populates="assigned_roles")
-    project: Optional["ProjectSchema"] = Relationship(
+    user: Optional["UserSchema"] = Relationship(
+        back_populates="assigned_roles"
+    )
+    workspace: Optional["WorkspaceSchema"] = Relationship(
         back_populates="user_role_assignments"
     )
 
     @classmethod
     def from_request(
-        cls, role_assignment: RoleAssignmentRequestModel
+        cls, role_assignment: UserRoleAssignmentRequestModel
     ) -> "UserRoleAssignmentSchema":
         """Create a `UserRoleAssignmentSchema` from a `RoleAssignmentRequestModel`.
 
@@ -146,19 +152,21 @@ class UserRoleAssignmentSchema(BaseSchema, table=True):
         return cls(
             role_id=role_assignment.role,
             user_id=role_assignment.user,
-            project_id=role_assignment.project,
+            workspace_id=role_assignment.workspace,
         )
 
-    def to_model(self) -> RoleAssignmentResponseModel:
+    def to_model(self) -> UserRoleAssignmentResponseModel:
         """Convert a `UserRoleAssignmentSchema` to a `RoleAssignmentModel`.
 
         Returns:
             The converted `RoleAssignmentModel`.
         """
-        return RoleAssignmentResponseModel(
+        return UserRoleAssignmentResponseModel(
             id=self.id,
-            project=self.project.to_model() if self.project else None,
-            user=self.user.to_model(_block_recursion=True),
+            workspace=self.workspace.to_model() if self.workspace else None,
+            user=self.user.to_model(_block_recursion=True)
+            if self.user
+            else None,
             role=self.role.to_model(),
             created=self.created,
             updated=self.updated,
@@ -166,7 +174,7 @@ class UserRoleAssignmentSchema(BaseSchema, table=True):
 
 
 class TeamRoleAssignmentSchema(BaseSchema, table=True):
-    """SQL Model for assigning roles to teams for a given project."""
+    """SQL Model for assigning roles to teams for a given workspace."""
 
     __tablename__ = "team_role_assignment"
 
@@ -187,23 +195,23 @@ class TeamRoleAssignmentSchema(BaseSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
-    project_id: Optional[UUID] = build_foreign_key_field(
+    workspace_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
-        target=ProjectSchema.__tablename__,
-        source_column="project_id",
+        target=WorkspaceSchema.__tablename__,
+        source_column="workspace_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=True,
     )
     role: RoleSchema = Relationship(back_populates="team_role_assignments")
     team: "TeamSchema" = Relationship(back_populates="assigned_roles")
-    project: Optional["ProjectSchema"] = Relationship(
+    workspace: Optional["WorkspaceSchema"] = Relationship(
         back_populates="team_role_assignments"
     )
 
     @classmethod
     def from_request(
-        cls, role_assignment: RoleAssignmentRequestModel
+        cls, role_assignment: TeamRoleAssignmentRequestModel
     ) -> "TeamRoleAssignmentSchema":
         """Create a `TeamRoleAssignmentSchema` from a `RoleAssignmentRequestModel`.
 
@@ -217,19 +225,19 @@ class TeamRoleAssignmentSchema(BaseSchema, table=True):
         return cls(
             role_id=role_assignment.role,
             team_id=role_assignment.team,
-            project_id=role_assignment.project,
+            workspace_id=role_assignment.workspace,
         )
 
-    def to_model(self) -> RoleAssignmentResponseModel:
+    def to_model(self) -> TeamRoleAssignmentResponseModel:
         """Convert a `TeamRoleAssignmentSchema` to a `RoleAssignmentModel`.
 
         Returns:
             The converted `RoleAssignmentModel`.
         """
-        return RoleAssignmentResponseModel(
+        return TeamRoleAssignmentResponseModel(
             id=self.id,
-            project=self.project.to_model() if self.project else None,
-            user=self.team.to_model(_block_recursion=True),
+            workspace=self.workspace.to_model() if self.workspace else None,
+            team=self.team.to_model(_block_recursion=True),
             role=self.role.to_model(),
             created=self.created,
             updated=self.updated,

@@ -43,7 +43,7 @@ def _get_vertex_orchestrator(**kwargs):
         flavor="gcp",
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -55,9 +55,7 @@ def test_vertex_orchestrator_stack_validation(
     local_container_registry,
     remote_container_registry,
 ) -> None:
-    """Tests that the vertex orchestrator validates that it's stack has a
-    container registry and that all stack components used are not local."""
-
+    """Tests that the vertex orchestrator validates that it's stack has a container registry and that all stack components used are not local."""
     orchestrator = _get_vertex_orchestrator(
         location="europe-west4",
         pipeline_root="gs://my-bucket/pipeline",
@@ -76,7 +74,7 @@ def test_vertex_orchestrator_stack_validation(
         flavor="azure",
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -177,8 +175,7 @@ def test_vertex_orchestrator_configure_container_resources(
     orchestrator_resource_settings: dict,
     expected_resources: dict,
 ) -> None:
-    """Tests that the vertex orchestrator sets the correct container resources
-    for a step."""
+    """Tests that the vertex orchestrator sets the correct container resources for a step."""
     accelerator = "NVIDIA_TESLA_K80"
     orchestrator = _get_vertex_orchestrator(
         location="europe-west4",

@@ -94,6 +94,70 @@ def get_requirements(integration_name: Optional[str] = None) -> None:
 
 
 @integration.command(
+    name="export-requirements", help="Export the integration requirements."
+)
+@click.argument("integrations", nargs=-1, required=False)
+@click.option(
+    "--ignore-integration",
+    "-i",
+    multiple=True,
+    help="List of integrations to ignore explicitly.",
+)
+@click.option(
+    "--output-file",
+    "-o",
+    "output_file",
+    type=str,
+    required=False,
+    help="File to which to export the integration requirements. If not "
+    "provided, the requirements will be printed to stdout instead.",
+)
+def export_requirements(
+    integrations: Tuple[str],
+    ignore_integration: Tuple[str],
+    output_file: Optional[str] = None,
+) -> None:
+    """Exports integration requirements so they can be installed using pip.
+
+    Args:
+        integrations: The name of the integration to install the requirements
+            for.
+        ignore_integration: List of integrations to ignore explicitly.
+        output_file: Optional path to the requirements output file.
+    """
+    from zenml.integrations.registry import integration_registry
+
+    if not integrations:
+        # no integrations specified, use all registered integrations
+        integrations = set(integration_registry.integrations.keys())
+        for i in ignore_integration:
+            try:
+                integrations.remove(i)
+            except KeyError:
+                error(
+                    f"Integration {i} does not exist. Available integrations: "
+                    f"{list(integration_registry.integrations.keys())}"
+                )
+
+    requirements = []
+    for integration_name in integrations:
+        try:
+            requirements += (
+                integration_registry.select_integration_requirements(
+                    integration_name
+                )
+            )
+        except KeyError:
+            error(f"Unable to find integration '{integration_name}'.")
+
+    if output_file:
+        with open(output_file, "x") as f:
+            f.write("\n".join(requirements))
+    else:
+        click.echo(" ".join(requirements), nl=False)
+
+
+@integration.command(
     help="Install the required packages for the integration of choice."
 )
 @click.argument("integrations", nargs=-1, required=False)
@@ -162,7 +226,9 @@ def install(
     integrations_to_install = []
     for integration_name in integrations:
         try:
-            if force or not integration_registry.is_installed(integration_name):
+            if force or not integration_registry.is_installed(
+                integration_name
+            ):
                 requirements += (
                     integration_registry.select_integration_requirements(
                         integration_name

@@ -79,14 +79,34 @@ zenml stack register custom_stack -e neptune_experiment_tracker ... --set
 {% tab title="Secrets Manager (Recommended)" %}
 
 This method requires you to include a [Secrets Manager](../secrets-managers/secrets-managers.md)
-in your stack and configure a ZenML secret to store the neptune.ai
+in your stack and configure a ZenML secret to store the Neptune tracking service
 credentials securely.
 
-{% hint style="warning" %}
-**This method is not yet supported!**
+You can register the secret using the `zenml secret register` command:
 
-We are actively working on adding Secrets Manager support to the Neptune
-Experiment Tracker.
+```shell 
+zenml secrets-manager secret register neptune_secret \
+    --project=<PROJECT>
+    --api_token=<API_TOKEN>
+```
+
+Once the secret is registered, you can use it to configure the neptune Experiment
+Tracker:
+
+```shell
+# Reference the project and api-token in our experiment tracker component
+zenml experiment-tracker register neptune_secret \
+    --flavor=neptune \
+    --project={{neptune_secret.project}} \
+    --api_token={{neptune_secret.api_token}}
+    ...
+```
+
+{% hint style="info" %}
+Read more about [Secrets Manager](../secrets-managers/secrets-managers.md) and
+[Secrets](../secrets-managers/secrets.md) in the ZenML documentation.
+For more practical examples of how to use the Secrets Manager, check out the
+[Secrets management practical guide](../../advanced-guide/practical/secrets-management.md).
 {% endhint %}
 {% endtab %}
 {% endtabs %}

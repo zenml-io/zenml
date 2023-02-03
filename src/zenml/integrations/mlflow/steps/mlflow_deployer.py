@@ -17,7 +17,6 @@ from typing import Optional, Type, cast
 
 from mlflow.tracking import MlflowClient, artifact_utils
 
-from zenml.artifacts.model_artifact import ModelArtifact
 from zenml.client import Client
 from zenml.constants import DEFAULT_SERVICE_START_STOP_TIMEOUT
 from zenml.environment import Environment
@@ -35,6 +34,7 @@ from zenml.integrations.mlflow.services.mlflow_deployment import (
     MLFlowDeploymentService,
 )
 from zenml.logger import get_logger
+from zenml.materializers import UnmaterializedArtifact
 from zenml.steps import (
     STEP_ENVIRONMENT_NAME,
     BaseParameters,
@@ -73,7 +73,7 @@ class MLFlowDeployerParameters(BaseParameters):
 @step(enable_cache=False)
 def mlflow_model_deployer_step(
     deploy_decision: bool,
-    model: ModelArtifact,
+    model: UnmaterializedArtifact,
     params: MLFlowDeployerParameters,
 ) -> MLFlowDeploymentService:
     """Model deployer pipeline step for MLflow.
@@ -101,13 +101,13 @@ def mlflow_model_deployer_step(
     # get pipeline name, step name and run id
     step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
     pipeline_name = step_env.pipeline_name
-    run_id = step_env.pipeline_run_id
+    run_name = step_env.run_name
     step_name = step_env.step_name
 
     client = MlflowClient()
     mlflow_run_id = experiment_tracker.get_run_id(
         experiment_name=params.experiment_name or pipeline_name,
-        run_name=params.run_name or run_id,
+        run_name=params.run_name or run_name,
     )
 
     model_uri = ""
@@ -132,8 +132,9 @@ def mlflow_model_deployer_step(
         workers=params.workers,
         mlserver=params.mlserver,
         pipeline_name=pipeline_name,
-        pipeline_run_id=run_id,
+        pipeline_run_id=run_name,
         pipeline_step_name=step_name,
+        timeout=params.timeout,
     )
 
     # Creating a new service with inactive state and status by default

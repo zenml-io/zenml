@@ -24,6 +24,9 @@ from zenml.integrations.aws.flavors.aws_secrets_manager_flavor import (
 from zenml.integrations.aws.flavors.aws_vm_orchestrator_flavor import (
     AWSVMOrchestratorConfig,
     AwsVMOrchestratorFlavor,
+from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
+    SagemakerOrchestratorConfig,
+    SagemakerOrchestratorFlavor,
 )
 from zenml.integrations.aws.flavors.sagemaker_step_operator_flavor import (
     SagemakerStepOperatorConfig,
@@ -39,4 +42,6 @@ __all__ = [
     "SagemakerStepOperatorConfig",
     "AWSVMOrchestratorConfig",
     "AwsVMOrchestratorFlavor",
+    "SagemakerOrchestratorFlavor",
+    "SagemakerOrchestratorConfig",
 ]

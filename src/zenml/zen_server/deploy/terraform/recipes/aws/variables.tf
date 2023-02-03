@@ -1,7 +1,3 @@
-variable "server_id" {
-  description = "Unique server ID"
-  type        = string
-}
 
 variable "username" {
   description = "Username for the default ZenML server account"
@@ -165,12 +161,6 @@ variable "ingress_tls_secret_name" {
 
 variable "zenmlserver_image_tag" {
   description = "The tag to use for the zenmlserver docker image."
-  default     = "latest"
-  type        = string   
-}
-
-variable "zenmlinit_image_tag" {
-  description = "The tag to use for the zenml init docker image."
   default     = "latest"
   type        = string   
 }

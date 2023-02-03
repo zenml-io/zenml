@@ -23,8 +23,7 @@ from zenml.integrations.airflow.orchestrators import AirflowOrchestrator
 
 
 def test_airflow_orchestrator_attributes():
-    """Tests that the basic attributes of the airflow orchestrator are set
-    correctly."""
+    """Tests that the basic attributes of the airflow orchestrator are set correctly."""
     orchestrator = AirflowOrchestrator(
         name="",
         id=uuid4(),
@@ -32,7 +31,7 @@ def test_airflow_orchestrator_attributes():
         flavor="airflow",
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )

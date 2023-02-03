@@ -13,29 +13,22 @@
 #  permissions and limitations under the License.
 """Abstract base class for entrypoint configurations that run a single step."""
 
-from typing import TYPE_CHECKING, Any, List, Optional, Set, Type
-
-from tfx.dsl.components.base.base_executor import BaseExecutor
-from tfx.orchestration.portable import data_types
-from tfx.orchestration.portable.data_types import ExecutionInfo
-from tfx.orchestration.portable.python_executor_operator import (
-    run_with_executor,
-)
-from tfx.proto.orchestration.execution_invocation_pb2 import ExecutionInvocation
+from typing import TYPE_CHECKING, Any, List, Set
+from uuid import UUID
 
 from zenml.client import Client
 from zenml.config.step_run_info import StepRunInfo
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
 )
-from zenml.io import fileio
-from zenml.steps import utils as step_utils
+from zenml.orchestrators import input_utils, output_utils
+from zenml.orchestrators.step_runner import StepRunner
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.config.step_configurations import Step
 
-EXECUTION_INFO_PATH_OPTION = "execution_info_path"
+STEP_RUN_ID_OPTION = "step_run_id"
 
 
 class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
@@ -46,10 +39,11 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
         """Gets all options required for running with this configuration.
 
         Returns:
-            The superclass options as well as an option for the path to the
-            execution info.
+            The superclass options as well as an option for the step run id.
         """
-        return super().get_entrypoint_options() | {EXECUTION_INFO_PATH_OPTION}
+        return super().get_entrypoint_options() | {
+            STEP_RUN_ID_OPTION,
+        }
 
     @classmethod
     def get_entrypoint_arguments(
@@ -59,104 +53,50 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
         """Gets all arguments that the entrypoint command should be called with.
 
         Args:
-            **kwargs: Kwargs, must include the execution info path.
+            **kwargs: Kwargs, must include the step run id.
 
         Returns:
-            The superclass arguments as well as arguments for the path to the
-            execution info.
+            The superclass arguments as well as arguments for the step run id.
         """
         return super().get_entrypoint_arguments(**kwargs) + [
-            f"--{EXECUTION_INFO_PATH_OPTION}",
-            kwargs[EXECUTION_INFO_PATH_OPTION],
+            f"--{STEP_RUN_ID_OPTION}",
+            kwargs[STEP_RUN_ID_OPTION],
         ]
 
     def _run_step(
         self,
         step: "Step",
         deployment: "PipelineDeployment",
-    ) -> Optional[data_types.ExecutionInfo]:
+    ) -> None:
         """Runs a single step.
 
         Args:
             step: The step to run.
             deployment: The deployment configuration.
-
-        Raises:
-            RuntimeError: If the step executor class does not exist.
-
-        Returns:
-            Step execution info.
         """
-        # Make sure the artifact store is loaded before we load the execution
-        # info
-        stack = Client().active_stack
+        step_run_id = UUID(self.entrypoint_args[STEP_RUN_ID_OPTION])
+        step_run = Client().zen_store.get_run_step(step_run_id)
+        pipeline_run = Client().get_pipeline_run(step_run.pipeline_run_id)
 
-        execution_info_path = self.entrypoint_args[EXECUTION_INFO_PATH_OPTION]
-        execution_info = self._load_execution_info(execution_info_path)
-        executor_class = step_utils.get_executor_class(step.config.name)
-        if not executor_class:
-            raise RuntimeError(
-                f"Unable to find executor class for step {step.config.name}."
-            )
-
-        executor = self._configure_executor(
-            executor_class=executor_class, execution_info=execution_info
-        )
-
-        stack.orchestrator._ensure_artifact_classes_loaded(step.config)
         step_run_info = StepRunInfo(
             config=step.config,
             pipeline=deployment.pipeline,
-            run_name=execution_info.pipeline_run_id,
+            run_name=pipeline_run.name,
+            run_id=pipeline_run.id,
+            step_run_id=step_run_id,
         )
 
-        stack.prepare_step_run(info=step_run_info)
-        step_failed = False
-        try:
-            run_with_executor(execution_info=execution_info, executor=executor)
-        except Exception:
-            step_failed = True
-        finally:
-            stack.cleanup_step_run(info=step_run_info, step_failed=step_failed)
-
-        return execution_info
-
-    @staticmethod
-    def _load_execution_info(execution_info_path: str) -> ExecutionInfo:
-        """Loads the execution info from the given path.
-
-        Args:
-            execution_info_path: Path to the execution info file.
-
-        Returns:
-            Execution info.
-        """
-        with fileio.open(execution_info_path, "rb") as f:
-            execution_info_proto = ExecutionInvocation.FromString(f.read())
-
-        return ExecutionInfo.from_proto(execution_info_proto)
-
-    @staticmethod
-    def _configure_executor(
-        executor_class: Type[BaseExecutor], execution_info: ExecutionInfo
-    ) -> BaseExecutor:
-        """Creates and configures an executor instance.
-
-        Args:
-            executor_class: The class of the executor instance.
-            execution_info: Execution info for the executor.
-
-        Returns:
-            A configured executor instance.
-        """
-        context = BaseExecutor.Context(
-            tmp_dir=execution_info.tmp_dir,
-            unique_id=str(execution_info.execution_id),
-            executor_output_uri=execution_info.execution_output_uri,
-            stateful_working_dir=execution_info.stateful_working_dir,
-            pipeline_node=execution_info.pipeline_node,
-            pipeline_info=execution_info.pipeline_info,
-            pipeline_run_id=execution_info.pipeline_run_id,
+        stack = Client().active_stack
+        input_artifacts, _ = input_utils.resolve_step_inputs(
+            step=step, run_id=pipeline_run.id
+        )
+        output_artifact_uris = output_utils.prepare_output_artifact_uris(
+            step_run=step_run, stack=stack, step=step
         )
 
-        return executor_class(context=context)
+        step_runner = StepRunner(step=step, stack=stack)
+        step_runner.run(
+            input_artifacts=input_artifacts,
+            output_artifact_uris=output_artifact_uris,
+            step_run_info=step_run_info,
+        )

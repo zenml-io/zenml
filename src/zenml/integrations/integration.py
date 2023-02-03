@@ -88,4 +88,9 @@ class Integration(metaclass=IntegrationMeta):
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
-        """Abstract method to declare new stack component flavors."""
+        """Abstract method to declare new stack component flavors.
+
+        Returns:
+            A list of new stack component flavors.
+        """
+        return []

@@ -25,11 +25,8 @@ from typing_extensions import Literal
 
 from zenml.integrations.evidently.data_validators import EvidentlyDataValidator
 from zenml.steps import Output
+from zenml.steps.base_parameters import BaseParameters
 from zenml.steps.base_step import BaseStep
-from zenml.steps.step_interfaces.base_drift_detection_step import (
-    BaseDriftDetectionParameters,
-    BaseDriftDetectionStep,
-)
 
 
 class EvidentlyColumnMapping(BaseModel):
@@ -71,7 +68,9 @@ class EvidentlyColumnMapping(BaseModel):
 
         # preserve the Evidently defaults where possible
         column_mapping.target = self.target or column_mapping.target
-        column_mapping.prediction = self.prediction or column_mapping.prediction
+        column_mapping.prediction = (
+            self.prediction or column_mapping.prediction
+        )
         column_mapping.datetime = self.datetime or column_mapping.datetime
         column_mapping.id = self.id or column_mapping.id
         column_mapping.numerical_features = (
@@ -88,7 +87,7 @@ class EvidentlyColumnMapping(BaseModel):
         return column_mapping
 
 
-class EvidentlyProfileParameters(BaseDriftDetectionParameters):
+class EvidentlyProfileParameters(BaseParameters):
     """Parameters class for Evidently profile steps.
 
     Attributes:
@@ -122,10 +121,10 @@ class EvidentlyProfileParameters(BaseDriftDetectionParameters):
     )
 
 
-class EvidentlyProfileStep(BaseDriftDetectionStep):
+class EvidentlyProfileStep(BaseStep):
     """Step implementation implementing an Evidently Profile Step."""
 
-    def entrypoint(  # type: ignore[override]
+    def entrypoint(
         self,
         reference_dataset: pd.DataFrame,
         comparison_dataset: pd.DataFrame,
@@ -183,7 +182,9 @@ class EvidentlyProfileStep(BaseDriftDetectionStep):
             )
 
         if params.column_mapping:
-            column_mapping = params.column_mapping.to_evidently_column_mapping()
+            column_mapping = (
+                params.column_mapping.to_evidently_column_mapping()
+            )
         profile, dashboard = data_validator.data_profiling(
             dataset=reference_dataset,
             comparison_dataset=comparison_dataset,

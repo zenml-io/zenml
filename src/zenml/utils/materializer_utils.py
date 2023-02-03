@@ -15,18 +15,17 @@
 
 import os
 import tempfile
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from ml_metadata.proto.metadata_store_pb2 import Artifact
-
-from zenml.artifacts.model_artifact import ModelArtifact
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.models import ArtifactResponseModel
 from zenml.utils import source_utils
 from zenml.utils.yaml_utils import read_yaml, write_yaml
+
+if TYPE_CHECKING:
+    from zenml.models import ArtifactResponseModel
 
 logger = get_logger(__name__)
 
@@ -34,7 +33,7 @@ METADATA_DATATYPE = "datatype"
 METADATA_MATERIALIZER = "materializer"
 
 
-def save_model_metadata(model_artifact: ArtifactResponseModel) -> str:
+def save_model_metadata(model_artifact: "ArtifactResponseModel") -> str:
     """Save a zenml model artifact metadata to a YAML file.
 
     This function is used to extract and save information from a zenml model artifact
@@ -68,61 +67,98 @@ def load_model_from_metadata(model_uri: str) -> Any:
     by the save_model_metadata function. The information in the Yaml file is
     used to load the model into memory in the inference environment.
 
-    model_uri: the URI of the model checkpoint/files to load.
-    datatype: the model type. This is the path to the model class.
-    materializer: the materializer class. This is the path to the materializer class.
-
     Args:
         model_uri: the artifact to extract the metadata from.
 
     Returns:
         The ML model object loaded into memory.
     """
+    # Load the model from its metadata
     with fileio.open(
         os.path.join(model_uri, MODEL_METADATA_YAML_FILE_NAME), "r"
     ) as f:
         metadata = read_yaml(f.name)
-    model_artifact = Artifact()
-    model_artifact.uri = model_uri
-    model_artifact.properties[METADATA_DATATYPE].string_value = metadata[
-        METADATA_DATATYPE
-    ]
-    model_artifact.properties[METADATA_MATERIALIZER].string_value = metadata[
-        METADATA_MATERIALIZER
-    ]
-    materializer_class = source_utils.load_source_path_class(
-        model_artifact.properties[METADATA_MATERIALIZER].string_value
+    data_type = metadata[METADATA_DATATYPE]
+    materializer = metadata[METADATA_MATERIALIZER]
+    model = _load_artifact(
+        materializer=materializer, data_type=data_type, uri=model_uri
     )
-    model_class = source_utils.load_source_path_class(
-        model_artifact.properties[METADATA_DATATYPE].string_value
-    )
-    materializer_object: BaseMaterializer = materializer_class(model_artifact)
-    model = materializer_object.handle_input(model_class)
+
+    # Switch to eval mode if the model is a torch model
     try:
         import torch.nn as nn
 
-        if issubclass(model_class, nn.Module):  # type: ignore
+        if isinstance(model, nn.Module):
             model.eval()
     except ImportError:
         pass
-    logger.debug(f"Model loaded successfully :\n{model}")
+
     return model
 
 
-def model_from_model_artifact(model_artifact: ModelArtifact) -> Any:
-    """Load model to memory from a model artifact.
+def load_artifact(artifact: "ArtifactResponseModel") -> Any:
+    """Load the given artifact into memory.
 
     Args:
-        model_artifact: The model artifact to load.
+        artifact: The artifact to load.
 
     Returns:
-        The ML model object loaded into memory.
+        The artifact loaded into memory.
     """
-    materializer_class = source_utils.load_source_path_class(
-        model_artifact.materializer
+    return _load_artifact(
+        materializer=artifact.materializer,
+        data_type=artifact.data_type,
+        uri=artifact.uri,
     )
-    model_class = source_utils.load_source_path_class(model_artifact.datatype)
-    materializer_object: BaseMaterializer = materializer_class(model_artifact)
-    model = materializer_object.handle_input(model_class)
-    logger.debug(f"Model loaded successfully :\n{model}")
-    return model
+
+
+def _load_artifact(
+    materializer: str,
+    data_type: str,
+    uri: str,
+) -> Any:
+    """Load an artifact using the given materializer.
+
+    Args:
+        materializer: The path of the materializer class to use.
+        data_type: The data type of the artifact.
+        uri: The uri of the artifact.
+
+    Returns:
+        The artifact loaded into memory.
+
+    Raises:
+        ModuleNotFoundError: If the materializer or data type cannot be found.
+    """
+    # Resolve the materializer class
+    try:
+        materializer_class = source_utils.load_source_path_class(materializer)
+    except (ModuleNotFoundError, AttributeError) as e:
+        logger.error(
+            f"ZenML cannot locate and import the materializer module "
+            f"'{materializer}' which was used to write this artifact."
+        )
+        raise ModuleNotFoundError(e) from e
+
+    # Resolve the artifact class
+    try:
+        artifact_class = source_utils.load_source_path_class(data_type)
+    except (ModuleNotFoundError, AttributeError) as e:
+        logger.error(
+            f"ZenML cannot locate and import the data type of this "
+            f"artifact '{data_type}'."
+        )
+        raise ModuleNotFoundError(e) from e
+
+    # Load the artifact
+    logger.debug(
+        "Using '%s' to load artifact of type '%s' from '%s'.",
+        materializer_class.__qualname__,
+        artifact_class.__qualname__,
+        uri,
+    )
+    materializer_object: BaseMaterializer = materializer_class(uri)
+    artifact = materializer_object.load(artifact_class)
+    logger.debug("Artifact loaded successfully.")
+
+    return artifact

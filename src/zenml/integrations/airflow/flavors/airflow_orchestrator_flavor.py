@@ -149,6 +149,8 @@ class AirflowOrchestratorFlavor(BaseOrchestratorFlavor):
         Returns:
             The implementation class.
         """
-        from zenml.integrations.airflow.orchestrators import AirflowOrchestrator
+        from zenml.integrations.airflow.orchestrators import (
+            AirflowOrchestrator,
+        )
 
         return AirflowOrchestrator
