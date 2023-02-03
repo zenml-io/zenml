@@ -127,9 +127,7 @@ class SeldonDeploymentPredictiveUnit(BaseModel):
     ] = SeldonDeploymentPredictiveUnitType.MODEL
     implementation: Optional[str]
     modelUri: Optional[str]
-    parameters: List[SeldonDeploymentPredictorParameter] = Field(
-        default_factory=list
-    )
+    parameters: Optional[List[SeldonDeploymentPredictorParameter]]
     serviceAccountName: Optional[str]
     envSecretRefName: Optional[str]
     children: List["SeldonDeploymentPredictiveUnit"] = Field(
@@ -322,9 +320,7 @@ class SeldonDeployment(BaseModel):
         model_uri: Optional[str] = None,
         model_name: Optional[str] = None,
         implementation: Optional[str] = None,
-        parameters: List[SeldonDeploymentPredictorParameter] = Field(
-            default_factory=list
-        ),
+        parameters: Optional[List[SeldonDeploymentPredictorParameter]] = None,
         engineResources: Optional[SeldonResourceRequirements] = None,
         secret_name: Optional[str] = None,
         labels: Optional[Dict[str, str]] = None,
