@@ -22,8 +22,11 @@ from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
 from zenml.enums import ExecutionStatus
-from zenml.models import PipelineRunResponseModel
-from zenml.models.pipeline_run_models import PipelineRunRequestModel
+from zenml.models import (
+    PipelineRunRequestModel,
+    PipelineRunResponseModel,
+    PipelineRunUpdateModel,
+)
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
 from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
@@ -33,7 +36,7 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineRunUpdateModel
+    from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
     from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
 
 
@@ -95,12 +98,14 @@ class PipelineRunSchema(NamedSchema, table=True):
     orchestrator_run_id: Optional[str] = Field(nullable=True)
 
     enable_cache: Optional[bool] = Field(nullable=True)
+    enable_artifact_metadata: Optional[bool] = Field(nullable=True)
     start_time: Optional[datetime] = Field(nullable=True)
     end_time: Optional[datetime] = Field(nullable=True)
     status: ExecutionStatus
     pipeline_configuration: str = Field(sa_column=Column(TEXT, nullable=False))
     num_steps: Optional[int]
-    zenml_version: str
+    client_version: str
+    server_version: Optional[str] = Field(nullable=True)
     client_environment: Optional[str] = Field(
         sa_column=Column(TEXT, nullable=True)
     )
@@ -109,6 +114,10 @@ class PipelineRunSchema(NamedSchema, table=True):
     )
     git_sha: Optional[str] = Field(nullable=True)
 
+    run_metadata: List["RunMetadataSchema"] = Relationship(
+        back_populates="pipeline_run",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
     step_runs: List["StepRunSchema"] = Relationship(
         back_populates="pipeline_run",
         sa_relationship_kwargs={"cascade": "delete"},
@@ -145,7 +154,8 @@ class PipelineRunSchema(NamedSchema, table=True):
             pipeline_configuration=configuration,
             num_steps=request.num_steps,
             git_sha=request.git_sha,
-            zenml_version=request.zenml_version,
+            client_version=request.client_version,
+            server_version=request.server_version,
             client_environment=client_environment,
             orchestrator_environment=orchestrator_environment,
         )
@@ -171,6 +181,10 @@ class PipelineRunSchema(NamedSchema, table=True):
             if self.orchestrator_environment
             else {}
         )
+        metadata = {
+            metadata_schema.key: metadata_schema.to_model()
+            for metadata_schema in self.run_metadata
+        }
 
         if _block_recursion:
             return PipelineRunResponseModel(
@@ -181,17 +195,20 @@ class PipelineRunSchema(NamedSchema, table=True):
                 schedule_id=self.schedule_id,
                 orchestrator_run_id=self.orchestrator_run_id,
                 enable_cache=self.enable_cache,
+                enable_artifact_metadata=self.enable_artifact_metadata,
                 start_time=self.start_time,
                 end_time=self.end_time,
                 status=self.status,
                 pipeline_configuration=json.loads(self.pipeline_configuration),
                 num_steps=self.num_steps,
                 git_sha=self.git_sha,
-                zenml_version=self.zenml_version,
+                client_version=self.client_version,
+                server_version=self.server_version,
                 client_environment=client_environment,
                 orchestrator_environment=orchestrator_environment,
                 created=self.created,
                 updated=self.updated,
+                metadata=metadata,
             )
         else:
             return PipelineRunResponseModel(
@@ -202,6 +219,7 @@ class PipelineRunSchema(NamedSchema, table=True):
                 user=self.user.to_model(True) if self.user else None,
                 orchestrator_run_id=self.orchestrator_run_id,
                 enable_cache=self.enable_cache,
+                enable_artifact_metadata=self.enable_artifact_metadata,
                 start_time=self.start_time,
                 end_time=self.end_time,
                 status=self.status,
@@ -212,11 +230,13 @@ class PipelineRunSchema(NamedSchema, table=True):
                 pipeline_configuration=json.loads(self.pipeline_configuration),
                 num_steps=self.num_steps,
                 git_sha=self.git_sha,
-                zenml_version=self.zenml_version,
+                client_version=self.client_version,
+                server_version=self.server_version,
                 client_environment=client_environment,
                 orchestrator_environment=orchestrator_environment,
                 created=self.created,
                 updated=self.updated,
+                metadata=metadata,
             )
 
     def update(

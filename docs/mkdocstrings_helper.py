@@ -205,7 +205,7 @@ def generate_docs(
     )
 
     integration_file_contents = [INTEGRATION_DOCS_TITLE]
-    integrations_file_content = create_entity_docs(
+    create_entity_docs(
         api_doc_file_dir=integrations_dev_doc_file_dir,
         ignored_modules=["__init__.py", "__pycache__"],
         sources_path=path / "integrations",

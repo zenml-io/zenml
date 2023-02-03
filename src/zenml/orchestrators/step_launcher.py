@@ -39,6 +39,7 @@ from zenml.orchestrators import (
 )
 from zenml.orchestrators import utils as orchestrator_utils
 from zenml.orchestrators.step_runner import StepRunner
+from zenml.orchestrators.utils import is_setting_enabled
 from zenml.stack import Stack
 from zenml.utils import string_utils
 
@@ -144,8 +145,16 @@ class StepLauncher:
         """Launches the step."""
         logger.info(f"Step `{self._step_name}` has started.")
 
-        pipeline_run = self._create_or_reuse_run()
+        pipeline_run, run_was_created = self._create_or_reuse_run()
         try:
+            if run_was_created:
+                pipeline_run_metadata = self._stack.get_pipeline_run_metadata(
+                    run_id=pipeline_run.id
+                )
+                publish_utils.publish_pipeline_run_metadata(
+                    pipeline_run_id=pipeline_run.id,
+                    pipeline_run_metadata=pipeline_run_metadata,
+                )
             client = Client()
             docstring, source_code = self._get_step_docstring_and_source_code()
             step_run = StepRunRequestModel(
@@ -211,11 +220,12 @@ class StepLauncher:
 
         return docstring, source_code
 
-    def _create_or_reuse_run(self) -> PipelineRunResponseModel:
-        """Creates a run or reuses an existing one.
+    def _create_or_reuse_run(self) -> Tuple[PipelineRunResponseModel, bool]:
+        """Creates a pipeline run or reuses an existing one.
 
         Returns:
-            The created or existing run.
+            The created or existing pipeline run,
+            and a boolean indicating whether the run was created or reused.
         """
         run_id = orchestrator_utils.get_run_id_for_orchestrator_run_id(
             orchestrator=self._stack.orchestrator,
@@ -241,11 +251,13 @@ class StepLauncher:
             pipeline=self._deployment.pipeline_id,
             schedule_id=self._deployment.schedule_id,
             enable_cache=self._deployment.pipeline.enable_cache,
+            enable_artifact_metadata=self._deployment.pipeline.enable_artifact_metadata,
             status=ExecutionStatus.RUNNING,
             pipeline_configuration=self._deployment.pipeline.dict(),
             num_steps=len(self._deployment.steps),
             client_environment=self._deployment.client_environment,
             orchestrator_environment=get_run_environment_dict(),
+            server_version=client.zen_store.get_store_info().version,
             start_time=datetime.utcnow(),
         )
         return client.zen_store.get_or_create_run(pipeline_run)
@@ -281,9 +293,9 @@ class StepLauncher:
         step_run.parent_step_ids = parent_step_ids
         step_run.cache_key = cache_key
 
-        cache_enabled = cache_utils.is_cache_enabled(
-            step_enable_cache=self._step.config.enable_cache,
-            pipeline_enable_cache=self._deployment.pipeline.enable_cache,
+        cache_enabled = is_setting_enabled(
+            is_enabled_on_step=self._step.config.enable_cache,
+            is_enabled_on_pipeline=self._deployment.pipeline.enable_cache,
         )
 
         execution_needed = True

@@ -39,6 +39,7 @@ from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
     from zenml.models import ArtifactResponseModel
+    from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
 
 
 class StepRunSchema(NamedSchema, table=True):
@@ -87,6 +88,7 @@ class StepRunSchema(NamedSchema, table=True):
     workspace: "WorkspaceSchema" = Relationship(back_populates="step_runs")
 
     enable_cache: Optional[bool] = Field(nullable=True)
+    enable_artifact_metadata: Optional[bool] = Field(nullable=True)
     code_hash: Optional[str] = Field(nullable=True)
     cache_key: Optional[str] = Field(nullable=True)
     start_time: Optional[datetime] = Field(nullable=True)
@@ -102,6 +104,9 @@ class StepRunSchema(NamedSchema, table=True):
     source_code: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     num_outputs: Optional[int]
 
+    run_metadata: List["RunMetadataSchema"] = Relationship(
+        back_populates="step_run", sa_relationship_kwargs={"cascade": "delete"}
+    )
     input_artifacts: List["StepRunInputArtifactSchema"] = Relationship(
         back_populates="step_run", sa_relationship_kwargs={"cascade": "delete"}
     )
@@ -141,6 +146,7 @@ class StepRunSchema(NamedSchema, table=True):
             workspace_id=request.workspace,
             user_id=request.user,
             enable_cache=step_config.enable_cache,
+            enable_artifact_metadata=step_config.enable_artifact_metadata,
             code_hash=step_config.caching_parameters.get(
                 STEP_SOURCE_PARAMETER_NAME
             ),
@@ -181,6 +187,10 @@ class StepRunSchema(NamedSchema, table=True):
         Returns:
             The created StepRunModel.
         """
+        metadata = {
+            metadata_schema.key: metadata_schema.to_model()
+            for metadata_schema in self.run_metadata
+        }
         return StepRunResponseModel(
             id=self.id,
             name=self.name,
@@ -189,6 +199,8 @@ class StepRunSchema(NamedSchema, table=True):
             workspace=self.workspace.to_model(),
             user=self.user.to_model() if self.user else None,
             parent_step_ids=parent_step_ids,
+            enable_cache=self.enable_cache,
+            enable_artifact_metadata=self.enable_artifact_metadata,
             cache_key=self.cache_key,
             start_time=self.start_time,
             end_time=self.end_time,
@@ -200,6 +212,7 @@ class StepRunSchema(NamedSchema, table=True):
             updated=self.updated,
             input_artifacts=input_artifacts,
             output_artifacts=output_artifacts,
+            metadata=metadata,
         )
 
     def update(self, step_update: StepRunUpdateModel) -> "StepRunSchema":

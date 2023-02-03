@@ -17,7 +17,6 @@ from zenml.models.artifact_models import (
     ArtifactFilterModel,
     ArtifactRequestModel,
     ArtifactResponseModel,
-    ArtifactUpdateModel,
 )
 from zenml.models.component_models import (
     ComponentFilterModel,
@@ -54,6 +53,11 @@ from zenml.models.role_models import (
     RoleRequestModel,
     RoleResponseModel,
     RoleUpdateModel,
+)
+from zenml.models.run_metadata_models import (
+    RunMetadataFilterModel,
+    RunMetadataRequestModel,
+    RunMetadataResponseModel,
 )
 from zenml.models.schedule_model import (
     ScheduleRequestModel,
@@ -135,6 +139,10 @@ PipelineResponseModel.update_forward_refs(
     WorkspaceResponseModel=WorkspaceResponseModel,
 )
 
+RunMetadataResponseModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
+)
 ScheduleResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
     WorkspaceResponseModel=WorkspaceResponseModel,
@@ -145,17 +153,20 @@ PipelineRunResponseModel.update_forward_refs(
     WorkspaceResponseModel=WorkspaceResponseModel,
     PipelineResponseModel=PipelineResponseModel,
     StackResponseModel=StackResponseModel,
+    RunMetadataResponseModel=RunMetadataResponseModel,
 )
 
 StepRunResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
     WorkspaceResponseModel=WorkspaceResponseModel,
     ArtifactResponseModel=ArtifactResponseModel,
+    RunMetadataResponseModel=RunMetadataResponseModel,
 )
 
 ArtifactResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
     WorkspaceResponseModel=WorkspaceResponseModel,
+    RunMetadataResponseModel=RunMetadataResponseModel,
 )
 
 __all__ = [
@@ -193,6 +204,9 @@ __all__ = [
     "RoleResponseModel",
     "RoleUpdateModel",
     "RoleFilterModel",
+    "RunMetadataFilterModel",
+    "RunMetadataRequestModel",
+    "RunMetadataResponseModel",
     "ScheduleRequestModel",
     "ScheduleResponseModel",
     "ScheduleUpdateModel",
