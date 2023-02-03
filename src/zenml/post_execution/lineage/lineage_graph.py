@@ -70,7 +70,7 @@ class LineageGraph(BaseModel):
                     outputs={k: v.uri for k, v in step.outputs.items()},
                     metadata=[
                         (m.key, str(m.value), str(m.type))
-                        for m in step.metadata
+                        for m in step.metadata.values()
                     ],
                 ),
             )
@@ -123,7 +123,7 @@ class LineageGraph(BaseModel):
             run: The PipelineRunView to generate the lineage graph for.
         """
         self.run_metadata = [
-            (m.key, str(m.value), str(m.type)) for m in run.metadata
+            (m.key, str(m.value), str(m.type)) for m in run.metadata.values()
         ]
         for step in run.steps:
             self.generate_step_nodes_and_edges(step)

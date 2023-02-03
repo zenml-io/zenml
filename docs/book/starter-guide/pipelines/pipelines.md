@@ -82,7 +82,6 @@ svc_trainer.entrypoint(X_train=..., y_train=...)
 ```
 {% endhint %}
 
-
 <details>
 <summary>Using the Class-based API</summary>
 
@@ -116,6 +115,18 @@ class SVCTrainerStep(BaseStep):
         return model
 ```
 </details>
+
+### Artifacts
+
+The inputs and outputs of a step are *artifacts* that are automatically tracked
+and stored by ZenML in the artifact store. Artifacts are produced by and
+circulated among steps whenever your step returns an object or a value. If a
+step returns only a single thing (value or object etc) there is no need to use
+the `Output` class as shown above. 
+
+If you want to dynamically update the hyperparameters of your pipeline, you can
+use a subclass of `BaseParams` for that purpose (explained in full detail
+[here](./parameters-and-caching.md)).
 
 ## Pipeline
 
