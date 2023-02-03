@@ -22,13 +22,13 @@ from zenml.enums import StackComponentType
 from zenml.models.base_models import (
     UserScopedRequestModel,
     UserScopedResponseModel,
-    update_model,
+    update_model, BaseRequestModel, BaseResponseModel,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.filter_models import WorkspaceScopedFilterModel
 
 if TYPE_CHECKING:
-    from zenml.models import WorkspaceResponseModel
+    from zenml.models import WorkspaceResponseModel, UserResponseModel
 
 
 # ---- #
@@ -73,7 +73,7 @@ class FlavorBaseModel(BaseModel):
 # -------- #
 
 
-class FlavorResponseModel(FlavorBaseModel, UserScopedResponseModel):
+class FlavorResponseModel(FlavorBaseModel, BaseResponseModel):
     """Response model for stack component flavors."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
@@ -81,6 +81,10 @@ class FlavorResponseModel(FlavorBaseModel, UserScopedResponseModel):
         "type",
         "integration",
     ]
+
+    user: Union["UserResponseModel", None] = Field(
+        title="The user that created this resource.", nullable=True
+    )
 
     workspace: Optional["WorkspaceResponseModel"] = Field(
         title="The project of this resource."
@@ -118,13 +122,15 @@ class FlavorFilterModel(WorkspaceScopedFilterModel):
 # ------- #
 
 
-class FlavorRequestModel(FlavorBaseModel, UserScopedRequestModel):
+class FlavorRequestModel(FlavorBaseModel, BaseRequestModel):
     """Request model for stack component flavors."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
         "type",
         "integration",
     ]
+
+    user: Optional[UUID] = Field(title="The id of the user that created this resource.")
 
     workspace: Optional[UUID] = Field(
         title="The workspace to which this resource belongs."
