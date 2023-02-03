@@ -15,13 +15,16 @@
 
 import os
 import tempfile
-from typing import Any, Type
+from typing import TYPE_CHECKING, Any, Dict, Type
 
 import lightgbm as lgb
 
 from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
+
+if TYPE_CHECKING:
+    from zenml.metadata.metadata_types import MetadataType
 
 DEFAULT_FILENAME = "data.binary"
 
@@ -72,3 +75,19 @@ class LightGBMDatasetMaterializer(BaseMaterializer):
         # Copy it into artifact store
         fileio.copy(temp_file, filepath)
         fileio.rmtree(temp_dir)
+
+    def extract_metadata(
+        self, matrix: lgb.Dataset
+    ) -> Dict[str, "MetadataType"]:
+        """Extract metadata from the given `Dataset` object.
+
+        Args:
+            matrix: The `Dataset` object to extract metadata from.
+
+        Returns:
+            The extracted metadata as a dictionary.
+        """
+        super().extract_metadata(matrix)
+        return {
+            "shape": (matrix.num_data(), matrix.num_feature()),
+        }

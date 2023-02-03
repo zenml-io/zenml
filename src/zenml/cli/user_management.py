@@ -75,7 +75,11 @@ def describe_user(user_name_or_id: Optional[str] = None) -> None:
 @user.command("list")
 @list_options(UserFilterModel)
 def list_users(**kwargs: Any) -> None:
-    """List all users."""
+    """List all users.
+
+    Args:
+        kwargs: Keyword arguments to filter the list of users.
+    """
     cli_utils.print_active_config()
     client = Client()
     with console.status("Listing stacks...\n"):
@@ -251,7 +255,11 @@ def team() -> None:
 @team.command("list")
 @list_options(TeamFilterModel)
 def list_teams(**kwargs: Any) -> None:
-    """List all teams that fulfill the filter requirements."""
+    """List all teams that fulfill the filter requirements.
+
+    Args:
+        kwargs: The filter options.
+    """
     cli_utils.print_active_config()
     client = Client()
 

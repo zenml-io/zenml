@@ -433,12 +433,12 @@ def print_active_config() -> None:
         declare(f"Connected to the ZenML server: '{gc.store.url}'")
     if client.uses_local_configuration:
         declare(
-            f"Running with active project: '{client.active_project.name}' "
+            f"Running with active workspace: '{client.active_workspace.name}' "
             "(repository)"
         )
     else:
         declare(
-            f"Running with active project: '{gc.get_active_project_name()}' "
+            f"Running with active workspace: '{gc.get_active_workspace_name()}' "
             "(global)"
         )
 
@@ -1044,27 +1044,31 @@ def print_pipeline_runs_table(
     print_table(runs_dicts)
 
 
-def warn_unsupported_non_default_project() -> None:
-    """Warning for unsupported non-default project."""
+def warn_unsupported_non_default_workspace() -> None:
+    """Warning for unsupported non-default workspace."""
     from zenml.constants import (
-        ENV_ZENML_DISABLE_PROJECT_WARNINGS,
+        ENV_ZENML_DISABLE_WORKSPACE_WARNINGS,
         handle_bool_env_var,
     )
 
     disable_warnings = handle_bool_env_var(
-        ENV_ZENML_DISABLE_PROJECT_WARNINGS, False
+        ENV_ZENML_DISABLE_WORKSPACE_WARNINGS, False
     )
     if not disable_warnings:
         warning(
-            "Currently the concept of `project` is not supported "
+            "Currently the concept of `workspace` is not supported "
             "within the Dashboard. The Project functionality will be "
             "completed in the coming weeks. For the time being it "
-            "is recommended to stay within the `default` project."
+            "is recommended to stay within the `default` workspace."
         )
 
 
 def print_page_info(page: Page[T]) -> None:
-    """Print all information pertaining to a page to show the amount of items and pages."""
+    """Print all page information showing the number of items and pages.
+
+    Args:
+        page: The page to print the information for.
+    """
     declare(
         f"Page `({page.page}/{page.total_pages})`, `{page.total}` items "
         f"found for the applied filters."
@@ -1174,6 +1178,9 @@ def list_options(filter_model: Type[BaseFilterModel]) -> Callable[[F], F]:
 
     Args:
         filter_model: The filter model based on which to decorate the function.
+
+    Returns:
+        The inner decorator.
     """
 
     def inner_decorator(func: F) -> F:

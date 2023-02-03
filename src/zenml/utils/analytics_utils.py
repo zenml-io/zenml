@@ -93,12 +93,12 @@ class AnalyticsEvent(str, Enum):
     UPDATED_TEAM = "Team updated"
     DELETED_TEAM = "Team deleted"
 
-    # Projects
-    CREATED_PROJECT = "Project created"
-    CREATED_DEFAULT_PROJECT = "Default project created"
-    UPDATED_PROJECT = "Project updated"
-    DELETED_PROJECT = "Project deleted"
-    SET_PROJECT = "Project set"
+    # Workspaces
+    CREATED_WORKSPACE = "Workspace created"
+    CREATED_DEFAULT_WORKSPACE = "Default workspace created"
+    UPDATED_WORKSPACE = "Workspace updated"
+    DELETED_WORKSPACE = "Workspace deleted"
+    SET_WORKSPACE = "Workspace set"
 
     # Role
     CREATED_ROLE = "Role created"

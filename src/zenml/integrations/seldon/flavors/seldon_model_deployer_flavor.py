@@ -47,12 +47,20 @@ class SeldonModelDeployerConfig(BaseModelDeployerConfig):
             Seldon Core storage initializers to authenticate to the Artifact
             Store (i.e. the storage backend where models are stored - see
             https://docs.seldon.io/projects/seldon-core/en/latest/servers/overview.html#handling-credentials).
+        kubernetes_secret_name: the name of the Kubernetes secret containing
+            the credentials used by Seldon Core storage initializers to
+            authenticate to the Artifact Store (i.e. the storage backend where
+            models are stored) - This is used when the secret is not managed by
+            ZenML and is already present in the Kubernetes cluster.
     """
 
     kubernetes_context: Optional[str]  # TODO: Potential setting
     kubernetes_namespace: Optional[str]
     base_url: str  # TODO: unused?
     secret: Optional[str]
+    kubernetes_secret_name: Optional[
+        str
+    ]  # TODO: Add full documentation section on this
 
 
 class SeldonModelDeployerFlavor(BaseModelDeployerFlavor):

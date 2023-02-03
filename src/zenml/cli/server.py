@@ -195,7 +195,10 @@ def up(
             config_attrs["image"] = image
         if port is not None:
             config_attrs["port"] = port
-        if ip_address is not None and provider == ServerProviderType.DOCKER:
+        if ip_address is not None and provider in [
+            ServerProviderType.LOCAL,
+            ServerProviderType.DOCKER,
+        ]:
             config_attrs["ip_address"] = ip_address
 
         from zenml.zen_server.deploy.deployment import ServerDeploymentConfig
@@ -225,7 +228,6 @@ def up(
                 and gc.store.type == StoreType.REST
                 and not connect
             ):
-
                 try:
                     if gc.zen_store.is_local_store():
                         connect = True
@@ -542,6 +544,9 @@ def status() -> None:
     store_cfg = gc.store
 
     cli_utils.declare(f"Using configuration from: '{gc.config_directory}'")
+    cli_utils.declare(
+        f"Local store files are located at: '{gc.local_stores_path}'"
+    )
     if client.root:
         cli_utils.declare(f"Active repository root: {client.root}")
     if store_cfg is not None:
@@ -555,7 +560,8 @@ def status() -> None:
     scope = "repository" if client.uses_local_configuration else "global"
     cli_utils.declare(f"The current user is: '{client.active_user.name}'")
     cli_utils.declare(
-        f"The active project is: '{client.active_project.name}' " f"({scope})"
+        f"The active workspace is: '{client.active_workspace.name}' "
+        f"({scope})"
     )
     cli_utils.declare(
         f"The active stack is: '{client.active_stack_model.name}' ({scope})"
@@ -650,8 +656,8 @@ def status() -> None:
     type=str,
 )
 @click.option(
-    "--project",
-    help="The project to use when connecting to the ZenML server.",
+    "--workspace",
+    help="The workspace to use when connecting to the ZenML server.",
     required=False,
     type=str,
 )
@@ -685,7 +691,7 @@ def connect(
     url: Optional[str] = None,
     username: Optional[str] = None,
     password: Optional[str] = None,
-    project: Optional[str] = None,
+    workspace: Optional[str] = None,
     no_verify_ssl: bool = False,
     ssl_ca_cert: Optional[str] = None,
     config: Optional[str] = None,
@@ -699,7 +705,7 @@ def connect(
             server.
         password: The password that is used to authenticate with the ZenML
             server.
-        project: The active project that is used to connect to the ZenML
+        workspace: The active workspace that is used to connect to the ZenML
             server.
         no_verify_ssl: Whether to verify the server's TLS certificate.
         ssl_ca_cert: A path to a CA bundle to use to verify the server's TLS
@@ -715,7 +721,6 @@ def connect(
     verify_ssl = ssl_ca_cert if ssl_ca_cert is not None else not no_verify_ssl
 
     if config:
-
         if os.path.isfile(config):
             store_dict = yaml_utils.read_yaml(config)
         else:
@@ -782,14 +787,14 @@ def connect(
     store_config = store_config_class.parse_obj(store_dict)
     GlobalConfiguration().set_store(store_config)
 
-    if project:
+    if workspace:
         try:
-            Client().set_active_project(project_name_or_id=project)
+            Client().set_active_workspace(workspace_name_or_id=workspace)
         except KeyError:
             cli_utils.warning(
-                f"The project {project} does not exist or is not accessible. "
-                f"Please set another project by running `zenml "
-                f"project set`."
+                f"The workspace {workspace} does not exist or is not accessible. "
+                f"Please set another workspace by running `zenml "
+                f"workspace set`."
             )
 
 

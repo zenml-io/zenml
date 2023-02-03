@@ -32,17 +32,18 @@ from pydantic import BaseModel, Field
 from zenml import __version__ as current_zenml_version
 from zenml.enums import ExecutionStatus
 from zenml.models.base_models import (
-    ProjectScopedRequestModel,
-    ProjectScopedResponseModel,
+    WorkspaceScopedRequestModel,
+    WorkspaceScopedResponseModel,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
-from zenml.models.filter_models import ProjectScopedFilterModel
+from zenml.models.filter_models import WorkspaceScopedFilterModel
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
     from sqlmodel import SQLModel
 
     from zenml.models.pipeline_models import PipelineResponseModel
+    from zenml.models.run_metadata_models import RunMetadataResponseModel
     from zenml.models.stack_models import StackResponseModel
 
 
@@ -95,14 +96,19 @@ class PipelineRunBaseModel(BaseModel):
     )
     schedule_id: Optional[UUID]
     enable_cache: Optional[bool]
+    enable_artifact_metadata: Optional[bool]
     start_time: Optional[datetime]
     end_time: Optional[datetime]
     status: ExecutionStatus
     pipeline_configuration: Dict[str, Any]
     num_steps: Optional[int]
-    zenml_version: Optional[str] = Field(
-        title="ZenML version.",
+    client_version: Optional[str] = Field(
+        title="Client version.",
         default=current_zenml_version,
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    server_version: Optional[str] = Field(
+        title="Server version.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     client_environment: Dict[str, str] = Field(
@@ -130,15 +136,19 @@ class PipelineRunBaseModel(BaseModel):
 
 
 class PipelineRunResponseModel(
-    PipelineRunBaseModel, ProjectScopedResponseModel
+    PipelineRunBaseModel, WorkspaceScopedResponseModel
 ):
-    """Pipeline run model with user, project, pipeline, and stack hydrated."""
+    """Pipeline run model with user, workspace, pipeline, and stack hydrated."""
 
     pipeline: Optional["PipelineResponseModel"] = Field(
         title="The pipeline this run belongs to."
     )
     stack: Optional["StackResponseModel"] = Field(
         title="The stack that was used for this run."
+    )
+    metadata: Dict[str, "RunMetadataResponseModel"] = Field(
+        default={},
+        title="Metadata associated with this pipeline run.",
     )
 
 
@@ -147,11 +157,11 @@ class PipelineRunResponseModel(
 # ------ #
 
 
-class PipelineRunFilterModel(ProjectScopedFilterModel):
-    """Model to enable advanced filtering of all Projects."""
+class PipelineRunFilterModel(WorkspaceScopedFilterModel):
+    """Model to enable advanced filtering of all Workspaces."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *ProjectScopedFilterModel.FILTER_EXCLUDE_FIELDS,
+        *WorkspaceScopedFilterModel.FILTER_EXCLUDE_FIELDS,
         "unlisted",
     ]
 
@@ -167,8 +177,8 @@ class PipelineRunFilterModel(ProjectScopedFilterModel):
     pipeline_id: Union[UUID, str] = Field(
         default=None, description="Pipeline associated with the Pipeline"
     )
-    project_id: Union[UUID, str] = Field(
-        default=None, description="Project of the Pipeline"
+    workspace_id: Union[UUID, str] = Field(
+        default=None, description="Workspace of the Pipeline"
     )
     user_id: Union[UUID, str] = Field(None, description="User of the Pipeline")
 
@@ -219,7 +229,7 @@ class PipelineRunFilterModel(ProjectScopedFilterModel):
                 unlisted_filter = getattr(table, "pipeline_id").is_not(None)
 
             # TODO: make this right
-            # This needs to be an AND right now to work with the project
+            # This needs to be an AND right now to work with the workspace
             # scoping of the superclass
             return and_(base_filter, unlisted_filter)
 
@@ -231,8 +241,10 @@ class PipelineRunFilterModel(ProjectScopedFilterModel):
 # ------- #
 
 
-class PipelineRunRequestModel(PipelineRunBaseModel, ProjectScopedRequestModel):
-    """Pipeline run model with user, project, pipeline, and stack as UUIDs."""
+class PipelineRunRequestModel(
+    PipelineRunBaseModel, WorkspaceScopedRequestModel
+):
+    """Pipeline run model with user, workspace, pipeline, and stack as UUIDs."""
 
     id: UUID
     stack: Optional[UUID]  # Might become None if the stack is deleted.

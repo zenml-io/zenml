@@ -24,9 +24,9 @@ class ArtifactType(StrEnum):
     DATA_ANALYSIS = "DataAnalysisArtifact"
     DATA = "DataArtifact"
     MODEL = "ModelArtifact"
-    SCHEMA = "SchemaArtifact"
+    SCHEMA = "SchemaArtifact"  # deprecated
     SERVICE = "ServiceArtifact"
-    STATISTICS = "StatisticsArtifact"
+    STATISTICS = "StatisticsArtifact"  # deprecated in favor of `DATA_ANALYSIS`
     BASE = "BaseArtifact"
 
 
@@ -166,6 +166,13 @@ class GenericFilterOps(StrEnum):
     GT = "gt"
     LTE = "lte"
     LT = "lt"
+
+
+class SorterOps(StrEnum):
+    """Ops for all filters for string values on list methods."""
+
+    ASCENDING = "asc"
+    DESCENDING = "desc"
 
 
 class LogicalOperators(StrEnum):

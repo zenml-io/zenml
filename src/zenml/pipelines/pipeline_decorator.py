@@ -27,6 +27,7 @@ from typing import (
 
 from zenml.pipelines.base_pipeline import (
     INSTANCE_CONFIGURATION,
+    PARAM_ENABLE_ARTIFACT_METADATA,
     PARAM_ENABLE_CACHE,
     PARAM_EXTRA_OPTIONS,
     PARAM_SETTINGS,
@@ -50,6 +51,7 @@ def pipeline(
     *,
     name: Optional[str] = None,
     enable_cache: Optional[bool] = None,
+    enable_artifact_metadata: Optional[bool] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
 ) -> Callable[[F], Type[BasePipeline]]:
@@ -61,6 +63,7 @@ def pipeline(
     *,
     name: Optional[str] = None,
     enable_cache: Optional[bool] = None,
+    enable_artifact_metadata: Optional[bool] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
 ) -> Union[Type[BasePipeline], Callable[[F], Type[BasePipeline]]]:
@@ -74,6 +77,7 @@ def pipeline(
         name: The name of the pipeline. If left empty, the name of the
             decorated function will be used as a fallback.
         enable_cache: Whether to use caching or not.
+        enable_artifact_metadata: Whether to enable artifact metadata or not.
         settings: Settings for this pipeline.
         extra: Extra configurations for this pipeline.
 
@@ -99,6 +103,7 @@ def pipeline(
                 PIPELINE_INNER_FUNC_NAME: staticmethod(func),  # type: ignore[arg-type] # noqa
                 INSTANCE_CONFIGURATION: {
                     PARAM_ENABLE_CACHE: enable_cache,
+                    PARAM_ENABLE_ARTIFACT_METADATA: enable_artifact_metadata,
                     PARAM_SETTINGS: settings,
                     PARAM_EXTRA_OPTIONS: extra,
                 },

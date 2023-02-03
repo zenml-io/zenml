@@ -95,13 +95,6 @@ zenml stack set <STACK_NAME>
 ```
 Now all your code is automatically executed using this stack.
 
-{% hint style="info" %}
-Some advanced stack component flavors might require connecting to remote 
-infrastructure components prior to running code on the stack. This can be done
-using `zenml stack up`. See the [Managing Stack States](../../advanced-guide/stacks/stack-state-management.md)
-section for more details.
-{% endhint %}
-
 ### Changing Stacks
 
 If you have multiple stacks configured, you can switch between them using the

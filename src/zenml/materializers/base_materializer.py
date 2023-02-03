@@ -19,10 +19,12 @@ from typing import Any, ClassVar, Dict, Optional, Tuple, Type, cast
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.enums import ArtifactType
 from zenml.exceptions import MaterializerInterfaceError
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.default_materializer_registry import (
     default_materializer_registry,
 )
+from zenml.metadata.metadata_types import MetadataType
 
 logger = get_logger(__name__)
 
@@ -259,6 +261,35 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
                 "`materializer.save` instead."
             )
             self.handle_return(data)
+
+    def extract_metadata(self, data: Any) -> Dict[str, "MetadataType"]:
+        """Extract metadata from the given data.
+
+        This metadata will be tracked and displayed alongside the artifact.
+
+        Args:
+            data: The data to extract metadata from.
+
+        Returns:
+            A dictionary of metadata.
+
+        Raises:
+            TypeError: If the data is not of the correct type.
+        """
+        from zenml.metadata.metadata_types import StorageSize
+
+        data_type = type(data)
+        if not self._can_handle_type(data_type):
+            raise TypeError(
+                f"Unable to extract metadata from {data_type}. "
+                f"{self.__class__.__name__} can only write the following "
+                f"types: {self.ASSOCIATED_TYPES}."
+            )
+
+        storage_size = fileio.size(self.uri)
+        if storage_size:
+            return {"storage_size": StorageSize(storage_size)}
+        return {}
 
     def handle_input(self, data_type: Type[Any]) -> Any:
         """Deprecated method to load the data of an artifact.

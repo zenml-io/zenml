@@ -88,7 +88,7 @@ from the artifact store that are unrelated to the current step. However, if that
 is not the case, and your step logic doesn't invalidate the caching behavior, it
 would be better to explicitly enable the cache for your step.
 
-### Use unique pipeline names across projects
+### Use unique pipeline names across projects/workspaces
 
 Pipeline names are their unique identifiers, so using the same name for
 different pipelines will create a mixed history of runs between the two
@@ -152,8 +152,6 @@ imports that are defined relative to the project root resolve for the pipeline r
 ## Tips
 
 * Use `zenml GROUP explain` to explain what everything is
-* Run `zenml stack up` after switching stacks (but this is also enforced by
-  validations that check if the stack is up)
 
 For a practical example on all of the above, please check
 out [ZenML Projects](https://github.com/zenml-io/zenml-projects) which are practical

@@ -23,11 +23,12 @@ from zenml.enums import ArtifactType
 from zenml.models import ArtifactRequestModel, ArtifactResponseModel
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
-from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
+    from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
     from zenml.zen_stores.schemas.step_run_schemas import (
         StepRunInputArtifactSchema,
         StepRunOutputArtifactSchema,
@@ -58,21 +59,25 @@ class ArtifactSchema(NamedSchema, table=True):
     )
     user: Optional["UserSchema"] = Relationship(back_populates="artifacts")
 
-    project_id: UUID = build_foreign_key_field(
+    workspace_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=ProjectSchema.__tablename__,
-        source_column="project_id",
+        target=WorkspaceSchema.__tablename__,
+        source_column="workspace_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=False,
     )
-    project: "ProjectSchema" = Relationship(back_populates="artifacts")
+    workspace: "WorkspaceSchema" = Relationship(back_populates="artifacts")
 
     type: ArtifactType
     uri: str
     materializer: str
     data_type: str
 
+    run_metadata: List["RunMetadataSchema"] = Relationship(
+        back_populates="artifact",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
     input_to_step_runs: List["StepRunInputArtifactSchema"] = Relationship(
         back_populates="artifact",
         sa_relationship_kwargs={"cascade": "delete"},
@@ -97,7 +102,7 @@ class ArtifactSchema(NamedSchema, table=True):
         return cls(
             name=artifact_request.name,
             artifact_store_id=artifact_request.artifact_store_id,
-            project_id=artifact_request.project,
+            workspace_id=artifact_request.workspace,
             user_id=artifact_request.user,
             type=artifact_request.type,
             uri=artifact_request.uri,
@@ -117,12 +122,16 @@ class ArtifactSchema(NamedSchema, table=True):
         Returns:
             The created `ArtifactModel`.
         """
+        metadata = {
+            metadata_schema.key: metadata_schema.to_model()
+            for metadata_schema in self.run_metadata
+        }
         return ArtifactResponseModel(
             id=self.id,
             name=self.name,
             artifact_store_id=self.artifact_store_id,
             user=self.user.to_model() if self.user else None,
-            project=self.project.to_model(),
+            workspace=self.workspace.to_model(),
             type=self.type,
             uri=self.uri,
             materializer=self.materializer,
@@ -130,4 +139,5 @@ class ArtifactSchema(NamedSchema, table=True):
             created=self.created,
             updated=self.updated,
             producer_step_run_id=producer_step_run_id,
+            metadata=metadata,
         )

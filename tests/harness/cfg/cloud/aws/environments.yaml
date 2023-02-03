@@ -40,22 +40,6 @@ environments:
     mandatory_requirements:
       - docker-local
 
-  - name: aws-kubeflow-orchestrator
-    description: >-
-      AWS ZenML server with local kubeflow orchestrator and all
-      local components.
-    deployment: aws-us-east-1-server
-    requirements:
-      - external-data-validators
-      - external-neptune-experiment-tracker
-      - external-wandb-experiment-tracker
-      - external-slack-alerter
-      - mlflow-local-tracker
-      - mlflow-local-deployer
-      - local-secrets-manager
-    mandatory_requirements:
-      - kubeflow-local
-
   - name: aws-airflow-orchestrator
     description: >-
       AWS ZenML server with local airflow orchestrator and all
