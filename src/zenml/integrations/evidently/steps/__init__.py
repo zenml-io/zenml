@@ -24,3 +24,9 @@ from zenml.integrations.evidently.steps.evidently_test import (
     EvidentlyTestStep,
     evidently_test_step,
 )
+from zenml.integrations.evidently.steps.evidently_profile import (
+    EvidentlyColumnMapping,
+    EvidentlyProfileParameters,
+    EvidentlyProfileStep,
+    evidently_profile_step,
+)
