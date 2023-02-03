@@ -381,7 +381,6 @@ requirements:
         configuration:
           synchronous: true
           skip_ui_daemon_provisioning: true
-          container_registry_name: k3d-local
 
 environment:
   - name: local_kubeflow_with_mlflow
