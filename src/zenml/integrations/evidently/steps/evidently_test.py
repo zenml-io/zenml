@@ -54,7 +54,7 @@ class EvidentlyTestParameters(BaseParameters):
 
     column_mapping: Optional[EvidentlyColumnMapping] = None
     ignored_cols: Optional[List[str]] = None
-    tests: List[Union[str, Dict[str, Any]]] = None
+    tests: List[Union[str, list, Dict[str, Any]]] = None
     test_options: Sequence[Tuple[str, Dict[str, Any]]] = Field(
         default_factory=list
     )

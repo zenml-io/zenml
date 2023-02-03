@@ -191,7 +191,7 @@ def get_test_class_from_mapping(test: str) -> Union[Test, TestPreset]:
 
 
 def get_metrics(
-    metric_list: List[Union[str, Dict[str, Any]]]
+    metric_list: List[Union[str, list, Dict[str, Any]]]
 ) -> List[Union[Metric, MetricPreset, BaseGenerator]]:
     """Get a list of Evidently metrics from a list of metric names and/or
     dictionaries.
@@ -229,7 +229,7 @@ def get_metrics(
 
 
 def get_tests(
-    test_list: List[Union[str, Dict[str, Any]]]
+    test_list: List[Union[str, list, Dict[str, Any]]]
 ) -> List[Union[Test, TestPreset, BaseGenerator]]:
     """Get a list of Evidently tests from a list of test names and/or
     dictionaries.
@@ -247,6 +247,12 @@ def get_tests(
     for test in test_list:
         if isinstance(test, str):
             tests.append(get_test_class_from_mapping(test)())
+        elif isinstance(test, list):
+            # get dict from second index of list and pass the values to the
+            # constructor for the class at index 0
+            tests.append(
+                get_test_class_from_mapping(test[0])(**test[1])
+            )
         elif isinstance(test, dict):
             tests.append(
                 generate_column_tests(
@@ -257,7 +263,7 @@ def get_tests(
             )
         else:
             raise ValueError(
-                f"Invalid metric type: {type(test)}. "
+                f"Invalid test type: {type(test)}. "
                 f"Expected str or dict, got {type(test)}."
             )
     return tests
@@ -343,7 +349,7 @@ class EvidentlyDataValidator(BaseDataValidator):
         self,
         dataset: pd.DataFrame,
         comparison_dataset: Optional[pd.DataFrame] = None,
-        metric_list: List[Union[str, Dict[str, Any]]] = None,
+        metric_list: List[Union[str, list, Dict[str, Any]]] = None,
         column_mapping: Optional[ColumnMapping] = None,
         report_options: Sequence[Tuple[str, Dict[str, Any]]] = [],
         **kwargs: Any,
@@ -400,7 +406,7 @@ class EvidentlyDataValidator(BaseDataValidator):
         self,
         dataset: Any,
         comparison_dataset: Optional[Any] = None,
-        check_list: List[Union[str, Dict[str, Any]]] = None,
+        check_list: List[Union[str, list, Dict[str, Any]]] = None,
         test_options: Sequence[Tuple[str, Dict[str, Any]]] = [],
         column_mapping: Optional[ColumnMapping] = None,
         **kwargs: Any,
