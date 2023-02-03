@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, List, Optional, Tuple, Type, cast
 
 import sagemaker
 
+from zenml.config.build_configuration import BuildConfiguration
 from zenml.enums import StackComponentType
 from zenml.integrations.aws.flavors.sagemaker_step_operator_flavor import (
     SagemakerStepOperatorConfig,
@@ -25,9 +26,6 @@ from zenml.integrations.aws.flavors.sagemaker_step_operator_flavor import (
 from zenml.logger import get_logger
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
-from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilder,
-)
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
@@ -108,33 +106,25 @@ class SagemakerStepOperator(BaseStepOperator):
             custom_validation_function=_validate_remote_components,
         )
 
-    def prepare_pipeline_deployment(
-        self,
-        deployment: "PipelineDeployment",
-        stack: "Stack",
-    ) -> None:
-        """Build a Docker image and push it to the container registry.
+    def get_docker_builds(
+        self, deployment: "PipelineDeployment"
+    ) -> List["BuildConfiguration"]:
+        builds = []
+        for step_name, step in deployment.steps.items():
+            if step.config.step_operator == self.name:
+                default_tag = (
+                    f"{deployment.pipeline.name}-{step_name}-sagemaker"
+                )
+                build = BuildConfiguration(
+                    key=SAGEMAKER_DOCKER_IMAGE_KEY,
+                    settings=step.config.docker_settings,
+                    default_tag=default_tag,
+                    step_name=step_name,
+                    entrypoint=f"${_ENTRYPOINT_ENV_VARIABLE}",
+                )
+                builds.append(build)
 
-        Args:
-            deployment: The pipeline deployment configuration.
-            stack: The stack on which the pipeline will be deployed.
-        """
-        steps_to_run = [
-            step
-            for step in deployment.steps.values()
-            if step.config.step_operator == self.name
-        ]
-        if not steps_to_run:
-            return
-
-        docker_image_builder = PipelineDockerImageBuilder()
-        repo_digest = docker_image_builder.build_docker_image(
-            deployment=deployment,
-            stack=stack,
-            entrypoint=f"${_ENTRYPOINT_ENV_VARIABLE}",
-        )
-        for step in steps_to_run:
-            step.config.extra[SAGEMAKER_DOCKER_IMAGE_KEY] = repo_digest
+        return builds
 
     def launch(
         self,
@@ -158,6 +148,7 @@ class SagemakerStepOperator(BaseStepOperator):
                 self.name,
             )
 
+        # TODO: figure out a nice way to get the build here
         image_name = info.config.extra[SAGEMAKER_DOCKER_IMAGE_KEY]
         environment = {_ENTRYPOINT_ENV_VARIABLE: " ".join(entrypoint_command)}
 
