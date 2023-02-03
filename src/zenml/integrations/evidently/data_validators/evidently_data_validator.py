@@ -206,11 +206,17 @@ def get_metrics(
     for metric in metric_list:
         if isinstance(metric, str):
             metrics.append(get_metric_class_from_mapping(metric)())
+        elif isinstance(metric, list):
+            # get dict from second index of list and pass the values to the
+            # constructor for the class at index 0
+            metrics.append(
+                get_metric_class_from_mapping(metric[0])(**metric[1])
+            )
         elif isinstance(metric, dict):
             metrics.append(
                 generate_column_metrics(
                     get_metric_class_from_mapping(metric["metric"]),
-                    metric["columns"],
+                    metric["columns"] if "columns" in metric else None,
                     metric["parameters"] if "parameters" in metric else None,
                 )
             )
