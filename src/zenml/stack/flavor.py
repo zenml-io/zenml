@@ -127,9 +127,7 @@ class Flavor:
         client = Client()
         model = FlavorRequestModel(
             user=client.active_user.id if is_custom else None,
-            workspace=client.active_workspace.id
-            if is_custom
-            else None,
+            workspace=client.active_workspace.id if is_custom else None,
             name=self.name,
             type=self.type,
             source=resolve_class(self.__class__),  # noqa

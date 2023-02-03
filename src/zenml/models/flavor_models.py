@@ -20,15 +20,15 @@ from pydantic import BaseModel, Field
 
 from zenml.enums import StackComponentType
 from zenml.models.base_models import (
-    UserScopedRequestModel,
-    UserScopedResponseModel,
-    update_model, BaseRequestModel, BaseResponseModel,
+    BaseRequestModel,
+    BaseResponseModel,
+    update_model,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.filter_models import WorkspaceScopedFilterModel
 
 if TYPE_CHECKING:
-    from zenml.models import WorkspaceResponseModel, UserResponseModel
+    from zenml.models import UserResponseModel, WorkspaceResponseModel
 
 
 # ---- #
@@ -130,7 +130,9 @@ class FlavorRequestModel(FlavorBaseModel, BaseRequestModel):
         "integration",
     ]
 
-    user: Optional[UUID] = Field(title="The id of the user that created this resource.")
+    user: Optional[UUID] = Field(
+        title="The id of the user that created this resource."
+    )
 
     workspace: Optional[UUID] = Field(
         title="The workspace to which this resource belongs."
