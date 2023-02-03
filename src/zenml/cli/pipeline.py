@@ -12,7 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """CLI functionality to interact with pipelines."""
-from typing import Any, Optional
+import contextlib
+from typing import Any, Iterator, Optional
 from uuid import UUID
 
 import click
@@ -30,6 +31,16 @@ from zenml.pipelines import BasePipeline
 from zenml.utils import source_utils
 
 logger = get_logger(__name__)
+
+
+@contextlib.contextmanager
+def temporary_active_stack(stack_id: UUID) -> Iterator[None]:
+    try:
+        old_stack_id = Client().active_stack_model.id
+        Client().activate_stack(stack_id)
+        yield
+    finally:
+        Client().activate_stack(old_stack_id)
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
@@ -90,7 +101,7 @@ def register_pipeline(source: str) -> None:
 @pipeline.command(
     "build",
 )
-@click.argument("name_or_id")
+@click.argument("pipeline_name_or_id")
 @click.option(
     "--version",
     "-v",
@@ -105,6 +116,13 @@ def register_pipeline(source: str) -> None:
     required=False,
 )
 @click.option(
+    "--stack",
+    "-s",
+    "stack_name_or_id",
+    type=str,
+    required=False,
+)
+@click.option(
     "--output",
     "-o",
     "output_path",
@@ -112,9 +130,10 @@ def register_pipeline(source: str) -> None:
     required=False,
 )
 def build_pipeline(
-    name_or_id: str,
+    pipeline_name_or_id: str,
     version: Optional[str] = None,
     config_path: Optional[str] = None,
+    stack_name_or_id: Optional[str] = None,
     output_path: Optional[str] = None,
 ) -> None:
     cli_utils.print_active_config()
@@ -127,25 +146,33 @@ def build_pipeline(
         )
 
     try:
-        id_ = UUID(name_or_id, version=4)
+        id_ = UUID(pipeline_name_or_id, version=4)
         pipeline_model = Client().get_pipeline(id=id_)
     except ValueError:
         pipeline_model = Client().get_pipeline(
-            name=name_or_id, version=version
+            name=pipeline_name_or_id, version=version
         )
 
-    pipeline_instance = BasePipeline.from_model(pipeline_model)
-    build = pipeline_instance.build(config_path=config_path)
+    if stack_name_or_id:
+        stack_model = Client().get_stack(stack_name_or_id)
+
+        maybe_activate_stack = temporary_active_stack(stack_id=stack_model.id)
+    else:
+        maybe_activate_stack = contextlib.nullcontext()
+
+    with maybe_activate_stack:
+        pipeline_instance = BasePipeline.from_model(pipeline_model)
+        build = pipeline_instance.build(config_path=config_path)
 
     if build and output_path:
         with open(output_path, "w") as f:
             f.write(build.configuration.yaml())
 
 
-# TODO: allow build output specification and stack specification or allow
+# TODO: allow build output specification or allow
 # specifying build output/ID in PipelineRunConfiguration
 @pipeline.command("run")
-@click.argument("name_or_id")
+@click.argument("pipeline_name_or_id")
 @click.option(
     "--version",
     "-v",
@@ -159,10 +186,18 @@ def build_pipeline(
     type=click.Path(exists=True, dir_okay=False),
     required=False,
 )
+@click.option(
+    "--stack",
+    "-s",
+    "stack_name_or_id",
+    type=str,
+    required=False,
+)
 def run_pipeline(
-    name_or_id: str,
+    pipeline_name_or_id: str,
     version: Optional[str] = None,
     config_path: Optional[str] = None,
+    stack_name_or_id: Optional[str] = None,
 ) -> None:
     cli_utils.print_active_config()
 
@@ -174,15 +209,23 @@ def run_pipeline(
         )
 
     try:
-        id_ = UUID(name_or_id, version=4)
+        id_ = UUID(pipeline_name_or_id, version=4)
         pipeline_model = Client().get_pipeline(id=id_)
     except ValueError:
         pipeline_model = Client().get_pipeline(
-            name=name_or_id, version=version
+            name=pipeline_name_or_id, version=version
         )
 
-    pipeline_instance = BasePipeline.from_model(pipeline_model)
-    pipeline_instance.run(config_path=config_path)
+    if stack_name_or_id:
+        stack_model = Client().get_stack(stack_name_or_id)
+
+        maybe_activate_stack = temporary_active_stack(stack_id=stack_model.id)
+    else:
+        maybe_activate_stack = contextlib.nullcontext()
+
+    with maybe_activate_stack:
+        pipeline_instance = BasePipeline.from_model(pipeline_model)
+        pipeline_instance.run(config_path=config_path)
 
 
 @pipeline.command("list", help="List all registered pipelines.")
