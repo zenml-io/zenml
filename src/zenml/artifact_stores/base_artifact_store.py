@@ -34,8 +34,11 @@ from pydantic import root_validator
 from zenml.enums import StackComponentType
 from zenml.exceptions import ArtifactStoreInterfaceError
 from zenml.io import fileio
+from zenml.logger import get_logger
 from zenml.stack import Flavor, StackComponent, StackComponentConfig
 from zenml.utils import io_utils
+
+logger = get_logger(__name__)
 
 PathType = Union[bytes, str]
 
@@ -306,6 +309,24 @@ class BaseArtifactStore(StackComponent):
             The stat descriptor.
         """
 
+    def size(self, path: PathType) -> Optional[int]:
+        """Get the size of a file in bytes.
+
+        Args:
+            path: The path to the file.
+
+        Returns:
+            The size of the file in bytes or `None` if the artifact store
+            does not implement the `size` method.
+        """
+        logger.warning(
+            "Cannot get size of file '%s' since the artifact store %s does not "
+            "implement the `size` method.",
+            path,
+            self.__class__.__name__,
+        )
+        return None
+
     @abstractmethod
     def walk(
         self,
@@ -361,6 +382,7 @@ class BaseArtifactStore(StackComponent):
                 "remove": staticmethod(_sanitize_paths(self.remove)),
                 "rename": staticmethod(_sanitize_paths(self.rename)),
                 "rmtree": staticmethod(_sanitize_paths(self.rmtree)),
+                "size": staticmethod(_sanitize_paths(self.size)),
                 "stat": staticmethod(_sanitize_paths(self.stat)),
                 "walk": staticmethod(_sanitize_paths(self.walk)),
             },

@@ -15,7 +15,7 @@
 
 import os
 import tempfile
-from typing import Type
+from typing import TYPE_CHECKING, Dict, Type
 
 import bentoml
 from bentoml._internal.bento import Bento, bento
@@ -27,6 +27,9 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import io_utils
+
+if TYPE_CHECKING:
+    from zenml.metadata.metadata_types import MetadataType
 
 logger = get_logger(__name__)
 
@@ -86,3 +89,23 @@ class BentoMaterializer(BaseMaterializer):
 
         # Remove the temporary directory
         fileio.rmtree(temp_dir.name)
+
+    def extract_metadata(
+        self, bento: bento.Bento
+    ) -> Dict[str, "MetadataType"]:
+        """Extract metadata from the given `Bento` object.
+
+        Args:
+            bento: The `Bento` object to extract metadata from.
+
+        Returns:
+            The extracted metadata as a dictionary.
+        """
+        base_metadata = super().extract_metadata(bento)
+        bento_metadata = {
+            "bento_info_name": bento.info.name,
+            "bento_info_version": bento.info.version,
+            "bento_tag_name": bento.tag.name,
+            "bentoml_version": bento.info.bentoml_version,
+        }
+        return {**base_metadata, **bento_metadata}

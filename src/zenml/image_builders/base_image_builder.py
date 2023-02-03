@@ -13,16 +13,24 @@
 #  permissions and limitations under the License.
 """Base class for all ZenML image builders."""
 
+import hashlib
+import os
+import tempfile
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
 
+from zenml.client import Client
 from zenml.enums import StackComponentType
+from zenml.io import fileio
+from zenml.logger import get_logger
 from zenml.stack import Flavor, StackComponent
 from zenml.stack.stack_component import StackComponentConfig
 
 if TYPE_CHECKING:
     from zenml.container_registries import BaseContainerRegistry
     from zenml.image_builders import BuildContext
+
+logger = get_logger(__name__)
 
 
 class BaseImageBuilderConfig(StackComponentConfig):
@@ -78,6 +86,48 @@ class BaseImageBuilder(StackComponent, ABC):
         Returns:
             The Docker image repo digest or name.
         """
+
+    @staticmethod
+    def _upload_build_context(
+        build_context: "BuildContext",
+        parent_path_directory_name: str,
+    ) -> str:
+        """Uploads a Docker image build context to a remote location.
+
+        Args:
+            build_context: The build context to upload.
+            parent_path_directory_name: The name of the directory to upload
+                the build context to. It will be appended to the artifact
+                store path to create the parent path where the build context
+                will be uploaded to.
+
+        Returns:
+            The path to the uploaded build context.
+        """
+        artifact_store = Client().active_stack.artifact_store
+        parent_path = f"{artifact_store.path}/{parent_path_directory_name}"
+        fileio.makedirs(parent_path)
+
+        hash_ = hashlib.sha1()
+        with tempfile.NamedTemporaryFile(mode="w+b", delete=False) as f:
+            build_context.write_archive(f, gzip=True)
+
+            while True:
+                data = f.read(64 * 1024)
+                if not data:
+                    break
+                hash_.update(data)
+
+            filename = f"{hash_.hexdigest()}.tar.gz"
+            filepath = f"{parent_path}/{filename}"
+            if not fileio.exists(filepath):
+                logger.info("Uploading build context to `%s`.", filepath)
+                fileio.copy(f.name, filepath)
+            else:
+                logger.info("Build context already exists, not uploading.")
+
+        os.unlink(f.name)
+        return filepath
 
 
 class BaseImageBuilderFlavor(Flavor, ABC):

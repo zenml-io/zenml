@@ -177,6 +177,7 @@ LOGOUT = "/logout"
 PIPELINES = "/pipelines"
 TRIGGERS = "/triggers"
 RUNS = "/runs"
+RUN_METADATA = "/run-metadata"
 SCHEDULES = "/schedules"
 DEFAULT_STACK = "/default-stack"
 PIPELINE_SPEC = "/pipeline-spec"
@@ -186,7 +187,6 @@ GRAPH = "/graph"
 STEPS = "/steps"
 ARTIFACTS = "/artifacts"
 COMPONENT_TYPES = "/component-types"
-COMPONENT_SIDE_EFFECTS = "/component-side-effects"
 REPOSITORIES = "/repositories"
 DEACTIVATE = "/deactivate"
 EMAIL_ANALYTICS = "/email-opt-in"
@@ -194,6 +194,7 @@ ACTIVATE = "/activate"
 INFO = "/info"
 VERSION_1 = "/v1"
 STATUS = "/status"
+GET_OR_CREATE = "/get-or-create"
 
 # mandatory stack component attributes
 MANDATORY_COMPONENT_ATTRIBUTES = ["name", "uuid"]
@@ -218,3 +219,8 @@ PAGE_SIZE_MAXIMUM: int = handle_int_env_var(
     ENV_ZENML_PAGINATION_DEFAULT_LIMIT, default=10000
 )
 FILTERING_DATETIME_FORMAT: str = "%Y-%m-%d %H:%M:%S"
+
+# Metadata constants
+METADATA_ORCHESTRATOR_URL = "orchestrator_url"
+METADATA_EXPERIMENT_TRACKER_URL = "experiment_tracker_url"
+METADATA_DEPLOYED_MODEL_URL = "deployed_model_url"

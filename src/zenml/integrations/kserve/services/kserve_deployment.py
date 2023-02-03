@@ -34,12 +34,12 @@ from pydantic import Field, ValidationError
 from zenml import __version__
 from zenml.logger import get_logger
 from zenml.services import (
-    BaseService,
     ServiceConfig,
     ServiceState,
     ServiceStatus,
     ServiceType,
 )
+from zenml.services.service import BaseDeploymentService
 
 if TYPE_CHECKING:
 
@@ -173,7 +173,7 @@ class KServeDeploymentConfig(ServiceConfig):
         return service_config
 
 
-class KServeDeploymentService(BaseService):
+class KServeDeploymentService(BaseDeploymentService):
     """A ZenML service that represents a KServe inference service CRD.
 
     Attributes:

@@ -30,30 +30,6 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-def is_cache_enabled(
-    step_enable_cache: Optional[bool],
-    pipeline_enable_cache: Optional[bool],
-) -> bool:
-    """Checks if caching is enabled for a step run.
-
-    This is the case if:
-    - caching is explicitly enabled for the step, or
-    - caching is neither explicitly disabled for the step nor the pipeline.
-
-    Args:
-        step_enable_cache: The enable cache parameter of the step.
-        pipeline_enable_cache: The enable cache parameter of the pipeline.
-
-    Returns:
-        True if caching is enabled, False otherwise.
-    """
-    if step_enable_cache is not None:
-        return step_enable_cache
-    if pipeline_enable_cache is not None:
-        return pipeline_enable_cache
-    return True
-
-
 def generate_cache_key(
     step: "Step",
     input_artifact_ids: Dict[str, "UUID"],

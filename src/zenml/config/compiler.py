@@ -129,6 +129,7 @@ class Compiler:
         """
         pipeline.configure(
             enable_cache=config.enable_cache,
+            enable_artifact_metadata=config.enable_artifact_metadata,
             settings=config.settings,
             extra=config.extra,
         )
@@ -142,6 +143,13 @@ class Compiler:
         if config.enable_cache is not None:
             for step_ in pipeline.steps.values():
                 step_.configure(enable_cache=config.enable_cache)
+
+        # Override `enable_artifact_metadata` of all steps if set at run level
+        if config.enable_artifact_metadata is not None:
+            for step_ in pipeline.steps.values():
+                step_.configure(
+                    enable_artifact_metadata=config.enable_artifact_metadata
+                )
 
     def _apply_stack_default_settings(
         self, pipeline: "BasePipeline", stack: "Stack"

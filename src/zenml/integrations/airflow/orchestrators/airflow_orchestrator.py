@@ -29,9 +29,13 @@ from typing import (
     Type,
     cast,
 )
+from uuid import UUID
 
 from zenml.config.global_config import GlobalConfiguration
-from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
+from zenml.constants import (
+    METADATA_ORCHESTRATOR_URL,
+    ORCHESTRATOR_DOCKER_IMAGE_KEY,
+)
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.enums import StackComponentType
 from zenml.integrations.airflow.flavors.airflow_orchestrator_flavor import (
@@ -40,6 +44,7 @@ from zenml.integrations.airflow.flavors.airflow_orchestrator_flavor import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.metadata.metadata_types import Uri
 from zenml.orchestrators import BaseOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
@@ -55,6 +60,7 @@ if TYPE_CHECKING:
         DagConfiguration,
         TaskConfiguration,
     )
+    from zenml.metadata.metadata_types import MetadataType
     from zenml.pipelines import Schedule
     from zenml.stack import Stack
 
@@ -598,3 +604,20 @@ class AirflowOrchestrator(BaseOrchestrator):
             "with username: `admin` password: `%s`",
             password,
         )
+
+    def get_pipeline_run_metadata(
+        self, run_id: UUID
+    ) -> Dict[str, "MetadataType"]:
+        """Get general component-specific metadata for a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run.
+
+        Returns:
+            A dictionary of metadata.
+        """
+        if self.config.local:
+            return {
+                METADATA_ORCHESTRATOR_URL: Uri("http://localhost:8080"),
+            }
+        return {}

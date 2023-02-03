@@ -287,6 +287,7 @@ GBDT
 GBM
 GCP
 GCPArtifactStore
+GCPImageBuilder
 GCPArtifactStoreConfig
 GCPContainerRegistry
 GCPSecretsManagerConfig
@@ -442,6 +443,7 @@ Mattermost
 Mesos
 MetadataStore
 MetadataStoreClientConfig
+MetadataType
 MiB
 Microsoft
 MinIO
@@ -777,6 +779,7 @@ VisionData
 VisualEditor
 VpcId
 Vpcs
+WandB
 WandbCallback
 WandbExperimentTracker
 WhyLabs
@@ -1637,3 +1640,4 @@ privateKeySecretRef
 workspaces
 Workspaces
 WORKSPACES
+uploader

@@ -208,17 +208,6 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
 
         # Step 1: Authenticate with Google
         credentials, project_id = self._get_authentication()
-        if self.config.project:
-            if self.config.project != project_id:
-                logger.warning(
-                    "Authenticated with project `%s`, but this orchestrator is "
-                    "configured to use the project `%s`.",
-                    project_id,
-                    self.config.project,
-                )
-        else:
-            self.config.project = project_id
-
         image_name = info.config.extra[VERTEX_DOCKER_IMAGE_DIGEST_KEY]
 
         # Step 3: Launch the job
@@ -264,9 +253,7 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
         }
         logger.debug("Vertex AI Job=%s", custom_job)
 
-        parent = (
-            f"projects/{self.config.project}/locations/{self.config.region}"
-        )
+        parent = f"projects/{project_id}/locations/{self.config.region}"
         logger.info(
             "Submitting custom job='%s', path='%s' to Vertex AI Training.",
             custom_job["display_name"],
