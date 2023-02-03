@@ -116,7 +116,8 @@ class Flavor:
             integration: The integration to use for the model.
             scoped_by_workspace: Whether this flavor should live in the scope
                 of the active workspace
-            is_custom: Whether the flavor is a custom flavor
+            is_custom: Whether the flavor is a custom flavor. Custom flavors
+                are then scoped by user and workspace
 
         Returns:
             The model.
@@ -125,9 +126,9 @@ class Flavor:
 
         client = Client()
         model = FlavorRequestModel(
-            user=client.active_user.id,
+            user=client.active_user.id if is_custom else None,
             workspace=client.active_workspace.id
-            if scoped_by_workspace
+            if is_custom
             else None,
             name=self.name,
             type=self.type,
