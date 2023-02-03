@@ -797,6 +797,7 @@ class ShareableWorkspaceScopedFilterModel(WorkspaceScopedFilterModel):
             user_filter = or_(
                 getattr(table, "user_id") == self.scope_user,
                 getattr(table, "is_shared").is_(True),
+                getattr(table, "user_id").is_(None),
             )
             return and_(base_filter, user_filter)
         return base_filter
