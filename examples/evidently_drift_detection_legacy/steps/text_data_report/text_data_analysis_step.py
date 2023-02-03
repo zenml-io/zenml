@@ -15,19 +15,29 @@ from zenml.integrations.evidently.steps import (
     EvidentlyReportParameters,
     evidently_report_step,
 )
+import nltk
 
-drift_detector = evidently_report_step(
-    step_name="drift_detector",
+nltk.download("words")
+nltk.download("wordnet")
+nltk.download("omw-1.4")
+
+text_data_re = evidently_report_step(
+    step_name="text_data_re",
     params=EvidentlyReportParameters(
         column_mapping=EvidentlyColumnMapping(
-            target="class", prediction="class"
+            target="Rating",
+            numerical_features=['Age', 'Positive_Feedback_Count'],
+            categorical_features=['Division_Name', 'Department_Name', 'Class_Name'],
+            text_features=['Review_Text', 'Title'],
+            prediction="class"
         ),
         metrics=[
-            "DataDriftPreset",
+            "DataQualityPreset",
+            ["TextOverviewPreset", {"column_name": "Review_Text"}],
             {
-                "metric": "ColumnQuantileMetric",
-                "parameters": {"quantile": 0.25},
-                "columns": ["class"],
+                "metric": "ColumnRegExpMetric",
+                "parameters": {"reg_exp": "^[0..9]"},
+                "columns": ["Review_Text", "Title"],
             },
         ],
     ),

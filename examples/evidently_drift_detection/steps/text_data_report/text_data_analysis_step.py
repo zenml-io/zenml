@@ -12,21 +12,32 @@
 #  permissions and limitations under the License.
 from zenml.integrations.evidently.steps import (
     EvidentlyColumnMapping,
-    EvidentlyTestParameters,
-    evidently_test_step,
+    EvidentlyReportParameters,
+    evidently_report_step,
 )
+import nltk
 
-drift_tester = evidently_test_step(
-    step_name="drift_tester",
-    params=EvidentlyTestParameters(
+nltk.download("words")
+nltk.download("wordnet")
+nltk.download("omw-1.4")
+
+text_data_re = evidently_report_step(
+    step_name="text_data_re",
+    params=EvidentlyReportParameters(
         column_mapping=EvidentlyColumnMapping(
-            target="class", prediction="class"
+            target="Rating",
+            numerical_features=['Age', 'Positive_Feedback_Count'],
+            categorical_features=['Division_Name', 'Department_Name', 'Class_Name'],
+            text_features=['Review_Text', 'Title'],
+            prediction="class"
         ),
-        tests=[
-            "DataDriftTestPreset",
+        metrics=[
+            "DataQualityPreset",
+            ["TextOverviewPreset", {"column_name": "Review_Text"}],
             {
-                "test": "TestMeanInNSigmas",
-                "columns": "num",
+                "metric": "ColumnRegExpMetric",
+                "parameters": {"reg_exp": "^[0..9]"},
+                "columns": ["Review_Text", "Title"],
             },
         ],
     ),

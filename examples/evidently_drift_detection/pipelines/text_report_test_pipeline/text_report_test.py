@@ -18,22 +18,22 @@ docker_settings = DockerSettings(required_integrations=[EVIDENTLY, SKLEARN])
 
 
 @pipeline(enable_cache=False, settings={"docker": docker_settings})
-def drift_detection_test_pipeline(
+def text_data_report_test_pipeline(
     data_loader,
     data_splitter,
-    drift_detector,
-    drift_tester,
-    drift_analyzer,
+    text_report,
+    text_test,
+    text_analyzer,
 ):
     """Links all the steps together in a pipeline."""
     data = data_loader()
     reference_dataset, comparison_dataset = data_splitter(data)
-    drift_report, _ = drift_detector(
+    report, _ = text_report(
         reference_dataset=reference_dataset,
         comparison_dataset=comparison_dataset,
     )
-    test_report, _ = drift_tester(
+    test_report, _ = text_test(
         reference_dataset=reference_dataset,
         comparison_dataset=comparison_dataset,
     )
-    drift_analyzer(drift_report)
+    text_analyzer(report)
