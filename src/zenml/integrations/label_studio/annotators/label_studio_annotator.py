@@ -665,6 +665,11 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
     def provision(self) -> None:
         """Spins up the annotation server backend."""
         fileio.makedirs(self.root_directory)
+        logger.warning(
+            "Label Studio provisioning using `zenml stack up` is ",
+            "deprecated. Please follow the new label_studio integration",
+            "documentation page to manually provision Label Studio locally.",
+        )
 
     def deprovision(self) -> None:
         """Spins down the annotation server backend."""

@@ -136,8 +136,9 @@ that you run during your experimentation.
 When we think about steps as functions, we know they receive input in the form
 of artifacts. We also know that they produce output (also in the form of
 artifacts, stored in the artifact store). But steps also take parameters. The
-parameters that you pass into the steps are also (helpfully!) stored by ZenML. This helps freeze the iterations of your experimentation
-workflow in time, so you can return to them exactly as you ran them.
+parameters that you pass into the steps are also (helpfully!) stored by ZenML. 
+This helps freeze the iterations of your experimentation workflow in time, so
+you can return to them exactly as you ran them.
 
 ## Pipeline
 
