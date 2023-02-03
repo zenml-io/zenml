@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 from contextlib import ExitStack as does_not_raise
 from datetime import datetime
-from typing import Optional
 from uuid import uuid4
 
 import pytest
@@ -26,15 +25,22 @@ from zenml.integrations.kubeflow.flavors.kubeflow_orchestrator_flavor import (
 from zenml.integrations.kubeflow.orchestrators import KubeflowOrchestrator
 from zenml.stack import Stack
 
+K8S_CONTEXT = "kubeflow_context"
+
 
 def _get_kubeflow_orchestrator(
-    config: Optional[KubeflowOrchestratorConfig] = None,
+    local: bool = False, skip_local_validations: bool = False
 ) -> KubeflowOrchestrator:
-    """Helper function to get a Kubernetes orchestrator."""
+    """Helper function to get a Kubeflow orchestrator."""
+
     return KubeflowOrchestrator(
         name="",
         id=uuid4(),
-        config=config or KubeflowOrchestratorConfig(),
+        config=KubeflowOrchestratorConfig(
+            kubernetes_context=K8S_CONTEXT,
+            local=local,
+            skip_local_validations=skip_local_validations,
+        ),
         flavor="kubeflow",
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4(),
@@ -44,19 +50,61 @@ def _get_kubeflow_orchestrator(
     )
 
 
-def test_kubeflow_orchestrator_stack_validation(
-    mocker, local_artifact_store, local_container_registry
-):
-    """Tests that the kubeflow orchestrator validates that it's stack has a container registry."""
+def test_kubeflow_orchestrator_remote_stack(
+    mocker, remote_artifact_store, remote_container_registry
+) -> None:
+    """Test the remote and local kubeflow orchestrator with remote stacks."""
     mocker.patch(
         "zenml.integrations.kubeflow.orchestrators.kubeflow_orchestrator.KubeflowOrchestrator.get_kubernetes_contexts",
-        return_value=([], ""),
+        return_value=([K8S_CONTEXT], K8S_CONTEXT),
     )
 
+    # Test remote stack with remote orchestrator
     orchestrator = _get_kubeflow_orchestrator()
+    with does_not_raise():
+        Stack(
+            id=uuid4(),
+            name="",
+            orchestrator=orchestrator,
+            artifact_store=remote_artifact_store,
+            container_registry=remote_container_registry,
+        ).validate()
 
+    # Test remote stack with local orchestrator
+    orchestrator = _get_kubeflow_orchestrator(local=True)
+    with does_not_raise():
+        Stack(
+            id=uuid4(),
+            name="",
+            orchestrator=orchestrator,
+            artifact_store=remote_artifact_store,
+            container_registry=remote_container_registry,
+        ).validate()
+    orchestrator = _get_kubeflow_orchestrator(
+        local=True, skip_local_validations=True
+    )
+    with does_not_raise():
+        Stack(
+            id=uuid4(),
+            name="",
+            orchestrator=orchestrator,
+            artifact_store=remote_artifact_store,
+            container_registry=remote_container_registry,
+        ).validate()
+
+
+def test_kubeflow_orchestrator_local_stack(
+    mocker, local_artifact_store, local_container_registry
+) -> None:
+    """Test the remote and local kubeflow orchestrator with remote stacks."""
+    mocker.patch(
+        "zenml.integrations.kubeflow.orchestrators.kubeflow_orchestrator.KubeflowOrchestrator.get_kubernetes_contexts",
+        return_value=([K8S_CONTEXT], K8S_CONTEXT),
+    )
+
+    # Test missing container registry
+    orchestrator = _get_kubeflow_orchestrator(local=True)
     with pytest.raises(StackValidationError):
-        # missing container registry
         Stack(
             id=uuid4(),
             name="",
@@ -64,8 +112,18 @@ def test_kubeflow_orchestrator_stack_validation(
             artifact_store=local_artifact_store,
         ).validate()
 
+    # Test local stack with remote orchestrator
+    orchestrator = _get_kubeflow_orchestrator()
+    with pytest.raises(StackValidationError):
+        Stack(
+            id=uuid4(),
+            name="",
+            orchestrator=orchestrator,
+            artifact_store=local_artifact_store,
+            container_registry=local_container_registry,
+        ).validate()
+    orchestrator = _get_kubeflow_orchestrator(skip_local_validations=True)
     with does_not_raise():
-        # valid stack with container registry
         Stack(
             id=uuid4(),
             name="",
@@ -74,26 +132,13 @@ def test_kubeflow_orchestrator_stack_validation(
             container_registry=local_container_registry,
         ).validate()
 
-
-@pytest.mark.parametrize(
-    "config,skip_ui_daemon_provisioning",
-    [
-        (KubeflowOrchestratorConfig(), False),
-        (
-            KubeflowOrchestratorConfig(
-                kubeflow_hostname="https://arias-kubeflow.com/pipeline"
-            ),
-            True,
-        ),
-        (KubeflowOrchestratorConfig(skip_ui_daemon_provisioning=True), True),
-    ],
-)
-def test_skip_ui_daemon_provisioning(config, skip_ui_daemon_provisioning):
-    """Tests that the UI daemon provisioning is skipped.
-
-    This happens if either set explicitly or when a hostname is specified.
-    """
-    assert (
-        _get_kubeflow_orchestrator(config).skip_ui_daemon_provisioning
-        is skip_ui_daemon_provisioning
-    )
+    # Test local stack with local orchestrator
+    orchestrator = _get_kubeflow_orchestrator(local=True)
+    with does_not_raise():
+        Stack(
+            id=uuid4(),
+            name="",
+            orchestrator=orchestrator,
+            artifact_store=local_artifact_store,
+            container_registry=local_container_registry,
+        ).validate()

@@ -530,6 +530,12 @@ class AirflowOrchestrator(BaseOrchestrator):
                 "official Airflow quickstart guide for running Airflow locally."
             )
             self.deprovision()
+        finally:
+            logger.warning(
+                "Airflow provisioning using `zenml stack up` is ",
+                "deprecated. Please follow the new Airflow quickstart guide ",
+                "to run Airflow locally.",
+            )
 
     def deprovision(self) -> None:
         """Stops the airflow daemon if necessary and tears down resources."""
