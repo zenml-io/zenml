@@ -15,21 +15,28 @@
 
 from typing import TYPE_CHECKING, Optional, Tuple, cast
 
+from zenml.logger import get_logger
 from zenml.stack.stack_component import StackComponent, StackComponentConfig
 
 if TYPE_CHECKING:
     from google.auth.credentials import Credentials
 
 
+logger = get_logger(__name__)
+
+
 class GoogleCredentialsConfigMixin(StackComponentConfig):
     """Config mixin for Google Cloud Platform credentials.
 
     Attributes:
+        project: GCP project name. If `None`, the project will be inferred from
+            the environment.
         service_account_path: path to the service account credentials file to be
             used for authentication. If not provided, the default credentials
             will be used.
     """
 
+    project: Optional[str] = None
     service_account_path: Optional[str] = None
 
 
@@ -64,4 +71,17 @@ class GoogleCredentialsMixin(StackComponent):
             )
         else:
             credentials, project_id = default()
+
+        if self.config.project and self.config.project != project_id:
+            logger.warning(
+                "Authenticated with project `%s`, but this %s is "
+                "configured to use the project `%s`.",
+                project_id,
+                self.type,
+                self.config.project,
+            )
+
+        # If the project was set in the configuration, use it. Otherwise, use
+        # the project that was used to authenticate.
+        project_id = self.config.project if self.config.project else project_id
         return credentials, project_id

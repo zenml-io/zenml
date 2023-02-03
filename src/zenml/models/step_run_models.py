@@ -29,7 +29,7 @@ from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.models.filter_models import WorkspaceScopedFilterModel
 
 if TYPE_CHECKING:
-    from zenml.models import ArtifactResponseModel
+    from zenml.models import ArtifactResponseModel, RunMetadataResponseModel
 
 
 # ---- #
@@ -78,6 +78,10 @@ class StepRunResponseModel(StepRunBaseModel, WorkspaceScopedResponseModel):
 
     input_artifacts: Dict[str, "ArtifactResponseModel"] = {}
     output_artifacts: Dict[str, "ArtifactResponseModel"] = {}
+    metadata: Dict[str, "RunMetadataResponseModel"] = Field(
+        default={},
+        title="Metadata associated with this step run.",
+    )
 
 
 # ------ #

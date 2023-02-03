@@ -17,6 +17,10 @@ from zenml.integrations.gcp.flavors.gcp_artifact_store_flavor import (
     GCPArtifactStoreConfig,
     GCPArtifactStoreFlavor,
 )
+from zenml.integrations.gcp.flavors.gcp_image_builder_flavor import (
+    GCPImageBuilderConfig,
+    GCPImageBuilderFlavor,
+)
 from zenml.integrations.gcp.flavors.gcp_secrets_manager_flavor import (
     GCPSecretsManagerConfig,
     GCPSecretsManagerFlavor,
@@ -33,6 +37,8 @@ from zenml.integrations.gcp.flavors.vertex_step_operator_flavor import (
 __all__ = [
     "GCPArtifactStoreFlavor",
     "GCPArtifactStoreConfig",
+    "GCPImageBuilderFlavor",
+    "GCPImageBuilderConfig",
     "GCPSecretsManagerFlavor",
     "GCPSecretsManagerConfig",
     "VertexOrchestratorFlavor",

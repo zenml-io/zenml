@@ -16,12 +16,6 @@ zenml:
     # Overrides the image tag whose default is the chart appVersion.
     tag:
 
-  initImage:
-    repository: zenmldocker/zenml
-    pullPolicy: Always
-    # Overrides the image tag whose default is the chart appVersion.
-    tag:
-
   debug: True
 
   # ZenML server deployment type. This field is used for telemetry purposes.
@@ -76,9 +70,7 @@ zenml:
   defaultPassword: zenml
 
   # MySQL database configuration. If not set, a local sqlite database will be
-  # used, which will not be persisted and cannot be accessed from outside the
-  # cluster, which means that pipeline run metadata information will not be
-  # tracked centrally and available in the dashboard.
+  # used, which will not be persisted across pod restarts.
   # NOTE: the certificate files need to be copied in the helm chart folder and
   # the paths configured here need to be relative to the root of the helm chart.
   database: {}
@@ -132,13 +124,12 @@ podAnnotations: {}
 podSecurityContext: {}
   # fsGroup: 2000
 
-securityContext: {}
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
   # capabilities:
   #   drop:
   #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
 
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious

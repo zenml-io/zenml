@@ -66,13 +66,31 @@ class Page(GenericModel, Generic[B]):
     __params_type__ = BaseFilterModel
 
     def __len__(self) -> int:
-        """Return the length of the page."""
+        """Return the length of the page.
+
+        Returns:
+            The length of the page.
+        """
         return len(self.items)
 
     def __getitem__(self, index: int) -> B:
-        """Return the item at the given index."""
+        """Return the item at the given index.
+
+        Args:
+            index: The index to get the item from.
+
+        Returns:
+            The item at the given index.
+        """
         return self.items[index]
 
     def __contains__(self, item: B) -> bool:
-        """Returns whether the page contains a specific item."""
+        """Returns whether the page contains a specific item.
+
+        Args:
+            item: The item to check for.
+
+        Returns:
+            Whether the item is in the page.
+        """
         return item in self.items

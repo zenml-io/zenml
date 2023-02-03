@@ -36,7 +36,11 @@ def artifact() -> None:
 @cli_utils.list_options(ArtifactFilterModel)
 @artifact.command("list", help="List all artifacts.")
 def list_artifacts(**kwargs: Any) -> None:
-    """List all artifacts."""
+    """List all artifacts.
+
+    Args:
+        **kwargs: Keyword arguments to filter artifacts.
+    """
     cli_utils.print_active_config()
     artifacts = Client().list_artifacts(**kwargs)
 

@@ -118,34 +118,6 @@ requirements:
       great_expectations: true
       whylogs: true
 
-    # Local kubeflow orchestrator components
-  - name: kubeflow-local
-    system_tools:
-      - docker
-      - kubectl
-      - k3d
-    stacks:
-      - name: k3d-local
-        type: container_registry
-        flavor: default
-        configuration:
-          uri: localhost:5000
-      - name: kubeflow-local
-        type: orchestrator
-        flavor: kubeflow
-        containerized: true
-        configuration:
-          synchronous: true
-          # IMPORTANT: running forked daemons in pytest leads to serious
-          # issues because the whole test process is forked. As a workaround,
-          # the test environment can be provisioned separately, before pytest
-          # is invoked.
-          skip_ui_daemon_provisioning: true
-          container_registry_name: k3d-local
-    capabilities:
-      synchronized: true
-      kubeflow: true
-
     # Local docker orchestrator
   - name: docker-local
     system_tools:

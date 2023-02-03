@@ -182,7 +182,7 @@ def remote_container_registry():
         name="",
         id=uuid4(),
         config=BaseContainerRegistryConfig(uri="gcr.io/my-project"),
-        flavor="default",
+        flavor="gcp",
         type=StackComponentType.CONTAINER_REGISTRY,
         user=uuid4(),
         workspace=uuid4(),
