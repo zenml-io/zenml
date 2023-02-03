@@ -148,7 +148,7 @@ class ScheduleSchema(NamedSchema, table=True):
             self.interval_second = model.interval_second.total_seconds()
         if model.catchup is not None:
             self.catchup = model.catchup
-        self.updated = datetime.now()
+        self.updated = datetime.utcnow()
         return self
 
     def to_model(self) -> ScheduleResponseModel:

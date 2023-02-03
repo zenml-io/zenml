@@ -199,6 +199,21 @@ class BaseFilesystem(ABC):
         """
 
     @staticmethod
+    def size(path: PathType) -> int:
+        """Get the size of a file in bytes.
+
+        To be implemented by subclasses but not abstract for backwards
+        compatibility.
+
+        Args:
+            path: The path to the file.
+
+        Returns:
+            The size of the file in bytes.
+        """
+        return -1
+
+    @staticmethod
     @abstractmethod
     def walk(
         top: PathType,

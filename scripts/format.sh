@@ -5,7 +5,10 @@ SRC=${1:-"src/zenml tests examples docs/mkdocstrings_helper.py"}
 
 export ZENML_DEBUG=1
 export ZENML_ANALYTICS_OPT_IN=false
-autoflake --remove-all-unused-imports --recursive --remove-unused-variables --in-place $SRC --exclude=__init__.py
+
+# autoflake replacement: removes unused imports and variables
+ruff $SRC --select F401,F841 --fix --exclude "__init__.py" --isolated
+
 # sorts imports
 ruff $SRC --select I --fix --ignore D
 black $SRC

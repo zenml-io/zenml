@@ -14,7 +14,7 @@
 """Models representing stacks."""
 
 import json
-from typing import Any, Dict, List, Union
+from typing import Any, ClassVar, Dict, List, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -120,6 +120,14 @@ class StackFilterModel(ShareableWorkspaceScopedFilterModel):
     `generate_filter()` method of the baseclass is overwritten to include the
     scoping.
     """
+
+    # `component_id` refers to a relationship through a link-table
+    #  rather than a field in the db, hence it needs to be handled
+    #  explicitly
+    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *ShareableWorkspaceScopedFilterModel.FILTER_EXCLUDE_FIELDS,
+        "component_id",  # This is a relationship, not a field
+    ]
 
     is_shared: Union[bool, str] = Field(
         default=None, description="If the stack is shared or private"
