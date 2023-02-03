@@ -100,12 +100,17 @@ class EvidentlyReportParameters(BaseParameters):
         column_mapping: properties of the DataFrame columns used
         ignored_cols: columns to ignore during the Evidently report step
         metrics: a list of metrics, metrics presets or a dictionary of
-            metrics to use with the gnerate_column_metrics method.
-
-            The metrics and the metric presets should be strings with the exact
-            names as in the evidently library. The dictionary should be used when
-            you want to choose a metric for more than one columns. The structure
-            of the dictionary should be as follows:
+            metrics to use with the "generate_column_metrics" method.
+            - For metrics and metric presets that are on the dataset level or those
+            that don't require any parameters, you can use a string with the exact
+            name as in the evidently library.
+            - For metrics and metric presets that are on the column level or those
+            that require parameters like "column_name", you can use a list with the 
+            exact name of the metric as in the evidently library and a dictionary
+            with the parameters.
+            - Pass a dictionary when you want to choose a metric for more than
+            one columns.This metric should also necessarily have the  "column_name"
+            parameter. The structure of the dictionary should be as follows:
             {
                 "metric": "metric_name",
                 "parameters": {},

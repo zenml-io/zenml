@@ -37,12 +37,17 @@ class EvidentlyTestParameters(BaseParameters):
         column_mapping: properties of the DataFrame columns used
         ignored_cols: columns to ignore during the Evidently profile step
         tests: a list of tests, test presets or a dictionary of
-            tests to use with the gnerate_column_tests method.
-
-            The tests and the test presets should be strings with the exact
-            names as in the evidently library. The dictionary should be used when
-            you want to choose a test for more than one columns. The structure
-            of the dictionary should be as follows:
+            tests to use with the generate_column_tests method.
+            - For tests and test presets that are on the dataset level or those
+            that don't require any parameters, you can use a string with the exact
+            name as in the evidently library.
+            - For tests and test presets that are on the column level or those
+            that require parameters like "column_name", you can use a list with the 
+            exact name of the test as in the evidently library and a dictionary
+            with the parameters.
+            - Pass a dictionary when you want to choose a test for more than
+            one columns.This test should also necessarily have the  "column_name"
+            parameter. The structure of the dictionary should be as follows:
             {
                 "test": "test_name",
                 "parameters": {},
