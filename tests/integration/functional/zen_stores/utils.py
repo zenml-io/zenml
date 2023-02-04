@@ -415,7 +415,6 @@ list_of_entities = [
     team_crud_test_config,
     flavor_crud_test_config,
     component_crud_test_config,
-    # stack_crud_test_config,
     pipeline_crud_test_config,
     # step_run_crud_test_config,
     pipeline_run_crud_test_config,
