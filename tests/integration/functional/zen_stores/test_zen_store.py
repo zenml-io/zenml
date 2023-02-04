@@ -196,7 +196,7 @@ def test_updating_nonexisting_entity_raises_error(
     list_of_entities,
     ids=[e.entity_name for e in list_of_entities],
 )
-def test_deleting_nonexistent_workspace_raises_error(
+def test_deleting_nonexistent_entity_raises_error(
     crud_test_config: CrudTestConfig,
 ):
     """Tests deleting a nonexistent workspace raises an error."""

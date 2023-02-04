@@ -98,8 +98,8 @@ class PipelineRunContext:
         self.runs = self.store.list_runs(
             PipelineRunFilterModel(name="startswith:sample_pipeline_run_")
         ).items
-        self.steps = list()
-        self.artifacts = list()
+        self.steps = []
+        self.artifacts = []
         for run in self.runs:
             self.steps += self.store.list_run_steps(
                 StepRunFilterModel(pipeline_run_id=run.id)
@@ -165,7 +165,7 @@ class StackContext:
     def __exit__(self, exc_type, exc_value, exc_traceback):
         try:
             self.store.delete_stack(self.created_stack.id)
-        except:
+        except KeyError:
             pass
 
 
@@ -203,7 +203,7 @@ class ComponentContext:
     def __exit__(self, exc_type, exc_value, exc_traceback):
         try:
             self.store.delete_stack_component(self.created_component.id)
-        except:
+        except KeyError:
             pass
 
 
@@ -221,7 +221,7 @@ class TeamContext:
     def __exit__(self, exc_type, exc_value, exc_traceback):
         try:
             self.store.delete_team(self.created_team.id),
-        except:
+        except KeyError:
             pass
 
 
@@ -239,7 +239,7 @@ class RoleContext:
     def __exit__(self, exc_type, exc_value, exc_traceback):
         try:
             self.store.delete_role(self.created_role.id)
-        except:
+        except KeyError:
             pass
 
 
