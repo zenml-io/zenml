@@ -51,21 +51,50 @@ TUTORIAL_REPO = "https://github.com/zenml-io/zenml"
         exists=True, file_okay=False, dir_okay=True, path_type=Path
     ),
 )
-def init(path: Optional[Path]) -> None:
+@click.option(
+    "--template",
+    is_flag=True,
+    help="Use a ZenML project template to initialize the repository.",
+    required=False,
+    default=False,
+)
+def init(path: Optional[Path], template: bool = False) -> None:
     """Initialize ZenML on given path.
 
     Args:
         path: Path to the repository.
+        template: Whether to use a ZenML project template to initialize the
+            repository.
     """
     if path is None:
         path = Path.cwd()
+
+    if template:
+        try:
+            from copier.cli import CopierApp
+        except ImportError:
+            error(
+                "You need to install the ZenML project template requirements "
+                "to use templates. Please run `pip install zenml[templates]` "
+                "and try again."
+            )
+            return
+        declare(
+            "Next, you will be prompted to generate a project from the "
+            "template."
+        )
+        CopierApp.run(
+            ["copier", "gh:zenml-io/zenml-project-templates", str(path)],
+            exit=False,
+        )
 
     with console.status(f"Initializing ZenML repository at {path}.\n"):
         try:
             Client.initialize(root=path)
             declare(f"ZenML repository initialized at {path}.")
         except InitializationException as e:
-            error(f"{e}")
+            declare(f"{e}")
+            return
 
     declare(
         f"The local active stack was initialized to "
