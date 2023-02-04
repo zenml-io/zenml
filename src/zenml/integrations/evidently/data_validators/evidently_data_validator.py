@@ -250,9 +250,7 @@ def get_tests(
         elif isinstance(test, list):
             # get dict from second index of list and pass the values to the
             # constructor for the class at index 0
-            tests.append(
-                get_test_class_from_mapping(test[0])(**test[1])
-            )
+            tests.append(get_test_class_from_mapping(test[0])(**test[1]))
         elif isinstance(test, dict):
             tests.append(
                 generate_column_tests(

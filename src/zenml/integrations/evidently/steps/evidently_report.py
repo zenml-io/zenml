@@ -105,7 +105,7 @@ class EvidentlyReportParameters(BaseParameters):
             that don't require any parameters, you can use a string with the exact
             name as in the evidently library.
             - For metrics and metric presets that are on the column level or those
-            that require parameters like "column_name", you can use a list with the 
+            that require parameters like "column_name", you can use a list with the
             exact name of the metric as in the evidently library and a dictionary
             with the parameters.
             - Pass a dictionary when you want to choose a metric for more than

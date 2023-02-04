@@ -42,7 +42,7 @@ class EvidentlyTestParameters(BaseParameters):
             that don't require any parameters, you can use a string with the exact
             name as in the evidently library.
             - For tests and test presets that are on the column level or those
-            that require parameters like "column_name", you can use a list with the 
+            that require parameters like "column_name", you can use a list with the
             exact name of the test as in the evidently library and a dictionary
             with the parameters.
             - Pass a dictionary when you want to choose a test for more than
