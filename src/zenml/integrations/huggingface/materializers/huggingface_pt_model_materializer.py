@@ -21,7 +21,6 @@ from typing import Dict, Type
 from transformers import AutoConfig, PreTrainedModel  # type: ignore [import]
 
 from zenml.enums import ArtifactType
-from zenml.integrations.pytorch.utils import count_module_params
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.metadata.metadata_types import DType, MetadataType
 from zenml.utils import io_utils
@@ -82,6 +81,8 @@ class HFPTModelMaterializer(BaseMaterializer):
         Returns:
             The extracted metadata as a dictionary.
         """
+        from zenml.integrations.pytorch.utils import count_module_params
+
         super().extract_metadata(model)
         module_param_metadata = count_module_params(model)
         return {
