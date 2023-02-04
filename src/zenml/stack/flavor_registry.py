@@ -124,7 +124,7 @@ class FlavorRegistry:
                 flavor_update_model = FlavorUpdateModel.parse_obj(
                     flavor_request_model
                 )
-                store.update_flavor(flavor_update_model)
+                store.update_flavor(existing_flavor[0].id, flavor_update_model)
 
     @staticmethod
     def register_integration_flavors(store: BaseZenStore) -> None:
@@ -152,4 +152,6 @@ class FlavorRegistry:
                     flavor_update_model = FlavorUpdateModel.parse_obj(
                         flavor_request_model
                     )
-                    store.update_flavor(flavor_update_model)
+                    store.update_flavor(
+                        existing_flavor[0].id, flavor_update_model
+                    )
