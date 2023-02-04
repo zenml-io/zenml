@@ -147,6 +147,7 @@ ClusterServingRuntimes
 Colab
 ColorOptions
 ColumnMapping
+CompareScoreParams
 ComponentModel
 ComponentModels
 ComponentSpecs
@@ -235,6 +236,7 @@ Docstring
 DoesNotExistException
 DuplicateRunNameError
 DuplicatedConfigurationError
+DynamicPipeline
 EBS
 ECR
 ECS
@@ -244,6 +246,7 @@ EntityExistsError
 Enum
 EnvironmentComponent
 EnvironmentError
+EvaluationParams
 Evidently
 Evidently's
 EvidentlyColumnMapping
@@ -330,6 +333,7 @@ HelpFormatter
 Homebrew
 HuggingFace
 HydratedStackModel
+HyperParameterTuning
 IAM
 IOError
 IPython
@@ -452,7 +456,6 @@ MjYxMzI
 ModelArtifact
 ModelMesh
 ModelRun
-modularity
 ModelServer
 ModuleNotFoundError
 MyAlerterConfig
@@ -571,7 +574,9 @@ RG
 RGW
 RIL
 RL
+RandomForestClassifierParameters
 RedPill
+ReduceType
 Reenable
 RemoteServer
 Reproducibility
@@ -916,6 +921,7 @@ boolean
 boto
 botocore
 br
+calc
 camelCase
 catchup
 categoricaltargetdrift
@@ -941,6 +947,7 @@ codebase
 coderepositoryschema
 colab
 compat
+conf
 config
 configmap
 configmaps
@@ -1059,6 +1066,7 @@ endembed
 endhint
 endtab
 endtabs
+engineResources
 entrypoint
 entrypoints
 enum
@@ -1283,6 +1291,7 @@ mnist
 mobilenetv
 modelFormat
 modelUri
+modularity
 msi
 mutex
 mvq
@@ -1335,6 +1344,8 @@ overfit
 pHAMZb
 parallelizable
 param
+parameterization
+parameterizing
 params
 pb
 pdf
@@ -1352,6 +1363,7 @@ pqh
 pre
 prebuilt
 preconfigure
+pred
 preds
 prem
 premiumsupport
@@ -1393,6 +1405,7 @@ quickstart
 rLJzxeguliMf
 rb
 rbac
+rbf
 rclone
 rds
 readthedocs
