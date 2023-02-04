@@ -37,6 +37,7 @@ from pipeline import (
 from rich import print
 
 from zenml.integrations.seldon.model_deployers import SeldonModelDeployer
+from zenml.integrations.seldon.seldon_client import SeldonResourceRequirements
 from zenml.integrations.seldon.services import (
     SeldonDeploymentConfig,
     SeldonDeploymentService,
@@ -173,6 +174,9 @@ def main(
                         model_name=model_name,
                         replicas=1,
                         implementation=seldon_implementation,
+                        resources=SeldonResourceRequirements(
+                            limits={"cpu": "200m", "memory": "250Mi"}
+                        ),
                     ),
                     timeout=120,
                 )
