@@ -2077,7 +2077,7 @@ def test_create_stack_component_flavor_succeeds(
     blupus_flavor = FlavorRequestModel(
         name=flavor_name,
         type=StackComponentType.ORCHESTRATOR,
-        config_schema="default",
+        config_schema={},
         source=".",
         workspace=sql_store["default_workspace"].id,
         user=sql_store["active_user"].id,
@@ -2109,7 +2109,7 @@ def test_create_stack_component_fails_when_flavor_already_exists(
     scinda_flavor = FlavorRequestModel(
         name=flavor_name,
         type=StackComponentType.ORCHESTRATOR,
-        config_schema="default",
+        config_schema={},
         source=".",
         workspace=sql_store["default_workspace"].id,
         user=sql_store["active_user"].id,
@@ -2119,7 +2119,7 @@ def test_create_stack_component_fails_when_flavor_already_exists(
     scinda_copy_flavor = FlavorRequestModel(
         name=flavor_name,
         type=StackComponentType.ORCHESTRATOR,
-        config_schema="default",
+        config_schema={},
         source=".",
         workspace=sql_store["default_workspace"].id,
         user=sql_store["active_user"].id,
@@ -2136,7 +2136,7 @@ def test_get_flavor_succeeds(
     verata_flavor = FlavorRequestModel(
         name=flavor_name,
         type=StackComponentType.ARTIFACT_STORE,
-        config_schema="default",
+        config_schema={},
         source=".",
         workspace=sql_store["default_workspace"].id,
         user=sql_store["active_user"].id,
@@ -2162,21 +2162,31 @@ def test_list_flavors_succeeds(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests listing stack component flavors."""
+    flavors_before = len(sql_store["store"].list_flavors(FlavorFilterModel()))
     flavor_name = "verata"
     verata_flavor = FlavorRequestModel(
         name=flavor_name,
         type=StackComponentType.ARTIFACT_STORE,
-        config_schema="default",
+        config_schema={},
         source=".",
         workspace=sql_store["default_workspace"].id,
         user=sql_store["active_user"].id,
     )
     with does_not_raise():
         sql_store["store"].create_flavor(flavor=verata_flavor)
-        assert len(sql_store["store"].list_flavors(FlavorFilterModel())) == 1
         assert (
-            sql_store["store"].list_flavors(FlavorFilterModel())[0].name
-            == flavor_name
+            len(sql_store["store"].list_flavors(FlavorFilterModel()))
+            == flavors_before + 1
+        )
+        assert (
+            len(
+                sql_store["store"].list_flavors(
+                    FlavorFilterModel(
+                        name="verata", type=StackComponentType.ARTIFACT_STORE
+                    )
+                )
+            )
+            == 1
         )
 
 
