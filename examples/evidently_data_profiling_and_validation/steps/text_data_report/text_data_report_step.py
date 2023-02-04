@@ -10,12 +10,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import nltk
+
 from zenml.integrations.evidently.steps import (
     EvidentlyColumnMapping,
     EvidentlyReportParameters,
     evidently_report_step,
 )
-import nltk
 
 nltk.download("words")
 nltk.download("wordnet")
@@ -26,10 +27,14 @@ text_data_report = evidently_report_step(
     params=EvidentlyReportParameters(
         column_mapping=EvidentlyColumnMapping(
             target="Rating",
-            numerical_features=['Age', 'Positive_Feedback_Count'],
-            categorical_features=['Division_Name', 'Department_Name', 'Class_Name'],
-            text_features=['Review_Text', 'Title'],
-            prediction="class"
+            numerical_features=["Age", "Positive_Feedback_Count"],
+            categorical_features=[
+                "Division_Name",
+                "Department_Name",
+                "Class_Name",
+            ],
+            text_features=["Review_Text", "Title"],
+            prediction="class",
         ),
         metrics=[
             "DataQualityPreset",

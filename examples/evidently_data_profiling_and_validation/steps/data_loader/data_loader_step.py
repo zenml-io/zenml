@@ -19,7 +19,9 @@ from zenml.steps import step
 @step
 def data_loader() -> pd.DataFrame:
     """Load the breast cancer dataset."""
-    reviews_data = datasets.fetch_openml(name='Womens-E-Commerce-Clothing-Reviews', version=2, as_frame='auto')
+    reviews_data = datasets.fetch_openml(
+        name="Womens-E-Commerce-Clothing-Reviews", version=2, as_frame="auto"
+    )
     reviews = reviews_data.frame
-    reviews['prediction'] = reviews['Rating']
+    reviews["prediction"] = reviews["Rating"]
     return reviews

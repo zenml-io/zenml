@@ -21,10 +21,14 @@ text_data_test = evidently_test_step(
     params=EvidentlyTestParameters(
         column_mapping=EvidentlyColumnMapping(
             target="Rating",
-            numerical_features=['Age', 'Positive_Feedback_Count'],
-            categorical_features=['Division_Name', 'Department_Name', 'Class_Name'],
-            text_features=['Review_Text', 'Title'],
-            prediction="class"
+            numerical_features=["Age", "Positive_Feedback_Count"],
+            categorical_features=[
+                "Division_Name",
+                "Department_Name",
+                "Class_Name",
+            ],
+            text_features=["Review_Text", "Title"],
+            prediction="class",
         ),
         tests=[
             "DataQualityTestPreset",

@@ -12,14 +12,17 @@
 #  permissions and limitations under the License.
 import json
 
-from zenml.steps import step
+from zenml.steps import Output, step
 
 
 @step
 def text_analyzer(
     report: str,
-) -> bool:
-    """Analyze the Evidently drift report and return a true/false value
-    indicating whether data drift was detected."""
-    breakpoint()
-    return json.loads(report)["metrics"][0]["result"]["dataset_drift"]
+) -> Output(ref_missing_values=int, comp_missing_values=int):
+    """Analyze the Evidently text Report and return the number of missing
+    values in the reference and comparison datasets."""
+    result = json.loads(report)["metrics"][0]["result"]
+    return (
+        result["current"]["number_of_missing_values"],
+        result["reference"]["number_of_missing_values"],
+    )

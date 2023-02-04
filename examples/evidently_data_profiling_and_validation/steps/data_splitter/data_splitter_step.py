@@ -21,6 +21,10 @@ def data_splitter(
 ) -> Output(reference_dataset=pd.DataFrame, comparison_dataset=pd.DataFrame):
     """Splits the dataset into two subsets, the reference dataset and the
     comparison dataset."""
-    ref_df = reviews[reviews.Rating > 3].sample(n=5000, replace=True, ignore_index=True, random_state=42)
-    comp_df = reviews[reviews.Rating < 3].sample(n=5000, replace=True, ignore_index=True, random_state=42)
+    ref_df = reviews[reviews.Rating > 3].sample(
+        n=5000, replace=True, ignore_index=True, random_state=42
+    )
+    comp_df = reviews[reviews.Rating < 3].sample(
+        n=5000, replace=True, ignore_index=True, random_state=42
+    )
     return ref_df, comp_df

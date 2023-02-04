@@ -14,7 +14,6 @@
 from pipelines.text_report_test_pipeline.text_report_test import (
     text_data_report_test_pipeline,
 )
-from rich import print
 from steps.data_loader.data_loader_step import data_loader
 from steps.data_splitter.data_splitter_step import data_splitter
 from steps.text_data_analyzer.text_analyzer_step import text_analyzer
@@ -27,7 +26,9 @@ from zenml.post_execution import get_pipeline
 
 def visualize_statistics():
     pipeline = get_pipeline(pipeline="text_data_report_test_pipeline")
-    evidently_outputs = pipeline.runs[-1].get_step(step="text_data_report").output.read()
+    evidently_outputs = (
+        pipeline.runs[-1].get_step(step="text_data_report").output.read()
+    )
     EvidentlyVisualizer().visualize(evidently_outputs)
 
 
