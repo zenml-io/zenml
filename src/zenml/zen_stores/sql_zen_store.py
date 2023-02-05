@@ -1573,6 +1573,9 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The updated flavor.
+
+        Raises:
+            KeyError: If no flavor with the given id exists.
         """
         with Session(self.engine) as session:
             existing_flavor = session.exec(
