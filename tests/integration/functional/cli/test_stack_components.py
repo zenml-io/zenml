@@ -13,13 +13,14 @@
 #  permissions and limitations under the License.
 
 from contextlib import ExitStack as does_not_raise
-from datetime import datetime
-from uuid import uuid4
+from typing import Optional
 
 import pytest
 from click.testing import CliRunner
 
+from tests.unit.test_flavor import AriaOrchestratorFlavor
 from zenml.cli.cli import cli
+from zenml.client import Client
 from zenml.enums import StackComponentType
 from zenml.stack.stack_component import StackComponent
 
@@ -174,59 +175,74 @@ def test_update_stack_component_with_non_configured_property_fails(
         ).__getattribute__("favorite_cat")
 
 
+class FlavorContext:
+    def __init__(self, client: Optional[Client]):
+        self.client = client
+
+    def __enter__(self):
+        aria_flavor = AriaOrchestratorFlavor()
+        self.created_flavor = self.client.zen_store.create_flavor(
+            aria_flavor.to_model()
+        )
+        return self.created_flavor
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        try:
+            self.client.zen_store.delete_flavor(self.created_flavor.id)
+        except KeyError:
+            pass
+
+
 def test_remove_attribute_component_succeeds(
-    clean_workspace, test_flavor
+    clean_workspace,
 ) -> None:
     """Removing an optional attribute from a stack component succeeds."""
-    orchestrator = test_flavor.implementation_class(
-        name="arias_orchestrator",
-        id=uuid4(),
-        config=test_flavor.config_class(
-            favorite_orchestration_language="arn:arias:aws:iam",
-            favorite_orchestration_language_version="a1.big.cat",
-        ),
-        flavor=test_flavor.name,
-        type=test_flavor.type,
-        user=clean_workspace.active_user.id,
-        workspace=clean_workspace.active_workspace.id,
-        created=datetime.now(),
-        updated=datetime.now(),
-    )
+    with FlavorContext(clean_workspace) as test_flavor:
+        configuration = {
+            "favorite_orchestration_language": "arn:arias:aws:iam",
+            "favorite_orchestration_language_version": "a1.big.cat",
+        }
+        created_orchestrator = clean_workspace.create_stack_component(
+            name="arias_orchestrator",
+            component_type=test_flavor.type,
+            flavor=test_flavor.name,
+            configuration=configuration,
+        )
 
-    orchestrator_response = clean_workspace.create_stack_component(
-        name=orchestrator.name,
-        component_type=orchestrator.type,
-        flavor=orchestrator.flavor,
-        configuration=orchestrator.config.dict(),
-    )
+        assert (
+            "favorite_orchestration_language_version"
+            in created_orchestrator.configuration
+        )
 
-    assert (
-        "favorite_orchestration_language_version"
-        in orchestrator_response.configuration
-    )
+        runner = CliRunner()
+        remove_attribute_command = cli.commands["orchestrator"].commands[
+            "remove-attribute"
+        ]
+        remove_attribute = runner.invoke(
+            remove_attribute_command,
+            [
+                f"{created_orchestrator.name}",
+                "favorite_orchestration_language_version",
+            ],
+        )
+        assert remove_attribute.exit_code == 0
 
-    runner = CliRunner()
-    remove_attribute_command = cli.commands["orchestrator"].commands[
-        "remove-attribute"
-    ]
-    remove_attribute = runner.invoke(
-        remove_attribute_command,
-        [
-            f"{orchestrator_response.name}",
-            "favorite_orchestration_language_version",
-        ],
-    )
-    assert remove_attribute.exit_code == 0
+        orchestrator_response = clean_workspace.get_stack_component(
+            name_id_or_prefix=created_orchestrator.id,
+            component_type=StackComponentType.ORCHESTRATOR,
+        )
 
-    orchestrator_response = clean_workspace.get_stack_component(
-        name_id_or_prefix=orchestrator_response.id,
-        component_type=StackComponentType.ORCHESTRATOR,
-    )
-
-    assert (
-        "favorite_orchestration_language_version"
-        not in orchestrator_response.configuration
-    )
+        assert (
+            "favorite_orchestration_language_version"
+            not in orchestrator_response.configuration
+        )
+        try:
+            clean_workspace.deregister_stack_component(
+                name_id_or_prefix=created_orchestrator.id,
+                component_type=StackComponentType.ORCHESTRATOR,
+            )
+        except KeyError:
+            pass
 
 
 def test_remove_attribute_component_non_existent_attributes_fail(
@@ -268,43 +284,41 @@ def test_remove_attribute_component_nonexistent_component_fails(
 
 
 def test_remove_attribute_component_required_attribute_fails(
-    clean_workspace, test_flavor
+    clean_workspace,
 ) -> None:
     """Removing a required attribute from a stack component fails."""
-    orchestrator = test_flavor.implementation_class(
-        name="arias_orchestrator",
-        id=uuid4(),
-        config=test_flavor.config_class(
-            favorite_orchestration_language="arn:arias:aws:iam",
-            favorite_orchestration_language_version="a1.big.cat",
-        ),
-        flavor=test_flavor.name,
-        type=test_flavor.type,
-        user=clean_workspace.active_user.id,
-        workspace=clean_workspace.active_workspace.id,
-        created=datetime.now(),
-        updated=datetime.now(),
-    )
+    with FlavorContext(clean_workspace) as test_flavor:
+        configuration = {
+            "favorite_orchestration_language": "arn:arias:aws:iam",
+            "favorite_orchestration_language_version": "a1.big.cat",
+        }
 
-    orchestrator_response = clean_workspace.create_stack_component(
-        name=orchestrator.name,
-        component_type=orchestrator.type,
-        flavor=orchestrator.flavor,
-        configuration=orchestrator.config.dict(),
-    )
+        created_orchestrator = clean_workspace.create_stack_component(
+            name="arias_orchestrator",
+            component_type=test_flavor.type,
+            flavor=test_flavor.name,
+            configuration=configuration,
+        )
 
-    runner = CliRunner()
-    remove_attribute_command = cli.commands["orchestrator"].commands[
-        "remove-attribute"
-    ]
-    remove_attribute = runner.invoke(
-        remove_attribute_command,
-        [
-            f"{orchestrator_response.name}",
-            "favorite_orchestration_language",
-        ],
-    )
-    assert remove_attribute.exit_code != 0
+        runner = CliRunner()
+        remove_attribute_command = cli.commands["orchestrator"].commands[
+            "remove-attribute"
+        ]
+        remove_attribute = runner.invoke(
+            remove_attribute_command,
+            [
+                f"{created_orchestrator.name}",
+                "favorite_orchestration_language",
+            ],
+        )
+        assert remove_attribute.exit_code != 0
+        try:
+            clean_workspace.deregister_stack_component(
+                name_id_or_prefix=created_orchestrator.id,
+                component_type=StackComponentType.ORCHESTRATOR,
+            )
+        except KeyError:
+            pass
 
 
 def test_rename_stack_component_to_preexisting_name_fails(
