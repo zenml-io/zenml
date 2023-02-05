@@ -40,7 +40,7 @@ in local files. Additional cloud secrets managers are provided by integrations:
 | [GCP](./gcp.md)                         | `gcp`    | `gcp`         | Yes              | Uses GCP to store secretes                                                 |
 | [Azure](./azure.md)                     | `azure`  | `azure`       | Yes              | Uses Azure Key Vaults to store secrets                                     |
 | [GitHub](./github.md)                   | `github` | `github`      | No               | Uses GitHub to store secrets                                               |
-| [HashiCorp Vault](./hashicorp-vault.md) | `vault`  | `vault`       | Yes              | Uses HashiCorp Vault to store secrets                                      |
+| [HashiCorp Vault](./vault.md) | `vault`  | `vault`       | Yes              | Uses HashiCorp Vault to store secrets                                      |
 | [Custom Implementation](./custom.md)    | _custom_ |               | No               | Extend the secrets manager abstraction and provide your own implementation |
 
 If you would like to see the available flavors of secrets managers, you can 

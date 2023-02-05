@@ -64,7 +64,7 @@ secrets manager](../secrets-managers/secrets-managers.md).)
 Be sure to register an secret schema for whichever artifact store you choose,
 and then you should make sure to pass the name of that secret into the artifact
 store as the `--authentication_secret` as [described in this
-guide](../artifact-stores/amazon-s3.md#advanced-configuration), for example in
+guide](../artifact-stores/s3.md#advanced-configuration), for example in
 the case of AWS.
 
 You will next need to obtain your Label Studio API key. This will give you

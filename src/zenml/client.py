@@ -2202,6 +2202,9 @@ class Client(metaclass=ClientMetaClass):
 
         Returns:
             The created flavor (in model form).
+
+        Raises:
+            ValueError: in case the config_schema of the flavor is too large.
         """
         from zenml.utils.source_utils import validate_flavor_source
 
@@ -2210,11 +2213,20 @@ class Client(metaclass=ClientMetaClass):
             component_type=component_type,
         )()
 
+        if len(flavor.config_schema) > TEXT_FIELD_MAX_LENGTH:
+            raise ValueError(
+                "Json representation of configuration schema"
+                "exceeds max length. This could be caused by an"
+                "overly long docstring on the flavors "
+                "configuration class' docstring."
+            )
+
         create_flavor_request = FlavorRequestModel(
             source=source,
             type=flavor.type,
             name=flavor.name,
             config_schema=flavor.config_schema,
+            integration="custom",
             user=self.active_user.id,
             workspace=self.active_workspace.id,
         )
@@ -2233,7 +2245,7 @@ class Client(metaclass=ClientMetaClass):
         """
         return self._get_entity_by_id_or_name_or_prefix(
             get_method=self.zen_store.get_flavor,
-            list_method=self.list_custom_flavors,
+            list_method=self.list_flavors,
             name_id_or_prefix=name_id_or_prefix,
         )
 
@@ -2249,7 +2261,7 @@ class Client(metaclass=ClientMetaClass):
 
         logger.info(f"Deleted flavor '{flavor.name}' of type '{flavor.type}'.")
 
-    def list_custom_flavors(
+    def list_flavors(
         self,
         sort_by: str = "created",
         page: int = PAGINATION_STARTING_PAGE,
@@ -2261,7 +2273,6 @@ class Client(metaclass=ClientMetaClass):
         name: Optional[str] = None,
         type: Optional[str] = None,
         integration: Optional[str] = None,
-        workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
     ) -> Page[FlavorResponseModel]:
         """Fetches all the flavor models.
@@ -2274,7 +2285,6 @@ class Client(metaclass=ClientMetaClass):
             id: Use the id of flavors to filter by.
             created: Use to flavors by time of creation
             updated: Use the last updated date for filtering
-            workspace_id: The id of the workspace to filter by.
             user_id: The  id of the user to filter by.
             name: The name of the flavor to filter by.
             type: The type of the flavor to filter by.
@@ -2288,7 +2298,6 @@ class Client(metaclass=ClientMetaClass):
             size=size,
             sort_by=sort_by,
             logical_operator=logical_operator,
-            workspace_id=workspace_id or self.active_workspace.id,
             user_id=user_id,
             name=name,
             type=type,
@@ -2304,7 +2313,7 @@ class Client(metaclass=ClientMetaClass):
 
     def get_flavors_by_type(
         self, component_type: "StackComponentType"
-    ) -> List["FlavorResponseModel"]:
+    ) -> Page[FlavorResponseModel]:
         """Fetches the list of flavor for a stack component type.
 
         Args:
@@ -2315,18 +2324,9 @@ class Client(metaclass=ClientMetaClass):
         """
         logger.debug(f"Fetching the flavors of type {component_type}.")
 
-        from zenml.stack.flavor_registry import flavor_registry
-
-        zenml_flavors = flavor_registry.get_flavors_by_type(
-            component_type=component_type
-        )
-
-        custom_flavors = self.list_custom_flavors(
-            workspace_id=self.active_workspace.id,
+        return self.list_flavors(
             type=component_type,
         )
-
-        return zenml_flavors + list(custom_flavors.items)
 
     def get_flavor_by_name_and_type(
         self, name: str, component_type: "StackComponentType"
@@ -2347,46 +2347,24 @@ class Client(metaclass=ClientMetaClass):
             f"Fetching the flavor of type {component_type} with name {name}."
         )
 
-        from zenml.stack.flavor_registry import flavor_registry
-
-        try:
-            zenml_flavor = flavor_registry.get_flavor_by_name_and_type(
-                component_type=component_type,
-                name=name,
-            )
-        except KeyError:
-            zenml_flavor = None
-
-        custom_flavors = self.list_custom_flavors(
-            workspace_id=self.active_workspace.id,
+        flavors = self.list_flavors(
             type=component_type,
             name=name,
         ).items
 
-        if custom_flavors:
-            if len(custom_flavors) > 1:
+        if flavors:
+            if len(flavors) > 1:
                 raise KeyError(
                     f"More than one flavor with name {name} and type "
                     f"{component_type} exists."
                 )
 
-            if zenml_flavor:
-                # If there is one, check whether the same flavor exists as
-                # a ZenML flavor to give out a warning
-                logger.warning(
-                    f"There is a custom implementation for the flavor "
-                    f"'{name}' of a {component_type}, which is currently "
-                    f"overwriting the same flavor provided by ZenML."
-                )
-            return custom_flavors[0]
+            return flavors[0]
         else:
-            if zenml_flavor:
-                return zenml_flavor
-            else:
-                raise KeyError(
-                    f"No flavor with name '{name}' and type '{component_type}' "
-                    "exists."
-                )
+            raise KeyError(
+                f"No flavor with name '{name}' and type '{component_type}' "
+                "exists."
+            )
 
     # -------------
     # - PIPELINES -
