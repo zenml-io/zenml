@@ -12,7 +12,7 @@ ZenML's scheduling functionality rests on the use of a `Schedule` object that
 you pass in when calling `pipeline.run()`. There are two ways to create a
 schedule with the `Schedule` object, though whether one or both of these are
 supported depends on the specific orchestrator you're using. For example, our
-[Vertex Orchestrator](../../component-gallery/orchestrators/gcloud-vertexai.md) only supports the cron expression method (see below).
+[Vertex Orchestrator](../../component-gallery/orchestrators/vertex.md) only supports the cron expression method (see below).
 
 You could write a cron expression to describe the pipeline schedule in terms
 that would be comprehensible as [a cron job](https://en.wikipedia.org/wiki/Cron). For example, if you wanted your pipeline to run at 14:05 on Wednesdays, you could use the following:

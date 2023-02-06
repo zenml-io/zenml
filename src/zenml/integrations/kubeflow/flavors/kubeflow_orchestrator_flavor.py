@@ -295,6 +295,24 @@ class KubeflowOrchestratorFlavor(BaseOrchestratorFlavor):
         return KUBEFLOW_ORCHESTRATOR_FLAVOR
 
     @property
+    def docs_url(self) -> Optional[str]:
+        """A url to point at docs explaining this flavor.
+
+        Returns:
+            A flavor docs url.
+        """
+        return self.generate_default_docs_url()
+
+    @property
+    def logo_url(self) -> str:
+        """A url to represent the flavor in the dashboard.
+
+        Returns:
+            The flavor logo.
+        """
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/kubeflow.png"
+
+    @property
     def config_class(self) -> Type[KubeflowOrchestratorConfig]:
         """Returns `KubeflowOrchestratorConfig` config class.
 

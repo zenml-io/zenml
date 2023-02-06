@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.32.1"
+version = "0.33.0"
 packages = [
     { include = "zenml", from = "src" },
 ]
@@ -79,14 +79,21 @@ fastapi-utils = { version = "~0.2.1", optional = true}
 
 # optional dependencies for stack recipes
 
+# Optional dependencies for project templates
+copier = { version = ">=7.0.0", optional = true }
+jinja2-time = { version = "^0.2.0", optional = true }
+black = { version = "^22.3.0", optional = true }
+ruff = { version = "^0.0.241", optional = true }
+
 [tool.poetry.extras]
 server = ["fastapi", "uvicorn", "python-multipart", "python-jose", "fastapi-utils"]
+templates = ["copier", "jinja2-time", "black", "ruff"]
 
 [tool.poetry.dev-dependencies]
 black = "^22.3.0"
 pytest = "^6.2.4"
 mypy = "^0.991"
-ruff = "^0.0.238"
+ruff = "^0.0.241"
 coverage = { extras = ["toml"], version = "^5.5" }
 pre-commit = "^2.14.0"
 pyment = "^0.3.3"
@@ -303,7 +310,8 @@ module = [
     "multipart.*",
     "jose.*",
     "fastapi_utils.*",
-    "sqlalchemy_utils.*"
+    "sqlalchemy_utils.*",
+    "copier.*"
 ]
 ignore_missing_imports = true
 
