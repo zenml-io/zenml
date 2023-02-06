@@ -28,6 +28,7 @@ from zenml.constants import API, HEALTH
 from zenml.zen_server.routers import (
     artifacts_endpoints,
     auth_endpoints,
+    builds_endpoints,
     flavors_endpoints,
     pipelines_endpoints,
     role_assignments_endpoints,
@@ -150,6 +151,7 @@ app.include_router(teams_endpoints.router)
 app.include_router(users_endpoints.router)
 app.include_router(users_endpoints.current_user_router)
 app.include_router(users_endpoints.activation_router)
+app.include_router(builds_endpoints.router)
 
 
 def get_root_static_files() -> List[str]:

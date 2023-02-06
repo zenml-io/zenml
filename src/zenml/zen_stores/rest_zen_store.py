@@ -40,6 +40,7 @@ from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     API,
     ARTIFACTS,
+    BUILDS,
     CURRENT_USER,
     DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
@@ -78,6 +79,9 @@ from zenml.models import (
     ArtifactRequestModel,
     ArtifactResponseModel,
     BaseFilterModel,
+    BuildOutputFilterModel,
+    BuildOutputRequestModel,
+    BuildOutputResponseModel,
     ComponentFilterModel,
     ComponentRequestModel,
     ComponentResponseModel,
@@ -1241,6 +1245,76 @@ class RestZenStore(BaseZenStore):
         self._delete_resource(
             resource_id=pipeline_id,
             route=PIPELINES,
+        )
+
+    # ---------
+    # Builds
+    # ---------
+
+    def create_build(
+        self,
+        build: BuildOutputRequestModel,
+    ) -> BuildOutputResponseModel:
+        """Creates a new build in a workspace.
+
+        Args:
+            build: The build to create.
+
+        Returns:
+            The newly created build.
+
+        Raises:
+            KeyError: If the workspace does not exist.
+            EntityExistsError: If an identical build already exists.
+        """
+        return self._create_workspace_scoped_resource(
+            resource=build,
+            route=BUILDS,
+            response_model=BuildOutputResponseModel,
+        )
+
+    def get_build(self, build_id: UUID) -> BuildOutputResponseModel:
+        """Get a build with a given ID.
+
+        Args:
+            build_id: ID of the build.
+
+        Returns:
+            The build.
+        """
+        return self._get_resource(
+            resource_id=build_id,
+            route=BUILDS,
+            response_model=BuildOutputResponseModel,
+        )
+
+    def list_builds(
+        self, build_filter_model: BuildOutputFilterModel
+    ) -> Page[BuildOutputResponseModel]:
+        """List all builds matching the given filter criteria.
+
+        Args:
+            build_filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all builds matching the filter criteria.
+        """
+        return self._list_paginated_resources(
+            route=BUILDS,
+            response_model=BuildOutputResponseModel,
+            filter_model=build_filter_model,
+        )
+
+    def delete_build(self, build_id: UUID) -> None:
+        """Deletes a build.
+
+        Args:
+            build_id: The ID of the build to delete.
+        """
+        self._delete_resource(
+            resource_id=build_id,
+            route=BUILDS,
         )
 
     # ---------

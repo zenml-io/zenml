@@ -19,6 +19,7 @@ from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import (
     API,
+    BUILDS,
     GET_OR_CREATE,
     PIPELINES,
     RUN_METADATA,
@@ -35,6 +36,9 @@ from zenml.constants import (
 from zenml.enums import PermissionType
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
+    BuildOutputFilterModel,
+    BuildOutputRequestModel,
+    BuildOutputResponseModel,
     ComponentFilterModel,
     ComponentRequestModel,
     ComponentResponseModel,
@@ -570,6 +574,80 @@ def create_pipeline(
         )
 
     return zen_store().create_pipeline(pipeline=pipeline)
+
+
+@router.get(
+    WORKSPACES + "/{workspace_name_or_id}" + BUILDS,
+    response_model=Page[BuildOutputResponseModel],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def list_workspace_builds(
+    workspace_name_or_id: Union[str, UUID],
+    build_filter_model: BuildOutputFilterModel = Depends(
+        make_dependable(BuildOutputFilterModel)
+    ),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+) -> Page[PipelineResponseModel]:
+    """Gets builds defined for a specific workspace.
+
+    # noqa: DAR401
+
+    Args:
+        workspace_name_or_id: Name or ID of the workspace.
+        build_filter_model: Filter model used for pagination, sorting,
+            filtering
+
+    Returns:
+        All builds within the workspace.
+    """
+    workspace = zen_store().get_workspace(workspace_name_or_id)
+    build_filter_model.set_scope_workspace(workspace.id)
+    return zen_store().list_builds(build_filter_model=build_filter_model)
+
+
+@router.post(
+    WORKSPACES + "/{workspace_name_or_id}" + BUILDS,
+    response_model=BuildOutputResponseModel,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_build(
+    workspace_name_or_id: Union[str, UUID],
+    build: BuildOutputRequestModel,
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
+) -> PipelineResponseModel:
+    """Creates a build.
+
+    Args:
+        workspace_name_or_id: Name or ID of the workspace.
+        build: Build to create.
+        auth_context: Authentication context.
+
+    Returns:
+        The created build.
+
+    Raises:
+        IllegalOperationError: If the workspace or user specified in the build
+            does not match the current workspace or authenticated user.
+    """
+    workspace = zen_store().get_workspace(workspace_name_or_id)
+
+    if build.workspace != workspace.id:
+        raise IllegalOperationError(
+            "Creating builds outside of the workspace scope "
+            f"of this endpoint `{workspace_name_or_id}` is "
+            f"not supported."
+        )
+    if build.user != auth_context.user.id:
+        raise IllegalOperationError(
+            "Creating builds for a user other than yourself "
+            "is not supported."
+        )
+
+    return zen_store().create_build(build=build)
 
 
 @router.get(
