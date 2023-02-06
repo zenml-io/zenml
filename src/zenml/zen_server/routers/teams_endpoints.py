@@ -130,7 +130,7 @@ def update_team(
         team_update: Team update.
 
     Returns:
-        The created team.
+        The updated team.
     """
     return zen_store().update_team(team_id=team_id, team_update=team_update)
 

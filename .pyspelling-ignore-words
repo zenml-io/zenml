@@ -282,6 +282,7 @@ FixtureRequest
 FlavorModel
 FlavorSchema
 FlavorWrapper
+FlavorRegistry
 Flyte
 Formatter
 FullAccess
