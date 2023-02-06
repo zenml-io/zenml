@@ -22,6 +22,7 @@ from typing import Optional
 import click
 
 from zenml import __version__ as zenml_version
+from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
 from zenml.cli.server import down
 from zenml.cli.utils import confirmation, declare, error, warning
@@ -356,3 +357,48 @@ def _prompt_email() -> bool:
         )
 
     return False
+
+
+@cli.command("info", help="Show information about the current user setup.")
+def info() -> None:
+    """Show information about the current user setup."""
+    gc = GlobalConfiguration()
+    client = Client()
+
+    store_cfg = gc.store
+
+    cli_utils.declare(f"Using configuration from: '{gc.config_directory}'")
+    cli_utils.declare(
+        f"Local store files are located at: '{gc.local_stores_path}'"
+    )
+    if client.root:
+        cli_utils.declare(f"Active repository root: {client.root}")
+    if store_cfg is not None:
+        if gc.uses_default_store():
+            cli_utils.declare(f"Using the local database ('{store_cfg.url}')")
+        else:
+            cli_utils.declare(
+                f"Connected to a ZenML server: '{store_cfg.url}'"
+            )
+
+    scope = "repository" if client.uses_local_configuration else "global"
+    cli_utils.declare(f"The current user is: '{client.active_user.name}'")
+    cli_utils.declare(
+        f"The active workspace is: '{client.active_workspace.name}' "
+        f"({scope})"
+    )
+    cli_utils.declare(
+        f"The active stack is: '{client.active_stack_model.name}' ({scope})"
+    )
+
+    server = get_active_deployment(local=True)
+    if server:
+        cli_utils.declare("The status of the local dashboard:")
+        cli_utils.print_server_deployment(server)
+
+    server = get_active_deployment(local=False)
+    if server:
+        cli_utils.declare(
+            "The status of the cloud ZenML server deployed from this host:"
+        )
+        cli_utils.print_server_deployment(server)
