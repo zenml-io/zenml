@@ -89,10 +89,3 @@ class StepConfigurationKeys(ConfigKeys):
     SOURCE_ = "source"
     PARAMETERS_ = "parameters"
     MATERIALIZERS_ = "materializers"
-
-
-class SourceConfigurationKeys(ConfigKeys):
-    """Keys for a step configuration source dict."""
-
-    FILE_ = "file"
-    NAME_ = "name"
