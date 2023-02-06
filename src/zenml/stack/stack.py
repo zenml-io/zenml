@@ -830,11 +830,11 @@ class Stack:
                     )
                     continue
 
-            image_name_or_digest = docker_image_builder.new_build_docker_image(
+            image_name_or_digest = docker_image_builder.build_docker_image(
                 deployment=deployment,
                 docker_settings=build.settings,
-                stack=self,
                 default_tag=build.default_tag,
+                stack=self,
                 entrypoint=build.entrypoint,
             )
             if image_name_or_digest in all_images:
