@@ -27,6 +27,7 @@ from zenml.models import (
     FlavorFilterModel,
     FlavorRequestModel,
     FlavorResponseModel,
+    FlavorUpdateModel,
     PipelineFilterModel,
     PipelineRequestModel,
     PipelineResponseModel,
@@ -342,6 +343,20 @@ class ZenStoreInterface(ABC):
         Raises:
             EntityExistsError: If a flavor with the same name and type
                 is already owned by this user in this workspace.
+        """
+
+    @abstractmethod
+    def update_flavor(
+        self, flavor_id: UUID, flavor_update: FlavorUpdateModel
+    ) -> FlavorResponseModel:
+        """Updates an existing user.
+
+        Args:
+            flavor_id: The id of the flavor to update.
+            flavor_update: The update to be applied to the flavor.
+
+        Returns:
+            The updated flavor.
         """
 
     @abstractmethod

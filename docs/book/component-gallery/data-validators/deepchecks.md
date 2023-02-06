@@ -130,7 +130,7 @@ pipelines.
 The current ZenML version has a limitation in its base Docker image that 
 requires a workaround for *all* pipelines using Deepchecks with a remote 
 orchestrator (e.g. [Kubeflow](../orchestrators/kubeflow.md), 
-[Vertex](../orchestrators/gcloud-vertexai.md)). The limitation being that the 
+[Vertex](../orchestrators/vertex.md)). The limitation being that the 
 base Docker image needs to be extended to include binaries that are required by 
 `opencv2`, which is a package that Deepchecks requires.
 

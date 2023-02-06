@@ -78,6 +78,7 @@ from zenml.models import (
     FlavorFilterModel,
     FlavorRequestModel,
     FlavorResponseModel,
+    FlavorUpdateModel,
     PipelineFilterModel,
     PipelineRequestModel,
     PipelineResponseModel,
@@ -124,10 +125,12 @@ from zenml.models import (
     WorkspaceUpdateModel,
 )
 from zenml.models.base_models import BaseResponseModel
+from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.models.page_model import Page
 from zenml.models.run_metadata_models import RunMetadataFilterModel
 from zenml.models.schedule_model import ScheduleFilterModel
 from zenml.models.server_models import ServerDatabaseType, ServerModel
+from zenml.stack.flavor_registry import FlavorRegistry
 from zenml.utils import uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.enum_utils import StrEnum
@@ -859,6 +862,18 @@ class SqlZenStore(BaseZenStore):
                 self.alembic.stamp(ZENML_ALEMBIC_START_REVISION)
                 self.alembic.upgrade()
 
+        # If an alembic migration took place, all non-custom flavors are purged
+        #  and the FlavorRegistry recreates all in-built and integration
+        #  flavors in the db.
+        revisions_afterwards = self.alembic.current_revisions()
+
+        if revisions != revisions_afterwards:
+            self._sync_flavors()
+
+    def _sync_flavors(self) -> None:
+        """Purge all in-built and integration flavors from the DB and sync."""
+        FlavorRegistry().register_flavors(store=self)
+
     def get_store_info(self) -> ServerModel:
         """Get information about the store.
 
@@ -1487,7 +1502,6 @@ class SqlZenStore(BaseZenStore):
     # Stack component flavors
     # -----------------------
 
-    @track(AnalyticsEvent.CREATED_FLAVOR)
     def create_flavor(self, flavor: FlavorRequestModel) -> FlavorResponseModel:
         """Creates a new stack component flavor.
 
@@ -1500,9 +1514,10 @@ class SqlZenStore(BaseZenStore):
         Raises:
             EntityExistsError: If a flavor with the same name and type
                 is already owned by this user in this workspace.
+            ValueError: In case the config_schema string exceeds the max length.
         """
         with Session(self.engine) as session:
-            # Check if component with the same domain key (name, type, workspace,
+            # Check if flavor with the same domain key (name, type, workspace,
             # owner) already exists
             existing_flavor = session.exec(
                 select(FlavorSchema)
@@ -1521,19 +1536,61 @@ class SqlZenStore(BaseZenStore):
                     f"'{flavor.user}' user."
                 )
 
-            new_flavor = FlavorSchema(
-                name=flavor.name,
-                type=flavor.type,
-                source=flavor.source,
-                config_schema=flavor.config_schema,
-                integration=flavor.integration,
-                workspace_id=flavor.workspace,
-                user_id=flavor.user,
-            )
-            session.add(new_flavor)
+            config_schema = json.dumps(flavor.config_schema)
+
+            if len(config_schema) > TEXT_FIELD_MAX_LENGTH:
+                raise ValueError(
+                    "Json representation of configuration schema"
+                    "exceeds max length."
+                )
+
+            else:
+                new_flavor = FlavorSchema(
+                    name=flavor.name,
+                    type=flavor.type,
+                    source=flavor.source,
+                    config_schema=config_schema,
+                    integration=flavor.integration,
+                    workspace_id=flavor.workspace,
+                    user_id=flavor.user,
+                    logo_url=flavor.logo_url,
+                    docs_url=flavor.docs_url,
+                    is_custom=flavor.is_custom,
+                )
+                session.add(new_flavor)
+                session.commit()
+
+                return new_flavor.to_model()
+
+    def update_flavor(
+        self, flavor_id: UUID, flavor_update: FlavorUpdateModel
+    ) -> FlavorResponseModel:
+        """Updates an existing user.
+
+        Args:
+            flavor_id: The id of the flavor to update.
+            flavor_update: The update to be applied to the flavor.
+
+        Returns:
+            The updated flavor.
+
+        Raises:
+            KeyError: If no flavor with the given id exists.
+        """
+        with Session(self.engine) as session:
+            existing_flavor = session.exec(
+                select(FlavorSchema).where(FlavorSchema.id == flavor_id)
+            ).first()
+
+            if not existing_flavor:
+                raise KeyError(f"Flavor with ID {flavor_id} not found.")
+            existing_flavor.update(flavor_update=flavor_update)
+            session.add(existing_flavor)
             session.commit()
 
-            return new_flavor.to_model()
+            # Refresh the Model that was just created
+            session.refresh(existing_flavor)
+            return existing_flavor.to_model()
 
     def get_flavor(self, flavor_id: UUID) -> FlavorResponseModel:
         """Get a flavor by ID.
@@ -1601,7 +1658,7 @@ class SqlZenStore(BaseZenStore):
                     raise IllegalOperationError(
                         f"Stack Component `{flavor_in_db.name}` of type "
                         f"`{flavor_in_db.type} cannot be "
-                        f"deleted as it is used by"
+                        f"deleted as it is used by "
                         f"{len(components_of_flavor)} "
                         f"components. Before deleting this "
                         f"flavor, make sure to delete all "
@@ -1611,8 +1668,6 @@ class SqlZenStore(BaseZenStore):
                     session.delete(flavor_in_db)
             except NoResultFound as error:
                 raise KeyError from error
-
-            session.commit()
 
     # -----
     # Users

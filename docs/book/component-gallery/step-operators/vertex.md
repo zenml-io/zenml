@@ -13,7 +13,7 @@ You should use the Vertex step operator if:
 * one or more steps of your pipeline require computing resources 
 (CPU, GPU, memory) that are not provided by your orchestrator.
 * you have access to Vertex AI. If you're using a different cloud provider, take 
-a look at the [SageMaker](./amazon-sagemaker.md) or [AzureML](./azureml.md) 
+a look at the [SageMaker](./sagemaker.md) or [AzureML](./azureml.md) 
 step operators.
 
 ## How to deploy it
@@ -33,7 +33,7 @@ To use the Vertex step operator, we need:
 * [Docker](https://www.docker.com) installed and running.
 * Vertex AI enabled and a service account file. See the [deployment section](#how-do-you-deploy-it)
 for detailed instructions.
-* A [GCR container registry](../container-registries/gcloud.md) as part of our 
+* A [GCR container registry](../container-registries/gcp.md) as part of our 
 stack.
 * (Optional) A machine type that we want to execute our steps on (this 
 defaults to `n1-standard-4`). See [here](https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types)

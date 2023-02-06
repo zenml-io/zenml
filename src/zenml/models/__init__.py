@@ -29,6 +29,7 @@ from zenml.models.flavor_models import (
     FlavorFilterModel,
     FlavorRequestModel,
     FlavorResponseModel,
+    FlavorUpdateModel,
 )
 from zenml.models.pipeline_models import (
     PipelineFilterModel,
@@ -172,7 +173,6 @@ ArtifactResponseModel.update_forward_refs(
 __all__ = [
     "ArtifactRequestModel",
     "ArtifactResponseModel",
-    "ArtifactUpdateModel",
     "ArtifactFilterModel",
     "ComponentRequestModel",
     "ComponentResponseModel",
@@ -181,6 +181,7 @@ __all__ = [
     "FlavorRequestModel",
     "FlavorResponseModel",
     "FlavorFilterModel",
+    "FlavorUpdateModel",
     "BaseFilterModel",
     "PipelineRequestModel",
     "PipelineResponseModel",

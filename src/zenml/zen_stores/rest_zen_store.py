@@ -85,6 +85,7 @@ from zenml.models import (
     FlavorFilterModel,
     FlavorRequestModel,
     FlavorResponseModel,
+    FlavorUpdateModel,
     PipelineFilterModel,
     PipelineRequestModel,
     PipelineResponseModel,
@@ -131,7 +132,6 @@ from zenml.models.base_models import (
     BaseRequestModel,
     BaseResponseModel,
     WorkspaceScopedRequestModel,
-    WorkspaceScopedResponseModel,
 )
 from zenml.models.page_model import Page
 from zenml.models.run_metadata_models import RunMetadataFilterModel
@@ -153,14 +153,8 @@ if TYPE_CHECKING:
 Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
 
 AnyRequestModel = TypeVar("AnyRequestModel", bound=BaseRequestModel)
-AnyProjestRequestModel = TypeVar(
-    "AnyProjestRequestModel", bound=WorkspaceScopedRequestModel
-)
-
 AnyResponseModel = TypeVar("AnyResponseModel", bound=BaseResponseModel)
-AnyProjestResponseModel = TypeVar(
-    "AnyProjestResponseModel", bound=WorkspaceScopedResponseModel
-)
+
 
 DEFAULT_HTTP_TIMEOUT = 30
 
@@ -578,8 +572,27 @@ class RestZenStore(BaseZenStore):
         Returns:
             The newly created flavor.
         """
-        return self._create_workspace_scoped_resource(
+        return self._create_resource(
             resource=flavor,
+            route=FLAVORS,
+            response_model=FlavorResponseModel,
+        )
+
+    def update_flavor(
+        self, flavor_id: UUID, flavor_update: FlavorUpdateModel
+    ) -> FlavorResponseModel:
+        """Updates an existing user.
+
+        Args:
+            flavor_id: The id of the flavor to update.
+            flavor_update: The update to be applied to the flavor.
+
+        Returns:
+            The updated flavor.
+        """
+        return self._update_resource(
+            resource_id=flavor_id,
+            resource_update=flavor_update,
             route=FLAVORS,
             response_model=FlavorResponseModel,
         )
@@ -1936,10 +1949,10 @@ class RestZenStore(BaseZenStore):
     def _create_workspace_scoped_resource(
         self,
         resource: WorkspaceScopedRequestModel,
-        response_model: Type[AnyProjestResponseModel],
+        response_model: Type[AnyResponseModel],
         route: str,
         params: Optional[Dict[str, Any]] = None,
-    ) -> AnyProjestResponseModel:
+    ) -> AnyResponseModel:
         """Create a new workspace scoped resource.
 
         Args:
@@ -2012,10 +2025,10 @@ class RestZenStore(BaseZenStore):
     def _get_or_create_workspace_scoped_resource(
         self,
         resource: WorkspaceScopedRequestModel,
-        response_model: Type[AnyProjestResponseModel],
+        response_model: Type[AnyResponseModel],
         route: str,
         params: Optional[Dict[str, Any]] = None,
-    ) -> Tuple[AnyProjestResponseModel, bool]:
+    ) -> Tuple[AnyResponseModel, bool]:
         """Get or create a workspace scoped resource.
 
         Args:
