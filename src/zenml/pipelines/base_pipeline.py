@@ -440,7 +440,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         extra: Optional[Dict[str, Any]] = None,
         config_path: Optional[str] = None,
         unlisted: bool = False,
-        build_output: Union["UUID", "BuildOutput", None] = None,
+        build: Union["UUID", "BuildOutput", None] = None,
     ) -> Any:
         """Runs the pipeline on the active stack of the current repository.
 
@@ -559,62 +559,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
             )
             stack.prepare_pipeline_deployment(deployment=deployment)
 
-            if build_output:
-                logger.info(
-                    "Using an old build for a pipeline run can lead to "
-                    "unexpected behavior. This pipeline run will use the code "
-                    "as well as configuration that were included in the Docker "
-                    "images and therefore might not use the current code and "
-                    "configuration of your pipeline."
-                )
-
-                if isinstance(build_output, UUID):
-                    build = Client().zen_store.get_build(build_id=build_output)
-                    build_output = build.configuration
-
-                    if build.pipeline:
-                        build_hash = build.pipeline.version_hash
-                        current_hash = self._compute_unique_identifier(
-                            pipeline_spec=pipeline_spec
-                        )
-
-                        if build_hash != current_hash:
-                            logger.warning(
-                                "The pipeline associated with the build you "
-                                "specified for this run has a different spec "
-                                "or step code. This might lead to unexpected "
-                                "behavior as this pipeline run will use the "
-                                "code as well as configuration that were "
-                                "included in the Docker images and therefore "
-                                "might not use the current code and "
-                                "configuration of your pipeline."
-                            )
-                else:
-                    # TODO: should we even allow this at the moment as the
-                    # deployment inside the container can't possibly have the
-                    # correct build ID and will therefore not produce "correct"
-                    # runs in the DB that store the associated build
-                    build = BuildOutputRequestModel(
-                        id=uuid4(),
-                        user=Client().active_user.id,
-                        workspace=Client().active_workspace.id,
-                        stack=Client().active_stack_model.id,
-                        pipeline=deployment.pipeline_id,
-                        configuration=build_output,
-                    )
-                    Client().zen_store.create_build(build)
-
-                if build_output.is_local:
-                    logger.warning(
-                        "You're using a local build to run your pipeline. This "
-                        "might lead to errors if the images don't exist on "
-                        "your local machine or the image tags have been "
-                        "overwritten since the original build happened."
-                    )
-            else:
-                build = self._build(deployment=deployment)
-                if build:
-                    build_output = build.configuration
+            build_output = self._load_or_create_build_output(
+                deployment=deployment, pipeline_spec=pipeline_spec, build=build
+            )
 
             # Prevent execution of nested pipelines which might lead to
             # unexpected behavior
@@ -1087,6 +1034,75 @@ class BasePipeline(metaclass=BasePipelineMeta):
             return int(all_pipelines.items[0].version)
         else:
             return None
+
+    def _load_or_create_build_output(
+        self,
+        deployment: "PipelineDeployment",
+        pipeline_spec: "PipelineSpec",
+        build: Union["UUID", "BuildOutput", None] = None,
+    ) -> "BuildOutput":
+        build_output = None
+
+        if build:
+            logger.info(
+                "Using an old build for a pipeline run can lead to "
+                "unexpected behavior. This pipeline run will use the code "
+                "as well as configuration that were included in the Docker "
+                "images and therefore might not use the current code and "
+                "configuration of your pipeline."
+            )
+
+            if isinstance(build, UUID):
+                build_model = Client().zen_store.get_build(
+                    build_id=build_output
+                )
+                build_output = build_model.configuration
+
+                if build_model.pipeline:
+                    build_hash = build_model.pipeline.version_hash
+                    current_hash = self._compute_unique_identifier(
+                        pipeline_spec=pipeline_spec
+                    )
+
+                    if build_hash != current_hash:
+                        logger.warning(
+                            "The pipeline associated with the build you "
+                            "specified for this run has a different spec "
+                            "or step code. This might lead to unexpected "
+                            "behavior as this pipeline run will use the "
+                            "code as well as configuration that were "
+                            "included in the Docker images and therefore "
+                            "might not use the current code and "
+                            "configuration of your pipeline."
+                        )
+            else:
+                # TODO: should we even allow this at the moment as the
+                # deployment inside the container can't possibly have the
+                # correct build ID and will therefore not produce "correct"
+                # runs in the DB that store the associated build
+                build_request = BuildOutputRequestModel(
+                    id=uuid4(),
+                    user=Client().active_user.id,
+                    workspace=Client().active_workspace.id,
+                    stack=Client().active_stack_model.id,
+                    pipeline=deployment.pipeline_id,
+                    configuration=build_output,
+                )
+                Client().zen_store.create_build(build=build_request)
+
+            if build_output.is_local:
+                logger.warning(
+                    "You're using a local build to run your pipeline. This "
+                    "might lead to errors if the images don't exist on "
+                    "your local machine or the image tags have been "
+                    "overwritten since the original build happened."
+                )
+        else:
+            build_model = self._build(deployment=deployment)
+            if build_model:
+                build_output = build_model.configuration
+
+        return build_output
 
     def build(
         self,
