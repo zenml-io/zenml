@@ -61,12 +61,12 @@ def test_build_context_includes_and_excludes(tmp_path):
         root=str(root), dockerignore_file=str(custom_dockerignore)
     )
     build_context.dockerignore_file == str(custom_dockerignore)
-    assert build_context._get_exclude_patterns() == ["/1"]
+    assert build_context._get_exclude_patterns() == ["/1", "/.zen"]
     assert build_context._get_files() == {"2"}
 
     default_dockerignore = root / ".dockerignore"
     default_dockerignore.write_text("/1\n/2")
     build_context = BuildContext(root=str(root))
     build_context.dockerignore_file == str(default_dockerignore)
-    assert build_context._get_exclude_patterns() == ["/1", "/2"]
+    assert build_context._get_exclude_patterns() == ["/1", "/2", "/.zen"]
     assert build_context._get_files() == {".dockerignore"}
