@@ -136,7 +136,11 @@ def generate_stack_component_list_command(
 
     @list_options(ComponentFilterModel)
     def list_stack_components_command(**kwargs: Any) -> None:
-        """Prints a table of stack components."""
+        """Prints a table of stack components.
+
+        Args:
+            kwargs: Keyword arguments to filter the components.
+        """
         client = Client()
         with console.status(f"Listing {component_type.plural}..."):
             kwargs["type"] = component_type
@@ -828,6 +832,7 @@ def generate_stack_component_flavor_list_command(
             flavors = client.get_flavors_by_type(component_type=component_type)
 
             cli_utils.print_flavor_list(flavors=flavors)
+            cli_utils.print_page_info(flavors)
 
     return list_stack_component_flavor_command
 

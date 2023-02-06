@@ -13,24 +13,13 @@
 #  permissions and limitations under the License.
 """Functionality for reading, writing and managing files."""
 import os
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Iterable,
-    List,
-    Optional,
-    Tuple,
-    Type,
-)
+from typing import Any, Callable, Iterable, List, Optional, Tuple, Type
 
 # this import required for CI to get local filesystem
 from zenml.io import local_filesystem  # noqa
+from zenml.io.filesystem import BaseFilesystem, PathType
 from zenml.io.filesystem_registry import default_filesystem_registry
 from zenml.logger import get_logger
-
-if TYPE_CHECKING:
-    from zenml.io.filesystem import BaseFilesystem, PathType
 
 logger = get_logger(__name__)
 
@@ -244,6 +233,44 @@ def stat(path: "PathType") -> Any:
         The stat descriptor.
     """
     return _get_filesystem(path).stat(path)
+
+
+def size(path: "PathType") -> Optional[int]:
+    """Get the size of a file or directory in bytes.
+
+    Args:
+        path: The path to the file.
+
+    Returns:
+        The size of the file or directory in bytes or `None` if the responsible
+        file system does not implement the `size` method.
+    """
+    file_system = _get_filesystem(path)
+
+    # If the file system does not implement the `size` method, return `None`.
+    if file_system.size == BaseFilesystem.size:
+        logger.warning(
+            "Cannot get size of file or directory '%s' since the responsible "
+            "file system `%s` does not implement the `size` method.",
+            path,
+            file_system.__name__,
+        )
+        return None
+
+    # If the path does not exist, return 0.
+    if not exists(path):
+        return 0
+
+    # If the path is a file, return its size.
+    if not file_system.isdir(path):
+        return file_system.size(path)
+
+    # If the path is a directory, recursively sum the sizes of everything in it.
+    files = file_system.listdir(path)
+    file_sizes = [size(os.path.join(str(path), str(file))) for file in files]
+    return sum(
+        [file_size for file_size in file_sizes if file_size is not None]
+    )
 
 
 def walk(

@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Utility functions for the CLI."""
 
-import json
 import os
 import subprocess
 import sys
@@ -335,14 +334,14 @@ def print_stack_configuration(
     )
 
 
-def print_flavor_list(flavors: List["FlavorResponseModel"]) -> None:
+def print_flavor_list(flavors: Page["FlavorResponseModel"]) -> None:
     """Prints the list of flavors.
 
     Args:
         flavors: List of flavors to print.
     """
     flavor_table = []
-    for f in flavors:
+    for f in flavors.items:
         flavor_table.append(
             {
                 "FLAVOR": f.name,
@@ -842,21 +841,19 @@ def print_server_deployment(server: "ServerDeployment") -> None:
     console.print(rich_table)
 
 
-def describe_pydantic_object(schema_json: str) -> None:
-    """Describes a Pydantic object based on the json of its schema.
+def describe_pydantic_object(schema_json: Dict[str, Any]) -> None:
+    """Describes a Pydantic object based on the dict-representation of its schema.
 
     Args:
         schema_json: str, represents the schema of a Pydantic object, which
             can be obtained through BaseModelClass.schema_json()
     """
     # Get the schema dict
-    schema = json.loads(schema_json)
-
     # Extract values with defaults
-    schema_title = schema["title"]
-    required = schema.get("required", [])
-    description = schema.get("description", "")
-    properties = schema.get("properties", {})
+    schema_title = schema_json["title"]
+    required = schema_json.get("required", [])
+    description = schema_json.get("description", "")
+    properties = schema_json.get("properties", {})
 
     # Pretty print the schema
     warning(f"Configuration class: {schema_title}\n", bold=True)
@@ -867,10 +864,12 @@ def describe_pydantic_object(schema_json: str) -> None:
     if properties:
         warning("Properties", bold=True)
         for prop, prop_schema in properties.items():
-            warning(
-                f"{prop}, {prop_schema['type']}"
-                f"{', REQUIRED' if prop in required else ''}"
-            )
+
+            if "$ref" not in prop_schema.keys():
+                warning(
+                    f"{prop}, {prop_schema['type']}"
+                    f"{', REQUIRED' if prop in required else ''}"
+                )
 
             if "description" in prop_schema:
                 declare(f"  {prop_schema['description']}", width=80)
@@ -1064,7 +1063,11 @@ def warn_unsupported_non_default_workspace() -> None:
 
 
 def print_page_info(page: Page[T]) -> None:
-    """Print all information pertaining to a page to show the amount of items and pages."""
+    """Print all page information showing the number of items and pages.
+
+    Args:
+        page: The page to print the information for.
+    """
     declare(
         f"Page `({page.index}/{page.total_pages})`, `{page.total}` items "
         f"found for the applied filters."
@@ -1174,6 +1177,9 @@ def list_options(filter_model: Type[BaseFilterModel]) -> Callable[[F], F]:
 
     Args:
         filter_model: The filter model based on which to decorate the function.
+
+    Returns:
+        The inner decorator.
     """
 
     def inner_decorator(func: F) -> F:

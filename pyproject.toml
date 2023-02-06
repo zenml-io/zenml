@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.32.1"
+version = "0.33.0"
 packages = [
     { include = "zenml", from = "src" },
 ]
@@ -57,7 +57,7 @@ python-dateutil = "^2.8.1"
 gitpython = "^3.1.18"
 click = "^8.0.1"
 click-params = "^0.3.0"
-pydantic = "~1.9.0"
+pydantic = "<1.11, >=1.9.0"
 analytics-python = "^1.4.0"
 distro = "^1.6.0"
 rich = {extras = ["jupyter"], version = "^12.0.0"}
@@ -79,21 +79,28 @@ fastapi-utils = { version = "~0.2.1", optional = true}
 
 # optional dependencies for stack recipes
 
+# Optional dependencies for project templates
+copier = { version = ">=7.0.0", optional = true }
+jinja2-time = { version = "^0.2.0", optional = true }
+black = { version = "^22.3.0", optional = true }
+ruff = { version = "^0.0.241", optional = true }
+
 [tool.poetry.extras]
 server = ["fastapi", "uvicorn", "python-multipart", "python-jose", "fastapi-utils"]
+templates = ["copier", "jinja2-time", "black", "ruff"]
 
 [tool.poetry.dev-dependencies]
 black = "^22.3.0"
 pytest = "^6.2.4"
 mypy = "^0.991"
-ruff = "^0.0.223"
+ruff = "^0.0.241"
 coverage = { extras = ["toml"], version = "^5.5" }
 pre-commit = "^2.14.0"
-autoflake = "^1.4"
 pyment = "^0.3.3"
 tox = "^3.24.3"
 hypothesis = "^6.43.1"
 typing-extensions = ">=3.7.4"
+darglint = "^1.8.1"
 
 # pytest dev dependencies
 pytest-randomly = "^3.10.1"
@@ -204,7 +211,7 @@ exclude = [
 ]
 per-file-ignores = {}
 select = ["D", "E", "F", "I", "I001", "Q"]
-ignore = ["E501", "F401", "F403", "D301", "D403", "D407", "D213", "D203", "S101", "S104", "S105", "S106", "S107"]
+ignore = ["E501", "F401", "F403", "D301", "D401", "D403", "D407", "D213", "D203", "S101", "S104", "S105", "S106", "S107"]
 src = ["src", "test"]
 # use Python 3.7 as the minimum version for autofixing
 target-version = "py37"
@@ -303,7 +310,8 @@ module = [
     "multipart.*",
     "jose.*",
     "fastapi_utils.*",
-    "sqlalchemy_utils.*"
+    "sqlalchemy_utils.*",
+    "copier.*"
 ]
 ignore_missing_imports = true
 

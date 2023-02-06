@@ -333,11 +333,17 @@ class AnalyticsContext:
         # infinite loop
         if gc._zen_store is not None:
             zen_store = gc.zen_store
+            user = zen_store.get_user()
+
+            if "client_id" not in properties:
+                properties["client_id"] = self.user_id
+            if "user_id" not in properties:
+                properties["user_id"] = str(user.id)
+
             if (
                 zen_store.type == StoreType.REST
                 and "server_id" not in properties
             ):
-                user = zen_store.get_user()
                 server_info = zen_store.get_store_info()
                 properties.update(
                     {
@@ -551,7 +557,6 @@ def track(
             Result of the function.
         """
         with event_handler(event) as handler:
-
             try:
                 if len(args) and isinstance(args[0], AnalyticsTrackerMixin):
                     handler.tracker = args[0]

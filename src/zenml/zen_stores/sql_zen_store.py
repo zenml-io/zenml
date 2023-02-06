@@ -78,6 +78,7 @@ from zenml.models import (
     FlavorFilterModel,
     FlavorRequestModel,
     FlavorResponseModel,
+    FlavorUpdateModel,
     PipelineFilterModel,
     PipelineRequestModel,
     PipelineResponseModel,
@@ -90,6 +91,8 @@ from zenml.models import (
     RoleRequestModel,
     RoleResponseModel,
     RoleUpdateModel,
+    RunMetadataRequestModel,
+    RunMetadataResponseModel,
     ScheduleRequestModel,
     ScheduleResponseModel,
     ScheduleUpdateModel,
@@ -122,9 +125,12 @@ from zenml.models import (
     WorkspaceUpdateModel,
 )
 from zenml.models.base_models import BaseResponseModel
+from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.models.page_model import Page
+from zenml.models.run_metadata_models import RunMetadataFilterModel
 from zenml.models.schedule_model import ScheduleFilterModel
 from zenml.models.server_models import ServerDatabaseType, ServerModel
+from zenml.stack.flavor_registry import FlavorRegistry
 from zenml.utils import uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.enum_utils import StrEnum
@@ -152,8 +158,10 @@ from zenml.zen_stores.schemas import (
     PipelineSchema,
     RolePermissionSchema,
     RoleSchema,
+    RunMetadataSchema,
     ScheduleSchema,
     StackComponentSchema,
+    StackCompositionSchema,
     StackSchema,
     StepRunInputArtifactSchema,
     StepRunOutputArtifactSchema,
@@ -643,6 +651,10 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The Domain Model representation of the DB resource
+
+        Raises:
+            ValueError: if the filtered page number is out of bounds.
+            RuntimeError: if the schema does not have a `to_model` method.
         """
         # Filtering
         filters = filter_model.generate_filter(table=table)
@@ -850,6 +862,18 @@ class SqlZenStore(BaseZenStore):
                 self.alembic.stamp(ZENML_ALEMBIC_START_REVISION)
                 self.alembic.upgrade()
 
+        # If an alembic migration took place, all non-custom flavors are purged
+        #  and the FlavorRegistry recreates all in-built and integration
+        #  flavors in the db.
+        revisions_afterwards = self.alembic.current_revisions()
+
+        if revisions != revisions_afterwards:
+            self._sync_flavors()
+
+    def _sync_flavors(self) -> None:
+        """Purge all in-built and integration flavors from the DB and sync."""
+        FlavorRegistry().register_flavors(store=self)
+
     def get_store_info(self) -> ServerModel:
         """Get information about the store.
 
@@ -965,6 +989,13 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             query = select(StackSchema)
+            if stack_filter_model.component_id:
+                query = query.where(
+                    StackCompositionSchema.stack_id == StackSchema.id
+                ).where(
+                    StackCompositionSchema.component_id
+                    == stack_filter_model.component_id
+                )
             return self.filter_and_paginate(
                 session=session,
                 query=query,
@@ -1471,7 +1502,6 @@ class SqlZenStore(BaseZenStore):
     # Stack component flavors
     # -----------------------
 
-    @track(AnalyticsEvent.CREATED_FLAVOR)
     def create_flavor(self, flavor: FlavorRequestModel) -> FlavorResponseModel:
         """Creates a new stack component flavor.
 
@@ -1484,9 +1514,10 @@ class SqlZenStore(BaseZenStore):
         Raises:
             EntityExistsError: If a flavor with the same name and type
                 is already owned by this user in this workspace.
+            ValueError: In case the config_schema string exceeds the max length.
         """
         with Session(self.engine) as session:
-            # Check if component with the same domain key (name, type, workspace,
+            # Check if flavor with the same domain key (name, type, workspace,
             # owner) already exists
             existing_flavor = session.exec(
                 select(FlavorSchema)
@@ -1505,19 +1536,61 @@ class SqlZenStore(BaseZenStore):
                     f"'{flavor.user}' user."
                 )
 
-            new_flavor = FlavorSchema(
-                name=flavor.name,
-                type=flavor.type,
-                source=flavor.source,
-                config_schema=flavor.config_schema,
-                integration=flavor.integration,
-                workspace_id=flavor.workspace,
-                user_id=flavor.user,
-            )
-            session.add(new_flavor)
+            config_schema = json.dumps(flavor.config_schema)
+
+            if len(config_schema) > TEXT_FIELD_MAX_LENGTH:
+                raise ValueError(
+                    "Json representation of configuration schema"
+                    "exceeds max length."
+                )
+
+            else:
+                new_flavor = FlavorSchema(
+                    name=flavor.name,
+                    type=flavor.type,
+                    source=flavor.source,
+                    config_schema=config_schema,
+                    integration=flavor.integration,
+                    workspace_id=flavor.workspace,
+                    user_id=flavor.user,
+                    logo_url=flavor.logo_url,
+                    docs_url=flavor.docs_url,
+                    is_custom=flavor.is_custom,
+                )
+                session.add(new_flavor)
+                session.commit()
+
+                return new_flavor.to_model()
+
+    def update_flavor(
+        self, flavor_id: UUID, flavor_update: FlavorUpdateModel
+    ) -> FlavorResponseModel:
+        """Updates an existing user.
+
+        Args:
+            flavor_id: The id of the flavor to update.
+            flavor_update: The update to be applied to the flavor.
+
+        Returns:
+            The updated flavor.
+
+        Raises:
+            KeyError: If no flavor with the given id exists.
+        """
+        with Session(self.engine) as session:
+            existing_flavor = session.exec(
+                select(FlavorSchema).where(FlavorSchema.id == flavor_id)
+            ).first()
+
+            if not existing_flavor:
+                raise KeyError(f"Flavor with ID {flavor_id} not found.")
+            existing_flavor.update(flavor_update=flavor_update)
+            session.add(existing_flavor)
             session.commit()
 
-            return new_flavor.to_model()
+            # Refresh the Model that was just created
+            session.refresh(existing_flavor)
+            return existing_flavor.to_model()
 
     def get_flavor(self, flavor_id: UUID) -> FlavorResponseModel:
         """Get a flavor by ID.
@@ -1546,8 +1619,7 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             flavor_filter_model: All filter parameters including pagination
-            params
-
+                params
 
         Returns:
             List of all the stack component flavors matching the given criteria.
@@ -1586,7 +1658,7 @@ class SqlZenStore(BaseZenStore):
                     raise IllegalOperationError(
                         f"Stack Component `{flavor_in_db.name}` of type "
                         f"`{flavor_in_db.type} cannot be "
-                        f"deleted as it is used by"
+                        f"deleted as it is used by "
                         f"{len(components_of_flavor)} "
                         f"components. Before deleting this "
                         f"flavor, make sure to delete all "
@@ -1596,8 +1668,6 @@ class SqlZenStore(BaseZenStore):
                     session.delete(flavor_in_db)
             except NoResultFound as error:
                 raise KeyError from error
-
-            session.commit()
 
     # -----
     # Users
@@ -2126,7 +2196,7 @@ class SqlZenStore(BaseZenStore):
             The created role assignment.
 
         Raises:
-            ValueError: If neither a user nor a team is specified.
+            EntityExistsError: if the role assignment already exists.
         """
         with Session(self.engine) as session:
             role = self._get_role_schema(
@@ -2237,6 +2307,9 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The newly created role assignment.
+
+        Raises:
+            EntityExistsError: If the role assignment already exists.
         """
         with Session(self.engine) as session:
             role = self._get_role_schema(
@@ -2313,6 +2386,9 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             team_role_assignment_id: The ID of the specific role assignment
+
+        Raises:
+            KeyError: If the role assignment does not exist.
         """
         with Session(self.engine) as session:
             team_role = session.exec(
@@ -2880,7 +2956,7 @@ class SqlZenStore(BaseZenStore):
 
     def get_or_create_run(
         self, pipeline_run: PipelineRunRequestModel
-    ) -> PipelineRunResponseModel:
+    ) -> Tuple[PipelineRunResponseModel, bool]:
         """Gets or creates a pipeline run.
 
         If a run with the same ID or name already exists, it is returned.
@@ -2890,20 +2966,21 @@ class SqlZenStore(BaseZenStore):
             pipeline_run: The pipeline run to get or create.
 
         Returns:
-            The pipeline run.
+            The pipeline run, and a boolean indicating whether the run was
+            created or not.
         """
         # We want to have the 'create' statement in the try block since running
         # it first will reduce concurrency issues.
         try:
-            return self.create_run(pipeline_run)
+            return self.create_run(pipeline_run), True
         except EntityExistsError:
             # Currently, an `EntityExistsError` is raised if either the run ID
             # or the run name already exists. Therefore, we need to have another
             # try block since getting the run by ID might still fail.
             try:
-                return self.get_run(pipeline_run.id)
+                return self.get_run(pipeline_run.id), False
             except KeyError:
-                return self.get_run(pipeline_run.name)
+                return self.get_run(pipeline_run.name), False
 
     def list_runs(
         self, runs_filter_model: PipelineRunFilterModel
@@ -3499,6 +3576,49 @@ class SqlZenStore(BaseZenStore):
                 )
             session.delete(artifact)
             session.commit()
+
+    # ------------
+    # Run Metadata
+    # ------------
+
+    def create_run_metadata(
+        self, run_metadata: RunMetadataRequestModel
+    ) -> RunMetadataResponseModel:
+        """Creates run metadata.
+
+        Args:
+            run_metadata: The run metadata to create.
+
+        Returns:
+            The created run metadata.
+        """
+        with Session(self.engine) as session:
+            run_metadata_schema = RunMetadataSchema.from_request(run_metadata)
+            session.add(run_metadata_schema)
+            session.commit()
+            return run_metadata_schema.to_model()
+
+    def list_run_metadata(
+        self,
+        run_metadata_filter_model: RunMetadataFilterModel,
+    ) -> Page[RunMetadataResponseModel]:
+        """List run metadata.
+
+        Args:
+            run_metadata_filter_model: All filter parameters including
+                pagination params.
+
+        Returns:
+            The run metadata.
+        """
+        with Session(self.engine) as session:
+            query = select(RunMetadataSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=RunMetadataSchema,
+                filter_model=run_metadata_filter_model,
+            )
 
     # =======================
     # Internal helper methods

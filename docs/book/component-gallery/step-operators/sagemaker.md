@@ -12,7 +12,7 @@ You should use the SageMaker step operator if:
 * one or more steps of your pipeline require computing resources 
 (CPU, GPU, memory) that are not provided by your orchestrator.
 * you have access to SageMaker. If you're using a different cloud provider, take 
-a look at the [Vertex](./gcloud-vertexai.md) or [AzureML](./azureml.md) 
+a look at the [Vertex](./vertex.md) or [AzureML](./azureml.md) 
 step operators.
 
 ## How to deploy it
@@ -32,8 +32,8 @@ To use the SageMaker step operator, we need:
 * [Docker](https://www.docker.com) installed and running.
 * An IAM role with the correct permissions. See the [deployment section](#how-to-deploy-it)
 for detailed instructions.
-* An [AWS container registry](../container-registries/amazon-ecr.md) as part of 
-our stack. Take a look [here](../container-registries/amazon-ecr.md#how-to-deploy-it) 
+* An [AWS container registry](../container-registries/aws.md) as part of 
+our stack. Take a look [here](../container-registries/aws.md#how-to-deploy-it) 
 for a guide on how to set that up.
 * A [remote artifact store](../artifact-stores/artifact-stores.md) as part of 
 your stack. This is needed so that both your orchestration environment 

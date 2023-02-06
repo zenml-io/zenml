@@ -78,6 +78,15 @@ You can also pass in a directory path manually using the
 
 ```bash
 zenml init --path /path/to/dir
+```
+
+If you wish to use one of [the available ZenML project templates](https://github.com/zenml-io/zenml-project-templates)
+to generate a ready-to-use project scaffold in your repository, you can do so by
+passing the ``--template`` option:
+
+```bash
+zenml init --template
+```
 
 If you wish to delete all data relating to your workspace from the
 directory, use the ``zenml clean`` command. This will:

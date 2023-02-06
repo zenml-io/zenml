@@ -138,7 +138,7 @@ zenml experiment-tracker register mlflow_tracker --flavor=mlflow
 zenml stack register mlflow_stack \
     -a default \
     -o default \
-    -e mlflow_tracker
+    -e mlflow_tracker \
     --set
 ```
 

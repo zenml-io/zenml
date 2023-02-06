@@ -28,6 +28,7 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
+    from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
     from zenml.zen_stores.schemas.step_run_schemas import (
         StepRunInputArtifactSchema,
         StepRunOutputArtifactSchema,
@@ -73,6 +74,10 @@ class ArtifactSchema(NamedSchema, table=True):
     materializer: str
     data_type: str
 
+    run_metadata: List["RunMetadataSchema"] = Relationship(
+        back_populates="artifact",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
     input_to_step_runs: List["StepRunInputArtifactSchema"] = Relationship(
         back_populates="artifact",
         sa_relationship_kwargs={"cascade": "delete"},
@@ -117,6 +122,10 @@ class ArtifactSchema(NamedSchema, table=True):
         Returns:
             The created `ArtifactModel`.
         """
+        metadata = {
+            metadata_schema.key: metadata_schema.to_model()
+            for metadata_schema in self.run_metadata
+        }
         return ArtifactResponseModel(
             id=self.id,
             name=self.name,
@@ -130,4 +139,5 @@ class ArtifactSchema(NamedSchema, table=True):
             created=self.created,
             updated=self.updated,
             producer_step_run_id=producer_step_run_id,
+            metadata=metadata,
         )
