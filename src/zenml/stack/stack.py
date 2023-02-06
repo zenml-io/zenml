@@ -814,11 +814,9 @@ class Stack:
         pipeline_images = {}
         step_images = defaultdict(dict)
         is_local = self.container_registry is None
+        all_images = {}
 
         for build in required_builds:
-            # TODO: this won't work if building multiple images with the same
-            # tag locally
-
             if build.step_name:
                 if build.key in step_images[build.step_name]:
                     logger.warning(
@@ -839,6 +837,16 @@ class Stack:
                 default_tag=build.default_tag,
                 entrypoint=build.entrypoint,
             )
+            if image_name_or_digest in all_images:
+                logger.warning(
+                    "The image `%s` was built twice with different Docker "
+                    "settings. Only the latest version will be used which "
+                    "might lead to failure. To fix this warning, assign "
+                    "different repository or tag names for all images of your "
+                    "in your Docker settings.",
+                    image_name_or_digest,
+                )
+            all_images[image_name_or_digest] = build.settings
 
             if build.step_name:
                 step_images[build.step_name][build.key] = image_name_or_digest
