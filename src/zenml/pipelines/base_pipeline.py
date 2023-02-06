@@ -1012,6 +1012,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
             name=self.name, sort_by="desc:created", size=1
         )
         if all_pipelines.total:
+            pipeline = all_pipelines.items[0]
+            if pipeline.version == "UNVERSIONED":
+                return None
             return int(all_pipelines.items[0].version)
         else:
             return None

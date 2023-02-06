@@ -556,6 +556,20 @@ def test_latest_version_fetching(
         name=pipeline_instance.name, sort_by="desc:created", size=1
     )
 
+    unversioned_pipeline_model = create_pipeline_model(version="UNVERSIONED")
+    mock_list_pipelines = mocker.patch(
+        "zenml.client.Client.list_pipelines",
+        return_value=Page(
+            page=1,
+            size=1,
+            total_pages=1,
+            total=1,
+            items=[unversioned_pipeline_model],
+        ),
+    )
+
+    assert pipeline_instance._get_latest_version() is None
+
     pipeline_model = create_pipeline_model(version="3")
     mock_list_pipelines = mocker.patch(
         "zenml.client.Client.list_pipelines",
