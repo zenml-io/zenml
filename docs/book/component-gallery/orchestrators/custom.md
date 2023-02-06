@@ -227,10 +227,6 @@ and get the complete docstrings, please check [the source code on GitHub](https:
 If you need to customize what happens when a step gets executed inside the 
 entrypoint, you can subclass from the `StepEntrypointConfiguration` class:
 
-If you want to provide a custom run name (this **has** to be the same for 
-all steps that are executed as part of the same pipeline run), you can 
-overwrite the `get_run_name(...)` method.
-
 If you need to pass additional arguments to the entrypoint, there are
 two methods that you need to implement:
 
