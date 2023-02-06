@@ -90,11 +90,6 @@ class BuildOutputRequestModel(
 ):
     """Request model for build outputs."""
 
-    id: UUID
-    stack: UUID
+    id: Optional[UUID] = None
+    stack: Optional[UUID] = None
     pipeline: Optional[UUID] = None
-
-
-# ------ #
-# UPDATE #
-# ------ #

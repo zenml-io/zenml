@@ -60,6 +60,9 @@ from zenml.exceptions import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import (
+    BuildOutputFilterModel,
+    BuildOutputRequestModel,
+    BuildOutputResponseModel,
     ComponentFilterModel,
     ComponentRequestModel,
     ComponentResponseModel,
@@ -119,6 +122,7 @@ from zenml.utils.analytics_utils import AnalyticsEvent, event_handler, track
 from zenml.utils.filesync_model import FileSyncModel
 
 if TYPE_CHECKING:
+    from zenml.config.build_configuration import BuildOutput
     from zenml.metadata.metadata_types import MetadataType
     from zenml.stack import Stack, StackComponentConfig
     from zenml.zen_stores.base_zen_store import BaseZenStore
@@ -2398,7 +2402,7 @@ class Client(metaclass=ClientMetaClass):
             version_hash: The version hash of the pipeline to filter by.
             docstring: The docstring of the pipeline to filter by.
             workspace_id: The id of the workspace to filter by.
-            user_id: The  id of the user to filter by.
+            user_id: The id of the user to filter by.
 
         Returns:
             A page with Pipeline fitting the filter description
@@ -2488,6 +2492,145 @@ class Client(metaclass=ClientMetaClass):
         """
         pipeline = self.get_pipeline(id=id, name=name, version=version)
         self.zen_store.delete_pipeline(pipeline_id=pipeline.id)
+
+    # ----------
+    # - BUILDS -
+    # ----------
+
+    def create_build(
+        self,
+        configuration: "BuildOutput",
+        stack_id: Optional[UUID] = None,
+        pipeline_id: Optional[UUID] = None,
+    ) -> BuildOutputResponseModel:
+        """Creates a new build.
+
+        Args:
+            configuration: The build configuration.
+            stack_id: ID of the stack for which this build should be created.
+            pipeline_id: ID of the pipeline for which this build should be
+                created.
+
+        Returns:
+            The created build.
+        """
+        # Verify the stack/pipeline exist
+        if stack_id:
+            self.get_stack(stack_id)
+        if pipeline_id:
+            self.get_pipeline(pipeline_id)
+
+        build_request = BuildOutputRequestModel(
+            user=self.active_user.id,
+            workspace=self.active_workspace.id,
+            stack=stack_id,
+            pipeline=pipeline_id,
+            configuration=configuration,
+        )
+        return self.zen_store.create_build(build=build_request)
+
+    def list_builds(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        workspace_id: Optional[Union[str, UUID]] = None,
+        user_id: Optional[Union[str, UUID]] = None,
+        pipeline_id: Optional[Union[str, UUID]] = None,
+        stack_id: Optional[Union[str, UUID]] = None,
+    ) -> Page[BuildOutputResponseModel]:
+        """List all builds.
+
+        Args:
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            id: Use the id of build to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            workspace_id: The id of the workspace to filter by.
+            user_id: The  id of the user to filter by.
+            pipeline_id: The id of the pipeline to filter by.
+            stack_id: The id of the stack to filter by.
+
+        Returns:
+            A page with builds fitting the filter description
+        """
+        build_filter_model = BuildOutputFilterModel(
+            sort_by=sort_by,
+            page=page,
+            size=size,
+            logical_operator=logical_operator,
+            id=id,
+            created=created,
+            updated=updated,
+            workspace_id=workspace_id,
+            user_id=user_id,
+            pipeline_id=pipeline_id,
+            stack_id=stack_id,
+        )
+        build_filter_model.set_scope_workspace(self.active_workspace.id)
+        return self.zen_store.list_builds(
+            build_filter_model=build_filter_model
+        )
+
+    def get_build(self, id_or_prefix: str) -> BuildOutputResponseModel:
+        """Get a build by id or prefix.
+
+        Args:
+            id_or_prefix: The id or id prefix of the build.
+
+        Returns:
+            The build.
+
+        Raises:
+            KeyError: If no build was found for the given id or prefix.
+            ZenKeyError: If multiple builds were found that match the given
+                id or prefix.
+        """
+        from zenml.utils.uuid_utils import is_valid_uuid
+
+        # First interpret as full UUID
+        if is_valid_uuid(id_or_prefix):
+            return self.zen_store.get_build(UUID(id_or_prefix))
+
+        entity = self.list_builds(
+            id=f"startswith:{id_or_prefix}",
+        )
+
+        # If only a single entity is found, return it.
+        if entity.total == 1:
+            return entity.items[0]
+
+        # If no entity is found, raise an error.
+        if entity.total == 0:
+            raise KeyError(
+                f"No builds have been found that have either an id or prefix "
+                f"that matches the provided string '{id_or_prefix}'."
+            )
+
+        raise ZenKeyError(
+            f"{entity.total} builds have been found that have "
+            f"an ID that matches the provided "
+            f"string '{id_or_prefix}':\n"
+            f"{[entity.items]}.\n"
+            f"Please use the id to uniquely identify "
+            f"only one of the builds."
+        )
+
+    def delete_build(self, id_or_prefix: str) -> None:
+        """Delete a build.
+
+        Args:
+            id_or_prefix: The id or id prefix of the build.
+        """
+        build = self.get_build(id_or_prefix=id_or_prefix)
+        self.zen_store.delete_build(build_id=build.id)
 
     # -------------
     # - SCHEDULES -
