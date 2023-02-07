@@ -583,7 +583,7 @@ def status() -> None:
 @cli.command(
     "connect",
     help=(
-        """Configure your client to connect to a remote ZenML server.
+        """Connect to a remote ZenML server.
 
     Examples:
 
