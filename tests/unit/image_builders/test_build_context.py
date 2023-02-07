@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import os
+
 from zenml.image_builders import BuildContext
 
 
@@ -75,5 +77,5 @@ def test_build_context_includes_and_excludes(tmp_path):
     assert build_context._get_files() == {
         ".dockerignore",
         ".zen",
-        ".zen/config.yaml",
+        os.path.join(".zen", "config.yaml"),
     }
