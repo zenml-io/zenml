@@ -2,7 +2,35 @@
 description: How to create ML pipelines in ZenML
 ---
 
-# Steps & Pipelines
+# Start your MLOps journey with ZenML
+
+## Set up your template
+
+Hey there! Welcome the world of MLOps, presented through the window of ZenML!
+In this guide, you will learn about how to use the ZenML open-source MLOps framework
+to guide your machine learning models to production. Let's begin with setting up.
+Make sure you have Python 3.6 or above installed, and in a fresh
+[virtualenv](https://virtualenv.pypa.io/en/latest/) do:
+
+```shell
+# Install ZenML with the right extras
+pip install "zenml[server,templates]"
+
+# Create a new directory
+mkdir mlops_starter
+cd mlops_starter
+
+# Initialize a ZenML repository
+zenml example pull starter_guide
+cd starter_guide
+```
+
+Pro tip: Open up the `starter_guide` in your favorite IDE to inspect the code as you
+go through this guide.
+
+Now, you are ready to begin. Let's dive into your local code!
+
+## Steps
 
 ZenML helps you standardize your ML workflows as ML **Pipelines** consisting of
 decoupled, modular **Steps**. This enables you to write portable code that can be
@@ -15,31 +43,22 @@ series on practical MLOps, where we introduce ML pipelines in more detail in
 [ZenBytes lesson 1.1](https://github.com/zenml-io/zenbytes/blob/main/1-1_Pipelines.ipynb).
 {% endhint %}
 
-## Step
-
 Steps are the atomic components of a ZenML pipeline. Each step is defined by its
 inputs, the logic it applies and its outputs. Here is a very basic example of
 such a step, which uses a utility function to load the Digits dataset:
 
 ```python
 import numpy as np
-from sklearn.datasets import load_digits
-from sklearn.model_selection import train_test_split
+from sklearn.datasets import load_wine
 
 from zenml.steps import Output, step
 
 
 @step
-def digits_data_loader() -> Output(
-    X_train=np.ndarray, X_test=np.ndarray, y_train=np.ndarray, y_test=np.ndarray
-):
-    """Loads the digits dataset as a tuple of flattened numpy arrays."""
-    digits = load_digits()
-    data = digits.images.reshape((len(digits.images), -1))
-    X_train, X_test, y_train, y_test = train_test_split(
-        data, digits.target, test_size=0.2, shuffle=False
-    )
-    return X_train, X_test, y_train, y_test
+def data_loader() -> pd.DataFrame:
+    """Loads the wine dataset."""
+    wine_dataset = load_wine()
+    return wine_dataset
 ```
 
 As this step has multiple outputs, we need to use the
