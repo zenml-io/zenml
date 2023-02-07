@@ -42,10 +42,13 @@ if TYPE_CHECKING:
     from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
     from sqlmodel import SQLModel
 
-    from zenml.models.build_output_models import BuildOutputResponseModel
-    from zenml.models.pipeline_models import PipelineResponseModel
-    from zenml.models.run_metadata_models import RunMetadataResponseModel
-    from zenml.models.stack_models import StackResponseModel
+    from zenml.models import (
+        PipelineBuildResponseModel,
+        PipelineDeploymentResponseModel,
+        PipelineResponseModel,
+        RunMetadataResponseModel,
+        StackResponseModel,
+    )
 
 
 def get_git_sha(clean: bool = True) -> Optional[str]:
@@ -153,8 +156,12 @@ class PipelineRunResponseModel(
         title="Metadata associated with this pipeline run.",
     )
 
-    build: Optional["BuildOutputResponseModel"] = Field(
-        title="The build output that was used for this run."
+    build: Optional["PipelineBuildResponseModel"] = Field(
+        title="The pipeline build that was used for this run."
+    )
+
+    deployment: Optional["PipelineDeploymentResponseModel"] = Field(
+        title="The deployment that was used for this run."
     )
 
 
@@ -197,7 +204,10 @@ class PipelineRunFilterModel(WorkspaceScopedFilterModel):
         default=None, description="Schedule that triggered the Pipeline Run"
     )
     build_id: Union[UUID, str] = Field(
-        default=None, description="Build output used for the Pipeline Run"
+        default=None, description="Build used for the Pipeline Run"
+    )
+    deployment_id: Union[UUID, str] = Field(
+        default=None, description="Deployment used for the Pipeline Run"
     )
 
     status: str = Field(
@@ -261,6 +271,7 @@ class PipelineRunRequestModel(
     stack: Optional[UUID]  # Might become None if the stack is deleted.
     pipeline: Optional[UUID]  # Unlisted runs have this as None.
     build: Optional[UUID]
+    deployment: Optional[UUID]
 
 
 # ------ #

@@ -28,7 +28,10 @@ from zenml.models import (
     PipelineRunUpdateModel,
 )
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
-from zenml.zen_stores.schemas.build_output_schemas import BuildOutputSchema
+from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
+from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
+    PipelineDeploymentSchema,
+)
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
 from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
@@ -68,13 +71,27 @@ class PipelineRunSchema(NamedSchema, table=True):
 
     build_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
-        target=BuildOutputSchema.__tablename__,
+        target=PipelineBuildSchema.__tablename__,
         source_column="build_id",
         target_column="id",
         ondelete="SET NULL",
         nullable=True,
     )
-    build: Optional["BuildOutputSchema"] = Relationship(back_populates="runs")
+    build: Optional["PipelineBuildSchema"] = Relationship(
+        back_populates="runs"
+    )
+
+    deployment_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=PipelineDeploymentSchema.__tablename__,
+        source_column="deployment_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+    deployment: "PipelineDeploymentSchema" = Relationship(
+        back_populates="runs"
+    )
 
     schedule_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -159,6 +176,7 @@ class PipelineRunSchema(NamedSchema, table=True):
             user_id=request.user,
             pipeline_id=request.pipeline,
             build_id=request.build,
+            deployment_id=request.deployment,
             schedule_id=request.schedule_id,
             enable_cache=request.enable_cache,
             start_time=request.start_time,
@@ -239,6 +257,9 @@ class PipelineRunSchema(NamedSchema, table=True):
                     self.pipeline.to_model(False) if self.pipeline else None
                 ),
                 build=self.build.to_model() if self.build else None,
+                deployment=self.deployment.to_model()
+                if self.deployment
+                else None,
                 schedule_id=self.schedule_id,
                 pipeline_configuration=json.loads(self.pipeline_configuration),
                 num_steps=self.num_steps,

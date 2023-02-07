@@ -67,7 +67,7 @@ from zenml.stack import StackValidator
 from zenml.utils import io_utils, settings_utils
 
 if TYPE_CHECKING:
-    from zenml.config.build_configuration import BuildOutput
+    from zenml.config.build_configuration import PipelineBuild
     from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.stack import Stack
     from zenml.steps import ResourceSettings
@@ -386,7 +386,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
         self,
         deployment: "PipelineDeployment",
         stack: "Stack",
-        builds: Optional["BuildOutput"],
+        build: Optional["PipelineBuild"],
     ) -> Any:
         """Creates a kfp yaml file.
 
@@ -420,7 +420,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
             RuntimeError: If trying to run a pipeline in a notebook
                 environment.
         """
-        assert builds
+        assert build
         # First check whether the code running in a notebook
         if Environment.in_notebook():
             raise RuntimeError(
@@ -452,7 +452,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
             step_name_to_container_op: Dict[str, dsl.ContainerOp] = {}
 
             for step_name, step in deployment.steps.items():
-                image = builds.get_image(
+                image = build.get_image(
                     key=ORCHESTRATOR_DOCKER_IMAGE_KEY, step=step_name
                 )
 
@@ -464,7 +464,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                 # docker container when the step is called.
                 arguments = (
                     StepEntrypointConfiguration.get_entrypoint_arguments(
-                        step_name=step_name,
+                        step_name=step_name, deployment_id=deployment.id
                     )
                 )
 

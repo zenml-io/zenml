@@ -16,10 +16,11 @@
 import argparse
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, NoReturn, Set
+from uuid import UUID
 
+from zenml.client import Client
 from zenml.config.pipeline_deployment import PipelineDeployment
-from zenml.constants import DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE
-from zenml.utils import source_utils, yaml_utils
+from zenml.utils import source_utils, uuid_utils
 
 DEFAULT_ENTRYPOINT_COMMAND = [
     "python",
@@ -28,6 +29,7 @@ DEFAULT_ENTRYPOINT_COMMAND = [
 ]
 
 ENTRYPOINT_CONFIG_SOURCE_OPTION = "entrypoint_config_source"
+DEPLOYMENT_ID_OPTION = "deployment_id"
 
 
 class BaseEntrypointConfiguration(ABC):
@@ -77,6 +79,8 @@ class BaseEntrypointConfiguration(ABC):
             # Importable source pointing to the entrypoint configuration class
             # that should be used inside the entrypoint.
             ENTRYPOINT_CONFIG_SOURCE_OPTION,
+            # ID of the pipeline deployment to use in this entrypoint
+            DEPLOYMENT_ID_OPTION,
         }
 
     @classmethod
@@ -97,10 +101,24 @@ class BaseEntrypointConfiguration(ABC):
 
         Returns:
             A list of strings with the arguments.
+
+        Raises:
+            ValueError: If no valid deployment ID is passed.
         """
+        deployment_id = kwargs.get(DEPLOYMENT_ID_OPTION)
+        if not uuid_utils.is_valid_uuid(deployment_id):
+            raise ValueError(
+                f"Missing or invalid deployment ID as argument for entrypoint "
+                f"configuration. Please make sure to pass a valid UUID to "
+                f"`{cls.__name__}.{cls.get_entrypoint_arguments.__name__}"
+                f"({DEPLOYMENT_ID_OPTION}=<UUID>)`."
+            )
+
         arguments = [
             f"--{ENTRYPOINT_CONFIG_SOURCE_OPTION}",
             source_utils.resolve_class(cls),
+            f"--{DEPLOYMENT_ID_OPTION}",
+            str(deployment_id),
         ]
 
         return arguments
@@ -153,8 +171,13 @@ class BaseEntrypointConfiguration(ABC):
         Returns:
             The deployment config.
         """
-        config_dict = yaml_utils.read_yaml(DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE)
-        return PipelineDeployment.parse_obj(config_dict)
+        deployment_id = UUID(self.entrypoint_args[DEPLOYMENT_ID_OPTION])
+        deployment = (
+            Client()
+            .zen_store.get_deployment(deployment_id=deployment_id)
+            .configuration
+        )
+        return deployment.copy(update={"id": deployment_id})
 
     @abstractmethod
     def run(self) -> None:

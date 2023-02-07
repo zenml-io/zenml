@@ -25,7 +25,6 @@ from zenml.config import DockerSettings
 from zenml.config.docker_settings import PythonEnvironmentExportMethod
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
-    DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE,
     ENV_ZENML_CONFIG_PATH,
     ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
 )
@@ -34,7 +33,6 @@ from zenml.logger import get_logger
 from zenml.utils import docker_utils, io_utils, source_utils
 
 if TYPE_CHECKING:
-    from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.container_registries import BaseContainerRegistry
     from zenml.image_builders import BuildContext
     from zenml.stack import Stack
@@ -58,9 +56,8 @@ class PipelineDockerImageBuilder:
 
     def build_docker_image(
         self,
-        deployment: "PipelineDeployment",
         docker_settings: "DockerSettings",
-        default_tag: str,
+        tag: str,
         stack: "Stack",
         entrypoint: Optional[str] = None,
     ) -> str:
@@ -70,10 +67,8 @@ class PipelineDockerImageBuilder:
         reference the pushed image in order to pull or run it.
 
         Args:
-            deployment: The pipeline deployment to include in the image.
             docker_settings: The settings for the image build.
-            default_tag: The default tag to use if not specified in the Docker
-                settings.
+            tag: The tag to use for the image.
             stack: The stack on which the pipeline will be deployed.
             entrypoint: Entrypoint to use for the final image. If left empty,
                 no entrypoint will be included in the image.
@@ -100,7 +95,7 @@ class PipelineDockerImageBuilder:
         build_context_class = image_builder.build_context_class
         target_image_name = self._get_target_image_name(
             docker_settings=docker_settings,
-            default_tag=default_tag,
+            tag=tag,
             container_registry=container_registry,
         )
 
@@ -141,7 +136,7 @@ class PipelineDockerImageBuilder:
                 # we build now will be used as the parent for the next build.
                 user_image_name = (
                     f"{docker_settings.target_repository}:"
-                    f"{docker_settings.tag or default_tag}-intermediate-build"
+                    f"{tag}-intermediate-build"
                 )
                 if push and container_registry:
                     user_image_name = (
@@ -230,10 +225,6 @@ class PipelineDockerImageBuilder:
 
             build_options = {"pull": pull_parent_image, "rm": False}
 
-            build_context.add_file(
-                source=deployment.yaml(),
-                destination=DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE,
-            )
             dockerfile = self._generate_zenml_pipeline_dockerfile(
                 parent_image=parent_image,
                 docker_settings=docker_settings,
@@ -268,7 +259,7 @@ class PipelineDockerImageBuilder:
     @staticmethod
     def _get_target_image_name(
         docker_settings: "DockerSettings",
-        default_tag: str,
+        tag: str,
         container_registry: Optional["BaseContainerRegistry"] = None,
     ) -> str:
         """Returns the target image name.
@@ -278,15 +269,13 @@ class PipelineDockerImageBuilder:
 
         Args:
             docker_settings: The settings for the image build.
-            default_tag: The default tag to use if not specified in the Docker
-                settings.
+            tag: The tag to use for the image.
             container_registry: Optional container registry to which this
                 image will be pushed.
 
         Returns:
             The docker image name.
         """
-        tag = docker_settings.tag or default_tag
         target_image_name = f"{docker_settings.target_repository}:{tag}"
         if container_registry:
             target_image_name = (

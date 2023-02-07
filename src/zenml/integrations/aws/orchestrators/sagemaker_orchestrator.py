@@ -37,7 +37,7 @@ from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 
 if TYPE_CHECKING:
-    from zenml.config.build_configuration import BuildOutput
+    from zenml.config.build_configuration import PipelineBuild
     from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.stack import Stack
 
@@ -130,7 +130,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         self,
         deployment: "PipelineDeployment",
         stack: "Stack",
-        builds: Optional["BuildOutput"],
+        build: Optional["PipelineBuild"],
     ) -> None:
         """Prepares or runs a pipeline on Sagemaker.
 
@@ -138,7 +138,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             deployment: The deployment to prepare or run.
             stack: The stack to run on.
         """
-        assert builds
+        assert build
         if deployment.schedule:
             logger.warning(
                 "The Sagemaker Orchestrator currently does not support the "
@@ -154,12 +154,12 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
         sagemaker_steps = []
         for step_name, step in deployment.steps.items():
-            image = builds.get_image(
+            image = build.get_image(
                 key=ORCHESTRATOR_DOCKER_IMAGE_KEY, step=step_name
             )
             command = StepEntrypointConfiguration.get_entrypoint_command()
             arguments = StepEntrypointConfiguration.get_entrypoint_arguments(
-                step_name=step_name
+                step_name=step_name, deployment_id=deployment.id
             )
             entrypoint = command + arguments
 

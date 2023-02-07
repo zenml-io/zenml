@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""SQLModel implementation of build output tables."""
+"""SQLModel implementation of pipeline build tables."""
 
 
 from typing import TYPE_CHECKING, List, Optional
@@ -20,8 +20,8 @@ from uuid import UUID
 from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
-from zenml.config.build_configuration import BuildOutput
-from zenml.models import BuildOutputRequestModel, BuildOutputResponseModel
+from zenml.config.build_configuration import PipelineBuild
+from zenml.models import PipelineBuildRequestModel, PipelineBuildResponseModel
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
@@ -30,13 +30,16 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
-    from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
+    from zenml.zen_stores.schemas import (
+        PipelineDeploymentSchema,
+        PipelineRunSchema,
+    )
 
 
-class BuildOutputSchema(BaseSchema, table=True):
-    """SQL Model for pipeline build outputs."""
+class PipelineBuildSchema(BaseSchema, table=True):
+    """SQL Model for pipeline builds."""
 
-    __tablename__ = "build_output"
+    __tablename__ = "pipeline_build"
 
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -81,25 +84,27 @@ class BuildOutputSchema(BaseSchema, table=True):
     )
 
     runs: List["PipelineRunSchema"] = Relationship(back_populates="build")
+    deployments: List["PipelineDeploymentSchema"] = Relationship(
+        back_populates="build",
+    )
 
     configuration: str = Field(sa_column=Column(TEXT, nullable=False))
 
     @classmethod
     def from_request(
-        cls, request: BuildOutputRequestModel
-    ) -> "BuildOutputSchema":
-        """Convert a `BuildOutputRequestModel` to a `BuildOutputSchema`.
+        cls, request: PipelineBuildRequestModel
+    ) -> "PipelineBuildSchema":
+        """Convert a `PipelineBuildRequestModel` to a `PipelineBuildSchema`.
 
         Args:
             request: The request to convert.
 
         Returns:
-            The created `BuildOutputSchema`.
+            The created `PipelineBuildSchema`.
         """
         configuration = request.configuration.json()
 
         return cls(
-            id=request.id,
             stack_id=request.stack,
             workspace_id=request.workspace,
             user_id=request.user,
@@ -109,15 +114,15 @@ class BuildOutputSchema(BaseSchema, table=True):
 
     def to_model(
         self,
-    ) -> BuildOutputResponseModel:
-        """Convert a `BuildOutputSchema` to a `BuildOutputResponseModel`.
+    ) -> PipelineBuildResponseModel:
+        """Convert a `PipelineBuildSchema` to a `PipelineBuildResponseModel`.
 
         Returns:
-            The created `BuildOutputResponseModel`.
+            The created `PipelineBuildResponseModel`.
         """
-        return BuildOutputResponseModel(
+        return PipelineBuildResponseModel(
             id=self.id,
-            configuration=BuildOutput.parse_raw(self.configuration),
+            configuration=PipelineBuild.parse_raw(self.configuration),
             workspace=self.workspace.to_model(),
             user=self.user.to_model(True) if self.user else None,
             stack=self.stack.to_model() if self.stack else None,

@@ -106,7 +106,6 @@ class DockerSettings(BaseSettings):
             image should be pushed. This repository will be appended to the
             registry URI of the container registry of your stack and should
             therefore **not** include any registry.
-        tag: The tag to use for the image.
         replicate_local_python_environment: If not `None`, ZenML will use the
             specified method to generate a requirements file that replicates
             the packages installed in the currently running python environment.
@@ -150,7 +149,6 @@ class DockerSettings(BaseSettings):
     build_options: Dict[str, Any] = {}
 
     target_repository: str = "zenml"
-    tag: Optional[str] = None
 
     replicate_local_python_environment: Optional[
         Union[List[str], PythonEnvironmentExportMethod]

@@ -29,7 +29,7 @@ from zenml.stack import Stack
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
-    from zenml.config.build_configuration import BuildOutput
+    from zenml.config.build_configuration import PipelineBuild
     from zenml.config.pipeline_deployment import PipelineDeployment
 
 logger = get_logger(__name__)
@@ -48,7 +48,7 @@ class LocalOrchestrator(BaseOrchestrator):
         self,
         deployment: "PipelineDeployment",
         stack: "Stack",
-        builds: Optional["BuildOutput"],
+        build: Optional["PipelineBuild"],
     ) -> Any:
         """Iterates through all steps and executes them sequentially.
 

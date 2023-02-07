@@ -11,14 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Models representing pipeline build outputs."""
+"""Models representing pipeline builds."""
 
 from typing import TYPE_CHECKING, Optional, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from zenml.config.build_configuration import BuildOutput
+from zenml.config.build_configuration import PipelineBuild
 from zenml.models.base_models import (
     WorkspaceScopedRequestModel,
     WorkspaceScopedResponseModel,
@@ -34,10 +34,10 @@ if TYPE_CHECKING:
 # ---- #
 
 
-class BuildOutputBaseModel(BaseModel):
-    """Base model for build outputs."""
+class PipelineBuildBaseModel(BaseModel):
+    """Base model for pipeline builds."""
 
-    configuration: BuildOutput
+    configuration: PipelineBuild
 
 
 # -------- #
@@ -45,10 +45,10 @@ class BuildOutputBaseModel(BaseModel):
 # -------- #
 
 
-class BuildOutputResponseModel(
-    BuildOutputBaseModel, WorkspaceScopedResponseModel
+class PipelineBuildResponseModel(
+    PipelineBuildBaseModel, WorkspaceScopedResponseModel
 ):
-    """Response model for build outputs."""
+    """Response model for pipeline builds."""
 
     pipeline: Optional["PipelineResponseModel"] = Field(
         title="The pipeline this build belongs to."
@@ -63,17 +63,18 @@ class BuildOutputResponseModel(
 # ------ #
 
 
-class BuildOutputFilterModel(WorkspaceScopedFilterModel):
-    """Model to enable advanced filtering of all build outputs."""
+class PipelineBuildFilterModel(WorkspaceScopedFilterModel):
+    """Model to enable advanced filtering of all pipeline builds."""
 
     workspace_id: Union[UUID, str] = Field(
-        default=None, description="Workspace for this build output."
+        default=None, description="Workspace for this pipeline build."
     )
     user_id: Union[UUID, str] = Field(
-        default=None, description="User that produced this build output."
+        default=None, description="User that produced this pipeline build."
     )
     pipeline_id: Union[UUID, str] = Field(
-        default=None, description="Pipeline associated with the build output."
+        default=None,
+        description="Pipeline associated with the pipeline build.",
     )
     stack_id: Union[UUID, str] = Field(
         default=None, description="Stack used for the Pipeline Run"
@@ -85,11 +86,10 @@ class BuildOutputFilterModel(WorkspaceScopedFilterModel):
 # ------- #
 
 
-class BuildOutputRequestModel(
-    BuildOutputBaseModel, WorkspaceScopedRequestModel
+class PipelineBuildRequestModel(
+    PipelineBuildBaseModel, WorkspaceScopedRequestModel
 ):
-    """Request model for build outputs."""
+    """Request model for pipelines builds."""
 
-    id: Optional[UUID] = None
     stack: Optional[UUID] = None
     pipeline: Optional[UUID] = None

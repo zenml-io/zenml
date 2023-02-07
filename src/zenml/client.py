@@ -60,9 +60,6 @@ from zenml.exceptions import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import (
-    BuildOutputFilterModel,
-    BuildOutputRequestModel,
-    BuildOutputResponseModel,
     ComponentFilterModel,
     ComponentRequestModel,
     ComponentResponseModel,
@@ -70,6 +67,10 @@ from zenml.models import (
     FlavorFilterModel,
     FlavorRequestModel,
     FlavorResponseModel,
+    PipelineBuildFilterModel,
+    PipelineBuildRequestModel,
+    PipelineBuildResponseModel,
+    PipelineDeploymentFilterModel,
     PipelineFilterModel,
     PipelineResponseModel,
     PipelineRunFilterModel,
@@ -122,7 +123,7 @@ from zenml.utils.analytics_utils import AnalyticsEvent, event_handler, track
 from zenml.utils.filesync_model import FileSyncModel
 
 if TYPE_CHECKING:
-    from zenml.config.build_configuration import BuildOutput
+    from zenml.config.build_configuration import PipelineBuild
     from zenml.metadata.metadata_types import MetadataType
     from zenml.stack import Stack, StackComponentConfig
     from zenml.zen_stores.base_zen_store import BaseZenStore
@@ -2499,10 +2500,10 @@ class Client(metaclass=ClientMetaClass):
 
     def create_build(
         self,
-        configuration: "BuildOutput",
+        configuration: "PipelineBuild",
         stack_id: Optional[UUID] = None,
         pipeline_id: Optional[UUID] = None,
-    ) -> BuildOutputResponseModel:
+    ) -> PipelineBuildResponseModel:
         """Creates a new build.
 
         Args:
@@ -2520,7 +2521,7 @@ class Client(metaclass=ClientMetaClass):
         if pipeline_id:
             self.get_pipeline(pipeline_id)
 
-        build_request = BuildOutputRequestModel(
+        build_request = PipelineBuildRequestModel(
             user=self.active_user.id,
             workspace=self.active_workspace.id,
             stack=stack_id,
@@ -2542,7 +2543,7 @@ class Client(metaclass=ClientMetaClass):
         user_id: Optional[Union[str, UUID]] = None,
         pipeline_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[Union[str, UUID]] = None,
-    ) -> Page[BuildOutputResponseModel]:
+    ) -> Page[PipelineBuildResponseModel]:
         """List all builds.
 
         Args:
@@ -2561,7 +2562,7 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A page with builds fitting the filter description
         """
-        build_filter_model = BuildOutputFilterModel(
+        build_filter_model = PipelineBuildFilterModel(
             sort_by=sort_by,
             page=page,
             size=size,
@@ -2579,7 +2580,7 @@ class Client(metaclass=ClientMetaClass):
             build_filter_model=build_filter_model
         )
 
-    def get_build(self, id_or_prefix: str) -> BuildOutputResponseModel:
+    def get_build(self, id_or_prefix: str) -> PipelineBuildResponseModel:
         """Get a build by id or prefix.
 
         Args:
@@ -2631,6 +2632,116 @@ class Client(metaclass=ClientMetaClass):
         """
         build = self.get_build(id_or_prefix=id_or_prefix)
         self.zen_store.delete_build(build_id=build.id)
+
+    # ---------------
+    # - DEPLOYMENTS -
+    # ---------------
+
+    def list_deployments(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        workspace_id: Optional[Union[str, UUID]] = None,
+        user_id: Optional[Union[str, UUID]] = None,
+        pipeline_id: Optional[Union[str, UUID]] = None,
+        stack_id: Optional[Union[str, UUID]] = None,
+        build_id: Optional[Union[str, UUID]] = None,
+    ) -> Page[PipelineBuildResponseModel]:
+        """List all deployments.
+
+        Args:
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            id: Use the id of build to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            workspace_id: The id of the workspace to filter by.
+            user_id: The  id of the user to filter by.
+            pipeline_id: The id of the pipeline to filter by.
+            stack_id: The id of the stack to filter by.
+            stack_id: The id of the build to filter by.
+
+        Returns:
+            A page with deployments fitting the filter description
+        """
+        deployment_filter_model = PipelineDeploymentFilterModel(
+            sort_by=sort_by,
+            page=page,
+            size=size,
+            logical_operator=logical_operator,
+            id=id,
+            created=created,
+            updated=updated,
+            workspace_id=workspace_id,
+            user_id=user_id,
+            pipeline_id=pipeline_id,
+            stack_id=stack_id,
+            build_id=build_id,
+        )
+        deployment_filter_model.set_scope_workspace(self.active_workspace.id)
+        return self.zen_store.list_deployments(
+            deployment_filter_model=deployment_filter_model
+        )
+
+    def get_deployment(self, id_or_prefix: str) -> PipelineBuildResponseModel:
+        """Get a deployment by id or prefix.
+
+        Args:
+            id_or_prefix: The id or id prefix of the build.
+
+        Returns:
+            The deployment.
+
+        Raises:
+            KeyError: If no deployment was found for the given id or prefix.
+            ZenKeyError: If multiple deployments were found that match the given
+                id or prefix.
+        """
+        from zenml.utils.uuid_utils import is_valid_uuid
+
+        # First interpret as full UUID
+        if is_valid_uuid(id_or_prefix):
+            return self.zen_store.get_deployment(UUID(id_or_prefix))
+
+        entity = self.list_deployments(
+            id=f"startswith:{id_or_prefix}",
+        )
+
+        # If only a single entity is found, return it.
+        if entity.total == 1:
+            return entity.items[0]
+
+        # If no entity is found, raise an error.
+        if entity.total == 0:
+            raise KeyError(
+                f"No deployment have been found that have either an id or "
+                f"prefix that matches the provided string '{id_or_prefix}'."
+            )
+
+        raise ZenKeyError(
+            f"{entity.total} deployments have been found that have "
+            f"an ID that matches the provided "
+            f"string '{id_or_prefix}':\n"
+            f"{[entity.items]}.\n"
+            f"Please use the id to uniquely identify "
+            f"only one of the deployments."
+        )
+
+    def delete_deployment(self, id_or_prefix: str) -> None:
+        """Delete a deployment.
+
+        Args:
+            id_or_prefix: The id or id prefix of the deployment.
+        """
+        deployment = self.get_deployment(id_or_prefix=id_or_prefix)
+        self.zen_store.delete_deployment(deployment_id=deployment.id)
 
     # -------------
     # - SCHEDULES -

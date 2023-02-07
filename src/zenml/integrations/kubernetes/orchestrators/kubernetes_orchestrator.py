@@ -58,7 +58,7 @@ from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 
 if TYPE_CHECKING:
-    from zenml.config.build_configuration import BuildOutput
+    from zenml.config.build_configuration import PipelineBuild
     from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.stack import Stack
 
@@ -260,7 +260,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         self,
         deployment: "PipelineDeployment",
         stack: "Stack",
-        builds: Optional["BuildOutput"],
+        build: Optional["PipelineBuild"],
     ) -> Any:
         """Runs the pipeline in Kubernetes.
 
@@ -271,7 +271,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         Raises:
             RuntimeError: If trying to run from a Jupyter notebook.
         """
-        assert builds
+        assert build
         # First check whether the code is running in a notebook.
         if Environment.in_notebook():
             raise RuntimeError(

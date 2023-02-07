@@ -84,7 +84,7 @@ from zenml.utils.io_utils import get_global_config_directory
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
-    from zenml.config.build_configuration import BuildOutput
+    from zenml.config.build_configuration import PipelineBuild
     from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.config.schedule import Schedule
     from zenml.stack import Stack
@@ -312,7 +312,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         self,
         deployment: "PipelineDeployment",
         stack: "Stack",
-        builds: Optional["BuildOutput"],
+        build: Optional["PipelineBuild"],
     ) -> Any:
         """Creates a KFP JSON pipeline.
 
@@ -353,7 +353,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                 raised if attempting to schedule pipeline run without using the
                 `zenml.integrations.gcp.artifact_store.GCPArtifactStore`.
         """
-        assert builds
+        assert build
         orchestrator_run_name = get_orchestrator_run_name(
             pipeline_name=deployment.pipeline.name
         )
@@ -392,12 +392,12 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             step_name_to_container_op: Dict[str, dsl.ContainerOp] = {}
 
             for step_name, step in deployment.steps.items():
-                image = builds.get_image(
+                image = build.get_image(
                     key=ORCHESTRATOR_DOCKER_IMAGE_KEY, step=step_name
                 )
                 arguments = (
                     StepEntrypointConfiguration.get_entrypoint_arguments(
-                        step_name=step_name,
+                        step_name=step_name, deployment_id=deployment.id
                     )
                 )
 

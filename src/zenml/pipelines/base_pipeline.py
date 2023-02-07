@@ -33,14 +33,14 @@ from typing import (
     Union,
     cast,
 )
-from uuid import UUID, uuid4
+from uuid import UUID
 
 import yaml
 from packaging import version
 
 from zenml import constants
 from zenml.client import Client
-from zenml.config.build_configuration import BuildOutput
+from zenml.config.build_configuration import PipelineBuild
 from zenml.config.compiler import Compiler
 from zenml.config.config_keys import (
     PipelineConfigurationKeys,
@@ -59,8 +59,8 @@ from zenml.enums import StackComponentType
 from zenml.exceptions import PipelineConfigurationError, PipelineInterfaceError
 from zenml.logger import get_logger
 from zenml.models import (
-    BuildOutputRequestModel,
-    BuildOutputResponseModel,
+    PipelineBuildRequestModel,
+    PipelineBuildResponseModel,
     PipelineRequestModel,
     PipelineResponseModel,
 )
@@ -440,7 +440,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         extra: Optional[Dict[str, Any]] = None,
         config_path: Optional[str] = None,
         unlisted: bool = False,
-        build: Union[str, "UUID", "BuildOutput", None] = None,
+        build: Union[str, "UUID", "PipelineBuild", None] = None,
     ) -> Any:
         """Runs the pipeline on the active stack of the current repository.
 
@@ -559,9 +559,28 @@ class BasePipeline(metaclass=BasePipelineMeta):
             )
             stack.prepare_pipeline_deployment(deployment=deployment)
 
-            build_output = self._load_or_create_build_output(
+            build_model = self._load_or_create_pipeline_build(
                 deployment=deployment, pipeline_spec=pipeline_spec, build=build
             )
+            if build_model:
+                deployment = deployment.copy(
+                    update={"build_id": build_model.id}
+                )
+
+            from zenml.models import PipelineDeploymentRequestModel
+
+            deployment_request = PipelineDeploymentRequestModel(
+                user=Client().active_user.id,
+                workspace=Client().active_workspace.id,
+                stack=deployment.stack_id,
+                pipeline=deployment.pipeline_id,
+                build=build_model.id if build_model else None,
+                configuration=deployment,
+            )
+            deployment_model = Client().zen_store.create_deployment(
+                deployment=deployment_request
+            )
+            deployment = deployment.copy(update={"id": deployment_model.id})
 
             # Prevent execution of nested pipelines which might lead to
             # unexpected behavior
@@ -569,7 +588,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             try:
                 return_value = stack.deploy_pipeline(
                     deployment=deployment,
-                    builds=build_output,
+                    build=build_model.configuration if build_model else None,
                 )
             finally:
                 constants.SHOULD_PREVENT_PIPELINE_EXECUTION = False
@@ -1035,21 +1054,20 @@ class BasePipeline(metaclass=BasePipelineMeta):
         else:
             return None
 
-    def _load_or_create_build_output(
+    def _load_or_create_pipeline_build(
         self,
         deployment: "PipelineDeployment",
         pipeline_spec: "PipelineSpec",
-        build: Union[str, "UUID", "BuildOutput", None] = None,
-    ) -> Optional["BuildOutput"]:
-        build_output = None
+        build: Union[str, "UUID", "PipelineBuild", None] = None,
+    ) -> Optional["PipelineBuildResponseModel"]:
+        build_model = None
 
         if build:
             logger.info(
                 "Using an old build for a pipeline run can lead to "
-                "unexpected behavior. This pipeline run will use the code "
-                "as well as configuration that were included in the Docker "
-                "images and therefore might not use the current code and "
-                "configuration of your pipeline."
+                "unexpected behavior as the pipeline will run with the step "
+                "code that was included in the Docker images which might "
+                "differ from the code in your client environment."
             )
 
             if isinstance(build, str):
@@ -1057,7 +1075,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
             if isinstance(build, UUID):
                 build_model = Client().zen_store.get_build(build_id=build)
-                build_output = build_model.configuration
 
                 if build_model.pipeline:
                     build_hash = build_model.pipeline.version_hash
@@ -1071,27 +1088,23 @@ class BasePipeline(metaclass=BasePipelineMeta):
                             "specified for this run has a different spec "
                             "or step code. This might lead to unexpected "
                             "behavior as this pipeline run will use the "
-                            "code as well as configuration that were "
-                            "included in the Docker images and therefore "
-                            "might not use the current code and "
-                            "configuration of your pipeline."
+                            "code that was included in the Docker images which "
+                            "might differ from the code in your client "
+                            "environment."
                         )
             else:
-                # TODO: should we even allow this at the moment as the
-                # deployment inside the container can't possibly have the
-                # correct build ID and will therefore not produce "correct"
-                # runs in the DB that store the associated build
-                build_request = BuildOutputRequestModel(
-                    id=uuid4(),
+                build_request = PipelineBuildRequestModel(
                     user=Client().active_user.id,
                     workspace=Client().active_workspace.id,
                     stack=Client().active_stack_model.id,
                     pipeline=deployment.pipeline_id,
-                    configuration=build_output,
+                    configuration=build,
                 )
-                Client().zen_store.create_build(build=build_request)
+                build_model = Client().zen_store.create_build(
+                    build=build_request
+                )
 
-            if build_output.is_local:
+            if build_model.configuration.is_local:
                 logger.warning(
                     "You're using a local build to run your pipeline. This "
                     "might lead to errors if the images don't exist on "
@@ -1100,34 +1113,22 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 )
         else:
             build_model = self._build(deployment=deployment)
-            if build_model:
-                build_output = build_model.configuration
 
-        return build_output
+        return build_model
 
     def build(
         self,
         *,
-        run_name: Optional[str] = None,
-        enable_cache: Optional[bool] = None,
-        enable_artifact_metadata: Optional[bool] = None,
-        schedule: Optional[Schedule] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         step_configurations: Optional[
             Mapping[str, "StepConfigurationUpdateOrDict"]
         ] = None,
-        extra: Optional[Dict[str, Any]] = None,
         config_path: Optional[str] = None,
-    ) -> Optional["BuildOutputResponseModel"]:
+    ) -> Optional["PipelineBuildResponseModel"]:
         deployment, pipeline_spec = self._compile(
             config_path=config_path,
-            run_name=run_name,
-            enable_cache=enable_cache,
-            enable_artifact_metadata=enable_artifact_metadata,
             steps=step_configurations,
             settings=settings,
-            schedule=schedule,
-            extra=extra,
         )
         pipeline_id = self._register(pipeline_spec=pipeline_spec).id
         deployment = deployment.copy(update={"pipeline_id": pipeline_id})
@@ -1136,19 +1137,11 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
     def _build(
         self, deployment: "PipelineDeployment"
-    ) -> Optional["BuildOutputResponseModel"]:
-        # Currently our Docker builds include the deployment, but the deployment
-        # also needs to include the finished build ID so we can associate it
-        # with the pipeline run. We therefore generate the ID first and make
-        # sure our build is registered in the database with this ID.
-        build_id = uuid4()
-        deployment = deployment.copy(update={"build_id": build_id})
-
+    ) -> Optional["PipelineBuildResponseModel"]:
         client = Client()
         output = client.active_stack.build(deployment=deployment)
         if output:
-            build = BuildOutputRequestModel(
-                id=build_id,
+            build = PipelineBuildRequestModel(
                 user=client.active_user.id,
                 workspace=client.active_workspace.id,
                 stack=client.active_stack_model.id,

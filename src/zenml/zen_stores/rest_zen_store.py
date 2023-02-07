@@ -40,7 +40,6 @@ from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     API,
     ARTIFACTS,
-    BUILDS,
     CURRENT_USER,
     DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
@@ -48,6 +47,8 @@ from zenml.constants import (
     GET_OR_CREATE,
     INFO,
     LOGIN,
+    PIPELINE_BUILDS,
+    PIPELINE_DEPLOYMENTS,
     PIPELINES,
     ROLES,
     RUN_METADATA,
@@ -79,9 +80,6 @@ from zenml.models import (
     ArtifactRequestModel,
     ArtifactResponseModel,
     BaseFilterModel,
-    BuildOutputFilterModel,
-    BuildOutputRequestModel,
-    BuildOutputResponseModel,
     ComponentFilterModel,
     ComponentRequestModel,
     ComponentResponseModel,
@@ -90,6 +88,12 @@ from zenml.models import (
     FlavorRequestModel,
     FlavorResponseModel,
     FlavorUpdateModel,
+    PipelineBuildFilterModel,
+    PipelineBuildRequestModel,
+    PipelineBuildResponseModel,
+    PipelineDeploymentFilterModel,
+    PipelineDeploymentRequestModel,
+    PipelineDeploymentResponseModel,
     PipelineFilterModel,
     PipelineRequestModel,
     PipelineResponseModel,
@@ -1253,8 +1257,8 @@ class RestZenStore(BaseZenStore):
 
     def create_build(
         self,
-        build: BuildOutputRequestModel,
-    ) -> BuildOutputResponseModel:
+        build: PipelineBuildRequestModel,
+    ) -> PipelineBuildResponseModel:
         """Creates a new build in a workspace.
 
         Args:
@@ -1269,11 +1273,11 @@ class RestZenStore(BaseZenStore):
         """
         return self._create_workspace_scoped_resource(
             resource=build,
-            route=BUILDS,
-            response_model=BuildOutputResponseModel,
+            route=PIPELINE_BUILDS,
+            response_model=PipelineBuildResponseModel,
         )
 
-    def get_build(self, build_id: UUID) -> BuildOutputResponseModel:
+    def get_build(self, build_id: UUID) -> PipelineBuildResponseModel:
         """Get a build with a given ID.
 
         Args:
@@ -1284,13 +1288,13 @@ class RestZenStore(BaseZenStore):
         """
         return self._get_resource(
             resource_id=build_id,
-            route=BUILDS,
-            response_model=BuildOutputResponseModel,
+            route=PIPELINE_BUILDS,
+            response_model=PipelineBuildResponseModel,
         )
 
     def list_builds(
-        self, build_filter_model: BuildOutputFilterModel
-    ) -> Page[BuildOutputResponseModel]:
+        self, build_filter_model: PipelineBuildFilterModel
+    ) -> Page[PipelineBuildResponseModel]:
         """List all builds matching the given filter criteria.
 
         Args:
@@ -1301,8 +1305,8 @@ class RestZenStore(BaseZenStore):
             A page of all builds matching the filter criteria.
         """
         return self._list_paginated_resources(
-            route=BUILDS,
-            response_model=BuildOutputResponseModel,
+            route=PIPELINE_BUILDS,
+            response_model=PipelineBuildResponseModel,
             filter_model=build_filter_model,
         )
 
@@ -1314,7 +1318,75 @@ class RestZenStore(BaseZenStore):
         """
         self._delete_resource(
             resource_id=build_id,
-            route=BUILDS,
+            route=PIPELINE_BUILDS,
+        )
+
+    # ----------------------
+    # Pipeline Deployments
+    # ----------------------
+
+    def create_deployment(
+        self,
+        deployment: PipelineDeploymentRequestModel,
+    ) -> PipelineDeploymentResponseModel:
+        """Creates a new deployment in a workspace.
+
+        Args:
+            deployment: The deployment to create.
+
+        Returns:
+            The newly created deployment.
+        """
+        return self._create_workspace_scoped_resource(
+            resource=deployment,
+            route=PIPELINE_DEPLOYMENTS,
+            response_model=PipelineDeploymentResponseModel,
+        )
+
+    def get_deployment(
+        self, deployment_id: UUID
+    ) -> PipelineDeploymentResponseModel:
+        """Get a deployment with a given ID.
+
+        Args:
+            deployment_id: ID of the deployment.
+
+        Returns:
+            The deployment.
+        """
+        return self._get_resource(
+            resource_id=deployment_id,
+            route=PIPELINE_DEPLOYMENTS,
+            response_model=PipelineDeploymentResponseModel,
+        )
+
+    def list_deployments(
+        self, deployment_filter_model: PipelineDeploymentFilterModel
+    ) -> Page[PipelineDeploymentResponseModel]:
+        """List all deployments matching the given filter criteria.
+
+        Args:
+            deployment_filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all deployments matching the filter criteria.
+        """
+        return self._list_paginated_resources(
+            route=PIPELINE_DEPLOYMENTS,
+            response_model=PipelineDeploymentResponseModel,
+            filter_model=deployment_filter_model,
+        )
+
+    def delete_deployment(self, deployment_id: UUID) -> None:
+        """Deletes a deployment.
+
+        Args:
+            deployment_id: The ID of the deployment to delete.
+        """
+        self._delete_resource(
+            resource_id=deployment_id,
+            route=PIPELINE_DEPLOYMENTS,
         )
 
     # ---------

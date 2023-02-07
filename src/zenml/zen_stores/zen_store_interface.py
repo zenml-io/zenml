@@ -20,9 +20,6 @@ from zenml.models import (
     ArtifactFilterModel,
     ArtifactRequestModel,
     ArtifactResponseModel,
-    BuildOutputFilterModel,
-    BuildOutputRequestModel,
-    BuildOutputResponseModel,
     ComponentFilterModel,
     ComponentRequestModel,
     ComponentResponseModel,
@@ -31,6 +28,12 @@ from zenml.models import (
     FlavorRequestModel,
     FlavorResponseModel,
     FlavorUpdateModel,
+    PipelineBuildFilterModel,
+    PipelineBuildRequestModel,
+    PipelineBuildResponseModel,
+    PipelineDeploymentFilterModel,
+    PipelineDeploymentRequestModel,
+    PipelineDeploymentResponseModel,
     PipelineFilterModel,
     PipelineRequestModel,
     PipelineResponseModel,
@@ -915,8 +918,8 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def create_build(
         self,
-        build: BuildOutputRequestModel,
-    ) -> BuildOutputResponseModel:
+        build: PipelineBuildRequestModel,
+    ) -> PipelineBuildResponseModel:
         """Creates a new build in a workspace.
 
         Args:
@@ -931,7 +934,7 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_build(self, build_id: UUID) -> BuildOutputResponseModel:
+    def get_build(self, build_id: UUID) -> PipelineBuildResponseModel:
         """Get a build with a given ID.
 
         Args:
@@ -946,8 +949,8 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def list_builds(
-        self, build_filter_model: BuildOutputFilterModel
-    ) -> Page[BuildOutputResponseModel]:
+        self, build_filter_model: PipelineBuildFilterModel
+    ) -> Page[PipelineBuildResponseModel]:
         """List all builds matching the given filter criteria.
 
         Args:
@@ -967,6 +970,69 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: if the build doesn't exist.
+        """
+
+    # ----------------------
+    # Pipeline Deployments
+    # ----------------------
+
+    @abstractmethod
+    def create_deployment(
+        self,
+        deployment: PipelineDeploymentRequestModel,
+    ) -> PipelineDeploymentResponseModel:
+        """Creates a new deployment in a workspace.
+
+        Args:
+            deployment: The deployment to create.
+
+        Returns:
+            The newly created deployment.
+
+        Raises:
+            KeyError: If the workspace does not exist.
+            EntityExistsError: If an identical deployment already exists.
+        """
+
+    @abstractmethod
+    def get_deployment(
+        self, deployment_id: UUID
+    ) -> PipelineDeploymentResponseModel:
+        """Get a deployment with a given ID.
+
+        Args:
+            deployment_id: ID of the deployment.
+
+        Returns:
+            The deployment.
+
+        Raises:
+            KeyError: If the deployment does not exist.
+        """
+
+    @abstractmethod
+    def list_deployments(
+        self, deployment_filter_model: PipelineDeploymentFilterModel
+    ) -> Page[PipelineDeploymentResponseModel]:
+        """List all deployments matching the given filter criteria.
+
+        Args:
+            deployment_filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all deployments matching the filter criteria.
+        """
+
+    @abstractmethod
+    def delete_deployment(self, deployment_id: UUID) -> None:
+        """Deletes a deployment.
+
+        Args:
+            deployment_id: The ID of the deployment to delete.
+
+        Raises:
+            KeyError: If the deployment doesn't exist.
         """
 
     # ---------

@@ -250,6 +250,7 @@ class StepLauncher:
             stack=self._deployment.stack_id,
             pipeline=self._deployment.pipeline_id,
             build=self._deployment.build_id,
+            deployment=self._deployment.id,
             schedule_id=self._deployment.schedule_id,
             enable_cache=self._deployment.pipeline.enable_cache,
             enable_artifact_metadata=self._deployment.pipeline.enable_artifact_metadata,
@@ -393,6 +394,7 @@ class StepLauncher:
             StepOperatorEntrypointConfiguration.get_entrypoint_command()
             + StepOperatorEntrypointConfiguration.get_entrypoint_arguments(
                 step_name=self._step_name,
+                deployment_id=self._deployment.id,
                 step_run_id=str(step_run_info.step_run_id),
             )
         )

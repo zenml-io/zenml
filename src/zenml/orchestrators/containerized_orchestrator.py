@@ -39,7 +39,7 @@ class ContainerizedOrchestrator(BaseOrchestrator, ABC):
                 build = BuildConfiguration(
                     key=ORCHESTRATOR_DOCKER_IMAGE_KEY,
                     settings=step_settings,
-                    default_tag=f"{deployment.pipeline.name}-{name}",
+                    tag=f"{deployment.pipeline.name}-{name}",
                     step_name=name,
                 )
                 builds.append(build)
@@ -47,7 +47,7 @@ class ContainerizedOrchestrator(BaseOrchestrator, ABC):
                 pipeline_build = BuildConfiguration(
                     key=ORCHESTRATOR_DOCKER_IMAGE_KEY,
                     settings=pipeline_settings,
-                    default_tag=deployment.pipeline.name,
+                    tag=deployment.pipeline.name,
                 )
                 builds.append(pipeline_build)
                 included_pipeline_build = True

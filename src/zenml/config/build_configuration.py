@@ -22,7 +22,7 @@ from zenml.utils import pydantic_utils
 class BuildConfiguration(BaseModel):
     key: str
     settings: DockerSettings
-    default_tag: str
+    tag: str
     step_name: Optional[str] = None
     entrypoint: Optional[str] = None
 
@@ -38,7 +38,7 @@ class BuildConfiguration(BaseModel):
         return build_settings_hash.hexdigest()
 
 
-class BuildOutput(pydantic_utils.YAMLSerializationMixin):
+class PipelineBuild(pydantic_utils.YAMLSerializationMixin):
     """Output of Docker builds to run a pipeline.
 
     Attributes:

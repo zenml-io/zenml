@@ -35,6 +35,7 @@ class PipelineDeployment(
     pipeline: PipelineConfiguration
     pipeline_id: Optional[UUID] = None
     build_id: Optional[UUID] = None
+    id: Optional[UUID] = None
     steps: Dict[str, Step] = {}
     zenml_version: str = zenml.__version__
     client_environment: Dict[str, str] = {}

@@ -42,7 +42,7 @@ from zenml.stack import Stack, StackValidator
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
-    from zenml.config.build_configuration import BuildOutput
+    from zenml.config.build_configuration import PipelineBuild
     from zenml.config.pipeline_deployment import PipelineDeployment
 
 logger = get_logger(__name__)
@@ -99,7 +99,7 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
         self,
         deployment: "PipelineDeployment",
         stack: "Stack",
-        builds: Optional["BuildOutput"],
+        build: Optional["PipelineBuild"],
     ) -> Any:
         """Sequentially runs all pipeline steps in local Docker containers.
 
@@ -107,7 +107,7 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
             deployment: The pipeline deployment to prepare or run.
             stack: The stack the pipeline will run on.
         """
-        assert builds
+        assert build
         if deployment.schedule:
             logger.warning(
                 "Local Docker Orchestrator currently does not support the"
@@ -118,7 +118,6 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
         from docker.client import DockerClient
 
         docker_client = DockerClient.from_env()
-        # image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
         entrypoint = StepEntrypointConfiguration.get_entrypoint_command()
 
         # Add the local stores path as a volume mount
@@ -148,14 +147,14 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
                 )
 
             arguments = StepEntrypointConfiguration.get_entrypoint_arguments(
-                step_name=step_name
+                step_name=step_name, deployment_id=deployment.id
             )
 
             settings = cast(
                 LocalDockerOrchestratorSettings,
                 self.get_settings(step),
             )
-            image = builds.get_image(
+            image = build.get_image(
                 key=ORCHESTRATOR_DOCKER_IMAGE_KEY, step=step_name
             )
 

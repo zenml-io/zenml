@@ -29,7 +29,7 @@ from typing import (
 from uuid import UUID
 
 from zenml.client import Client
-from zenml.config.build_configuration import BuildConfiguration, BuildOutput
+from zenml.config.build_configuration import BuildConfiguration, PipelineBuild
 from zenml.constants import (
     ENV_ZENML_SECRET_VALIDATION_LEVEL,
     ENV_ZENML_SKIP_IMAGE_BUILDER_DEFAULT,
@@ -795,7 +795,9 @@ class Stack:
             )
         )
 
-    def build(self, deployment: "PipelineDeployment") -> Optional[BuildOutput]:
+    def build(
+        self, deployment: "PipelineDeployment"
+    ) -> Optional[PipelineBuild]:
         required_builds = self.get_docker_builds(deployment=deployment)
         if not required_builds:
             logger.debug("No docker builds required.")
@@ -833,9 +835,8 @@ class Stack:
                     continue
 
             image_name_or_digest = docker_image_builder.build_docker_image(
-                deployment=deployment,
                 docker_settings=build.settings,
-                default_tag=build.default_tag,
+                tag=build.tag,
                 stack=self,
                 entrypoint=build.entrypoint,
             )
@@ -870,14 +871,16 @@ class Stack:
 
         logger.info("Finished building Docker image(s).")
 
-        return BuildOutput(
+        return PipelineBuild(
             is_local=is_local,
             pipeline_images=pipeline_images,
             step_images=step_images,
         )
 
     def deploy_pipeline(
-        self, deployment: "PipelineDeployment", builds: Optional["BuildOutput"]
+        self,
+        deployment: "PipelineDeployment",
+        build: Optional["PipelineBuild"],
     ) -> Any:
         """Deploys a pipeline on this stack.
 
@@ -887,34 +890,36 @@ class Stack:
         Returns:
             The return value of the call to `orchestrator.run_pipeline(...)`.
         """
-        self._validate_build(deployment=deployment, builds=builds)
+        self._validate_build(deployment=deployment, build=build)
         return self.orchestrator.run(
-            deployment=deployment, stack=self, builds=builds
+            deployment=deployment, stack=self, build=build
         )
 
     def _validate_build(
-        self, deployment: "PipelineDeployment", builds: Optional["BuildOutput"]
+        self,
+        deployment: "PipelineDeployment",
+        build: Optional["PipelineBuild"],
     ) -> None:
         required_builds = self.get_docker_builds(deployment=deployment)
 
-        if required_builds and not builds:
+        if required_builds and not build:
             raise RuntimeError("Missing docker builds.")
 
         for build in required_builds:
             try:
-                image = builds.get_image(key=build.key, step=build.step_name)
+                image = build.get_image(key=build.key, step=build.step_name)
             except KeyError:
                 raise RuntimeError(f"Missing build for key: {build.key}.")
 
-            if build.settings_hash != builds.get_settings_hash(
+            if build.settings_hash != build.get_settings_hash(
                 key=build.key, step=build.step_name
             ):
                 logger.warning(
                     "The Docker settings used to build the image `%s` are "
                     "not the same as currently specified for you pipeline. "
                     "This means that the build you specified to run this "
-                    "pipeline might be outdated and most likely does not "
-                    "contain your current step code and configuration.",
+                    "pipeline might be outdated and most likely contains "
+                    "outdated code of your steps.",
                     image,
                 )
 
