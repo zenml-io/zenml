@@ -246,9 +246,9 @@ def test_deleting_default_workspace_fails():
         client.zen_store.delete_workspace(DEFAULT_NAME)
 
 
-# .-------.-.
-# | TEAMS | |
-# '-------'-'
+# .-------.
+# | TEAMS |
+# '-------'
 
 
 def test_adding_user_to_team():
@@ -334,6 +334,8 @@ def test_removing_user_from_team_succeeds():
             else:
                 zen_store.delete_team(team.id)
 
+def test_access_user_in_team_succeeds():
+    pass
 
 #  .------.
 # | USERS |
@@ -371,6 +373,9 @@ def test_deleting_default_user_fails():
     with pytest.raises(IllegalOperationError):
         zen_store.delete_user("default")
 
+
+def test_getting_team_for_user_succeeds():
+    pass
 
 # .-------.
 # | ROLES |
