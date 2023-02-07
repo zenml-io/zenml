@@ -28,7 +28,10 @@ from zenml.cli.utils import confirmation, declare, error, warning
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
-from zenml.constants import REPOSITORY_DIRECTORY_NAME
+from zenml.constants import (
+    ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
+    REPOSITORY_DIRECTORY_NAME,
+)
 from zenml.enums import AnalyticsEventSource
 from zenml.exceptions import GitNotFoundError, InitializationException
 from zenml.io import fileio
@@ -90,6 +93,8 @@ def init(
     if path is None:
         path = Path.cwd()
 
+    os.environ[ENV_ZENML_ENABLE_REPO_INIT_WARNINGS] = "False"
+
     if template or starter:
         try:
             from copier import Worker
@@ -102,11 +107,11 @@ def init(
             return
 
         from zenml.cli.text_utils import (
-            zenml_go_privacy_message,
-            zenml_go_welcome_message,
+            zenml_cli_privacy_message,
+            zenml_cli_welcome_message,
         )
 
-        console.print(zenml_go_welcome_message, width=80)
+        console.print(zenml_cli_welcome_message, width=80)
 
         client = Client()
         # Only ask them if they haven't been asked before and the email
@@ -115,7 +120,7 @@ def init(
             not GlobalConfiguration().user_email
             and client.active_user.email_opted_in is None
         ):
-            _prompt_email()
+            _prompt_email(AnalyticsEventSource.ZENML_INIT)
 
         email = GlobalConfiguration().user_email or ""
         metadata = {
@@ -127,13 +132,19 @@ def init(
         with event_handler(
             event=AnalyticsEvent.GENERATE_TEMPLATE, metadata=metadata
         ):
-            console.print(zenml_go_privacy_message)
+            console.print(zenml_cli_privacy_message, width=80)
 
             if not starter:
-                declare(
-                    "Next, you will be prompted to generate a project from "
-                    "the template."
+
+                from rich.markdown import Markdown
+
+                prompt_message = Markdown(
+                    """
+## 🧑‍🏫 Project template parameters
+"""
                 )
+
+                console.print(prompt_message, width=80)
 
             with Worker(
                 src_path="gh:zenml-io/zenml-project-templates",
@@ -293,14 +304,14 @@ def go() -> None:
         GitNotFoundError: If git is not installed.
     """
     from zenml.cli.text_utils import (
+        zenml_cli_privacy_message,
+        zenml_cli_welcome_message,
         zenml_go_notebook_tutorial_message,
-        zenml_go_privacy_message,
-        zenml_go_welcome_message,
     )
 
     metadata = {}
 
-    console.print(zenml_go_welcome_message, width=80)
+    console.print(zenml_cli_welcome_message, width=80)
 
     client = Client()
 
@@ -310,12 +321,12 @@ def go() -> None:
         not GlobalConfiguration().user_email
         and client.active_user.email_opted_in is None
     ):
-        gave_email = _prompt_email()
+        gave_email = _prompt_email(AnalyticsEventSource.ZENML_GO)
         metadata = {"gave_email": gave_email}
 
     with event_handler(event=AnalyticsEvent.RUN_ZENML_GO, metadata=metadata):
 
-        console.print(zenml_go_privacy_message, width=80)
+        console.print(zenml_cli_privacy_message, width=80)
 
         zenml_tutorial_path = os.path.join(os.getcwd(), "zenml_tutorial")
 
@@ -370,18 +381,18 @@ def go() -> None:
     subprocess.check_call(["jupyter", "notebook"], cwd=notebook_path)
 
 
-def _prompt_email() -> bool:
+def _prompt_email(event_source: AnalyticsEventSource) -> bool:
     """Ask the user to give their email address.
 
     Returns:
         bool: True if the user gave an email address, False otherwise.
     """
     from zenml.cli.text_utils import (
-        zenml_go_email_prompt,
-        zenml_go_thank_you_message,
+        zenml_cli_email_prompt,
+        zenml_cli_thank_you_message,
     )
 
-    console.print(zenml_go_email_prompt, width=80)
+    console.print(zenml_cli_email_prompt, width=80)
 
     email = click.prompt(
         click.style("Email", fg="blue"), default="", show_default=False
@@ -391,13 +402,13 @@ def _prompt_email() -> bool:
         if len(email) > 0 and email.count("@") != 1:
             warning("That doesn't look like an email. Skipping ...")
         else:
-            console.print(zenml_go_thank_you_message, width=80)
+            console.print(zenml_cli_thank_you_message, width=80)
 
             # For now, hard-code to ZENML GO as the source
             GlobalConfiguration().record_email_opt_in_out(
                 opted_in=True,
                 email=email,
-                source=AnalyticsEventSource.ZENML_GO,
+                source=event_source,
             )
 
             # Add consent and email to user model
@@ -409,7 +420,7 @@ def _prompt_email() -> bool:
             return True
     else:
         GlobalConfiguration().record_email_opt_in_out(
-            opted_in=False, email=None, source=AnalyticsEventSource.ZENML_GO
+            opted_in=False, email=None, source=event_source
         )
 
         # This is the case where user opts out
