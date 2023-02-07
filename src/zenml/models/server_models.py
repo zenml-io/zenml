@@ -58,7 +58,7 @@ class ServerModel(BaseModel):
         ServerDatabaseType.OTHER,
         title="The database type that the server is using.",
     )
-    analytics_opt_in: Optional[bool] = Field(
+    analytics_opt_in: bool = Field(
         False,
         title="Whether the server is opted in to analytics collection.",
     )

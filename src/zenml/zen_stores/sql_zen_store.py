@@ -752,10 +752,11 @@ class SqlZenStore(BaseZenStore):
                 )
             model.id = identity.id
 
-        # get the analytics opt-in status from global config
-        model.analytics_opt_in = (
-            GlobalConfiguration().override_client_analytics_opt_in
-        )
+        # get the analytics opt-in status from global config if it is not None
+        if GlobalConfiguration().override_client_analytics_opt_in is not None:
+            model.analytics_opt_in = (
+                GlobalConfiguration().override_client_analytics_opt_in
+            )
         return model
 
     # ------
