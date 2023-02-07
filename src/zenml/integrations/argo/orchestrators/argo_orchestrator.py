@@ -12,8 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the Argo orchestrator."""
-import base64
-import errno
 import os
 import subprocess
 import sys
@@ -25,7 +23,6 @@ from hera import (  # type: ignore[attr-defined]
     Workflow,
     WorkflowService,
 )
-from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 
 from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
@@ -58,40 +55,9 @@ logger = get_logger(__name__)
 ENV_ZENML_ARGO_RUN_ID = "ZENML_ARGO_RUN_ID"
 
 
-def get_sa_token(
-    service_account: str,
-    namespace: str = "argo",
-    config_file: Optional[str] = None,
-) -> str:
-    """Get ServiceAccount token using kubernetes config.
-
-    Args:
-        service_account: str: The service account to authenticate from.
-        namespace: str: The K8S namespace the workflow service submits workflows to. Defaults to default.
-        config_file: Optional[str]: The path to k8s configuration file. Defaults to None.
-
-    Raises:
-        FileNotFoundError: When the config_file can not be found.
-    """
-    if config_file is not None and not os.path.isfile(config_file):
-        raise FileNotFoundError(
-            errno.ENOENT, os.strerror(errno.ENOENT), config_file
-        )
-
-    k8s_config.load_kube_config(config_file=config_file)
-    v1 = k8s_client.CoreV1Api()
-    secret_name = (
-        v1.read_namespaced_service_account(service_account, namespace)
-        .secrets[0]
-        .name
-    )
-    sec = v1.read_namespaced_secret(secret_name, namespace).data
-    return base64.b64decode(sec["token"]).decode()
-
-
 def dummy() -> None:
     """Create dummy function for argo task."""
-    print("This function is ignored.")
+    print("This function is ignored in favor of the entrypoint.")
 
 
 class ArgoOrchestrator(BaseOrchestrator):
@@ -258,18 +224,16 @@ class ArgoOrchestrator(BaseOrchestrator):
 
         # Dictionary mapping step names to airflow_operators. This will be needed
         # to configure airflow operator dependencies
-        # settings = cast(
-        #     ArgoOrchestratorSettings, self.get_settings(deployment)
-        # )
-        _token = get_sa_token(
-            "jenkins", namespace=self.config.kubernetes_namespace
+        settings = cast(
+            ArgoOrchestratorSettings, self.get_settings(deployment)
         )
+
         with Workflow(
             orchestrator_run_name.replace("_", "-"),
             service=WorkflowService(
                 host=f"https://127.0.0.1:{self.config.argo_ui_port}",
                 namespace=self.config.kubernetes_namespace,
-                token=_token,
+                token=settings.token,
                 verify_ssl=False,
             ),
         ) as w:
