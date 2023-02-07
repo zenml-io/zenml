@@ -34,6 +34,7 @@ from zenml.exceptions import GitNotFoundError, InitializationException
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
+from zenml.utils.enum_utils import StrEnum
 from zenml.utils.io_utils import copy_dir, get_global_config_directory
 
 logger = get_logger(__name__)
@@ -42,6 +43,12 @@ logger = get_logger(__name__)
 _SHOW_EMOJIS = not os.name == "nt" or os.environ.get("WT_SESSION")
 
 TUTORIAL_REPO = "https://github.com/zenml-io/zenml"
+
+
+class ZenMLTemplate(StrEnum):
+    """ZenML project templates."""
+
+    STARTER = "starter"
 
 
 @cli.command("init", help="Initialize a ZenML repository.")
@@ -54,24 +61,38 @@ TUTORIAL_REPO = "https://github.com/zenml-io/zenml"
 @click.option(
     "--template",
     is_flag=True,
-    help="Use a ZenML project template to initialize the repository.",
-    required=False,
     default=False,
+    required=False,
+    help="Use the ZenML starter project template to initialize the repository "
+    "and prompt the user to enter parameter values for the template.",
 )
-def init(path: Optional[Path], template: bool = False) -> None:
+@click.option(
+    "--starter",
+    is_flag=True,
+    default=False,
+    required=False,
+    help="Use the ZenML starter project template to initialize the repository.",
+)
+def init(
+    path: Optional[Path],
+    template: bool = False,
+    starter: bool = False,
+) -> None:
     """Initialize ZenML on given path.
 
     Args:
         path: Path to the repository.
-        template: Whether to use a ZenML project template to initialize the
-            repository.
+        template: Whether to use the ZenML starter project template to
+            initialize the repository and prompt the user for parameter values.
+        starter: Whether to use the ZenML starter project template to
+            initialize the repository.
     """
     if path is None:
         path = Path.cwd()
 
-    if template:
+    if template or starter:
         try:
-            from copier.cli import CopierApp
+            from copier import Worker
         except ImportError:
             error(
                 "You need to install the ZenML project template requirements "
@@ -79,14 +100,56 @@ def init(path: Optional[Path], template: bool = False) -> None:
                 "and try again."
             )
             return
-        declare(
-            "Next, you will be prompted to generate a project from the "
-            "template."
+
+        from zenml.cli.text_utils import (
+            zenml_go_privacy_message,
+            zenml_go_welcome_message,
         )
-        CopierApp.run(
-            ["copier", "gh:zenml-io/zenml-project-templates", str(path)],
-            exit=False,
-        )
+
+        console.print(zenml_go_welcome_message, width=80)
+
+        client = Client()
+        # Only ask them if they haven't been asked before and the email
+        # hasn't been supplied by other means
+        if (
+            not GlobalConfiguration().user_email
+            and client.active_user.email_opted_in is None
+        ):
+            _prompt_email()
+
+        email = GlobalConfiguration().user_email or ""
+        metadata = {
+            "email": email,
+            "template": ZenMLTemplate.STARTER.value,
+            "prompt": not starter,
+        }
+
+        with event_handler(
+            event=AnalyticsEvent.GENERATE_TEMPLATE, metadata=metadata
+        ):
+            console.print(zenml_go_privacy_message)
+
+            if not starter:
+                declare(
+                    "Next, you will be prompted to generate a project from "
+                    "the template."
+                )
+
+            with Worker(
+                src_path="gh:zenml-io/zenml-project-templates",
+                dst_path=path,
+                data=dict(
+                    template=ZenMLTemplate.STARTER.value,
+                    email=email,
+                ),
+                defaults=starter,
+                user_defaults=dict(
+                    template=ZenMLTemplate.STARTER.value,
+                    email=email,
+                ),
+                overwrite=starter,
+            ) as worker:
+                worker.run_copy()
 
     with console.status(f"Initializing ZenML repository at {path}.\n"):
         try:
