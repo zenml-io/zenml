@@ -48,6 +48,14 @@ and add it to your stack:
 zenml integration install label_studio
 ```
 
+{% hint style="warning" %}
+There is a known issue with Label Studio installations via `zenml integration
+install...`. You might find that the Label Studio installation breaks the ZenML
+CLI. In this case, please run `pip install 'pydantic==1.10.4'` to fix the issue
+or [message us on Slack](https://zenml.io/slack-invite) if you need more help with
+this. We are working on a more definitive fix.
+{% endhint %}
+
 The following instructions below offer a general guide to the parts that need
 attention when deploying / using the Label Studio stack component and
 integration. The [`label_studio_annotation`
