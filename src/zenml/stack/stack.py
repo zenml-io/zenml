@@ -816,7 +816,7 @@ class Stack:
         pipeline_images = {}
         step_images = defaultdict(dict)
         is_local = self.container_registry is None
-        all_images = {}
+        settings_hashes = {}
 
         for build in required_builds:
             if build.step_name:
@@ -839,7 +839,14 @@ class Stack:
                 stack=self,
                 entrypoint=build.entrypoint,
             )
-            if image_name_or_digest in all_images:
+
+            build_settings_hash = build.settings_hash
+
+            if (
+                image_name_or_digest in settings_hashes
+                and settings_hashes[image_name_or_digest]
+                != build_settings_hash
+            ):
                 logger.warning(
                     "The image `%s` was built twice with different Docker "
                     "settings. Only the latest version will be used which "
@@ -848,12 +855,18 @@ class Stack:
                     "in your Docker settings.",
                     image_name_or_digest,
                 )
-            all_images[image_name_or_digest] = build.settings
+            settings_hashes[image_name_or_digest] = build_settings_hash
 
             if build.step_name:
-                step_images[build.step_name][build.key] = image_name_or_digest
+                step_images[build.step_name][build.key] = (
+                    image_name_or_digest,
+                    build_settings_hash,
+                )
             else:
-                pipeline_images[build.key] = image_name_or_digest
+                pipeline_images[build.key] = (
+                    image_name_or_digest,
+                    build_settings_hash,
+                )
 
         logger.info("Finished building Docker image(s).")
 
@@ -889,9 +902,21 @@ class Stack:
 
         for build in required_builds:
             try:
-                builds.get_image(key=build.key, step=build.step_name)
+                image = builds.get_image(key=build.key, step=build.step_name)
             except KeyError:
                 raise RuntimeError(f"Missing build for key: {build.key}.")
+
+            if build.settings_hash != builds.get_settings_hash(
+                key=build.key, step=build.step_name
+            ):
+                logger.warning(
+                    "The Docker settings used to build the image `%s` are "
+                    "not the same as currently specified for you pipeline. "
+                    "This means that the build you specified to run this "
+                    "pipeline might be outdated and most likely does not "
+                    "contain your current step code and configuration.",
+                    image,
+                )
 
     def _get_active_components_for_step(
         self, step_config: "StepConfiguration"

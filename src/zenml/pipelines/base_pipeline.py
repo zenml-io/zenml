@@ -440,7 +440,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         extra: Optional[Dict[str, Any]] = None,
         config_path: Optional[str] = None,
         unlisted: bool = False,
-        build: Union["UUID", "BuildOutput", None] = None,
+        build: Union[str, "UUID", "BuildOutput", None] = None,
     ) -> Any:
         """Runs the pipeline on the active stack of the current repository.
 
@@ -1039,8 +1039,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
         self,
         deployment: "PipelineDeployment",
         pipeline_spec: "PipelineSpec",
-        build: Union["UUID", "BuildOutput", None] = None,
-    ) -> "BuildOutput":
+        build: Union[str, "UUID", "BuildOutput", None] = None,
+    ) -> Optional["BuildOutput"]:
         build_output = None
 
         if build:
@@ -1052,10 +1052,11 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 "configuration of your pipeline."
             )
 
+            if isinstance(build, str):
+                build = UUID(build, version=4)
+
             if isinstance(build, UUID):
-                build_model = Client().zen_store.get_build(
-                    build_id=build_output
-                )
+                build_model = Client().zen_store.get_build(build_id=build)
                 build_output = build_model.configuration
 
                 if build_model.pipeline:

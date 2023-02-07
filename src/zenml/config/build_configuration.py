@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 
 from pydantic import BaseModel
 
@@ -26,6 +26,17 @@ class BuildConfiguration(BaseModel):
     step_name: Optional[str] = None
     entrypoint: Optional[str] = None
 
+    @property
+    def settings_hash(self) -> str:
+        import hashlib
+
+        build_settings_hash = hashlib.md5()
+        build_settings_hash.update(self.settings.json().encode())
+        if self.entrypoint:
+            build_settings_hash.update(self.entrypoint.encode())
+
+        return build_settings_hash.hexdigest()
+
 
 class BuildOutput(pydantic_utils.YAMLSerializationMixin):
     """Output of Docker builds to run a pipeline.
@@ -35,10 +46,9 @@ class BuildOutput(pydantic_utils.YAMLSerializationMixin):
         step_images: Docker images built for specific steps of the pipeline.
     """
 
-    pipeline_images: Dict[str, str] = {}
-    step_images: Dict[str, Dict[str, str]] = {}
+    pipeline_images: Dict[str, Tuple[str, str]] = {}
+    step_images: Dict[str, Dict[str, Tuple[str, str]]] = {}
     is_local: bool
-    # TODO: does this need to include the deployment for pipeline.run()
 
     def get_image(self, key: str, step: Optional[str] = None) -> str:
         """Get the image built for a specific key.
@@ -61,9 +71,25 @@ class BuildOutput(pydantic_utils.YAMLSerializationMixin):
             images.update(self.step_images.get(step, {}))
 
         try:
-            return images[key]
+            image = images[key]
+            return image[0]
         except KeyError:
             raise KeyError(
                 f"Unable to find image for key {key}. Available keys: "
+                f"{set(images)}."
+            )
+
+    def get_settings_hash(self, key: str, step: Optional[str] = None) -> str:
+        images = self.pipeline_images.copy()
+
+        if step:
+            images.update(self.step_images.get(step, {}))
+
+        try:
+            image = images[key]
+            return image[1]
+        except KeyError:
+            raise KeyError(
+                f"Unable to find settings hash for key {key}. Available keys: "
                 f"{set(images)}."
             )
