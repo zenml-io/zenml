@@ -45,7 +45,6 @@ from zenml.utils.analytics_utils import (
     identify_user,
     track_event,
 )
-from zenml.zen_stores.rest_zen_store import RestZenStore
 
 if TYPE_CHECKING:
     from zenml.models import ProjectResponseModel, StackResponseModel
@@ -397,7 +396,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         )
 
         # if it is a REST store, override the value for analytics opt-in
-        if isinstance(store, RestZenStore):
+        if store.TYPE == StoreType.REST:
             self.analytics_opt_in = store.config.analytics_opt_in
 
         if self.store != store.config or not self._zen_store:
