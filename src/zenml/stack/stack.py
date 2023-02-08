@@ -15,6 +15,7 @@
 
 import itertools
 import os
+from collections import defaultdict
 from typing import (
     TYPE_CHECKING,
     AbstractSet,
@@ -41,6 +42,9 @@ from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models import StackResponseModel
 from zenml.utils import settings_utils
+from zenml.utils.pipeline_docker_image_builder import (
+    PipelineDockerImageBuilder,
+)
 
 if TYPE_CHECKING:
     from zenml.alerter import BaseAlerter
@@ -808,16 +812,9 @@ class Stack:
             deployment.pipeline.name,
         )
 
-        from collections import defaultdict
-
-        from zenml.utils.pipeline_docker_image_builder import (
-            PipelineDockerImageBuilder,
-        )
-
         docker_image_builder = PipelineDockerImageBuilder()
         pipeline_images = {}
         step_images = defaultdict(dict)
-        is_local = self.container_registry is None
         settings_hashes = {}
 
         for build in required_builds:
@@ -870,6 +867,8 @@ class Stack:
                 )
 
         logger.info("Finished building Docker image(s).")
+
+        is_local = self.container_registry is None
 
         return PipelineBuild(
             is_local=is_local,

@@ -166,9 +166,17 @@ def build_pipeline(
         pipeline_instance = BasePipeline.from_model(pipeline_model)
         build = pipeline_instance.build(config_path=config_path)
 
-    if build and output_path:
-        with open(output_path, "w") as f:
-            f.write(build.configuration.yaml())
+    if build:
+        cli_utils.declare(f"Created pipeline build `{build.id}`.")
+
+        if output_path:
+            cli_utils.declare(
+                f"Writing pipeline build output to `{output_path}`."
+            )
+            with open(output_path, "w") as f:
+                f.write(build.configuration.yaml())
+    else:
+        cli_utils.declare("No docker builds required.")
 
 
 @pipeline.command("run")
