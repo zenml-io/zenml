@@ -1082,6 +1082,7 @@ def zen_server_exists() -> bool:
 @pass_git_stack_recipes_handler
 @click.pass_context
 def destroy(
+    ctx: click.Context,
     git_stack_recipes_handler: GitStackRecipesHandler,
     stack_recipe_name: str,
     path: str,
