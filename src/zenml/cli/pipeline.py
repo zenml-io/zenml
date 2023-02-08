@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """CLI functionality to interact with pipelines."""
 import contextlib
+import os
 from typing import Any, Iterator, Optional
 from uuid import UUID
 
@@ -22,13 +23,14 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import list_options
 from zenml.client import Client
+from zenml.config.build_configuration import PipelineBuild
 from zenml.console import console
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
 from zenml.models import PipelineFilterModel, PipelineRunFilterModel
 from zenml.models.schedule_model import ScheduleFilterModel
 from zenml.pipelines import BasePipeline
-from zenml.utils import source_utils
+from zenml.utils import source_utils, uuid_utils
 
 logger = get_logger(__name__)
 
@@ -169,8 +171,6 @@ def build_pipeline(
             f.write(build.configuration.yaml())
 
 
-# TODO: allow build output specification or allow
-# specifying build output/ID in PipelineRunConfiguration
 @pipeline.command("run")
 @click.argument("pipeline_name_or_id")
 @click.option(
@@ -193,11 +193,19 @@ def build_pipeline(
     type=str,
     required=False,
 )
+@click.option(
+    "--build",
+    "-b",
+    "build_path_or_id",
+    type=str,
+    required=False,
+)
 def run_pipeline(
     pipeline_name_or_id: str,
     version: Optional[str] = None,
     config_path: Optional[str] = None,
     stack_name_or_id: Optional[str] = None,
+    build_path_or_id: Optional[str] = None,
 ) -> None:
     cli_utils.print_active_config()
 
@@ -223,9 +231,21 @@ def run_pipeline(
     else:
         maybe_activate_stack = contextlib.nullcontext()
 
+    build = None
+    if build_path_or_id:
+        if uuid_utils.is_valid_uuid(build_path_or_id):
+            build = build_path_or_id
+        elif os.path.exists(build_path_or_id):
+            build = PipelineBuild.from_yaml(build_path_or_id)
+        else:
+            cli_utils.error(
+                f"The specified build {build_path_or_id} is not a valid UUID "
+                "or file path."
+            )
+
     with maybe_activate_stack:
         pipeline_instance = BasePipeline.from_model(pipeline_model)
-        pipeline_instance.run(config_path=config_path)
+        pipeline_instance.run(config_path=config_path, build=build)
 
 
 @pipeline.command("list", help="List all registered pipelines.")

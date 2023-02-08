@@ -61,10 +61,11 @@ from zenml.logger import get_logger
 from zenml.models import (
     PipelineBuildRequestModel,
     PipelineBuildResponseModel,
+    PipelineDeploymentRequestModel,
     PipelineRequestModel,
     PipelineResponseModel,
+    ScheduleRequestModel,
 )
-from zenml.models.schedule_model import ScheduleRequestModel
 from zenml.stack import Stack
 from zenml.steps import BaseStep
 from zenml.steps.base_step import BaseStepMeta
@@ -566,8 +567,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 deployment = deployment.copy(
                     update={"build_id": build_model.id}
                 )
-
-            from zenml.models import PipelineDeploymentRequestModel
 
             deployment_request = PipelineDeploymentRequestModel(
                 user=Client().active_user.id,
@@ -1139,15 +1138,15 @@ class BasePipeline(metaclass=BasePipelineMeta):
         self, deployment: "PipelineDeployment"
     ) -> Optional["PipelineBuildResponseModel"]:
         client = Client()
-        output = client.active_stack.build(deployment=deployment)
-        if output:
-            build = PipelineBuildRequestModel(
+        build = client.active_stack.build(deployment=deployment)
+        if build:
+            build_request = PipelineBuildRequestModel(
                 user=client.active_user.id,
                 workspace=client.active_workspace.id,
                 stack=client.active_stack_model.id,
                 pipeline=deployment.pipeline_id,
-                configuration=output,
+                configuration=build,
             )
-            return client.zen_store.create_build(build)
+            return client.zen_store.create_build(build_request)
         else:
             return None
