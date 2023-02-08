@@ -677,15 +677,16 @@ def test_crud_on_stack_succeeds():
                 StackComponentType.ORCHESTRATOR: [orchestrator.id],
                 StackComponentType.ARTIFACT_STORE: [artifact_store.id],
             }
+            stack_name = sample_name("arias_stack")
             new_stack = StackRequestModel(
-                name="arias_stack",
+                name=stack_name,
                 components=components,
                 workspace=client.active_workspace.id,
                 user=client.active_user.id,
             )
             created_stack = store.create_stack(stack=new_stack)
 
-            stacks = store.list_stacks(StackFilterModel(name="arias_stack"))
+            stacks = store.list_stacks(StackFilterModel(name=stack_name))
             assert len(stacks) == 1
 
             with does_not_raise():
@@ -698,7 +699,7 @@ def test_crud_on_stack_succeeds():
 
             stacks = store.list_stacks(StackFilterModel(name="axls_stack"))
             assert len(stacks) == 1
-            stacks = store.list_stacks(StackFilterModel(name="arias_stack"))
+            stacks = store.list_stacks(StackFilterModel(name=stack_name))
             assert len(stacks) == 0
 
             # Cleanup
