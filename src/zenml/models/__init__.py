@@ -66,6 +66,12 @@ from zenml.models.schedule_model import (
     ScheduleUpdateModel,
     ScheduleFilterModel,
 )
+from zenml.models.secret_models import (
+    SecretRequestModel,
+    SecretFilterModel,
+    SecretResponseModel,
+    SecretUpdateModel,
+)
 from zenml.models.stack_models import (
     StackFilterModel,
     StackRequestModel,
@@ -170,6 +176,11 @@ ArtifactResponseModel.update_forward_refs(
     RunMetadataResponseModel=RunMetadataResponseModel,
 )
 
+SecretResponseModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
+)
+
 __all__ = [
     "ArtifactRequestModel",
     "ArtifactResponseModel",
@@ -212,6 +223,10 @@ __all__ = [
     "ScheduleResponseModel",
     "ScheduleUpdateModel",
     "ScheduleFilterModel",
+    "SecretRequestModel",
+    "SecretFilterModel",
+    "SecretResponseModel",
+    "SecretUpdateModel",
     "StackRequestModel",
     "StackResponseModel",
     "StackUpdateModel",

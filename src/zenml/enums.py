@@ -86,6 +86,11 @@ class StoreType(StrEnum):
     REST = "rest"
 
 
+class SecretsStoreType(StrEnum):
+    """Secrets Store Backend Types."""
+
+    SQL = "sql"
+
 class ContainerRegistryFlavor(StrEnum):
     """Flavors of container registries."""
 
