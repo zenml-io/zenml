@@ -47,6 +47,9 @@ class AnalyticsEvent(str, Enum):
     UPDATE_REPOSITORY = "Repository updated"
     DELETE_REPOSITORY = "Repository deleted"
 
+    # Template
+    GENERATE_TEMPLATE = "Template generated"
+
     # Zen store
     INITIALIZED_STORE = "Store initialized"
 
