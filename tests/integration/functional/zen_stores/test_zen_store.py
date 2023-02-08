@@ -303,6 +303,10 @@ def test_removing_user_from_team_succeeds():
 def test_access_user_in_team_succeeds():
     pass
 
+@pytest.skip
+def test_access_user_in_team_succeeds():
+    pass
+
 #  .------.
 # | USERS |
 # '-------'
@@ -342,6 +346,11 @@ def test_deleting_default_user_fails():
 
 def test_getting_team_for_user_succeeds():
     pass
+
+@pytest.skip
+def test_team_for_user_succeeds():
+    pass
+
 
 # .-------.
 # | ROLES |
@@ -598,6 +607,15 @@ def test_delete_default_stack_component_fails():
 
     with pytest.raises(IllegalOperationError):
         store.delete_stack_component(default_orchestrator.id)
+
+
+@pytest.skip
+def test_list_stack_components_works_with_filters():
+    pass
+
+@pytest.skip
+def test_list_stack_components_lists_nothing_for_nonexistent_filters():
+    pass
 
 
 # .-------------------------.
