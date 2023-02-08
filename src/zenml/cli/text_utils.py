@@ -17,13 +17,13 @@ from typing import List
 
 from rich.markdown import Markdown
 
-zenml_go_welcome_message = Markdown(
+zenml_cli_welcome_message = Markdown(
     """
 # ⛩  Welcome to ZenML!
 """
 )
 
-zenml_go_email_prompt = Markdown(
+zenml_cli_email_prompt = Markdown(
     """
 Here at ZenML we are working hard to produce the best
 possible MLOps framework. In order to solve real-world problems
@@ -35,7 +35,7 @@ user interview and to better understand usage.
 """
 )
 
-zenml_go_privacy_message = Markdown(
+zenml_cli_privacy_message = Markdown(
     """
 ## 🔒 Privacy Policy at ZenML!
 
@@ -52,7 +52,7 @@ zenml analytics opt-out
 """
 )
 
-zenml_go_thank_you_message = Markdown(
+zenml_cli_thank_you_message = Markdown(
     """
 🙏  Thank you!
 """
