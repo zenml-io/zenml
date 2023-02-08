@@ -24,6 +24,7 @@ from zenml.stack import Flavor
 
 MLFLOW_MODEL_DEPLOYER_FLAVOR = "mlflow"
 MLFLOW_MODEL_EXPERIMENT_TRACKER_FLAVOR = "mlflow"
+MLFLOW_MODEL_REGISTRY_FLAVOR = "mlflow"
 
 
 class MlflowIntegration(Integration):
@@ -54,9 +55,14 @@ class MlflowIntegration(Integration):
         from zenml.integrations.mlflow.flavors import (
             MLFlowExperimentTrackerFlavor,
             MLFlowModelDeployerFlavor,
+            MLFlowModelRegistryFlavor,
         )
 
-        return [MLFlowModelDeployerFlavor, MLFlowExperimentTrackerFlavor]
+        return [
+            MLFlowModelDeployerFlavor,
+            MLFlowExperimentTrackerFlavor,
+            MLFlowModelRegistryFlavor,
+        ]
 
 
 MlflowIntegration.check_installation()

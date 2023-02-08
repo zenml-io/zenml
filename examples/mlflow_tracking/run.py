@@ -21,6 +21,10 @@ from steps.normalizer.normalizer_step import normalizer
 from steps.trainer.trainer_step import TrainerParameters, tf_trainer
 
 from zenml.integrations.mlflow.mlflow_utils import get_tracking_uri
+from zenml.integrations.mlflow.steps.mlflow_registry import (
+    MLFlowRegistryParameters,
+    mlflow_register_model_step,
+)
 
 if __name__ == "__main__":
     # Initialize a pipeline run
@@ -29,19 +33,26 @@ if __name__ == "__main__":
         normalizer=normalizer(),
         trainer=tf_trainer(params=TrainerParameters(epochs=5, lr=0.0003)),
         evaluator=tf_evaluator(),
+        model_register=mlflow_register_model_step(
+            params=MLFlowRegistryParameters(
+                registered_model_name="Tensorflow-mnist-model",
+                registered_model_description="A simple mnist model trained with zenml",
+                tags={"framework": "tensorflow", "dataset": "mnist"},
+            )
+        ),
     )
 
     run_1.run()
 
     # Initialize a pipeline run again
-    run_2 = mlflow_example_pipeline(
-        importer=loader_mnist(),
-        normalizer=normalizer(),
-        trainer=tf_trainer(params=TrainerParameters(epochs=5, lr=0.0001)),
-        evaluator=tf_evaluator(),
-    )
+    # run_2 = mlflow_example_pipeline(
+    #    importer=loader_mnist(),
+    #    normalizer=normalizer(),
+    #    trainer=tf_trainer(params=TrainerParameters(epochs=5, lr=0.0001)),
+    #    evaluator=tf_evaluator(),
+    # )
 
-    run_2.run()
+    # run_2.run()
 
     print(
         "Now run \n "
