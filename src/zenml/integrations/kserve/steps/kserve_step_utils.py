@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Utility functions used by the KServe deployer step."""
 import os
+import re
 import tempfile
 from typing import List, Optional
 
@@ -20,6 +21,7 @@ from model_archiver.model_packaging import package_model
 from model_archiver.model_packaging_utils import ModelExportUtils
 from pydantic import BaseModel
 
+from zenml.exceptions import ValidationError
 from zenml.integrations.kserve.services.kserve_deployment import (
     KServeDeploymentConfig,
 )
@@ -28,6 +30,16 @@ from zenml.integrations.kserve.steps.kserve_deployer import (
 )
 from zenml.io import fileio
 from zenml.utils import io_utils
+
+
+def is_valid_model_name(model_name: str) -> bool:
+    """Checks if the model name is valid.
+
+    Returns:
+        True if the model name is valid, False otherwise.
+    """
+    pattern = re.compile("^[a-z0-9-]+$")
+    return pattern.match(model_name) is not None
 
 
 def prepare_service_config(
@@ -91,6 +103,12 @@ def prepare_service_config(
         )
         fileio.makedirs(served_model_uri)
         fileio.copy(model_uri, os.path.join(served_model_uri, "model.joblib"))
+    elif not is_valid_model_name(params.service_config.model_name):
+        raise ValidationError(
+            f"Model name '{params.service_config.model_name}' is invalid. "
+            f"The model name can only include lowercase alphanumeric "
+            "characters and hyphens. Please rename your model and try again."
+        )
     else:
         # default treatment for all other server implementations is to
         # simply reuse the model from the artifact store path where it
