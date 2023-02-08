@@ -35,6 +35,9 @@ from zenml.utils import io_utils
 def is_valid_model_name(model_name: str) -> bool:
     """Checks if the model name is valid.
 
+    Args:
+        model_name: the model name to check
+
     Returns:
         True if the model name is valid, False otherwise.
     """
@@ -63,6 +66,7 @@ def prepare_service_config(
 
     Raises:
         RuntimeError: if the model files cannot be prepared.
+        ValidationError: if the model name is invalid.
     """
     served_model_uri = os.path.join(output_artifact_uri, "kserve")
     fileio.makedirs(served_model_uri)
