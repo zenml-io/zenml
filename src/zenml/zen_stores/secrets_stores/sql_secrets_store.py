@@ -52,6 +52,7 @@ from zenml.models import (
 from zenml.models.base_models import BaseResponseModel
 from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.models.page_model import Page
+from zenml.models.secret_models import SecretScope
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.zen_stores.schemas import (
     BaseSchema,
@@ -193,20 +194,33 @@ class SqlSecretsStore(BaseSecretsStore):
             ValueError: In case the values contents exceeds the max length.
         """
         with Session(self.engine) as session:
-            # Check if secret with the same domain key (name, workspace) already
-            # exists
-            existing_secret = session.exec(
-                select(SecretSchema)
-                .where(SecretSchema.name == secret.name)
-                .where(SecretSchema.workspace_id == secret.workspace)
-            ).first()
+            # Check if a secret with the same name already exists in the same
+            # scope.
+            scope_filter = select(SecretSchema).where(
+                SecretSchema.name == secret.name
+            )
+            if secret.scope in [SecretScope.WORKSPACE, SecretScope.USER]:
+                scope_filter = scope_filter.where(
+                    SecretSchema.workspace_id == secret.workspace
+                )
+            if secret.scope == SecretScope.USER:
+                scope_filter = scope_filter.where(
+                    SecretSchema.user_id == secret.user
+                )
+
+            existing_secret = session.exec(scope_filter).first()
 
             if existing_secret is not None:
-                raise EntityExistsError(
+                msg = (
                     f"Unable to register secret with name '{secret.name}': "
-                    f"Found an existing secret with the same name in the same "
-                    f"'{secret.workspace}' workspace."
+                    f"Found an existing '{secret.scope.value}' scoped secret "
+                    f"with the same name"
                 )
+                if secret.scope in [SecretScope.WORKSPACE, SecretScope.USER]:
+                    msg += f" in the same '{secret.workspace}' workspace"
+                if secret.scope == SecretScope.USER:
+                    msg += f" for the same '{secret.user}' user"
+                raise EntityExistsError(msg)
 
             serialized_values = base64.b64encode(
                 json.dumps(secret.clear_values).encode("utf-8")
@@ -228,7 +242,12 @@ class SqlSecretsStore(BaseSecretsStore):
     def update_secret(
         self, secret_id: UUID, secret_update: SecretUpdateModel
     ) -> SecretResponseModel:
-        """Updates an existing user.
+        """Updates an existing secret.
+
+        Values that are specified as `None` in the update that are present in
+        the existing secret will be removed from the existing secret. Values
+        that are present in both secrets will be overwritten. All other values
+        in both the existing secret and the update will be kept.
 
         Args:
             secret_id: The id of the secret to update.

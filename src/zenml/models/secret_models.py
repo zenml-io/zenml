@@ -13,23 +13,34 @@
 #  permissions and limitations under the License.
 """Models representing secrets."""
 
-from typing import TYPE_CHECKING, Dict, Optional, Union
+from enum import StrEnum
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field, SecretStr
 
 from zenml.models.base_models import (
+    BaseResponseModel,
     WorkspaceScopedRequestModel,
     WorkspaceScopedResponseModel,
     update_model,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.filter_models import WorkspaceScopedFilterModel
+from zenml.models.user_models import UserResponseModel
+from zenml.models.workspace_models import WorkspaceResponseModel
 
 
 # ---- #
 # BASE #
 # ---- #
+
+
+class SecretScope(StrEnum):
+    """Enum for the scope of a secret."""
+
+    WORKSPACE = "workspace"
+    USER = "user"
 
 
 class SecretBaseModel(BaseModel):
@@ -40,6 +51,10 @@ class SecretBaseModel(BaseModel):
         max_length=STR_FIELD_MAX_LENGTH,
     )
 
+    scope: SecretScope = Field(
+        SecretScope.WORKSPACE, title="The scope of the secret."
+    )
+
     values: Dict[str, Optional[SecretStr]] = Field(
         title="The values stored in this secret."
     )
@@ -48,12 +63,18 @@ class SecretBaseModel(BaseModel):
     def clear_values(self) -> Dict[str, str]:
         """A dictionary with all un-obfuscated values stored in this secret.
 
+        The values are returned as strings, not SecretStrs. If a value is
+        None, it is not included in the returned dictionary. This is to enable
+        the use of None values in the update model to indicate that a secret
+        value should be deleted. 
+
         Returns:
             A dictionary containing the secret's values.
         """
         return {
-            k: v.get_secret_value() if v is not None else None
+            k: v.get_secret_value()
             for k, v in self.values.items()
+            if v is not None
         }
 
 
@@ -74,16 +95,21 @@ class SecretResponseModel(SecretBaseModel, WorkspaceScopedResponseModel):
 class SecretFilterModel(WorkspaceScopedFilterModel):
     """Model to enable advanced filtering of all Secrets."""
 
-    name: str = Field(
+    name: Optional[str] = Field(
         default=None,
         description="Name of the secret",
     )
 
-    workspace_id: Union[UUID, str] = Field(
+    scope: SecretScope = Field(
+        default=SecretScope.WORKSPACE,
+        description="Scope in which to filter secrets",
+    )
+
+    workspace_id: Optional[Union[UUID, str]] = Field(
         default=None, description="Workspace of the Secret"
     )
 
-    user_id: Union[UUID, str] = Field(
+    user_id: Optional[Union[UUID, str]] = Field(
         None, description="User that created the Secret"
     )
 

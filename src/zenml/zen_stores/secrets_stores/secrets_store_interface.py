@@ -100,6 +100,11 @@ class SecretsStoreInterface(ABC):
     ) -> SecretResponseModel:
         """Updates a secret.
 
+        Values that are specified as `None` in the update that are present in
+        the existing secret will be removed from the existing secret. Values
+        that are present in both secrets will be overwritten. All other values
+        in both the existing secret and the update will be kept.
+
         Args:
             secret_id: The ID of the secret to be updated.
             secret_update: The update to be applied.

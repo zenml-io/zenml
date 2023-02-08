@@ -24,6 +24,7 @@ from sqlmodel import Field, Relationship
 from zenml.models.secret_models import (
     SecretRequestModel,
     SecretResponseModel,
+    SecretScope,
     SecretUpdateModel,
 )
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
@@ -42,6 +43,8 @@ class SecretSchema(NamedSchema, table=True):
 
     __tablename__ = "secret"
 
+    scope: SecretScope
+
     values: str = Field(sa_column=Column(TEXT, nullable=False))
 
     workspace_id: UUID = build_foreign_key_field(
@@ -54,13 +57,13 @@ class SecretSchema(NamedSchema, table=True):
     )
     workspace: "WorkspaceSchema" = Relationship(back_populates="secrets")
 
-    user_id: Optional[UUID] = build_foreign_key_field(
+    user_id: UUID = build_foreign_key_field(
         source=__tablename__,
         target=UserSchema.__tablename__,
         source_column="user_id",
         target_column="id",
-        ondelete="SET NULL",
-        nullable=True,
+        ondelete="CASCADE",
+        nullable=False,
     )
     user: Optional["UserSchema"] = Relationship(back_populates="secrets")
 
@@ -74,8 +77,10 @@ class SecretSchema(NamedSchema, table=True):
         Returns:
             The created `SecretSchema`.
         """
+        assert secret.user is not None, "User must be set for secret creation."
         return cls(
             name=secret.name,
+            scope=secret.scope,
             workspace_id=secret.workspace,
             user_id=secret.user,
             values=base64.b64encode(
@@ -96,8 +101,16 @@ class SecretSchema(NamedSchema, table=True):
             exclude_unset=True, exclude={"workspace", "user"}
         ).items():
             if field == "values":
+                existing_values = json.loads(
+                    base64.b64decode(self.values).decode()
+                )
+                existing_values.update(value)
+                # Drop None values
+                existing_values = {
+                    k: v for k, v in existing_values.items() if v is not None
+                }
                 self.configuration = base64.b64encode(
-                    json.dumps(secret_update.clear_values).encode("utf-8")
+                    json.dumps(existing_values).encode("utf-8")
                 )
             else:
                 setattr(self, field, value)
@@ -114,6 +127,7 @@ class SecretSchema(NamedSchema, table=True):
         return SecretResponseModel(
             id=self.id,
             name=self.name,
+            scope=self.scope,
             values=json.loads(
                 base64.b64decode(self.values).decode()
             ),
