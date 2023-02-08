@@ -56,11 +56,13 @@ def test_server_up_and_connect(clean_client, cli_runner):
     """Test spinning up and connecting to ZenServer."""
     port = scan_for_available_port(start=8003, stop=9000)
     up_command = cli.commands["up"]
-    cli_runner.invoke(up_command, ["--port", port, "--connect", True])
+    cli_runner.invoke(up_command, ["--port", port, "--connect"])
 
     deployer = ServerDeployer()
-    # logging.info(deployer.list_servers())
     server = deployer.get_server(LOCAL_ZENML_SERVER_NAME)
 
     gc = GlobalConfiguration()
     assert gc.store.url == server.status.url
+
+    down_command = cli.commands["down"]
+    cli_runner.invoke(down_command)
