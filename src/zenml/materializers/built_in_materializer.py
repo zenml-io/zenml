@@ -14,7 +14,7 @@
 """Implementation of ZenML's builtin materializer."""
 
 import os
-from typing import Any, Iterable, Type
+from typing import TYPE_CHECKING, Any, Dict, Iterable, Type, Union
 
 from zenml.enums import ArtifactType
 from zenml.io import fileio
@@ -25,11 +25,19 @@ from zenml.materializers.default_materializer_registry import (
 )
 from zenml.utils import yaml_utils
 
+if TYPE_CHECKING:
+    from zenml.metadata.metadata_types import MetadataType
+
 logger = get_logger(__name__)
 DEFAULT_FILENAME = "data.json"
 DEFAULT_BYTES_FILENAME = "data.txt"
 DEFAULT_METADATA_FILENAME = "metadata.json"
-BASIC_TYPES = (bool, float, int, str)  # complex/bytes are not JSON serializable
+BASIC_TYPES = (
+    bool,
+    float,
+    int,
+    str,
+)  # complex/bytes are not JSON serializable
 
 
 class BuiltInMaterializer(BaseMaterializer):
@@ -47,7 +55,9 @@ class BuiltInMaterializer(BaseMaterializer):
         super().__init__(uri)
         self.data_path = os.path.join(self.uri, DEFAULT_FILENAME)
 
-    def load(self, data_type: Type[Any]) -> Any:
+    def load(
+        self, data_type: Union[Type[bool], Type[float], Type[int], Type[str]]
+    ) -> Any:
         """Reads basic primitive types from JSON.
 
         Args:
@@ -66,7 +76,7 @@ class BuiltInMaterializer(BaseMaterializer):
             )
         return contents
 
-    def save(self, data: Any) -> None:
+    def save(self, data: Union[bool, float, int, str]) -> None:
         """Serialize a basic type to JSON.
 
         Args:
@@ -74,6 +84,27 @@ class BuiltInMaterializer(BaseMaterializer):
         """
         super().save(data)
         yaml_utils.write_json(self.data_path, data)
+
+    def extract_metadata(
+        self, data: Union[bool, float, int, str]
+    ) -> Dict[str, "MetadataType"]:
+        """Extract metadata from the given built-in container object.
+
+        Args:
+            data: The built-in container object to extract metadata from.
+
+        Returns:
+            The extracted metadata as a dictionary.
+        """
+        base_metadata = super().extract_metadata(data)
+        builtin_metadata: Dict[str, "MetadataType"] = {}
+
+        # For boolean and numbers, add the string representation as metadata.
+        # We don't to this for strings because they can be arbitrarily long.
+        if isinstance(data, (bool, float, int)):
+            builtin_metadata["string_representation"] = str(data)
+
+        return {**base_metadata, **builtin_metadata}
 
 
 class BytesMaterializer(BaseMaterializer):
@@ -143,7 +174,9 @@ def _is_serializable(obj: Any) -> bool:
     if isinstance(obj, (list, tuple, set)):
         return _all_serializable(obj)
     if isinstance(obj, dict):
-        return _all_serializable(obj.keys()) and _all_serializable(obj.values())
+        return _all_serializable(obj.keys()) and _all_serializable(
+            obj.values()
+        )
     return False
 
 
@@ -340,3 +373,18 @@ class BuiltInContainerMaterializer(BaseMaterializer):
             for element_path in paths:
                 fileio.rmtree(element_path)
             raise e
+
+    def extract_metadata(self, data: Any) -> Dict[str, "MetadataType"]:
+        """Extract metadata from the given built-in container object.
+
+        Args:
+            data: The built-in container object to extract metadata from.
+
+        Returns:
+            The extracted metadata as a dictionary.
+        """
+        base_metadata = super().extract_metadata(data)
+        container_metadata = {
+            "length": len(data),
+        }
+        return {**base_metadata, **container_metadata}

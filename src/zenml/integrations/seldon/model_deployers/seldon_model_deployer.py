@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional, Type, cast
 from uuid import UUID
 
 from zenml.client import Client
+from zenml.enums import StackComponentType
 from zenml.integrations.seldon.constants import (
     SELDON_CUSTOM_DEPLOYMENT,
     SELDON_DOCKER_IMAGE_KEY,
@@ -36,9 +37,11 @@ from zenml.logger import get_logger
 from zenml.model_deployers import BaseModelDeployer, BaseModelDeployerFlavor
 from zenml.secrets_managers import BaseSecretsManager
 from zenml.services.service import BaseService, ServiceConfig
-from zenml.stack.stack import Stack
+from zenml.stack import Stack, StackValidator
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
-from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
+from zenml.utils.pipeline_docker_image_builder import (
+    PipelineDockerImageBuilder,
+)
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
@@ -64,6 +67,20 @@ class SeldonModelDeployer(BaseModelDeployer):
             The configuration.
         """
         return cast(SeldonModelDeployerConfig, self._config)
+
+    @property
+    def validator(self) -> Optional[StackValidator]:
+        """Ensures there is a container registry and image builder in the stack.
+
+        Returns:
+            A `StackValidator` instance.
+        """
+        return StackValidator(
+            required_components={
+                StackComponentType.CONTAINER_REGISTRY,
+                StackComponentType.IMAGE_BUILDER,
+            }
+        )
 
     @staticmethod
     def get_model_server_info(  # type: ignore[override]
@@ -111,7 +128,9 @@ class SeldonModelDeployer(BaseModelDeployer):
             The Seldon Core Kubernetes secret name, or None if no secret is
             configured.
         """
-        if not self.config.secret:
+        if self.config.kubernetes_secret_name and not self.config.secret:
+            return self.config.kubernetes_secret_name
+        elif not self.config.secret:
             return None
         return (
             re.sub(
@@ -141,7 +160,7 @@ class SeldonModelDeployer(BaseModelDeployer):
 
         if needs_docker_image:
             docker_image_builder = PipelineDockerImageBuilder()
-            repo_digest = docker_image_builder.build_and_push_docker_image(
+            repo_digest = docker_image_builder.build_docker_image(
                 deployment=deployment, stack=stack
             )
             deployment.add_extra(SELDON_DOCKER_IMAGE_KEY, repo_digest)
@@ -161,7 +180,9 @@ class SeldonModelDeployer(BaseModelDeployer):
         # if a ZenML secret was configured in the model deployer,
         # create a Kubernetes secret as a means to pass this information
         # to the Seldon Core deployment
-        if self.config.secret:
+        if self.config.kubernetes_secret_name and not self.config.secret:
+            return self.config.kubernetes_secret_name
+        elif self.config.secret:
 
             secret_manager = Client().active_stack.secrets_manager
 
@@ -196,7 +217,11 @@ class SeldonModelDeployer(BaseModelDeployer):
 
         Do this if no Seldon Core deployments are using it.
         """
-        if self.kubernetes_secret_name:
+        if (
+            self.kubernetes_secret_name
+            and self.kubernetes_secret_name
+            != self.config.kubernetes_secret_name
+        ):
 
             # fetch all the Seldon Core deployments that currently
             # configured to use this secret
@@ -275,7 +300,8 @@ class SeldonModelDeployer(BaseModelDeployer):
             # SeldonDeploymentConfig, try to create one from the ZenML secret
             # configured for the model deployer
             config.secret_name = (
-                config.secret_name or self._create_or_update_kubernetes_secret()
+                config.secret_name
+                or self._create_or_update_kubernetes_secret()
             )
 
             # if replace is True, find equivalent Seldon Core deployments

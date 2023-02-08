@@ -102,9 +102,9 @@ DELETED_USER = "User deleted"
 CREATED_TEAM = "Team created"
 DELETED_TEAM = "Team deleted"
 
-# Projects
-CREATED_PROJECT = "Project created"
-DELETED_PROJECT = "Project deleted"
+# Workspaces
+CREATED_WORKSPACE = "Workspace created"
+DELETED_WORKSPACE = "Workspace deleted"
 
 # Role
 CREATED_ROLE = "Role created"

@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """ZenML enums."""
-
 import logging
 from enum import Enum
 
@@ -25,9 +24,9 @@ class ArtifactType(StrEnum):
     DATA_ANALYSIS = "DataAnalysisArtifact"
     DATA = "DataArtifact"
     MODEL = "ModelArtifact"
-    SCHEMA = "SchemaArtifact"
+    SCHEMA = "SchemaArtifact"  # deprecated
     SERVICE = "ServiceArtifact"
-    STATISTICS = "StatisticsArtifact"
+    STATISTICS = "StatisticsArtifact"  # deprecated in favor of `DATA_ANALYSIS`
     BASE = "BaseArtifact"
 
 
@@ -61,6 +60,7 @@ class StackComponentType(StrEnum):
     DATA_VALIDATOR = "data_validator"
     EXPERIMENT_TRACKER = "experiment_tracker"
     FEATURE_STORE = "feature_store"
+    IMAGE_BUILDER = "image_builder"
     MODEL_DEPLOYER = "model_deployer"
     ORCHESTRATOR = "orchestrator"
     SECRETS_MANAGER = "secrets_manager"
@@ -150,4 +150,33 @@ class PermissionType(StrEnum):
     # ANY CHANGES TO THIS ENUM WILL NEED TO BE DONE TOGETHER WITH A DB MIGRATION
     WRITE = "write"  # allows the user to create, update, delete everything
     READ = "read"  # allows the user to read everything
-    ME = "me"  # allows the user to self administrate (change name, password...)
+    ME = (
+        "me"  # allows the user to self administrate (change name, password...)
+    )
+
+
+class GenericFilterOps(StrEnum):
+    """Ops for all filters for string values on list methods."""
+
+    EQUALS = "equals"
+    CONTAINS = "contains"
+    STARTSWITH = "startswith"
+    ENDSWITH = "endswith"
+    GTE = "gte"
+    GT = "gt"
+    LTE = "lte"
+    LT = "lt"
+
+
+class SorterOps(StrEnum):
+    """Ops for all filters for string values on list methods."""
+
+    ASCENDING = "asc"
+    DESCENDING = "desc"
+
+
+class LogicalOperators(StrEnum):
+    """Logical Ops to use to combine filters on list methods."""
+
+    OR = "or"
+    AND = "and"

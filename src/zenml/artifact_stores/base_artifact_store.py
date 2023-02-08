@@ -33,8 +33,12 @@ from pydantic import root_validator
 
 from zenml.enums import StackComponentType
 from zenml.exceptions import ArtifactStoreInterfaceError
+from zenml.io import fileio
+from zenml.logger import get_logger
 from zenml.stack import Flavor, StackComponent, StackComponentConfig
 from zenml.utils import io_utils
+
+logger = get_logger(__name__)
 
 PathType = Union[bytes, str]
 
@@ -53,7 +57,7 @@ def _sanitize_potential_path(potential_path: Any) -> Any:
         path.
     """
     if isinstance(potential_path, bytes):
-        path = io_utils.convert_to_str(potential_path)
+        path = fileio.convert_to_str(potential_path)
     elif isinstance(potential_path, str):
         path = potential_path
     else:
@@ -147,7 +151,9 @@ class BaseArtifactStoreConfig(StackComponentConfig):
                     """
                 )
             )
-        if not any(values["path"].startswith(i) for i in cls.SUPPORTED_SCHEMES):
+        if not any(
+            values["path"].startswith(i) for i in cls.SUPPORTED_SCHEMES
+        ):
             raise ArtifactStoreInterfaceError(
                 f"The path: '{values['path']}' you defined for your "
                 f"artifact store is not supported by the implementation of "
@@ -303,6 +309,24 @@ class BaseArtifactStore(StackComponent):
             The stat descriptor.
         """
 
+    def size(self, path: PathType) -> Optional[int]:
+        """Get the size of a file in bytes.
+
+        Args:
+            path: The path to the file.
+
+        Returns:
+            The size of the file in bytes or `None` if the artifact store
+            does not implement the `size` method.
+        """
+        logger.warning(
+            "Cannot get size of file '%s' since the artifact store %s does not "
+            "implement the `size` method.",
+            path,
+            self.__class__.__name__,
+        )
+        return None
+
     @abstractmethod
     def walk(
         self,
@@ -348,7 +372,7 @@ class BaseArtifactStore(StackComponent):
             {
                 "SUPPORTED_SCHEMES": self.config.SUPPORTED_SCHEMES,
                 "open": staticmethod(_sanitize_paths(self.open)),
-                "copy": staticmethod(_sanitize_paths(self.copyfile)),
+                "copyfile": staticmethod(_sanitize_paths(self.copyfile)),
                 "exists": staticmethod(_sanitize_paths(self.exists)),
                 "glob": staticmethod(_sanitize_paths(self.glob)),
                 "isdir": staticmethod(_sanitize_paths(self.isdir)),
@@ -358,6 +382,7 @@ class BaseArtifactStore(StackComponent):
                 "remove": staticmethod(_sanitize_paths(self.remove)),
                 "rename": staticmethod(_sanitize_paths(self.rename)),
                 "rmtree": staticmethod(_sanitize_paths(self.rmtree)),
+                "size": staticmethod(_sanitize_paths(self.size)),
                 "stat": staticmethod(_sanitize_paths(self.stat)),
                 "walk": staticmethod(_sanitize_paths(self.walk)),
             },

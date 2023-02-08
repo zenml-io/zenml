@@ -28,6 +28,8 @@ if TYPE_CHECKING:
         FlavorSchema,
         PipelineRunSchema,
         PipelineSchema,
+        RunMetadataSchema,
+        ScheduleSchema,
         StackComponentSchema,
         StackSchema,
         StepRunSchema,
@@ -61,9 +63,15 @@ class UserSchema(NamedSchema, table=True):
     )
     flavors: List["FlavorSchema"] = Relationship(back_populates="user")
     pipelines: List["PipelineSchema"] = Relationship(back_populates="user")
+    schedules: List["ScheduleSchema"] = Relationship(
+        back_populates="user",
+    )
     runs: List["PipelineRunSchema"] = Relationship(back_populates="user")
     step_runs: List["StepRunSchema"] = Relationship(back_populates="user")
     artifacts: List["ArtifactSchema"] = Relationship(back_populates="user")
+    run_metadata: List["RunMetadataSchema"] = Relationship(
+        back_populates="user"
+    )
 
     @classmethod
     def from_request(cls, model: UserRequestModel) -> "UserSchema":
@@ -141,4 +149,5 @@ class UserSchema(NamedSchema, table=True):
                 full_name=self.full_name,
                 created=self.created,
                 updated=self.updated,
+                roles=[ra.role.to_model() for ra in self.assigned_roles],
             )

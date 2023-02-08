@@ -69,6 +69,25 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         """
         # write `data` to self.uri
         ...
+    
+    def extract_metadata(self, data: Any) -> Dict[str, "MetadataType"]:
+        """Extract metadata from the given data.
+
+        This metadata will be tracked and displayed alongside the artifact.
+
+        Args:
+            data: The data to extract metadata from.
+
+        Returns:
+            A dictionary of metadata.
+        """
+        # Optionally, extract some metadata from `data` for ZenML to store.
+        # E.g.:
+        # return {
+        #     "some_attribute_i_want_to_track": self.some_attribute,
+        #     "pi": 3.14,
+        # }
+        ...
 ```
 
 ### Which Data Type to Handle?
@@ -108,6 +127,33 @@ of artifacts.
 You will need to overwrite these methods according to how you plan to serialize
 your objects. E.g., if you have custom PyTorch classes as `ASSOCIATED_TYPES`,
 then you might want to use `torch.save()` and `torch.load()` here.
+
+### (Optional) Which Metadata to Extract for the Artifact
+
+Optionally, you can overwrite the `extract_metadata()` method to track custom 
+metadata for all artifacts saved by your materializer. Anything you extract 
+here will be displayed in the dashboard next to your artifacts.
+
+To extract metadata, define and return a dictionary of values you want to track. 
+The only requirement is that all your values are built-in types (like `str`, 
+`int`, `list`, `dict`, ...) or among the special types defined in
+[src.zenml.metadata.metadata_types](https://github.com/zenml-io/zenml/blob/main/src/zenml/metadata/metadata_types.py)
+that are displayed in a dedicated way in the dashboard.
+See [src.zenml.metadata.metadata_types.MetadataType](https://github.com/zenml-io/zenml/blob/main/src/zenml/metadata/metadata_types.py)
+for more details.
+
+By default, this method will extract an artifact's storage size and runtime 
+data type, but you can overwrite it to track anything you wish. E.g., the 
+`zenml.materializers.NumpyMaterializer` overwrites this method to track the 
+`shape`, `dtype`, and some statistical properties of each `np.ndarray` that it saves.
+
+{% hint style="info" %}
+If you would like to disable artifact metadata extraction altogether, you can 
+set `enable_artifact_metadata` at either pipeline, step, or run level via 
+`@pipeline(enable_artifact_metadata=False)` or 
+`@step(enable_artifact_metadata=False)` or
+`my_pipeline(...).run(enable_artifact_metadata=False)`.
+{% endhint %}
 
 ## Using a Custom Materializer
 
@@ -446,3 +492,166 @@ def example_pipeline(step_1, step_2, step_3, step_4):
 
 example_pipeline(step_1(), step_2(), step_3(), step_4()).run()
 ```
+
+## Note on using Materializers for Custom Artifact Stores
+
+When creating a custom Artifact Store, you may encounter a situation where the 
+default materializers do not function properly. Specifically, the `fileio.open`
+method used in these materializers may not be compatible with your custom store
+due to not being implemented properly.
+
+In this case, you can create a modified version of the failing materializer by 
+copying it and modifying it to copy the artifact to a local path, then opening 
+it from there. For example, consider the following implementation of a custom 
+[PandasMaterializer](https://github.com/zenml-io/zenml/blob/main/src/zenml/materializers/pandas_materializer.py) 
+that works with a custom artifact store. In this implementation, we copy 
+the artifact to a local path because we want to use the `pandas.read_csv` method 
+to read it. If we were to use the `fileio.open` method instead, we would not need 
+to make this copy.
+
+
+{% hint style="info" %}
+It is worth noting that copying the artifact to a local path may not always be 
+necessary and can potentially be a performance bottleneck.
+{% endhint %}
+
+<details>
+    <summary>Pandas Materializer code example</summary>
+
+```python
+import os
+from typing import Any, Type, Union
+
+import pandas as pd
+
+from zenml.enums import ArtifactType
+from zenml.io import fileio
+from zenml.logger import get_logger
+from zenml.materializers.base_materializer import BaseMaterializer
+
+logger = get_logger(__name__)
+PARQUET_FILENAME = "df.parquet.gzip"
+COMPRESSION_TYPE = "gzip"
+
+CSV_FILENAME = "df.csv"
+
+
+class PandasMaterializer(BaseMaterializer):
+    """Materializer to read data to and from pandas."""
+
+    ASSOCIATED_TYPES = (pd.DataFrame, pd.Series)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
+
+    def __init__(self, uri: str):
+        """Define `self.data_path`.
+        Args:
+            uri: The URI where the artifact data is stored.
+        """
+        super().__init__(uri)
+        try:
+            import pyarrow  # type: ignore
+
+            self.pyarrow_exists = True
+        except ImportError:
+            self.pyarrow_exists = False
+            logger.warning(
+                "By default, the `PandasMaterializer` stores data as a "
+                "`.csv` file. If you want to store data more efficiently, "
+                "you can install `pyarrow` by running "
+                "'`pip install pyarrow`'. This will allow `PandasMaterializer` "
+                "to automatically store the data as a `.parquet` file instead."
+            )
+        finally:
+            self.parquet_path = os.path.join(self.uri, PARQUET_FILENAME)
+            self.csv_path = os.path.join(self.uri, CSV_FILENAME)
+
+    def load(self, data_type: Type[Any]) -> Union[pd.DataFrame, pd.Series]:
+        """Reads `pd.DataFrame` or `pd.Series` from a `.parquet` or `.csv` file.
+        Args:
+            data_type: The type of the data to read.
+        Raises:
+            ImportError: If pyarrow or fastparquet is not installed.
+        Returns:
+            The pandas dataframe or series.
+        """
+        super().load(data_type)
+        temp_dir = tempfile.mkdtemp(prefix="zenml-temp-")
+        if fileio.exists(self.parquet_path):
+            if self.pyarrow_exists:
+                # Create a temporary file
+                temp_file = os.path.join(str(temp_dir), PARQUET_FILENAME)
+                # Copy the data to the temporary file
+                fileio.copy(self.parquet_path, temp_file)
+                # Load the data from the temporary file
+                df = pd.read_parquet(temp_file)
+            else:
+                raise ImportError(
+                    "You have an old version of a `PandasMaterializer` "
+                    "data artifact stored in the artifact store "
+                    "as a `.parquet` file, which requires `pyarrow` "
+                    "for reading, You can install `pyarrow` by running "
+                    "'`pip install pyarrow fastparquet`'."
+                )
+        else:
+            # Create a temporary file
+            temp_file = os.path.join(str(temp_dir), CSV_FILENAME)
+            # Copy the data to the temporary file
+            fileio.copy(self.csv_path, temp_file)
+            # Load the data from the temporary file
+            df = pd.read_csv(temp_file, index_col=0, parse_dates=True)
+
+        # Cleanup and return
+        fileio.rmtree(temp_dir)
+
+        # validate the type of the data.
+        def is_dataframe_or_series(
+            df: Union[pd.DataFrame, pd.Series]
+        ) -> Union[pd.DataFrame, pd.Series]:
+            """Checks if the data is a `pd.DataFrame` or `pd.Series`.
+            Args:
+                df: The data to check.
+            Returns:
+                The data if it is a `pd.DataFrame` or `pd.Series`.
+            """
+            if issubclass(data_type, pd.Series):
+                # Taking the first column if its a series as the assumption
+                # is that there will only be one
+                assert len(df.columns) == 1
+                df = df[df.columns[0]]
+                return df
+            else:
+                return df
+
+        return is_dataframe_or_series(df)
+
+    def save(self, df: Union[pd.DataFrame, pd.Series]) -> None:
+        """Writes a pandas dataframe or series to the specified filename.
+        Args:
+            df: The pandas dataframe or series to write.
+        """
+        super().save(df)
+
+        if isinstance(df, pd.Series):
+
+            df = df.to_frame(name="series")
+
+        # Create a temporary file to store the data
+        if self.pyarrow_exists:
+            with tempfile.NamedTemporaryFile(
+                mode="wb", suffix=".gzip", delete=False
+            ) as f:
+                df.to_parquet(f.name, compression=COMPRESSION_TYPE)
+                fileio.copy(f.name, self.parquet_path)
+        else:
+            with tempfile.NamedTemporaryFile(
+                mode="wb", suffix=".csv", delete=False
+            ) as f:
+                df.to_csv(f.name, index=True)
+                fileio.copy(f.name, self.csv_path)
+
+        # Close and remove the temporary file
+        fileio.remove(f.name)
+
+```
+
+</details>

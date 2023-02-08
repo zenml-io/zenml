@@ -14,21 +14,24 @@ See the advanced section on [Services](manage-external-services.md) for more
 information on daemons.
 {% endhint %}
 
-For such components, you can manage the daemon state using the 
-`zenml <STACK_COMPONENT> up` and `zenml <STACK_COMPONENT> down` commands.
-Alternatively, you can also use `zenml stack up` or `zenml stack down` to 
-manage the state of your entire stack:
+{% hint style="warning" %}
+As we move towards a more efficient and scalable stack and stack components 
+management, it has become clear that the current provision and deprovision 
+commands are not sufficient to allow more modularity when using different stack
+components and tools. Therefore, we are deprecating the `zenml stack up` and
+`zenml stack down` commands in favor of the new `zenml stack recipe pull` and
+`zenml stack recipe deploy` commands. The new commands with the ZenML stack
+recipes offer a more granular approach to managing stack components, allowing 
+for greater control over each component's state and configuration. 
+Additionally, this approach makes it easier to add new components to the stack 
+and update existing ones, making the overall deployment and test process more 
+streamlined and efficient. 
 
-```shell
-zenml stack up  # Provision and start all stack components
-zenml orchestrator up  # Provision and start the orchestrator only
-
-zenml stack down  # Stop all stack components
-zenml orchestrator down  # Stop the orchestrator only
-
-zenml stack down --force  # Stop and deprovision all stack components
-zenml orchestrator down --force  # Stop and deprovision the orchestrator only
-```
+We will continue to support the old commands for the time being, but we
+strongly recommend adding your custom stack component provisioning and
+deprovisioning logic to the terraform recipe files. Alternatively, you can make 
+it independent from the main implementation of the stack component. 
+{% endhint %}
 
 ## Defining States of Custom Components
 

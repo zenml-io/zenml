@@ -50,8 +50,7 @@ class StubSecretsManagerConfig(BaseSecretsManagerConfig):
 
 
 def test_base_secrets_manager_prevents_secret_references():
-    """Tests that the secrets manager prevents all secret references"""
-
+    """Tests that the secrets manager prevents all secret references."""
     with pytest.raises(ValueError):
         StubSecretsManager(
             name="",
@@ -60,7 +59,7 @@ def test_base_secrets_manager_prevents_secret_references():
             flavor="default",
             type=StackComponentType.SECRETS_MANAGER,
             user=uuid4(),
-            project=uuid4(),
+            workspace=uuid4(),
             created=datetime.now(),
             updated=datetime.now(),
         )
@@ -73,7 +72,7 @@ def test_base_secrets_manager_prevents_secret_references():
             flavor="default",
             type=StackComponentType.SECRETS_MANAGER,
             user=uuid4(),
-            project=uuid4(),
+            workspace=uuid4(),
             created=datetime.now(),
             updated=datetime.now(),
         )

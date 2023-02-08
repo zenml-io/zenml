@@ -19,6 +19,7 @@ from typing import Dict, Union
 import pytest
 
 from zenml.config.pipeline_configurations import PipelineSpec
+from zenml.config.schedule import Schedule
 from zenml.enums import (
     ArtifactType,
     ExecutionStatus,
@@ -31,152 +32,180 @@ from zenml.exceptions import (
     StackComponentExistsError,
     StackExistsError,
 )
+from zenml.metadata.metadata_types import MetadataTypeEnum
 from zenml.models import (
+    ArtifactFilterModel,
     ArtifactRequestModel,
+    ComponentFilterModel,
     ComponentRequestModel,
     ComponentUpdateModel,
+    FlavorFilterModel,
     FlavorRequestModel,
+    PipelineFilterModel,
     PipelineRequestModel,
+    PipelineRunFilterModel,
     PipelineRunUpdateModel,
     PipelineUpdateModel,
-    ProjectRequestModel,
-    ProjectUpdateModel,
-    RoleAssignmentRequestModel,
     RoleRequestModel,
     RoleUpdateModel,
+    StackFilterModel,
     StackRequestModel,
     StackUpdateModel,
+    StepRunFilterModel,
     StepRunUpdateModel,
+    TeamFilterModel,
     TeamRequestModel,
+    TeamRoleAssignmentRequestModel,
     TeamUpdateModel,
+    UserFilterModel,
     UserRequestModel,
+    UserRoleAssignmentRequestModel,
     UserUpdateModel,
+    WorkspaceFilterModel,
+    WorkspaceRequestModel,
+    WorkspaceUpdateModel,
 )
 from zenml.models.base_models import BaseResponseModel
+from zenml.models.pipeline_run_models import PipelineRunRequestModel
+from zenml.models.run_metadata_models import (
+    RunMetadataFilterModel,
+    RunMetadataRequestModel,
+)
+from zenml.models.schedule_model import (
+    ScheduleFilterModel,
+    ScheduleRequestModel,
+    ScheduleUpdateModel,
+)
 from zenml.zen_stores.base_zen_store import (
     DEFAULT_ADMIN_ROLE,
     DEFAULT_GUEST_ROLE,
-    DEFAULT_PROJECT_NAME,
     DEFAULT_USERNAME,
+    DEFAULT_WORKSPACE_NAME,
     BaseZenStore,
 )
 
 DEFAULT_NAME = "default"
 
 #  .--------
-# | PROJECTS
+# | WORKSPACES
 # '---------
 
 
-def test_only_one_default_project_present(
+def test_only_one_default_workspace_present(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
 ):
-    """Tests that only one default project can be created."""
-    assert len(sql_store["store"].list_projects()) == 1
+    """Tests that only one default workspace can be created."""
+    assert len(sql_store["store"].list_workspaces(WorkspaceFilterModel())) == 1
 
 
-def test_project_creation_succeeds(
+def test_workspace_creation_succeeds(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
 ):
-    """Tests project creation."""
-    assert len(sql_store["store"].list_projects()) == 1
-    new_project = ProjectRequestModel(name="arias_project")
-    sql_store["store"].create_project(new_project)
-    projects_list = sql_store["store"].list_projects()
-    assert len(projects_list) == 2
-    assert "arias_project" in [p.name for p in projects_list]
+    """Tests workspace creation."""
+    assert len(sql_store["store"].list_workspaces(WorkspaceFilterModel())) == 1
+    new_workspace = WorkspaceRequestModel(name="arias_workspace")
+    sql_store["store"].create_workspace(new_workspace)
+    workspaces_list = sql_store["store"].list_workspaces(
+        WorkspaceFilterModel()
+    )
+    assert len(workspaces_list) == 2
+    assert "arias_workspace" in [p.name for p in workspaces_list.items]
 
 
-def test_get_project_succeeds(
+def test_get_workspace_succeeds(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
 ):
-    """Tests getting a project."""
-    assert sql_store["default_project"].name == DEFAULT_PROJECT_NAME
+    """Tests getting a workspace."""
+    assert sql_store["default_workspace"].name == DEFAULT_WORKSPACE_NAME
     with does_not_raise():
-        sql_store["store"].get_project(DEFAULT_PROJECT_NAME)
-        sql_store["store"].get_project(sql_store["default_project"].id)
+        sql_store["store"].get_workspace(DEFAULT_WORKSPACE_NAME)
+        sql_store["store"].get_workspace(sql_store["default_workspace"].id)
 
 
-def test_getting_nonexistent_project_fails(
+def test_getting_nonexistent_workspace_fails(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
-    """Tests getting a nonexistent project raises an error."""
+    """Tests getting a nonexistent workspace raises an error."""
     with pytest.raises(KeyError):
-        sql_store["store"].get_project("blupus_project")
+        sql_store["store"].get_workspace("blupus_workspace")
 
 
-def test_updating_default_project_fails(
+def test_updating_default_workspace_fails(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
 ):
-    """Tests updating the default project."""
-    default_project = sql_store["store"].get_project(DEFAULT_PROJECT_NAME)
-    assert default_project.name == DEFAULT_PROJECT_NAME
-    project_update = ProjectUpdateModel(
-        name="aria_project",
-        description="Aria has taken possession of this project.",
+    """Tests updating the default workspace."""
+    default_workspace = sql_store["store"].get_workspace(
+        DEFAULT_WORKSPACE_NAME
+    )
+    assert default_workspace.name == DEFAULT_WORKSPACE_NAME
+    workspace_update = WorkspaceUpdateModel(
+        name="aria_workspace",
+        description="Aria has taken possession of this workspace.",
     )
     with pytest.raises(IllegalOperationError):
-        sql_store["store"].update_project(
-            project_id=default_project.id, project_update=project_update
+        sql_store["store"].update_workspace(
+            workspace_id=default_workspace.id,
+            workspace_update=workspace_update,
         )
 
 
-def test_updating_project_succeeds(
+def test_updating_workspace_succeeds(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
 ):
-    """Tests updating a project."""
-    new_project = ProjectRequestModel(name="arias_project")
-    new_project = sql_store["store"].create_project(new_project)
+    """Tests updating a workspace."""
+    new_workspace = WorkspaceRequestModel(name="arias_workspace")
+    new_workspace = sql_store["store"].create_workspace(new_workspace)
 
-    new_name = "axls_project"
-    project_update = ProjectUpdateModel(
-        name=new_name, description="Axl has taken possession of this project."
+    new_name = "axls_workspace"
+    workspace_update = WorkspaceUpdateModel(
+        name=new_name,
+        description="Axl has taken possession of this workspace.",
     )
 
     with does_not_raise():
-        sql_store["store"].update_project(
-            project_id=new_project.id, project_update=project_update
+        sql_store["store"].update_workspace(
+            workspace_id=new_workspace.id, workspace_update=workspace_update
         )
     with does_not_raise():
-        sql_store["store"].get_project(project_name_or_id=new_name)
+        sql_store["store"].get_workspace(workspace_name_or_id=new_name)
 
 
-def test_updating_nonexisting_project_raises_error(
+def test_updating_nonexisting_workspace_raises_error(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
-    """Tests updating a nonexistent project raises an error."""
-    project_update = ProjectUpdateModel(name="arias_project")
+    """Tests updating a nonexistent workspace raises an error."""
+    workspace_update = WorkspaceUpdateModel(name="arias_workspace")
     with pytest.raises(KeyError):
-        sql_store["store"].update_project(
-            project_id=uuid.uuid4(), project_update=project_update
+        sql_store["store"].update_workspace(
+            workspace_id=uuid.uuid4(), workspace_update=workspace_update
         )
 
 
-def test_deleting_project_succeeds(
+def test_deleting_workspace_succeeds(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
 ):
-    """Tests deleting a project."""
-    new_project = ProjectRequestModel(name="axls_project")
-    new_project = sql_store["store"].create_project(new_project)
+    """Tests deleting a workspace."""
+    new_workspace = WorkspaceRequestModel(name="axls_workspace")
+    new_workspace = sql_store["store"].create_workspace(new_workspace)
     with does_not_raise():
-        sql_store["store"].delete_project("axls_project")
-    assert len(sql_store["store"].list_projects()) == 1
+        sql_store["store"].delete_workspace("axls_workspace")
+    assert len(sql_store["store"].list_workspaces(WorkspaceFilterModel())) == 1
 
 
-def test_deleting_default_project_fails(
+def test_deleting_default_workspace_fails(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
 ):
-    """Tests deleting the default project."""
+    """Tests deleting the default workspace."""
     with pytest.raises(IllegalOperationError):
-        sql_store["store"].delete_project(DEFAULT_NAME)
+        sql_store["store"].delete_workspace(DEFAULT_NAME)
 
 
-def test_deleting_nonexistent_project_raises_error(
+def test_deleting_nonexistent_workspace_raises_error(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
-    """Tests deleting a nonexistent project raises an error."""
+    """Tests deleting a nonexistent workspace raises an error."""
     with pytest.raises(KeyError):
-        sql_store["store"].delete_project("blupus_project")
+        sql_store["store"].delete_workspace("blupus_workspace")
 
 
 #  .-----
@@ -188,11 +217,11 @@ def test_list_teams(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
 ):
     """Tests listing teams."""
-    assert len(sql_store["store"].list_teams()) == 0
+    assert len(sql_store["store"].list_teams(TeamFilterModel())) == 0
     new_team = TeamRequestModel(name="arias_team")
     with does_not_raise():
         new_team = sql_store["store"].create_team(new_team)
-    assert len(sql_store["store"].list_teams()) == 1
+    assert len(sql_store["store"].list_teams(TeamFilterModel())) == 1
 
 
 def test_create_team(
@@ -205,7 +234,9 @@ def test_create_team(
     assert sql_store["store"].get_team(new_team.name)
 
 
-def test_get_team(sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]):
+def test_get_team(
+    sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
+):
     """Tests getting a team."""
     new_team = TeamRequestModel(name="arias_team")
     sql_store["store"].create_team(new_team)
@@ -359,21 +390,30 @@ def test_users_property(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
 ):
     """Tests the users property."""
-    assert len(sql_store["store"].list_users()) == 1
-    assert sql_store["store"].list_users()[0].name == DEFAULT_NAME
+    assert len(sql_store["store"].list_users(UserFilterModel())) == 1
+    assert (
+        sql_store["store"].list_users(UserFilterModel())[0].name
+        == DEFAULT_NAME
+    )
     assert sql_store["active_user"].name == DEFAULT_NAME
-    assert sql_store["store"].list_users()[0] == sql_store["store"].get_user()
-    assert sql_store["store"].list_users()[0] == sql_store["active_user"]
+    assert (
+        sql_store["store"].list_users(UserFilterModel())[0]
+        == sql_store["store"].get_user()
+    )
+    assert (
+        sql_store["store"].list_users(UserFilterModel())[0]
+        == sql_store["active_user"]
+    )
 
 
 def test_creating_user_succeeds(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]]
 ):
     """Tests creating a user."""
-    assert len(sql_store["store"].list_users()) == 1
+    assert len(sql_store["store"].list_users(UserFilterModel())) == 1
     new_user = UserRequestModel(name="aria")
     sql_store["store"].create_user(new_user)
-    assert len(sql_store["store"].list_users()) == 2
+    assert len(sql_store["store"].list_users(UserFilterModel())) == 2
     assert sql_store["store"].get_user("aria") is not None
 
 
@@ -405,7 +445,7 @@ def test_getting_user_by_name_and_id_succeeds(
     user_by_name = sql_store["store"].get_user("aria")
     user_by_id = sql_store["store"].get_user(new_user_id)
     assert user_by_id == user_by_name
-    assert len(sql_store["store"].list_users()) == 2
+    assert len(sql_store["store"].list_users(UserFilterModel())) == 2
 
 
 def test_updating_user_succeeds(
@@ -418,7 +458,9 @@ def test_updating_user_succeeds(
 
     new_user_name = "blupus"
     user_update = UserUpdateModel(name=new_user_name)
-    sql_store["store"].update_user(user_id=new_user.id, user_update=user_update)
+    sql_store["store"].update_user(
+        user_id=new_user.id, user_update=user_update
+    )
 
     assert sql_store["store"].get_user(new_user_name) is not None
     with pytest.raises(KeyError):
@@ -458,9 +500,9 @@ def test_deleting_user_succeeds(
     new_user = UserRequestModel(name="aria")
     sql_store["store"].create_user(new_user)
     new_user_id = sql_store["store"].get_user("aria").id
-    assert len(sql_store["store"].list_users()) == 2
+    assert len(sql_store["store"].list_users(UserFilterModel())) == 2
     sql_store["store"].delete_user(new_user_id)
-    assert len(sql_store["store"].list_users()) == 1
+    assert len(sql_store["store"].list_users(UserFilterModel())) == 1
 
 
 def test_deleting_default_user_fails(
@@ -631,11 +673,15 @@ def test_updating_builtin_role_fails(
     role_update = RoleUpdateModel(name="cat_feeder")
 
     with pytest.raises(IllegalOperationError):
-        sql_store["store"].update_role(role_id=role.id, role_update=role_update)
+        sql_store["store"].update_role(
+            role_id=role.id, role_update=role_update
+        )
 
     role = sql_store["store"].get_role(DEFAULT_GUEST_ROLE)
     with pytest.raises(IllegalOperationError):
-        sql_store["store"].update_role(role_id=role.id, role_update=role_update)
+        sql_store["store"].update_role(
+            role_id=role.id, role_update=role_update
+        )
 
 
 #  .----------------
@@ -649,15 +695,15 @@ def test_assigning_role_to_user_succeeds(
     ],
 ):
     """Tests assigning a role to a user."""
-    role_assignment = RoleAssignmentRequestModel(
+    role_assignment = UserRoleAssignmentRequestModel(
         role=sql_store_with_user_team_role["role"].id,
         user=sql_store_with_user_team_role["user"].id,
         is_user=True,
-        project=None,
+        workspace=None,
     )
     with does_not_raise():
         (
-            sql_store_with_user_team_role["store"].create_role_assignment(
+            sql_store_with_user_team_role["store"].create_user_role_assignment(
                 role_assignment
             )
         )
@@ -669,15 +715,14 @@ def test_assigning_role_to_team_succeeds(
     ],
 ):
     """Tests assigning a role to a team."""
-    role_assignment = RoleAssignmentRequestModel(
+    role_assignment = TeamRoleAssignmentRequestModel(
         role=sql_store_with_user_team_role["role"].id,
         team=sql_store_with_user_team_role["team"].id,
-        is_user=True,
-        project=None,
+        workspace=None,
     )
     with does_not_raise():
         (
-            sql_store_with_user_team_role["store"].create_role_assignment(
+            sql_store_with_user_team_role["store"].create_team_role_assignment(
                 role_assignment
             )
         )
@@ -689,21 +734,21 @@ def test_assigning_role_if_assignment_already_exists_fails(
     ],
 ):
     """Tests assigning a role to a user if the assignment already exists."""
-    role_assignment = RoleAssignmentRequestModel(
+    role_assignment = UserRoleAssignmentRequestModel(
         role=sql_store_with_user_team_role["role"].id,
         user=sql_store_with_user_team_role["user"].id,
         is_user=True,
-        project=None,
+        workspace=None,
     )
     with does_not_raise():
         (
-            sql_store_with_user_team_role["store"].create_role_assignment(
+            sql_store_with_user_team_role["store"].create_user_role_assignment(
                 role_assignment
             )
         )
     with pytest.raises(EntityExistsError):
         (
-            sql_store_with_user_team_role["store"].create_role_assignment(
+            sql_store_with_user_team_role["store"].create_user_role_assignment(
                 role_assignment
             )
         )
@@ -715,22 +760,22 @@ def test_revoking_role_for_user_succeeds(
     ],
 ):
     """Tests revoking a role for a user."""
-    role_assignment = RoleAssignmentRequestModel(
+    role_assignment = UserRoleAssignmentRequestModel(
         role=sql_store_with_user_team_role["role"].id,
         user=sql_store_with_user_team_role["user"].id,
         is_user=True,
-        project=None,
+        workspace=None,
     )
     with does_not_raise():
         role_assignment = sql_store_with_user_team_role[
             "store"
-        ].create_role_assignment(role_assignment)
-        sql_store_with_user_team_role["store"].delete_role_assignment(
-            role_assignment_id=role_assignment.id
+        ].create_user_role_assignment(role_assignment)
+        sql_store_with_user_team_role["store"].delete_user_role_assignment(
+            user_role_assignment_id=role_assignment.id
         )
     with pytest.raises(KeyError):
-        sql_store_with_user_team_role["store"].get_role_assignment(
-            role_assignment_id=role_assignment.id
+        sql_store_with_user_team_role["store"].get_user_role_assignment(
+            user_role_assignment_id=role_assignment.id
         )
 
 
@@ -740,22 +785,21 @@ def test_revoking_role_for_team_succeeds(
     ],
 ):
     """Tests revoking a role for a team."""
-    role_assignment = RoleAssignmentRequestModel(
+    role_assignment = TeamRoleAssignmentRequestModel(
         role=sql_store_with_user_team_role["role"].id,
         team=sql_store_with_user_team_role["team"].id,
-        is_user=True,
-        project=None,
+        workspace=None,
     )
     with does_not_raise():
         role_assignment = sql_store_with_user_team_role[
             "store"
-        ].create_role_assignment(role_assignment)
-        sql_store_with_user_team_role["store"].delete_role_assignment(
-            role_assignment_id=role_assignment.id
+        ].create_team_role_assignment(role_assignment)
+        sql_store_with_user_team_role["store"].delete_team_role_assignment(
+            team_role_assignment_id=role_assignment.id
         )
     with pytest.raises(KeyError):
-        sql_store_with_user_team_role["store"].get_role_assignment(
-            role_assignment_id=role_assignment.id
+        sql_store_with_user_team_role["store"].get_team_role_assignment(
+            team_role_assignment_id=role_assignment.id
         )
 
 
@@ -766,8 +810,8 @@ def test_revoking_nonexistent_role_fails(
 ):
     """Tests revoking a nonexistent role fails."""
     with pytest.raises(KeyError):
-        sql_store_with_user_team_role["store"].delete_role_assignment(
-            role_assignment_id=uuid.uuid4()
+        sql_store_with_user_team_role["store"].delete_user_role_assignment(
+            user_role_assignment_id=uuid.uuid4()
         )
 
 
@@ -780,22 +824,28 @@ def test_list_stacks_succeeds(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests listing stacks."""
-    assert len(sql_store["store"].list_stacks()) == 1
+    assert len(sql_store["store"].list_stacks(StackFilterModel())) == 1
 
 
-def test_list_stacks_fails_with_nonexistent_project(
+def test_list_stacks_fails_with_nonexistent_workspace(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
-    """Tests listing stacks fails with nonexistent project."""
-    with pytest.raises(KeyError):
-        sql_store["store"].list_stacks(project_name_or_id=uuid.uuid4())
+    """Tests listing stacks fails with nonexistent workspace."""
+    assert (
+        len(
+            sql_store["store"].list_stacks(
+                StackFilterModel(workspace_id=uuid.uuid4())
+            )
+        )
+        == 0
+    )
 
 
 def test_get_stack_succeeds(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests getting stack."""
-    current_stack_id = sql_store["store"].list_stacks()[0].id
+    current_stack_id = sql_store["store"].list_stacks(StackFilterModel())[0].id
     stack = sql_store["store"].get_stack(stack_id=current_stack_id)
     assert stack is not None
 
@@ -815,15 +865,17 @@ def test_register_stack_succeeds(
     new_stack = StackRequestModel(
         name="arias_stack",
         components={},
-        project=sql_store["default_project"].id,
+        workspace=sql_store["default_workspace"].id,
         user=sql_store["active_user"].id,
     )
-    # TODO: [server] inject user and project into stack as well
+    # TODO: [server] inject user and workspace into stack as well
     sql_store["store"].create_stack(
         stack=new_stack,
     )
-    stacks = sql_store["store"].list_stacks(DEFAULT_NAME)
-    assert len(stacks) == 2
+    stacks = sql_store["store"].list_stacks(
+        StackFilterModel(name="arias_stack")
+    )
+    assert len(stacks) == 1
     assert sql_store["store"].get_stack(stacks[0].id) is not None
 
 
@@ -834,11 +886,11 @@ def test_register_stack_fails_when_stack_exists(
     new_stack = StackRequestModel(
         name=DEFAULT_NAME,
         components={},
-        project=sql_store["default_project"].id,
+        workspace=sql_store["default_workspace"].id,
         user=sql_store["active_user"].id,
     )
     with pytest.raises(StackExistsError):
-        # TODO: [server] inject user and project into stack as well
+        # TODO: [server] inject user and workspace into stack as well
         sql_store["store"].create_stack(
             stack=new_stack,
         )
@@ -852,7 +904,7 @@ def test_updating_stack_succeeds(
         name="arias_stack",
         description="Aria likes her stacks.",
         components={},
-        project=sql_store["default_project"].id,
+        workspace=sql_store["default_workspace"].id,
         user=sql_store["active_user"].id,
     )
     new_stack = sql_store["store"].create_stack(
@@ -910,7 +962,7 @@ def test_deleting_stack_succeeds(
     new_stack = StackRequestModel(
         name="arias_stack",
         components={},
-        project=sql_store["default_project"].id,
+        workspace=sql_store["default_workspace"].id,
         user=sql_store["active_user"].id,
     )
     new_stack = sql_store["store"].create_stack(
@@ -943,19 +995,21 @@ def test_deleting_a_stack_succeeds(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests deleting stack."""
-    # TODO: [server] inject user and project into stack as well
+    # TODO: [server] inject user and workspace into stack as well
     new_stack = StackRequestModel(
         name="arias_stack",
         components={},
-        project=sql_store["default_project"].id,
+        workspace=sql_store["default_workspace"].id,
         user=sql_store["active_user"].id,
     )
     sql_store["store"].create_stack(
         stack=new_stack,
     )
-    stacks = sql_store["store"].list_stacks(project_name_or_id=DEFAULT_NAME)
+    stacks = sql_store["store"].list_stacks(StackFilterModel())
     assert len(stacks) == 2
-    new_stack = [stack for stack in stacks if stack.name == "arias_stack"][0]
+    new_stack = [
+        stack for stack in stacks.items if stack.name == "arias_stack"
+    ][0]
     sql_store["store"].delete_stack(new_stack.id)
     with pytest.raises(KeyError):
         sql_store["store"].get_stack(new_stack.id)
@@ -970,17 +1024,17 @@ def test_create_pipeline_succeeds(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests creating pipeline."""
-    project_id = sql_store["default_project"].id
+    workspace_id = sql_store["default_workspace"].id
     user_id = sql_store["active_user"].id
     spec = PipelineSpec(steps=[])
     new_pipeline = PipelineRequestModel(
         name="arias_pipeline",
-        project=project_id,
+        workspace=workspace_id,
         user=user_id,
         spec=spec,
     )
     sql_store["store"].create_pipeline(pipeline=new_pipeline)
-    pipelines = sql_store["store"].list_pipelines()
+    pipelines = sql_store["store"].list_pipelines(PipelineFilterModel())
     assert len(pipelines) == 1
     assert pipelines[0].name == "arias_pipeline"
 
@@ -989,19 +1043,19 @@ def test_creating_identical_pipeline_fails(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests creating identical pipeline fails."""
-    project_id = sql_store["default_project"].id
+    workspace_id = sql_store["default_workspace"].id
     user_id = sql_store["active_user"].id
     spec = PipelineSpec(steps=[])
     new_pipeline = PipelineRequestModel(
         name="arias_pipeline",
-        project=project_id,
+        workspace=workspace_id,
         user=user_id,
         spec=spec,
     )
     sql_store["store"].create_pipeline(pipeline=new_pipeline)
     with pytest.raises(EntityExistsError):
         sql_store["store"].create_pipeline(pipeline=new_pipeline)
-    pipelines = sql_store["store"].list_pipelines()
+    pipelines = sql_store["store"].list_pipelines(PipelineFilterModel())
     assert len(pipelines) == 1
 
 
@@ -1009,17 +1063,19 @@ def test_get_pipeline_succeeds(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests getting pipeline."""
-    project_id = sql_store["default_project"].id
+    workspace_id = sql_store["default_workspace"].id
     user_id = sql_store["active_user"].id
     spec = PipelineSpec(steps=[])
     new_pipeline = PipelineRequestModel(
         name="arias_pipeline",
-        project=project_id,
+        workspace=workspace_id,
         user=user_id,
         spec=spec,
     )
     sql_store["store"].create_pipeline(pipeline=new_pipeline)
-    pipeline_id = sql_store["store"].list_pipelines()[0].id
+    pipeline_id = (
+        sql_store["store"].list_pipelines(PipelineFilterModel())[0].id
+    )
     pipeline = sql_store["store"].get_pipeline(pipeline_id=pipeline_id)
     assert pipeline is not None
     assert pipeline.name == "arias_pipeline"
@@ -1037,18 +1093,18 @@ def test_list_pipelines_succeeds(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests listing pipelines."""
-    project_id = sql_store["default_project"].id
+    workspace_id = sql_store["default_workspace"].id
     user_id = sql_store["active_user"].id
     spec = PipelineSpec(steps=[])
     new_pipeline = PipelineRequestModel(
         name="arias_pipeline",
-        project=project_id,
+        workspace=workspace_id,
         user=user_id,
         spec=spec,
     )
     sql_store["store"].create_pipeline(pipeline=new_pipeline)
     with does_not_raise():
-        pipelines = sql_store["store"].list_pipelines()
+        pipelines = sql_store["store"].list_pipelines(PipelineFilterModel())
         assert len(pipelines) == 1
 
 
@@ -1056,12 +1112,12 @@ def test_update_pipeline_succeeds(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests updating pipeline."""
-    project_id = sql_store["default_project"].id
+    workspace_id = sql_store["default_workspace"].id
     user_id = sql_store["active_user"].id
     spec = PipelineSpec(steps=[])
     new_pipeline = PipelineRequestModel(
         name="arias_pipeline",
-        project=project_id,
+        workspace=workspace_id,
         user=user_id,
         spec=spec,
     )
@@ -1083,12 +1139,12 @@ def test_updating_nonexistent_pipeline_fails(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests updating nonexistent pipeline fails."""
-    project_id = sql_store["default_project"].id
+    workspace_id = sql_store["default_workspace"].id
     user_id = sql_store["active_user"].id
     spec = PipelineSpec(steps=[])
     pipeline_update = PipelineUpdateModel(
         name="blupus_ka_pipeline",
-        project=project_id,
+        workspace=workspace_id,
         user=user_id,
         spec=spec,
     )
@@ -1102,19 +1158,21 @@ def test_deleting_pipeline_succeeds(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests deleting pipeline."""
-    project_id = sql_store["default_project"].id
+    workspace_id = sql_store["default_workspace"].id
     user_id = sql_store["active_user"].id
     spec = PipelineSpec(steps=[])
     new_pipeline = PipelineRequestModel(
         name="arias_pipeline",
-        project=project_id,
+        workspace=workspace_id,
         user=user_id,
         spec=spec,
     )
     sql_store["store"].create_pipeline(pipeline=new_pipeline)
-    pipeline_id = sql_store["store"].list_pipelines()[0].id
+    pipeline_id = (
+        sql_store["store"].list_pipelines(PipelineFilterModel())[0].id
+    )
     sql_store["store"].delete_pipeline(pipeline_id)
-    assert len(sql_store["store"].list_pipelines()) == 0
+    assert len(sql_store["store"].list_pipelines(PipelineFilterModel())) == 0
     with pytest.raises(KeyError):
         sql_store["store"].get_pipeline(pipeline_id)
 
@@ -1127,13 +1185,154 @@ def test_deleting_nonexistent_pipeline_fails(
         sql_store["store"].delete_pipeline(uuid.uuid4())
 
 
+# ---------
+# Schedules
+# ---------
+
+
+def test_create_schedule_succeeds(sql_store):
+    """Tests creating schedule."""
+    workspace_id = sql_store["default_workspace"].id
+    user_id = sql_store["active_user"].id
+    orchestrator_id = (
+        sql_store["default_stack"].components["orchestrator"][0].id
+    )
+    schedule = Schedule(cron_expression="*/5 * * * *")
+    schedule = ScheduleRequestModel(
+        name="arias_schedule",
+        workspace=workspace_id,
+        user=user_id,
+        pipeline_id=None,
+        orchestrator_id=orchestrator_id,
+        active=True,
+        cron_expression=schedule.cron_expression,
+        start_time=schedule.start_time,
+        end_time=schedule.end_time,
+        interval_second=schedule.interval_second,
+        catchup=schedule.catchup,
+    )
+    schedules = sql_store["store"].list_schedules(ScheduleFilterModel())
+    assert len(schedules) == 0
+    with does_not_raise():
+        schedule = sql_store["store"].create_schedule(schedule=schedule)
+    assert schedule is not None
+    assert schedule.name == "arias_schedule"
+    schedules = sql_store["store"].list_schedules(ScheduleFilterModel())
+    assert len(schedules) == 1
+
+
+def test_getting_schedule_succeeds(sql_store_with_scheduled_run):
+    """Tests getting schedule."""
+    schedule_id = sql_store_with_scheduled_run["schedule"].id
+    with does_not_raise():
+        schedule = sql_store_with_scheduled_run["store"].get_schedule(
+            schedule_id
+        )
+        assert schedule is not None
+        assert schedule.name == sql_store_with_scheduled_run["schedule"].name
+
+
+def test_getting_nonexistent_schedule_fails(sql_store_with_scheduled_run):
+    """Tests getting nonexistent schedule fails."""
+    with pytest.raises(KeyError):
+        sql_store_with_scheduled_run["store"].get_schedule(uuid.uuid4())
+
+
+def test_list_schedules_succeeds(sql_store_with_scheduled_run):
+    """Tests listing schedules."""
+    schedules = sql_store_with_scheduled_run["store"].list_schedules(
+        ScheduleFilterModel()
+    )
+    assert len(schedules) == 1
+
+
+def test_updating_schedule_succeeds(sql_store_with_scheduled_run):
+    """Tests updating schedule."""
+    schedule_id = sql_store_with_scheduled_run["schedule"].id
+    schedule_update = ScheduleUpdateModel(
+        name="blupus_schedule",
+        active=False,
+    )
+    with does_not_raise():
+        updated_schedule = sql_store_with_scheduled_run[
+            "store"
+        ].update_schedule(
+            schedule_id=schedule_id, schedule_update=schedule_update
+        )
+    assert updated_schedule is not None
+    assert updated_schedule.name == "blupus_schedule"
+    assert updated_schedule.active is False
+    assert (
+        updated_schedule.created
+        == sql_store_with_scheduled_run["schedule"].created
+    )
+    assert (
+        updated_schedule.updated
+        != sql_store_with_scheduled_run["schedule"].updated
+    )
+
+
+def test_updating_nonexistent_schedule_fails(sql_store_with_scheduled_run):
+    """Tests updating nonexistent schedule fails."""
+    schedule_update = ScheduleUpdateModel(
+        name="blupus_schedule",
+        active=False,
+    )
+    with pytest.raises(KeyError):
+        sql_store_with_scheduled_run["store"].update_schedule(
+            schedule_id=uuid.uuid4(), schedule_update=schedule_update
+        )
+
+
+def test_deleting_schedule_succeeds(sql_store_with_scheduled_run):
+    """Tests deleting schedule."""
+    schedule_id = sql_store_with_scheduled_run["schedule"].id
+    schedules = sql_store_with_scheduled_run["store"].list_schedules(
+        ScheduleFilterModel()
+    )
+    assert len(schedules) == 1
+    sql_store_with_scheduled_run["store"].delete_schedule(schedule_id)
+    schedules = sql_store_with_scheduled_run["store"].list_schedules(
+        ScheduleFilterModel()
+    )
+    assert len(schedules) == 0
+    with pytest.raises(KeyError):
+        sql_store_with_scheduled_run["store"].get_schedule(schedule_id)
+
+
+def test_deleting_nonexistent_schedule_fails(sql_store_with_scheduled_run):
+    """Tests deleting nonexistent schedule fails."""
+    with pytest.raises(KeyError):
+        sql_store_with_scheduled_run["store"].delete_schedule(uuid.uuid4())
+
+
 # --------------
 # Pipeline runs
 # --------------
 
 
+def test_create_run_succeeds(sql_store):
+    """Tests creating run."""
+    workspace_id = sql_store["default_workspace"].id
+    user_id = sql_store["active_user"].id
+    run = PipelineRunRequestModel(
+        id=uuid.uuid4(),
+        name="arias_run",
+        workspace=workspace_id,
+        user=user_id,
+        status=ExecutionStatus.RUNNING,
+        pipeline_configuration={},
+    )
+    runs = sql_store["store"].list_runs(PipelineRunFilterModel())
+    assert len(runs) == 0
+    run = sql_store["store"].create_run(run)
+    assert run.name == "arias_run"
+    runs = sql_store["store"].list_runs(PipelineRunFilterModel())
+    assert len(runs) == 1
+
+
 def test_getting_run_succeeds(
-    sql_store_with_run: BaseZenStore,
+    sql_store_with_run: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests getting run."""
     run_id = sql_store_with_run["pipeline_run"].id
@@ -1141,6 +1340,82 @@ def test_getting_run_succeeds(
         run = sql_store_with_run["store"].get_run(run_id)
         assert run is not None
         assert run.name == sql_store_with_run["pipeline_run"].name
+
+
+def test_get_or_create_run(sql_store):
+    """Test `get_or_create_run`."""
+    # Create a run using `get_or_create_run`
+    workspace_id = sql_store["default_workspace"].id
+    user_id = sql_store["active_user"].id
+    run = PipelineRunRequestModel(
+        id=uuid.uuid4(),
+        name="arias_run",
+        workspace=workspace_id,
+        user=user_id,
+        status=ExecutionStatus.RUNNING,
+        pipeline_configuration={},
+    )
+    runs = sql_store["store"].list_runs(PipelineRunFilterModel())
+    assert len(runs) == 0
+    run, was_created = sql_store["store"].get_or_create_run(run)
+    assert run.name == "arias_run"
+    assert was_created is True
+    runs = sql_store["store"].list_runs(PipelineRunFilterModel())
+    assert len(runs) == 1
+
+    # Try to create the same run again - this should retrieve the existing run
+    run, was_created = sql_store["store"].get_or_create_run(run)
+    assert run.name == "arias_run"
+    assert was_created is False
+    runs = sql_store["store"].list_runs(PipelineRunFilterModel())
+    assert len(runs) == 1
+
+    # Creating a run with the same ID but different name should also retrieve
+    # the existing run
+    run = PipelineRunRequestModel(
+        id=run.id,
+        name="arias_run_2",
+        workspace=workspace_id,
+        user=user_id,
+        status=ExecutionStatus.RUNNING,
+        pipeline_configuration={},
+    )
+    run, was_created = sql_store["store"].get_or_create_run(run)
+    assert run.name == "arias_run"
+    assert was_created is False
+    runs = sql_store["store"].list_runs(PipelineRunFilterModel())
+    assert len(runs) == 1
+
+    # Creating a run with the same name but different ID should also retrieve
+    # the existing run
+    run = PipelineRunRequestModel(
+        id=uuid.uuid4(),
+        name="arias_run",
+        workspace=workspace_id,
+        user=user_id,
+        status=ExecutionStatus.RUNNING,
+        pipeline_configuration={},
+    )
+    run, was_created = sql_store["store"].get_or_create_run(run)
+    assert run.name == "arias_run"
+    assert was_created is False
+    runs = sql_store["store"].list_runs(PipelineRunFilterModel())
+    assert len(runs) == 1
+
+    # Create a run with a different ID and name - this should create a new run
+    run = PipelineRunRequestModel(
+        id=uuid.uuid4(),
+        name="arias_run_2",
+        workspace=workspace_id,
+        user=user_id,
+        status=ExecutionStatus.RUNNING,
+        pipeline_configuration={},
+    )
+    run, was_created = sql_store["store"].get_or_create_run(run)
+    assert run.name == "arias_run_2"
+    assert was_created is True
+    runs = sql_store["store"].list_runs(PipelineRunFilterModel())
+    assert len(runs) == 2
 
 
 def test_getting_nonexistent_run_fails(
@@ -1152,12 +1427,12 @@ def test_getting_nonexistent_run_fails(
 
 
 def test_list_runs_succeeds(
-    sql_store_with_run: BaseZenStore,
+    sql_store_with_run: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests listing runs."""
     run = sql_store_with_run["pipeline_run"]
     with does_not_raise():
-        runs = sql_store_with_run["store"].list_runs()
+        runs = sql_store_with_run["store"].list_runs(PipelineRunFilterModel())
         assert len(runs) == 1
         assert runs[0].name == run.name
 
@@ -1166,28 +1441,38 @@ def test_list_runs_returns_nothing_when_no_runs_exist(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests listing runs returns nothing when no runs exist."""
-    runs = sql_store["store"].list_runs()
+    runs = sql_store["store"].list_runs(PipelineRunFilterModel())
     assert len(runs) == 0
 
-    with pytest.raises(KeyError):
-        sql_store["store"].list_runs(project_name_or_id=uuid.uuid4())
+    runs = sql_store["store"].list_runs(
+        PipelineRunFilterModel(workspace_id=uuid.uuid4())
+    )
+    assert len(runs) == 0
 
-    false_stack_runs = sql_store["store"].list_runs(stack_id=uuid.uuid4())
+    false_stack_runs = sql_store["store"].list_runs(
+        PipelineRunFilterModel(stack_id=uuid.uuid4())
+    )
     assert len(false_stack_runs) == 0
 
-    false_run_name_runs = sql_store["store"].list_runs(name="not_arias_run")
+    false_run_name_runs = sql_store["store"].list_runs(
+        PipelineRunFilterModel(name="arias_run")
+    )
     assert len(false_run_name_runs) == 0
 
-    with pytest.raises(KeyError):
-        sql_store["store"].list_runs(user_name_or_id=uuid.uuid4())
+    runs = sql_store["store"].list_runs(
+        PipelineRunFilterModel(user_id=uuid.uuid4())
+    )
+    assert len(runs) == 0
 
-    false_pipeline_runs = sql_store["store"].list_runs(pipeline_id=uuid.uuid4())
+    false_pipeline_runs = sql_store["store"].list_runs(
+        PipelineRunFilterModel(pipeline_id=uuid.uuid4())
+    )
     assert len(false_pipeline_runs) == 0
 
 
 def test_list_runs_is_ordered(sql_store_with_runs):
     """Tests listing runs returns ordered runs."""
-    runs = sql_store_with_runs["store"].list_runs()
+    runs = sql_store_with_runs["store"].list_runs(PipelineRunFilterModel())
     assert len(runs) == 10
     assert all(
         runs[i].created <= runs[i + 1].created for i in range(len(runs) - 1)
@@ -1215,10 +1500,16 @@ def test_update_nonexistent_run_fails(sql_store):
 
 def test_deleting_run_succeeds(sql_store_with_run):
     """Tests deleting run."""
-    assert len(sql_store_with_run["store"].list_runs()) == 1
+    assert (
+        len(sql_store_with_run["store"].list_runs(PipelineRunFilterModel()))
+        == 1
+    )
     run_id = sql_store_with_run["pipeline_run"].id
     sql_store_with_run["store"].delete_run(run_id)
-    assert len(sql_store_with_run["store"].list_runs()) == 0
+    assert (
+        len(sql_store_with_run["store"].list_runs(PipelineRunFilterModel()))
+        == 0
+    )
     with pytest.raises(KeyError):
         sql_store_with_run["store"].get_run(run_id)
 
@@ -1231,10 +1522,16 @@ def test_deleting_nonexistent_run_fails(sql_store):
 
 def test_deleting_run_deletes_steps(sql_store_with_run):
     """Tests deleting run deletes its steps."""
-    assert len(sql_store_with_run["store"].list_run_steps()) == 2
+    assert (
+        len(sql_store_with_run["store"].list_run_steps(StepRunFilterModel()))
+        == 2
+    )
     run_id = sql_store_with_run["pipeline_run"].id
     sql_store_with_run["store"].delete_run(run_id)
-    assert len(sql_store_with_run["store"].list_run_steps()) == 0
+    assert (
+        len(sql_store_with_run["store"].list_run_steps(StepRunFilterModel()))
+        == 0
+    )
 
 
 # ------------------
@@ -1243,7 +1540,7 @@ def test_deleting_run_deletes_steps(sql_store_with_run):
 
 
 def test_get_run_step_succeeds(
-    sql_store_with_run: BaseZenStore,
+    sql_store_with_run: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests getting run step."""
     pipeline_step = sql_store_with_run["step"]
@@ -1264,7 +1561,7 @@ def test_get_run_step_fails_when_step_does_not_exist(
 
 
 def test_get_run_step_outputs_succeeds(
-    sql_store_with_run: BaseZenStore,
+    sql_store_with_run: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests getting run step outputs."""
     pipeline_step = sql_store_with_run["step"]
@@ -1274,7 +1571,7 @@ def test_get_run_step_outputs_succeeds(
 
 
 def test_get_run_step_inputs_succeeds(
-    sql_store_with_run: BaseZenStore,
+    sql_store_with_run: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests getting run step inputs."""
     pipeline_step = sql_store_with_run["step"]
@@ -1284,7 +1581,7 @@ def test_get_run_step_inputs_succeeds(
 
 
 def test_get_run_step_status_succeeds(
-    sql_store_with_run: BaseZenStore,
+    sql_store_with_run: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests getting run step status."""
     pipeline_step = sql_store_with_run["step"]
@@ -1299,11 +1596,13 @@ def test_get_run_step_status_succeeds(
 
 
 def test_list_run_steps_succeeds(
-    sql_store_with_run: BaseZenStore,
+    sql_store_with_run: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests listing run steps."""
     run_steps = sql_store_with_run["store"].list_run_steps(
-        run_id=sql_store_with_run["pipeline_run"].id
+        StepRunFilterModel(
+            pipeline_run_id=sql_store_with_run["pipeline_run"].id
+        )
     )
     assert len(run_steps) == 2
     assert run_steps[1] == sql_store_with_run["step"]
@@ -1344,10 +1643,12 @@ def test_create_artifact_succeeds(sql_store):
         materializer="",
         data_type="",
         user=sql_store["active_user"].id,
-        project=sql_store["default_project"].id,
+        workspace=sql_store["default_workspace"].id,
     )
     with does_not_raise():
-        created_artifact = sql_store["store"].create_artifact(artifact=artifact)
+        created_artifact = sql_store["store"].create_artifact(
+            artifact=artifact
+        )
         assert created_artifact.name == artifact_name
 
 
@@ -1368,37 +1669,108 @@ def test_get_artifact_fails_when_artifact_does_not_exist(sql_store):
 
 def test_list_artifacts_succeeds(sql_store_with_run):
     """Tests listing artifacts."""
-    artifacts = sql_store_with_run["store"].list_artifacts()
+    artifacts = sql_store_with_run["store"].list_artifacts(
+        ArtifactFilterModel()
+    )
     assert len(artifacts) == 2
-    assert artifacts[0] == sql_store_with_run["artifact"]
+    assert sql_store_with_run["artifact"] in artifacts
 
 
 def test_list_unused_artifacts(sql_store_with_run):
     """Tests listing with `unused=True` only returns unused artifacts."""
-    artifacts = sql_store_with_run["store"].list_artifacts()
+    artifacts = sql_store_with_run["store"].list_artifacts(
+        ArtifactFilterModel()
+    )
     assert len(artifacts) == 2
-    artifacts = sql_store_with_run["store"].list_artifacts(only_unused=True)
+    artifacts = sql_store_with_run["store"].list_artifacts(
+        ArtifactFilterModel(only_unused=True)
+    )
     assert len(artifacts) == 0
     run_id = sql_store_with_run["pipeline_run"].id
     sql_store_with_run["store"].delete_run(run_id)
-    artifacts = sql_store_with_run["store"].list_artifacts(only_unused=True)
+    artifacts = sql_store_with_run["store"].list_artifacts(
+        ArtifactFilterModel(only_unused=True)
+    )
     assert len(artifacts) == 2
 
 
 def test_delete_artifact_succeeds(sql_store_with_run):
     """Tests deleting artifact."""
-    artifact_id = sql_store_with_run["artifact"].id
-    assert len(sql_store_with_run["store"].list_artifacts()) == 2
-    sql_store_with_run["store"].delete_artifact(artifact_id=artifact_id)
-    assert len(sql_store_with_run["store"].list_artifacts()) == 1
+    artifact = sql_store_with_run["artifact"]
+    artifacts = sql_store_with_run["store"].list_artifacts(
+        ArtifactFilterModel()
+    )
+    assert len(artifacts) == 2
+    sql_store_with_run["store"].delete_artifact(artifact_id=artifact.id)
+    artifacts = sql_store_with_run["store"].list_artifacts(
+        ArtifactFilterModel()
+    )
+    assert len(artifacts) == 1
     with pytest.raises(KeyError):
-        sql_store_with_run["store"].get_artifact(artifact_id=artifact_id)
+        sql_store_with_run["store"].get_artifact(artifact_id=artifact.id)
 
 
 def test_delete_artifact_fails_when_artifact_does_not_exist(sql_store):
     """Tests deleting artifact fails when artifact does not exist."""
     with pytest.raises(KeyError):
         sql_store["store"].delete_artifact(artifact_id=uuid.uuid4())
+
+
+# ------------
+# Run Metadata
+# ------------
+
+
+def test_create_run_metadata_succeeds(sql_store_with_run):
+    """Test creating run metadata."""
+    metadata = RunMetadataRequestModel(
+        key="test_key",
+        value="test_value",
+        type=MetadataTypeEnum.STRING,
+        user=sql_store_with_run["active_user"].id,
+        workspace=sql_store_with_run["default_workspace"].id,
+        pipeline_run_id=sql_store_with_run["pipeline_run"].id,
+        stack_component_id=sql_store_with_run["default_stack"]
+        .components["orchestrator"][0]
+        .id,
+    )
+    with does_not_raise():
+        created_metadata = sql_store_with_run["store"].create_run_metadata(
+            metadata
+        )
+        assert created_metadata.key == metadata.key
+        assert created_metadata.value == metadata.value
+        assert created_metadata.type == metadata.type
+        assert created_metadata.user.id == metadata.user
+        assert created_metadata.workspace.id == metadata.workspace
+        assert created_metadata.pipeline_run_id == metadata.pipeline_run_id
+        assert (
+            created_metadata.stack_component_id == metadata.stack_component_id
+        )
+
+
+def test_list_run_metadata_succeeds(sql_store_with_run):
+    """Test listing run metadata."""
+    filter_model = RunMetadataFilterModel(
+        pipeline_run_id=sql_store_with_run["pipeline_run"].id
+    )
+    metadata = sql_store_with_run["store"].list_run_metadata(filter_model)
+    assert len(metadata) == 0
+
+    metadata_request = RunMetadataRequestModel(
+        key="test_key",
+        value="test_value",
+        type=MetadataTypeEnum.STRING,
+        user=sql_store_with_run["active_user"].id,
+        workspace=sql_store_with_run["default_workspace"].id,
+        pipeline_run_id=sql_store_with_run["pipeline_run"].id,
+        stack_component_id=sql_store_with_run["default_stack"]
+        .components["orchestrator"][0]
+        .id,
+    )
+    sql_store_with_run["store"].create_run_metadata(metadata_request)
+    metadata = sql_store_with_run["store"].list_run_metadata(filter_model)
+    assert len(metadata) == 1
 
 
 # ----------------
@@ -1416,7 +1788,7 @@ def test_create_stack_component_succeeds(
         type=StackComponentType.ORCHESTRATOR,
         flavor="default",
         configuration={},
-        project=sql_store["default_project"].id,
+        workspace=sql_store["default_workspace"].id,
         user=sql_store["active_user"].id,
     )
     with does_not_raise():
@@ -1436,7 +1808,7 @@ def test_create_component_fails_when_same_name(
         type=StackComponentType.ORCHESTRATOR,
         flavor="default",
         configuration={},
-        project=sql_store["default_project"].id,
+        workspace=sql_store["default_workspace"].id,
         user=sql_store["active_user"].id,
     )
     sql_store["store"].create_stack_component(component=stack_component)
@@ -1467,22 +1839,22 @@ def test_list_stack_components_succeeds(
 ):
     """Tests listing stack components."""
     stack_components = sql_store["store"].list_stack_components(
-        project_name_or_id=sql_store["default_project"].name
+        ComponentFilterModel(workspace_id=sql_store["default_workspace"].id)
     )
     assert len(stack_components) == 2
-    component_types = [component.type for component in stack_components]
+    component_types = [component.type for component in stack_components.items]
     assert StackComponentType.ORCHESTRATOR in component_types
     assert StackComponentType.ARTIFACT_STORE in component_types
 
 
-def test_list_stack_components_fails_when_project_does_not_exist(
+def test_list_stack_components_fails_when_workspace_does_not_exist(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
-    """Tests listing stack components fails when project does not exist."""
-    with pytest.raises(KeyError):
-        sql_store["store"].list_stack_components(
-            project_name_or_id=uuid.uuid4()
-        )
+    """Tests listing stack components fails when workspace does not exist."""
+    components = sql_store["store"].list_stack_components(
+        ComponentFilterModel(workspace_id=uuid.uuid4())
+    )
+    assert len(components) == 0
 
 
 def test_list_stack_components_works_with_filters(
@@ -1490,15 +1862,19 @@ def test_list_stack_components_works_with_filters(
 ):
     """Tests listing stack components works with filters."""
     artifact_stores = sql_store["store"].list_stack_components(
-        project_name_or_id=sql_store["default_project"].name,
-        type=StackComponentType.ARTIFACT_STORE,
+        ComponentFilterModel(
+            workspace_id=sql_store["default_workspace"].id,
+            type=StackComponentType.ARTIFACT_STORE,
+        )
     )
     assert len(artifact_stores) == 1
     assert artifact_stores[0].type == StackComponentType.ARTIFACT_STORE
 
     orchestrators = sql_store["store"].list_stack_components(
-        project_name_or_id=sql_store["default_project"].name,
-        type=StackComponentType.ORCHESTRATOR,
+        ComponentFilterModel(
+            workspace_id=sql_store["default_workspace"].id,
+            type=StackComponentType.ORCHESTRATOR,
+        )
     )
     assert len(orchestrators) == 1
     assert orchestrators[0].type == StackComponentType.ORCHESTRATOR
@@ -1509,20 +1885,26 @@ def test_list_stack_components_lists_nothing_for_nonexistent_filters(
 ):
     """Tests listing stack components lists nothing for nonexistent filters."""
     flavor_filtered = sql_store["store"].list_stack_components(
-        project_name_or_id=sql_store["default_project"].name,
-        flavor_name="nonexistent",
+        ComponentFilterModel(
+            workspace_id=sql_store["default_workspace"].id,
+            flavor="nonexistent",
+        )
     )
     assert len(flavor_filtered) == 0
 
-    with pytest.raises(KeyError):
-        sql_store["store"].list_stack_components(
-            project_name_or_id=sql_store["default_project"].name,
-            user_name_or_id=uuid.uuid4(),
+    components = sql_store["store"].list_stack_components(
+        ComponentFilterModel(
+            workspace_id=sql_store["default_workspace"].id,
+            user_id=uuid.uuid4(),
         )
+    )
+    assert len(components) == 0
 
     name_filtered = sql_store["store"].list_stack_components(
-        project_name_or_id=sql_store["default_project"].name,
-        name="nonexistent",
+        ComponentFilterModel(
+            workspace_id=sql_store["default_workspace"].id,
+            name="nonexistent",
+        )
     )
     assert len(name_filtered) == 0
 
@@ -1537,7 +1919,7 @@ def test_update_stack_component_succeeds(
         type=StackComponentType.ORCHESTRATOR,
         flavor="default",
         configuration={},
-        project=sql_store["default_project"].id,
+        workspace=sql_store["default_workspace"].id,
         user=sql_store["active_user"].id,
     )
     with does_not_raise():
@@ -1559,15 +1941,19 @@ def test_update_default_stack_component_fails(
 ):
     """Tests that updating default stack components fails."""
     default_artifact_store = sql_store["store"].list_stack_components(
-        project_name_or_id=sql_store["default_project"].name,
-        type=StackComponentType.ARTIFACT_STORE,
-        name="default",
+        ComponentFilterModel(
+            workspace_id=sql_store["default_workspace"].id,
+            type=StackComponentType.ARTIFACT_STORE,
+            name="default",
+        )
     )[0]
 
     default_orchestrator = sql_store["store"].list_stack_components(
-        project_name_or_id=sql_store["default_project"].name,
-        type=StackComponentType.ORCHESTRATOR,
-        name="default",
+        ComponentFilterModel(
+            workspace_id=sql_store["default_workspace"].id,
+            type=StackComponentType.ORCHESTRATOR,
+            name="default",
+        )
     )[0]
 
     component_update = ComponentUpdateModel(name="aria")
@@ -1594,7 +1980,7 @@ def test_update_stack_component_fails_when_component_does_not_exist(
         type=StackComponentType.ORCHESTRATOR,
         flavor="default",
         configuration={},
-        project=sql_store["default_project"].id,
+        workspace=sql_store["default_workspace"].id,
         user=sql_store["active_user"].id,
     )
     with pytest.raises(KeyError):
@@ -1613,15 +1999,17 @@ def test_delete_stack_component_succeeds(
         type=StackComponentType.ORCHESTRATOR,
         flavor="default",
         configuration={},
-        project=sql_store["default_project"].id,
+        workspace=sql_store["default_workspace"].id,
         user=sql_store["active_user"].id,
     )
     created_component = sql_store["store"].create_stack_component(
         component=stack_component
     )
     orchestrators = sql_store["store"].list_stack_components(
-        project_name_or_id=sql_store["default_project"].name,
-        type=StackComponentType.ORCHESTRATOR,
+        ComponentFilterModel(
+            workspace_id=sql_store["default_workspace"].id,
+            type=StackComponentType.ORCHESTRATOR,
+        )
     )
     assert len(orchestrators) == 2
     with does_not_raise():
@@ -1629,8 +2017,10 @@ def test_delete_stack_component_succeeds(
             component_id=created_component.id
         )
         orchestrators = sql_store["store"].list_stack_components(
-            project_name_or_id=sql_store["default_project"].name,
-            type=StackComponentType.ORCHESTRATOR,
+            ComponentFilterModel(
+                workspace_id=sql_store["default_workspace"].id,
+                type=StackComponentType.ORCHESTRATOR,
+            )
         )
     assert len(orchestrators) == 1
     with pytest.raises(KeyError):
@@ -1644,15 +2034,19 @@ def test_delete_default_stack_component_fails(
 ):
     """Tests that deleting default stack components is prohibited."""
     default_artifact_store = sql_store["store"].list_stack_components(
-        project_name_or_id=sql_store["default_project"].name,
-        type=StackComponentType.ARTIFACT_STORE,
-        name="default",
+        ComponentFilterModel(
+            workspace_id=sql_store["default_workspace"].id,
+            type=StackComponentType.ARTIFACT_STORE,
+            name="default",
+        )
     )[0]
 
     default_orchestrator = sql_store["store"].list_stack_components(
-        project_name_or_id=sql_store["default_project"].name,
-        type=StackComponentType.ORCHESTRATOR,
-        name="default",
+        ComponentFilterModel(
+            workspace_id=sql_store["default_workspace"].id,
+            type=StackComponentType.ORCHESTRATOR,
+            name="default",
+        )
     )[0]
 
     with pytest.raises(IllegalOperationError):
@@ -1683,9 +2077,9 @@ def test_create_stack_component_flavor_succeeds(
     blupus_flavor = FlavorRequestModel(
         name=flavor_name,
         type=StackComponentType.ORCHESTRATOR,
-        config_schema="default",
+        config_schema={},
         source=".",
-        project=sql_store["default_project"].id,
+        workspace=sql_store["default_workspace"].id,
         user=sql_store["active_user"].id,
     )
     with does_not_raise():
@@ -1693,9 +2087,11 @@ def test_create_stack_component_flavor_succeeds(
         blupus_flavor_id = (
             sql_store["store"]
             .list_flavors(
-                project_name_or_id=sql_store["default_project"].name,
-                component_type=StackComponentType.ORCHESTRATOR,
-                name=flavor_name,
+                FlavorFilterModel(
+                    workspace_id=sql_store["default_workspace"].id,
+                    type=StackComponentType.ORCHESTRATOR,
+                    name=flavor_name,
+                )
             )[0]
             .id
         )
@@ -1713,9 +2109,9 @@ def test_create_stack_component_fails_when_flavor_already_exists(
     scinda_flavor = FlavorRequestModel(
         name=flavor_name,
         type=StackComponentType.ORCHESTRATOR,
-        config_schema="default",
+        config_schema={},
         source=".",
-        project=sql_store["default_project"].id,
+        workspace=sql_store["default_workspace"].id,
         user=sql_store["active_user"].id,
     )
     with does_not_raise():
@@ -1723,9 +2119,9 @@ def test_create_stack_component_fails_when_flavor_already_exists(
     scinda_copy_flavor = FlavorRequestModel(
         name=flavor_name,
         type=StackComponentType.ORCHESTRATOR,
-        config_schema="default",
+        config_schema={},
         source=".",
-        project=sql_store["default_project"].id,
+        workspace=sql_store["default_workspace"].id,
         user=sql_store["active_user"].id,
     )
     with pytest.raises(EntityExistsError):
@@ -1740,9 +2136,9 @@ def test_get_flavor_succeeds(
     verata_flavor = FlavorRequestModel(
         name=flavor_name,
         type=StackComponentType.ARTIFACT_STORE,
-        config_schema="default",
+        config_schema={},
         source=".",
-        project=sql_store["default_project"].id,
+        workspace=sql_store["default_workspace"].id,
         user=sql_store["active_user"].id,
     )
     with does_not_raise():
@@ -1766,27 +2162,42 @@ def test_list_flavors_succeeds(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
     """Tests listing stack component flavors."""
+    flavors_before = len(sql_store["store"].list_flavors(FlavorFilterModel()))
     flavor_name = "verata"
     verata_flavor = FlavorRequestModel(
         name=flavor_name,
         type=StackComponentType.ARTIFACT_STORE,
-        config_schema="default",
+        config_schema={},
         source=".",
-        project=sql_store["default_project"].id,
+        workspace=sql_store["default_workspace"].id,
         user=sql_store["active_user"].id,
     )
     with does_not_raise():
         sql_store["store"].create_flavor(flavor=verata_flavor)
-        assert len(sql_store["store"].list_flavors()) == 1
-        assert sql_store["store"].list_flavors()[0].name == flavor_name
+        assert (
+            len(sql_store["store"].list_flavors(FlavorFilterModel()))
+            == flavors_before + 1
+        )
+        assert (
+            len(
+                sql_store["store"].list_flavors(
+                    FlavorFilterModel(
+                        name="verata", type=StackComponentType.ARTIFACT_STORE
+                    )
+                )
+            )
+            == 1
+        )
 
 
-def test_list_flavors_fails_with_nonexistent_project(
+def test_list_flavors_returns_empty_for_nonexistent_workspace(
     sql_store: Dict[str, Union[BaseZenStore, BaseResponseModel]],
 ):
-    """Tests listing stack component flavors fails with nonexistent project."""
-    with pytest.raises(KeyError):
-        sql_store["store"].list_flavors(
-            project_name_or_id="nonexistent",
-            component_type=StackComponentType.ORCHESTRATOR,
+    """Tests listing stack component flavors fails with nonexistent workspace."""
+    flavors = sql_store["store"].list_flavors(
+        FlavorFilterModel(
+            workspace_id=uuid.uuid4(),
+            type=StackComponentType.ORCHESTRATOR,
         )
+    )
+    assert len(flavors) == 0

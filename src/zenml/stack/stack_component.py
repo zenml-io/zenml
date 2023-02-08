@@ -14,7 +14,7 @@
 """Implementation of the ZenML Stack Component class."""
 from abc import ABC
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, List, Optional, Set, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Type, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Extra
@@ -29,6 +29,7 @@ from zenml.utils import secret_utils, settings_utils
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
+    from zenml.metadata.metadata_types import MetadataType
     from zenml.stack import Stack, StackValidator
 
 
@@ -265,7 +266,7 @@ class StackComponent:
         flavor: str,
         type: StackComponentType,
         user: Optional[UUID],
-        project: UUID,
+        workspace: UUID,
         created: datetime,
         updated: datetime,
         *args: Any,
@@ -280,7 +281,7 @@ class StackComponent:
             flavor: The flavor of the component.
             type: The type of the component.
             user: The ID of the user who created the component.
-            project: The ID of the project the component belongs to.
+            workspace: The ID of the workspace the component belongs to.
             created: The creation time of the component.
             updated: The last update time of the component.
             *args: Additional positional arguments.
@@ -301,7 +302,7 @@ class StackComponent:
         self.flavor = flavor
         self.type = type
         self.user = user
-        self.project = project
+        self.workspace = workspace
         self.created = created
         self.updated = updated
 
@@ -345,7 +346,7 @@ class StackComponent:
 
         return flavor.implementation_class(
             user=user_id,
-            project=component_model.project.id,
+            workspace=component_model.workspace.id,
             name=component_model.name,
             id=component_model.id,
             config=configuration,
@@ -502,12 +503,38 @@ class StackComponent:
             stack: The stack on which the pipeline will be deployed.
         """
 
+    def get_pipeline_run_metadata(
+        self, run_id: UUID
+    ) -> Dict[str, "MetadataType"]:
+        """Get general component-specific metadata for a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run.
+
+        Returns:
+            A dictionary of metadata.
+        """
+        return {}
+
     def prepare_step_run(self, info: "StepRunInfo") -> None:
         """Prepares running a step.
 
         Args:
             info: Info about the step that will be executed.
         """
+
+    def get_step_run_metadata(
+        self, info: "StepRunInfo"
+    ) -> Dict[str, "MetadataType"]:
+        """Get component- and step-specific metadata after a step ran.
+
+        Args:
+            info: Info about the step that was executed.
+
+        Returns:
+            A dictionary of metadata.
+        """
+        return {}
 
     def cleanup_step_run(self, info: "StepRunInfo", step_failed: bool) -> None:
         """Cleans up resources after the step run is finished.

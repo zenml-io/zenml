@@ -14,6 +14,7 @@
 """Amazon S3 artifact store flavor."""
 
 import json
+import re
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -33,13 +34,18 @@ from zenml.artifact_stores import (
 )
 from zenml.integrations.s3 import S3_ARTIFACT_STORE_FLAVOR
 from zenml.stack.authentication_mixin import AuthenticationConfigMixin
+from zenml.utils.networking_utils import (
+    replace_localhost_with_internal_hostname,
+)
 from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
     from zenml.integrations.s3.artifact_stores import S3ArtifactStore
 
 
-class S3ArtifactStoreConfig(BaseArtifactStoreConfig, AuthenticationConfigMixin):
+class S3ArtifactStoreConfig(
+    BaseArtifactStoreConfig, AuthenticationConfigMixin
+):
     """Configuration for the S3 Artifact Store.
 
     All attributes of this class except `path` will be passed to the
@@ -101,6 +107,41 @@ class S3ArtifactStoreConfig(BaseArtifactStoreConfig, AuthenticationConfigMixin):
         else:
             raise TypeError(f"{value} is not a json string or a dictionary.")
 
+    @validator("client_kwargs")
+    def _validate_client_kwargs(
+        cls, value: Optional[Dict[str, Any]]
+    ) -> Optional[Dict[str, Any]]:
+        """Validates the `client_kwargs` attribute.
+
+        Args:
+            value: The value to validate.
+
+        Raises:
+            ValueError: If the value is not a valid URL.
+
+        Returns:
+            The validated value.
+        """
+        if value is None:
+            return value
+
+        if "endpoint_url" in value and value["endpoint_url"]:
+            url = value["endpoint_url"].rstrip("/")
+            scheme = re.search("^([a-z0-9]+://)", url)
+            if scheme is None or scheme.group() not in ("https://", "http://"):
+                raise ValueError(
+                    "Invalid URL for endpoint url: {url}. Should be in the form "
+                    "https://hostname[:port] or http://hostname[:port]."
+                )
+
+            # When running inside a container, if the URL uses localhost, the
+            # target service will not be available. We try to replace localhost
+            # with one of the special Docker or K3D internal hostnames.
+            value["endpoint_url"] = replace_localhost_with_internal_hostname(
+                url
+            )
+        return value
+
 
 class S3ArtifactStoreFlavor(BaseArtifactStoreFlavor):
     """Flavor of the S3 artifact store."""
@@ -113,6 +154,24 @@ class S3ArtifactStoreFlavor(BaseArtifactStoreFlavor):
             The name of the flavor.
         """
         return S3_ARTIFACT_STORE_FLAVOR
+
+    @property
+    def docs_url(self) -> Optional[str]:
+        """A url to point at docs explaining this flavor.
+
+        Returns:
+            A flavor docs url.
+        """
+        return self.generate_default_docs_url()
+
+    @property
+    def logo_url(self) -> str:
+        """A url to represent the flavor in the dashboard.
+
+        Returns:
+            The flavor logo.
+        """
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/artifact_store/aws.png"
 
     @property
     def config_class(self) -> Type[S3ArtifactStoreConfig]:

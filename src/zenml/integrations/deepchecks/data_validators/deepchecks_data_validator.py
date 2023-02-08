@@ -82,7 +82,9 @@ class DeepchecksDataValidator(BaseDataValidator):
         """
         tabular_checks = list(
             filter(
-                lambda check: DeepchecksValidationCheck.is_tabular_check(check),
+                lambda check: DeepchecksValidationCheck.is_tabular_check(
+                    check
+                ),
                 check_list,
             )
         )
@@ -94,7 +96,6 @@ class DeepchecksDataValidator(BaseDataValidator):
         )
         return tabular_checks, vision_checks
 
-    # flake8: noqa: C901
     @classmethod
     def _create_and_run_check_suite(
         cls,

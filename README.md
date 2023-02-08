@@ -13,7 +13,6 @@
 [![Contributors][contributors-shield]][contributors-url]
 [![License][license-shield]][license-url]
 <!-- [![Build][build-shield]][build-url] -->
-<!-- [![Interrogate][interrogate-shield]][interrogate-url] -->
 <!-- [![CodeCov][codecov-shield]][codecov-url] -->
 
 <!-- MARKDOWN LINKS & IMAGES -->
@@ -38,8 +37,6 @@
 [slack-url]: https://zenml.io/slack-invite
 [build-shield]: https://img.shields.io/github/workflow/status/zenml-io/zenml/Build,%20Lint,%20Unit%20&%20Integration%20Test/develop?logo=github&style=for-the-badge
 [build-url]: https://github.com/zenml-io/zenml/actions/workflows/ci.yml
-[interrogate-shield]: https://img.shields.io/badge/Interrogate-100%25-brightgreen?style=for-the-badge&logo=interrogate
-[interrogate-url]: https://interrogate.readthedocs.io/en/latest/
 
 
 <!-- PROJECT LOGO -->
@@ -74,7 +71,7 @@
     ·
     <a href="#-meet-the-team">Meet the Team</a>
     <br />
-    🎉 Version 0.31.0 is out. Check out the release notes
+    🎉 Version 0.33.0 is out. Check out the release notes
     <a href="https://github.com/zenml-io/zenml/releases">here</a>.
     <br />
     <br />
@@ -107,7 +104,7 @@
         <li><a href="#-first-run">First run</a></li>
         <li><a href="#-collaborate-with-zenml">Collaborate with ZenML</a></li>
         <li><a href="#-zenbytes">ZenBytes</a></li>
-        <li><a href="#-zenfiles">ZenFiles</a></li>
+        <li><a href="#-zenml-projects">ZenML Projects</a></li>
       </ul>
     </li>
     <li>
@@ -266,11 +263,11 @@ New to MLOps? Get up to speed by visiting the [ZenBytes](https://github.com/zenm
 >ZenBytes is a series of short practical MLOps lessons taught using ZenML. 
 >It covers many of the [core concepts](https://docs.zenml.io/getting-started/core-concepts) widely used in ZenML and MLOps in general.
 
-## 📜 ZenFiles
+## 📜 ZenML Projects
 
-Already comfortable with ZenML and wish to elevate your pipeline into production mode? Check out [ZenFiles](https://github.com/zenml-io/zenfiles).
+Already comfortable with ZenML and wish to elevate your pipeline into production mode? Check out [ZenML Projects](https://github.com/zenml-io/zenml-projects).
 
->ZenFiles is a collection of production-grade ML use-cases powered by ZenML. They are fully fleshed out, end-to-end projects that showcase ZenML's capabilities. They can also serve as a template from which to start similar projects.
+>ZenML Projects is a collection of production-grade ML use-cases powered by ZenML. They are fully fleshed out, end-to-end projects that showcase ZenML's capabilities. They can also serve as a template from which to start similar projects.
 
 
 # ☁️ Infrastructure Requirements
@@ -377,7 +374,7 @@ the Apache License Version 2.0.
 | 📓 **[Docs]** | Full documentation for creating your own ZenML pipelines. |
 | 📒 **[API Reference]** | Detailed reference on ZenML's API. |
 | 🍰 **[ZenBytes]** | A guided and in-depth tutorial on MLOps and ZenML. |
-| 🗂️️ **[ZenFiles]** | End-to-end projects using ZenML. |
+| 🗂️️ **[ZenML Projects]** | End-to-end projects using ZenML. |
 | 👨‍🍳 **[MLOps Stacks]** | Terraform based infrastructure recipes for pre-made ZenML stacks. |
 | ⚽️ **[Examples]** | Learn best through examples where ZenML is used? We've got you covered. |
 | 📬 **[Blog]** | Use cases of ZenML and technical deep dives on how we built it. |
@@ -395,7 +392,7 @@ the Apache License Version 2.0.
 [Docs]: https://docs.zenml.io/
 [API Reference]: https://apidocs.zenml.io/
 [ZenBytes]: https://github.com/zenml-io/zenbytes
-[ZenFiles]: https://github.com/zenml-io/zenfiles
+[ZenML Projects]: https://github.com/zenml-io/zenml-projects
 [MLOps Stacks]: https://github.com/zenml-io/mlops-stacks
 [Examples]: https://github.com/zenml-io/zenml/tree/main/examples
 [Blog]: https://blog.zenml.io/

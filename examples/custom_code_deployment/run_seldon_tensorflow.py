@@ -19,7 +19,9 @@ from seldon_tensorflow.pipelines.seldon_tensorflow_pipelines import (
     tensorflow_custom_code_pipeline,
     tensorflow_inference_pipeline,
 )
-from seldon_tensorflow.steps.deployer import seldon_tensorflow_custom_deployment
+from seldon_tensorflow.steps.deployer import (
+    seldon_tensorflow_custom_deployment,
+)
 from seldon_tensorflow.steps.deployment_trigger import (
     DeploymentTriggerParameters,
     deployment_trigger,
@@ -108,7 +110,7 @@ def main(
     min_accuracy: float,
     prediction_image_url: str,
 ):
-    """Run the custom code deployment example training/deployment or inference pipeline
+    """Run the custom code deployment example training/deployment or inference pipeline.
 
     Example usage:
 

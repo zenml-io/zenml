@@ -37,10 +37,10 @@ use of the additional URI validations.
 |----------------------------------------------|-------------|------------------|-------------------------------------------|
 | [DefaultContainerRegistry](./default.md)     | `default`   | _built-in_       | -                                         |
 | [DockerHubContainerRegistry](./dockerhub.md) | `dockerhub` | _built-in_       | docker.io/zenml                           |
-| [GCPContainerRegistry](./gcloud.md)          | `gcp`       | _built-in_       | gcr.io/zenml                              |
+| [GCPContainerRegistry](./gcp.md)          | `gcp`       | _built-in_       | gcr.io/zenml                              |
 | [AzureContainerRegistry](./azure.md)         | `azure`     | _built-in_       | zenml.azurecr.io                          |
 | [GitHubContainerRegistry](./github.md)       | `github`    | _built-in_       | ghcr.io/zenml                             |
-| [AWSContainerRegistry](./amazon-ecr.md)      | `aws`       | `aws`            | 123456789.dkr.ecr.us-east-1.amazonaws.com |
+| [AWSContainerRegistry](./aws.md)      | `aws`       | `aws`            | 123456789.dkr.ecr.us-east-1.amazonaws.com |
 
 If you would like to see the available flavors of container registries, you can 
 use the command:

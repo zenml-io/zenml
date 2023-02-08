@@ -58,7 +58,7 @@ def _is_module_ignored(module_name: str, ignored_modules: List[str]) -> bool:
 
 
 def generate_title(s: str) -> str:
-    """Remove underscores and capitalize first letter to each word"""
+    """Remove underscores and capitalize first letter to each word."""
     s = s.replace("_", " ")
     s = s.title()
     return s
@@ -205,7 +205,7 @@ def generate_docs(
     )
 
     integration_file_contents = [INTEGRATION_DOCS_TITLE]
-    integrations_file_content = create_entity_docs(
+    create_entity_docs(
         api_doc_file_dir=integrations_dev_doc_file_dir,
         ignored_modules=["__init__.py", "__pycache__"],
         sources_path=path / "integrations",

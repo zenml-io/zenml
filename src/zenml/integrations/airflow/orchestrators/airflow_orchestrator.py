@@ -29,9 +29,13 @@ from typing import (
     Type,
     cast,
 )
+from uuid import UUID
 
 from zenml.config.global_config import GlobalConfiguration
-from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
+from zenml.constants import (
+    METADATA_ORCHESTRATOR_URL,
+    ORCHESTRATOR_DOCKER_IMAGE_KEY,
+)
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.enums import StackComponentType
 from zenml.integrations.airflow.flavors.airflow_orchestrator_flavor import (
@@ -40,11 +44,14 @@ from zenml.integrations.airflow.flavors.airflow_orchestrator_flavor import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.metadata.metadata_types import Uri
 from zenml.orchestrators import BaseOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 from zenml.utils import daemon, io_utils
-from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
+from zenml.utils.pipeline_docker_image_builder import (
+    PipelineDockerImageBuilder,
+)
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
@@ -53,6 +60,7 @@ if TYPE_CHECKING:
         DagConfiguration,
         TaskConfiguration,
     )
+    from zenml.metadata.metadata_types import MetadataType
     from zenml.pipelines import Schedule
     from zenml.stack import Stack
 
@@ -161,7 +169,9 @@ class AirflowOrchestrator(BaseOrchestrator):
             return None
         else:
 
-            def _validate_remote_components(stack: "Stack") -> Tuple[bool, str]:
+            def _validate_remote_components(
+                stack: "Stack",
+            ) -> Tuple[bool, str]:
                 for component in stack.components.values():
                     if not component.config.is_local:
                         continue
@@ -180,7 +190,10 @@ class AirflowOrchestrator(BaseOrchestrator):
                 return True, ""
 
             return StackValidator(
-                required_components={StackComponentType.CONTAINER_REGISTRY},
+                required_components={
+                    StackComponentType.CONTAINER_REGISTRY,
+                    StackComponentType.IMAGE_BUILDER,
+                },
                 custom_validation_function=_validate_remote_components,
             )
 
@@ -199,24 +212,12 @@ class AirflowOrchestrator(BaseOrchestrator):
             stack.check_local_paths()
 
         docker_image_builder = PipelineDockerImageBuilder()
-        if stack.container_registry:
-            repo_digest = docker_image_builder.build_and_push_docker_image(
-                deployment=deployment, stack=stack
-            )
-            deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
-        else:
-            # If there is no container registry, we only build the image
-            target_image_name = docker_image_builder.get_target_image_name(
-                deployment=deployment
-            )
-            docker_image_builder.build_docker_image(
-                target_image_name=target_image_name,
-                deployment=deployment,
-                stack=stack,
-            )
-            deployment.add_extra(
-                ORCHESTRATOR_DOCKER_IMAGE_KEY, target_image_name
-            )
+        image_name_or_digest = docker_image_builder.build_docker_image(
+            deployment=deployment, stack=stack
+        )
+        deployment.add_extra(
+            ORCHESTRATOR_DOCKER_IMAGE_KEY, image_name_or_digest
+        )
 
     def prepare_or_run_pipeline(
         self,
@@ -452,8 +453,8 @@ class AirflowOrchestrator(BaseOrchestrator):
         if not self.config.local:
             return True
 
-        from airflow.cli.commands.standalone_command import (
-            StandaloneCommand,  # type: ignore
+        from airflow.cli.commands.standalone_command import (  # type: ignore
+            StandaloneCommand,
         )
         from airflow.jobs.triggerer_job import TriggererJob
 
@@ -529,6 +530,12 @@ class AirflowOrchestrator(BaseOrchestrator):
                 "official Airflow quickstart guide for running Airflow locally."
             )
             self.deprovision()
+        finally:
+            logger.warning(
+                "Airflow provisioning using `zenml stack up` is ",
+                "deprecated. Please follow the new Airflow quickstart guide ",
+                "to run Airflow locally.",
+            )
 
     def deprovision(self) -> None:
         """Stops the airflow daemon if necessary and tears down resources."""
@@ -597,3 +604,20 @@ class AirflowOrchestrator(BaseOrchestrator):
             "with username: `admin` password: `%s`",
             password,
         )
+
+    def get_pipeline_run_metadata(
+        self, run_id: UUID
+    ) -> Dict[str, "MetadataType"]:
+        """Get general component-specific metadata for a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run.
+
+        Returns:
+            A dictionary of metadata.
+        """
+        if self.config.local:
+            return {
+                METADATA_ORCHESTRATOR_URL: Uri("http://localhost:8080"),
+            }
+        return {}

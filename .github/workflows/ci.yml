@@ -8,7 +8,7 @@ on:
     paths-ignore: ["docs/**", "docker/**", "*", "!pyproject.toml", "**.md"]
   pull_request:
     types: [opened, synchronize, ready_for_review]
-    paths-ignore: ['docs/**', 'docker/**', '*', '!pyproject.toml', '**.md']
+    paths-ignore: ["docs/**", "docker/**", "*", "!pyproject.toml", "**.md"]
 
 concurrency:
   # New commit on branch cancels running workflows of the same branch
@@ -37,9 +37,14 @@ jobs:
     if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
     strategy:
       matrix:
-        os: [ ubuntu-latest, windows-latest, macos-latest ]
-        python-version: [ '3.7', '3.8', '3.9', '3.10' ]
-        test_environment: [ "default", "docker-server-docker-orchestrator", "default-kubeflow-orchestrator"]
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
+        test_environment:
+          [
+            "default",
+            "docker-server-docker-orchestrator",
+            "default-kubeflow-orchestrator",
+          ]
         exclude:
           # docker and kubeflow are not supported on windows
           - os: windows-latest
@@ -48,18 +53,20 @@ jobs:
             test_environment: docker-server-docker-orchestrator
           # kubeflow is time-consuming to run, so we only run it on 3.8
           - test_environment: default-kubeflow-orchestrator
-            python-version: '3.7'
+            python-version: "3.7"
           - test_environment: default-kubeflow-orchestrator
-            python-version: '3.9'
+            python-version: "3.9"
           - test_environment: default-kubeflow-orchestrator
-            python-version: '3.10'
+            python-version: "3.10"
+          - test_environment: default-kubeflow-orchestrator
+            python-version: "3.8"
           # docker is time-consuming to run, so we only run it on 3.8
           - test_environment: docker-server-docker-orchestrator
-            python-version: '3.7'
+            python-version: "3.7"
           - test_environment: docker-server-docker-orchestrator
-            python-version: '3.9'
+            python-version: "3.9"
           - test_environment: docker-server-docker-orchestrator
-            python-version: '3.10'
+            python-version: "3.10"
           # disable docker macos tests for now
           - test_environment: docker-server-docker-orchestrator
             os: macos-latest
@@ -77,11 +84,11 @@ jobs:
       test_environment: ${{ matrix.test_environment }}
     secrets: inherit
 
-  spell-check:
-    uses: ./.github/workflows/spellcheck.yml
+  markdown-link-check:
+    uses: ./.github/workflows/markdown-link-check.yml
 
   docstring-check:
     uses: ./.github/workflows/docstring.yml
 
-  markdown-link-check:
-    uses: ./.github/workflows/markdown-link-check.yml
+  spell-check:
+    uses: ./.github/workflows/spellcheck.yml

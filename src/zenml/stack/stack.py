@@ -28,10 +28,15 @@ from typing import (
 from uuid import UUID
 
 from zenml.client import Client
-from zenml.constants import ENV_ZENML_SECRET_VALIDATION_LEVEL
+from zenml.constants import (
+    ENV_ZENML_SECRET_VALIDATION_LEVEL,
+    ENV_ZENML_SKIP_IMAGE_BUILDER_DEFAULT,
+    handle_bool_env_var,
+)
 from zenml.enums import SecretValidationLevel, StackComponentType
 from zenml.exceptions import ProvisioningError, StackValidationError
 from zenml.logger import get_logger
+from zenml.metadata.metadata_types import MetadataType
 from zenml.models import StackResponseModel
 from zenml.utils import settings_utils
 
@@ -49,6 +54,7 @@ if TYPE_CHECKING:
         BaseExperimentTracker,
     )
     from zenml.feature_stores import BaseFeatureStore
+    from zenml.image_builders import BaseImageBuilder
     from zenml.model_deployers import BaseModelDeployer
     from zenml.orchestrators import BaseOrchestrator
     from zenml.secrets_managers import BaseSecretsManager
@@ -86,10 +92,9 @@ class Stack:
         alerter: Optional["BaseAlerter"] = None,
         annotator: Optional["BaseAnnotator"] = None,
         data_validator: Optional["BaseDataValidator"] = None,
+        image_builder: Optional["BaseImageBuilder"] = None,
     ):
         """Initializes and validates a stack instance.
-
-        # noqa: DAR402
 
         Args:
             id: Unique ID of the stack.
@@ -105,9 +110,7 @@ class Stack:
             alerter: Alerter component of the stack.
             annotator: Annotator component of the stack.
             data_validator: Data validator component of the stack.
-
-        Raises:
-            StackValidationError: If the stack configuration is not valid.
+            image_builder: Image builder component of the stack.
         """
         self._id = id
         self._name = name
@@ -122,6 +125,62 @@ class Stack:
         self._alerter = alerter
         self._annotator = annotator
         self._data_validator = data_validator
+
+        requires_image_builder = (
+            orchestrator.flavor != "local"
+            or step_operator
+            or (model_deployer and model_deployer.flavor != "mlflow")
+        )
+        skip_default_image_builder = handle_bool_env_var(
+            ENV_ZENML_SKIP_IMAGE_BUILDER_DEFAULT, default=False
+        )
+        if (
+            requires_image_builder
+            and not skip_default_image_builder
+            and not image_builder
+        ):
+            # This is a temporary fix to include a local image builder in each
+            # stack that needs it. This mirrors the behavior in previous
+            # versions and ensures we don't break all existing stacks
+            from datetime import datetime
+            from uuid import uuid4
+
+            from zenml.image_builders import (
+                LocalImageBuilder,
+                LocalImageBuilderConfig,
+                LocalImageBuilderFlavor,
+            )
+
+            flavor = LocalImageBuilderFlavor()
+
+            image_builder = LocalImageBuilder(
+                id=uuid4(),
+                name="temporary_default",
+                flavor=flavor.name,
+                type=flavor.type,
+                config=LocalImageBuilderConfig(),
+                user=Client().active_user.id,
+                workspace=Client().active_workspace.id,
+                created=datetime.utcnow(),
+                updated=datetime.utcnow(),
+            )
+
+            logger.warning(
+                "The stack `%s` contains components that require building "
+                "Docker images. Older versions of ZenML always built these "
+                "images locally, but since version 0.32.0 this behavior can be "
+                "configured using the `image_builder` stack component. This "
+                "stack will temporarily default to a local image builder that "
+                "mirrors the previous behavior, but this will be removed in "
+                "future versions of ZenML. Please add an image builder to this "
+                "stack:\n"
+                "`zenml image-builder register <NAME> ...\n"
+                "zenml stack update %s -i <NAME>",
+                name,
+                id,
+            )
+
+        self._image_builder = image_builder
 
     @classmethod
     def from_model(cls, stack_model: StackResponseModel) -> "Stack":
@@ -175,6 +234,7 @@ class Stack:
         from zenml.data_validators import BaseDataValidator
         from zenml.experiment_trackers import BaseExperimentTracker
         from zenml.feature_stores import BaseFeatureStore
+        from zenml.image_builders import BaseImageBuilder
         from zenml.model_deployers import BaseModelDeployer
         from zenml.orchestrators import BaseOrchestrator
         from zenml.secrets_managers import BaseSecretsManager
@@ -260,6 +320,12 @@ class Stack:
         ):
             _raise_type_error(data_validator, BaseDataValidator)
 
+        image_builder = components.get(StackComponentType.IMAGE_BUILDER)
+        if image_builder is not None and not isinstance(
+            image_builder, BaseImageBuilder
+        ):
+            _raise_type_error(image_builder, BaseImageBuilder)
+
         return Stack(
             id=id,
             name=name,
@@ -274,6 +340,7 @@ class Stack:
             alerter=alerter,
             annotator=annotator,
             data_validator=data_validator,
+            image_builder=image_builder,
         )
 
     @property
@@ -297,6 +364,7 @@ class Stack:
                 self.alerter,
                 self.annotator,
                 self.data_validator,
+                self.image_builder,
             ]
             if component is not None
         }
@@ -418,6 +486,15 @@ class Stack:
             The data validator of the stack.
         """
         return self._data_validator
+
+    @property
+    def image_builder(self) -> Optional["BaseImageBuilder"]:
+        """The image builder of the stack.
+
+        Returns:
+            The image builder of the stack.
+        """
+        return self._image_builder
 
     def dict(self) -> Dict[str, str]:
         """Converts the stack into a dictionary.
@@ -676,6 +753,17 @@ class Stack:
                     f"is not currently running. Please run the following "
                     f"command to provision and start the component:\n\n"
                     f"    `zenml stack up`\n"
+                    f"It is worth noting that the provision command will "
+                    f" be deprecated in the future. ZenML will no longer "
+                    f"be responsible for provisioning infrastructure, "
+                    f"or port-forwarding directly. Instead of managing "
+                    f"the state of the components, ZenML will be utilizing "
+                    f"the already running stack or stack components directly. "
+                    f"Additionally, we are also providing a variety of "
+                    f" deployment recipes for popular Kubernetes-based "
+                    f"integrations such as Kubeflow, Tekton, and Seldon etc."
+                    f"Check out https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes"
+                    f"for more information."
                 )
 
         if self.requires_remote_server and Client().zen_store.is_local_store():
@@ -750,6 +838,58 @@ class Stack:
             info.config
         ).values():
             component.prepare_step_run(info=info)
+
+    def get_pipeline_run_metadata(
+        self, run_id: UUID
+    ) -> Dict[UUID, Dict[str, MetadataType]]:
+        """Get general component-specific metadata for a pipeline run.
+
+        Args:
+            run_id: ID of the pipeline run.
+
+        Returns:
+            A dictionary mapping component IDs to the metadata they created.
+        """
+        pipeline_run_metadata: Dict[UUID, Dict[str, MetadataType]] = {}
+        for component in self.components.values():
+            try:
+                component_metadata = component.get_pipeline_run_metadata(
+                    run_id=run_id
+                )
+                if component_metadata:
+                    pipeline_run_metadata[component.id] = component_metadata
+            except Exception as e:
+                logger.warning(
+                    f"Extracting pipeline run metadata failed for component "
+                    f"'{component.name}' of type '{component.type}': {e}"
+                )
+        return pipeline_run_metadata
+
+    def get_step_run_metadata(
+        self, info: "StepRunInfo"
+    ) -> Dict[UUID, Dict[str, MetadataType]]:
+        """Get component-specific metadata for a step run.
+
+        Args:
+            info: Info about the step that was executed.
+
+        Returns:
+            A dictionary mapping component IDs to the metadata they created.
+        """
+        step_run_metadata: Dict[UUID, Dict[str, MetadataType]] = {}
+        for component in self._get_active_components_for_step(
+            info.config
+        ).values():
+            try:
+                component_metadata = component.get_step_run_metadata(info=info)
+                if component_metadata:
+                    step_run_metadata[component.id] = component_metadata
+            except Exception as e:
+                logger.warning(
+                    f"Extracting step run metadata failed for component "
+                    f"'{component.name}' of type '{component.type}': {e}"
+                )
+        return step_run_metadata
 
     def cleanup_step_run(self, info: "StepRunInfo", step_failed: bool) -> None:
         """Cleans up resources after the step run is finished.

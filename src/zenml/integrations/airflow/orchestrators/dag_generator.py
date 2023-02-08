@@ -200,7 +200,7 @@ else:
         dag_id=dag_config.id,
         is_paused_upon_creation=False,
         tags=dag_config.tags,
-        schedule=dag_config.schedule,
+        schedule_interval=dag_config.schedule,
         start_date=dag_config.start_date,
         end_date=dag_config.end_date,
         catchup=dag_config.catchup,

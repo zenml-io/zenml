@@ -8,16 +8,6 @@ robust environment.
 
 You can also watch a video of this example [here](https://www.youtube.com/watch?v=b5TXRYkdL3w).
 
-## ⏩ SuperQuick `kubeflow` run
-
-If you're really in a hurry and just want to see this example pipeline run
-without wanting to fiddle around with all the individual installation and
-configuration steps, just run the following:
-
-```shell
-zenml example run kubeflow_pipelines_orchestration
-```
-
 # 🖥 Run it locally
 
 ## 👣 Step-by-Step
@@ -36,6 +26,8 @@ to deploy Kubeflow Pipelines
 your pipeline in Kubernetes pods (**Note**: the local Kubeflow Pipelines
 deployment requires more than 2 GB of RAM, so if you're using Docker Desktop
 make sure to update the resource limits in the preferences)
+* [Terraform](https://www.terraform.io/downloads.html) to deploy a local Kubernetes
+cluster using K3D and install Kubeflow Pipelines on it.
 
 
 Next, we will install ZenML, get the code for this example and initialize a
@@ -104,41 +96,84 @@ pipeline on a local Kubeflow Pipelines deployment.
 python run.py --stop-tensorboard
 ```
 
-## 🏃️ Run the same pipeline on a local Kubeflow Pipelines deployment
+## 🏃️ Use Kubeflow Pipelines on a local K3D cluster with ZenML Stack Recipes
 
-### 🥞 Create a local Kubeflow Pipelines Stack
+As ZenML continued to expand, we found that supporting more and more 
+orchestration tools, model deployment platforms, and other technologies that 
+require a Kubernetes cluster to operate, can be complex and prone to errors. 
+To simplify this process, we introduced the concept of **[stack recipes](https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes)**. 
+A stack recipe is a pre-configured collection of orchestrators, artifact-stores,
+and container registries that work together seamlessly. This allows you to 
+quickly spin up a Kubernetes cluster and install all the necessary tools to run 
+your pipeline with just a few commands, and support all three major 
+cloud providers (AWS, GCP, and Azure).
 
-Now with all the installation and initialization out of the way, all that's left
-to do is configuring our ZenML [stack](https://docs.zenml.io/getting-started/core-concepts). For
-this example, the stack we create consists of the following four parts:
-* The **local artifact store** stores step outputs on your hard disk.
+### 🥞 Let's cook up a Local Kubeflow stack recipe
+
+To run the pipeline on a local Kubeflow Pipelines deployment, you can use the
+ZenML Stack recipes to spin up a local Kubernetes cluster and install Kubeflow
+Pipelines on it. The stack recipe is called `k3d-modular` and is available in the ZenML
+[stack recipe repository](https://github.com/zenml-io/mlops-stacks/tree/main/k3d-modular).
+The recipe is modular, meaning that you can configured it to use different
+orchestrators, Model Deployers, and other tools. By default, the recipe will
+install the following tools:
+
+* The **Minio Artifact Store** as a remote alternative to the local file system
+for storing artifacts, the Minio server is deployed as a Kubernetes pod.
 * The docker images that are created to run your pipeline are stored in a local
-docker **container registry**.
-* The **Kubeflow orchestrator** is responsible for running your ZenML pipeline
+docker **Container Registry**.
+* The **Kubeflow Orchestrator** is responsible for running your ZenML pipeline
 in Kubeflow Pipelines.
+* The **MLFlow Expirement Tracker** is used to track the experiments and
+metrics of your pipeline runs. The MLFlow server is deployed as a Kubernetes
+pod.
 
 ```bash
-# Make sure to create the local registry on port 5000 for it to work 
-zenml container-registry register local_registry --flavor=default --uri=localhost:5000 
-zenml orchestrator register local_kubeflow_orchestrator --flavor=kubeflow
-zenml stack register local_kubeflow_stack \
-    -a default \
-    -o local_kubeflow_orchestrator \
-    -c local_registry \
-    --set
+zenml stack recipe deploy k3d-modular
+```
+>**Note**:
+> This recipe comes with MLflow, Kubeflow and Minio enabled by default. If you want any other components like KServe, Seldon or Tekton, you can specify that using the `--install/-i` flag.
+
+#### 🏁 Deploy the stack using ZenML CLI
+
+The flow to get started for this example can be the following:
+
+1. Pull the `k3d-modular` recipe to your local system. Learn more about what 
+this recipe does from its [README](https://github.com/zenml-io/mlops-stacks/blob/main/k3d-modular/README.md).
+
+```shell
+zenml stack recipe pull k3d-modular
 ```
 
-### 🏁 Start up Kubeflow Pipelines locally
+2. (Optional) 🎨 Customize your deployment by editing the default values in the `locals.tf` file.
 
-ZenML takes care of setting up and configuring the local Kubeflow Pipelines
-deployment. All we need to do is run:
+3. Deploy the stack using the ZenML CLI:
 
-```bash
-zenml stack up
+```shell
+zenml stack recipe deploy k3d-modular --no-server
 ```
 
-When the setup is finished, you should see a local URL which you can access in
-your browser and take a look at the Kubeflow Pipelines UI.
+> **Note**
+    > This command can also automatically import the resources created as a ZenML stack for you. Just run it with the `--import` flag and optionally provide a `--stack-name` and you're set! Keep in mind, in that case, you'll need all integrations for this example installed before you run this command.
+
+
+4. You'll notice that a ZenML stack configuration file gets created 🤯! You can run the following command to import the resources as a ZenML stack, manually.
+
+```shell
+zenml stack import <STACK_NAME> -f <PATH_TO_THE_CREATED_STACK_CONFIG_YAML>
+
+# set the imported stack as the active stack
+zenml stack set <STACK_NAME>
+```
+
+5. Get the endpoints of the deployed services UIs:
+
+```shell
+kubectl get ingress -A  -o jsonpath='{.items[*].spec.rules[*].host}'
+
+# Output:
+kubeflow.<EXTERNAL-IP>.nip.io mlflow.<EXTERNAL-IP>.nip.io minio-console.<EXTERNAL-IP>.nip.io
+```
 
 ### ▶️ Run the pipeline
 We can now run the pipeline by simply executing the python script:
@@ -150,7 +185,12 @@ python run.py
 This will build a docker image containing all the necessary python packages and
 files, push it to the local container registry and schedule a pipeline run in
 Kubeflow Pipelines. Once the script is finished, you should be able to see the
-pipeline run [here](http://localhost:8080/#/runs).
+pipeline run in the Kubeflow Pipelines UI:
+
+```bash
+# Get the Kubeflow Pipelines UI endpoint
+kubectl get ingress -n kubeflow  -o jsonpath='{.items[0].spec.rules[0].host}'
+```
 
 The TensorBoard logs for the model trained in every pipeline run can be viewed
 directly in the Kubeflow Pipelines UI by clicking on the "Visualization" tab
@@ -180,11 +220,19 @@ in the background with the command:
 python run.py --stop-tensorboard
 ```
 
-You can delete the local Kubernetes cluster and all associated resources by
-calling:
+1. 🗑️ Once you're done running your pipelines, there's only a single command 
+you need to execute that will take care of cleaning up all the resources 
+that you had created on your local machine.
 
 ```bash
-zenml stack down --force
+zenml stack recipe destroy <STACK_RECIPE_NAME>
+```
+
+2. (Optional) 🧹 You can also remove all the downloaded recipe files from 
+the `pull` execution by using the `clean` command.
+
+```
+zenml stack recipe clean
 ```
 
 ## ☁️ Run the same pipeline on Kubeflow Pipelines deployed to GCP
@@ -247,8 +295,39 @@ zenml stack register gcp_kubeflow_stack \
     -c gcr_registry \
     --set
 
-# Forward the Kubeflow pipelines UI so we can access it locally
-zenml stack up
+```
+
+### Setting up the stack using a recipe
+
+Alternatively, you can also use the `zenml stack recipe` command to create the
+stack and its components. Just as the local k3d stack, the GCP Kubeflow stack
+recipe is also available in the ZenML repository. You can pull it using the
+following command:
+
+```bash
+zenml stack recipe pull gcp_kubeflow_stack
+```
+
+You can follow the same steps as above to create and activate the stack and its
+components:
+
+Deploy the stack using the ZenML CLI:
+
+```shell
+zenml stack recipe deploy gcp_kubeflow_stack
+```
+
+> **Note**
+    > This command can also automatically import the resources created as a ZenML stack for you. Just run it with the `--import` flag and optionally provide a `--stack-name` and you're set! Keep in mind, in that case, you'll need all integrations for this example installed before you run this command.
+
+
+You can run the following command to import the resources as a ZenML stack, manually.
+
+```shell
+zenml stack import <STACK_NAME> -f <PATH_TO_THE_CREATED_STACK_CONFIG_YAML>
+
+# set the imported stack as the active stack
+zenml stack set <STACK_NAME>
 ```
 
 ### ▶️ Run the pipeline
@@ -280,11 +359,16 @@ This will make sure that your step runs on a machine with the specified resource
 as such a machine is available in the Kubernetes cluster you're using.
 
 ### 🧽 Clean up
-Once you're done experimenting, you can stop the port forwarding and delete the example files by calling:
+Once you're done experimenting, delete the example files by calling:
 
 ```bash
-zenml stack down --force
 rm -rf zenml_examples
+```
+
+If you have created the GCP Kubeflow stack using the recipe, you can delete it using the following command:
+
+```bash
+zenml stack recipe destroy gcp_kubeflow_stack
 ```
 
 # ⚠️ Important note for multi-tenant Kubeflow deployments

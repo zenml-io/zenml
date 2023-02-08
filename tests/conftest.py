@@ -25,7 +25,7 @@ from tests.harness.environment import TestEnvironment
 from tests.harness.utils import (
     check_test_requirements,
     clean_default_client_session,
-    clean_project_session,
+    clean_workspace_session,
     environment_session,
 )
 from tests.venv_clone_utils import clone_virtualenv
@@ -72,7 +72,7 @@ def pytest_addoption(parser):
         "--no-cleanup",
         action="store_true",
         default=False,
-        help="Do not cleanup the temporary resources (e.g. stacks, projects) "
+        help="Do not cleanup the temporary resources (e.g. stacks, workspaces) "
         "set up for tests after tests have run.",
     )
     parser.addoption(
@@ -103,7 +103,6 @@ def auto_environment(
     Yields:
         The active environment and a client connected with it.
     """
-
     session_mocker.patch("analytics.track")
     session_mocker.patch("analytics.group")
     session_mocker.patch("analytics.identify")
@@ -153,16 +152,16 @@ def check_module_requirements(
 
 
 @pytest.fixture
-def clean_project(
+def clean_workspace(
     tmp_path_factory: pytest.TempPathFactory,
 ) -> Generator[Client, None, None]:
     """Fixture to create, activate and use a separate ZenML repository and
-    project for an individual test.
+    workspace for an individual test.
 
     Yields:
-        A ZenML client configured to use the project.
+        A ZenML client configured to use the workspace.
     """
-    with clean_project_session(
+    with clean_workspace_session(
         tmp_path_factory=tmp_path_factory,
         clean_repo=True,
     ) as client:
@@ -170,16 +169,16 @@ def clean_project(
 
 
 @pytest.fixture(scope="module")
-def module_clean_project(
+def module_clean_workspace(
     tmp_path_factory: pytest.TempPathFactory,
 ) -> Generator[Client, None, None]:
     """Fixture to create, activate and use a separate ZenML repository and
-    project for an entire test module.
+    workspace for an entire test module.
 
     Yields:
-        A ZenML client configured to use the project.
+        A ZenML client configured to use the workspace.
     """
-    with clean_project_session(
+    with clean_workspace_session(
         tmp_path_factory=tmp_path_factory,
         clean_repo=True,
     ) as client:

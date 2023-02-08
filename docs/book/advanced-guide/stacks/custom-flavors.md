@@ -168,6 +168,8 @@ With the configuration defined, we can move on to the logic behind the
 implementation:
 
 ```python
+PathType = Union[bytes, str]
+
 from zenml.artifact_stores import BaseArtifactStore
 
 
@@ -198,15 +200,18 @@ from zenml.artifact_stores import BaseArtifactStoreFlavor
 class MyArtifactStoreFlavor(BaseArtifactStoreFlavor):
     """Custom artifact store implementation."""
     
+    @property
     def name(self) -> str:
         """The name of the flavor."""
         return 'my_artifact_store'
     
+    @property
     def implementation_class(self) -> Type["BaseArtifactStore"]:
         """Implementation class for this flavor."""
         from ... import MyArtifactStore
         return MyArtifactStore
 
+    @property
     def config_class(self) -> Type[StackComponentConfig]:
         """Configuration class for this flavor."""
         from ... import MyArtifactStoreConfig
@@ -246,6 +251,10 @@ zenml stack register <STACK_NAME> \
 If your custom stack component flavor requires special setup before it can be
 used, check out the [Managing Stack Component States](./stack-state-management.md)
 section for more details.
+
+If you would like to automatically track some metadata about your custom stack
+component with each pipeline run, check out the 
+[Tracking Custom Stack Component Metadata](./component-metadata.md) section.
 {% endhint %}
 
 Check out [this short (< 3 minutes) video](https://www.youtube.com/watch?v=CQRVSKbBjtQ) on how to quickly get some more

@@ -4,24 +4,23 @@ description: Iteration is native to ZenML.
 
 # Quickly iterating in ZenML
 
-Machine learning pipelines are rerun many times over throughout their development lifecycle. 
+Machine learning pipelines are rerun many times over throughout their development lifecycle.
 
 ## Parameterizing steps
 
-In order to iterate quickly, one must be able to quickly tweak pipeline runs by changing various 
-parameters for the steps that make up your pipeline.
+In order to iterate quickly, one must be able to quickly tweak pipeline runs by
+changing various parameters for the steps that make up your pipeline.
 
-You can configure your pipelines at runtime in the following ways:
+{% hint style="info" %}
+If you want to configure runtime settings of pipelines and stack components,
+you'll want to [read the part of the Advanced
+Guide](../../advanced-guide/pipelines/settings.md) where we dive into how to do
+this with `BaseSettings`.
+{% endhint %}
 
-- `BaseParameters`: Runtime configuration passed down to steps as parameters.
-- `BaseSettings`: Runtime settings passed down to stack components and pipelines.
-
-In this section, we will focus on `BaseParameters`, and in the Advanced Guide we will 
-[dive deeper into `BaseSettings`](../../advanced-guide/pipelines/pipelines.md).
-
-You can parameterize a step by creating a subclass of the `BaseParameters`. When such a 
-config object is passed to a step, it is not treated like other artifacts. Instead, it 
-gets passed into the step when the pipeline is instantiated.
+You can parameterize a step by creating a subclass of the `BaseParameters`. When
+an object like this is passed to a step, it is not handled like other [Artifacts](../../starter-guide/pipelines/pipelines.md#artifacts) within ZenML. Instead, it gets
+passed into the step when the pipeline is instantiated.
 
 ```python
 import numpy as np
@@ -48,8 +47,9 @@ def svc_trainer(
     return model
 ```
 
-The default value for the `gamma` parameter is set to `0.001`. However, when
-the pipeline is instantiated you can override the default like this:
+The default value for the `gamma` parameter is set to `0.001` inside the
+`SVCTrainerParams` object. However, when the pipeline is instantiated you can
+override the default like this:
 
 ```python
 first_pipeline_instance = first_pipeline(
@@ -59,6 +59,10 @@ first_pipeline_instance = first_pipeline(
 
 first_pipeline_instance.run()
 ```
+
+By passing the `SVCTrainerParams` object to the instance of the pipeline, you
+can amend and override the default values of the parameters. This is a very
+powerful tool to quickly iterate over your pipeline.
 
 {% hint style="info" %}
 Behind the scenes, `BaseParameters` is implemented as a 
@@ -71,7 +75,76 @@ is also supported as an attribute type in the `BaseParameters`.
 Try running the above pipeline, and changing the parameter `gamma` through many runs. 
 In essence, each pipeline can be viewed as an experiment, and each run is a trial of 
 the experiment, defined by the `BaseParameters`. You can always get the parameters again 
-when you [fetch pipeline runs](./fetching-pipelines.md), to compare various runs.
+when you [fetch pipeline runs](./fetching-pipelines.md), to compare various
+runs, and of course all this information is also available in the ZenML
+Dashboard.
+
+<details>
+<summary>How-To: Parameterization of a step</summary>
+A practical example of how you might parameterize a step is shown below. We can start with a version of a step that has yet to be parameterized. You can see how arguments for `gamma`, `C` and `kernel` are passed in and are hard-coded in the step definition.
+
+```python
+@step
+def svc_trainer(
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+) -> ClassifierMixin:
+    """Train a sklearn SVC classifier."""
+    model = SVC(gamma=0.001, C=2.5, kernel='rbf')
+    model.fit(X_train, y_train)
+    return model
+```
+
+If you are in the early stages of prototyping, you might want to quickly iterate
+over different values for `gamma`, `C` and `kernel`. Moreover, you might want to
+store these as specific hyperparameters that are tracked alongside the rest of
+the artifacts stored by ZenML. This is where `BaseParameters` comes in handy.
+
+```python
+class SVCTrainerParams(BaseParameters):
+    """Trainer params"""
+    gamma: float = 0.001
+    C: float = 1.0
+    kernel: str = 'rbf'
+```
+
+Now, you can pass the `SVCTrainerParams` object to the step, and the values
+inside the object will be used instead of the hard-coded values.
+
+```python
+@step
+def svc_trainer(
+    params: SVCTrainerParams,
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+) -> ClassifierMixin:
+    """Train a sklearn SVC classifier."""
+    model = SVC(gamma=params.gamma, C=params.C, kernel=params.kernel)
+    model.fit(X_train, y_train)
+    return model
+```
+
+Finally, you can pass the `SVCTrainerParams` object to the instance of the
+pipeline, and override the default values of the parameters.
+
+```python
+first_pipeline_instance = first_pipeline(
+    step_1=digits_data_loader(),
+    step_2=svc_trainer(SVCTrainerParams(gamma=0.01, C=2.5, kernel='linear')),
+)
+```
+
+Parameterizing steps in ML pipelines is a crucial aspect of efficient and
+effective machine learning. By separating the configuration from the code, data
+scientists and machine learning engineers have greater control over the behavior
+of each step in the pipeline. This makes it easier to tune and optimize each
+step, as well as to reuse the code in different pipelines or experiments.
+Additionally, parameterization helps to make the pipelines more robust and
+reproducible, as the configuration can be stored and versioned alongside the
+code. Ultimately, parameterizing steps in ML pipelines can lead to improved
+model performance, reduced development time, and increased collaboration among
+team members.
+</details>
 
 ## Caching in ZenML
 
@@ -108,16 +181,19 @@ changing step definitions or you have an external API state change in your
 function that ZenML does not detect.
 
 There are multiple ways to take control of when and where caching is used:
-- [Disabling caching for the entire pipeline](#disabling-caching-for-the-entire-pipeline):
-Do this if you want to turn off all caching (not recommended).
-- [Disabling caching for individual steps](#disabling-caching-for-individual-steps):
-This is required for certain steps that depend on external input.
-- [Dynamically disabling caching for a pipeline run](#dynamically-disabling-caching-for-a-pipeline-run):
-This is useful to force a complete rerun of a pipeline.
+- [Configuring caching for the entire pipeline](#disabling-caching-for-the-entire-pipeline):
+Do this if you want to configure caching for all steps of a pipeline.
+- [Configuring caching for individual steps](#disabling-caching-for-individual-steps):
+Do this to configure caching for individual steps. This is, e.g., useful to 
+disable caching for steps that depend on external input.
+- [Dynamically configuring caching for a pipeline run](#dynamically-disabling-caching-for-a-pipeline-run):
+Do this if you want to change the caching behaviour at runtime. This is, e.g.,
+useful to force a complete rerun of a pipeline.
 
-#### Disabling caching for the entire pipeline
+#### Configuring caching for the entire pipeline
 
-On a pipeline level the caching policy can be set as a parameter within the decorator. 
+On a pipeline level, the caching policy can be set as a parameter within the
+`@pipeline` decorator as shown below:
 
 ```python
 @pipeline(enable_cache=False)
@@ -125,15 +201,13 @@ def first_pipeline(....):
     """Pipeline with cache disabled"""
 ```
 
-{% hint style="info" %}
-If caching is explicitly turned off on a pipeline level, all steps are run 
-without caching, even if caching is set to `True` for single steps.
-{% endhint %}
+The setting above will disable caching for all steps in the pipeline, unless a 
+step explicitly sets `enable_cache=True` (see below).
 
-#### Disabling caching for individual steps
+#### Configuring caching for individual steps
 
-Caching can also be explicitly turned off at a step level. You might want to turn off caching for steps that take 
-external input (like fetching data from an API or File IO).
+Caching can also be explicitly configured at a step level via a parameter of the
+`@step` decorator:
 
 ```python
 @step(enable_cache=False)
@@ -142,19 +216,28 @@ def import_data_from_api(...):
     ...
 ```
 
+The code above turns caching off for this step only. This is very useful in
+practice since you might want to turn off caching for certain steps that take 
+external input (like fetching data from an API or File IO) without affecting the
+overall pipeline caching behaviour.
+
 {% hint style="info" %}
 You can get a graphical visualization of which steps were cached using
 the [ZenML Dashboard](./pipelines.md).
 {% endhint %}
 
-#### Dynamically disabling caching for a pipeline run
+#### Dynamically configuring caching for a pipeline run
 
-Sometimes you want to have control over caching at runtime instead of defaulting to the backed in configurations of 
-your pipeline and its steps. ZenML offers a way to override all caching settings of the pipeline at runtime.
+Sometimes you want to have control over caching at runtime instead of defaulting
+to the hard-coded pipeline and step decorator settings.
+ZenML offers a way to override all caching settings at runtime:
 
 ```python
 first_pipeline(step_1=..., step_2=...).run(enable_cache=False)
 ```
+
+The code above disables caching for all steps of your pipeline, no matter what
+you have configured in the `@step` or `@parameter` decorators.
 
 ### Code Example
 

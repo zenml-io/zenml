@@ -31,9 +31,9 @@ from zenml.artifact_stores import BaseArtifactStore
 from zenml.integrations.s3.flavors.s3_artifact_store_flavor import (
     S3ArtifactStoreConfig,
 )
+from zenml.io.fileio import convert_to_str
 from zenml.secret.schemas import AWSSecretSchema
 from zenml.stack.authentication_mixin import AuthenticationMixin
-from zenml.utils.io_utils import convert_to_str
 
 PathType = Union[bytes, str]
 
@@ -282,6 +282,17 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
             A dictionary containing the stat info.
         """
         return self.filesystem.stat(path=path)  # type: ignore[no-any-return]
+
+    def size(self, path: PathType) -> int:
+        """Get the size of a file in bytes.
+
+        Args:
+            path: The path to the file.
+
+        Returns:
+            The size of the file in bytes.
+        """
+        return self.filesystem.size(path=path)  # type: ignore[no-any-return]
 
     def walk(
         self,

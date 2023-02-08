@@ -39,7 +39,9 @@ class AirflowIntegration(Integration):
         Returns:
             List of stack component flavors for this integration.
         """
-        from zenml.integrations.airflow.flavors import AirflowOrchestratorFlavor
+        from zenml.integrations.airflow.flavors import (
+            AirflowOrchestratorFlavor,
+        )
 
         return [AirflowOrchestratorFlavor]
 

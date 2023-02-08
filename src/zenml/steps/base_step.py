@@ -56,6 +56,7 @@ from zenml.steps.step_context import StepContext
 from zenml.steps.utils import (
     INSTANCE_CONFIGURATION,
     PARAM_CREATED_BY_FUNCTIONAL_API,
+    PARAM_ENABLE_ARTIFACT_METADATA,
     PARAM_ENABLE_CACHE,
     PARAM_EXPERIMENT_TRACKER,
     PARAM_EXTRA_OPTIONS,
@@ -67,7 +68,12 @@ from zenml.steps.utils import (
     parse_return_type_annotations,
     resolve_type_annotation,
 )
-from zenml.utils import dict_utils, pydantic_utils, settings_utils, source_utils
+from zenml.utils import (
+    dict_utils,
+    pydantic_utils,
+    settings_utils,
+    source_utils,
+)
 
 logger = get_logger(__name__)
 if TYPE_CHECKING:
@@ -218,6 +224,8 @@ class BaseStep(metaclass=BaseStepMeta):
         pipeline_parameter_name: The name of the pipeline parameter for which
             this step was passed as an argument.
         enable_cache: A boolean indicating if caching is enabled for this step.
+        enable_artifact_metadata: A boolean indicating if artifact metadata
+            is enabled for this step.
     """
 
     INPUT_SIGNATURE: ClassVar[Dict[str, Type[Any]]] = None  # type: ignore[assignment] # noqa
@@ -277,18 +285,27 @@ class BaseStep(metaclass=BaseStepMeta):
                     "explicitly enabled.",
                     name,
                 )
-            else:
-                # Default to cache enabled if not explicitly set
-                enable_cache = True
 
         logger.debug(
             "Step '%s': Caching %s.",
             name,
-            "enabled" if enable_cache else "disabled",
+            "enabled" if enable_cache is not False else "disabled",
+        )
+
+        enable_artifact_metadata = kwargs.pop(
+            PARAM_ENABLE_ARTIFACT_METADATA, None
+        )
+
+        logger.debug(
+            "Step '%s': Artifact metadata %s.",
+            name,
+            "enabled" if enable_artifact_metadata is not False else "disabled",
         )
 
         self._configuration = PartialStepConfiguration(
-            name=name, enable_cache=enable_cache, docstring=self.__doc__
+            name=name,
+            enable_cache=enable_cache,
+            enable_artifact_metadata=enable_artifact_metadata,
         )
         self._apply_class_configuration(kwargs)
         self._verify_and_apply_init_params(*args, **kwargs)
@@ -316,6 +333,21 @@ class BaseStep(metaclass=BaseStepMeta):
         return cls.INSTANCE_CONFIGURATION.get(
             PARAM_CREATED_BY_FUNCTIONAL_API, False
         )
+
+    @classmethod
+    def load_from_source(cls, source: str) -> "BaseStep":
+        """Loads a step from source.
+
+        Args:
+            source: The path to the step source.
+
+        Returns:
+            The loaded step.
+        """
+        step_class: Type[BaseStep] = source_utils.load_and_validate_class(
+            source, expected_class=BaseStep
+        )
+        return step_class()
 
     @property
     def upstream_steps(self) -> Set[str]:
@@ -378,6 +410,38 @@ class BaseStep(metaclass=BaseStepMeta):
         return self._inputs
 
     @property
+    def source_object(self) -> Any:
+        """The source object of this step.
+
+        This is either a function wrapped by the `@step` decorator or a custom
+        step class.
+
+        Returns:
+            The source object of this step.
+        """
+        if self._created_by_functional_api():
+            return self.entrypoint
+        return self.__class__
+
+    @property
+    def source_code(self) -> str:
+        """The source code of this step.
+
+        Returns:
+            The source code of this step.
+        """
+        return inspect.getsource(self.source_object)
+
+    @property
+    def docstring(self) -> Optional[str]:
+        """The docstring of this step.
+
+        Returns:
+            The docstring of this step.
+        """
+        return self.__doc__
+
+    @property
     def caching_parameters(self) -> Dict[str, Any]:
         """Caching parameters for this step.
 
@@ -385,15 +449,9 @@ class BaseStep(metaclass=BaseStepMeta):
             A dictionary containing the caching parameters
         """
         parameters = {}
-
-        source_object = (
-            self.entrypoint
-            if self._created_by_functional_api()
-            else self.__class__
-        )
-        parameters[STEP_SOURCE_PARAMETER_NAME] = source_utils.get_hashed_source(
-            source_object
-        )
+        parameters[
+            STEP_SOURCE_PARAMETER_NAME
+        ] = source_utils.get_hashed_source(self.source_object)
 
         for name, output in self.configuration.outputs.items():
             if output.materializer_source:
@@ -655,7 +713,7 @@ class BaseStep(metaclass=BaseStepMeta):
         return self.configuration.name
 
     @property
-    def enable_cache(self) -> bool:
+    def enable_cache(self) -> Optional[bool]:
         """If caching is enabled for the step.
 
         Returns:
@@ -676,6 +734,7 @@ class BaseStep(metaclass=BaseStepMeta):
         self: T,
         name: Optional[str] = None,
         enable_cache: Optional[bool] = None,
+        enable_artifact_metadata: Optional[bool] = None,
         experiment_tracker: Optional[str] = None,
         step_operator: Optional[str] = None,
         parameters: Optional["ParametersOrDict"] = None,
@@ -702,6 +761,8 @@ class BaseStep(metaclass=BaseStepMeta):
         Args:
             name: The name of the step.
             enable_cache: If caching should be enabled for this step.
+            enable_artifact_metadata: If artifact metadata should be enabled
+                for this step.
             experiment_tracker: The experiment tracker to use for this step.
             step_operator: The step operator to use for this step.
             parameters: Function parameters for this step
@@ -723,10 +784,6 @@ class BaseStep(metaclass=BaseStepMeta):
 
         Returns:
             The step instance that this method was called on.
-
-        Raises:
-            StepInterfaceError: If a materializer or artifact for a non-existent
-                output name are configured.
         """
 
         def _resolve_if_necessary(value: Union[str, Type[Any]]) -> str:
@@ -748,15 +805,6 @@ class BaseStep(metaclass=BaseStepMeta):
                 }
 
             for output_name, materializer in output_materializers.items():
-                if output_name not in allowed_output_names:
-                    raise StepInterfaceError(
-                        f"Got unexpected materializers for non-existent "
-                        f"output '{output_name}' in step '{self.name}'. "
-                        f"Only materializers for the outputs "
-                        f"{allowed_output_names} of this step can"
-                        f" be registered."
-                    )
-
                 source = _resolve_if_necessary(materializer)
                 outputs[output_name]["materializer_source"] = source
 
@@ -773,6 +821,7 @@ class BaseStep(metaclass=BaseStepMeta):
             {
                 "name": name,
                 "enable_cache": enable_cache,
+                "enable_artifact_metadata": enable_artifact_metadata,
                 "experiment_tracker": experiment_tracker,
                 "step_operator": step_operator,
                 "parameters": parameters,
@@ -817,7 +866,9 @@ class BaseStep(metaclass=BaseStepMeta):
         self._validate_function_parameters(parameters=config.parameters)
         self._validate_outputs(outputs=config.outputs)
 
-    def _validate_function_parameters(self, parameters: Dict[str, Any]) -> None:
+    def _validate_function_parameters(
+        self, parameters: Dict[str, Any]
+    ) -> None:
         """Validates step function parameters.
 
         Args:
@@ -882,10 +933,11 @@ class BaseStep(metaclass=BaseStepMeta):
         for output_name, output in outputs.items():
             if output_name not in allowed_output_names:
                 raise StepInterfaceError(
-                    f"Found explicit artifact type for unrecognized output "
-                    f"'{output_name}' in step '{self.name}'. Output "
-                    f"artifact types can only be specified for the outputs "
-                    f"of this step: {set(self.OUTPUT_SIGNATURE)}."
+                    f"Got unexpected materializers for non-existent "
+                    f"output '{output_name}' in step '{self.name}'. "
+                    f"Only materializers for the outputs "
+                    f"{allowed_output_names} of this step can"
+                    f" be registered."
                 )
 
             if output.materializer_source:

@@ -20,7 +20,11 @@ from typing import Any, Dict, Optional, cast
 from uuid import UUID
 
 from zenml.logger import get_logger
-from zenml.services import ServiceType, TerraformService, TerraformServiceConfig
+from zenml.services import (
+    ServiceType,
+    TerraformService,
+    TerraformServiceConfig,
+)
 from zenml.utils.io_utils import get_global_config_directory
 from zenml.zen_server.deploy.deployment import ServerDeploymentConfig
 
@@ -117,9 +121,10 @@ class TerraformServerDeploymentConfig(ServerDeploymentConfig):
     password: str
     helm_chart: str = get_helm_chart_path()
     zenmlserver_image_tag: str = "latest"
-    zenmlinit_image_tag: str = "latest"
     namespace: str = "zenmlserver"
-    kubectl_config_path: str = os.path.join(str(Path.home()), ".kube", "config")
+    kubectl_config_path: str = os.path.join(
+        str(Path.home()), ".kube", "config"
+    )
     ingress_tls: bool = True
     ingress_tls_generate_certs: bool = True
     ingress_tls_secret_name: str = "zenml-tls-certs"
