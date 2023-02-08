@@ -17,6 +17,7 @@ import os
 from pathlib import Path
 from typing import IO, Dict, List, Optional, Set, Tuple, cast
 
+from zenml.constants import REPOSITORY_DIRECTORY_NAME
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils import io_utils, string_utils
@@ -186,7 +187,10 @@ class BuildContext:
         """
         dockerignore = self.dockerignore_file
         if dockerignore:
-            return self._parse_dockerignore(dockerignore)
+            patterns = self._parse_dockerignore(dockerignore)
+            # Always include the .zen directory
+            patterns.append(f"!/{REPOSITORY_DIRECTORY_NAME}")
+            return patterns
         else:
             logger.info(
                 "No `.dockerignore` found, including all files inside build "
