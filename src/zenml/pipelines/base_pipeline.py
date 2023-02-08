@@ -42,10 +42,6 @@ from zenml import constants
 from zenml.client import Client
 from zenml.config.build_configuration import PipelineBuild
 from zenml.config.compiler import Compiler
-from zenml.config.config_keys import (
-    PipelineConfigurationKeys,
-    StepConfigurationKeys,
-)
 from zenml.config.pipeline_configurations import (
     PipelineConfiguration,
     PipelineConfigurationUpdate,
@@ -56,7 +52,7 @@ from zenml.config.pipeline_deployment import PipelineDeployment
 from zenml.config.schedule import Schedule
 from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.enums import StackComponentType
-from zenml.exceptions import PipelineConfigurationError, PipelineInterfaceError
+from zenml.exceptions import PipelineInterfaceError
 from zenml.logger import get_logger
 from zenml.models import (
     PipelineBuildRequestModel,
@@ -627,78 +623,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
             config: The configuration update to validate.
         """
         settings_utils.validate_setting_keys(list(config.settings))
-
-    def with_config(
-        self: T, config_file: str, overwrite_step_parameters: bool = False
-    ) -> T:
-        """DEPRECATED: Configures this pipeline using a yaml file.
-
-        Args:
-            config_file: Path to a yaml file which contains configuration
-                options for running this pipeline. See
-                https://docs.zenml.io/advanced-guide/pipelines/settings
-                for details regarding the specification of this file.
-            overwrite_step_parameters: If set to `True`, values from the
-                configuration file will overwrite configuration parameters
-                passed in code.
-
-        Returns:
-            The pipeline object that this method was called on.
-        """
-        logger.warning(
-            "The `with_config(...)` method is deprecated. Use "
-            "`pipeline.configure(...)` or `pipeline.run(config_path=...)` "
-            "instead."
-        )
-
-        config_yaml = yaml_utils.read_yaml(config_file)
-
-        if PipelineConfigurationKeys.STEPS in config_yaml:
-            self._read_config_steps(
-                config_yaml[PipelineConfigurationKeys.STEPS],
-                overwrite=overwrite_step_parameters,
-            )
-
-        return self
-
-    def _read_config_steps(
-        self, steps: Dict[str, Dict[str, Any]], overwrite: bool = False
-    ) -> None:
-        """Reads and sets step parameters from a config file.
-
-        Args:
-            steps: Maps step names to dicts of parameter names and values.
-            overwrite: If `True`, overwrite previously set step parameters.
-
-        Raises:
-            PipelineConfigurationError: If the configuration file contains
-                invalid data.
-        """
-        for step_name, step_dict in steps.items():
-            StepConfigurationKeys.key_check(step_dict)
-
-            if step_name not in self.__steps:
-                raise PipelineConfigurationError(
-                    f"Found '{step_name}' step in configuration yaml but it "
-                    f"doesn't exist in the pipeline steps "
-                    f"{list(self.__steps.keys())}."
-                )
-
-            step = self.__steps[step_name]
-            parameters = step_dict.get(StepConfigurationKeys.PARAMETERS_, {})
-            enable_cache = parameters.pop(PARAM_ENABLE_CACHE, None)
-            enable_artifact_metadata = parameters.pop(
-                PARAM_ENABLE_ARTIFACT_METADATA, None
-            )
-
-            if not overwrite:
-                parameters.update(step.configuration.parameters)
-
-            step.configure(
-                enable_cache=enable_cache,
-                enable_artifact_metadata=enable_artifact_metadata,
-                parameters=parameters,
-            )
 
     @classmethod
     def get_runs(cls) -> Optional[List["PipelineRunView"]]:
