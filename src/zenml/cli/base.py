@@ -384,6 +384,9 @@ def go() -> None:
 def _prompt_email(event_source: AnalyticsEventSource) -> bool:
     """Ask the user to give their email address.
 
+    Args:
+        event_source: The source of the event to use for analytics.
+
     Returns:
         bool: True if the user gave an email address, False otherwise.
     """
