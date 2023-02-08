@@ -15,6 +15,7 @@ from typing import Any, Callable, Dict, List, Optional, Type, TypeVar
 
 from pydantic import BaseModel
 
+from tests.integration.functional.utils import sample_name
 from zenml.client import Client
 from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.enums import ArtifactType, ExecutionStatus, StackComponentType
@@ -52,7 +53,6 @@ from zenml.models.base_models import BaseRequestModel, BaseResponseModel
 from zenml.models.page_model import Page
 from zenml.pipelines import pipeline
 from zenml.steps import step
-from zenml.utils.string_utils import random_str
 
 
 @step
@@ -87,16 +87,17 @@ class PipelineRunContext:
         self.store = self.client.zen_store
 
     def __enter__(self):
+        self.pipeline_name = sample_name("sample_pipeline_run_")
         for i in range(self.num_runs):
             pipeline_instance.run(
-                run_name=f"sample_pipeline_run_{i}", unlisted=True
+                run_name=f"{self.pipeline_name}_{i}", unlisted=True
             )
 
         # persist which runs, steps and artifacts were produced, in case
         #  the test ends up deleting some or all of these, this allows for a
         #  thorough cleanup nonetheless
         self.runs = self.store.list_runs(
-            PipelineRunFilterModel(name="startswith:sample_pipeline_run_")
+            PipelineRunFilterModel(name=f"startswith:{self.pipeline_name}")
         ).items
         self.steps = []
         self.artifacts = []
@@ -241,11 +242,6 @@ class RoleContext:
             self.store.delete_role(self.created_role.id)
         except KeyError:
             pass
-
-
-def sample_name(prefix: str = "aria") -> str:
-    """Function to get random username."""
-    return f"{prefix}_{random_str(4)}"
 
 
 AnyRequestModel = TypeVar("AnyRequestModel", bound=BaseRequestModel)

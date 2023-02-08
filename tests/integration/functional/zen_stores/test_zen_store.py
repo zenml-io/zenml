@@ -25,8 +25,8 @@ from tests.integration.functional.zen_stores.utils import (
     TeamContext,
     UserContext,
     list_of_entities,
-    sample_name,
 )
+from tests.integration.functional.utils import sample_name
 from zenml.client import Client
 from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import (
@@ -93,12 +93,12 @@ def test_basic_crud_for_entity(crud_test_config: CrudTestConfig):
     entities_list = crud_test_config.list_method(
         crud_test_config.filter_model(name=create_model.name)
     )
-    assert entities_list.total > 0
+    assert entities_list.total == 1
     # Filter by id to verify the entity was actually created
     entities_list = crud_test_config.list_method(
         crud_test_config.filter_model(id=created_entity.id)
     )
-    assert entities_list.total > 0
+    assert entities_list.total == 1
     # Test the get method
     with does_not_raise():
         returned_entity_by_id = crud_test_config.get_method(created_entity.id)
@@ -256,53 +256,30 @@ def test_adding_user_to_team():
     zen_store = Client().zen_store
     team_name = "arias_team"
     with UserContext() as created_user:
-        try:
-            new_team = TeamRequestModel(name=team_name)
-            new_team = zen_store.create_team(new_team)
-
+        with TeamContext() as created_team:
             team_update = TeamUpdateModel(users=[created_user.id])
             team_update = zen_store.update_team(
-                team_id=new_team.id, team_update=team_update
+                team_id=created_team.id, team_update=team_update
             )
 
             assert created_user.id in team_update.user_ids
             assert len(team_update.users) == 1
 
             # Make sure the team name has not been inadvertently changed
-            assert zen_store.get_team(new_team.id).name == team_name
-        # Cleanup no matter what
-        finally:
-            try:
-                team = zen_store.get_team(team_name_or_id=team_name)
-            except KeyError:
-                pass
-            else:
-                zen_store.delete_team(team.id)
+            assert zen_store.get_team(created_team.id).name == created_team
 
 
 def test_adding_nonexistent_user_to_real_team_raises_error():
     """Tests adding a nonexistent user to a team raises an error."""
     zen_store = Client().zen_store
-    team_name = "arias_team"
-    try:
-        new_team = TeamRequestModel(name=team_name)
-        new_team = zen_store.create_team(new_team)
-
+    with TeamContext() as created_team:
         nonexistent_id = uuid.uuid4()
 
         team_update = TeamUpdateModel(users=[nonexistent_id])
         with pytest.raises(KeyError):
-            team_update = zen_store.update_team(
-                team_id=new_team.id, team_update=team_update
+            zen_store.update_team(
+                team_id=created_team.id, team_update=team_update
             )
-    # Cleanup no matter what
-    finally:
-        try:
-            team = zen_store.get_team(team_name_or_id=team_name)
-        except KeyError:
-            pass
-        else:
-            zen_store.delete_team(team.id)
 
 
 def test_removing_user_from_team_succeeds():
@@ -312,27 +289,16 @@ def test_removing_user_from_team_succeeds():
     team_name = sample_name("arias_team")
 
     with UserContext() as created_user:
-        try:
-            new_team = TeamRequestModel(
-                name=team_name, users=[created_user.id]
-            )
-            new_team = zen_store.create_team(new_team)
-            assert created_user.id in new_team.user_ids
+        with TeamContext() as created_team:
+            assert created_user.id in created_team.user_ids
 
             team_update = TeamUpdateModel(users=[])
             team_update = zen_store.update_team(
-                team_id=new_team.id, team_update=team_update
+                team_id=created_team.id, team_update=team_update
             )
 
             assert created_user.id not in team_update.user_ids
-        # Cleanup no matter what
-        finally:
-            try:
-                team = zen_store.get_team(team_name_or_id=team_name)
-            except KeyError:
-                pass
-            else:
-                zen_store.delete_team(team.id)
+
 
 def test_access_user_in_team_succeeds():
     pass
@@ -385,14 +351,15 @@ def test_getting_team_for_user_succeeds():
 def test_creating_role_with_empty_permissions_succeeds():
     """Tests creating a role."""
     zen_store = Client().zen_store
-    new_role = RoleRequestModel(name=sample_name("cat"), permissions=set())
-    created_role = zen_store.create_role(new_role)
-    with does_not_raise():
-        zen_store.get_role(role_name_or_id=new_role.name)
-    list_of_roles = zen_store.list_roles(RoleFilterModel(name=new_role.name))
-    assert list_of_roles.total > 0
-    # Cleanup
-    with does_not_raise():
+    try:
+        new_role = RoleRequestModel(name=sample_name("cat"), permissions=set())
+        created_role = zen_store.create_role(new_role)
+        with does_not_raise():
+            zen_store.get_role(role_name_or_id=new_role.name)
+        list_of_roles = zen_store.list_roles(RoleFilterModel(name=new_role.name))
+        assert list_of_roles.total > 0
+    finally:
+        # Cleanup
         zen_store.delete_role(created_role.id)
 
 
@@ -425,28 +392,18 @@ def test_updating_builtin_role_fails():
 def test_deleting_assigned_role_fails():
     """Tests assigning a role to a user."""
     zen_store = Client().zen_store
+    with RoleContext() as created_role:
+        with UserContext() as created_user:
 
-    new_role = RoleRequestModel(name=sample_name("cat"), permissions=set())
-    created_role = zen_store.create_role(new_role)
-
-    new_user = UserRequestModel(name=sample_name("aria"))
-    created_user = zen_store.create_user(new_user)
-
-    role_assignment = UserRoleAssignmentRequestModel(
-        role=created_role.id,
-        user=created_user.id,
-        workspace=None,
-    )
-    with does_not_raise():
-        (zen_store.create_user_role_assignment(role_assignment))
-    with pytest.raises(IllegalOperationError):
-        zen_store.delete_role(created_role.id)
-
-    # Cleanup
-    with does_not_raise():
-        # By deleting the user first, the role assignment is cleaned up as well
-        zen_store.delete_user(created_user.id)
-        zen_store.delete_role(created_role.id)
+            role_assignment = UserRoleAssignmentRequestModel(
+                role=created_role.id,
+                user=created_user.id,
+                workspace=None,
+            )
+            with does_not_raise():
+                (zen_store.create_user_role_assignment(role_assignment))
+            with pytest.raises(IllegalOperationError):
+                zen_store.delete_role(created_role.id)
 
 
 # .------------------.
