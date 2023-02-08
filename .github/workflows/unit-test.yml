@@ -47,7 +47,10 @@ jobs:
       - name: Install Prerequisites
         run: |
           source $VENV
-          zenml integration export-requirements --output-file requirements.txt kubeflow s3 gcp azure vault pillow evidently deepchecks great_expectations huggingface lightgbm neural_prophet pytorch tensorflow whylogs xgboost mlflow neptune
+          zenml integration export-requirements --output-file requirements.txt
+          kubeflow s3 gcp azure vault pillow evidently deepchecks
+          great_expectations huggingface lightgbm neural_prophet pytorch
+          tensorflow whylogs xgboost mlflow neptune kserve
           pip install -r requirements.txt
           rm requirements.txt
           pip install click~=8.0.3          
