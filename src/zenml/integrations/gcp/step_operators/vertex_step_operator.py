@@ -24,6 +24,7 @@ from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Type, cast
 from google.cloud import aiplatform
 
 from zenml import __version__
+from zenml.client import Client
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.enums import StackComponentType
 from zenml.integrations.gcp.constants import (
@@ -53,7 +54,7 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-VERTEX_DOCKER_IMAGE_DIGEST_KEY = "vertex_docker_image"
+VERTEX_DOCKER_IMAGE_KEY = "vertex_step_operator"
 
 
 def validate_accelerator_type(accelerator_type: Optional[str] = None) -> None:
@@ -157,7 +158,7 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
             if step.config.step_operator == self.name:
                 tag = f"{deployment.pipeline_configuration.name}-{step_name}-vertex"
                 build = BuildConfiguration(
-                    key=VERTEX_DOCKER_IMAGE_DIGEST_KEY,
+                    key=VERTEX_DOCKER_IMAGE_KEY,
                     settings=step.config.docker_settings,
                     tag=tag,
                     step_name=step_name,
@@ -200,8 +201,13 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
         # Step 1: Authenticate with Google
         credentials, project_id = self._get_authentication()
 
-        # TODO: figure out a nice way to get the build here
-        image_name = info.config.extra[VERTEX_DOCKER_IMAGE_DIGEST_KEY]
+        run = Client().get_pipeline_run(info.run_id)
+        assert run.build
+        # TODO: use StepRunInfo property once available
+        pipeline_step_name = Client().get_run_step(info.step_run_id).name
+        image_name = run.build.get_image(
+            key=VERTEX_DOCKER_IMAGE_KEY, step=pipeline_step_name
+        )
 
         # Step 3: Launch the job
         # The AI Platform services require regional API endpoints.

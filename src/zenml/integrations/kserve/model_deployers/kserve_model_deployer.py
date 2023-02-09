@@ -133,7 +133,7 @@ class KServeModelDeployer(BaseModelDeployer):
         builds = []
         for step_name, step in deployment.step_configurations.items():
             if step.config.extra.get(KSERVE_CUSTOM_DEPLOYMENT, False) is True:
-                tag = f"{deployment.pipeline_configuration.name}-{step_name}-seldon"
+                tag = f"{deployment.pipeline_configuration.name}-{step_name}-kserve"
                 build = BuildConfiguration(
                     key=KSERVE_DOCKER_IMAGE_KEY,
                     settings=step.config.docker_settings,

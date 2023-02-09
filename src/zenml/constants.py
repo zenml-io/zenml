@@ -206,7 +206,7 @@ MANDATORY_COMPONENT_ATTRIBUTES = ["name", "uuid"]
 MODEL_METADATA_YAML_FILE_NAME = "model_metadata.yaml"
 
 # orchestrator constants
-ORCHESTRATOR_DOCKER_IMAGE_KEY = "orchestrator_docker_image"
+ORCHESTRATOR_DOCKER_IMAGE_KEY = "orchestrator"
 
 # Secret constants
 ARBITRARY_SECRET_SCHEMA_TYPE = "arbitrary"

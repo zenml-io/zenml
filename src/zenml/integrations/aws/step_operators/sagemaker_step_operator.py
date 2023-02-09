@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, List, Optional, Tuple, Type, cast
 
 import sagemaker
 
+from zenml.client import Client
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.enums import StackComponentType
 from zenml.integrations.aws.flavors.sagemaker_step_operator_flavor import (
@@ -36,7 +37,7 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-SAGEMAKER_DOCKER_IMAGE_KEY = "sagemaker_docker_image"
+SAGEMAKER_DOCKER_IMAGE_KEY = "sagemaker_step_operator"
 _ENTRYPOINT_ENV_VARIABLE = "__ZENML_ENTRYPOINT"
 
 
@@ -148,8 +149,13 @@ class SagemakerStepOperator(BaseStepOperator):
                 self.name,
             )
 
-        # TODO: figure out a nice way to get the build here
-        image_name = info.config.extra[SAGEMAKER_DOCKER_IMAGE_KEY]
+        run = Client().get_pipeline_run(info.run_id)
+        assert run.build
+        # TODO: use StepRunInfo property once available
+        pipeline_step_name = Client().get_run_step(info.step_run_id).name
+        image_name = run.build.get_image(
+            key=SAGEMAKER_DOCKER_IMAGE_KEY, step=pipeline_step_name
+        )
         environment = {_ENTRYPOINT_ENV_VARIABLE: " ".join(entrypoint_command)}
 
         settings = cast(SagemakerStepOperatorSettings, self.get_settings(info))
