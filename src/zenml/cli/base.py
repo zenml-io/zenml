@@ -34,7 +34,9 @@ from zenml.constants import (
     REPOSITORY_DIRECTORY_NAME,
 )
 from zenml.enums import AnalyticsEventSource
+from zenml.environment import Environment, get_environment
 from zenml.exceptions import GitNotFoundError, InitializationException
+from zenml.integrations.registry import integration_registry
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
@@ -442,17 +444,15 @@ def _prompt_email(event_source: AnalyticsEventSource) -> bool:
 @click.option(
     "--packages",
     "-p",
-    is_flag=True,
-    default=False,
-    help="Output information about installed packages.",
-    type=bool,
+    multiple=True,
+    help="Select specific installed packages.",
+    type=str,
 )
 @click.option(
-    "--server",
-    "-s",
+    "--all",
     is_flag=True,
     default=False,
-    help="Output information about a connected ZenML server.",
+    help="Output information about all installed packages.",
     type=bool,
 )
 @click.option(
@@ -461,33 +461,40 @@ def _prompt_email(event_source: AnalyticsEventSource) -> bool:
     help="Output to a file.",
     type=str,
 )
-def info(packages: bool, server: bool, file: str) -> None:
+def info(packages, all, file) -> None:
     """Show information about the current user setup."""
     gc = GlobalConfiguration()
+    environment = Environment()
     client = Client()
+    store_info = client.zen_store.get_store_info()
 
     store_cfg = gc.store
 
-    cli_utils.declare(f"Using configuration from: '{gc.config_directory}'")
-    cli_utils.declare(
-        f"Local store files are located at: '{gc.local_stores_path}'"
-    )
-    if client.root:
-        cli_utils.declare(f"Active repository root: {client.root}")
-    if store_cfg is not None:
-        if gc.uses_default_store():
-            cli_utils.declare(f"Using the local database ('{store_cfg.url}')")
-        else:
-            cli_utils.declare(
-                f"Connected to a ZenML server: '{store_cfg.url}'"
-            )
+    user_info = {
+        "zenml_local_version": zenml_version,
+        "zenml_server_version": store_info.version,
+        "zenml_server_database": str(store_info.database_type),
+        "zenml_server_deployment_type": str(store_info.deployment_type),
+        "zenml_config_dir": gc.config_directory,
+        "zenml_local_store_dir": gc.local_stores_path,
+        "zenml_server_url": store_cfg.url,
+        "zenml_active_repository_root": client.root,
+        "python_version": environment.python_version(),
+        "environment": get_environment(),
+        "system_info": environment.get_system_info(),
+        "active_workspace": client.active_workspace.name,
+        "active_stack": client.active_stack_model.name,
+        "active_user": client.active_user.name,
+        "telemetry_status": "enabled" if gc.analytics_opt_in else "disabled",
+        "analytics_client_id": gc.user_id,
+        "analytics_user_id": client.active_user.id,
+        "analytics_server_id": client.zen_store.get_store_info().id,
+        "integrations": integration_registry.get_installed_integrations(),
+    }
 
-    scope = "repository" if client.uses_local_configuration else "global"
-    cli_utils.declare(f"The current user is: '{client.active_user.name}'")
-    cli_utils.declare(
-        f"The active workspace is: '{client.active_workspace.name}' "
-        f"({scope})"
-    )
-    cli_utils.declare(
-        f"The active stack is: '{client.active_stack_model.name}' ({scope})"
-    )
+    if all:
+        user_info["packages"] = cli_utils.get_installed_local_packages()
+    elif packages:
+        user_info["query_packages"] = cli_utils.get_package_information(
+            packages
+        )
