@@ -30,6 +30,7 @@ from kserve import KServeClient, V1beta1InferenceService, constants, utils
 from kubernetes import client
 
 from zenml.client import Client
+from zenml.config.build_configuration import BuildConfiguration
 from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import StackComponentType
 from zenml.integrations.kserve.constants import (
@@ -49,11 +50,8 @@ from zenml.logger import get_logger
 from zenml.model_deployers import BaseModelDeployer, BaseModelDeployerFlavor
 from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
 from zenml.services.service import BaseService, ServiceConfig
-from zenml.stack import Stack, StackValidator
+from zenml.stack import StackValidator
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
-from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilder,
-)
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_deployment import PipelineDeployment
@@ -127,28 +125,22 @@ class KServeModelDeployer(BaseModelDeployer):
             )
         return self._client
 
-    def prepare_pipeline_deployment(
-        self,
-        deployment: "PipelineDeployment",
-        stack: "Stack",
-    ) -> None:
-        """Build a Docker image and push it to the container registry.
-
-        Args:
-            deployment: The pipeline deployment configuration.
-            stack: The stack on which the pipeline will be deployed.
-        """
-        needs_docker_image = False
-        for step in deployment.steps.values():
+    def get_docker_builds(
+        self, deployment: "PipelineDeployment"
+    ) -> List["BuildConfiguration"]:
+        builds = []
+        for step_name, step in deployment.steps.items():
             if step.config.extra.get(KSERVE_CUSTOM_DEPLOYMENT, False) is True:
-                needs_docker_image = True
+                tag = f"{deployment.pipeline.name}-{step_name}-seldon"
+                build = BuildConfiguration(
+                    key=KSERVE_DOCKER_IMAGE_KEY,
+                    settings=step.config.docker_settings,
+                    tag=tag,
+                    step_name=step_name,
+                )
+                builds.append(build)
 
-        if needs_docker_image:
-            docker_image_builder = PipelineDockerImageBuilder()
-            repo_digest = docker_image_builder.build_docker_image(
-                deployment=deployment, stack=stack
-            )
-            deployment.add_extra(KSERVE_DOCKER_IMAGE_KEY, repo_digest)
+        return builds
 
     def _set_credentials(self) -> None:
         """Set the credentials for the given service instance.

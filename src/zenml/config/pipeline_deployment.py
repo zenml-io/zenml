@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Pipeline deployment."""
-from typing import Any, Dict, Optional
+from typing import Dict, Optional
 from uuid import UUID
 
 import zenml
@@ -39,12 +39,3 @@ class PipelineDeployment(
     steps: Dict[str, Step] = {}
     zenml_version: str = zenml.__version__
     client_environment: Dict[str, str] = {}
-
-    def add_extra(self, key: str, value: Any) -> None:
-        """Adds an extra key-value pair to the pipeline configuration.
-
-        Args:
-            key: Key for which to add the extra value.
-            value: The extra value.
-        """
-        self.pipeline.extra[key] = value
