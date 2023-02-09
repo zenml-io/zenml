@@ -102,7 +102,7 @@ def mlflow_model_deployer_step(
     step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
     pipeline_name = step_env.pipeline_name
     run_name = step_env.run_name
-    step_name = step_env.step_name
+    step_name = step_env.step_run_info.pipeline_step_name
 
     client = MlflowClient()
     mlflow_run_id = experiment_tracker.get_run_id(
