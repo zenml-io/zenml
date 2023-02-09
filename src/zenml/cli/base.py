@@ -465,7 +465,13 @@ def _prompt_email(event_source: AnalyticsEventSource) -> bool:
     type=bool,
 )
 def info(packages, all, file) -> None:
-    """Show information about the current user setup."""
+    """Show information about the current user setup.
+
+    Args:
+        packages: List of packages to show information about.
+        all: Flag to show information about all installed packages.
+        file: Flag to output to a file.
+    """
     gc = GlobalConfiguration()
     environment = Environment()
     client = Client()
