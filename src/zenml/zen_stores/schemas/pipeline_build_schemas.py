@@ -14,13 +14,13 @@
 """SQLModel implementation of pipeline build tables."""
 
 
+import json
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
-from zenml.config.build_configuration import PipelineBuild
 from zenml.models import PipelineBuildRequestModel, PipelineBuildResponseModel
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
@@ -88,7 +88,9 @@ class PipelineBuildSchema(BaseSchema, table=True):
         back_populates="build",
     )
 
-    configuration: str = Field(sa_column=Column(TEXT, nullable=False))
+    pipeline_images: str = Field(sa_column=Column(TEXT, nullable=False))
+    step_images: str = Field(sa_column=Column(TEXT, nullable=False))
+    is_local: bool
 
     @classmethod
     def from_request(
@@ -102,14 +104,14 @@ class PipelineBuildSchema(BaseSchema, table=True):
         Returns:
             The created `PipelineBuildSchema`.
         """
-        configuration = request.configuration.json()
-
         return cls(
             stack_id=request.stack,
             workspace_id=request.workspace,
             user_id=request.user,
             pipeline_id=request.pipeline,
-            configuration=configuration,
+            pipeline_images=json.dumps(request.pipeline_images),
+            step_images=json.dumps(request.step_images),
+            is_local=request.is_local,
         )
 
     def to_model(
@@ -122,7 +124,6 @@ class PipelineBuildSchema(BaseSchema, table=True):
         """
         return PipelineBuildResponseModel(
             id=self.id,
-            configuration=PipelineBuild.parse_raw(self.configuration),
             workspace=self.workspace.to_model(),
             user=self.user.to_model(True) if self.user else None,
             stack=self.stack.to_model() if self.stack else None,
@@ -131,4 +132,7 @@ class PipelineBuildSchema(BaseSchema, table=True):
             ),
             created=self.created,
             updated=self.updated,
+            pipeline_images=json.loads(self.pipeline_images),
+            step_images=json.loads(self.step_images),
+            is_local=self.is_local,
         )

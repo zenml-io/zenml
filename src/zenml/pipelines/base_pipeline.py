@@ -40,7 +40,6 @@ from packaging import version
 
 from zenml import constants
 from zenml.client import Client
-from zenml.config.build_configuration import PipelineBuild
 from zenml.config.compiler import Compiler
 from zenml.config.pipeline_configurations import (
     PipelineConfiguration,
@@ -62,6 +61,7 @@ from zenml.models import (
     PipelineResponseModel,
     ScheduleRequestModel,
 )
+from zenml.models.pipeline_build_models import PipelineBuildBaseModel
 from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
 from zenml.stack import Stack
 from zenml.steps import BaseStep
@@ -438,7 +438,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         extra: Optional[Dict[str, Any]] = None,
         config_path: Optional[str] = None,
         unlisted: bool = False,
-        build: Union[str, "UUID", "PipelineBuild", None] = None,
+        build: Union[str, "UUID", "PipelineBuildBaseModel", None] = None,
     ) -> Any:
         """Runs the pipeline on the active stack of the current repository.
 
@@ -984,7 +984,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         deployment: "PipelineDeploymentBaseModel",
         pipeline_spec: "PipelineSpec",
         pipeline_id: Optional[UUID] = None,
-        build: Union[str, "UUID", "PipelineBuild", None] = None,
+        build: Union[str, "UUID", "PipelineBuildBaseModel", None] = None,
     ) -> Optional["PipelineBuildResponseModel"]:
         if not build:
             return self._build(deployment=deployment, pipeline_id=pipeline_id)
@@ -1026,11 +1026,11 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 workspace=Client().active_workspace.id,
                 stack=Client().active_stack_model.id,
                 pipeline=pipeline_id,
-                configuration=build,
+                **build.dict(),
             )
             build_model = Client().zen_store.create_build(build=build_request)
 
-        if build_model.configuration.is_local:
+        if build_model.is_local:
             logger.warning(
                 "You're using a local build to run your pipeline. This "
                 "might lead to errors if the images don't exist on "
@@ -1070,7 +1070,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 workspace=client.active_workspace.id,
                 stack=client.active_stack_model.id,
                 pipeline=pipeline_id,
-                configuration=build,
+                **build.dict(),
             )
             return client.zen_store.create_build(build_request)
         else:

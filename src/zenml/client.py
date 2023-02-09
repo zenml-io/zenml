@@ -68,7 +68,6 @@ from zenml.models import (
     FlavorRequestModel,
     FlavorResponseModel,
     PipelineBuildFilterModel,
-    PipelineBuildRequestModel,
     PipelineBuildResponseModel,
     PipelineDeploymentFilterModel,
     PipelineDeploymentResponseModel,
@@ -124,7 +123,6 @@ from zenml.utils.analytics_utils import AnalyticsEvent, event_handler, track
 from zenml.utils.filesync_model import FileSyncModel
 
 if TYPE_CHECKING:
-    from zenml.config.build_configuration import PipelineBuild
     from zenml.metadata.metadata_types import MetadataType
     from zenml.stack import Stack, StackComponentConfig
     from zenml.zen_stores.base_zen_store import BaseZenStore
@@ -2498,38 +2496,6 @@ class Client(metaclass=ClientMetaClass):
     # ----------
     # - BUILDS -
     # ----------
-
-    def create_build(
-        self,
-        configuration: "PipelineBuild",
-        stack_id: Optional[UUID] = None,
-        pipeline_id: Optional[UUID] = None,
-    ) -> PipelineBuildResponseModel:
-        """Creates a new build.
-
-        Args:
-            configuration: The build configuration.
-            stack_id: ID of the stack for which this build should be created.
-            pipeline_id: ID of the pipeline for which this build should be
-                created.
-
-        Returns:
-            The created build.
-        """
-        # Verify the stack/pipeline exist
-        if stack_id:
-            self.get_stack(stack_id)
-        if pipeline_id:
-            self.get_pipeline(pipeline_id)
-
-        build_request = PipelineBuildRequestModel(
-            user=self.active_user.id,
-            workspace=self.active_workspace.id,
-            stack=stack_id,
-            pipeline=pipeline_id,
-            configuration=configuration,
-        )
-        return self.zen_store.create_build(build=build_request)
 
     def list_builds(
         self,

@@ -46,7 +46,6 @@ from zenml.stack import Stack, StackValidator
 from zenml.utils import yaml_utils
 
 if TYPE_CHECKING:
-    from zenml.config.build_configuration import PipelineBuild
     from zenml.models.pipeline_deployment_models import (
         PipelineDeploymentResponseModel,
     )
@@ -321,7 +320,6 @@ class GitHubActionsOrchestrator(ContainerizedOrchestrator):
         self,
         deployment: "PipelineDeploymentResponseModel",
         stack: "Stack",
-        build: Optional["PipelineBuild"],
     ) -> Any:
         """Writes a GitHub Action workflow yaml and optionally pushes it.
 
@@ -333,7 +331,7 @@ class GitHubActionsOrchestrator(ContainerizedOrchestrator):
             ValueError: If a schedule without a cron expression or with an
                 invalid cron expression is passed.
         """
-        assert build
+        assert deployment.build
         schedule = deployment.schedule
 
         workflow_name = deployment.pipeline_configuration.name
@@ -438,7 +436,7 @@ class GitHubActionsOrchestrator(ContainerizedOrchestrator):
             if docker_login_step:
                 job_steps.append(copy.deepcopy(docker_login_step))
 
-            image = build.get_image(
+            image = deployment.build.get_image(
                 key=ORCHESTRATOR_DOCKER_IMAGE_KEY, step=step_name
             )
 

@@ -23,11 +23,11 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import list_options
 from zenml.client import Client
-from zenml.config.build_configuration import PipelineBuild
 from zenml.console import console
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
 from zenml.models import PipelineFilterModel, PipelineRunFilterModel
+from zenml.models.pipeline_build_models import PipelineBuildBaseModel
 from zenml.models.schedule_model import ScheduleFilterModel
 from zenml.pipelines import BasePipeline
 from zenml.utils import source_utils, uuid_utils
@@ -173,7 +173,7 @@ def build_pipeline(
                 f"Writing pipeline build output to `{output_path}`."
             )
             with open(output_path, "w") as f:
-                f.write(build.configuration.yaml())
+                f.write(build.yaml())
     else:
         cli_utils.declare("No docker builds required.")
 
@@ -231,12 +231,12 @@ def run_pipeline(
             name=pipeline_name_or_id, version=version
         )
 
-    build: Union[str, "PipelineBuild", None] = None
+    build: Union[str, "PipelineBuildBaseModel", None] = None
     if build_path_or_id:
         if uuid_utils.is_valid_uuid(build_path_or_id):
             build = build_path_or_id
         elif os.path.exists(build_path_or_id):
-            build = PipelineBuild.from_yaml(build_path_or_id)
+            build = PipelineBuildBaseModel.from_yaml(build_path_or_id)
         else:
             cli_utils.error(
                 f"The specified build {build_path_or_id} is not a valid UUID "

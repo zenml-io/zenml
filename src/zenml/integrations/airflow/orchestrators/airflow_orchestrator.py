@@ -52,7 +52,6 @@ from zenml.utils import daemon, io_utils
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
-    from zenml.config.build_configuration import PipelineBuild
     from zenml.integrations.airflow.orchestrators.dag_generator import (
         DagConfiguration,
         TaskConfiguration,
@@ -212,9 +211,8 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
 
     def prepare_or_run_pipeline(
         self,
-        deployment: "PipelineDeploymentBaseModel",
+        deployment: "PipelineDeploymentResponseModel",
         stack: "Stack",
-        build: Optional["PipelineBuild"],
     ) -> Any:
         """Creates and writes an Airflow DAG zip file.
 
@@ -222,7 +220,7 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
             deployment: The pipeline deployment to prepare or run.
             stack: The stack the pipeline will run on.
         """
-        assert build
+        assert deployment.build
         pipeline_settings = cast(
             AirflowOrchestratorSettings, self.get_settings(deployment)
         )
@@ -257,7 +255,7 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
             if self.config.local
             else None
         )
-        image = build.get_image(key=ORCHESTRATOR_DOCKER_IMAGE_KEY)
+        image = deployment.build.get_image(key=ORCHESTRATOR_DOCKER_IMAGE_KEY)
 
         dag_id = pipeline_settings.dag_id or get_orchestrator_run_name(
             pipeline_name=deployment.pipeline_configuration.name

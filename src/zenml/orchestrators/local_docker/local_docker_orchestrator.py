@@ -155,7 +155,7 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
                 LocalDockerOrchestratorSettings,
                 self.get_settings(step),
             )
-            image = deployment.build.configuration.get_image(
+            image = deployment.build.get_image(
                 key=ORCHESTRATOR_DOCKER_IMAGE_KEY, step=step_name
             )
 

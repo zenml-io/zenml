@@ -46,9 +46,8 @@ from zenml.utils import io_utils
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
-    from zenml.config.build_configuration import PipelineBuild
     from zenml.models.pipeline_deployment_models import (
-        PipelineDeploymentBaseModel,
+        PipelineDeploymentResponseModel,
     )
     from zenml.stack import Stack
     from zenml.steps import ResourceSettings
@@ -297,9 +296,8 @@ class TektonOrchestrator(ContainerizedOrchestrator):
 
     def prepare_or_run_pipeline(
         self,
-        deployment: "PipelineDeploymentBaseModel",
+        deployment: "PipelineDeploymentResponseModel",
         stack: "Stack",
-        build: Optional["PipelineBuild"],
     ) -> Any:
         """Runs the pipeline on Tekton.
 
@@ -313,7 +311,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
         Raises:
             RuntimeError: If you try to run the pipelines in a notebook environment.
         """
-        assert build
+        assert deployment.build
         # First check whether the code running in a notebook
         if Environment.in_notebook():
             raise RuntimeError(
@@ -344,7 +342,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             step_name_to_container_op: Dict[str, dsl.ContainerOp] = {}
 
             for step_name, step in deployment.step_configurations.items():
-                image = build.get_image(
+                image = deployment.build.get_image(
                     key=ORCHESTRATOR_DOCKER_IMAGE_KEY, step=step_name
                 )
 

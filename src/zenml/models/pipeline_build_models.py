@@ -13,17 +13,17 @@
 #  permissions and limitations under the License.
 """Models representing pipeline builds."""
 
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Dict, Optional, Tuple, Union
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
-from zenml.config.build_configuration import PipelineBuild
 from zenml.models.base_models import (
     WorkspaceScopedRequestModel,
     WorkspaceScopedResponseModel,
 )
 from zenml.models.filter_models import WorkspaceScopedFilterModel
+from zenml.utils import pydantic_utils
 
 if TYPE_CHECKING:
     from zenml.models.pipeline_models import PipelineResponseModel
@@ -34,10 +34,61 @@ if TYPE_CHECKING:
 # ---- #
 
 
-class PipelineBuildBaseModel(BaseModel):
-    """Base model for pipeline builds."""
+class PipelineBuildBaseModel(pydantic_utils.YAMLSerializationMixin):
+    """Base model for pipeline builds.
 
-    configuration: PipelineBuild
+    Attributes:
+        pipeline_images: General Docker images built for the entire pipeline.
+        step_images: Docker images built for specific steps of the pipeline.
+    """
+
+    pipeline_images: Dict[str, Tuple[str, str]] = {}
+    step_images: Dict[str, Dict[str, Tuple[str, str]]] = {}
+    is_local: bool
+
+    def get_image(self, key: str, step: Optional[str] = None) -> str:
+        """Get the image built for a specific key.
+
+        Args:
+            key: The key for which to get the image.
+            step: The name of the step for which to get the image. If no image
+                exists for this step, will fallback to the pipeline image for
+                the same key.
+
+        Raises:
+            KeyError: If no image exists for the given key.
+
+        Returns:
+            The image name or digest.
+        """
+        images = self.pipeline_images.copy()
+
+        if step:
+            images.update(self.step_images.get(step, {}))
+
+        try:
+            image = images[key]
+            return image[0]
+        except KeyError:
+            raise KeyError(
+                f"Unable to find image for key {key}. Available keys: "
+                f"{set(images)}."
+            )
+
+    def get_settings_hash(self, key: str, step: Optional[str] = None) -> str:
+        images = self.pipeline_images.copy()
+
+        if step:
+            images.update(self.step_images.get(step, {}))
+
+        try:
+            image = images[key]
+            return image[1]
+        except KeyError:
+            raise KeyError(
+                f"Unable to find settings hash for key {key}. Available keys: "
+                f"{set(images)}."
+            )
 
 
 # -------- #

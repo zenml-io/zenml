@@ -31,7 +31,7 @@ from typing import (
 from uuid import UUID
 
 from zenml.client import Client
-from zenml.config.build_configuration import BuildConfiguration, PipelineBuild
+from zenml.config.build_configuration import BuildConfiguration
 from zenml.constants import (
     ENV_ZENML_SECRET_VALIDATION_LEVEL,
     ENV_ZENML_SKIP_IMAGE_BUILDER_DEFAULT,
@@ -42,6 +42,7 @@ from zenml.exceptions import ProvisioningError, StackValidationError
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models import StackResponseModel
+from zenml.models.pipeline_build_models import PipelineBuildBaseModel
 from zenml.utils import settings_utils
 from zenml.utils.pipeline_docker_image_builder import (
     PipelineDockerImageBuilder,
@@ -806,7 +807,7 @@ class Stack:
 
     def build(
         self, deployment: "PipelineDeploymentBaseModel"
-    ) -> Optional[PipelineBuild]:
+    ) -> Optional[PipelineBuildBaseModel]:
         required_builds = self.get_docker_builds(deployment=deployment)
         if not required_builds:
             logger.debug("No docker builds required.")
@@ -875,7 +876,7 @@ class Stack:
 
         is_local = self.container_registry is None
 
-        return PipelineBuild(
+        return PipelineBuildBaseModel(
             is_local=is_local,
             pipeline_images=pipeline_images,
             step_images=step_images,
@@ -904,7 +905,7 @@ class Stack:
         if required_builds and not deployment.build:
             raise RuntimeError("Missing docker builds.")
 
-        build = deployment.build.configuration if deployment.build else None
+        build = deployment.build
 
         for build_config in required_builds:
             try:
