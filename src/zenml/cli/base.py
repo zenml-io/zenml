@@ -42,7 +42,7 @@ from zenml.logger import get_logger
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
 from zenml.utils.enum_utils import StrEnum
 from zenml.utils.io_utils import copy_dir, get_global_config_directory
-from zenml.utils.yaml_utils import write_json
+from zenml.utils.yaml_utils import write_yaml
 
 logger = get_logger(__name__)
 # WT_SESSION is a Windows Terminal specific environment variable. If it
@@ -497,14 +497,14 @@ def info(packages, all, file) -> None:
 
     if all:
         user_info["packages"] = cli_utils.get_installed_local_packages()
-    elif packages:
+    if packages:
         user_info["query_packages"] = cli_utils.get_package_information(
             packages
         )
 
     if file:
-        file_write_path = os.path.join(os.get_cwd(), "zenml_user_info.json")
-        write_json(file_write_path, user_info)
+        file_write_path = os.path.join(os.getcwd(), "zenml_user_info.yaml")
+        write_yaml(file_write_path, user_info)
         declare(f"Wrote user debug info to file at '{file_write_path}'.")
     else:
         cli_utils.print_user_info(user_info)
