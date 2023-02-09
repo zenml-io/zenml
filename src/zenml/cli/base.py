@@ -439,7 +439,29 @@ def _prompt_email(event_source: AnalyticsEventSource) -> bool:
 @cli.command(
     "info", help="Show information about the current user setup.", hidden=True
 )
-def info() -> None:
+@click.option(
+    "--packages",
+    "-p",
+    is_flag=True,
+    default=False,
+    help="Output information about installed packages.",
+    type=bool,
+)
+@click.option(
+    "--server",
+    "-s",
+    is_flag=True,
+    default=False,
+    help="Output information about a connected ZenML server.",
+    type=bool,
+)
+@click.option(
+    "--file",
+    "-f",
+    help="Output to a file.",
+    type=str,
+)
+def info(packages: bool, server: bool, file: str) -> None:
     """Show information about the current user setup."""
     gc = GlobalConfiguration()
     client = Client()
