@@ -359,7 +359,9 @@ def _prompt_email() -> bool:
     return False
 
 
-@cli.command("info", help="Show information about the current user setup.")
+@cli.command(
+    "info", help="Show information about the current user setup.", hidden=True
+)
 def info() -> None:
     """Show information about the current user setup."""
     gc = GlobalConfiguration()
@@ -390,15 +392,3 @@ def info() -> None:
     cli_utils.declare(
         f"The active stack is: '{client.active_stack_model.name}' ({scope})"
     )
-
-    server = get_active_deployment(local=True)
-    if server:
-        cli_utils.declare("The status of the local dashboard:")
-        cli_utils.print_server_deployment(server)
-
-    server = get_active_deployment(local=False)
-    if server:
-        cli_utils.declare(
-            "The status of the cloud ZenML server deployed from this host:"
-        )
-        cli_utils.print_server_deployment(server)
