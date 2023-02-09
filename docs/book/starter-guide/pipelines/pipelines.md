@@ -21,7 +21,7 @@ mkdir mlops_starter
 cd mlops_starter
 
 # Initialize a ZenML repository
-zenml example pull starter_guide
+zenml example pull starter_guide  # soon to be replaced with `zenml init --starter`
 cd starter_guide
 ```
 
