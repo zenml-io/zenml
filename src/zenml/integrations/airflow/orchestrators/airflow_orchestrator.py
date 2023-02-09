@@ -236,6 +236,9 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
             settings = cast(
                 AirflowOrchestratorSettings, self.get_settings(step)
             )
+            image = deployment.build.get_image(
+                key=ORCHESTRATOR_DOCKER_IMAGE_KEY, step=step_name
+            )
             arguments = StepEntrypointConfiguration.get_entrypoint_arguments(
                 step_name=step_name, deployment_id=deployment.id
             )
@@ -243,6 +246,7 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
                 id=step_name,
                 zenml_step_name=step.config.name,
                 upstream_steps=step.spec.upstream_steps,
+                docker_image=image,
                 command=command,
                 arguments=arguments,
                 operator_source=settings.operator,
@@ -255,14 +259,12 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
             if self.config.local
             else None
         )
-        image = deployment.build.get_image(key=ORCHESTRATOR_DOCKER_IMAGE_KEY)
 
         dag_id = pipeline_settings.dag_id or get_orchestrator_run_name(
             pipeline_name=deployment.pipeline_configuration.name
         )
         dag_config = dag_generator_values.dag_configuration_class(
             id=dag_id,
-            docker_image=image,  # TODO: support per-step images
             local_stores_path=local_stores_path,
             tasks=tasks,
             tags=pipeline_settings.dag_tags,
