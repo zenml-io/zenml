@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,78 +12,46 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base Secrets Store implementation."""
-import os
 from abc import ABC
-from typing import Any, ClassVar, Dict, Optional, Tuple, Type, Union
-from uuid import UUID
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Type, Union
 
 from pydantic import BaseModel
 
-import zenml
-from zenml.config.global_config import GlobalConfiguration
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
-from zenml.config.store_config import StoreConfiguration
-from zenml.constants import (
-    ENV_ZENML_DEFAULT_USER_NAME,
-    ENV_ZENML_DEFAULT_USER_PASSWORD,
-    ENV_ZENML_DEFAULT_WORKSPACE_NAME,
-    ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
-)
-from zenml.enums import PermissionType, SecretsStoreType, StackComponentType, StoreType
+from zenml.enums import SecretsStoreType
 from zenml.logger import get_logger
-from zenml.models import (
-    ComponentRequestModel,
-    RoleFilterModel,
-    RoleRequestModel,
-    RoleResponseModel,
-    StackFilterModel,
-    StackRequestModel,
-    StackResponseModel,
-    UserRequestModel,
-    UserResponseModel,
-    UserRoleAssignmentRequestModel,
-    WorkspaceRequestModel,
-    WorkspaceResponseModel,
-)
-from zenml.models.page_model import Page
-from zenml.models.server_models import (
-    ServerDatabaseType,
-    ServerDeploymentType,
-    ServerModel,
-)
 from zenml.utils.analytics_utils import (
     AnalyticsEvent,
     AnalyticsTrackerMixin,
-    track,
     track_event,
 )
-from zenml.zen_stores.secrets_mgmt.secrets_store_interface import SecretsStoreInterface
-from zenml.zen_stores.zen_store_interface import ZenStoreInterface
+from zenml.zen_stores.secrets_stores.secrets_store_interface import (
+    SecretsStoreInterface,
+)
 
 logger = get_logger(__name__)
 
-DEFAULT_USERNAME = "default"
-DEFAULT_PASSWORD = ""
-DEFAULT_WORKSPACE_NAME = "default"
-DEFAULT_STACK_NAME = "default"
-DEFAULT_STACK_COMPONENT_NAME = "default"
-DEFAULT_ADMIN_ROLE = "admin"
-DEFAULT_GUEST_ROLE = "guest"
+if TYPE_CHECKING:
+    from zenml.zen_stores.base_zen_store import BaseZenStore
 
 
-class BaseSecretsStore(BaseModel, SecretsStoreInterface, AnalyticsTrackerMixin, ABC):
+class BaseSecretsStore(
+    BaseModel, SecretsStoreInterface, AnalyticsTrackerMixin, ABC
+):
     """Base class for accessing and persisting ZenML secret objects.
 
     Attributes:
-        config: The configuration of the store.
+        config: The configuration of the secret store.
         track_analytics: Only send analytics if set to `True`.
+        _zen_store: The ZenML store that owns this secrets store.
     """
 
     config: SecretsStoreConfiguration
     track_analytics: bool = True
+    _zen_store: Optional["BaseZenStore"] = None
 
-    TYPE: ClassVar[StoreType]
-    CONFIG_TYPE: ClassVar[Type[StoreConfiguration]]
+    TYPE: ClassVar[SecretsStoreType]
+    CONFIG_TYPE: ClassVar[Type[SecretsStoreConfiguration]]
 
     # ---------------------------------
     # Initialization and configuration
@@ -91,11 +59,13 @@ class BaseSecretsStore(BaseModel, SecretsStoreInterface, AnalyticsTrackerMixin, 
 
     def __init__(
         self,
+        zen_store: "BaseZenStore",
         **kwargs: Any,
     ) -> None:
         """Create and initialize a secrets store.
 
         Args:
+            zen_store: The ZenML store that owns this secrets store.
             **kwargs: Additional keyword arguments to pass to the Pydantic
                 constructor.
 
@@ -103,6 +73,7 @@ class BaseSecretsStore(BaseModel, SecretsStoreInterface, AnalyticsTrackerMixin, 
             RuntimeError: If the store cannot be initialized.
         """
         super().__init__(**kwargs)
+        self._zen_store = zen_store
 
         try:
             self._initialize()
@@ -112,7 +83,9 @@ class BaseSecretsStore(BaseModel, SecretsStoreInterface, AnalyticsTrackerMixin, 
             ) from e
 
     @staticmethod
-    def get_store_class(store_type: SecretsStoreType) -> Type["BaseSecretsStore"]:
+    def get_store_class(
+        store_type: SecretsStoreType,
+    ) -> Type["BaseSecretsStore"]:
         """Returns the class of the given secrets store type.
 
         Args:
@@ -122,566 +95,67 @@ class BaseSecretsStore(BaseModel, SecretsStoreInterface, AnalyticsTrackerMixin, 
             The class of the given store type or None if the type is unknown.
 
         Raises:
-            TypeError: If the store type is unsupported.
+            TypeError: If the secrets store type is unsupported.
         """
         if store_type == SecretsStoreType.SQL:
-            from zenml.zen_stores.secrets_stores.sql_secrets_store import SqlZenStore
+            from zenml.zen_stores.secrets_stores.sql_secrets_store import (
+                SqlSecretsStore,
+            )
 
-            return SqlZenStore
-        elif store_type == StoreType.REST:
-            from zenml.zen_stores.rest_zen_store import RestZenStore
-
-            return RestZenStore
+            return SqlSecretsStore
         else:
             raise TypeError(
-                f"No store implementation found for store type "
+                f"No store implementation found for secrets store type "
                 f"`{store_type.value}`."
             )
 
     @staticmethod
     def get_store_config_class(
-        store_type: StoreType,
-    ) -> Type["StoreConfiguration"]:
-        """Returns the store config class of the given store type.
+        store_type: SecretsStoreType,
+    ) -> Type["SecretsStoreConfiguration"]:
+        """Returns the secrets store config class of the given secrets store type.
 
         Args:
-            store_type: The type of the store to get the class for.
+            store_type: The type of the secrets store to get the class for.
 
         Returns:
-            The config class of the given store type.
+            The config class of the given secrets store type.
         """
-        store_class = BaseZenStore.get_store_class(store_type)
+        store_class = BaseSecretsStore.get_store_class(store_type)
         return store_class.CONFIG_TYPE
 
     @staticmethod
-    def get_store_type(url: str) -> StoreType:
-        """Returns the store type associated with a URL schema.
-
-        Args:
-            url: The store URL.
-
-        Returns:
-            The store type associated with the supplied URL schema.
-
-        Raises:
-            TypeError: If no store type was found to support the supplied URL.
-        """
-        from zenml.zen_stores.rest_zen_store import RestZenStoreConfiguration
-        from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
-
-        if SqlZenStoreConfiguration.supports_url_scheme(url):
-            return StoreType.SQL
-        elif RestZenStoreConfiguration.supports_url_scheme(url):
-            return StoreType.REST
-        else:
-            raise TypeError(f"No store implementation found for URL: {url}.")
-
-    @staticmethod
     def create_store(
-        config: StoreConfiguration,
-        skip_default_registrations: bool = False,
+        config: SecretsStoreConfiguration,
         **kwargs: Any,
-    ) -> "BaseZenStore":
-        """Create and initialize a store from a store configuration.
+    ) -> "BaseSecretsStore":
+        """Create and initialize a secrets store from a secrets store configuration.
 
         Args:
-            config: The store configuration to use.
-            skip_default_registrations: If `True`, the creation of the default
-                stack and user in the store will be skipped.
+            config: The secrets store configuration to use.
             **kwargs: Additional keyword arguments to pass to the store class
 
         Returns:
-            The initialized store.
+            The initialized secrets store.
         """
-        logger.debug(f"Creating store with config '{config}'...")
-        store_class = BaseZenStore.get_store_class(config.type)
+        logger.debug(
+            f"Creating secrets store with type '{config.type.value}'..."
+        )
+        store_class = BaseSecretsStore.get_store_class(config.type)
         store = store_class(
             config=config,
-            skip_default_registrations=skip_default_registrations,
             **kwargs,
         )
         return store
 
-    @staticmethod
-    def get_default_store_config(path: str) -> StoreConfiguration:
-        """Get the default store configuration.
-
-        The default store is a SQLite store that saves the DB contents on the
-        local filesystem.
-
-        Args:
-            path: The local path where the store DB will be stored.
-
-        Returns:
-            The default store configuration.
-        """
-        from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
-
-        config = SqlZenStoreConfiguration(
-            type=StoreType.SQL,
-            url=SqlZenStoreConfiguration.get_local_url(path),
-        )
-        return config
-
-    def _initialize_database(self) -> None:
-        """Initialize the database on first use."""
-        try:
-            default_workspace = self._default_workspace
-        except KeyError:
-            default_workspace = self._create_default_workspace()
-        try:
-            assert self._admin_role
-        except KeyError:
-            self._create_admin_role()
-        try:
-            assert self._guest_role
-        except KeyError:
-            self._create_guest_role()
-        try:
-            default_user = self._default_user
-        except KeyError:
-            default_user = self._create_default_user()
-        try:
-            self._get_default_stack(
-                workspace_name_or_id=default_workspace.id,
-                user_name_or_id=default_user.id,
-            )
-        except KeyError:
-            self._create_default_stack(
-                workspace_name_or_id=default_workspace.id,
-                user_name_or_id=default_user.id,
-            )
-
     @property
-    def url(self) -> str:
-        """The URL of the store.
+    def type(self) -> SecretsStoreType:
+        """The type of the secrets store.
 
         Returns:
-            The URL of the store.
-        """
-        return self.config.url
-
-    @property
-    def type(self) -> StoreType:
-        """The type of the store.
-
-        Returns:
-            The type of the store.
+            The type of the secrets store.
         """
         return self.TYPE
-
-    def validate_active_config(
-        self,
-        active_workspace_name_or_id: Optional[Union[str, UUID]] = None,
-        active_stack_id: Optional[UUID] = None,
-        config_name: str = "",
-    ) -> Tuple[WorkspaceResponseModel, StackResponseModel]:
-        """Validate the active configuration.
-
-        Call this method to validate the supplied active workspace and active
-        stack values.
-
-        This method is guaranteed to return valid workspace ID and stack ID
-        values. If the supplied workspace and stack are not set or are not valid
-        (e.g. they do not exist or are not accessible), the default workspace and
-        default workspace stack will be returned in their stead.
-
-        Args:
-            active_workspace_name_or_id: The name or ID of the active workspace.
-            active_stack_id: The ID of the active stack.
-            config_name: The name of the configuration to validate (used in the
-                displayed logs/messages).
-
-        Returns:
-            A tuple containing the active workspace and active stack.
-        """
-        active_workspace: WorkspaceResponseModel
-
-        if active_workspace_name_or_id:
-            try:
-                active_workspace = self.get_workspace(
-                    active_workspace_name_or_id
-                )
-            except KeyError:
-                active_workspace = self._get_or_create_default_workspace()
-
-                logger.warning(
-                    f"The current {config_name} active workspace is no longer "
-                    f"available. Resetting the active workspace to "
-                    f"'{active_workspace.name}'."
-                )
-        else:
-            active_workspace = self._get_or_create_default_workspace()
-
-            logger.info(
-                f"Setting the {config_name} active workspace "
-                f"to '{active_workspace.name}'."
-            )
-
-        active_stack: StackResponseModel
-
-        # Sanitize the active stack
-        if active_stack_id:
-            # Ensure that the active stack is still valid
-            try:
-                active_stack = self.get_stack(stack_id=active_stack_id)
-            except KeyError:
-                logger.warning(
-                    "The current %s active stack is no longer available. "
-                    "Resetting the active stack to default.",
-                    config_name,
-                )
-                active_stack = self._get_or_create_default_stack(
-                    active_workspace
-                )
-            else:
-                if active_stack.workspace.id != active_workspace.id:
-                    logger.warning(
-                        "The current %s active stack is not part of the active "
-                        "workspace. Resetting the active stack to default.",
-                        config_name,
-                    )
-                    active_stack = self._get_or_create_default_stack(
-                        active_workspace
-                    )
-                elif not active_stack.is_shared and (
-                    not active_stack.user
-                    or (active_stack.user.id != self.get_user().id)
-                ):
-                    logger.warning(
-                        "The current %s active stack is not shared and not "
-                        "owned by the active user. "
-                        "Resetting the active stack to default.",
-                        config_name,
-                    )
-                    active_stack = self._get_or_create_default_stack(
-                        active_workspace
-                    )
-        else:
-            logger.warning(
-                "Setting the %s active stack to default.",
-                config_name,
-            )
-            active_stack = self._get_or_create_default_stack(active_workspace)
-
-        return active_workspace, active_stack
-
-    def get_store_info(self) -> ServerModel:
-        """Get information about the store.
-
-        Returns:
-            Information about the store.
-        """
-        return ServerModel(
-            id=GlobalConfiguration().user_id,
-            version=zenml.__version__,
-            deployment_type=os.environ.get(
-                ENV_ZENML_SERVER_DEPLOYMENT_TYPE, ServerDeploymentType.OTHER
-            ),
-            database_type=ServerDatabaseType.OTHER,
-        )
-
-    def is_local_store(self) -> bool:
-        """Check if the store is local or connected to a local ZenML server.
-
-        Returns:
-            True if the store is local, False otherwise.
-        """
-        return self.get_store_info().is_local()
-
-    def _get_or_create_default_stack(
-        self, workspace: "WorkspaceResponseModel"
-    ) -> "StackResponseModel":
-        try:
-            return self._get_default_stack(
-                workspace_name_or_id=workspace.id,
-                user_name_or_id=self.get_user().id,
-            )
-        except KeyError:
-            return self._create_default_stack(  # type: ignore[no-any-return]
-                workspace_name_or_id=workspace.id,
-                user_name_or_id=self.get_user().id,
-            )
-
-    def _get_or_create_default_workspace(self) -> "WorkspaceResponseModel":
-        try:
-            return self._default_workspace
-        except KeyError:
-            return self._create_default_workspace()  # type: ignore[no-any-return]
-
-    # ------
-    # Stacks
-    # ------
-
-    @track(AnalyticsEvent.REGISTERED_DEFAULT_STACK)
-    def _create_default_stack(
-        self,
-        workspace_name_or_id: Union[str, UUID],
-        user_name_or_id: Union[str, UUID],
-    ) -> StackResponseModel:
-        """Create the default stack components and stack.
-
-        The default stack contains a local orchestrator and a local artifact
-        store.
-
-        Args:
-            workspace_name_or_id: Name or ID of the workspace to which the stack
-                belongs.
-            user_name_or_id: The name or ID of the user that owns the stack.
-
-        Returns:
-            The model of the created default stack.
-        """
-        workspace = self.get_workspace(
-            workspace_name_or_id=workspace_name_or_id
-        )
-        user = self.get_user(user_name_or_id=user_name_or_id)
-
-        logger.info(
-            f"Creating default stack for user '{user.name}' in workspace "
-            f"{workspace.name}..."
-        )
-
-        # Register the default orchestrator
-        orchestrator = self.create_stack_component(
-            component=ComponentRequestModel(
-                user=user.id,
-                workspace=workspace.id,
-                name=DEFAULT_STACK_COMPONENT_NAME,
-                type=StackComponentType.ORCHESTRATOR,
-                flavor="local",
-                configuration={},
-            ),
-        )
-
-        # Register the default artifact store
-        artifact_store = self.create_stack_component(
-            component=ComponentRequestModel(
-                user=user.id,
-                workspace=workspace.id,
-                name=DEFAULT_STACK_COMPONENT_NAME,
-                type=StackComponentType.ARTIFACT_STORE,
-                flavor="local",
-                configuration={},
-            ),
-        )
-
-        components = {c.type: [c.id] for c in [orchestrator, artifact_store]}
-        # Register the default stack
-        stack = StackRequestModel(
-            name=DEFAULT_STACK_NAME,
-            components=components,
-            is_shared=False,
-            workspace=workspace.id,
-            user=user.id,
-        )
-        return self.create_stack(stack=stack)
-
-    def _get_default_stack(
-        self,
-        workspace_name_or_id: Union[str, UUID],
-        user_name_or_id: Union[str, UUID],
-    ) -> StackResponseModel:
-        """Get the default stack for a user in a workspace.
-
-        Args:
-            workspace_name_or_id: Name or ID of the workspace.
-            user_name_or_id: Name or ID of the user.
-
-        Returns:
-            The default stack in the workspace owned by the supplied user.
-
-        Raises:
-            KeyError: if the workspace or default stack doesn't exist.
-        """
-        default_stacks = self.list_stacks(
-            StackFilterModel(
-                workspace_id=workspace_name_or_id,
-                user_id=user_name_or_id,
-                name=DEFAULT_STACK_NAME,
-            )
-        )
-        if default_stacks.total == 0:
-            raise KeyError(
-                f"No default stack found for user {str(user_name_or_id)} in "
-                f"workspace {str(workspace_name_or_id)}"
-            )
-        return default_stacks.items[0]
-
-    # -----
-    # Roles
-    # -----
-    @property
-    def _admin_role(self) -> RoleResponseModel:
-        """Get the admin role.
-
-        Returns:
-            The default admin role.
-        """
-        return self.get_role(DEFAULT_ADMIN_ROLE)
-
-    @track(AnalyticsEvent.CREATED_DEFAULT_ROLES)
-    def _create_admin_role(self) -> RoleResponseModel:
-        """Creates the admin role.
-
-        Returns:
-            The admin role
-        """
-        logger.info(f"Creating '{DEFAULT_ADMIN_ROLE}' role ...")
-        return self.create_role(
-            RoleRequestModel(
-                name=DEFAULT_ADMIN_ROLE,
-                permissions={
-                    PermissionType.READ.value,
-                    PermissionType.WRITE.value,
-                    PermissionType.ME.value,
-                },
-            )
-        )
-
-    @property
-    def _guest_role(self) -> RoleResponseModel:
-        """Get the guest role.
-
-        Returns:
-            The guest role.
-        """
-        return self.get_role(DEFAULT_GUEST_ROLE)
-
-    @track(AnalyticsEvent.CREATED_DEFAULT_ROLES)
-    def _create_guest_role(self) -> RoleResponseModel:
-        """Creates the guest role.
-
-        Returns:
-            The guest role
-        """
-        logger.info(f"Creating '{DEFAULT_GUEST_ROLE}' role ...")
-        return self.create_role(
-            RoleRequestModel(
-                name=DEFAULT_GUEST_ROLE,
-                permissions={
-                    PermissionType.READ.value,
-                    PermissionType.ME.value,
-                },
-            )
-        )
-
-    # -----
-    # Users
-    # -----
-
-    @property
-    def _default_user_name(self) -> str:
-        """Get the default user name.
-
-        Returns:
-            The default user name.
-        """
-        return os.getenv(ENV_ZENML_DEFAULT_USER_NAME, DEFAULT_USERNAME)
-
-    @property
-    def _default_user(self) -> UserResponseModel:
-        """Get the default user.
-
-        Returns:
-            The default user.
-
-        Raises:
-            KeyError: If the default user doesn't exist.
-        """
-        user_name = self._default_user_name
-        try:
-            return self.get_user(user_name)
-        except KeyError:
-            raise KeyError(f"The default user '{user_name}' is not configured")
-
-    @track(AnalyticsEvent.CREATED_DEFAULT_USER)
-    def _create_default_user(self) -> UserResponseModel:
-        """Creates a default user with the admin role.
-
-        Returns:
-            The default user.
-        """
-        user_name = os.getenv(ENV_ZENML_DEFAULT_USER_NAME, DEFAULT_USERNAME)
-        user_password = os.getenv(
-            ENV_ZENML_DEFAULT_USER_PASSWORD, DEFAULT_PASSWORD
-        )
-
-        logger.info(f"Creating default user '{user_name}' ...")
-        new_user = self.create_user(
-            UserRequestModel(
-                name=user_name,
-                active=True,
-                password=user_password,
-            )
-        )
-        self.create_user_role_assignment(
-            UserRoleAssignmentRequestModel(
-                role=self._admin_role.id,
-                user=new_user.id,
-                workspace=None,
-            )
-        )
-        return new_user
-
-    # -----
-    # Roles
-    # -----
-
-    @property
-    def roles(self) -> Page[RoleResponseModel]:
-        """All existing roles.
-
-        Returns:
-            A list of all existing roles.
-        """
-        return self.list_roles(RoleFilterModel())
-
-    # --------
-    # Workspaces
-    # --------
-
-    @property
-    def _default_workspace_name(self) -> str:
-        """Get the default workspace name.
-
-        Returns:
-            The default workspace name.
-        """
-        return os.getenv(
-            ENV_ZENML_DEFAULT_WORKSPACE_NAME, DEFAULT_WORKSPACE_NAME
-        )
-
-    @property
-    def _default_workspace(self) -> WorkspaceResponseModel:
-        """Get the default workspace.
-
-        Returns:
-            The default workspace.
-
-        Raises:
-            KeyError: if the default workspace doesn't exist.
-        """
-        workspace_name = self._default_workspace_name
-        try:
-            return self.get_workspace(workspace_name)
-        except KeyError:
-            raise KeyError(
-                f"The default workspace '{workspace_name}' is not configured"
-            )
-
-    @track(AnalyticsEvent.CREATED_DEFAULT_WORKSPACE)
-    def _create_default_workspace(self) -> WorkspaceResponseModel:
-        """Creates a default workspace.
-
-        Returns:
-            The default workspace.
-        """
-        workspace_name = self._default_workspace_name
-        logger.info(f"Creating default workspace '{workspace_name}' ...")
-        return self.create_workspace(
-            WorkspaceRequestModel(name=workspace_name)
-        )
 
     # ---------
     # Analytics

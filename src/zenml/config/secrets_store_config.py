@@ -13,12 +13,10 @@
 #  permissions and limitations under the License.
 """Functionality to support ZenML store configurations."""
 
-from pathlib import PurePath
-from typing import Optional
 
 from pydantic import BaseModel
 
-from zenml.enums import SecretsStoreType, StoreType
+from zenml.enums import SecretsStoreType
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)

@@ -80,16 +80,22 @@ class StackComponentType(StrEnum):
 
 
 class StoreType(StrEnum):
-    """Repository Store Backend Types."""
+    """Zen Store Backend Types."""
 
     SQL = "sql"
     REST = "rest"
 
 
 class SecretsStoreType(StrEnum):
-    """Secrets Store Backend Types."""
+    """Secrets Store Backend Types.
 
-    SQL = "sql"
+    NOTE: this is a superset of the StoreType values because the set of secrets
+    store backends includes all the backends supported for zen stores.
+    """
+
+    SQL = StoreType.SQL.value
+    REST = StoreType.REST.value
+
 
 class ContainerRegistryFlavor(StrEnum):
     """Flavors of container registries."""

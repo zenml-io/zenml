@@ -30,6 +30,7 @@ if TYPE_CHECKING:
         PipelineSchema,
         RunMetadataSchema,
         ScheduleSchema,
+        SecretSchema,
         StackComponentSchema,
         StackSchema,
         StepRunSchema,
@@ -71,6 +72,10 @@ class UserSchema(NamedSchema, table=True):
     artifacts: List["ArtifactSchema"] = Relationship(back_populates="user")
     run_metadata: List["RunMetadataSchema"] = Relationship(
         back_populates="user"
+    )
+    secrets: List["SecretSchema"] = Relationship(
+        back_populates="user",
+        sa_relationship_kwargs={"cascade": "delete"},
     )
 
     @classmethod

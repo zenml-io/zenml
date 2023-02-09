@@ -13,23 +13,19 @@
 #  permissions and limitations under the License.
 """Models representing secrets."""
 
-from enum import StrEnum
-from typing import TYPE_CHECKING, Any, Dict, Optional, Union
+from typing import ClassVar, Dict, List, Optional, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field, SecretStr
 
 from zenml.models.base_models import (
-    BaseResponseModel,
     WorkspaceScopedRequestModel,
     WorkspaceScopedResponseModel,
     update_model,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.filter_models import WorkspaceScopedFilterModel
-from zenml.models.user_models import UserResponseModel
-from zenml.models.workspace_models import WorkspaceResponseModel
-
+from zenml.utils.enum_utils import StrEnum
 
 # ---- #
 # BASE #
@@ -66,7 +62,7 @@ class SecretBaseModel(BaseModel):
         The values are returned as strings, not SecretStrs. If a value is
         None, it is not included in the returned dictionary. This is to enable
         the use of None values in the update model to indicate that a secret
-        value should be deleted. 
+        value should be deleted.
 
         Returns:
             A dictionary containing the secret's values.
@@ -85,6 +81,8 @@ class SecretBaseModel(BaseModel):
 
 class SecretResponseModel(SecretBaseModel, WorkspaceScopedResponseModel):
     """Secret response model with user and workspace hydrated."""
+
+    ANALYTICS_FIELDS: ClassVar[List[str]] = ["scope"]
 
 
 # ------ #
@@ -121,6 +119,8 @@ class SecretFilterModel(WorkspaceScopedFilterModel):
 
 class SecretRequestModel(SecretBaseModel, WorkspaceScopedRequestModel):
     """Secret request model."""
+
+    ANALYTICS_FIELDS: ClassVar[List[str]] = ["scope"]
 
 
 # ------ #

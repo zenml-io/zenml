@@ -15,12 +15,13 @@
 import base64
 import json
 from datetime import datetime
-from typing import Optional
+from typing import Dict, Optional
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
+from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.models.secret_models import (
     SecretRequestModel,
     SecretResponseModel,
@@ -68,6 +69,47 @@ class SecretSchema(NamedSchema, table=True):
     user: Optional["UserSchema"] = Relationship(back_populates="secrets")
 
     @classmethod
+    def _dump_secret_values(cls, values: Dict[str, str]) -> str:
+        """Dump the secret values to a string.
+
+        Args:
+            values: The secret values to dump.
+
+        Raises:
+            ValueError: If the secret values do not fit in the database field.
+
+        Returns:
+            The dumped secret values.
+        """
+        serialized_values = base64.b64encode(
+            json.dumps(values).encode("utf-8")
+        )
+
+        if len(serialized_values) > TEXT_FIELD_MAX_LENGTH:
+            raise ValueError(
+                "Database representation of secret values exceeds max "
+                "length. Please use fewer values or consider using shorter "
+                "secret keys and/or values."
+            )
+
+        return serialized_values
+
+    @classmethod
+    def _load_secret_values(
+        cls,
+        serialized_values: str,
+    ) -> Dict[str, str]:
+        """Load the secret values from a string.
+
+        Args:
+            serialized_values: The serialized secret values.
+
+        Returns:
+            The loaded secret values.
+        """
+        return json.loads(base64.b64decode(serialized_values).decode())
+
+    @classmethod
     def from_request(cls, secret: SecretRequestModel) -> "SecretSchema":
         """Create a `SecretSchema` from a `SecretRequestModel`.
 
@@ -83,13 +125,15 @@ class SecretSchema(NamedSchema, table=True):
             scope=secret.scope,
             workspace_id=secret.workspace,
             user_id=secret.user,
-            values=base64.b64encode(
-                json.dumps(secret.clear_values).encode("utf-8")
-            ),
+            values=cls._dump_secret_values(secret.clear_values),
         )
 
     def update(self, secret_update: SecretUpdateModel) -> "SecretSchema":
         """Update a `SecretSchema` from a `SecretUpdateModel`.
+
+        The method also knows how to handle the `values` field of the secret
+        update model: It will update the existing values with the new values
+        and drop `None` values.
 
         Args:
             secret_update: The `SecretUpdateModel` from which to update the schema.
@@ -101,17 +145,13 @@ class SecretSchema(NamedSchema, table=True):
             exclude_unset=True, exclude={"workspace", "user"}
         ).items():
             if field == "values":
-                existing_values = json.loads(
-                    base64.b64decode(self.values).decode()
-                )
+                existing_values = self._load_secret_values(self.values)
                 existing_values.update(value)
                 # Drop None values
                 existing_values = {
                     k: v for k, v in existing_values.items() if v is not None
                 }
-                self.configuration = base64.b64encode(
-                    json.dumps(existing_values).encode("utf-8")
-                )
+                self.values = self._dump_secret_values(existing_values)
             else:
                 setattr(self, field, value)
 
@@ -128,9 +168,7 @@ class SecretSchema(NamedSchema, table=True):
             id=self.id,
             name=self.name,
             scope=self.scope,
-            values=json.loads(
-                base64.b64decode(self.values).decode()
-            ),
+            values=self._load_secret_values(self.values),
             user=self.user.to_model() if self.user else None,
             workspace=self.workspace.to_model(),
             created=self.created,

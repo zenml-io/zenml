@@ -13,24 +13,19 @@
 #  permissions and limitations under the License.
 """SQL Zen Store implementation."""
 
-import base64
-import json
-from contextvars import ContextVar
 from typing import (
     Any,
     ClassVar,
     Optional,
+    Tuple,
     Type,
-    TypeVar,
-    cast,
 )
 from uuid import UUID
+from git import TYPE_CHECKING
 
-import pymysql
 from sqlalchemy.engine import Engine
-from sqlalchemy.exc import NoResultFound, OperationalError
+from sqlalchemy.exc import NoResultFound
 from sqlmodel import Session, select
-from sqlmodel.sql.expression import Select, SelectOfScalar
 
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.enums import (
@@ -40,36 +35,30 @@ from zenml.exceptions import (
     EntityExistsError,
     IllegalOperationError,
 )
-from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import (
-    BaseFilterModel,
     SecretFilterModel,
     SecretRequestModel,
     SecretResponseModel,
     SecretUpdateModel,
 )
-from zenml.models.base_models import BaseResponseModel
-from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.models.page_model import Page
 from zenml.models.secret_models import SecretScope
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.zen_stores.schemas import (
-    BaseSchema,
     SecretSchema,
-    NamedSchema,
     StackComponentSchema,
 )
-from zenml.zen_stores.secrets_stores.base_secrets_store import BaseSecretsStore
-from zenml.zen_stores.sql_zen_store import SqlZenStore
+from zenml.zen_stores.secrets_stores.base_secrets_store import (
+    BaseSecretsStore,
+)
 
-AnyNamedSchema = TypeVar("AnyNamedSchema", bound=NamedSchema)
-AnySchema = TypeVar("AnySchema", bound=BaseSchema)
-B = TypeVar("B", bound=BaseResponseModel)
-
-params_value: ContextVar[BaseFilterModel] = ContextVar("params_value")
 
 logger = get_logger(__name__)
+
+if TYPE_CHECKING:
+    from zenml.zen_stores.base_zen_store import BaseZenStore
+    from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 
 class SqlSecretsStoreConfiguration(SecretsStoreConfiguration):
@@ -102,7 +91,6 @@ class SqlSecretsStore(BaseSecretsStore):
         config: The configuration of the SQL secrets store.
         TYPE: The type of the store.
         CONFIG_TYPE: The type of the store configuration.
-        _engine: The SQLAlchemy engine.
     """
 
     config: SqlSecretsStoreConfiguration
@@ -112,21 +100,27 @@ class SqlSecretsStore(BaseSecretsStore):
     ] = SqlSecretsStoreConfiguration
 
     _engine: Optional[Engine] = None
-    _zen_store: Optional[SqlZenStore] = None
 
     def __init__(
         self,
-        zen_store: SqlZenStore,
+        zen_store: "BaseZenStore",
         **kwargs: Any,
     ) -> None:
         """Create and initialize the SQL secrets store.
 
         Args:
+            zen_store: The ZenML store that owns this SQL secrets store.
             **kwargs: Additional keyword arguments to pass to the Pydantic
                 constructor.
         """
-        self._zen_store = zen_store
-        super().__init__(**kwargs)
+        from zenml.zen_stores.sql_zen_store import SqlZenStore
+
+        if not isinstance(zen_store, SqlZenStore):
+            raise IllegalOperationError(
+                "The SQL secrets store can only be used with the SQL ZenML "
+                "store."
+            )
+        super().__init__(zen_store, **kwargs)
 
     @property
     def engine(self) -> Engine:
@@ -134,16 +128,11 @@ class SqlSecretsStore(BaseSecretsStore):
 
         Returns:
             The SQLAlchemy engine.
-
-        Raises:
-            ValueError: If the store is not initialized.
         """
-        if not self._engine:
-            raise ValueError("Store not initialized")
-        return self._engine
+        return self.zen_store.engine
 
     @property
-    def zen_store(self) -> SqlZenStore:
+    def zen_store(self) -> "SqlZenStore":
         """The ZenML store that this SQL secrets store is using as a back-end.
 
         Returns:
@@ -152,8 +141,11 @@ class SqlSecretsStore(BaseSecretsStore):
         Raises:
             ValueError: If the store is not initialized.
         """
+        from zenml.zen_stores.sql_zen_store import SqlZenStore
+
         if not self._zen_store:
             raise ValueError("Store not initialized")
+        assert isinstance(self._zen_store, SqlZenStore)
         return self._zen_store
 
     # ====================================
@@ -172,15 +164,93 @@ class SqlSecretsStore(BaseSecretsStore):
         """
         logger.debug("Initializing SqlSecretsStore")
 
-        # Nothing to do here, the SQL ZenML store back-end is already
+        # Nothing else to do here, the SQL ZenML store back-end is already
         # initialized
 
     # ------
     # Secrets
     # ------
 
+    def _check_secret_scope(
+        self,
+        session: Session,
+        secret_name: str,
+        scope: SecretScope,
+        workspace: UUID,
+        user: UUID,
+        exclude_secret_id: Optional[UUID] = None,
+    ) -> Tuple[bool, str]:
+        """Checks if a secret with the given name already exists in the given scope.
+
+        This method enforces the following scope rules:
+
+          - only one workspace-scoped secret with the given name can exist
+            in the target workspace.
+          - only one user-scoped secret with the given name can exist in the
+            target workspace for the target user.
+
+        Args:
+            session: The SQLAlchemy session.
+            secret_name: The name of the secret.
+            scope: The scope of the secret.
+            workspace: The ID of the workspace to which the secret belongs.
+            user: The ID of the user to which the secret belongs.
+            exclude_secret_id: The ID of a secret to exclude from the check
+                (used e.g. during an update to exclude the existing secret).
+
+        Returns:
+            True if a secret with the given name already exists in the given
+            scope, False otherwise, and an error message.
+        """
+        scope_filter = select(SecretSchema).where(
+            SecretSchema.name == secret_name
+        )
+        if scope in [SecretScope.WORKSPACE, SecretScope.USER]:
+            scope_filter = scope_filter.where(
+                SecretSchema.workspace_id == workspace
+            )
+        if scope == SecretScope.USER:
+            scope_filter = scope_filter.where(SecretSchema.user_id == user)
+        if exclude_secret_id is not None:
+            scope_filter = scope_filter.where(
+                SecretSchema.id != exclude_secret_id
+            )
+
+        existing_secret = session.exec(scope_filter).first()
+
+        if existing_secret is not None:
+            existing_secret_model = existing_secret.to_model()
+
+            msg = (
+                f"Found an existing '{scope.value}' scoped secret with the "
+                f"same '{secret_name}' name"
+            )
+            if scope in [SecretScope.WORKSPACE, SecretScope.USER]:
+                msg += (
+                    f" in the same '{existing_secret_model.workspace.name}' "
+                    f"workspace"
+                )
+            if scope == SecretScope.USER:
+                assert existing_secret_model.user
+                msg += (
+                    f" for the same '{existing_secret_model.user.name}' user"
+                )
+
+            return True, msg
+
+        return False, ""
+
+    @track(AnalyticsEvent.CREATED_SECRET)
     def create_secret(self, secret: SecretRequestModel) -> SecretResponseModel:
         """Creates a new secret.
+
+        The new secret is also validated against the scoping rules enforced in
+        the secrets store:
+
+          - only one workspace-scoped secret with the given name can exist
+            in the target workspace.
+          - only one user-scoped secret with the given name can exist in the
+            target workspace for the target user.
 
         Args:
             secret: The secret to create.
@@ -189,49 +259,23 @@ class SqlSecretsStore(BaseSecretsStore):
             The newly created secret.
 
         Raises:
+            KeyError: if the user or workspace does not exist.
             EntityExistsError: If a secret with the same name already exists in
-                this workspace.
-            ValueError: In case the values contents exceeds the max length.
+                the same scope.
+            ValueError: if the secret is invalid.
         """
         with Session(self.engine) as session:
             # Check if a secret with the same name already exists in the same
             # scope.
-            scope_filter = select(SecretSchema).where(
-                SecretSchema.name == secret.name
+            secret_exists, msg = self._check_secret_scope(
+                session=session,
+                secret_name=secret.name,
+                scope=secret.scope,
+                workspace=secret.workspace,
+                user=secret.user,
             )
-            if secret.scope in [SecretScope.WORKSPACE, SecretScope.USER]:
-                scope_filter = scope_filter.where(
-                    SecretSchema.workspace_id == secret.workspace
-                )
-            if secret.scope == SecretScope.USER:
-                scope_filter = scope_filter.where(
-                    SecretSchema.user_id == secret.user
-                )
-
-            existing_secret = session.exec(scope_filter).first()
-
-            if existing_secret is not None:
-                msg = (
-                    f"Unable to register secret with name '{secret.name}': "
-                    f"Found an existing '{secret.scope.value}' scoped secret "
-                    f"with the same name"
-                )
-                if secret.scope in [SecretScope.WORKSPACE, SecretScope.USER]:
-                    msg += f" in the same '{secret.workspace}' workspace"
-                if secret.scope == SecretScope.USER:
-                    msg += f" for the same '{secret.user}' user"
+            if secret_exists:
                 raise EntityExistsError(msg)
-
-            serialized_values = base64.b64encode(
-                json.dumps(secret.clear_values).encode("utf-8")
-            )
-
-            if len(serialized_values) > TEXT_FIELD_MAX_LENGTH:
-                raise ValueError(
-                    "Database representation of secret values exceeds max "
-                    "length. Please use fewer values or consider using shorter "
-                    "secret keys and/or values."
-                )
 
             new_secret = SecretSchema.from_request(secret)
             session.add(new_secret)
@@ -239,25 +283,37 @@ class SqlSecretsStore(BaseSecretsStore):
 
             return new_secret.to_model()
 
+    @track(AnalyticsEvent.UPDATED_SECRET)
     def update_secret(
         self, secret_id: UUID, secret_update: SecretUpdateModel
     ) -> SecretResponseModel:
-        """Updates an existing secret.
+        """Updates a secret.
 
-        Values that are specified as `None` in the update that are present in
-        the existing secret will be removed from the existing secret. Values
-        that are present in both secrets will be overwritten. All other values
-        in both the existing secret and the update will be kept.
+        Secret values that are specified as `None` in the update that are
+        present in the existing secret are removed from the existing secret.
+        Values that are present in both secrets are overwritten. All other
+        values in both the existing secret and the update are kept (merged).
+
+        If the update includes a change of name or scope, the scoping rules
+        enforced in the secrets store are used to validate the update:
+
+          - only one workspace-scoped secret with the given name can exist
+            in the target workspace.
+          - only one user-scoped secret with the given name can exist in the
+            target workspace for the target user.
 
         Args:
-            secret_id: The id of the secret to update.
-            secret_update: The update to be applied to the secret.
+            secret_id: The ID of the secret to be updated.
+            secret_update: The update to be applied.
 
         Returns:
             The updated secret.
 
         Raises:
-            KeyError: If no secret with the given id exists.
+            KeyError: if the secret doesn't exist.
+            EntityExistsError: If a secret with the same name already exists in
+                the same scope.
+            ValueError: if the secret is invalid.
         """
         with Session(self.engine) as session:
             existing_secret = session.exec(
@@ -266,6 +322,25 @@ class SqlSecretsStore(BaseSecretsStore):
 
             if not existing_secret:
                 raise KeyError(f"Secret with ID {secret_id} not found.")
+
+            # A change in name or scope requires a check of the scoping rules.
+            if (
+                secret_update.name is not None
+                and existing_secret.name != secret_update.name
+                or secret_update.scope is not None
+                and existing_secret.scope != secret_update.scope
+            ):
+                secret_exists, msg = self._check_secret_scope(
+                    session=session,
+                    secret_name=secret_update.name,
+                    scope=secret_update.scope,
+                    workspace=secret_update.workspace,
+                    user=secret_update.user,
+                    exclude_secret_id=secret_id,
+                )
+                if secret_exists:
+                    raise EntityExistsError(msg)
+
             existing_secret.update(secret_update=secret_update)
             session.add(existing_secret)
             session.commit()
@@ -308,14 +383,14 @@ class SqlSecretsStore(BaseSecretsStore):
         """
         with Session(self.engine) as session:
             query = select(SecretSchema)
-            return self.filter_and_paginate(
+            return self.zen_store.filter_and_paginate(
                 session=session,
                 query=query,
                 table=SecretSchema,
                 filter_model=secret_filter_model,
             )
 
-    @track(AnalyticsEvent.DELETED_FLAVOR)
+    @track(AnalyticsEvent.DELETED_SECRET)
     def delete_secret(self, secret_id: UUID) -> None:
         """Delete a secret.
 

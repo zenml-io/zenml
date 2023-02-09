@@ -15,13 +15,13 @@
 from abc import ABC, abstractmethod
 from uuid import UUID
 
-from zenml.models.page_model import Page
 from zenml.models import (
+    SecretFilterModel,
     SecretRequestModel,
     SecretResponseModel,
-    SecretFilterModel,
     SecretUpdateModel,
 )
+from zenml.models.page_model import Page
 
 
 class SecretsStoreInterface(ABC):
@@ -53,6 +53,14 @@ class SecretsStoreInterface(ABC):
     ) -> SecretResponseModel:
         """Creates a new secret.
 
+        The new secret is also validated against the scoping rules enforced in
+        the secrets store:
+
+          - only one workspace-scoped secret with the given name can exist
+            in the target workspace.
+          - only one user-scoped secret with the given name can exist in the
+            target workspace for the target user.
+
         Args:
             secret: The secret to create.
 
@@ -60,8 +68,10 @@ class SecretsStoreInterface(ABC):
             The newly created secret.
 
         Raises:
-            KeyError: if the workspace does not exist.
-            EntityExistsError: If an identical secret already exists.
+            KeyError: if the user or workspace does not exist.
+            EntityExistsError: If a secret with the same name already exists in
+                the same scope.
+            ValueError: if the secret is invalid.
         """
 
     @abstractmethod
@@ -100,10 +110,18 @@ class SecretsStoreInterface(ABC):
     ) -> SecretResponseModel:
         """Updates a secret.
 
-        Values that are specified as `None` in the update that are present in
-        the existing secret will be removed from the existing secret. Values
-        that are present in both secrets will be overwritten. All other values
-        in both the existing secret and the update will be kept.
+        Secret values that are specified as `None` in the update that are
+        present in the existing secret are removed from the existing secret.
+        Values that are present in both secrets are overwritten. All other
+        values in both the existing secret and the update are kept (merged).
+
+        If the update includes a change of name or scope, the scoping rules
+        enforced in the secrets store are used to validate the update:
+
+          - only one workspace-scoped secret with the given name can exist
+            in the target workspace.
+          - only one user-scoped secret with the given name can exist in the
+            target workspace for the target user.
 
         Args:
             secret_id: The ID of the secret to be updated.
@@ -114,6 +132,9 @@ class SecretsStoreInterface(ABC):
 
         Raises:
             KeyError: if the secret doesn't exist.
+            EntityExistsError: If a secret with the same name already exists in
+                the same scope.
+            ValueError: if the secret is invalid.
         """
 
     @abstractmethod
