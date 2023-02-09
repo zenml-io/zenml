@@ -1250,7 +1250,7 @@ def get_package_information(package_names: List[str]) -> Dict[str, str]:
         package_names: The package names to get the information for.
 
     Returns:
-        A dictionary of all installed packages.
+        A dictionary of the name:version for the package names passed in.
     """
     import pkg_resources
 
