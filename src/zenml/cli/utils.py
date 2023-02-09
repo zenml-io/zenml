@@ -1230,3 +1230,32 @@ def list_options(filter_model: Type[BaseFilterModel]) -> Callable[[F], F]:
         return wrapper(func)
 
     return inner_decorator
+
+
+def get_installed_local_packages() -> Dict[str, str]:
+    """Get a dictionary of all locally installed packages.
+
+    Returns:
+        A dictionary of all locally installed packages and their versions.
+    """
+    import pkg_resources
+
+    return {pkg.key: pkg.version for pkg in pkg_resources.working_set}
+
+
+def get_package_information(package_names: List[str]) -> Dict[str, str]:
+    """Get a dictionary of specific installed packages.
+
+    Args:
+        package_names: The package names to get the information for.
+
+    Returns:
+        A dictionary of all installed packages.
+    """
+    import pkg_resources
+
+    return {
+        pkg.key: pkg.version
+        for pkg in pkg_resources.working_set
+        if pkg.key in package_names
+    }
