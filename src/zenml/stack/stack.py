@@ -904,12 +904,12 @@ class Stack:
 
         if required_builds and not deployment.build:
             raise RuntimeError("Missing docker builds.")
-
-        build = deployment.build
+        elif not deployment.build:
+            return None
 
         for build_config in required_builds:
             try:
-                image = build.get_image(
+                image = deployment.build.get_image(
                     key=build_config.key, step=build_config.step_name
                 )
             except KeyError:
@@ -917,8 +917,11 @@ class Stack:
                     f"Missing build for key: {build_config.key}."
                 )
 
-            if build_config.settings_hash != build.get_settings_hash(
-                key=build_config.key, step=build_config.step_name
+            if (
+                build_config.settings_hash
+                != deployment.build.get_settings_hash(
+                    key=build_config.key, step=build_config.step_name
+                )
             ):
                 logger.warning(
                     "The Docker settings used to build the image `%s` are "

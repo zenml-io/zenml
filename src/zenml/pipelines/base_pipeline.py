@@ -431,6 +431,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         enable_cache: Optional[bool] = None,
         enable_artifact_metadata: Optional[bool] = None,
         schedule: Optional[Schedule] = None,
+        build: Union[str, "UUID", "PipelineBuildBaseModel", None] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         step_configurations: Optional[
             Mapping[str, "StepConfigurationUpdateOrDict"]
@@ -438,7 +439,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
         extra: Optional[Dict[str, Any]] = None,
         config_path: Optional[str] = None,
         unlisted: bool = False,
-        build: Union[str, "UUID", "PipelineBuildBaseModel", None] = None,
     ) -> Any:
         """Runs the pipeline on the active stack of the current repository.
 
@@ -477,7 +477,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             return
 
         with event_handler(AnalyticsEvent.RUN_PIPELINE) as analytics_handler:
-            deployment, pipeline_spec, schedule = self._compile(
+            deployment, pipeline_spec, schedule, build = self._compile(
                 config_path=config_path,
                 run_name=run_name,
                 enable_cache=enable_cache,
@@ -485,6 +485,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 steps=step_configurations,
                 settings=settings,
                 schedule=schedule,
+                build=build,
                 extra=extra,
             )
 
@@ -854,7 +855,10 @@ class BasePipeline(metaclass=BasePipelineMeta):
     def _compile(
         self, config_path: Optional[str] = None, **run_configuration_args: Any
     ) -> Tuple[
-        "PipelineDeploymentBaseModel", "PipelineSpec", Optional["Schedule"]
+        "PipelineDeploymentBaseModel",
+        "PipelineSpec",
+        Optional["Schedule"],
+        Union["PipelineBuildBaseModel", UUID, None],
     ]:
         # Activating the built-in integrations to load all materializers
         from zenml.integrations.registry import integration_registry
@@ -877,7 +881,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             run_configuration=run_config,
         )
 
-        return deployment, pipeline_spec, run_config.schedule
+        return deployment, pipeline_spec, run_config.schedule, run_config.build
 
     def register(self) -> "PipelineResponseModel":
         """Register the pipeline in the server.
@@ -984,7 +988,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         deployment: "PipelineDeploymentBaseModel",
         pipeline_spec: "PipelineSpec",
         pipeline_id: Optional[UUID] = None,
-        build: Union[str, "UUID", "PipelineBuildBaseModel", None] = None,
+        build: Union["UUID", "PipelineBuildBaseModel", None] = None,
     ) -> Optional["PipelineBuildResponseModel"]:
         if not build:
             return self._build(deployment=deployment, pipeline_id=pipeline_id)
@@ -995,9 +999,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
             "code that was included in the Docker images which might "
             "differ from the code in your client environment."
         )
-
-        if isinstance(build, str):
-            build = UUID(build, version=4)
 
         build_model = None
 
@@ -1049,7 +1050,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         ] = None,
         config_path: Optional[str] = None,
     ) -> Optional["PipelineBuildResponseModel"]:
-        deployment, pipeline_spec, _ = self._compile(
+        deployment, pipeline_spec, _, _ = self._compile(
             config_path=config_path,
             steps=step_configurations,
             settings=settings,
