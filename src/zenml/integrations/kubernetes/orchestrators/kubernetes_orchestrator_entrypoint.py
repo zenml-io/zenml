@@ -19,7 +19,7 @@ import socket
 from kubernetes import client as k8s_client
 
 from zenml.client import Client
-from zenml.constants import DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE
+from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
 )
@@ -34,9 +34,7 @@ from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
     build_pod_manifest,
 )
 from zenml.logger import get_logger
-from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
 from zenml.orchestrators.dag_runner import ThreadedDagRunner
-from zenml.utils import yaml_utils
 
 logger = get_logger(__name__)
 
@@ -49,7 +47,7 @@ def parse_args() -> argparse.Namespace:
     """
     parser = argparse.ArgumentParser()
     parser.add_argument("--run_name", type=str, required=True)
-    parser.add_argument("--image_name", type=str, required=True)
+    parser.add_argument("--deployment_id", type=str, required=True)
     parser.add_argument("--kubernetes_namespace", type=str, required=True)
     return parser.parse_args()
 
@@ -68,8 +66,8 @@ def main() -> None:
 
     orchestrator_run_id = socket.gethostname()
 
-    config_dict = yaml_utils.read_yaml(DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE)
-    deployment_config = PipelineDeploymentBaseModel.parse_obj(config_dict)
+    deployment_config = Client().get_deployment(args.deployment_id)
+    assert deployment_config.build
 
     pipeline_dag = {}
     step_name_to_pipeline_step_name = {}
@@ -96,8 +94,11 @@ def main() -> None:
         pod_name = kube_utils.sanitize_pod_name(pod_name)
 
         pipeline_step_name = step_name_to_pipeline_step_name[step_name]
+        image = deployment_config.build.get_image(
+            key=ORCHESTRATOR_DOCKER_IMAGE_KEY, step=pipeline_step_name
+        )
         step_args = StepEntrypointConfiguration.get_entrypoint_arguments(
-            step_name=pipeline_step_name
+            step_name=pipeline_step_name, deployment_id=deployment_config.id
         )
 
         step_config = deployment_config.step_configurations[
@@ -112,7 +113,7 @@ def main() -> None:
             pod_name=pod_name,
             run_name=args.run_name,
             pipeline_name=deployment_config.pipeline_configuration.name,
-            image_name=args.image_name,
+            image_name=image,
             command=step_command,
             args=step_args,
             env={ENV_ZENML_KUBERNETES_RUN_ID: orchestrator_run_id},

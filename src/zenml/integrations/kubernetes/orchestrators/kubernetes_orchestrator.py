@@ -296,13 +296,21 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         orchestrator_run_name = get_orchestrator_run_name(pipeline_name)
         pod_name = kube_utils.sanitize_pod_name(orchestrator_run_name)
 
-        # Get Docker image name (for all pods).
         assert stack.container_registry
-        # TODO: figure out which image to use for the orchestrator pod, allow
-        # per-step images
-        image_name = deployment.pipeline_configuration.extra[
-            ORCHESTRATOR_DOCKER_IMAGE_KEY
-        ]
+
+        # Get Docker image for the orchestrator pod
+        try:
+            image = deployment.build.get_image(
+                key=ORCHESTRATOR_DOCKER_IMAGE_KEY
+            )
+        except KeyError:
+            # If no generic pipeline image exists (which means all steps have
+            # custom builds) we use a random step image as all of them include
+            # dependencies for the active stack
+            pipeline_step_name = next(iter(deployment.step_configurations))
+            image = deployment.build.get_image(
+                key=ORCHESTRATOR_DOCKER_IMAGE_KEY, step=pipeline_step_name
+            )
 
         # Build entrypoint command and args for the orchestrator pod.
         # This will internally also build the command/args for all step pods.
@@ -311,7 +319,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         )
         args = KubernetesOrchestratorEntrypointConfiguration.get_entrypoint_arguments(
             run_name=orchestrator_run_name,
-            image_name=image_name,
+            deployment_id=deployment.id,
             kubernetes_namespace=self.config.kubernetes_namespace,
         )
 
@@ -342,7 +350,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 run_name=orchestrator_run_name,
                 pod_name=pod_name,
                 pipeline_name=pipeline_name,
-                image_name=image_name,
+                image_name=image,
                 command=command,
                 args=args,
                 service_account_name=service_account_name,
@@ -365,7 +373,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             run_name=orchestrator_run_name,
             pod_name=pod_name,
             pipeline_name=pipeline_name,
-            image_name=image_name,
+            image_name=image,
             command=command,
             args=args,
             service_account_name=service_account_name,
