@@ -71,6 +71,7 @@ from zenml.models import (
     PipelineBuildRequestModel,
     PipelineBuildResponseModel,
     PipelineDeploymentFilterModel,
+    PipelineDeploymentResponseModel,
     PipelineFilterModel,
     PipelineResponseModel,
     PipelineRunFilterModel,
@@ -2651,7 +2652,7 @@ class Client(metaclass=ClientMetaClass):
         pipeline_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[Union[str, UUID]] = None,
         build_id: Optional[Union[str, UUID]] = None,
-    ) -> Page[PipelineBuildResponseModel]:
+    ) -> Page[PipelineDeploymentResponseModel]:
         """List all deployments.
 
         Args:
@@ -2690,7 +2691,9 @@ class Client(metaclass=ClientMetaClass):
             deployment_filter_model=deployment_filter_model
         )
 
-    def get_deployment(self, id_or_prefix: str) -> PipelineBuildResponseModel:
+    def get_deployment(
+        self, id_or_prefix: str
+    ) -> PipelineDeploymentResponseModel:
         """Get a deployment by id or prefix.
 
         Args:
