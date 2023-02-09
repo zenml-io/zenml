@@ -23,9 +23,10 @@ from zenml.orchestrators.step_launcher import StepLauncher
 from zenml.stack import Flavor, Stack, StackComponent, StackComponentConfig
 
 if TYPE_CHECKING:
-    from zenml.config.build_configuration import PipelineBuild
-    from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.config.step_configurations import Step
+    from zenml.models.pipeline_deployment_models import (
+        PipelineDeploymentResponseModel,
+    )
 
 logger = get_logger(__name__)
 
@@ -74,7 +75,7 @@ class BaseOrchestrator(StackComponent, ABC):
     the pipeline to some remote infrastructure.
     """
 
-    _active_deployment: Optional["PipelineDeployment"] = None
+    _active_deployment: Optional["PipelineDeploymentResponseModel"] = None
 
     @property
     def config(self) -> BaseOrchestratorConfig:
@@ -99,9 +100,8 @@ class BaseOrchestrator(StackComponent, ABC):
     @abstractmethod
     def prepare_or_run_pipeline(
         self,
-        deployment: "PipelineDeployment",
+        deployment: "PipelineDeploymentResponseModel",
         stack: "Stack",
-        build: Optional["PipelineBuild"],
     ) -> Any:
         """The method needs to be implemented by the respective orchestrator.
 
@@ -143,9 +143,8 @@ class BaseOrchestrator(StackComponent, ABC):
 
     def run(
         self,
-        deployment: "PipelineDeployment",
+        deployment: "PipelineDeploymentResponseModel",
         stack: "Stack",
-        build: Optional["PipelineBuild"],
     ) -> Any:
         """Runs a pipeline on a stack.
 
@@ -159,7 +158,7 @@ class BaseOrchestrator(StackComponent, ABC):
         self._prepare_run(deployment=deployment)
         try:
             result = self.prepare_or_run_pipeline(
-                deployment=deployment, stack=stack, build=build
+                deployment=deployment, stack=stack
             )
         finally:
             self._cleanup_run()
@@ -201,7 +200,9 @@ class BaseOrchestrator(StackComponent, ABC):
 
         return not step.config.resource_settings.empty
 
-    def _prepare_run(self, deployment: "PipelineDeployment") -> None:
+    def _prepare_run(
+        self, deployment: "PipelineDeploymentResponseModel"
+    ) -> None:
         """Prepares a run.
 
         Args:

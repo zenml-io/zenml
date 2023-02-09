@@ -62,11 +62,19 @@ def upgrade() -> None:
         sa.Column("stack_id", sqlmodel.sql.sqltypes.GUID(), nullable=True),
         sa.Column("pipeline_id", sqlmodel.sql.sqltypes.GUID(), nullable=True),
         sa.Column("build_id", sqlmodel.sql.sqltypes.GUID(), nullable=True),
+        sa.Column("schedule_id", sqlmodel.sql.sqltypes.GUID(), nullable=True),
         sa.Column("user_id", sqlmodel.sql.sqltypes.GUID(), nullable=True),
         sa.Column(
             "workspace_id", sqlmodel.sql.sqltypes.GUID(), nullable=False
         ),
-        sa.Column("configuration", sa.TEXT(), nullable=False),
+        sa.Column("pipeline_configuration", sa.TEXT(), nullable=False),
+        sa.Column("step_configurations", sa.TEXT(), nullable=False),
+        sa.Column("client_environment", sa.TEXT(), nullable=False),
+        sa.Column(
+            "run_name_template",
+            sqlmodel.sql.sqltypes.AutoString(),
+            nullable=False,
+        ),
         sa.Column("id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
         sa.Column("created", sa.DateTime(), nullable=False),
         sa.Column("updated", sa.DateTime(), nullable=False),
@@ -74,6 +82,12 @@ def upgrade() -> None:
             ["build_id"],
             ["pipeline_build.id"],
             name="fk_pipeline_deployment_build_id_pipeline_build",
+            ondelete="SET NULL",
+        ),
+        sa.ForeignKeyConstraint(
+            ["schedule_id"],
+            ["schedule.id"],
+            name="fk_pipeline_deployment_schedule_id_schedule",
             ondelete="SET NULL",
         ),
         sa.ForeignKeyConstraint(

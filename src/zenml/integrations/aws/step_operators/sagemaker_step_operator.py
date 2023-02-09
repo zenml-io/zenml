@@ -29,8 +29,10 @@ from zenml.step_operators import BaseStepOperator
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
-    from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.config.step_run_info import StepRunInfo
+    from zenml.models.pipeline_deployment_models import (
+        PipelineDeploymentBaseModel,
+    )
 
 logger = get_logger(__name__)
 
@@ -107,12 +109,12 @@ class SagemakerStepOperator(BaseStepOperator):
         )
 
     def get_docker_builds(
-        self, deployment: "PipelineDeployment"
+        self, deployment: "PipelineDeploymentBaseModel"
     ) -> List["BuildConfiguration"]:
         builds = []
-        for step_name, step in deployment.steps.items():
+        for step_name, step in deployment.step_configurations.items():
             if step.config.step_operator == self.name:
-                tag = f"{deployment.pipeline.name}-{step_name}-sagemaker"
+                tag = f"{deployment.pipeline_configuration.name}-{step_name}-sagemaker"
                 build = BuildConfiguration(
                     key=SAGEMAKER_DOCKER_IMAGE_KEY,
                     settings=step.config.docker_settings,

@@ -52,7 +52,6 @@ if TYPE_CHECKING:
     from zenml.annotators import BaseAnnotator
     from zenml.artifact_stores import BaseArtifactStore
     from zenml.config.base_settings import BaseSettings
-    from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.config.step_configurations import StepConfiguration
     from zenml.config.step_run_info import StepRunInfo
     from zenml.container_registries import BaseContainerRegistry
@@ -63,6 +62,10 @@ if TYPE_CHECKING:
     from zenml.feature_stores import BaseFeatureStore
     from zenml.image_builders import BaseImageBuilder
     from zenml.model_deployers import BaseModelDeployer
+    from zenml.models.pipeline_deployment_models import (
+        PipelineDeploymentBaseModel,
+        PipelineDeploymentResponseModel,
+    )
     from zenml.orchestrators import BaseOrchestrator
     from zenml.secrets_managers import BaseSecretsManager
     from zenml.stack import StackComponent
@@ -737,7 +740,7 @@ class Stack:
         self._validate_secrets(raise_exception=fail_if_secrets_missing)
 
     def prepare_pipeline_deployment(
-        self, deployment: "PipelineDeployment"
+        self, deployment: "PipelineDeploymentResponseModel"
     ) -> None:
         """Prepares the stack for a pipeline deployment.
 
@@ -752,6 +755,7 @@ class Stack:
                 ZenML server with a local one.
         """
         self.validate(fail_if_secrets_missing=True)
+        self._validate_build(deployment=deployment)
 
         for component in self.components.values():
             if not component.is_running:
@@ -789,7 +793,7 @@ class Stack:
             )
 
     def get_docker_builds(
-        self, deployment: "PipelineDeployment"
+        self, deployment: "PipelineDeploymentBaseModel"
     ) -> List["BuildConfiguration"]:
         # TODO: maybe make this a dict of some sort, BuildConfig -> List[key]
         # so we can avoid building the same thing multiple times
@@ -801,7 +805,7 @@ class Stack:
         )
 
     def build(
-        self, deployment: "PipelineDeployment"
+        self, deployment: "PipelineDeploymentBaseModel"
     ) -> Optional[PipelineBuild]:
         required_builds = self.get_docker_builds(deployment=deployment)
         if not required_builds:
@@ -810,7 +814,7 @@ class Stack:
 
         logger.info(
             "Building Docker image(s) for pipeline `%s`.",
-            deployment.pipeline.name,
+            deployment.pipeline_configuration.name,
         )
 
         docker_image_builder = PipelineDockerImageBuilder()
@@ -879,8 +883,7 @@ class Stack:
 
     def deploy_pipeline(
         self,
-        deployment: "PipelineDeployment",
-        build: Optional["PipelineBuild"],
+        deployment: "PipelineDeploymentResponseModel",
     ) -> Any:
         """Deploys a pipeline on this stack.
 
@@ -890,20 +893,18 @@ class Stack:
         Returns:
             The return value of the call to `orchestrator.run_pipeline(...)`.
         """
-        self._validate_build(deployment=deployment, build=build)
-        return self.orchestrator.run(
-            deployment=deployment, stack=self, build=build
-        )
+        return self.orchestrator.run(deployment=deployment, stack=self)
 
     def _validate_build(
         self,
-        deployment: "PipelineDeployment",
-        build: Optional["PipelineBuild"],
+        deployment: "PipelineDeploymentResponseModel",
     ) -> None:
         required_builds = self.get_docker_builds(deployment=deployment)
 
-        if required_builds and not build:
+        if required_builds and not deployment.build:
             raise RuntimeError("Missing docker builds.")
+
+        build = deployment.build.configuration if deployment.build else None
 
         for build_config in required_builds:
             try:

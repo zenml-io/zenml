@@ -24,7 +24,7 @@ from zenml.config.pipeline_configurations import (
     PipelineRunConfiguration,
     PipelineSpec,
 )
-from zenml.config.pipeline_deployment import PipelineDeployment
+from zenml.config.pipeline_deployment import PipelineDeploymentBaseModel
 from zenml.exceptions import (
     PipelineInterfaceError,
     StackValidationError,
@@ -388,14 +388,16 @@ def test_setting_enable_cache_at_run_level_overrides_all_decorator_values(
 ):
     """Test that `pipeline.run(enable_cache=...)` overrides decorator values."""
 
-    def assert_cache_enabled(pipeline_deployment: PipelineDeployment):
-        assert pipeline_deployment.pipeline.enable_cache is True
-        for step_ in pipeline_deployment.steps.values():
+    def assert_cache_enabled(pipeline_deployment: PipelineDeploymentBaseModel):
+        assert pipeline_deployment.pipeline_configuration.enable_cache is True
+        for step_ in pipeline_deployment.step_configurations.values():
             assert step_.config.enable_cache is True
 
-    def assert_cache_disabled(pipeline_deployment: PipelineDeployment):
-        assert pipeline_deployment.pipeline.enable_cache is False
-        for step_ in pipeline_deployment.steps.values():
+    def assert_cache_disabled(
+        pipeline_deployment: PipelineDeploymentBaseModel,
+    ):
+        assert pipeline_deployment.pipeline_configuration.enable_cache is False
+        for step_ in pipeline_deployment.step_configurations.values():
             assert step_.config.enable_cache is False
 
     cache_enabled_mock = mocker.MagicMock(side_effect=assert_cache_enabled)

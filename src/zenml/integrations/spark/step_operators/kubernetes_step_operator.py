@@ -35,8 +35,10 @@ from zenml.utils.pipeline_docker_image_builder import (
 from zenml.utils.source_utils import get_source_root_path
 
 if TYPE_CHECKING:
-    from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.config.step_configurations import StepConfiguration
+    from zenml.models.pipeline_deployment_models import (
+        PipelineDeploymentBaseModel,
+    )
 
 logger = get_logger(__name__)
 
@@ -112,7 +114,7 @@ class KubernetesSparkStepOperator(SparkStepOperator):
 
     def prepare_pipeline_deployment(
         self,
-        deployment: "PipelineDeployment",
+        deployment: "PipelineDeploymentBaseModel",
         stack: "Stack",
     ) -> None:
         """Build a Docker image and push it to the container registry.
@@ -126,7 +128,7 @@ class KubernetesSparkStepOperator(SparkStepOperator):
         """
         steps_to_run = [
             step
-            for step in deployment.steps.values()
+            for step in deployment.step_configurations.values()
             if step.config.step_operator == self.name
         ]
         if not steps_to_run:

@@ -20,7 +20,6 @@ from uuid import UUID
 from pydantic import BaseModel, Extra
 
 from zenml.config.build_configuration import BuildConfiguration
-from zenml.config.pipeline_deployment import PipelineDeployment
 from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import StackComponentType
@@ -31,8 +30,11 @@ from zenml.utils import secret_utils, settings_utils
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.metadata.metadata_types import MetadataType
+    from zenml.models.pipeline_deployment_models import (
+        PipelineDeploymentBaseModel,
+        PipelineDeploymentResponseModel,
+    )
     from zenml.stack import Stack, StackValidator
-
 
 logger = get_logger(__name__)
 
@@ -379,7 +381,8 @@ class StackComponent:
         return None
 
     def get_settings(
-        self, container: Union["Step", "StepRunInfo", "PipelineDeployment"]
+        self,
+        container: Union["Step", "StepRunInfo", "PipelineDeploymentBaseModel"],
     ) -> "BaseSettings":
         """Gets settings for this stack component.
 
@@ -411,7 +414,7 @@ class StackComponent:
         all_settings = (
             container.config.settings
             if isinstance(container, (Step, StepRunInfo))
-            else container.pipeline.settings
+            else container.pipeline_configuration.settings
         )
 
         if key in all_settings:
@@ -489,13 +492,13 @@ class StackComponent:
         return None
 
     def get_docker_builds(
-        self, deployment: "PipelineDeployment"
+        self, deployment: "PipelineDeploymentBaseModel"
     ) -> List["BuildConfiguration"]:
         return []
 
     def prepare_pipeline_deployment(
         self,
-        deployment: "PipelineDeployment",
+        deployment: "PipelineDeploymentResponseModel",
         stack: "Stack",
     ) -> None:
         """Prepares deploying the pipeline.

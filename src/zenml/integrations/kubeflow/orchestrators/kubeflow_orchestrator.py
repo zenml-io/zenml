@@ -68,7 +68,9 @@ from zenml.utils import io_utils, settings_utils
 
 if TYPE_CHECKING:
     from zenml.config.build_configuration import PipelineBuild
-    from zenml.config.pipeline_deployment import PipelineDeployment
+    from zenml.models.pipeline_deployment_models import (
+        PipelineDeploymentBaseModel,
+    )
     from zenml.stack import Stack
     from zenml.steps import ResourceSettings
 
@@ -384,7 +386,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
 
     def prepare_or_run_pipeline(
         self,
-        deployment: "PipelineDeployment",
+        deployment: "PipelineDeploymentBaseModel",
         stack: "Stack",
         build: Optional["PipelineBuild"],
     ) -> Any:
@@ -451,7 +453,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
             # Dictionary of container_ops index by the associated step name
             step_name_to_container_op: Dict[str, dsl.ContainerOp] = {}
 
-            for step_name, step in deployment.steps.items():
+            for step_name, step in deployment.step_configurations.items():
                 image = build.get_image(
                     key=ORCHESTRATOR_DOCKER_IMAGE_KEY, step=step_name
                 )
@@ -508,7 +510,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                 step_name_to_container_op[step.config.name] = container_op
 
         orchestrator_run_name = get_orchestrator_run_name(
-            pipeline_name=deployment.pipeline.name
+            pipeline_name=deployment.pipeline_configuration.name
         )
 
         # Get a filepath to use to save the finished yaml to
@@ -520,7 +522,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
         # write the argo pipeline yaml
         KFPCompiler()._create_and_write_workflow(
             pipeline_func=_construct_kfp_pipeline,
-            pipeline_name=deployment.pipeline.name,
+            pipeline_name=deployment.pipeline_configuration.name,
             package_path=pipeline_file_path,
         )
         logger.info(
@@ -537,7 +539,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
 
     def _upload_and_run_pipeline(
         self,
-        deployment: "PipelineDeployment",
+        deployment: "PipelineDeploymentBaseModel",
         pipeline_file_path: str,
         run_name: str,
     ) -> None:
@@ -551,7 +553,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
         Raises:
             RuntimeError: If Kubeflow API returns an error.
         """
-        pipeline_name = deployment.pipeline.name
+        pipeline_name = deployment.pipeline_configuration.name
         settings = cast(
             KubeflowOrchestratorSettings, self.get_settings(deployment)
         )

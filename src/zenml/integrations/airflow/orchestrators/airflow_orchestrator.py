@@ -53,12 +53,14 @@ from zenml.utils import daemon, io_utils
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.config.build_configuration import PipelineBuild
-    from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.integrations.airflow.orchestrators.dag_generator import (
         DagConfiguration,
         TaskConfiguration,
     )
     from zenml.metadata.metadata_types import MetadataType
+    from zenml.models.pipeline_deployment_models import (
+        PipelineDeploymentResponseModel,
+    )
     from zenml.pipelines import Schedule
     from zenml.stack import Stack
 
@@ -196,7 +198,7 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
 
     def prepare_pipeline_deployment(
         self,
-        deployment: "PipelineDeployment",
+        deployment: "PipelineDeploymentResponseModel",
         stack: "Stack",
     ) -> None:
         """Builds a Docker image to run pipeline steps.
@@ -210,7 +212,7 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
 
     def prepare_or_run_pipeline(
         self,
-        deployment: "PipelineDeployment",
+        deployment: "PipelineDeploymentBaseModel",
         stack: "Stack",
         build: Optional["PipelineBuild"],
     ) -> Any:
@@ -232,7 +234,7 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
         command = StepEntrypointConfiguration.get_entrypoint_command()
 
         tasks = []
-        for step_name, step in deployment.steps.items():
+        for step_name, step in deployment.step_configurations.items():
             settings = cast(
                 AirflowOrchestratorSettings, self.get_settings(step)
             )
@@ -258,7 +260,7 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
         image = build.get_image(key=ORCHESTRATOR_DOCKER_IMAGE_KEY)
 
         dag_id = pipeline_settings.dag_id or get_orchestrator_run_name(
-            pipeline_name=deployment.pipeline.name
+            pipeline_name=deployment.pipeline_configuration.name
         )
         dag_config = dag_generator_values.dag_configuration_class(
             id=dag_id,

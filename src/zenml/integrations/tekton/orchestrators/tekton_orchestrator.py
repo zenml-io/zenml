@@ -47,7 +47,9 @@ from zenml.utils import io_utils
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.config.build_configuration import PipelineBuild
-    from zenml.config.pipeline_deployment import PipelineDeployment
+    from zenml.models.pipeline_deployment_models import (
+        PipelineDeploymentBaseModel,
+    )
     from zenml.stack import Stack
     from zenml.steps import ResourceSettings
 
@@ -295,7 +297,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
 
     def prepare_or_run_pipeline(
         self,
-        deployment: "PipelineDeployment",
+        deployment: "PipelineDeploymentBaseModel",
         stack: "Stack",
         build: Optional["PipelineBuild"],
     ) -> Any:
@@ -326,7 +328,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
         assert stack.container_registry
 
         orchestrator_run_name = get_orchestrator_run_name(
-            pipeline_name=deployment.pipeline.name
+            pipeline_name=deployment.pipeline_configuration.name
         )
 
         def _construct_kfp_pipeline() -> None:
@@ -341,7 +343,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             # Dictionary of container_ops index by the associated step name
             step_name_to_container_op: Dict[str, dsl.ContainerOp] = {}
 
-            for step_name, step in deployment.steps.items():
+            for step_name, step in deployment.step_configurations.items():
                 image = build.get_image(
                     key=ORCHESTRATOR_DOCKER_IMAGE_KEY, step=step_name
                 )

@@ -18,7 +18,7 @@ import pytest
 
 from zenml.config.compiler import Compiler
 from zenml.config.pipeline_configurations import PipelineRunConfiguration
-from zenml.config.pipeline_deployment import PipelineDeployment
+from zenml.config.pipeline_deployment import PipelineDeploymentBaseModel
 from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError, StackValidationError
 from zenml.stack import Stack
@@ -144,10 +144,10 @@ def test_stack_prepare_pipeline_run(
     """Tests that the stack prepares a pipeline run by calling the prepare methods of all its components."""
     pipeline = one_step_pipeline(empty_step())
     run_name = "some_unique_pipeline_run_name"
-    deployment = PipelineDeployment(
+    deployment = PipelineDeploymentBaseModel(
         run_name=run_name,
         stack_id=uuid4(),
-        pipeline=pipeline.configuration,
+        pipeline_configuration=pipeline.configuration,
     )
     stack_with_mock_components.prepare_pipeline_deployment(deployment)
     for component in stack_with_mock_components.components.values():
@@ -408,10 +408,10 @@ def test_requires_remote_server(stack_with_mock_components, mocker):
 
 def test_deployment_server_validation(mocker, stack_with_mock_components):
     """Tests that the deployment validation fails when the stack requires a remote server but the store is local."""
-    deployment = PipelineDeployment(
+    deployment = PipelineDeploymentBaseModel(
         run_name="",
         stack_id=uuid4(),
-        pipeline={"name": "", "enable_cache": True},
+        pipeline_configuration={"name": "", "enable_cache": True},
     )
 
     ######### Remote server #########

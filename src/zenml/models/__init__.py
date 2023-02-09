@@ -171,6 +171,7 @@ PipelineDeploymentResponseModel.update_forward_refs(
     PipelineResponseModel=PipelineResponseModel,
     StackResponseModel=StackResponseModel,
     PipelineBuildResponseModel=PipelineBuildResponseModel,
+    ScheduleResponseModel=ScheduleResponseModel,
 )
 
 PipelineRunResponseModel.update_forward_refs(

@@ -42,7 +42,9 @@ from zenml.stack import StackValidator
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
 
 if TYPE_CHECKING:
-    from zenml.config.pipeline_deployment import PipelineDeployment
+    from zenml.models.pipeline_deployment_models import (
+        PipelineDeploymentBaseModel,
+    )
 
 logger = get_logger(__name__)
 
@@ -141,12 +143,12 @@ class SeldonModelDeployer(BaseModelDeployer):
         )
 
     def get_docker_builds(
-        self, deployment: "PipelineDeployment"
+        self, deployment: "PipelineDeploymentBaseModel"
     ) -> List["BuildConfiguration"]:
         builds = []
-        for step_name, step in deployment.steps.items():
+        for step_name, step in deployment.step_configurations.items():
             if step.config.extra.get(SELDON_CUSTOM_DEPLOYMENT, False) is True:
-                tag = f"{deployment.pipeline.name}-{step_name}-seldon"
+                tag = f"{deployment.pipeline_configuration.name}-{step_name}-seldon"
                 build = BuildConfiguration(
                     key=SELDON_DOCKER_IMAGE_KEY,
                     settings=step.config.docker_settings,

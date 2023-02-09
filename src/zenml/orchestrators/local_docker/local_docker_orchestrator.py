@@ -42,8 +42,9 @@ from zenml.stack import Stack, StackValidator
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
-    from zenml.config.build_configuration import PipelineBuild
-    from zenml.config.pipeline_deployment import PipelineDeployment
+    from zenml.models.pipeline_deployment_models import (
+        PipelineDeploymentResponseModel,
+    )
 
 logger = get_logger(__name__)
 
@@ -97,9 +98,8 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
 
     def prepare_or_run_pipeline(
         self,
-        deployment: "PipelineDeployment",
+        deployment: "PipelineDeploymentResponseModel",
         stack: "Stack",
-        build: Optional["PipelineBuild"],
     ) -> Any:
         """Sequentially runs all pipeline steps in local Docker containers.
 
@@ -107,7 +107,8 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
             deployment: The pipeline deployment to prepare or run.
             stack: The stack the pipeline will run on.
         """
-        assert build
+        assert deployment.build
+
         if deployment.schedule:
             logger.warning(
                 "Local Docker Orchestrator currently does not support the"
@@ -137,7 +138,7 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
         start_time = time.time()
 
         # Run each step
-        for step_name, step in deployment.steps.items():
+        for step_name, step in deployment.step_configurations.items():
             if self.requires_resources_in_orchestration_environment(step):
                 logger.warning(
                     "Specifying step resources is not supported for the local "
@@ -154,7 +155,7 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
                 LocalDockerOrchestratorSettings,
                 self.get_settings(step),
             )
-            image = build.get_image(
+            image = deployment.build.configuration.get_image(
                 key=ORCHESTRATOR_DOCKER_IMAGE_KEY, step=step_name
             )
 

@@ -16,8 +16,8 @@ from abc import ABC
 from typing import List
 
 from zenml.config.build_configuration import BuildConfiguration
-from zenml.config.pipeline_deployment import PipelineDeployment
 from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
+from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
 from zenml.orchestrators import BaseOrchestrator
 
 
@@ -25,21 +25,21 @@ class ContainerizedOrchestrator(BaseOrchestrator, ABC):
     """Base class for containerized orchestrators."""
 
     def get_docker_builds(
-        self, deployment: "PipelineDeployment"
+        self, deployment: "PipelineDeploymentBaseModel"
     ) -> List["BuildConfiguration"]:
-        pipeline_settings = deployment.pipeline.docker_settings
+        pipeline_settings = deployment.pipeline_configuration.docker_settings
 
         included_pipeline_build = False
         builds = []
 
-        for name, step in deployment.steps.items():
+        for name, step in deployment.step_configurations.items():
             step_settings = step.config.docker_settings
 
             if step_settings != pipeline_settings:
                 build = BuildConfiguration(
                     key=ORCHESTRATOR_DOCKER_IMAGE_KEY,
                     settings=step_settings,
-                    tag=f"{deployment.pipeline.name}-{name}",
+                    tag=f"{deployment.pipeline_configuration.name}-{name}",
                     step_name=name,
                 )
                 builds.append(build)
@@ -47,7 +47,7 @@ class ContainerizedOrchestrator(BaseOrchestrator, ABC):
                 pipeline_build = BuildConfiguration(
                     key=ORCHESTRATOR_DOCKER_IMAGE_KEY,
                     settings=pipeline_settings,
-                    tag=deployment.pipeline.name,
+                    tag=deployment.pipeline_configuration.name,
                 )
                 builds.append(pipeline_build)
                 included_pipeline_build = True

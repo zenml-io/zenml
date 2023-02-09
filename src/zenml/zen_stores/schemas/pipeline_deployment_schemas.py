@@ -13,13 +13,15 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of pipeline deployment tables."""
 
+import json
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
+from pydantic.json import pydantic_encoder
 from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
-from zenml.config.pipeline_deployment import PipelineDeployment
+from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.models import (
     PipelineDeploymentRequestModel,
     PipelineDeploymentResponseModel,
@@ -27,6 +29,7 @@ from zenml.models import (
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
+from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.stack_schemas import StackSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
@@ -73,6 +76,18 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
         back_populates="deployments"
     )
 
+    schedule_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=ScheduleSchema.__tablename__,
+        source_column="schedule_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+    schedule: Optional[ScheduleSchema] = Relationship(
+        back_populates="deployment"
+    )
+
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
         target=UserSchema.__tablename__,
@@ -95,7 +110,10 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
 
     runs: List["PipelineRunSchema"] = Relationship(back_populates="deployment")
 
-    configuration: str = Field(sa_column=Column(TEXT, nullable=False))
+    run_name_template: str
+    pipeline_configuration: str = Field(sa_column=Column(TEXT, nullable=False))
+    step_configurations: str = Field(sa_column=Column(TEXT, nullable=False))
+    client_environment: str = Field(sa_column=Column(TEXT, nullable=False))
 
     @classmethod
     def from_request(
@@ -109,15 +127,21 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
         Returns:
             The created `PipelineDeploymentSchema`.
         """
-        configuration = request.configuration.json()
-
         return cls(
             stack_id=request.stack,
             workspace_id=request.workspace,
             pipeline_id=request.pipeline,
             build_id=request.build,
             user_id=request.user,
-            configuration=configuration,
+            schedule_id=request.schedule,
+            run_name_template=request.run_name_template,
+            pipeline_configuration=request.pipeline_configuration.json(),
+            step_configurations=json.dumps(
+                request.step_configurations,
+                sort_keys=False,
+                default=pydantic_encoder,
+            ),
+            client_environment=json.dumps(request.client_environment),
         )
 
     def to_model(
@@ -130,7 +154,6 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
         """
         return PipelineDeploymentResponseModel(
             id=self.id,
-            configuration=PipelineDeployment.parse_raw(self.configuration),
             workspace=self.workspace.to_model(),
             user=self.user.to_model(True) if self.user else None,
             stack=self.stack.to_model() if self.stack else None,
@@ -138,6 +161,13 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
                 self.pipeline.to_model(False) if self.pipeline else None
             ),
             build=self.build.to_model() if self.build else None,
+            schedule=self.schedule.to_model() if self.schedule else None,
             created=self.created,
             updated=self.updated,
+            run_name_template=self.run_name_template,
+            pipeline_configuration=PipelineConfiguration.parse_raw(
+                self.pipeline_configuration
+            ),
+            step_configurations=json.loads(self.step_configurations),
+            client_environment=json.loads(self.client_environment),
         )

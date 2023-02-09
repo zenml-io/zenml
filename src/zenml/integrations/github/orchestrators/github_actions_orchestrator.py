@@ -47,7 +47,9 @@ from zenml.utils import yaml_utils
 
 if TYPE_CHECKING:
     from zenml.config.build_configuration import PipelineBuild
-    from zenml.config.pipeline_deployment import PipelineDeployment
+    from zenml.models.pipeline_deployment_models import (
+        PipelineDeploymentResponseModel,
+    )
 
 logger = get_logger(__name__)
 
@@ -290,7 +292,7 @@ class GitHubActionsOrchestrator(ContainerizedOrchestrator):
 
     def prepare_pipeline_deployment(
         self,
-        deployment: "PipelineDeployment",
+        deployment: "PipelineDeploymentResponseModel",
         stack: "Stack",
     ) -> None:
         """Build a Docker image and push it to the container registry.
@@ -317,7 +319,7 @@ class GitHubActionsOrchestrator(ContainerizedOrchestrator):
 
     def prepare_or_run_pipeline(
         self,
-        deployment: "PipelineDeployment",
+        deployment: "PipelineDeploymentResponseModel",
         stack: "Stack",
         build: Optional["PipelineBuild"],
     ) -> Any:
@@ -334,7 +336,7 @@ class GitHubActionsOrchestrator(ContainerizedOrchestrator):
         assert build
         schedule = deployment.schedule
 
-        workflow_name = deployment.pipeline.name
+        workflow_name = deployment.pipeline_configuration.name
         if schedule:
             # Add a suffix to the workflow filename so we don't overwrite
             # scheduled pipeline by future schedules or single pipeline runs.
@@ -418,7 +420,7 @@ class GitHubActionsOrchestrator(ContainerizedOrchestrator):
         ]
 
         jobs = {}
-        for step_name, step in deployment.steps.items():
+        for step_name, step in deployment.step_configurations.items():
             if self.requires_resources_in_orchestration_environment(step):
                 logger.warning(
                     "Specifying step resources is not supported for the "
@@ -476,7 +478,7 @@ class GitHubActionsOrchestrator(ContainerizedOrchestrator):
             self.git_repo.index.add(workflow_path)
             self.git_repo.index.commit(
                 "[ZenML GitHub Actions Orchestrator] Add github workflow for "
-                f"pipeline {deployment.pipeline.name}."
+                f"pipeline {deployment.pipeline_configuration.name}."
             )
             self.git_repo.remote().push()
             logger.info("Pushed workflow file '%s'", workflow_path)

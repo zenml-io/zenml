@@ -38,7 +38,9 @@ from zenml.stack import StackValidator
 
 if TYPE_CHECKING:
     from zenml.config.build_configuration import PipelineBuild
-    from zenml.config.pipeline_deployment import PipelineDeployment
+    from zenml.models.pipeline_deployment_models import (
+        PipelineDeploymentBaseModel,
+    )
     from zenml.stack import Stack
 
 ENV_ZENML_SAGEMAKER_RUN_ID = "ZENML_SAGEMAKER_RUN_ID"
@@ -128,7 +130,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
     def prepare_or_run_pipeline(
         self,
-        deployment: "PipelineDeployment",
+        deployment: "PipelineDeploymentBaseModel",
         stack: "Stack",
         build: Optional["PipelineBuild"],
     ) -> None:
@@ -147,13 +149,13 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             )
 
         orchestrator_run_name = get_orchestrator_run_name(
-            pipeline_name=deployment.pipeline.name
+            pipeline_name=deployment.pipeline_configuration.name
         ).replace("_", "-")
 
         session = sagemaker.Session(default_bucket=self.config.bucket)
 
         sagemaker_steps = []
-        for step_name, step in deployment.steps.items():
+        for step_name, step in deployment.step_configurations.items():
             image = build.get_image(
                 key=ORCHESTRATOR_DOCKER_IMAGE_KEY, step=step_name
             )

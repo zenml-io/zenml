@@ -19,7 +19,6 @@ import socket
 from kubernetes import client as k8s_client
 
 from zenml.client import Client
-from zenml.config.pipeline_deployment import PipelineDeployment
 from zenml.constants import DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
@@ -35,6 +34,7 @@ from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
     build_pod_manifest,
 )
 from zenml.logger import get_logger
+from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
 from zenml.orchestrators.dag_runner import ThreadedDagRunner
 from zenml.utils import yaml_utils
 
@@ -69,11 +69,14 @@ def main() -> None:
     orchestrator_run_id = socket.gethostname()
 
     config_dict = yaml_utils.read_yaml(DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE)
-    deployment_config = PipelineDeployment.parse_obj(config_dict)
+    deployment_config = PipelineDeploymentBaseModel.parse_obj(config_dict)
 
     pipeline_dag = {}
     step_name_to_pipeline_step_name = {}
-    for name_in_pipeline, step in deployment_config.steps.items():
+    for (
+        name_in_pipeline,
+        step,
+    ) in deployment_config.step_configurations.items():
         step_name_to_pipeline_step_name[step.config.name] = name_in_pipeline
         pipeline_dag[step.config.name] = step.spec.upstream_steps
 
@@ -97,7 +100,9 @@ def main() -> None:
             step_name=pipeline_step_name
         )
 
-        step_config = deployment_config.steps[pipeline_step_name].config
+        step_config = deployment_config.step_configurations[
+            pipeline_step_name
+        ].config
         settings = KubernetesOrchestratorSettings.parse_obj(
             step_config.settings.get("orchestrator.kubernetes", {})
         )
@@ -106,7 +111,7 @@ def main() -> None:
         pod_manifest = build_pod_manifest(
             pod_name=pod_name,
             run_name=args.run_name,
-            pipeline_name=deployment_config.pipeline.name,
+            pipeline_name=deployment_config.pipeline_configuration.name,
             image_name=args.image_name,
             command=step_command,
             args=step_args,

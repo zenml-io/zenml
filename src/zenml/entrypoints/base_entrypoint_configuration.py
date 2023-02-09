@@ -19,7 +19,9 @@ from typing import Any, Dict, List, NoReturn, Set
 from uuid import UUID
 
 from zenml.client import Client
-from zenml.config.pipeline_deployment import PipelineDeployment
+from zenml.models.pipeline_deployment_models import (
+    PipelineDeploymentResponseModel,
+)
 from zenml.utils import source_utils, uuid_utils
 
 DEFAULT_ENTRYPOINT_COMMAND = [
@@ -165,19 +167,14 @@ class BaseEntrypointConfiguration(ABC):
         result, _ = parser.parse_known_args(arguments)
         return vars(result)
 
-    def load_deployment_config(self) -> "PipelineDeployment":
-        """Loads the deployment config.
+    def load_deployment(self) -> "PipelineDeploymentResponseModel":
+        """Loads the deployment.
 
         Returns:
-            The deployment config.
+            The deployment.
         """
         deployment_id = UUID(self.entrypoint_args[DEPLOYMENT_ID_OPTION])
-        deployment = (
-            Client()
-            .zen_store.get_deployment(deployment_id=deployment_id)
-            .configuration
-        )
-        return deployment.copy(update={"id": deployment_id})
+        return Client().zen_store.get_deployment(deployment_id=deployment_id)
 
     @abstractmethod
     def run(self) -> None:

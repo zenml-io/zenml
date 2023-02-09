@@ -17,7 +17,7 @@ from uuid import uuid4
 
 import pytest
 
-from zenml.config.pipeline_deployment import PipelineDeployment
+from zenml.config.pipeline_deployment import PipelineDeploymentBaseModel
 from zenml.config.step_configurations import Step
 from zenml.enums import StackComponentType
 from zenml.orchestrators.step_launcher import (
@@ -47,7 +47,7 @@ def test_pipeline_step_name_extraction():
         }
     )
 
-    deployment = PipelineDeployment.parse_obj(
+    deployment = PipelineDeploymentBaseModel.parse_obj(
         {
             "run_name": "run_name",
             "stack_id": uuid4(),

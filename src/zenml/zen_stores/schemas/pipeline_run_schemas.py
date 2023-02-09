@@ -57,7 +57,7 @@ class PipelineRunSchema(NamedSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    stack: "StackSchema" = Relationship(back_populates="runs")
+    stack: Optional["StackSchema"] = Relationship(back_populates="runs")
 
     pipeline_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -67,7 +67,7 @@ class PipelineRunSchema(NamedSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    pipeline: "PipelineSchema" = Relationship(back_populates="runs")
+    pipeline: Optional["PipelineSchema"] = Relationship(back_populates="runs")
 
     build_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -89,7 +89,7 @@ class PipelineRunSchema(NamedSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    deployment: "PipelineDeploymentSchema" = Relationship(
+    deployment: Optional["PipelineDeploymentSchema"] = Relationship(
         back_populates="runs"
     )
 
@@ -101,7 +101,7 @@ class PipelineRunSchema(NamedSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    schedule: ScheduleSchema = Relationship(back_populates="runs")
+    schedule: Optional[ScheduleSchema] = Relationship(back_populates="runs")
 
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,

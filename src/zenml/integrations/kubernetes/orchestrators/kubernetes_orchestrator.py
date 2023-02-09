@@ -59,7 +59,9 @@ from zenml.stack import StackValidator
 
 if TYPE_CHECKING:
     from zenml.config.build_configuration import PipelineBuild
-    from zenml.config.pipeline_deployment import PipelineDeployment
+    from zenml.models.pipeline_deployment_models import (
+        PipelineDeploymentBaseModel,
+    )
     from zenml.stack import Stack
 
 logger = get_logger(__name__)
@@ -258,7 +260,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
 
     def prepare_or_run_pipeline(
         self,
-        deployment: "PipelineDeployment",
+        deployment: "PipelineDeploymentBaseModel",
         stack: "Stack",
         build: Optional["PipelineBuild"],
     ) -> Any:
@@ -283,7 +285,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 "orchestrator."
             )
 
-        for step in deployment.steps.values():
+        for step in deployment.step_configurations.values():
             if self.requires_resources_in_orchestration_environment(step):
                 logger.warning(
                     "Specifying step resources is not yet supported for "
@@ -292,7 +294,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                     step.config.name,
                 )
 
-        pipeline_name = deployment.pipeline.name
+        pipeline_name = deployment.pipeline_configuration.name
         orchestrator_run_name = get_orchestrator_run_name(pipeline_name)
         pod_name = kube_utils.sanitize_pod_name(orchestrator_run_name)
 
@@ -300,7 +302,9 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         assert stack.container_registry
         # TODO: figure out which image to use for the orchestrator pod, allow
         # per-step images
-        image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
+        image_name = deployment.pipeline_configuration.extra[
+            ORCHESTRATOR_DOCKER_IMAGE_KEY
+        ]
 
         # Build entrypoint command and args for the orchestrator pod.
         # This will internally also build the command/args for all step pods.

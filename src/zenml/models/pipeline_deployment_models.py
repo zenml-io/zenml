@@ -13,12 +13,13 @@
 #  permissions and limitations under the License.
 """Models representing pipeline deployments."""
 
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Dict, Optional, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from zenml.config.pipeline_deployment import PipelineDeployment
+from zenml.config.pipeline_configurations import PipelineConfiguration
+from zenml.config.step_configurations import Step
 from zenml.models.base_models import (
     WorkspaceScopedRequestModel,
     WorkspaceScopedResponseModel,
@@ -29,6 +30,7 @@ if TYPE_CHECKING:
     from zenml.models import (
         PipelineBuildResponseModel,
         PipelineResponseModel,
+        ScheduleResponseModel,
         StackResponseModel,
     )
 
@@ -40,7 +42,10 @@ if TYPE_CHECKING:
 class PipelineDeploymentBaseModel(BaseModel):
     """Base model for pipeline deployments."""
 
-    configuration: PipelineDeployment
+    run_name_template: str
+    pipeline_configuration: PipelineConfiguration
+    step_configurations: Dict[str, Step] = {}
+    client_environment: Dict[str, str] = {}
 
 
 # -------- #
@@ -61,6 +66,9 @@ class PipelineDeploymentResponseModel(
     )
     build: Optional["PipelineBuildResponseModel"] = Field(
         title="The pipeline build associated with the deployment."
+    )
+    schedule: Optional["ScheduleResponseModel"] = Field(
+        title="The schedule associated with the deployment."
     )
 
 
@@ -87,6 +95,9 @@ class PipelineDeploymentFilterModel(WorkspaceScopedFilterModel):
     build_id: Union[UUID, str] = Field(
         default=None, description="Build associated with the deployment."
     )
+    schedule_id: Union[UUID, str] = Field(
+        default=None, description="Schedule associated with the deployment."
+    )
 
 
 # ------- #
@@ -102,3 +113,4 @@ class PipelineDeploymentRequestModel(
     stack: UUID
     pipeline: Optional[UUID] = None
     build: Optional[UUID] = None
+    schedule: Optional[UUID] = None

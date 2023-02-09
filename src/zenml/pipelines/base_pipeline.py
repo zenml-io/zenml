@@ -48,7 +48,6 @@ from zenml.config.pipeline_configurations import (
     PipelineRunConfiguration,
     PipelineSpec,
 )
-from zenml.config.pipeline_deployment import PipelineDeployment
 from zenml.config.schedule import Schedule
 from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.enums import StackComponentType
@@ -58,10 +57,12 @@ from zenml.models import (
     PipelineBuildRequestModel,
     PipelineBuildResponseModel,
     PipelineDeploymentRequestModel,
+    PipelineDeploymentResponseModel,
     PipelineRequestModel,
     PipelineResponseModel,
     ScheduleRequestModel,
 )
+from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
 from zenml.stack import Stack
 from zenml.steps import BaseStep
 from zenml.steps.base_step import BaseStepMeta
@@ -388,7 +389,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
     def _get_pipeline_analytics_metadata(
         self,
-        deployment: "PipelineDeployment",
+        deployment: "PipelineDeploymentResponseModel",
         stack: "Stack",
     ) -> Dict[str, Any]:
         """Returns the pipeline deployment metadata.
@@ -401,7 +402,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             the metadata about the pipeline deployment
         """
         custom_materializer = False
-        for step in deployment.steps.values():
+        for step in deployment.step_configurations.values():
             for output in step.config.outputs.values():
                 if not output.materializer_source.startswith("zenml."):
                     custom_materializer = True
@@ -476,7 +477,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             return
 
         with event_handler(AnalyticsEvent.RUN_PIPELINE) as analytics_handler:
-            deployment, pipeline_spec = self._compile(
+            deployment, pipeline_spec, schedule = self._compile(
                 config_path=config_path,
                 run_name=run_name,
                 enable_cache=enable_cache,
@@ -496,20 +497,19 @@ class BasePipeline(metaclass=BasePipelineMeta):
             pipeline_id = None
             if register_pipeline:
                 pipeline_id = self._register(pipeline_spec=pipeline_spec).id
-                deployment = deployment.copy(
-                    update={"pipeline_id": pipeline_id}
-                )
 
             # TODO: check whether orchestrator even support scheduling before
             # registering the schedule
+            schedule_id = None
             if schedule:
-                if not schedule.name:
+                if schedule.name:
+                    schedule_name = schedule.name
+                else:
                     date = datetime.utcnow().strftime("%Y_%m_%d")
                     time = datetime.utcnow().strftime("%H_%M_%S_%f")
-                    schedule.name = deployment.run_name.format(
+                    schedule_name = deployment.run_name_template.format(
                         date=date, time=time
                     )
-                    deployment = deployment.copy(update={"schedule": schedule})
                 components = Client().active_stack_model.components
                 orchestrator = components[StackComponentType.ORCHESTRATOR][0]
                 schedule_model = ScheduleRequestModel(
@@ -517,7 +517,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     user=Client().active_user.id,
                     pipeline_id=pipeline_id,
                     orchestrator_id=orchestrator.id,
-                    name=schedule.name,
+                    name=schedule_name,
                     active=True,
                     cron_expression=schedule.cron_expression,
                     start_time=schedule.start_time,
@@ -529,68 +529,66 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     Client().zen_store.create_schedule(schedule_model).id
                 )
                 logger.info(
-                    f"Created schedule '{schedule.name}' for pipeline "
-                    f"{deployment.pipeline.name}."
-                )
-                deployment = deployment.copy(
-                    update={"schedule_id": schedule_id}
+                    f"Created schedule `{schedule_name}` for pipeline "
+                    f"`{deployment.pipeline_configuration.name}`."
                 )
 
             stack = Client().active_stack
+
+            build_model = self._load_or_create_pipeline_build(
+                deployment=deployment,
+                pipeline_spec=pipeline_spec,
+                pipeline_id=pipeline_id,
+                build=build,
+            )
+            build_id = build_model.id if build_model else None
+
+            deployment_request = PipelineDeploymentRequestModel(
+                user=Client().active_user.id,
+                workspace=Client().active_workspace.id,
+                stack=stack.id,
+                pipeline=pipeline_id,
+                build=build_id,
+                schedule=schedule_id,
+                **deployment.dict(),
+            )
+            deployment_model = Client().zen_store.create_deployment(
+                deployment=deployment_request
+            )
+
             analytics_handler.metadata = self._get_pipeline_analytics_metadata(
-                deployment=deployment, stack=stack
+                deployment=deployment_model, stack=stack
             )
             caching_status = (
                 "enabled"
-                if deployment.pipeline.enable_cache is not False
+                if deployment.pipeline_configuration.enable_cache is not False
                 else "disabled"
             )
             logger.info(
                 "%s %s on stack `%s` (caching %s)",
-                "Scheduling" if deployment.schedule else "Running",
-                f"pipeline `{deployment.pipeline.name}`"
+                "Scheduling" if deployment_model.schedule else "Running",
+                f"pipeline `{deployment_model.pipeline_configuration.name}`"
                 if register_pipeline
                 else "unlisted pipeline",
                 stack.name,
                 caching_status,
             )
-            stack.prepare_pipeline_deployment(deployment=deployment)
 
-            build_model = self._load_or_create_pipeline_build(
-                deployment=deployment, pipeline_spec=pipeline_spec, build=build
-            )
-            if build_model:
-                deployment = deployment.copy(
-                    update={"build_id": build_model.id}
-                )
-
-            deployment_request = PipelineDeploymentRequestModel(
-                user=Client().active_user.id,
-                workspace=Client().active_workspace.id,
-                stack=deployment.stack_id,
-                pipeline=deployment.pipeline_id,
-                build=build_model.id if build_model else None,
-                configuration=deployment,
-            )
-            deployment_model = Client().zen_store.create_deployment(
-                deployment=deployment_request
-            )
-            deployment = deployment.copy(update={"id": deployment_model.id})
+            stack.prepare_pipeline_deployment(deployment=deployment_model)
 
             # Prevent execution of nested pipelines which might lead to
             # unexpected behavior
             constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True
             try:
                 return_value = stack.deploy_pipeline(
-                    deployment=deployment,
-                    build=build_model.configuration if build_model else None,
+                    deployment=deployment_model,
                 )
             finally:
                 constants.SHOULD_PREVENT_PIPELINE_EXECUTION = False
 
             # Log the dashboard URL
             dashboard_utils.print_run_url(
-                run_name=deployment.run_name, pipeline_id=pipeline_id
+                run_name=deployment.run_name_template, pipeline_id=pipeline_id
             )
 
             return return_value
@@ -855,7 +853,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
     def _compile(
         self, config_path: Optional[str] = None, **run_configuration_args: Any
-    ) -> Tuple["PipelineDeployment", "PipelineSpec"]:
+    ) -> Tuple[
+        "PipelineDeploymentBaseModel", "PipelineSpec", Optional["Schedule"]
+    ]:
         # Activating the built-in integrations to load all materializers
         from zenml.integrations.registry import integration_registry
 
@@ -871,11 +871,13 @@ class BasePipeline(metaclass=BasePipelineMeta):
         # Update with the values in code so they take precedence
         run_config = pydantic_utils.update_model(run_config, update=new_values)
 
-        return Compiler().compile(
+        deployment, pipeline_spec = Compiler().compile(
             pipeline=self,
             stack=Client().active_stack,
             run_configuration=run_config,
         )
+
+        return deployment, pipeline_spec, run_config.schedule
 
     def register(self) -> "PipelineResponseModel":
         """Register the pipeline in the server.
@@ -979,12 +981,13 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
     def _load_or_create_pipeline_build(
         self,
-        deployment: "PipelineDeployment",
+        deployment: "PipelineDeploymentBaseModel",
         pipeline_spec: "PipelineSpec",
+        pipeline_id: Optional[UUID] = None,
         build: Union[str, "UUID", "PipelineBuild", None] = None,
     ) -> Optional["PipelineBuildResponseModel"]:
         if not build:
-            return self._build(deployment=deployment)
+            return self._build(deployment=deployment, pipeline_id=pipeline_id)
 
         logger.info(
             "Using an old build for a pipeline run can lead to "
@@ -1022,7 +1025,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 user=Client().active_user.id,
                 workspace=Client().active_workspace.id,
                 stack=Client().active_stack_model.id,
-                pipeline=deployment.pipeline_id,
+                pipeline=pipeline_id,
                 configuration=build,
             )
             build_model = Client().zen_store.create_build(build=build_request)
@@ -1046,18 +1049,18 @@ class BasePipeline(metaclass=BasePipelineMeta):
         ] = None,
         config_path: Optional[str] = None,
     ) -> Optional["PipelineBuildResponseModel"]:
-        deployment, pipeline_spec = self._compile(
+        deployment, pipeline_spec, _ = self._compile(
             config_path=config_path,
             steps=step_configurations,
             settings=settings,
         )
         pipeline_id = self._register(pipeline_spec=pipeline_spec).id
-        deployment = deployment.copy(update={"pipeline_id": pipeline_id})
-
-        return self._build(deployment=deployment)
+        return self._build(deployment=deployment, pipeline_id=pipeline_id)
 
     def _build(
-        self, deployment: "PipelineDeployment"
+        self,
+        deployment: "PipelineDeploymentBaseModel",
+        pipeline_id: Optional[UUID] = None,
     ) -> Optional["PipelineBuildResponseModel"]:
         client = Client()
         build = client.active_stack.build(deployment=deployment)
@@ -1066,7 +1069,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 user=client.active_user.id,
                 workspace=client.active_workspace.id,
                 stack=client.active_stack_model.id,
-                pipeline=deployment.pipeline_id,
+                pipeline=pipeline_id,
                 configuration=build,
             )
             return client.zen_store.create_build(build_request)

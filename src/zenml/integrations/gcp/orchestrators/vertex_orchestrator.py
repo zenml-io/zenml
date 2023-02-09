@@ -85,8 +85,10 @@ from zenml.utils.io_utils import get_global_config_directory
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.config.build_configuration import PipelineBuild
-    from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.config.schedule import Schedule
+    from zenml.models.pipeline_deployment_models import (
+        PipelineDeploymentResponseModel,
+    )
     from zenml.stack import Stack
     from zenml.steps import ResourceSettings
 
@@ -229,7 +231,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
 
     def prepare_pipeline_deployment(
         self,
-        deployment: "PipelineDeployment",
+        deployment: "PipelineDeploymentResponseModel",
         stack: "Stack",
     ) -> None:
         """Build a Docker image and push it to the container registry.
@@ -310,7 +312,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
 
     def prepare_or_run_pipeline(
         self,
-        deployment: "PipelineDeployment",
+        deployment: "PipelineDeploymentBaseModel",
         stack: "Stack",
         build: Optional["PipelineBuild"],
     ) -> Any:
@@ -355,7 +357,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         """
         assert build
         orchestrator_run_name = get_orchestrator_run_name(
-            pipeline_name=deployment.pipeline.name
+            pipeline_name=deployment.pipeline_configuration.name
         )
         # If the `pipeline_root` has not been defined in the orchestrator
         # configuration,
@@ -363,7 +365,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         # `GCPArtifactStore`.
         if not self.config.pipeline_root:
             artifact_store = stack.artifact_store
-            self._pipeline_root = f"{artifact_store.path.rstrip('/')}/vertex_pipeline_root/{deployment.pipeline.name}/{orchestrator_run_name}"
+            self._pipeline_root = f"{artifact_store.path.rstrip('/')}/vertex_pipeline_root/{deployment.pipeline_configuration.name}/{orchestrator_run_name}"
             logger.info(
                 "The attribute `pipeline_root` has not been set in the "
                 "orchestrator configuration. One has been generated "
@@ -391,7 +393,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             command = StepEntrypointConfiguration.get_entrypoint_command()
             step_name_to_container_op: Dict[str, dsl.ContainerOp] = {}
 
-            for step_name, step in deployment.steps.items():
+            for step_name, step in deployment.step_configurations.items():
                 image = build.get_image(
                     key=ORCHESTRATOR_DOCKER_IMAGE_KEY, step=step_name
                 )
@@ -457,7 +459,9 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         KFPV2Compiler().compile(
             pipeline_func=_construct_kfp_pipeline,
             package_path=pipeline_file_path,
-            pipeline_name=_clean_pipeline_name(deployment.pipeline.name),
+            pipeline_name=_clean_pipeline_name(
+                deployment.pipeline_configuration.name
+            ),
         )
         logger.info(
             "Writing Vertex workflow definition to `%s`.", pipeline_file_path
@@ -472,7 +476,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                 "Scheduling job using Google Cloud Scheduler and Google Cloud Functions..."
             )
             self._upload_and_schedule_pipeline(
-                pipeline_name=deployment.pipeline.name,
+                pipeline_name=deployment.pipeline_configuration.name,
                 run_name=orchestrator_run_name,
                 stack=stack,
                 schedule=deployment.schedule,
@@ -486,7 +490,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             # pipeline
             # on the Vertex AI Pipelines service.
             self._upload_and_run_pipeline(
-                pipeline_name=deployment.pipeline.name,
+                pipeline_name=deployment.pipeline_configuration.name,
                 pipeline_file_path=pipeline_file_path,
                 run_name=orchestrator_run_name,
                 settings=settings,

@@ -21,7 +21,6 @@ from zenml.config.pipeline_configurations import (
     PipelineRunConfiguration,
     PipelineSpec,
 )
-from zenml.config.pipeline_deployment import PipelineDeployment
 from zenml.config.settings_resolver import SettingsResolver
 from zenml.config.step_configurations import (
     Step,
@@ -30,6 +29,7 @@ from zenml.config.step_configurations import (
 )
 from zenml.environment import get_run_environment_dict
 from zenml.exceptions import PipelineInterfaceError, StackValidationError
+from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
 from zenml.utils import pydantic_utils, settings_utils, source_utils
 
 if TYPE_CHECKING:
@@ -50,7 +50,7 @@ class Compiler:
         pipeline: "BasePipeline",
         stack: "Stack",
         run_configuration: PipelineRunConfiguration,
-    ) -> Tuple[PipelineDeployment, PipelineSpec]:
+    ) -> Tuple[PipelineDeploymentBaseModel, PipelineSpec]:
         """Compiles a ZenML pipeline to a serializable representation.
 
         Args:
@@ -107,12 +107,10 @@ class Compiler:
             pipeline_name=pipeline.name
         )
 
-        deployment = PipelineDeployment(
-            run_name=run_name,
-            stack_id=stack.id,
-            schedule=run_configuration.schedule,
-            pipeline=pipeline.configuration,
-            steps=steps,
+        deployment = PipelineDeploymentBaseModel(
+            run_name_template=run_name,
+            pipeline_configuration=pipeline.configuration,
+            step_configurations=steps,
             client_environment=get_run_environment_dict(),
         )
 
