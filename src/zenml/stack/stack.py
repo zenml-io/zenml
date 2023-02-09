@@ -15,7 +15,6 @@
 
 import itertools
 import os
-from collections import defaultdict
 from typing import (
     TYPE_CHECKING,
     AbstractSet,
@@ -25,7 +24,6 @@ from typing import (
     NoReturn,
     Optional,
     Set,
-    Tuple,
     Type,
 )
 from uuid import UUID
@@ -42,11 +40,7 @@ from zenml.exceptions import ProvisioningError, StackValidationError
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models import StackResponseModel
-from zenml.models.pipeline_build_models import PipelineBuildBaseModel
 from zenml.utils import settings_utils
-from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilder,
-)
 
 if TYPE_CHECKING:
     from zenml.alerter import BaseAlerter
@@ -803,83 +797,6 @@ class Stack:
                 component.get_docker_builds(deployment=deployment)
                 for component in self.components.values()
             )
-        )
-
-    def build(
-        self, deployment: "PipelineDeploymentBaseModel"
-    ) -> Optional[PipelineBuildBaseModel]:
-        required_builds = self.get_docker_builds(deployment=deployment)
-        if not required_builds:
-            logger.debug("No docker builds required.")
-            return None
-
-        logger.info(
-            "Building Docker image(s) for pipeline `%s`.",
-            deployment.pipeline_configuration.name,
-        )
-
-        docker_image_builder = PipelineDockerImageBuilder()
-        pipeline_images: Dict[str, Tuple[str, str]] = {}
-        step_images: Dict[str, Dict[str, Tuple[str, str]]] = defaultdict(dict)
-        settings_hashes: Dict[str, str] = {}
-
-        for build in required_builds:
-            if build.step_name:
-                if build.key in step_images[build.step_name]:
-                    logger.warning(
-                        "Step image with key %s already exists", build.key
-                    )
-                    continue
-            else:
-                if build.key in pipeline_images:
-                    logger.warning(
-                        "Pipeline image with key %s already exists", build.key
-                    )
-                    continue
-
-            image_name_or_digest = docker_image_builder.build_docker_image(
-                docker_settings=build.settings,
-                tag=build.tag,
-                stack=self,
-                entrypoint=build.entrypoint,
-            )
-
-            build_settings_hash = build.settings_hash
-
-            if (
-                image_name_or_digest in settings_hashes
-                and settings_hashes[image_name_or_digest]
-                != build_settings_hash
-            ):
-                logger.warning(
-                    "The image `%s` was built twice with different Docker "
-                    "settings. Only the latest version will be used which "
-                    "might lead to failure. To fix this warning, assign "
-                    "different repository or tag names for all images of your "
-                    "in your Docker settings.",
-                    image_name_or_digest,
-                )
-            settings_hashes[image_name_or_digest] = build_settings_hash
-
-            if build.step_name:
-                step_images[build.step_name][build.key] = (
-                    image_name_or_digest,
-                    build_settings_hash,
-                )
-            else:
-                pipeline_images[build.key] = (
-                    image_name_or_digest,
-                    build_settings_hash,
-                )
-
-        logger.info("Finished building Docker image(s).")
-
-        is_local = self.container_registry is None
-
-        return PipelineBuildBaseModel(
-            is_local=is_local,
-            pipeline_images=pipeline_images,
-            step_images=step_images,
         )
 
     def deploy_pipeline(
