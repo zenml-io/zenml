@@ -42,6 +42,7 @@ from zenml.logger import get_logger
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
 from zenml.utils.enum_utils import StrEnum
 from zenml.utils.io_utils import copy_dir, get_global_config_directory
+from zenml.utils.yaml_utils import write_json
 
 logger = get_logger(__name__)
 # WT_SESSION is a Windows Terminal specific environment variable. If it
@@ -450,6 +451,7 @@ def _prompt_email(event_source: AnalyticsEventSource) -> bool:
 )
 @click.option(
     "--all",
+    "-a",
     is_flag=True,
     default=False,
     help="Output information about all installed packages.",
@@ -458,8 +460,9 @@ def _prompt_email(event_source: AnalyticsEventSource) -> bool:
 @click.option(
     "--file",
     "-f",
+    is_flag=True,
     help="Output to a file.",
-    type=str,
+    type=bool,
 )
 def info(packages, all, file) -> None:
     """Show information about the current user setup."""
@@ -478,7 +481,7 @@ def info(packages, all, file) -> None:
         "zenml_config_dir": gc.config_directory,
         "zenml_local_store_dir": gc.local_stores_path,
         "zenml_server_url": store_cfg.url,
-        "zenml_active_repository_root": client.root,
+        "zenml_active_repository_root": str(client.root),
         "python_version": environment.python_version(),
         "environment": get_environment(),
         "system_info": environment.get_system_info(),
@@ -486,9 +489,9 @@ def info(packages, all, file) -> None:
         "active_stack": client.active_stack_model.name,
         "active_user": client.active_user.name,
         "telemetry_status": "enabled" if gc.analytics_opt_in else "disabled",
-        "analytics_client_id": gc.user_id,
-        "analytics_user_id": client.active_user.id,
-        "analytics_server_id": client.zen_store.get_store_info().id,
+        "analytics_client_id": str(gc.user_id),
+        "analytics_user_id": str(client.active_user.id),
+        "analytics_server_id": str(client.zen_store.get_store_info().id),
         "integrations": integration_registry.get_installed_integrations(),
     }
 
@@ -498,3 +501,10 @@ def info(packages, all, file) -> None:
         user_info["query_packages"] = cli_utils.get_package_information(
             packages
         )
+
+    if file:
+        file_write_path = os.path.join(os.get_cwd(), "zenml_user_info.json")
+        write_json(file_write_path, user_info)
+        declare(f"Wrote user debug info to file at '{file_write_path}'.")
+    else:
+        cli_utils.print_user_info(user_info)

@@ -1259,3 +1259,13 @@ def get_package_information(package_names: List[str]) -> Dict[str, str]:
         for pkg in pkg_resources.working_set
         if pkg.key in package_names
     }
+
+
+def print_user_info(info: Dict[str, Any]) -> None:
+    """Print user information to the terminal.
+
+    Args:
+        info: The information to print.
+    """
+    print("User information:")
+    print(info)
