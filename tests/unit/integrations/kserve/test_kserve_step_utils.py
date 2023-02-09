@@ -12,6 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import sys
+
 import pytest
 from hypothesis import given
 from hypothesis.strategies import text
@@ -29,6 +31,10 @@ from zenml.integrations.kserve.steps.kserve_step_utils import (
 )
 
 
+@pytest.mark.skipif(
+    sys.version_info.major == 3 and sys.version_info.minor == 10,
+    reason="Kserve is only supported on Python <3.10",
+)
 @given(
     sample_str=text(
         alphabet="abcdefghijklmnopqrstuvwxyz0123456789-", min_size=1
@@ -47,6 +53,10 @@ def test_model_name_validation(sample_str: str):
         assert not is_valid_model_name(invalid_char)
 
 
+@pytest.mark.skipif(
+    sys.version_info.major == 3 and sys.version_info.minor == 10,
+    reason="Kserve is only supported on Python <3.10",
+)
 def test_service_config_preparation_fails_with_invalid_model_name():
     """Test that the prepare_service_config function fails with invalid input."""
     with pytest.raises(ValidationError):
