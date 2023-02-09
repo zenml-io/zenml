@@ -14,7 +14,7 @@
 """CLI functionality to interact with pipelines."""
 import contextlib
 import os
-from typing import Any, Iterator, Optional
+from typing import Any, Iterator, Optional, Union
 from uuid import UUID
 
 import click
@@ -36,13 +36,19 @@ logger = get_logger(__name__)
 
 
 @contextlib.contextmanager
-def temporary_active_stack(stack_id: UUID) -> Iterator[None]:
+def temporary_active_stack(
+    stack_name_or_id: Optional[Union[UUID, str]] = None
+) -> Iterator[None]:
     try:
-        old_stack_id = Client().active_stack_model.id
-        Client().activate_stack(stack_id)
+        if stack_name_or_id:
+            old_stack_id = Client().active_stack_model.id
+            Client().activate_stack(stack_name_or_id)
+        else:
+            old_stack_id = None
         yield
     finally:
-        Client().activate_stack(old_stack_id)
+        if old_stack_id:
+            Client().activate_stack(old_stack_id)
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
@@ -155,14 +161,7 @@ def build_pipeline(
             name=pipeline_name_or_id, version=version
         )
 
-    if stack_name_or_id:
-        stack_model = Client().get_stack(stack_name_or_id)
-
-        maybe_activate_stack = temporary_active_stack(stack_id=stack_model.id)
-    else:
-        maybe_activate_stack = contextlib.nullcontext()
-
-    with maybe_activate_stack:
+    with temporary_active_stack(stack_name_or_id=stack_name_or_id):
         pipeline_instance = BasePipeline.from_model(pipeline_model)
         build = pipeline_instance.build(config_path=config_path)
 
@@ -232,14 +231,7 @@ def run_pipeline(
             name=pipeline_name_or_id, version=version
         )
 
-    if stack_name_or_id:
-        stack_model = Client().get_stack(stack_name_or_id)
-
-        maybe_activate_stack = temporary_active_stack(stack_id=stack_model.id)
-    else:
-        maybe_activate_stack = contextlib.nullcontext()
-
-    build = None
+    build: Union[str, "PipelineBuild", None] = None
     if build_path_or_id:
         if uuid_utils.is_valid_uuid(build_path_or_id):
             build = build_path_or_id
@@ -251,7 +243,7 @@ def run_pipeline(
                 "or file path."
             )
 
-    with maybe_activate_stack:
+    with temporary_active_stack(stack_name_or_id=stack_name_or_id):
         pipeline_instance = BasePipeline.from_model(pipeline_model)
         pipeline_instance.run(config_path=config_path, build=build)
 

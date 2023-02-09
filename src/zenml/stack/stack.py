@@ -25,6 +25,7 @@ from typing import (
     NoReturn,
     Optional,
     Set,
+    Tuple,
     Type,
 )
 from uuid import UUID
@@ -813,9 +814,9 @@ class Stack:
         )
 
         docker_image_builder = PipelineDockerImageBuilder()
-        pipeline_images = {}
-        step_images = defaultdict(dict)
-        settings_hashes = {}
+        pipeline_images: Dict[str, Tuple[str, str]] = {}
+        step_images: Dict[str, Dict[str, Tuple[str, str]]] = defaultdict(dict)
+        settings_hashes: Dict[str, str] = {}
 
         for build in required_builds:
             if build.step_name:
@@ -904,14 +905,18 @@ class Stack:
         if required_builds and not build:
             raise RuntimeError("Missing docker builds.")
 
-        for build in required_builds:
+        for build_config in required_builds:
             try:
-                image = build.get_image(key=build.key, step=build.step_name)
+                image = build.get_image(
+                    key=build_config.key, step=build_config.step_name
+                )
             except KeyError:
-                raise RuntimeError(f"Missing build for key: {build.key}.")
+                raise RuntimeError(
+                    f"Missing build for key: {build_config.key}."
+                )
 
-            if build.settings_hash != build.get_settings_hash(
-                key=build.key, step=build.step_name
+            if build_config.settings_hash != build.get_settings_hash(
+                key=build_config.key, step=build_config.step_name
             ):
                 logger.warning(
                     "The Docker settings used to build the image `%s` are "
