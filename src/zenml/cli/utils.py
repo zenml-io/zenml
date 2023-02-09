@@ -1267,5 +1267,5 @@ def print_user_info(info: Dict[str, Any]) -> None:
     Args:
         info: The information to print.
     """
-    print("User information:")
-    print(info)
+    for key, value in info.items():
+        declare(f"{key.upper()}: {value}")
