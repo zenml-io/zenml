@@ -16,6 +16,7 @@ from contextlib import ExitStack as does_not_raise
 
 import pytest
 
+from tests.integration.functional.utils import sample_name
 from tests.integration.functional.zen_stores.utils import (
     ComponentContext,
     CrudTestConfig,
@@ -26,7 +27,6 @@ from tests.integration.functional.zen_stores.utils import (
     UserContext,
     list_of_entities,
 )
-from tests.integration.functional.utils import sample_name
 from zenml.client import Client
 from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import (
@@ -46,10 +46,8 @@ from zenml.models import (
     StackRequestModel,
     StackUpdateModel,
     StepRunFilterModel,
-    TeamRequestModel,
     TeamRoleAssignmentRequestModel,
     TeamUpdateModel,
-    UserRequestModel,
     UserRoleAssignmentRequestModel,
     UserUpdateModel,
     WorkspaceFilterModel,
@@ -156,10 +154,8 @@ def test_create_entity_twice_fails(crud_test_config: CrudTestConfig):
     with does_not_raise():
         crud_test_config.delete_method(created_entity.id)
     # Filter by id to verify the entity was actually deleted
-    entities_list = crud_test_config.list_method(
-        crud_test_config.filter_model(id=created_entity.id)
-    )
-    assert entities_list.total == 0
+    with pytest.raises(KeyError):
+        crud_test_config.get_method(created_entity.id)
 
 
 @pytest.mark.parametrize(
@@ -254,7 +250,6 @@ def test_deleting_default_workspace_fails():
 def test_adding_user_to_team():
     """Tests adding a user to a team."""
     zen_store = Client().zen_store
-    team_name = "arias_team"
     with UserContext() as created_user:
         with TeamContext() as created_team:
             team_update = TeamUpdateModel(users=[created_user.id])
@@ -266,7 +261,9 @@ def test_adding_user_to_team():
             assert len(team_update.users) == 1
 
             # Make sure the team name has not been inadvertently changed
-            assert zen_store.get_team(created_team.id).name == created_team
+            assert (
+                zen_store.get_team(created_team.id).name == created_team.name
+            )
 
 
 def test_adding_nonexistent_user_to_real_team_raises_error():
@@ -286,11 +283,17 @@ def test_removing_user_from_team_succeeds():
     """Tests removing a user from a team."""
 
     zen_store = Client().zen_store
-    team_name = sample_name("arias_team")
+    sample_name("arias_team")
 
     with UserContext() as created_user:
         with TeamContext() as created_team:
-            assert created_user.id in created_team.user_ids
+
+            team_update = TeamUpdateModel(users=[created_user.id])
+            team_update = zen_store.update_team(
+                team_id=created_team.id, team_update=team_update
+            )
+
+            assert created_user.id in team_update.user_ids
 
             team_update = TeamUpdateModel(users=[])
             team_update = zen_store.update_team(
@@ -303,9 +306,11 @@ def test_removing_user_from_team_succeeds():
 def test_access_user_in_team_succeeds():
     pass
 
-@pytest.skip
+
 def test_access_user_in_team_succeeds():
+    pytest.skip("Not Implemented yet.")
     pass
+
 
 #  .------.
 # | USERS |
@@ -347,8 +352,9 @@ def test_deleting_default_user_fails():
 def test_getting_team_for_user_succeeds():
     pass
 
-@pytest.skip
+
 def test_team_for_user_succeeds():
+    pytest.skip("Not Implemented yet.")
     pass
 
 
@@ -365,7 +371,9 @@ def test_creating_role_with_empty_permissions_succeeds():
         created_role = zen_store.create_role(new_role)
         with does_not_raise():
             zen_store.get_role(role_name_or_id=new_role.name)
-        list_of_roles = zen_store.list_roles(RoleFilterModel(name=new_role.name))
+        list_of_roles = zen_store.list_roles(
+            RoleFilterModel(name=new_role.name)
+        )
         assert list_of_roles.total > 0
     finally:
         # Cleanup
@@ -609,12 +617,13 @@ def test_delete_default_stack_component_fails():
         store.delete_stack_component(default_orchestrator.id)
 
 
-@pytest.skip
 def test_list_stack_components_works_with_filters():
+    pytest.skip("Not Implemented yet.")
     pass
 
-@pytest.skip
+
 def test_list_stack_components_lists_nothing_for_nonexistent_filters():
+    pytest.skip("Not Implemented yet.")
     pass
 
 
