@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base Zen Store implementation."""
-from functools import wraps
 import os
 from abc import ABC
 from typing import (
@@ -71,10 +70,10 @@ from zenml.utils.analytics_utils import (
     track_event,
 )
 from zenml.utils.proxy_utils import make_proxy_class
+from zenml.zen_stores.secrets_stores.base_secrets_store import BaseSecretsStore
 from zenml.zen_stores.secrets_stores.secrets_store_interface import (
     SecretsStoreInterface,
 )
-from zenml.zen_stores.secrets_stores.base_secrets_store import BaseSecretsStore
 from zenml.zen_stores.secrets_stores.sql_secrets_store import (
     SqlSecretsStoreConfiguration,
 )
@@ -252,7 +251,7 @@ class BaseZenStore(
 
             # Update the config with the actual secrets store config
             # to reflect the default values in the saved configuration
-            store.config.secrets_store = store.secrets_store.config
+            store.config.secrets_store = store._secrets_store.config
         return store
 
     @staticmethod

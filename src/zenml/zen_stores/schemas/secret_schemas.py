@@ -15,7 +15,7 @@
 import base64
 import json
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Dict, Optional, cast
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column
@@ -46,7 +46,7 @@ class SecretSchema(NamedSchema, table=True):
 
     scope: SecretScope
 
-    values: str = Field(sa_column=Column(TEXT, nullable=False))
+    values: bytes = Field(sa_column=Column(TEXT, nullable=False))
 
     workspace_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -69,7 +69,7 @@ class SecretSchema(NamedSchema, table=True):
     user: Optional["UserSchema"] = Relationship(back_populates="secrets")
 
     @classmethod
-    def _dump_secret_values(cls, values: Dict[str, str]) -> str:
+    def _dump_secret_values(cls, values: Dict[str, str]) -> bytes:
         """Dump the secret values to a string.
 
         Args:
@@ -97,9 +97,9 @@ class SecretSchema(NamedSchema, table=True):
     @classmethod
     def _load_secret_values(
         cls,
-        serialized_values: str,
+        serialized_values: bytes,
     ) -> Dict[str, str]:
-        """Load the secret values from a string.
+        """Load the secret values from a base64 encoded byte string.
 
         Args:
             serialized_values: The serialized secret values.
@@ -107,7 +107,10 @@ class SecretSchema(NamedSchema, table=True):
         Returns:
             The loaded secret values.
         """
-        return json.loads(base64.b64decode(serialized_values).decode())
+        return cast(
+            Dict[str, str],
+            json.loads(base64.b64decode(serialized_values).decode()),
+        )
 
     @classmethod
     def from_request(cls, secret: SecretRequestModel) -> "SecretSchema":

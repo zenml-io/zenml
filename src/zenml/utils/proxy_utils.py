@@ -15,10 +15,9 @@
 
 from abc import ABC
 from functools import wraps
-from typing import Any, Callable, Type, TypeVar
+from typing import Any, Callable, Type, TypeVar, cast
 
-
-C = TypeVar("C", bound=Type[Any])
+C = TypeVar("C", bound=Type[ABC])
 F = TypeVar("F", bound=Callable[..., Any])
 
 
@@ -110,11 +109,10 @@ def make_proxy_class(interface: Type[ABC], attribute: str) -> Callable[[C], C]:
 
     fat_bob.big_jim = BigJim()
     # Now it works:
-    fat_bob.build_body()    
+    fat_bob.build_body()
     ```
-    
+
     Args:
-        cls: The class to use as the base.
         interface: The interface to implement.
         attribute: The attribute of the base class to forward calls to.
 
@@ -122,7 +120,7 @@ def make_proxy_class(interface: Type[ABC], attribute: str) -> Callable[[C], C]:
         The proxy class.
     """
 
-    def make_proxy_method(cls, _method: F) -> F:
+    def make_proxy_method(cls: C, _method: F) -> F:
         """Proxy method decorator.
 
         Used to transform a method into a proxy that forwards all calls to the
@@ -131,12 +129,24 @@ def make_proxy_class(interface: Type[ABC], attribute: str) -> Callable[[C], C]:
         Args:
             cls: The class to use as the base.
             _method: The method to replace.
-        
+
         Returns:
             The proxy method.
         """
+
         @wraps(_method)
-        def proxy_method(self, *args, **kw):
+        def proxy_method(*args: Any, **kw: Any) -> Any:
+            """Proxy method.
+
+            Args:
+                self: The instance to use as the base.
+                *args: The arguments to pass to the method.
+                **kw: The keyword arguments to pass to the method.
+
+            Returns:
+                The return value of the proxied method.
+            """
+            self = args[0]
             if not hasattr(self, attribute):
                 raise TypeError(
                     f"Class '{cls.__name__}' does not have a '{attribute}' "
@@ -155,18 +165,17 @@ def make_proxy_class(interface: Type[ABC], attribute: str) -> Callable[[C], C]:
                 )
             return getattr(proxied_obj, _method.__name__)(*args, **kw)
 
-        return proxy_method
+        return cast(F, proxy_method)
 
     def _inner_decorator(_cls: C) -> C:
         """Inner proxy class decorator.
-        
+
         Args:
             _cls: The class to decorate.
 
         Returns:
             The decorated class.
         """
-
         if not issubclass(_cls, interface):
             raise TypeError(
                 f"Interface '{interface.__name__}' must be implemented by "
@@ -182,10 +191,11 @@ def make_proxy_class(interface: Type[ABC], attribute: str) -> Callable[[C], C]:
 
         # Remove the abstract methods in the interface from the decorated class.
         _cls.__abstractmethods__ = frozenset(
-            method_name for method_name in _cls.__abstractmethods__
+            method_name
+            for method_name in _cls.__abstractmethods__
             if method_name not in interface.__abstractmethods__
         )
 
-        return _cls
+        return cast(C, _cls)
 
     return _inner_decorator

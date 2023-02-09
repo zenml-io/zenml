@@ -14,6 +14,7 @@
 """SQL Zen Store implementation."""
 
 from typing import (
+    TYPE_CHECKING,
     Any,
     ClassVar,
     Optional,
@@ -21,7 +22,6 @@ from typing import (
     Type,
 )
 from uuid import UUID
-from git import TYPE_CHECKING
 
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import NoResultFound
@@ -47,12 +47,10 @@ from zenml.models.secret_models import SecretScope
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.zen_stores.schemas import (
     SecretSchema,
-    StackComponentSchema,
 )
 from zenml.zen_stores.secrets_stores.base_secrets_store import (
     BaseSecretsStore,
 )
-
 
 logger = get_logger(__name__)
 
@@ -406,23 +404,7 @@ class SqlSecretsStore(BaseSecretsStore):
                 secret_in_db = session.exec(
                     select(SecretSchema).where(SecretSchema.id == secret_id)
                 ).one()
-                components_of_secret = session.exec(
-                    select(StackComponentSchema).where(
-                        StackComponentSchema.secret == secret_in_db.name
-                    )
-                ).all()
-                if len(components_of_secret) > 0:
-                    raise IllegalOperationError(
-                        f"Stack Component `{secret_in_db.name}` of type "
-                        f"`{secret_in_db.type} cannot be "
-                        f"deleted as it is used by "
-                        f"{len(components_of_secret)} "
-                        f"components. Before deleting this "
-                        f"secret, make sure to delete all "
-                        f"associated components."
-                    )
-                else:
-                    session.delete(secret_in_db)
+                session.delete(secret_in_db)
             except NoResultFound as error:
                 raise KeyError from error
 

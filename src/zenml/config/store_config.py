@@ -17,8 +17,8 @@ from pathlib import PurePath
 from typing import Optional
 
 from pydantic import BaseModel
-from zenml.config.secrets_store_config import SecretsStoreConfiguration
 
+from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.enums import StoreType
 from zenml.logger import get_logger
 
