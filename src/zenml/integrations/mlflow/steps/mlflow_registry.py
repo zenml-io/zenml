@@ -111,20 +111,37 @@ def mlflow_register_model_step(
     pipeline_run_id = step_env.pipeline_run_id
 
     client = MlflowClient()
-    mlflow_run_id = client.get_run(
-        run_id=run_id
-    ).info.run_id or experiment_tracker.get_run_id(
-        experiment_name=params.experiment_name or pipeline_name,
-        run_name=params.run_name or run_name,
+
+    # Get MLflow run ID either from params or from experiment tracker using
+    # pipeline name and run name
+    # Note: We need to run the experiment tracker get_run_id() method
+    # first, because it will persist the run ID in the experiment tracker.
+    # not doing it causes a speriodic bug where the run ID is not found
+    mlflow_run_id = (
+        experiment_tracker.get_run_id(
+            experiment_name=params.experiment_name or pipeline_name,
+            run_name=params.run_name or run_name,
+        )
+        or params.run_id
     )
+    if params.run_id and params.run_id != mlflow_run_id:
+        mlflow_run_id = params.run_id
+    # If no value was set at all, raise an error
     if not mlflow_run_id:
         raise ValueError(
             f"Could not find MLflow run for pipeline {pipeline_name} "
             f"and run {run_name} in experiment {params.experiment_name}."
         )
+    # Lastly, check if the run ID is valid
+    try:
+        client.get_run(run_id=mlflow_run_id).info.run_id
+    except Exception:
+        raise ValueError(f"Could not find MLflow run with ID {mlflow_run_id}.")
 
     # Set model source URI
     model_source_uri = params.model_source_uri or None
+
+    # Check if the run ID have a model artifact if no model source URI is set.
     if not params.model_source_uri and client.list_artifacts(
         mlflow_run_id, params.trained_model_name
     ):

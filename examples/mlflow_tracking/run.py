@@ -64,7 +64,7 @@ if __name__ == "__main__":
                 registered_model_name="Tensorflow-mnist-model",
                 registered_model_version="2",
                 # or you can use the model stage if you have set it in the mlflow registry
-                # registered_model_stage="Production",
+                # registered_model_stage="Staging",
             )
         ),
         dynamic_importer=dynamic_importer(),

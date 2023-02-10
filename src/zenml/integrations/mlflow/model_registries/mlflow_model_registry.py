@@ -20,9 +20,16 @@ import mlflow.pyfunc
 from mlflow import MlflowClient
 from mlflow.exceptions import MlflowException
 
+from zenml.client import Client
 from zenml.enums import StackComponentType
+from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker import (
+    MLFlowExperimentTracker,
+)
 from zenml.integrations.mlflow.flavors.mlflow_model_registry_flavor import (
     MLFlowModelRegistryConfig,
+)
+from zenml.integrations.mlflow.mlflow_utils import (
+    get_missing_mlflow_experiment_tracker_error,
 )
 from zenml.logger import get_logger
 from zenml.model_registries.base_model_registry import (
@@ -67,6 +74,12 @@ class MLFlowModelRegistry(BaseModelRegistry):
             The MLFlowClient.
         """
         if not self._client:
+            # TODO: This is a hacky way to get the MLFlow client. We should
+            #  refactor this.
+            experiment_tracker = Client().active_stack.experiment_tracker
+            if not isinstance(experiment_tracker, MLFlowExperimentTracker):
+                raise get_missing_mlflow_experiment_tracker_error()
+            experiment_tracker.configure_mlflow()
             self._client = MlflowClient()
         return self._client
 
@@ -97,7 +110,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
                     "tracker to the stack using the following command: "
                     "`zenml stack register expirement_tracker ..."
                 )
-
+            expirement_tracker
             return True, ""
 
         return StackValidator(
@@ -437,8 +450,8 @@ class MLFlowModelRegistry(BaseModelRegistry):
                     mlflow_model_version.last_updated_timestamp
                 ),
                 model_registry_metadata={
-                    "mlflow_run_id": mlflow_model_version.run_id,
-                    "mlflow_run_link": mlflow_model_version.run_link,
+                    "mlflow_run_id": mlflow_model_version.run_id or "",
+                    "mlflow_run_link": mlflow_model_version.run_link or "",
                 },
                 model_source_uri=mlflow_model_version.source,
                 tags=mlflow_model_version.tags,
@@ -480,8 +493,8 @@ class MLFlowModelRegistry(BaseModelRegistry):
                     mlflow_model_version.last_updated_timestamp
                 ),
                 model_registry_metadata={
-                    "mlflow_run_id": mlflow_model_version.run_id,
-                    "mlflow_run_link": mlflow_model_version.run_link,
+                    "mlflow_run_id": mlflow_model_version.run_id or "",
+                    "mlflow_run_link": mlflow_model_version.run_link or "",
                 },
                 model_source_uri=mlflow_model_version.source,
                 tags=mlflow_model_version.tags,

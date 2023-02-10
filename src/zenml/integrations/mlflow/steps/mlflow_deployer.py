@@ -227,16 +227,21 @@ def mlflow_model_registry_deployer_step(
     Returns:
         MLflow deployment service
     """
-    if (
-        not params.registered_model_version
-        or not params.registered_model_stage
-    ) or (not params.registered_model_name):
+    if not params.registered_model_name:
         raise ValueError(
-            "Either `registered_model_version` or `registered_model_stage` must"
-            "be provided in addition to `registered_model_name` to the MLflow"
-            "model registry deployer step.Since the"
-            "`mlflow_model_registry_deployer_step` is used in conjunction with"
-            "the `mlflow_model_registry`."
+            "registered_model_name must be provided to the MLflow"
+            "model registry deployer step."
+        )
+    elif (
+        not params.registered_model_version
+        and not params.registered_model_stage
+    ):
+        raise ValueError(
+            "Either registered_model_version or registered_model_stage must"
+            "be provided in addition to registered_model_name to the MLflow"
+            "model registry deployer step. Since the"
+            "mlflow_model_registry_deployer_step is used in conjunction with"
+            "the mlflow_model_registry."
         )
 
     model_deployer = cast(

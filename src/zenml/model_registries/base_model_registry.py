@@ -99,7 +99,7 @@ class ModelVersion(BaseModel):
     version: Optional[str] = None
     created_at: Optional[str] = None
     last_updated_at: Optional[str] = None
-    current_stage: Optional[ModelVersionStageEnum] = None
+    current_stage: Optional[str] = None
     tags: Dict[str, str] = Field(default_factory=dict)
     model_registry_metadata: Dict[str, str] = Field(default_factory=dict)
 
