@@ -17,7 +17,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
 
 import click
 
@@ -443,13 +443,6 @@ def _prompt_email(event_source: AnalyticsEventSource) -> bool:
     "info", help="Show information about the current user setup.", hidden=True
 )
 @click.option(
-    "--packages",
-    "-p",
-    multiple=True,
-    help="Select specific installed packages.",
-    type=str,
-)
-@click.option(
     "--all",
     "-a",
     is_flag=True,
@@ -460,11 +453,18 @@ def _prompt_email(event_source: AnalyticsEventSource) -> bool:
 @click.option(
     "--file",
     "-f",
-    is_flag=True,
-    help="Output to a file.",
-    type=bool,
+    default="",
+    help="Path to export to a .yaml file.",
+    type=str,
 )
-def info(packages, all, file) -> None:
+@click.option(
+    "--packages",
+    "-p",
+    multiple=True,
+    help="Select specific installed packages.",
+    type=str,
+)
+def info(packages: Tuple[str], all: bool = False, file: str = "") -> None:
     """Show information about the current user setup.
 
     Args:
@@ -510,8 +510,8 @@ def info(packages, all, file) -> None:
             else cli_utils.get_package_information(packages)
         )
     if file:
-        file_write_path = os.path.join(os.getcwd(), "zenml_user_info.yaml")
-        write_yaml(file_write_path, user_info)
+        file_write_path = os.path.abspath(file)
+        write_yaml(file, user_info)
         declare(f"Wrote user debug info to file at '{file_write_path}'.")
     else:
         cli_utils.print_user_info(user_info)
