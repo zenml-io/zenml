@@ -32,7 +32,8 @@ def continuous_deployment_pipeline(
     x_trained_normed, x_test_normed = normalizer(
         x_train=x_train, x_test=x_test
     )
-    model = trainer(x_train=x_trained_normed, y_train=y_train)
-    accuracy = evaluator(x_test=x_test_normed, y_test=y_test, model=model)
+    model1 = trainer(x_train=x_trained_normed, y_train=y_train)
+    trainer(x_train=x_trained_normed, y_train=y_train)
+    accuracy = evaluator(x_test=x_test_normed, y_test=y_test, model=model1)
     deployment_decision = deployment_trigger(accuracy=accuracy)
-    model_deployer(deployment_decision, model)
+    model_deployer(deployment_decision, model1)
