@@ -21,6 +21,7 @@ from tests.integration.functional.cli.test_utils import (
     user_create_command,
 )
 from zenml.cli.cli import cli
+from zenml.config.global_config import GlobalConfiguration
 
 role_create_command = cli.commands["role"].commands["create"]
 
@@ -49,10 +50,15 @@ def test_server_doesnt_raise_error_for_permissionless_user() -> None:
     # disconnect from the server
     runner.invoke(cli.commands["disconnect"])
 
+    server_url = GlobalConfiguration().store.url
     # try to connect to the server with the permissionless user
     with does_not_raise():
         result = runner.invoke(
             cli.commands["connect"],
-            [f"--user={new_user_name}", f"--password={new_password}"],
+            [
+                f"--url={server_url}",
+                f"--user={new_user_name}",
+                f"--password={new_password}",
+            ],
         )
         assert result.exit_code == 0
