@@ -499,16 +499,29 @@ def info(packages: Tuple[str], all: bool = False, file: str = "") -> None:
         "analytics_user_id": str(client.active_user.id),
         "analytics_server_id": str(client.zen_store.get_store_info().id),
         "integrations": integration_registry.get_installed_integrations(),
+        "packages": {},
+        "query_packages": {},
     }
 
     if all:
         user_info["packages"] = cli_utils.get_package_information()
     if packages:
-        user_info["query_packages"] = (
-            {p: v for p, v in user_info["packages"].items() if p in packages}
-            if user_info.get("packages")
-            else cli_utils.get_package_information(packages)
-        )
+        if user_info.get("packages"):
+            if isinstance(user_info["packages"], dict):
+                user_info["query_packages"] = {
+                    p: v
+                    for p, v in user_info["packages"].items()
+                    if p in packages
+                }
+        else:
+            user_info["query_packages"] = cli_utils.get_package_information(
+                list(packages)
+            )
+        # user_info["query_packages"] = (
+        #     {p: v for p, v in user_info["packages"].items() if p in packages}
+        #     if user_info.get("packages")
+        #     else cli_utils.get_package_information(list(packages))
+        # )
     if file:
         file_write_path = os.path.abspath(file)
         write_yaml(file, user_info)
