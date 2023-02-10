@@ -1091,7 +1091,6 @@ def zen_server_exists() -> bool:
     help="Relative path at which you want to install the stack_recipe(s)",
 )
 @pass_git_stack_recipes_handler
-@click.pass_context
 def destroy(
     git_stack_recipes_handler: GitStackRecipesHandler,
     stack_recipe_name: str,
