@@ -455,7 +455,7 @@ def _prompt_email(event_source: AnalyticsEventSource) -> bool:
     "-f",
     default="",
     help="Path to export to a .yaml file.",
-    type=str,
+    type=click.Path(exists=False, dir_okay=False),
 )
 @click.option(
     "--packages",
@@ -517,11 +517,6 @@ def info(packages: Tuple[str], all: bool = False, file: str = "") -> None:
             user_info["query_packages"] = cli_utils.get_package_information(
                 list(packages)
             )
-        # user_info["query_packages"] = (
-        #     {p: v for p, v in user_info["packages"].items() if p in packages}
-        #     if user_info.get("packages")
-        #     else cli_utils.get_package_information(list(packages))
-        # )
     if file:
         file_write_path = os.path.abspath(file)
         write_yaml(file, user_info)
