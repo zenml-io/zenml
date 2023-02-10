@@ -1105,6 +1105,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 tag=build_config.tag,
                 stack=stack,
                 entrypoint=build_config.entrypoint,
+                extra_files=build_config.extra_files,
             )
 
             build_settings_hash = build_config.settings_hash

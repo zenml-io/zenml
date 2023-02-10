@@ -18,7 +18,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import PurePosixPath
-from typing import TYPE_CHECKING, List, Optional, Sequence, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Sequence, Tuple
 
 import zenml
 from zenml.config import DockerSettings
@@ -60,6 +60,7 @@ class PipelineDockerImageBuilder:
         tag: str,
         stack: "Stack",
         entrypoint: Optional[str] = None,
+        extra_files: Optional[Dict[str, str]] = None,
     ) -> str:
         """Builds (and optionally pushes) a Docker image to run a pipeline.
 
@@ -110,6 +111,7 @@ class PipelineDockerImageBuilder:
                 docker_settings.copy_files,
                 docker_settings.copy_global_config,
                 entrypoint,
+                extra_files,
             ]
         )
 
@@ -245,6 +247,12 @@ class PipelineDockerImageBuilder:
                     build_context.add_directory(
                         source=tmpdir,
                         destination=DOCKER_IMAGE_ZENML_CONFIG_DIR,
+                    )
+
+            if extra_files:
+                for filename, file_content in extra_files.items():
+                    build_context.add_file(
+                        destination=filename, source=file_content
                     )
 
             image_name_or_digest = image_builder.build(

@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Optional
+from typing import Dict, Optional
 
 from pydantic import BaseModel
 
@@ -24,6 +24,7 @@ class BuildConfiguration(BaseModel):
     tag: str
     step_name: Optional[str] = None
     entrypoint: Optional[str] = None
+    extra_files: Dict[str, str] = {}
 
     @property
     def settings_hash(self) -> str:
@@ -33,5 +34,9 @@ class BuildConfiguration(BaseModel):
         build_settings_hash.update(self.settings.json().encode())
         if self.entrypoint:
             build_settings_hash.update(self.entrypoint.encode())
+
+        for destination, source in self.extra_files.items():
+            build_settings_hash.update(destination.encode())
+            build_settings_hash.update(source.encode())
 
         return build_settings_hash.hexdigest()
