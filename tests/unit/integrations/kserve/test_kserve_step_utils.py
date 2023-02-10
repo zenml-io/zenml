@@ -19,16 +19,18 @@ from hypothesis import given
 from hypothesis.strategies import text
 
 from zenml.exceptions import ValidationError
-from zenml.integrations.kserve.services.kserve_deployment import (
-    KServeDeploymentConfig,
-)
-from zenml.integrations.kserve.steps.kserve_deployer import (
-    KServeDeployerStepParameters,
-)
-from zenml.integrations.kserve.steps.kserve_step_utils import (
-    is_valid_model_name,
-    prepare_service_config,
-)
+
+if sys.version_info.major == 3 and sys.version_info.minor != 10:
+    from zenml.integrations.kserve.services.kserve_deployment import (
+        KServeDeploymentConfig,
+    )
+    from zenml.integrations.kserve.steps.kserve_deployer import (
+        KServeDeployerStepParameters,
+    )
+    from zenml.integrations.kserve.steps.kserve_step_utils import (
+        is_valid_model_name,
+        prepare_service_config,
+    )
 
 
 @pytest.mark.skipif(
