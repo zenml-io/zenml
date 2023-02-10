@@ -1084,7 +1084,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         docker_image_builder = PipelineDockerImageBuilder()
         images: Dict[str, BuildItem] = {}
         checksums: Dict[str, str] = {}
-        image_names = {}
+        image_names: Dict[str, str] = {}
 
         for build_config in required_builds:
             combined_key = PipelineBuildBaseModel.get_key(

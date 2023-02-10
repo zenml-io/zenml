@@ -47,10 +47,12 @@ def stack_with_mock_components(mocker):
     orchestrator.config.required_secrets = set()
     orchestrator.settings_class = None
     orchestrator.config.is_remote = False
+    orchestrator.get_docker_builds.return_value = []
 
     artifact_store.config.required_secrets = set()
     artifact_store.settings_class = None
     artifact_store.config.path = "/"
+    artifact_store.get_docker_builds.return_value = []
 
     return Stack(
         id=uuid4(),

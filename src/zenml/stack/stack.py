@@ -833,8 +833,8 @@ class Stack:
                 )
 
             if (
-                build_config.settings_hash
-                != deployment.build.get_settings_hash(
+                build_config.settings_checksum
+                != deployment.build.get_settings_checksum(
                     key=build_config.key, step=build_config.step_name
                 )
             ):

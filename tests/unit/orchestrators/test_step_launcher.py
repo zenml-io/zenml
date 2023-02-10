@@ -49,7 +49,7 @@ def test_pipeline_step_name_extraction():
 
     deployment = PipelineDeploymentBaseModel.parse_obj(
         {
-            "run_name": "run_name",
+            "run_name_template": "run_name",
             "pipeline_configuration": {"name": "pipeline_name"},
             "step_configurations": {"step_1": step_1, "step_2": step_2},
         }

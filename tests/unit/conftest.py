@@ -33,6 +33,7 @@ from zenml.enums import ArtifactType, ExecutionStatus
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.models import (
     ArtifactResponseModel,
+    PipelineDeploymentResponseModel,
     PipelineResponseModel,
     PipelineRunResponseModel,
     StepRunResponseModel,
@@ -537,3 +538,19 @@ def create_pipeline_model(
         return PipelineResponseModel(**model_args)
 
     return f
+
+
+@pytest.fixture
+def sample_deployment_response_model(
+    sample_user_model: UserResponseModel,
+    sample_workspace_model: WorkspaceResponseModel,
+) -> PipelineDeploymentResponseModel:
+    return PipelineDeploymentResponseModel(
+        id=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+        user=sample_user_model,
+        workspace=sample_workspace_model,
+        run_name_template="",
+        pipeline_configuration={"name": ""},
+    )

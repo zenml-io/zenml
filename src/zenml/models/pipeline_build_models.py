@@ -51,8 +51,11 @@ class PipelineBuildBaseModel(pydantic_utils.YAMLSerializationMixin):
     is_local: bool
 
     @staticmethod
-    def get_key(key: str, step: str) -> str:
-        return f"{step}.{key}"
+    def get_key(key: str, step: Optional[str] = None) -> str:
+        if step:
+            return f"{step}.{key}"
+        else:
+            return key
 
     def _get_item(self, key: str, step: Optional[str] = None) -> BuildItem:
         if step:

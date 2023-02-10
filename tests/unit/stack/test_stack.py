@@ -20,7 +20,6 @@ from zenml.config.compiler import Compiler
 from zenml.config.pipeline_configurations import PipelineRunConfiguration
 from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError, StackValidationError
-from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
 from zenml.stack import Stack
 
 
@@ -138,18 +137,13 @@ def test_stack_validation_succeeds_if_no_component_validator_fails(
         stack_with_mock_components.validate()
 
 
-def test_stack_prepare_pipeline_run(
-    stack_with_mock_components, one_step_pipeline, empty_step
+def test_stack_prepare_pipeline_deployment(
+    stack_with_mock_components, sample_deployment_response_model
 ):
     """Tests that the stack prepares a pipeline run by calling the prepare methods of all its components."""
-    pipeline = one_step_pipeline(empty_step())
-    run_name = "some_unique_pipeline_run_name"
-    deployment = PipelineDeploymentBaseModel(
-        run_name=run_name,
-        stack_id=uuid4(),
-        pipeline_configuration=pipeline.configuration,
+    stack_with_mock_components.prepare_pipeline_deployment(
+        sample_deployment_response_model
     )
-    stack_with_mock_components.prepare_pipeline_deployment(deployment)
     for component in stack_with_mock_components.components.values():
         component.prepare_pipeline_deployment.assert_called_once()
 
@@ -406,13 +400,10 @@ def test_requires_remote_server(stack_with_mock_components, mocker):
     assert stack_with_mock_components.requires_remote_server is True
 
 
-def test_deployment_server_validation(mocker, stack_with_mock_components):
+def test_deployment_server_validation(
+    mocker, stack_with_mock_components, sample_deployment_response_model
+):
     """Tests that the deployment validation fails when the stack requires a remote server but the store is local."""
-    deployment = PipelineDeploymentBaseModel(
-        run_name="",
-        stack_id=uuid4(),
-        pipeline_configuration={"name": "", "enable_cache": True},
-    )
 
     ######### Remote server #########
     mocker.patch(
@@ -425,7 +416,9 @@ def test_deployment_server_validation(mocker, stack_with_mock_components):
         new_callable=mocker.PropertyMock,
     )
     with does_not_raise():
-        stack_with_mock_components.prepare_pipeline_deployment(deployment)
+        stack_with_mock_components.prepare_pipeline_deployment(
+            sample_deployment_response_model
+        )
 
     mocker.patch(
         "zenml.stack.Stack.requires_remote_server",
@@ -433,7 +426,9 @@ def test_deployment_server_validation(mocker, stack_with_mock_components):
         new_callable=mocker.PropertyMock,
     )
     with does_not_raise():
-        stack_with_mock_components.prepare_pipeline_deployment(deployment)
+        stack_with_mock_components.prepare_pipeline_deployment(
+            sample_deployment_response_model
+        )
 
     ######### Local server #########
     mocker.patch(
@@ -447,7 +442,9 @@ def test_deployment_server_validation(mocker, stack_with_mock_components):
         new_callable=mocker.PropertyMock,
     )
     with does_not_raise():
-        stack_with_mock_components.prepare_pipeline_deployment(deployment)
+        stack_with_mock_components.prepare_pipeline_deployment(
+            sample_deployment_response_model
+        )
 
     mocker.patch(
         "zenml.stack.Stack.requires_remote_server",
@@ -455,7 +452,9 @@ def test_deployment_server_validation(mocker, stack_with_mock_components):
         new_callable=mocker.PropertyMock,
     )
     with pytest.raises(RuntimeError):
-        stack_with_mock_components.prepare_pipeline_deployment(deployment)
+        stack_with_mock_components.prepare_pipeline_deployment(
+            sample_deployment_response_model
+        )
 
 
 def test_get_pipeline_run_metadata(
