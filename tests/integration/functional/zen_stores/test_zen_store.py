@@ -304,10 +304,6 @@ def test_removing_user_from_team_succeeds():
 
 
 def test_access_user_in_team_succeeds():
-    pass
-
-
-def test_access_user_in_team_succeeds():
     pytest.skip("Not Implemented yet.")
     pass
 
