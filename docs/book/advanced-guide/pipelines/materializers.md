@@ -142,8 +142,8 @@ that are displayed in a dedicated way in the dashboard.
 See [src.zenml.metadata.metadata_types.MetadataType](https://github.com/zenml-io/zenml/blob/main/src/zenml/metadata/metadata_types.py)
 for more details.
 
-By default, this method will extract an artifact's storage size and runtime 
-data type, but you can overwrite it to track anything you wish. E.g., the 
+By default, this method will only extract the storage size of an artifact, but
+but you can overwrite it to track anything you wish. E.g., the 
 `zenml.materializers.NumpyMaterializer` overwrites this method to track the 
 `shape`, `dtype`, and some statistical properties of each `np.ndarray` that it saves.
 
