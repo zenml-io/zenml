@@ -250,9 +250,9 @@ class PipelineDockerImageBuilder:
                     )
 
             if extra_files:
-                for filename, file_content in extra_files.items():
+                for destination, source in extra_files.items():
                     build_context.add_file(
-                        destination=filename, source=file_content
+                        destination=destination, source=source
                     )
 
             image_name_or_digest = image_builder.build(

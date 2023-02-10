@@ -353,7 +353,6 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                 raised if attempting to schedule pipeline run without using the
                 `zenml.integrations.gcp.artifact_store.GCPArtifactStore`.
         """
-        assert deployment.build
         orchestrator_run_name = get_orchestrator_run_name(
             pipeline_name=deployment.pipeline_configuration.name
         )
@@ -388,6 +387,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             `KFPV2Compiler` all `dsl.ContainerOp` instances will be
             automatically added to a singular `dsl.Pipeline` instance.
             """
+            assert deployment.build
             command = StepEntrypointConfiguration.get_entrypoint_command()
             step_name_to_container_op: Dict[str, dsl.ContainerOp] = {}
 

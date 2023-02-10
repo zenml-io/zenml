@@ -311,7 +311,6 @@ class TektonOrchestrator(ContainerizedOrchestrator):
         Raises:
             RuntimeError: If you try to run the pipelines in a notebook environment.
         """
-        assert deployment.build
         # First check whether the code running in a notebook
         if Environment.in_notebook():
             raise RuntimeError(
@@ -338,6 +337,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             Additionally, this gives each container_op information about its
             direct downstream steps.
             """
+            assert deployment.build
             # Dictionary of container_ops index by the associated step name
             step_name_to_container_op: Dict[str, dsl.ContainerOp] = {}
 

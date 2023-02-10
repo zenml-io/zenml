@@ -67,7 +67,6 @@ def main() -> None:
     orchestrator_run_id = socket.gethostname()
 
     deployment_config = Client().get_deployment(args.deployment_id)
-    assert deployment_config.build
 
     pipeline_dag = {}
     step_name_to_pipeline_step_name = {}
@@ -89,6 +88,8 @@ def main() -> None:
         Args:
             step_name: Name of the step.
         """
+        assert deployment_config.build
+
         # Define Kubernetes pod name.
         pod_name = f"{orchestrator_run_id}-{step_name}"
         pod_name = kube_utils.sanitize_pod_name(pod_name)

@@ -420,7 +420,6 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
             RuntimeError: If trying to run a pipeline in a notebook
                 environment.
         """
-        assert deployment.build
         # First check whether the code running in a notebook
         if Environment.in_notebook():
             raise RuntimeError(
@@ -448,6 +447,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
             method of a KFPCompiler all dsl.ContainerOp instances will be
             automatically added to a singular dsl.Pipeline instance.
             """
+            assert deployment.build
             # Dictionary of container_ops index by the associated step name
             step_name_to_container_op: Dict[str, dsl.ContainerOp] = {}
 
