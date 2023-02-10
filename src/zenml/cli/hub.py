@@ -20,6 +20,7 @@ from typing import Any, Dict, List, Union
 
 import click
 import requests
+from pydantic import BaseModel
 
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import print_table
@@ -35,7 +36,16 @@ logger = get_logger(__name__)
 Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
 
 
-def server_url():
+class PluginResponseModel(BaseModel):
+    """Response model for a plugin."""
+
+    name: str
+    logo: str
+    index_url: str
+    wheel_name: str
+
+
+def server_url() -> str:
     """Helper function to get the hub url."""
     if HUB_URL:
         return HUB_URL
@@ -52,18 +62,22 @@ def _hub_get(url: str) -> Json:
         verify=False,
         timeout=30,
     )
-    payload = response.json()
+    payload: Json = response.json()
     return payload
 
 
-def _list_plugins() -> Json:
+def _list_plugins() -> List[PluginResponseModel]:
     """Helper function to list all plugins in the hub."""
-    return _hub_get(f"{server_url()}/plugins")
+    payload = _hub_get(f"{server_url()}/plugins")
+    if not isinstance(payload, list):
+        return []
+    return [PluginResponseModel.parse_obj(plugin) for plugin in payload]
 
 
-def _get_plugin(plugin_name: str) -> Json:
+def _get_plugin(plugin_name: str) -> PluginResponseModel:
     """Helper function to get a specfic plugin from the hub."""
-    return _hub_get(f"{server_url()}/plugins/{plugin_name}")
+    payload = _hub_get(f"{server_url()}/plugins/{plugin_name}")
+    return PluginResponseModel.parse_obj(payload)
 
 
 def _is_package_installed(package_name: str) -> bool:
@@ -73,17 +87,17 @@ def _is_package_installed(package_name: str) -> bool:
 
 
 def _format_plugins_table(
-    plugins: List[Dict[str, str]]
+    plugins: List[PluginResponseModel],
 ) -> List[Dict[str, str]]:
-    """Helper function to add an 'INSTALLED' column to the plugins table."""
-    formatted_plugins = []
+    """Helper function to format a list of plugins into a table."""
+    plugins_table = []
     for plugin in plugins:
-        if _is_package_installed(plugin["wheel_name"]):
+        if _is_package_installed(plugin.wheel_name):
             installed_icon = ":white_check_mark:"
         else:
             installed_icon = ":x:"
-        formatted_plugins.append({"INSTALLED": installed_icon, **plugin})
-    return formatted_plugins
+        plugins_table.append({"INSTALLED": installed_icon, **plugin.dict()})
+    return plugins_table
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.HUB)
@@ -95,20 +109,18 @@ def hub() -> None:
 def list_plugins() -> None:
     """List all plugins available on the hub."""
     plugins = _list_plugins()
-    if isinstance(plugins, list):
-        plugins = _format_plugins_table(plugins)
-    print_table(plugins)
+    plugins_table = _format_plugins_table(plugins)
+    print_table(plugins_table)
 
 
 @hub.command("install")
 @click.argument("plugin_name", type=str, required=True)
-def install_plugin(plugin_name: str):
+def install_plugin(plugin_name: str) -> None:
     """Install a plugin from the hub."""
-
-    # GET on /plugins/{plugin_id} to fetch the index url and wheel name
+    # Get plugin from hub
     plugin = _get_plugin(plugin_name)
-    index_url = plugin["index_url"]
-    wheel_name = plugin["wheel_name"]
+    index_url = plugin.index_url
+    wheel_name = plugin.wheel_name
 
     # pip install the wheel
     logger.info(
@@ -130,11 +142,11 @@ def install_plugin(plugin_name: str):
 
 @hub.command("uninstall")
 @click.argument("plugin_name", type=str, required=True)
-def uninstall_plugin(plugin_name: str):
+def uninstall_plugin(plugin_name: str) -> None:
     """Uninstall a plugin from the hub."""
-    # GET on /plugins/{plugin_id} to fetch the index url and wheel name
+    # Get plugin from hub
     plugin = _get_plugin(plugin_name)
-    wheel_name = plugin["wheel_name"]
+    wheel_name = plugin.wheel_name
 
     # pip uninstall the wheel
     logger.info(f"Uninstalling plugin '{plugin_name}'...")
