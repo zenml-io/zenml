@@ -31,6 +31,7 @@ ApiException
 Archiver
 Argo
 Args
+permissionless
 ArtifactModel
 ArtifactStore
 ArtifactStoreInterfaceError
