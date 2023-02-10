@@ -1232,33 +1232,28 @@ def list_options(filter_model: Type[BaseFilterModel]) -> Callable[[F], F]:
     return inner_decorator
 
 
-def get_installed_local_packages() -> Dict[str, str]:
-    """Get a dictionary of all locally installed packages.
-
-    Returns:
-        A dictionary of all locally installed packages and their versions.
-    """
-    import pkg_resources
-
-    return {pkg.key: pkg.version for pkg in pkg_resources.working_set}
-
-
-def get_package_information(package_names: List[str]) -> Dict[str, str]:
-    """Get a dictionary of specific installed packages.
+def get_package_information(
+    package_names: Optional[List[str]] = None,
+) -> Dict[str, str]:
+    """Get a dictionary of installed packages.
 
     Args:
-        package_names: The package names to get the information for.
+        package_names: Specific package names to get the information for.
 
     Returns:
-        A dictionary of the name:version for the package names passed in.
+        A dictionary of the name:version for the package names passed in or
+            all packages and their respective versions.
     """
     import pkg_resources
 
-    return {
-        pkg.key: pkg.version
-        for pkg in pkg_resources.working_set
-        if pkg.key in package_names
-    }
+    if package_names:
+        return {
+            pkg.key: pkg.version
+            for pkg in pkg_resources.working_set
+            if pkg.key in package_names
+        }
+
+    return {pkg.key: pkg.version for pkg in pkg_resources.working_set}
 
 
 def print_user_info(info: Dict[str, Any]) -> None:

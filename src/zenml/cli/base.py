@@ -502,12 +502,13 @@ def info(packages, all, file) -> None:
     }
 
     if all:
-        user_info["packages"] = cli_utils.get_installed_local_packages()
+        user_info["packages"] = cli_utils.get_package_information()
     if packages:
-        user_info["query_packages"] = cli_utils.get_package_information(
-            packages
+        user_info["query_packages"] = (
+            {p: v for p, v in user_info["packages"].items() if p in packages}
+            if user_info.get("packages")
+            else cli_utils.get_package_information(packages)
         )
-
     if file:
         file_write_path = os.path.join(os.getcwd(), "zenml_user_info.yaml")
         write_yaml(file_write_path, user_info)
