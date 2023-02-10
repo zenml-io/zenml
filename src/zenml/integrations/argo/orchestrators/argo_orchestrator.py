@@ -229,10 +229,10 @@ class ArgoOrchestrator(BaseOrchestrator):
         with Workflow(
             orchestrator_run_name.replace("_", "-"),
             service=WorkflowService(
-                host=f"https://127.0.0.1:{self.config.argo_ui_port}",
+                host=f"{self.config.host}:{self.config.port}",
                 namespace=self.config.kubernetes_namespace,
                 token=settings.token,
-                verify_ssl=False,
+                verify_ssl=self.config.verify_ssl,
             ),
         ) as w:
             step_name_to_argo_task = {}

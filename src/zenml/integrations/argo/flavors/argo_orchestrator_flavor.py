@@ -44,18 +44,22 @@ class ArgoOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydanti
     """Configuration for the Tekton orchestrator.
 
     Attributes:
+        host: Host of the publicly
+        port: Port of the publicly exposed argo service.
+        verify_ssl: Whether to verify SSL before deploying the workflow.
         kubernetes_context: Name of a kubernetes context to run
             pipelines in.
         kubernetes_namespace: Name of the kubernetes namespace in which the
             pods that run the pipeline steps should be running.
-        argo_ui_port: A local port to which the Tekton UI will be forwarded.
         skip_ui_daemon_provisioning: If `True`, provisioning the Tekton UI
             daemon will be skipped.
     """
 
+    host: str
+    port: int = DEFAULT_ARGO_UI_PORT
+    verify_ssl: bool = True
     kubernetes_context: str  # TODO: Potential setting
     kubernetes_namespace: str = "zenml"
-    argo_ui_port: int = DEFAULT_ARGO_UI_PORT
     skip_ui_daemon_provisioning: bool = False
 
     @property
