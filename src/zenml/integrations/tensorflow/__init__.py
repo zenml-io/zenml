@@ -22,7 +22,9 @@ class TensorflowIntegration(Integration):
 
     NAME = TENSORFLOW
     REQUIREMENTS = [
-        "tensorflow-macos",
+        "tensorflow==2.8.0",
+        "tensorflow_io==0.24.0",
+        "protobuf>=3.6.0,<4.0.0",
     ]
 
     @classmethod
@@ -30,7 +32,7 @@ class TensorflowIntegration(Integration):
         """Activates the integration."""
         # need to import this explicitly to load the Tensorflow file IO support
         # for S3 and other file systems
-        # import tensorflow_io  # type: ignore [import]
+        import tensorflow_io  # type: ignore [import]
 
         from zenml.integrations.tensorflow import materializers  # noqa
 
