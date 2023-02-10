@@ -105,6 +105,7 @@ class CliCategories(StrEnum):
 
     STACK_COMPONENTS = "Stack Components"
     MODEL_DEPLOYMENT = "Model Deployment"
+    HUB = "ZenML Hub"
     INTEGRATIONS = "Integrations"
     MANAGEMENT_TOOLS = "Management Tools"
     IDENTITY_AND_SECURITY = "Identity and Security"
