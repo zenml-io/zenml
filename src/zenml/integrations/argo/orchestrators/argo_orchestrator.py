@@ -14,7 +14,6 @@
 """Implementation of the Argo orchestrator."""
 import os
 import subprocess
-import sys
 from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Type, cast
 
 from hera import (  # type: ignore[attr-defined]
@@ -30,7 +29,6 @@ from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
 from zenml.integrations.argo.flavors.argo_orchestrator_flavor import (
-    DEFAULT_ARGO_UI_PORT,
     ArgoOrchestratorConfig,
     ArgoOrchestratorSettings,
 )
@@ -39,7 +37,7 @@ from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
-from zenml.utils import io_utils, networking_utils
+from zenml.utils import io_utils
 from zenml.utils.pipeline_docker_image_builder import (
     PipelineDockerImageBuilder,
 )
@@ -366,126 +364,3 @@ class ArgoOrchestrator(BaseOrchestrator):
             True if a local k3d cluster exists, False otherwise.
         """
         return fileio.exists(self.root_directory)
-
-    @property
-    def is_running(self) -> bool:
-        """Checks if the local UI daemon is running.
-
-        Returns:
-            True if the local UI daemon for this orchestrator is running.
-        """
-        if self.config.skip_ui_daemon_provisioning:
-            return True
-
-        if sys.platform != "win32":
-            from zenml.utils.daemon import check_if_daemon_is_running
-
-            return check_if_daemon_is_running(self._pid_file_path)
-        else:
-            return True
-
-    def provision(self) -> None:
-        """Provisions resources for the orchestrator."""
-        fileio.makedirs(self.root_directory)
-
-    def deprovision(self) -> None:
-        """Deprovisions the orchestrator resources."""
-        if self.is_running:
-            self.suspend()
-
-        if fileio.exists(self.log_file):
-            fileio.remove(self.log_file)
-
-    def resume(self) -> None:
-        """Start the UI forwarding daemon if necessary."""
-        if self.is_running:
-            logger.info("Argo UI forwarding is already running.")
-            return
-
-        self.start_ui_daemon()
-
-    def suspend(self) -> None:
-        """Stop the UI forwarding daemon if it's running."""
-        if not self.is_running:
-            logger.info("Argo UI forwarding not running.")
-            return
-
-        self.stop_ui_daemon()
-
-    def start_ui_daemon(self) -> None:
-        """Start the UI forwarding daemon if possible."""
-        port = self.config.argo_ui_port
-        if (
-            port == DEFAULT_ARGO_UI_PORT
-            and not networking_utils.port_available(port)
-        ):
-            # if the user didn't specify a specific port and the default
-            # port is occupied, fallback to a random open port
-            port = networking_utils.find_available_port()
-
-        command = [
-            "kubectl",
-            "--context",
-            self.config.kubernetes_context,
-            "--namespace",
-            f"{self.config.kubernetes_namespace}",
-            "port-forward",
-            "svc/argo-server",
-            f"{port}:2746",
-        ]
-
-        if not networking_utils.port_available(port):
-            modified_command = command.copy()
-            modified_command[-1] = "<PORT>:9097"
-            logger.warning(
-                "Unable to port-forward Argo UI to local port %d "
-                "because the port is occupied. In order to access the Argo "
-                "UI at http://localhost:<PORT>/, please run '%s' in a "
-                "separate command line shell (replace <PORT> with a free port "
-                "of your choice).",
-                port,
-                " ".join(modified_command),
-            )
-        elif sys.platform == "win32":
-            logger.warning(
-                "Daemon functionality not supported on Windows. "
-                "In order to access the Argo UI at "
-                "http://localhost:%d/, please run '%s' in a separate command "
-                "line shell.",
-                port,
-                " ".join(command),
-            )
-        else:
-            from zenml.utils import daemon
-
-            def _daemon_function() -> None:
-                """Port-forwards the Argo UI pod."""
-                subprocess.check_call(command)
-
-            daemon.run_as_daemon(
-                _daemon_function,
-                pid_file=self._pid_file_path,
-                log_file=self.log_file,
-            )
-            logger.info(
-                "Started Argo UI daemon (check the daemon logs at %s "
-                "in case you're not able to view the UI). The Argo "
-                "UI should now be accessible at http://localhost:%d/.",
-                self.log_file,
-                port,
-            )
-
-    def stop_ui_daemon(self) -> None:
-        """Stop the UI forwarding daemon if it's running."""
-        if fileio.exists(self._pid_file_path):
-            if sys.platform == "win32":
-                # Daemon functionality is not supported on Windows, so the PID
-                # file won't exist. This if clause exists just for mypy to not
-                # complain about missing functions
-                pass
-            else:
-                from zenml.utils import daemon
-
-                daemon.stop_daemon(self._pid_file_path)
-                fileio.remove(self._pid_file_path)
-                logger.info("Stopped Tektion UI daemon.")
