@@ -253,6 +253,10 @@ def install(
     ):
         with console.status("Installing integrations..."):
             install_packages(requirements)
+            if "label_studio" in integrations:
+                warning(
+                    "There is a known issue with Label Studio installations via zenml. You might find that the Label Studio installation breaks the ZenML CLI. In this case, please run `pip install 'pydantic<1.11,>=1.9.0'` to fix the issue or message us on Slack if you need help with this. We are working on a more definitive fix."
+                )
 
         for integration_name in integrations_to_install:
             track_event(

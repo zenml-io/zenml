@@ -305,8 +305,8 @@ services:
       - "8080:8080"
     environment:
       - ZENML_STORE_URL=mysql://root:password@host.docker.internal/zenml
-      - ZENML_DEFAULT_USERNAME=admin
-      - ZENML_DEFAULT_PASSWORD=zenml
+      - ZENML_DEFAULT_USER_NAME=admin
+      - ZENML_DEFAULT_USER_PASSWORD=zenml
     links:
       - mysql
     depends_on:
@@ -322,7 +322,7 @@ Note the following:
 to instruct the server to connect to the database over the Docker network.
 - The `extra_hosts` section is needed on Linux to make the `host.docker.internal`
 hostname resolvable from the ZenML server container.
-- This example also uses the `ZENML_DEFAULT_USERNAME` and `ZENML_DEFAULT_PASSWORD`
+- This example also uses the `ZENML_DEFAULT_USER_NAME` and `ZENML_DEFAULT_USER_PASSWORD`
 environment variables to customize the default account credentials.
 
 To start the containers, run the following command from the directory where
