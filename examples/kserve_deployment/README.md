@@ -90,7 +90,11 @@ online predictions on the running KServe inference service.
 
 You don't need to set up any infrastructure to run your pipelines with KServe, locally. However, you need the following tools installed:
   * Docker must be installed on your local machine.
-  * Install k3d by running `curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash`.
+  * Install k3d by running `curl -s
+    https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash`.
+
+You also need to be running Linux or Windows. MacOS is currently not supported
+for these local deployments.
 
 ## Create a local KServe Stack
 

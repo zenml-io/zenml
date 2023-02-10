@@ -142,6 +142,7 @@ class AnalyticsEventSource(StrEnum):
     """Enum to identify analytics events source."""
 
     ZENML_GO = "zenml go"
+    ZENML_INIT = "zenml init"
     ZENML_SERVER = "zenml server"
 
 
