@@ -24,12 +24,12 @@ from zenml.config.pipeline_configurations import (
     PipelineRunConfiguration,
     PipelineSpec,
 )
-from zenml.config.pipeline_deployment import PipelineDeploymentBaseModel
 from zenml.exceptions import (
     PipelineInterfaceError,
     StackValidationError,
 )
 from zenml.models.page_model import Page
+from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
 from zenml.pipelines import BasePipeline, pipeline
 from zenml.steps import BaseParameters, BaseStep, step
 

@@ -148,11 +148,9 @@ class SeldonModelDeployer(BaseModelDeployer):
         builds = []
         for step_name, step in deployment.step_configurations.items():
             if step.config.extra.get(SELDON_CUSTOM_DEPLOYMENT, False) is True:
-                tag = f"{deployment.pipeline_configuration.name}-{step_name}-seldon"
                 build = BuildConfiguration(
                     key=SELDON_DOCKER_IMAGE_KEY,
                     settings=step.config.docker_settings,
-                    tag=tag,
                     step_name=step_name,
                 )
                 builds.append(build)

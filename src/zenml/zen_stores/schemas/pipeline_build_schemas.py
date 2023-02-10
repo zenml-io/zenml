@@ -18,6 +18,7 @@ import json
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
+from pydantic.json import pydantic_encoder
 from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
@@ -88,8 +89,7 @@ class PipelineBuildSchema(BaseSchema, table=True):
         back_populates="build",
     )
 
-    pipeline_images: str = Field(sa_column=Column(TEXT, nullable=False))
-    step_images: str = Field(sa_column=Column(TEXT, nullable=False))
+    images: str = Field(sa_column=Column(TEXT, nullable=False))
     is_local: bool
 
     @classmethod
@@ -109,8 +109,7 @@ class PipelineBuildSchema(BaseSchema, table=True):
             workspace_id=request.workspace,
             user_id=request.user,
             pipeline_id=request.pipeline,
-            pipeline_images=json.dumps(request.pipeline_images),
-            step_images=json.dumps(request.step_images),
+            images=json.dumps(request.images, default=pydantic_encoder),
             is_local=request.is_local,
         )
 
@@ -132,7 +131,6 @@ class PipelineBuildSchema(BaseSchema, table=True):
             ),
             created=self.created,
             updated=self.updated,
-            pipeline_images=json.loads(self.pipeline_images),
-            step_images=json.loads(self.step_images),
+            images=json.loads(self.images),
             is_local=self.is_local,
         )

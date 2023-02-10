@@ -13,10 +13,10 @@
 #  permissions and limitations under the License.
 """Models representing pipeline builds."""
 
-from typing import TYPE_CHECKING, Dict, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Dict, Optional, Union
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 from zenml.models.base_models import (
     WorkspaceScopedRequestModel,
@@ -34,6 +34,11 @@ if TYPE_CHECKING:
 # ---- #
 
 
+class BuildItem(BaseModel):
+    image: str
+    settings_checksum: Optional[str] = None
+
+
 class PipelineBuildBaseModel(pydantic_utils.YAMLSerializationMixin):
     """Base model for pipeline builds.
 
@@ -42,9 +47,27 @@ class PipelineBuildBaseModel(pydantic_utils.YAMLSerializationMixin):
         step_images: Docker images built for specific steps of the pipeline.
     """
 
-    pipeline_images: Dict[str, Tuple[str, str]] = {}
-    step_images: Dict[str, Dict[str, Tuple[str, str]]] = {}
+    images: Dict[str, BuildItem] = {}
     is_local: bool
+
+    @staticmethod
+    def get_key(key: str, step: str) -> str:
+        return f"{step}.{key}"
+
+    def _get_item(self, key: str, step: Optional[str] = None) -> BuildItem:
+        if step:
+            try:
+                k = self.get_key(key=key, step=step)
+                return self.images[k]
+            except KeyError:
+                pass
+
+        return self.images[key]
+
+        # raise KeyError(
+        #         f"Unable to find image for key {key}. Available keys: "
+        #         f"{set(images)}."
+        #     )
 
     def get_image(self, key: str, step: Optional[str] = None) -> str:
         """Get the image built for a specific key.
@@ -61,34 +84,12 @@ class PipelineBuildBaseModel(pydantic_utils.YAMLSerializationMixin):
         Returns:
             The image name or digest.
         """
-        images = self.pipeline_images.copy()
+        return self._get_item(key=key, step=step).image
 
-        if step:
-            images.update(self.step_images.get(step, {}))
-
-        try:
-            image = images[key]
-            return image[0]
-        except KeyError:
-            raise KeyError(
-                f"Unable to find image for key {key}. Available keys: "
-                f"{set(images)}."
-            )
-
-    def get_settings_hash(self, key: str, step: Optional[str] = None) -> str:
-        images = self.pipeline_images.copy()
-
-        if step:
-            images.update(self.step_images.get(step, {}))
-
-        try:
-            image = images[key]
-            return image[1]
-        except KeyError:
-            raise KeyError(
-                f"Unable to find settings hash for key {key}. Available keys: "
-                f"{set(images)}."
-            )
+    def get_settings_checksum(
+        self, key: str, step: Optional[str] = None
+    ) -> Optional[str]:
+        return self._get_item(key=key, step=step).settings_checksum
 
 
 # -------- #

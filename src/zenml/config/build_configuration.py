@@ -21,22 +21,21 @@ from zenml.config import DockerSettings
 class BuildConfiguration(BaseModel):
     key: str
     settings: DockerSettings
-    tag: str
     step_name: Optional[str] = None
     entrypoint: Optional[str] = None
     extra_files: Dict[str, str] = {}
 
     @property
-    def settings_hash(self) -> str:
+    def settings_checksum(self) -> str:
         import hashlib
 
-        build_settings_hash = hashlib.md5()
-        build_settings_hash.update(self.settings.json().encode())
+        hash_ = hashlib.md5()
+        hash_.update(self.settings.json().encode())
         if self.entrypoint:
-            build_settings_hash.update(self.entrypoint.encode())
+            hash_.update(self.entrypoint.encode())
 
         for destination, source in self.extra_files.items():
-            build_settings_hash.update(destination.encode())
-            build_settings_hash.update(source.encode())
+            hash_.update(destination.encode())
+            hash_.update(source.encode())
 
-        return build_settings_hash.hexdigest()
+        return hash_.hexdigest()

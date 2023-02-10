@@ -156,11 +156,9 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
         builds = []
         for step_name, step in deployment.step_configurations.items():
             if step.config.step_operator == self.name:
-                tag = f"{deployment.pipeline_configuration.name}-{step_name}-vertex"
                 build = BuildConfiguration(
                     key=VERTEX_DOCKER_IMAGE_KEY,
                     settings=step.config.docker_settings,
-                    tag=tag,
                     step_name=step_name,
                 )
                 builds.append(build)

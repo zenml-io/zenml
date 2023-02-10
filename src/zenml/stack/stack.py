@@ -790,8 +790,6 @@ class Stack:
     def get_docker_builds(
         self, deployment: "PipelineDeploymentBaseModel"
     ) -> List["BuildConfiguration"]:
-        # TODO: maybe make this a dict of some sort, BuildConfig -> List[key]
-        # so we can avoid building the same thing multiple times
         return list(
             itertools.chain.from_iterable(
                 component.get_docker_builds(deployment=deployment)

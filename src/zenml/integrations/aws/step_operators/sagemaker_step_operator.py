@@ -115,11 +115,9 @@ class SagemakerStepOperator(BaseStepOperator):
         builds = []
         for step_name, step in deployment.step_configurations.items():
             if step.config.step_operator == self.name:
-                tag = f"{deployment.pipeline_configuration.name}-{step_name}-sagemaker"
                 build = BuildConfiguration(
                     key=SAGEMAKER_DOCKER_IMAGE_KEY,
                     settings=step.config.docker_settings,
-                    tag=tag,
                     step_name=step_name,
                     entrypoint=f"${_ENTRYPOINT_ENV_VARIABLE}",
                 )

@@ -15,7 +15,6 @@
 import hashlib
 import inspect
 from abc import abstractmethod
-from collections import defaultdict
 from datetime import datetime
 from typing import (
     TYPE_CHECKING,
@@ -61,7 +60,10 @@ from zenml.models import (
     PipelineResponseModel,
     ScheduleRequestModel,
 )
-from zenml.models.pipeline_build_models import PipelineBuildBaseModel
+from zenml.models.pipeline_build_models import (
+    BuildItem,
+    PipelineBuildBaseModel,
+)
 from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
 from zenml.stack import Stack
 from zenml.steps import BaseStep
@@ -1080,40 +1082,42 @@ class BasePipeline(metaclass=BasePipelineMeta):
         )
 
         docker_image_builder = PipelineDockerImageBuilder()
-        pipeline_images: Dict[str, Tuple[str, str]] = {}
-        step_images: Dict[str, Dict[str, Tuple[str, str]]] = defaultdict(dict)
-        settings_hashes: Dict[str, str] = {}
+        images: Dict[str, BuildItem] = {}
+        checksums: Dict[str, str] = {}
+        image_names = {}
 
         for build_config in required_builds:
-            if build_config.step_name:
-                if build_config.key in step_images[build_config.step_name]:
-                    logger.warning(
-                        "Step image with key %s already exists",
-                        build_config.key,
-                    )
-                    continue
-            else:
-                if build_config.key in pipeline_images:
-                    logger.warning(
-                        "Pipeline image with key %s already exists",
-                        build_config.key,
-                    )
-                    continue
-
-            image_name_or_digest = docker_image_builder.build_docker_image(
-                docker_settings=build_config.settings,
-                tag=build_config.tag,
-                stack=stack,
-                entrypoint=build_config.entrypoint,
-                extra_files=build_config.extra_files,
+            combined_key = PipelineBuildBaseModel.get_key(
+                key=build_config.key, step=build_config.step_name
             )
 
-            build_settings_hash = build_config.settings_hash
+            if combined_key in images:
+                logger.warning(
+                    "Image with key %s already exists",
+                    combined_key,
+                )
+                continue
+
+            checksum = build_config.settings_checksum
+            if checksum in image_names:
+                image_name_or_digest = image_names[checksum]
+            else:
+                tag = deployment.pipeline_configuration.name
+                if build_config.step_name:
+                    tag += f"-{build_config.step_name}"
+                tag += f"-{build_config.key}"
+
+                image_name_or_digest = docker_image_builder.build_docker_image(
+                    docker_settings=build_config.settings,
+                    tag=tag,
+                    stack=stack,
+                    entrypoint=build_config.entrypoint,
+                    extra_files=build_config.extra_files,
+                )
 
             if (
-                image_name_or_digest in settings_hashes
-                and settings_hashes[image_name_or_digest]
-                != build_settings_hash
+                image_name_or_digest in checksums
+                and checksums[image_name_or_digest] != checksum
             ):
                 logger.warning(
                     "The image `%s` was built twice with different Docker "
@@ -1123,34 +1127,21 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     "in your Docker settings.",
                     image_name_or_digest,
                 )
-            settings_hashes[image_name_or_digest] = build_settings_hash
+            checksums[image_name_or_digest] = checksum
 
-            if build_config.step_name:
-                step_images[build_config.step_name][build_config.key] = (
-                    image_name_or_digest,
-                    build_settings_hash,
-                )
-            else:
-                pipeline_images[build_config.key] = (
-                    image_name_or_digest,
-                    build_settings_hash,
-                )
+            images[combined_key] = BuildItem(
+                image=image_name_or_digest, settings_checksum=checksum
+            )
 
         logger.info("Finished building Docker image(s).")
 
         is_local = stack.container_registry is None
-
-        build = PipelineBuildBaseModel(
-            is_local=is_local,
-            pipeline_images=pipeline_images,
-            step_images=step_images,
-        )
-
         build_request = PipelineBuildRequestModel(
             user=client.active_user.id,
             workspace=client.active_workspace.id,
             stack=client.active_stack_model.id,
             pipeline=pipeline_id,
-            **build.dict(),
+            is_local=is_local,
+            images=images,
         )
         return client.zen_store.create_build(build_request)
