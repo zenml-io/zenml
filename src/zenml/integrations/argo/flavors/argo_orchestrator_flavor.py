@@ -41,7 +41,7 @@ class ArgoOrchestratorSettings(BaseSettings):
 class ArgoOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
     BaseOrchestratorConfig, ArgoOrchestratorSettings
 ):
-    """Configuration for the Tekton orchestrator.
+    """Configuration for the Argo orchestrator.
 
     Attributes:
         host: Host of the publicly
