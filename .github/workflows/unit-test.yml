@@ -62,7 +62,7 @@ jobs:
           zenml integration export-requirements --output-file requirements.txt kserve
           pip install -r requirements.txt
           rm requirements.txt
-        if: inputs.python-version != '3.10'
+        if: ${{ matrix.python-version != '3.10' }}
 
       - name: Setup tmate session
         if: ${{ github.event.inputs.tags }}
