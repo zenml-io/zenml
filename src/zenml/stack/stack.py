@@ -180,7 +180,7 @@ class Stack:
                 "future versions of ZenML. Please add an image builder to this "
                 "stack:\n"
                 "`zenml image-builder register <NAME> ...\n"
-                "zenml stack update %s -i <NAME>",
+                "zenml stack update %s -i <NAME>`",
                 name,
                 id,
             )
