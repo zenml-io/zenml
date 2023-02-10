@@ -80,9 +80,9 @@ def _get_plugin(plugin_name: str) -> PluginResponseModel:
     return PluginResponseModel.parse_obj(payload)
 
 
-def _is_package_installed(package_name: str) -> bool:
-    """Helper function to check if a pip package is installed."""
-    spec = find_spec(package_name)
+def _is_plugin_installed(plugin_name: str) -> bool:
+    """Helper function to check if a plugin is installed."""
+    spec = find_spec(f"zenml.hub.{plugin_name}")
     return spec is not None
 
 
@@ -92,7 +92,7 @@ def _format_plugins_table(
     """Helper function to format a list of plugins into a table."""
     plugins_table = []
     for plugin in plugins:
-        if _is_package_installed(plugin.wheel_name):
+        if _is_plugin_installed(plugin.name):
             installed_icon = ":white_check_mark:"
         else:
             installed_icon = ":x:"
