@@ -29,6 +29,9 @@ from zenml.integrations.mlflow.mlflow_utils import (
 from zenml.integrations.mlflow.model_deployers.mlflow_model_deployer import (
     MLFlowModelDeployer,
 )
+from zenml.integrations.mlflow.model_registries.mlflow_model_registry import (
+    MLFlowModelRegistry,
+)
 from zenml.integrations.mlflow.services.mlflow_deployment import (
     MLFlowDeploymentConfig,
     MLFlowDeploymentService,
@@ -63,6 +66,9 @@ class MLFlowDeployerParameters(BaseParameters):
     """
 
     model_name: str = "model"
+    registered_model_name: Optional[str] = None
+    registered_model_version: Optional[str] = None
+    registered_model_stage: Optional[str] = None
     experiment_name: Optional[str] = None
     run_name: Optional[str] = None
     workers: int = 1
@@ -131,6 +137,8 @@ def mlflow_model_deployer_step(
         model_uri=model_uri,
         workers=params.workers,
         mlserver=params.mlserver,
+        registered_model_name=params.registered_model_name or "",
+        registered_model_version=params.registered_model_version or "",
         pipeline_name=pipeline_name,
         pipeline_run_id=run_name,
         pipeline_step_name=step_name,
@@ -185,6 +193,123 @@ def mlflow_model_deployer_step(
         # that a model server is available at all times
         if not service.is_running:
             service.start(params.timeout)
+        return service
+
+    # create a new model deployment and replace an old one if it exists
+    new_service = cast(
+        MLFlowDeploymentService,
+        model_deployer.deploy_model(
+            replace=True,
+            config=predictor_cfg,
+            timeout=params.timeout,
+        ),
+    )
+
+    logger.info(
+        f"MLflow deployment service started and reachable at:\n"
+        f"    {new_service.prediction_url}\n"
+    )
+
+    return new_service
+
+
+@step(enable_cache=False)
+def mlflow_model_registry_deployer_step(
+    params: MLFlowDeployerParameters,
+) -> MLFlowDeploymentService:
+    """Model deployer pipeline step for MLflow.
+
+    # noqa: DAR401
+
+    Args:
+        params: parameters for the deployer step
+
+    Returns:
+        MLflow deployment service
+    """
+    if (
+        not params.registered_model_version
+        or not params.registered_model_stage
+    ) or (not params.registered_model_name):
+        raise ValueError(
+            "Either `registered_model_version` or `registered_model_stage` must"
+            "be provided in addition to `registered_model_name` to the MLflow"
+            "model registry deployer step.Since the"
+            "`mlflow_model_registry_deployer_step` is used in conjunction with"
+            "the `mlflow_model_registry`."
+        )
+
+    model_deployer = cast(
+        MLFlowModelDeployer, MLFlowModelDeployer.get_active_model_deployer()
+    )
+
+    # fetch the MLflow artifacts logged during the pipeline run
+    experiment_tracker = Client().active_stack.experiment_tracker
+
+    if not isinstance(experiment_tracker, MLFlowExperimentTracker):
+        raise get_missing_mlflow_experiment_tracker_error()
+
+    # fetch the MLflow model registry
+    model_registry = Client().active_stack.model_registry
+    if not isinstance(model_registry, MLFlowModelRegistry):
+        raise ValueError(
+            "The MLflow model registry step can only be used with an "
+            "MLflow model registry."
+        )
+
+    # fetch the model version
+    if params.registered_model_version:
+        model_version = model_registry.get_model_version(
+            name=params.registered_model_name,
+            version=params.registered_model_version,
+        )
+    elif params.registered_model_stage:
+        model_version = model_registry.get_latest_model_versions(
+            name=params.registered_model_name,
+            stages=[params.registered_model_stage],
+        )[0]
+
+    if not model_version:
+        raise ValueError(
+            f"No Model Version found for model name "
+            f"{params.registered_model_name} and version "
+            f"{params.registered_model_version} or stage "
+            f"{params.registered_model_stage}"
+        )
+
+    # Set the pipeline information from the model version
+    pipeline_name = model_version.tags.get("zenml_pipeline_name", "")
+    pipeline_run_id = model_version.tags.get("zenml_pipeline_run_id", "")
+    step_name = model_version.tags.get("zenml_pipeline_step_name", "")
+
+    # fetch existing services with same pipeline name, step name and model name
+    existing_services = model_deployer.find_model_server(
+        registered_model_name=params.registered_model_name,
+        registered_model_version=params.registered_model_version,
+    )
+
+    # create a config for the new model service
+    predictor_cfg = MLFlowDeploymentConfig(
+        model_name=params.model_name or "",
+        model_uri=model_version.model_source_uri,
+        registered_model_name=params.model_name or "",
+        registered_model_version=model_version.version or "",
+        workers=params.workers,
+        mlserver=params.mlserver,
+        pipeline_name=pipeline_name,
+        pipeline_run_id=pipeline_run_id,
+        pipeline_step_name=step_name,
+        timeout=params.timeout,
+    )
+
+    # Creating a new service with inactive state and status by default
+    service = MLFlowDeploymentService(predictor_cfg)
+    if existing_services:
+        service = cast(MLFlowDeploymentService, existing_services[0])
+
+    # check if the model is already deployed but not running
+    if existing_services and not service.is_running:
+        service.start(params.timeout)
         return service
 
     # create a new model deployment and replace an old one if it exists

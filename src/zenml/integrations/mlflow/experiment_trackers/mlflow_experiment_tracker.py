@@ -276,10 +276,11 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
 
         runs = mlflow.search_runs(
             experiment_names=[experiment_name],
-            filter_string=f'tags.mlflow.runName = "{run_name}"',
+            # filter_string=f'tags.mlflow.runName = "{run_name}"',
+            run_view_type=3,
             output_format="list",
         )
-
+        breakpoint()
         if not runs:
             return None
 

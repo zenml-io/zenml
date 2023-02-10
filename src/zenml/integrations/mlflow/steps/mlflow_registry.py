@@ -54,6 +54,7 @@ class MLFlowRegistryParameters(BaseParameters):
         trained_model_name: Name of the model to be deployed.
         experiment_name: Name of the experiment to be used for the run.
         run_name: Name of the run to be created.
+        run_id: ID of the run to be used.
         model_source_uri: URI of the model source. If not provided, the model
             will be fetched from the MLflow tracking server.
         description: Description of the model.
@@ -67,20 +68,27 @@ class MLFlowRegistryParameters(BaseParameters):
     model_source_uri: Optional[str] = None
     experiment_name: Optional[str] = None
     run_name: Optional[str] = None
+    run_id: Optional[str] = None
     description: Optional[str] = None
     tags: Optional[Dict[str, str]] = None
 
 
 @step(enable_cache=False)
 def mlflow_register_model_step(
-    run_info: Dict[str, str],
+    run_id: str,
     params: MLFlowRegistryParameters,
 ) -> None:
     """MLflow model registry step.
 
     Args:
+        run_id: ID of the run to be used.
         params: Parameters for the step.
-        run_info: Run info dictionary.
+
+    Raises:
+        ValueError: If the model registry is not an MLflow model registry.
+        get_missing_mlflow_experiment_tracker_error: If the experiment tracker
+            is not an MLflow experiment tracker.
+        ValueError: If no model source URI is provided and no model is found
     """
     # fetch the MLflow artifacts logged during the pipeline run
     experiment_tracker = Client().active_stack.experiment_tracker
@@ -103,17 +111,22 @@ def mlflow_register_model_step(
     pipeline_run_id = step_env.pipeline_run_id
 
     client = MlflowClient()
-    mlflow_run_id = experiment_tracker.get_run_id(
+    mlflow_run_id = client.get_run(
+        run_id=run_id
+    ).info.run_id or experiment_tracker.get_run_id(
         experiment_name=params.experiment_name or pipeline_name,
         run_name=params.run_name or run_name,
     )
+    if not mlflow_run_id:
+        raise ValueError(
+            f"Could not find MLflow run for pipeline {pipeline_name} "
+            f"and run {run_name} in experiment {params.experiment_name}."
+        )
 
     # Set model source URI
     model_source_uri = params.model_source_uri or None
-    if (
-        not params.model_source_uri
-        and mlflow_run_id
-        and client.list_artifacts(mlflow_run_id, params.trained_model_name)
+    if not params.model_source_uri and client.list_artifacts(
+        mlflow_run_id, params.trained_model_name
     ):
         model_source_uri = artifact_utils.get_artifact_uri(
             run_id=mlflow_run_id, artifact_path=params.trained_model_name
@@ -121,7 +134,7 @@ def mlflow_register_model_step(
     if not model_source_uri:
         raise ValueError(
             "No model source URI provided and no model found in the "
-            "MLflow tracking server."
+            "MLflow tracking server for the given inputs."
         )
 
     # Add zenml tags
@@ -139,7 +152,7 @@ def mlflow_register_model_step(
     )
 
     # Register model
-    # model_registry.register_model(model_registration)
+    model_registry.register_model(model_registration)
 
     # Create model version
     model_version = ModelVersion(

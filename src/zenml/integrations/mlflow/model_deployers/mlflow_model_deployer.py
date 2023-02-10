@@ -116,6 +116,8 @@ class MLFlowModelDeployer(BaseModelDeployer):
             "PREDICTION_URL": service_instance.endpoint.prediction_url,
             "MODEL_URI": service_instance.config.model_uri,
             "MODEL_NAME": service_instance.config.model_name,
+            "REGISTERED_MODEL_NAME": service_instance.config.registered_model_name,
+            "REGISTERED_MODEL_VERSION": service_instance.config.registered_model_version,
             "SERVICE_PATH": service_instance.status.runtime_path,
             "DAEMON_PID": str(service_instance.status.pid),
         }
@@ -261,6 +263,8 @@ class MLFlowModelDeployer(BaseModelDeployer):
         model_name: Optional[str] = None,
         model_uri: Optional[str] = None,
         model_type: Optional[str] = None,
+        registered_model_name: Optional[str] = None,
+        registered_model_version: Optional[str] = None,
     ) -> List[BaseService]:
         """Finds one or more model servers that match the given criteria.
 
@@ -278,6 +282,10 @@ class MLFlowModelDeployer(BaseModelDeployer):
             model_uri: URI of the deployed model.
             model_type: Type/format of the deployed model. Not used in this
                 MLflow case.
+            registered_model_name: Name of the registered model that the
+                deployed model belongs to.
+            registered_model_version: Version of the registered model that
+                the deployed model belongs to.
 
         Returns:
             One or more Service objects representing model servers that match
@@ -293,6 +301,8 @@ class MLFlowModelDeployer(BaseModelDeployer):
             pipeline_name=pipeline_name or "",
             pipeline_run_id=pipeline_run_id or "",
             pipeline_step_name=pipeline_step_name or "",
+            registered_model_name=registered_model_name or "",
+            registered_model_version=registered_model_version or "",
         )
 
         # find all services that match the input criteria
@@ -372,6 +382,18 @@ class MLFlowModelDeployer(BaseModelDeployer):
                 not config.pipeline_run_id
                 or existing_service_config.pipeline_run_id
                 == config.pipeline_run_id
+            )
+            and (
+                (
+                    not config.registered_model_name
+                    and not config.registered_model_version
+                )
+                or (
+                    existing_service_config.registered_model_name
+                    == config.registered_model_name
+                    and existing_service_config.registered_model_version
+                    == config.registered_model_version
+                )
             )
         ):
             return True

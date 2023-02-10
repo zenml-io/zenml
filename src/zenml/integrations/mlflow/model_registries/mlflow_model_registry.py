@@ -16,6 +16,7 @@
 
 from typing import Any, Dict, List, Optional, Tuple, cast
 
+import mlflow.pyfunc
 from mlflow import MlflowClient
 from mlflow.exceptions import MlflowException
 
@@ -111,6 +112,9 @@ class MLFlowModelRegistry(BaseModelRegistry):
 
         Args:
             registered_model: The model to register.
+
+        Raises:
+            MlflowException: If the model already exists.
         """
         try:
             registered_model = self.mlflow_client.create_registered_model(
@@ -118,22 +122,26 @@ class MLFlowModelRegistry(BaseModelRegistry):
                 description=registered_model.description,
                 tags=registered_model.tags,
             )
-        except MlflowException as e:
-            logger.error(f"Error occurred while registering the model: \n{e}")
-            raise e
+        except MlflowException:
+            logger.warning(
+                "A registered model with the same name already exists."
+            )
 
     def delete_model(self, registered_model: ModelRegistration) -> None:
         """Delete a model from the MLFlow model registry.
 
         Args:
             registered_model: The model to delete.
+
+        Raises:
+            MlflowException: If the model does not exist.
         """
         try:
             self.mlflow_client.delete_registered_model(
                 name=registered_model.name,
             )
         except MlflowException as e:
-            logger.error(f"Error occurred while deleting the model: \n{e}")
+            logger.error("Error occurred while deleting the model. \n")
             raise e
 
     def update_model(self, registered_model: ModelRegistration) -> None:
@@ -141,6 +149,9 @@ class MLFlowModelRegistry(BaseModelRegistry):
 
         Args:
             registered_model: The model to update.
+
+        Raises:
+            MlflowException: If the model does not exist.
         """
         # TODO: Support updating the registered model tags.
         try:
@@ -149,7 +160,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
                 description=registered_model.description,
             )
         except MlflowException as e:
-            logger.error(f"Error occurred while updating the model: \n{e}")
+            logger.error("Error occurred while updating the model. \n")
             raise e
 
     def list_models(
@@ -166,6 +177,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
         Returns:
             A list of models.
         """
+        # Set the filter string.
         filter_string = ""
         if name:
             filter_string += f"name='{name}'"
@@ -174,15 +186,14 @@ class MLFlowModelRegistry(BaseModelRegistry):
                 if filter_string:
                     filter_string += " AND "
                 filter_string += f"tags.{tag}='{value}'"
-        try:
-            registered_models = self.mlflow_client.search_registered_models(
-                filter_string=filter_string,
-                max_results=100,
-            )
-        except MlflowException as e:
-            logger.error(f"Error occurred while listing the models: \n{e}")
-            raise e
 
+        # Get the registered models.
+        registered_models = self.mlflow_client.search_registered_models(
+            filter_string=filter_string,
+            max_results=100,
+        )
+
+        # Return the registered models.
         return [
             ModelRegistration(
                 name=registered_model.name,
@@ -202,6 +213,12 @@ class MLFlowModelRegistry(BaseModelRegistry):
         Args:
             model_version: The model to register.
             **kwargs: Arbitrary keyword arguments.
+
+        Raises:
+            MlflowException: If the registered model does not exist.
+
+        Returns:
+            The registered model version.
         """
         try:
             registered_model_version = self.mlflow_client.create_model_version(
@@ -223,15 +240,16 @@ class MLFlowModelRegistry(BaseModelRegistry):
             )
             raise e
 
+        # Return the registered model version.
         return ModelVersion(
             model_registration=ModelRegistration(
                 name=registered_model_version.name,
             ),
             model_source_uri=registered_model_version.source,
-            # model_registry_metadata={
-            #    "mlflow_run_id": registered_model_version.run_id,
-            #    "mlflow_run_link": registered_model_version.run_link,
-            # },
+            model_registry_metadata={
+                "mlflow_run_id": registered_model_version.run_id or "",
+                "mlflow_run_link": registered_model_version.run_link or "",
+            },
             version=registered_model_version.version,
             description=registered_model_version.description,
             tags=registered_model_version.tags,
@@ -251,6 +269,9 @@ class MLFlowModelRegistry(BaseModelRegistry):
         Args:
             name: The name of the model.
             version: The version of the model.
+
+        Raises:
+            MlflowException: If the model version does not exist.
         """
         try:
             self.mlflow_client.delete_model_version(
@@ -279,6 +300,12 @@ class MLFlowModelRegistry(BaseModelRegistry):
             description: The description of the model.
             tags: A dictionary of tags to filter the models by.
             stage: The stage of the model.
+
+        Raises:
+            MlflowException: If the model version does not exist.
+
+        Returns:
+            The updated model version.
         """
         # TODO: Support updating the model version tags.
         # TODO: Support updating the model version stage.
@@ -304,8 +331,8 @@ class MLFlowModelRegistry(BaseModelRegistry):
             description=updated_model_version.description,
             last_updated_at=str(updated_model_version.last_updated_timestamp),
             model_registry_metadata={
-                "mlflow_run_id": updated_model_version.run_id,
-                "mlflow_run_link": updated_model_version.run_link,
+                "mlflow_run_id": updated_model_version.run_id or "",
+                "mlflow_run_link": updated_model_version.run_link or "",
             },
             tags=updated_model_version.tags,
         )
@@ -321,6 +348,9 @@ class MLFlowModelRegistry(BaseModelRegistry):
             name: The name of the model.
             version: The version of the model.
 
+        Raises:
+            MlflowException: If the model version does not exist.
+
         Returns:
             The model version.
         """
@@ -329,29 +359,28 @@ class MLFlowModelRegistry(BaseModelRegistry):
                 name=name,
                 version=version,
             )
-            return ModelVersion(
-                model_registration=ModelRegistration(
-                    name=mlflow_model_version.name
-                ),
-                version=mlflow_model_version.version,
-                created_at=str(mlflow_model_version.creation_timestamp),
-                current_stage=mlflow_model_version.current_stage,
-                description=mlflow_model_version.description,
-                last_updated_at=str(
-                    mlflow_model_version.last_updated_timestamp
-                ),
-                model_registry_metadata={
-                    "mlflow_run_id": mlflow_model_version.run_id,
-                    "mlflow_run_link": mlflow_model_version.run_link,
-                },
-                model_source_uri=mlflow_model_version.source,
-                tags=mlflow_model_version.tags,
-            )
         except MlflowException as e:
             logger.error(
                 f"Error occurred while getting the model version: \n{e}"
             )
             raise e
+
+        return ModelVersion(
+            model_registration=ModelRegistration(
+                name=mlflow_model_version.name
+            ),
+            version=mlflow_model_version.version,
+            created_at=str(mlflow_model_version.creation_timestamp),
+            current_stage=mlflow_model_version.current_stage,
+            description=mlflow_model_version.description,
+            last_updated_at=str(mlflow_model_version.last_updated_timestamp),
+            model_registry_metadata={
+                "mlflow_run_id": mlflow_model_version.run_id or "",
+                "mlflow_run_link": mlflow_model_version.run_link or "",
+            },
+            model_source_uri=mlflow_model_version.source,
+            tags=mlflow_model_version.tags,
+        )
 
     def list_model_versions(
         self,
@@ -371,6 +400,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
         Returns:
             The model versions.
         """
+        # Set the filter string.
         filter_string = ""
         if name:
             filter_string += f"name='{name}'"
@@ -387,15 +417,13 @@ class MLFlowModelRegistry(BaseModelRegistry):
                 if filter_string:
                     filter_string += " AND "
                 filter_string += f"tags.{tag}='{value}'"
-        try:
-            mlflow_model_versions = self.mlflow_client.search_model_versions(
-                filter_string=filter_string,
-            )
-        except MlflowException as e:
-            logger.error(
-                f"Error occurred while listing the model versions: \n{e}"
-            )
-            raise e
+
+        # Get the model versions.
+        mlflow_model_versions = self.mlflow_client.search_model_versions(
+            filter_string=filter_string,
+        )
+
+        # Return the model versions.
         return [
             ModelVersion(
                 model_registration=ModelRegistration(
@@ -417,3 +445,68 @@ class MLFlowModelRegistry(BaseModelRegistry):
             )
             for mlflow_model_version in mlflow_model_versions
         ]
+
+    def get_latest_model_versions(
+        self,
+        name: Optional[str] = None,
+        stages: Optional[List[str]] = None,
+    ) -> List[ModelVersion]:
+        """Get the latest model versions from the MLFlow model registry.
+
+        Args:
+            name: The name of the model.
+            stages: The stages to fsilter by.
+
+        Returns:
+            The latest model versions or None if no model versions exist.
+        """
+        # Get the latest model versions.
+        mlflow_model_versions = self.mlflow_client.get_latest_versions(
+            name=name,
+            stages=stages,
+        )
+
+        # Return the model versions.
+        return [
+            ModelVersion(
+                model_registration=ModelRegistration(
+                    name=mlflow_model_version.name
+                ),
+                version=mlflow_model_version.version,
+                created_at=str(mlflow_model_version.creation_timestamp),
+                current_stage=mlflow_model_version.current_stage,
+                description=mlflow_model_version.description,
+                last_updated_at=str(
+                    mlflow_model_version.last_updated_timestamp
+                ),
+                model_registry_metadata={
+                    "mlflow_run_id": mlflow_model_version.run_id,
+                    "mlflow_run_link": mlflow_model_version.run_link,
+                },
+                model_source_uri=mlflow_model_version.source,
+                tags=mlflow_model_version.tags,
+            )
+            for mlflow_model_version in mlflow_model_versions
+        ]
+
+    def load_model_version(
+        self,
+        name: str,
+        version: str,
+        **kwargs: Any,
+    ) -> Any:
+        """Load a model version from the MLFlow model registry.
+
+        Args:
+            name: The name of the model.
+            version: The version of the model.
+            kwargs: Additional keyword arguments.
+
+        Returns:
+            The model.
+        """
+        # Load the model.
+        model = mlflow.pyfunc.load_model(model_uri=f"models:/{name}/{version}")
+
+        # Return the model.
+        return model

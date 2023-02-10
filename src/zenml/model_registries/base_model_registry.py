@@ -243,6 +243,24 @@ class BaseModelRegistry(StackComponent, ABC):
             The model version.
         """
 
+    @abstractmethod
+    def load_model_version(
+        self,
+        name: str,
+        version: str,
+        **kwargs: Any,
+    ) -> Any:
+        """Loads a model version for a registered model.
+
+        Args:
+            name: The name of the registered model.
+            version: The version of the model version to load.
+            kwargs: Additional keyword arguments.
+
+        Returns:
+            The loaded model version.
+        """
+
 
 class BaseModelRegistryFlavor(Flavor):
     """Base class for all ZenML model registry flavors."""

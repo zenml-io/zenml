@@ -96,6 +96,8 @@ class MLFlowDeploymentConfig(LocalDaemonServiceConfig):
 
     model_uri: str
     model_name: str
+    registered_model_name: str
+    registered_model_version: str
     workers: int = 1
     mlserver: bool = False
     timeout: int = DEFAULT_SERVICE_START_STOP_TIMEOUT
