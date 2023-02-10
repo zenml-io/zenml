@@ -15,6 +15,7 @@
 import os
 import subprocess
 import sys
+from importlib.util import find_spec
 from typing import Any, Dict, List, Union
 
 import click
@@ -65,21 +66,43 @@ def _get_plugin(plugin_name: str) -> Json:
     return _hub_get(f"{server_url()}/plugins/{plugin_name}")
 
 
+def _is_package_installed(package_name: str) -> bool:
+    """Helper function to check if a pip package is installed."""
+    spec = find_spec(package_name)
+    return spec is not None
+
+
+def _format_plugins_table(
+    plugins: List[Dict[str, str]]
+) -> List[Dict[str, str]]:
+    """Helper function to add an 'INSTALLED' column to the plugins table."""
+    formatted_plugins = []
+    for plugin in plugins:
+        if _is_package_installed(plugin["wheel_name"]):
+            installed_icon = ":white_check_mark:"
+        else:
+            installed_icon = ":x:"
+        formatted_plugins.append({"INSTALLED": installed_icon, **plugin})
+    return formatted_plugins
+
+
 @cli.group(cls=TagGroup, tag=CliCategories.HUB)
 def hub() -> None:
     """Interact with the ZenML Hub."""
 
 
-@hub.command()
-def list() -> None:
+@hub.command("list")
+def list_plugins() -> None:
     """List all plugins available on the hub."""
     plugins = _list_plugins()
+    if isinstance(plugins, list):
+        plugins = _format_plugins_table(plugins)
     print_table(plugins)
 
 
-@hub.command()
+@hub.command("install")
 @click.argument("plugin_name", type=str, required=True)
-def install(plugin_name: str):
+def install_plugin(plugin_name: str):
     """Install a plugin from the hub."""
 
     # GET on /plugins/{plugin_id} to fetch the index url and wheel name
@@ -105,9 +128,9 @@ def install(plugin_name: str):
     logger.info(f"Successfully installed plugin '{plugin_name}'.")
 
 
-@hub.command()
+@hub.command("uninstall")
 @click.argument("plugin_name", type=str, required=True)
-def uninstall(plugin_name: str):
+def uninstall_plugin(plugin_name: str):
     """Uninstall a plugin from the hub."""
     # GET on /plugins/{plugin_id} to fetch the index url and wheel name
     plugin = _get_plugin(plugin_name)
