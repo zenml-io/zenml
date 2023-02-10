@@ -486,7 +486,7 @@ def info(packages: Tuple[str], all: bool = False, file: str = "") -> None:
         "zenml_server_deployment_type": str(store_info.deployment_type),
         "zenml_config_dir": gc.config_directory,
         "zenml_local_store_dir": gc.local_stores_path,
-        "zenml_server_url": store_cfg.url,
+        "zenml_server_url": store_cfg.url or "",
         "zenml_active_repository_root": str(client.root),
         "python_version": environment.python_version(),
         "environment": get_environment(),
