@@ -135,7 +135,7 @@ def test_create_entity_twice_fails(crud_test_config: CrudTestConfig):
     """Tests getting a non-existent entity by id."""
     if crud_test_config.entity_name == "artifact":
         # Artifacts do not check for duplicates
-        pytest.skip()
+        pytest.skip("Duplicates of artifacts are allowed.")
 
     client = Client()
     # Create the entity
@@ -184,7 +184,9 @@ def test_updating_nonexisting_entity_raises_error(
         with pytest.raises(KeyError):
             crud_test_config.update_method(uuid.uuid4(), update_model)
     else:
-        pytest.skip()
+        pytest.skip(
+            "For entities that do not support updates, this test is not run."
+        )
 
 
 @pytest.mark.parametrize(
@@ -304,8 +306,18 @@ def test_removing_user_from_team_succeeds():
 
 
 def test_access_user_in_team_succeeds():
-    pytest.skip("Not Implemented yet.")
-    pass
+    """Tests accessing a users in a team."""
+
+    zen_store = Client().zen_store
+    sample_name("arias_team")
+
+    with UserContext() as created_user:
+        with TeamContext() as created_team:
+            team_update = TeamUpdateModel(users=[created_user.id])
+            team_update = zen_store.update_team(
+                team_id=created_team.id, team_update=team_update
+            )
+            assert created_user in team_update.users
 
 
 #  .------.
@@ -350,8 +362,21 @@ def test_getting_team_for_user_succeeds():
 
 
 def test_team_for_user_succeeds():
-    pytest.skip("Not Implemented yet.")
-    pass
+    """Tests accessing a users in a team."""
+
+    zen_store = Client().zen_store
+    sample_name("arias_team")
+
+    with UserContext() as created_user:
+        with TeamContext() as created_team:
+            team_update = TeamUpdateModel(users=[created_user.id])
+            team_update = zen_store.update_team(
+                team_id=created_team.id, team_update=team_update
+            )
+
+            updated_user_response = zen_store.get_user(created_user.id)
+
+            assert team_update in updated_user_response.teams
 
 
 # .-------.
