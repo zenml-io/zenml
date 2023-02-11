@@ -7,6 +7,7 @@ Create Date: 2022-12-20 11:20:30.731406
 """
 
 import sqlalchemy as sa
+import sqlmodel
 from alembic import op
 
 # revision identifiers, used by Alembic.
@@ -20,8 +21,16 @@ def upgrade() -> None:
     """Upgrade database schema and/or data, creating a new revision."""
     with op.batch_alter_table("flavor", schema=None) as batch_op:
 
-        batch_op.add_column(sa.Column("logo_url", sa.TEXT(), nullable=True))
-        batch_op.add_column(sa.Column("docs_url", sa.TEXT(), nullable=True))
+        batch_op.add_column(
+            sa.Column(
+                "logo_url", sqlmodel.sql.sqltypes.AutoString(), nullable=True
+            )
+        )
+        batch_op.add_column(
+            sa.Column(
+                "docs_url", sqlmodel.sql.sqltypes.AutoString(), nullable=True
+            )
+        )
         batch_op.add_column(
             sa.Column("is_custom", sa.BOOLEAN(), nullable=False, default=True)
         )
