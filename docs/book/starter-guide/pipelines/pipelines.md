@@ -4,7 +4,7 @@ description: How to create ML pipelines in ZenML
 
 # Start your MLOps journey with ZenML
 
-## Set up your template
+## 🥼 Set up your template
 
 Hey there! Welcome the world of MLOps, presented through the window of ZenML!
 In this guide, you will learn about how to use the ZenML open-source MLOps framework
@@ -23,6 +23,9 @@ cd mlops_starter
 # Initialize a ZenML repository
 zenml example pull starter_guide  # soon to be replaced with `zenml init --starter`
 cd starter_guide
+
+# If you have VS Code, nows the time to open it!
+code .
 ```
 
 Pro tip: Open up the `starter_guide` in your favorite IDE to inspect the code as you
@@ -30,7 +33,7 @@ go through this guide.
 
 Now, you are ready to begin. Let's dive into your local code!
 
-## Steps
+## 🚶‍♀️First Steps
 
 ZenML helps you standardize your ML workflows as ML **Pipelines** consisting of
 decoupled, modular **Steps**. This enables you to write portable code that can be
@@ -44,21 +47,28 @@ series on practical MLOps, where we introduce ML pipelines in more detail in
 {% endhint %}
 
 Steps are the atomic components of a ZenML pipeline. Each step is defined by its
-inputs, the logic it applies and its outputs. Here is a very basic example of
-such a step, which uses a utility function to load the Digits dataset:
+inputs, the logic it applies, and its outputs. You can see your first steps in the
+`steps/data_loaders.py` file in the starter template, specifically the last one:
 
 ```python
 import numpy as np
 from sklearn.datasets import load_wine
+from sklearn.model_selection import train_test_split
 
 from zenml.steps import Output, step
 
-
 @step
-def data_loader() -> pd.DataFrame:
-    """Loads the wine dataset."""
-    wine_dataset = load_wine()
-    return wine_dataset
+def simple_data_splitter(
+    dataset: pd.DataFrame,
+) -> Output(train_set=pd.DataFrame, test_set=pd.DataFrame):
+    # Load the wine dataset
+    dataset = load_wine(as_frame=True).frame
+
+    # Split the dataset into training and dev subsets
+    train_set, test_set = train_test_split(
+        dataset,
+    )
+    return train_set, test_set
 ```
 
 As this step has multiple outputs, we need to use the
@@ -68,7 +78,7 @@ a pipeline, as we will see [in a later chapter](./fetching-pipelines.md).
 
 Let's come up with a second step that consumes the output of our first step and
 performs some sort of transformation on it. In this case, let's train a support
-vector machine classifier on the training data using sklearn:
+vector machine classifier on the training data and score it with the test set:
 
 ```python
 import numpy as np
@@ -79,17 +89,24 @@ from zenml.steps import step
 
 
 @step
-def svc_trainer(
-    X_train: np.ndarray,
-    y_train: np.ndarray,
+def simple_svc_trainer(
+    train_set: pd.DataFrame,
+    test_set: pd.DataFrame,
 ) -> ClassifierMixin:
-    """Train a sklearn SVC classifier."""
+    """Trains a sklearn SVC classifier."""
+    X_train, y_train = train_set.drop("target", axis=1), train_set["target"]
+    X_test, y_test = test_set.drop("target", axis=1), test_set["target"]
     model = SVC(gamma=0.001)
     model.fit(X_train, y_train)
+    test_acc = model.score(X_test, y_test)
+    print(f"Test accuracy: {test_acc}")
     return model
 ```
 
-Next, we will combine our two steps into our first ML pipeline.
+As you can see, you can put your steps in one or multiple files, but the more
+you logically seperate them in your directory structure the better. In most cases,
+it is best to put all your steps in a seperate module called `steps`, as is shown
+in the directory!
 
 {% hint style="info" %}
 In case you want to run the step function outside the context of a ZenML 
@@ -97,7 +114,7 @@ pipeline, all you need to do is call the `.entrypoint()` method with the same
 input signature. For example:
 
 ```python
-svc_trainer.entrypoint(X_train=..., y_train=...)
+simple_svc_trainer.entrypoint(train_set=..., test_set=...)
 ```
 {% endhint %}
 
@@ -135,7 +152,7 @@ class SVCTrainerStep(BaseStep):
 ```
 </details>
 
-### Artifacts
+### 🦖 Connecting steps with Artifacts
 
 The inputs and outputs of a step are *artifacts* that are automatically tracked
 and stored by ZenML in the artifact store. Artifacts are produced by and
