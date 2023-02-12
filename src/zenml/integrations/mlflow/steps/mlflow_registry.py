@@ -15,7 +15,7 @@
 
 from typing import Dict, Optional, cast
 
-from mlflow.tracking import MlflowClient, artifact_utils
+from mlflow.tracking import artifact_utils
 
 from zenml import __version__
 from zenml.client import Client
@@ -31,7 +31,6 @@ from zenml.integrations.mlflow.model_registries.mlflow_model_registry import (
 )
 from zenml.logger import get_logger
 from zenml.model_registries.base_model_registry import (
-    ModelRegistration,
     ModelVersion,
 )
 from zenml.steps import (
@@ -106,31 +105,22 @@ def mlflow_register_model_step(
     # get pipeline name, step name and run id
     step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
     pipeline_name = step_env.pipeline_name
-    run_name = step_env.run_name
     step_name = step_env.step_name
-    pipeline_run_id = step_env.pipeline_run_id
+    pipeline_run_id = step_env.run_name
 
-    client = MlflowClient()
+    client = model_registry.mlflow_client
 
     # Get MLflow run ID either from params or from experiment tracker using
     # pipeline name and run name
-    # Note: We need to run the experiment tracker get_run_id() method
-    # first, because it will persist the run ID in the experiment tracker.
-    # not doing it causes a speriodic bug where the run ID is not found
-    mlflow_run_id = (
-        experiment_tracker.get_run_id(
-            experiment_name=params.experiment_name or pipeline_name,
-            run_name=params.run_name or run_name,
-        )
-        or params.run_id
+    mlflow_run_id = params.run_id or experiment_tracker.get_run_id(
+        experiment_name=params.experiment_name or pipeline_name,
+        run_name=params.run_name or pipeline_run_id,
     )
-    if params.run_id and params.run_id != mlflow_run_id:
-        mlflow_run_id = params.run_id
     # If no value was set at all, raise an error
     if not mlflow_run_id:
         raise ValueError(
             f"Could not find MLflow run for pipeline {pipeline_name} "
-            f"and run {run_name} in experiment {params.experiment_name}."
+            f"and run {pipeline_run_id} in experiment {params.experiment_name}."
         )
     # Lastly, check if the run ID is valid
     try:
@@ -150,7 +140,7 @@ def mlflow_register_model_step(
         )
     if not model_source_uri:
         raise ValueError(
-            "No model source URI provided and no model found in the "
+            "No model source URI provided or no model found in the "
             "MLflow tracking server for the given inputs."
         )
 
@@ -161,15 +151,12 @@ def mlflow_register_model_step(
     tags["zenml_step_name"] = step_name
     tags["zenml_version"] = __version__
 
-    # Create model registration
-    model_registration = ModelRegistration(
+    # Register model
+    model_registration = model_registry.register_model(
         name=params.registered_model_name,
         description=params.registered_model_description,
         tags=params.registered_model_tags,
     )
-
-    # Register model
-    model_registry.register_model(model_registration)
 
     # Create model version
     model_version = ModelVersion(

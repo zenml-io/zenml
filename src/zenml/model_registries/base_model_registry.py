@@ -121,27 +121,55 @@ class BaseModelRegistry(StackComponent, ABC):
         return cast(BaseModelRegistryConfig, self._config)
 
     @abstractmethod
-    def register_model(self, registered_model: ModelRegistration) -> None:
+    def register_model(
+        self,
+        name: str,
+        description: Optional[str] = None,
+        tags: Optional[Dict[str, str]] = None,
+    ) -> ModelRegistration:
         """Registers a model in the model registry.
 
         Args:
-            registered_model: The model to register.
+            name: The name of the registered model.
+            description: The description of the registered model.
+            tags: The tags associated with the registered model.
         """
 
     @abstractmethod
-    def delete_model(self, registered_model: ModelRegistration) -> None:
+    def delete_model(
+        self,
+        name: str,
+    ) -> None:
         """Deletes a registered model from the model registry.
 
         Args:
-            registered_model: The registered model to delete.
+            name: The name of the registered model.
         """
 
     @abstractmethod
-    def update_model(self, registered_model: ModelRegistration) -> None:
+    def update_model(
+        self,
+        name: str,
+        description: Optional[str] = None,
+        tags: Optional[Dict[str, str]] = None,
+    ) -> ModelRegistration:
         """Updates a registered model in the model registry.
 
         Args:
-            registered_model: The registered model to update.
+            name: The name of the registered model.
+            description: The description of the registered model.
+            tags: The tags associated with the registered model.
+        """
+
+    @abstractmethod
+    def get_model(self, name: str) -> ModelRegistration:
+        """Gets a registered model from the model registry.
+
+        Args:
+            name: The name of the registered model.
+
+        Returns:
+            The registered model.
         """
 
     @abstractmethod
