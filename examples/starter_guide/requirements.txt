@@ -1,0 +1,2 @@
+zenml[server]
+scikit-learn
