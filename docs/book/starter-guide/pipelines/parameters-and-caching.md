@@ -12,15 +12,14 @@ In order to iterate quickly, one must be able to quickly tweak pipeline runs by
 changing various parameters for the steps that make up your pipeline.
 
 {% hint style="info" %}
-If you want to configure runtime settings of pipelines and stack components,
-you'll want to [read the part of the Advanced
-Guide](../../advanced-guide/pipelines/settings.md) where we dive into how to do
-this with `BaseSettings`.
+If you want to configure infrastructure related runtime settings of pipelines and stack components,
+you'll want to [read the part of the Advanced Guide](../../advanced-guide/pipelines/settings.md)
+where we dive into how to do this with `BaseSettings`.
 {% endhint %}
 
 You can parameterize a step by creating a subclass of the `BaseParameters`. When
-an object like this is passed to a step, it is not handled like other [Artifacts](../../starter-guide/pipelines/pipelines.md#artifacts) within ZenML. Instead, it gets
-passed into the step when the pipeline is instantiated.
+an object like this is passed to a step, it is not handled like other 
+[Artifacts](../../starter-guide/pipelines/pipelines.md#artifacts-link-steps-in-pipelines) within ZenML.Instead, it gets passed into the step when the pipeline is instantiated.
 
 ```python
 import numpy as np
@@ -36,14 +35,18 @@ class SVCTrainerParams(BaseParameters):
 
 
 @step
-def svc_trainer(
+def parameterized_svc_trainer(
     params: SVCTrainerParams,
     X_train: np.ndarray,
     y_train: np.ndarray,
 ) -> ClassifierMixin:
-    """Train a sklearn SVC classifier."""
-    model = SVC(gamma=params.gamma)
+    """Train a sklearn SVC classifier with hyper-parameters."""
+    X_train, y_train = train_set.drop("target", axis=1), train_set["target"]
+    X_test, y_test = test_set.drop("target", axis=1), test_set["target"]
+    model = SVC(gamma=params.gamma) # Parameterized!
     model.fit(X_train, y_train)
+    test_acc = model.score(X_test, y_test)
+    print(f"Test accuracy: {test_acc}")
     return model
 ```
 
@@ -53,8 +56,8 @@ override the default like this:
 
 ```python
 first_pipeline_instance = first_pipeline(
-    step_1=digits_data_loader(),
-    step_2=svc_trainer(SVCTrainerParams(gamma=0.01)),
+    step_1=simple_data_splitter(),
+    step_2=parameterized_svc_trainer(SVCTrainerParams(gamma=0.01)),
 )
 
 first_pipeline_instance.run()
@@ -85,7 +88,7 @@ A practical example of how you might parameterize a step is shown below. We can 
 
 ```python
 @step
-def svc_trainer(
+def parameterized_svc_trainer(
     X_train: np.ndarray,
     y_train: np.ndarray,
 ) -> ClassifierMixin:
@@ -113,7 +116,7 @@ inside the object will be used instead of the hard-coded values.
 
 ```python
 @step
-def svc_trainer(
+def parameterized_svc_trainer(
     params: SVCTrainerParams,
     X_train: np.ndarray,
     y_train: np.ndarray,
@@ -129,8 +132,8 @@ pipeline, and override the default values of the parameters.
 
 ```python
 first_pipeline_instance = first_pipeline(
-    step_1=digits_data_loader(),
-    step_2=svc_trainer(SVCTrainerParams(gamma=0.01, C=2.5, kernel='linear')),
+    step_1=data_loader(),
+    step_2=parameterized_svc_trainer(SVCTrainerParams(gamma=0.01, C=2.5, kernel='linear')),
 )
 ```
 
@@ -149,7 +152,7 @@ team members.
 ## Caching in ZenML
 
 When you tweaked the `gamma` variable above, you must have noticed that the 
-`digits_data_loader` step does not re-execute for each subsequent run.  This is because ZenML 
+`simple_data_splitter` step does not re-execute for each subsequent run.  This is because ZenML 
 understands that nothing has changed between subsequent runs, so it re-uses the output of the last 
 run (the outputs are persisted in the [artifact store](../../component-gallery/artifact-stores/artifact-stores.md). 
 This behavior is known as **caching**.
@@ -263,16 +266,17 @@ from zenml.pipelines import pipeline
 
 
 @step
-def digits_data_loader() -> Output(
-    X_train=np.ndarray, X_test=np.ndarray, y_train=np.ndarray, y_test=np.ndarray
-):
-    """Loads the digits dataset as a tuple of flattened numpy arrays."""
-    digits = load_digits()
-    data = digits.images.reshape((len(digits.images), -1))
-    X_train, X_test, y_train, y_test = train_test_split(
-        data, digits.target, test_size=0.2, shuffle=False
+def simple_data_splitter(
+    dataset: pd.DataFrame,
+) -> Output(train_set=pd.DataFrame, test_set=pd.DataFrame):
+    # Load the wine dataset
+    dataset = load_wine(as_frame=True).frame
+
+    # Split the dataset into training and dev subsets
+    train_set, test_set = train_test_split(
+        dataset,
     )
-    return X_train, X_test, y_train, y_test
+    return train_set, test_set
 
 
 class SVCTrainerParams(BaseParameters):
@@ -281,7 +285,7 @@ class SVCTrainerParams(BaseParameters):
 
 
 @step(enable_cache=False)  # never cache this step, always retrain
-def svc_trainer(
+def parameterized_svc_trainer(
     params SVCTrainerParams,
     X_train: np.ndarray,
     y_train: np.ndarray,
@@ -294,13 +298,13 @@ def svc_trainer(
 
 @pipeline
 def first_pipeline(step_1, step_2):
-    X_train, X_test, y_train, y_test = step_1()
-    step_2(X_train, y_train)
+    train_set, test_set = step_1()
+    step_2(train_set, test_set)
 
 
 first_pipeline_instance = first_pipeline(
-    step_1=digits_data_loader(),
-    step_2=svc_trainer()
+    step_1=simple_data_splitter(),
+    step_2=parameterized_svc_trainer(),
 )
 
 # The pipeline is executed for the first time, so all steps are run.
@@ -319,10 +323,10 @@ first_pipeline_instance.run(enable_cache=False)
 Creating run for pipeline: first_pipeline
 Cache enabled for pipeline first_pipeline
 Using stack default to run pipeline first_pipeline...
-Step digits_data_loader has started.
-Step digits_data_loader has finished in 0.135s.
-Step svc_trainer has started.
-Step svc_trainer has finished in 0.109s.
+Step simple_data_splitter has started.
+Step simple_data_splitter has finished in 0.135s.
+Step parameterized_svc_trainer has started.
+Step parameterized_svc_trainer has finished in 0.109s.
 Pipeline run first_pipeline-07_Jul_22-12_05_54_573248 has finished in 0.417s.
 ```
 
@@ -332,11 +336,11 @@ Pipeline run first_pipeline-07_Jul_22-12_05_54_573248 has finished in 0.417s.
 Creating run for pipeline: first_pipeline
 Cache enabled for pipeline first_pipeline
 Using stack default to run pipeline first_pipeline...
-Step digits_data_loader has started.
-Using cached version of digits_data_loader.
-Step digits_data_loader has finished in 0.014s.
-Step svc_trainer has started.
-Step svc_trainer has finished in 0.051s.
+Step simple_data_splitter has started.
+Using cached version of simple_data_splitter.
+Step simple_data_splitter has finished in 0.014s.
+Step parameterized_svc_trainer has started.
+Step parameterized_svc_trainer has finished in 0.051s.
 Pipeline run first_pipeline-07_Jul_22-12_05_55_813554 has finished in 0.161s.
 ```
 
@@ -347,10 +351,10 @@ Creating run for pipeline: first_pipeline
 Cache enabled for pipeline first_pipeline
 Using stack default to run pipeline first_pipeline...
 Runtime configuration overwriting the pipeline cache settings to enable_cache=False for this pipeline run. The default caching strategy is retained for future pipeline runs.
-Step digits_data_loader has started.
-Step digits_data_loader has finished in 0.078s.
-Step svc_trainer has started.
-Step svc_trainer has finished in 0.048s.
+Step simple_data_splitter has started.
+Step simple_data_splitter has finished in 0.078s.
+Step parameterized_svc_trainer has started.
+Step parameterized_svc_trainer has finished in 0.048s.
 Pipeline run first_pipeline-07_Jul_22-12_05_56_718489 has finished in 0.219s.
 ```
 
