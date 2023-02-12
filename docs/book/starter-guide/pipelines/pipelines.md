@@ -290,6 +290,7 @@ last_run = pipeline_with_latest_initial_run_time.runs[-1]
 
 # get the step that was executed first
 first_step = steps[0]
+git status
 
 # if there are multiple outputs they are accessible by name
 output = step.outputs["train_set"]
