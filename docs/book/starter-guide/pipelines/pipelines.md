@@ -47,7 +47,8 @@ series on practical MLOps, where we introduce ML pipelines in more detail in
 {% endhint %}
 
 Steps are the atomic components of a ZenML pipeline. Each step is defined by its
-inputs, the logic it applies, and its outputs. You can see your first steps in the
+inputs, the logic it applies, and its outputs. Steps are simple Python functions
+with some annotations. You can see your first steps in the
 `steps/data_loaders.py` file in the starter template, specifically the last one:
 
 ```python
@@ -75,10 +76,13 @@ As this step has multiple outputs, we need to use the
 `zenml.steps.step_output.Output` class to indicate the names of each output. 
 These names can be used to directly access the outputs of steps after running
 a pipeline, as we will see [in a later chapter](./fetching-pipelines.md).
+If a step returns only a single thing (value or object etc) there is no need to use
+the `Output` class as shown above. 
 
 Let's come up with a second step that consumes the output of our first step and
 performs some sort of transformation on it. In this case, let's train a support
-vector machine classifier on the training data and score it with the test set:
+vector machine classifier on the training data and score it with the test set.
+You can see the step in the file `steps/model_trainers.py`. 
 
 ```python
 import numpy as np
@@ -106,7 +110,7 @@ def simple_svc_trainer(
 As you can see, you can put your steps in one or multiple files, but the more
 you logically seperate them in your directory structure the better. In most cases,
 it is best to put all your steps in a seperate module called `steps`, as is shown
-in the directory!
+in the starter template!
 
 {% hint style="info" %}
 In case you want to run the step function outside the context of a ZenML 
@@ -133,38 +137,24 @@ from sklearn.svm import SVC
 from zenml.steps import BaseStep, BaseParameters
 
 
-class SVCTrainerParams(BaseParameters):
-    """Trainer params"""
-    gamma: float = 0.001
-
-
 class SVCTrainerStep(BaseStep):
     def entrypoint(
         self,
-        params SVCTrainerParams,
-        X_train: np.ndarray,
-        y_train: np.ndarray,
+        train_set: pd.DataFrame,
+        test_set: pd.DataFrame,
     ) -> ClassifierMixin:
         """Train a sklearn SVC classifier."""
-        model = SVC(gamma=config.gamma)
+        X_train, y_train = train_set.drop("target", axis=1), train_set["target"]
+        X_test, y_test = test_set.drop("target", axis=1), test_set["target"]
+        model = SVC(gamma=0.001)
         model.fit(X_train, y_train)
+        test_acc = model.score(X_test, y_test)
+        print(f"Test accuracy: {test_acc}")
         return model
 ```
 </details>
 
-### 🦖 Connecting steps with Artifacts
-
-The inputs and outputs of a step are *artifacts* that are automatically tracked
-and stored by ZenML in the artifact store. Artifacts are produced by and
-circulated among steps whenever your step returns an object or a value. If a
-step returns only a single thing (value or object etc) there is no need to use
-the `Output` class as shown above. 
-
-If you want to dynamically update the hyperparameters of your pipeline, you can
-use a subclass of `BaseParams` for that purpose (explained in full detail
-[here](./parameters-and-caching.md)).
-
-## Pipeline
+## 🔌 Connecting steps with Pipeline
 
 Let us now define our first ML pipeline. This is agnostic of the implementation and can be
 done by routing outputs through the steps within the pipeline. You can think of
@@ -175,9 +165,22 @@ from zenml.pipelines import pipeline
 
 @pipeline
 def first_pipeline(step_1, step_2):
-    X_train, X_test, y_train, y_test = step_1()
-    step_2(X_train, y_train)
+    train_set, test_set = step_1()
+    step_2(train_set, test_set)
 ```
+
+### 🏃 Instantiate and run your Pipeline
+
+With your pipeline recipe in hand you can now specify which concrete step
+implementations to use when instantiating the pipeline:
+
+```python
+first_pipeline_instance = first_pipeline(
+    step_1=simple_data_splitter(),
+    step_2=simple_svc_trainer(),
+)
+```
+
 
 <details>
 <summary>Using the Class-based API</summary>
@@ -197,24 +200,11 @@ class FirstPipeline(BasePipeline):
 
 
 first_pipeline_instance = FirstPipeline(
-    step_1=digits_data_loader(),
-    step_2=SVCTrainerStep(SVCTrainerParams(gamma=0.01)),
+    step_1=simple_data_splitter(),
+    step_2=SVCTrainerStep(),
 )
 ```
 </details>
-
-
-### Instantiate and run your Pipeline
-
-With your pipeline recipe in hand you can now specify which concrete step
-implementations to use when instantiating the pipeline:
-
-```python
-first_pipeline_instance = first_pipeline(
-    step_1=digits_data_loader(),
-    step_2=svc_trainer(),
-)
-```
 
 You can then execute your pipeline instance with the `.run()` method:
 
@@ -228,10 +218,10 @@ You should see the following output in your terminal:
 Registered new pipeline with name `first_pipeline`.
 Creating run `first_pipeline-03_Oct_22-14_08_44_284312` for pipeline `first_pipeline` (Caching enabled)
 Using stack `default` to run pipeline `first_pipeline`...
-Step `digits_data_loader` has started.
-Step `digits_data_loader` has finished in 0.121s.
-Step `svc_trainer` has started.
-Step `svc_trainer` has finished in 0.099s.
+Step `simple_data_splitter` has started.
+Step `simple_data_splitter` has finished in 0.121s.
+Step `simple_svc_trainer` has started.
+Step `simple_svc_trainer` has finished in 0.099s.
 Pipeline run `first_pipeline-03_Oct_22-14_08_44_284312` has finished in 0.236s.
 Pipeline visualization can be seen in the ZenML Dashboard. Run `zenml up` to see your pipeline!
 ```
@@ -239,13 +229,13 @@ Pipeline visualization can be seen in the ZenML Dashboard. Run `zenml up` to see
 We will dive deeper into how to inspect the finished run within the chapter on
 [Accessing Pipeline Runs](./fetching-pipelines.md).
 
-### Inspect your pipeline in the dashboard
+### 👀 Inspect your pipeline in the dashboard
 
 Notice the last log, that indicates running a command to view the dashboard.
 Check out the dashboard guide [in the next section](./dashboard.md) to inspect
 your pipeline there.
 
-### Give each pipeline run a name
+### 💯 Give each pipeline run a name
 
 When running a pipeline by calling `my_pipeline.run()`, ZenML uses the current
 date and time as the name for the pipeline run. In order to change the name
@@ -265,7 +255,7 @@ one of the following placeholders that will be replaced by ZenML:
 first_pipeline_instance.run(run_name="custom_pipeline_run_name_{{date}}_{{time}}")
 ```
 
-### Unlisted runs
+### 🎽 Unlisted runs
 
 Once a pipeline has been executed, it is represented by a [`PipelineSpec`](https://apidocs.zenml.io) that uniquely identifies it. 
 Therefore, you cannot edit a pipeline after it has been run once. In order to iterate quickly pipelines, there are three options:
@@ -277,7 +267,43 @@ the `unlisted` parameter when running a pipeline: `pipeline_instance.run(unliste
 
 We will dive into quickly iterating over pipelines [later in this section](iterating.md).
 
+
+## 🦖 Artifacts link steps in pipelines
+
+The inputs and outputs of a step are *artifacts* that are automatically tracked
+and stored by ZenML in the artifact store. Artifacts are produced by and
+circulated among steps whenever your step returns an object or a value. 
+
+Artifacts can be fetched post-run by using the simple client API:
+
+```python
+from zenml.post_execution import get_pipelines
+
+# get all pipelines from all stacks
+pipelines = get_pipelines()
+
+# now you can get pipelines by index
+pipeline_with_latest_initial_run_time = pipelines[-1]
+
+# get the last run by index, runs are ordered by execution time in ascending order
+last_run = pipeline_with_latest_initial_run_time.runs[-1]
+
+# get the step that was executed first
+first_step = steps[0]
+
+# if there are multiple outputs they are accessible by name
+output = step.outputs["train_set"]
+
+# read the value into memory
+train_set = output.read()  
+```
+
+You will learn more about this in a [later chapter](./fetching-pipelines.md).
+
 ## Code Summary
+
+The entire code of this section can be found in the `steps` and `pipelines` directory of the
+starter template.
 
 <details>
 <summary>Code Example for this Section</summary>
@@ -285,7 +311,7 @@ We will dive into quickly iterating over pipelines [later in this section](itera
 ```python
 import numpy as np
 from sklearn.base import ClassifierMixin
-from sklearn.datasets import load_digits
+from sklearn.datasets import load_wine
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
 
@@ -294,38 +320,43 @@ from zenml.pipelines import pipeline
 
 
 @step
-def digits_data_loader() -> Output(
-    X_train=np.ndarray, X_test=np.ndarray, y_train=np.ndarray, y_test=np.ndarray
-):
-    """Loads the digits dataset as a tuple of flattened numpy arrays."""
-    digits = load_digits()
-    data = digits.images.reshape((len(digits.images), -1))
-    X_train, X_test, y_train, y_test = train_test_split(
-        data, digits.target, test_size=0.2, shuffle=False
+def simple_data_splitter(
+    dataset: pd.DataFrame,
+) -> Output(train_set=pd.DataFrame, test_set=pd.DataFrame):
+    # Load the wine dataset
+    dataset = load_wine(as_frame=True).frame
+
+    # Split the dataset into training and dev subsets
+    train_set, test_set = train_test_split(
+        dataset,
     )
-    return X_train, X_test, y_train, y_test
+    return train_set, test_set
 
 
 @step
-def svc_trainer(
-    X_train: np.ndarray,
-    y_train: np.ndarray,
+def simple_svc_trainer(
+    train_set: pd.DataFrame,
+    test_set: pd.DataFrame,
 ) -> ClassifierMixin:
-    """Train a sklearn SVC classifier."""
+    """Trains a sklearn SVC classifier."""
+    X_train, y_train = train_set.drop("target", axis=1), train_set["target"]
+    X_test, y_test = test_set.drop("target", axis=1), test_set["target"]
     model = SVC(gamma=0.001)
     model.fit(X_train, y_train)
+    test_acc = model.score(X_test, y_test)
+    print(f"Test accuracy: {test_acc}")
     return model
 
 
 @pipeline
 def first_pipeline(step_1, step_2):
-    X_train, X_test, y_train, y_test = step_1()
-    step_2(X_train, y_train)
+    train_set, test_set = step_1()
+    step_2(train_set, test_set)
 
 
 first_pipeline_instance = first_pipeline(
-    step_1=digits_data_loader(),
-    step_2=svc_trainer(),
+    step_1=simple_data_splitter(),
+    step_2=simple_svc_trainer(),
 )
 
 first_pipeline_instance.run()
