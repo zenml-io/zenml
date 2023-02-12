@@ -1,6 +1,0 @@
-artifact_location: file:///Users/safoine-zenml/work-dir/zen/zenml/examples/mlflow_tracking/mlruns/0
-creation_time: 1675865525223
-experiment_id: '0'
-last_update_time: 1675865525223
-lifecycle_stage: active
-name: Default

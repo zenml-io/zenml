@@ -12,21 +12,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import numpy as np
-import tensorflow as tf
 
 from zenml.steps import Output, step
 
 
 @step
-def loader_mnist() -> Output(
-    x_train=np.ndarray,
-    y_train=np.ndarray,
-    x_test=np.ndarray,
-    y_test=np.ndarray,
-):
-    """Download the MNIST data store it as an artifact."""
-    (x_train, y_train), (
-        x_test,
-        y_test,
-    ) = tf.keras.datasets.mnist.load_data()
-    return x_train, y_train, x_test, y_test
+def normalizer(
+    x_train: np.ndarray, x_test: np.ndarray
+) -> Output(x_train_normed=np.ndarray, x_test_normed=np.ndarray):
+    """Normalize the values for all the images so they are between 0 and 1."""
+    x_train_normed = x_train / 255.0
+    x_test_normed = x_test / 255.0
+    return x_train_normed, x_test_normed

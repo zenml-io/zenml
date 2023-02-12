@@ -19,7 +19,7 @@ from zenml.client import Client
 from zenml.integrations.mlflow.experiment_trackers import (
     MLFlowExperimentTracker,
 )
-from zenml.steps import BaseParameters, step
+from zenml.steps import step
 
 experiment_tracker = Client().active_stack.experiment_tracker
 
@@ -32,40 +32,13 @@ if not experiment_tracker or not isinstance(
     )
 
 
-class TrainerParameters(BaseParameters):
-    """Trainer params."""
-
-    epochs: int = 1
-    lr: float = 0.001
-
-
 @step(experiment_tracker=experiment_tracker.name)
-def tf_trainer(
-    params: TrainerParameters,
-    x_train: np.ndarray,
-    y_train: np.ndarray,
-) -> tf.keras.Model:
-    """Train a neural net from scratch to recognize MNIST digits return our
-    model or the learner."""
-    model = tf.keras.Sequential(
-        [
-            tf.keras.layers.Flatten(input_shape=(28, 28)),
-            tf.keras.layers.Dense(10),
-        ]
-    )
-
-    model.compile(
-        optimizer=tf.keras.optimizers.Adam(params.lr),
-        loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-        metrics=["accuracy"],
-    )
-
-    mlflow.tensorflow.autolog()
-    model.fit(
-        x_train,
-        y_train,
-        epochs=params.epochs,
-    )
-
-    # write model
-    return model
+def tf_evaluator(
+    x_test: np.ndarray,
+    y_test: np.ndarray,
+    model: tf.keras.Model,
+) -> float:
+    """Calculate the loss for the model for each epoch in a graph."""
+    _, test_acc = model.evaluate(x_test, y_test, verbose=2)
+    mlflow.log_metric("val_accuracy", test_acc)
+    return test_acc

@@ -19,16 +19,18 @@ docker_settings = DockerSettings(required_integrations=[MLFLOW, TENSORFLOW])
 
 
 @pipeline(enable_cache=False, settings={"docker": docker_settings})
-def mlflow_example_pipeline(
+def mlflow_training_pipeline(
     importer,
     normalizer,
     trainer,
     evaluator,
+    model_register,
 ):
     # Link all the steps artifacts together
     x_train, y_train, x_test, y_test = importer()
     x_trained_normed, x_test_normed = normalizer(
         x_train=x_train, x_test=x_test
     )
-    model = trainer(x_train=x_trained_normed, y_train=y_train)
+    model, run_id = trainer(x_train=x_trained_normed, y_train=y_train)
     evaluator(x_test=x_test_normed, y_test=y_test, model=model)
+    model_register(run_id)

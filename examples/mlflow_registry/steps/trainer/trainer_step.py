@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from typing import cast
+
 import mlflow
 import numpy as np
 import tensorflow as tf
@@ -19,7 +21,7 @@ from zenml.client import Client
 from zenml.integrations.mlflow.experiment_trackers import (
     MLFlowExperimentTracker,
 )
-from zenml.steps import BaseParameters, step
+from zenml.steps import BaseParameters, Output, step
 
 experiment_tracker = Client().active_stack.experiment_tracker
 
@@ -44,7 +46,7 @@ def tf_trainer(
     params: TrainerParameters,
     x_train: np.ndarray,
     y_train: np.ndarray,
-) -> tf.keras.Model:
+) -> Output(model=tf.keras.Model, run_id=str):
     """Train a neural net from scratch to recognize MNIST digits return our
     model or the learner."""
     model = tf.keras.Sequential(
@@ -68,4 +70,4 @@ def tf_trainer(
     )
 
     # write model
-    return model
+    return model, cast(str, mlflow.active_run().info.run_id)

@@ -135,10 +135,14 @@ zenml up
 
 # Create and activate the stack with the mlflow experiment tracker component
 zenml experiment-tracker register mlflow_tracker --flavor=mlflow
+zenml model-registry register mlflow_registry --flavor=mlflow
+zenml model-deployer register mlflow_deployer --flavor=mlflow
 zenml stack register mlflow_stack \
     -a default \
     -o default \
     -e mlflow_tracker \
+    -r mlflow_registry \
+    -d mlflow_deployer \
     --set
 ```
 
