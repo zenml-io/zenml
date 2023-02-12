@@ -17,7 +17,8 @@
 ## Starter Guide
 
 * [Pipelines](./starter-guide/pipelines/pipelines.md)
-  * [Step Parameterization and Caching](./starter-guide/pipelines/parameters-and-caching.md)
+  * [Step Parameterization](./starter-guide/pipelines/parameters.md)
+  * [Caching](./starter-guide/pipelines/caching.md)
   * [Dashboard Overview](./starter-guide/pipelines/dashboard.md)
   * [Fetching Pipelines](./starter-guide/pipelines/fetching-pipelines.md)
 * [Stacks](./starter-guide/stacks/stacks.md)

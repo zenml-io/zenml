@@ -12,12 +12,12 @@ This video gives an overview of everything discussed in this chapter.
 
 ## Settings in ZenML
 
-As discussed in a [previous chapter](../../starter-guide/pipelines/parameters-and-caching.md), there are two ways to configure anything in ZenML:
+There are two ways to parameterize anything in ZenML:
 
 - `BaseParameters`: Runtime configuration passed down as a parameter to step functions.
 - `BaseSettings`: Runtime settings passed down to stack components and pipelines.
 
-We have [already discussed `BaseParameters`](../../starter-guide/pipelines/parameters-and-caching.md) and now is the time to talk about its brother, `BaseSettings`.
+We have [already discussed `BaseParameters`](../../starter-guide/pipelines/parameters.md) and now is the time to talk about its brother, `BaseSettings`.
 
 ### What can be configured?
 
