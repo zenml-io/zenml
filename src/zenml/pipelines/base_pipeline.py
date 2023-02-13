@@ -209,6 +209,40 @@ class BasePipeline(metaclass=BasePipelineMeta):
         """
         return self.__steps
 
+    @classmethod
+    def from_model(cls: Type[T], model: "PipelineResponseModel") -> T:
+        """Creates a pipeline instance from a model.
+
+        Args:
+            model: The model to load the pipeline instance from.
+
+        Returns:
+            The pipeline instance.
+
+        Raises:
+            ValueError: If the spec version of the given model is <0.2
+        """
+        if version.parse(model.spec.version) < version.parse("0.2"):
+            raise ValueError(
+                "Loading a pipeline is only possible for pipeline specs with "
+                "version 0.2 or higher."
+            )
+
+        steps = cls._load_and_verify_steps(pipeline_spec=model.spec)
+        connect_method = cls._generate_connect_method(model=model)
+
+        pipeline_class: Type[T] = type(
+            model.name,
+            (cls,),
+            {
+                PIPELINE_INNER_FUNC_NAME: staticmethod(connect_method),
+                "__doc__": model.docstring,
+            },
+        )
+
+        pipeline_instance = pipeline_class(**steps)
+        return pipeline_instance
+
     def configure(
         self: T,
         enable_cache: Optional[bool] = None,
@@ -256,129 +290,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
         self._apply_configuration(config, merge=merge)
         return self
 
-    def _apply_class_configuration(self, options: Dict[str, Any]) -> None:
-        """Applies the configurations specified on the pipeline class.
-
-        Args:
-            options: Class configurations.
-        """
-        settings = options.pop(PARAM_SETTINGS, None)
-        extra = options.pop(PARAM_EXTRA_OPTIONS, None)
-        self.configure(settings=settings, extra=extra)
-
-    def _verify_steps(self, *steps: BaseStep, **kw_steps: Any) -> None:
-        """Verifies the initialization args and kwargs of this pipeline.
-
-        This method makes sure that no missing/unexpected arguments or
-        arguments of a wrong type are passed when creating a pipeline. If
-        all arguments are correct, saves the steps to `self.__steps`.
-
-        Args:
-            *steps: The args passed to the init method of this pipeline.
-            **kw_steps: The kwargs passed to the init method of this pipeline.
-
-        Raises:
-            PipelineInterfaceError: If there are too many/few arguments or
-                arguments with a wrong name/type.
-        """
-        input_step_keys = list(self.STEP_SPEC.keys())
-        if len(steps) > len(input_step_keys):
-            raise PipelineInterfaceError(
-                f"Too many input steps for pipeline '{self.name}'. "
-                f"This pipeline expects {len(input_step_keys)} step(s) "
-                f"but got {len(steps) + len(kw_steps)}."
-            )
-
-        combined_steps = {}
-        step_ids: Dict[int, str] = {}
-
-        def _verify_step(key: str, step: BaseStep) -> None:
-            """Verifies a single step of the pipeline.
-
-            Args:
-                key: The key of the step.
-                step: The step to verify.
-
-            Raises:
-                PipelineInterfaceError: If the step is not of the correct type
-                    or is of the same class as another step.
-            """
-            step_class = type(step)
-
-            if isinstance(step, BaseStepMeta):
-                raise PipelineInterfaceError(
-                    f"Wrong argument type (`{step_class}`) for argument "
-                    f"'{key}' of pipeline '{self.name}'. "
-                    f"A `BaseStep` subclass was provided instead of an "
-                    f"instance. "
-                    f"This might have been caused due to missing brackets of "
-                    f"your steps when creating a pipeline with `@step` "
-                    f"decorated functions, "
-                    f"for which the correct syntax is `pipeline(step=step())`."
-                )
-
-            if not isinstance(step, BaseStep):
-                raise PipelineInterfaceError(
-                    f"Wrong argument type (`{step_class}`) for argument "
-                    f"'{key}' of pipeline '{self.name}'. Only "
-                    f"`@step` decorated functions or instances of `BaseStep` "
-                    f"subclasses can be used as arguments when creating "
-                    f"a pipeline."
-                )
-
-            if id(step) in step_ids:
-                previous_key = step_ids[id(step)]
-                raise PipelineInterfaceError(
-                    f"Found the same step object for arguments "
-                    f"'{previous_key}' and '{key}' in pipeline '{self.name}'. "
-                    "Step object cannot be reused inside a ZenML pipeline. "
-                    "A possible solution is to create two instances of the "
-                    "same step class and assigning them different names: "
-                    "`first_instance = step_class(name='s1')` and "
-                    "`second_instance = step_class(name='s2')`."
-                )
-
-            step_ids[id(step)] = key
-            combined_steps[key] = step
-
-        # verify args
-        for i, step in enumerate(steps):
-            key = input_step_keys[i]
-            _verify_step(key, step)
-
-        # verify kwargs
-        for key, step in kw_steps.items():
-            if key in combined_steps:
-                # a step for this key was already set by
-                # the positional input steps
-                raise PipelineInterfaceError(
-                    f"Unexpected keyword argument '{key}' for pipeline "
-                    f"'{self.name}'. A step for this key was "
-                    f"already passed as a positional argument."
-                )
-            _verify_step(key, step)
-
-        # check if there are any missing or unexpected steps
-        expected_steps = set(self.STEP_SPEC.keys())
-        actual_steps = set(combined_steps.keys())
-        missing_steps = expected_steps - actual_steps
-        unexpected_steps = actual_steps - expected_steps
-
-        if missing_steps:
-            raise PipelineInterfaceError(
-                f"Missing input step(s) for pipeline "
-                f"'{self.name}': {missing_steps}."
-            )
-
-        if unexpected_steps:
-            raise PipelineInterfaceError(
-                f"Unexpected input step(s) for pipeline "
-                f"'{self.name}': {unexpected_steps}. This pipeline "
-                f"only requires the following steps: {expected_steps}."
-            )
-
-        self.__steps = combined_steps
-
     @abstractmethod
     def connect(self, *args: BaseStep, **kwargs: BaseStep) -> None:
         """Function that connects inputs and outputs of the pipeline steps.
@@ -392,42 +303,45 @@ class BasePipeline(metaclass=BasePipelineMeta):
         """
         raise NotImplementedError
 
-    def _get_pipeline_analytics_metadata(
-        self,
-        deployment: "PipelineDeploymentResponseModel",
-        stack: "Stack",
-    ) -> Dict[str, Any]:
-        """Returns the pipeline deployment metadata.
-
-        Args:
-            deployment: The pipeline deployment to track.
-            stack: The stack on which the pipeline will be deployed.
+    def register(self) -> "PipelineResponseModel":
+        """Register the pipeline in the server.
 
         Returns:
-            the metadata about the pipeline deployment
+            The registered pipeline model.
         """
-        custom_materializer = False
-        for step in deployment.step_configurations.values():
-            for output in step.config.outputs.values():
-                if not output.materializer_source.startswith("zenml."):
-                    custom_materializer = True
+        pipeline_spec = Compiler().compile_spec(self)
+        return self._register(pipeline_spec=pipeline_spec)
 
-        stack_creator = Client().get_stack(stack.id).user
-        active_user = Client().active_user
-        own_stack = stack_creator and stack_creator.id == active_user.id
+    def build(
+        self,
+        *,
+        settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
+        step_configurations: Optional[
+            Mapping[str, "StepConfigurationUpdateOrDict"]
+        ] = None,
+        config_path: Optional[str] = None,
+    ) -> Optional["PipelineBuildResponseModel"]:
+        """Builds Docker images for the pipeline.
 
-        stack_metadata = {
-            component_type.value: component.flavor
-            for component_type, component in stack.components.items()
-        }
-        return {
-            "store_type": Client().zen_store.type.value,
-            **stack_metadata,
-            "total_steps": len(self.steps),
-            "schedule": bool(deployment.schedule),
-            "custom_materializer": custom_materializer,
-            "own_stack": own_stack,
-        }
+        Args:
+            settings: Settings for the pipeline.
+            step_configurations: Configurations for steps of the pipeline.
+            config_path: Path to a yaml configuration file. This file will
+                be parsed as a `zenml.config.pipeline_configurations.PipelineRunConfiguration`
+                object. Options provided in this file will be overwritten by
+                options provided in code using the other arguments of this
+                method.
+
+        Returns:
+            The build output.
+        """
+        deployment, pipeline_spec, _, _ = self._compile(
+            config_path=config_path,
+            steps=step_configurations,
+            settings=settings,
+        )
+        pipeline_id = self._register(pipeline_spec=pipeline_spec).id
+        return self._build(deployment=deployment, pipeline_id=pipeline_id)
 
     def run(
         self,
@@ -595,35 +509,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 run_name=deployment.run_name_template, pipeline_id=pipeline_id
             )
 
-    def _apply_configuration(
-        self,
-        config: PipelineConfigurationUpdate,
-        merge: bool = True,
-    ) -> None:
-        """Applies an update to the pipeline configuration.
-
-        Args:
-            config: The configuration update.
-            merge: Whether to merge the updates with the existing configuration
-                or not. See the `BasePipeline.configure(...)` method for a
-                detailed explanation.
-        """
-        self._validate_configuration(config)
-        self._configuration = pydantic_utils.update_model(
-            self._configuration, update=config, recursive=merge
-        )
-        logger.debug("Updated pipeline configuration:")
-        logger.debug(self._configuration)
-
-    @staticmethod
-    def _validate_configuration(config: PipelineConfigurationUpdate) -> None:
-        """Validates a configuration update.
-
-        Args:
-            config: The configuration update to validate.
-        """
-        settings_utils.validate_setting_keys(list(config.settings))
-
     @classmethod
     def get_runs(cls) -> Optional[List["PipelineRunView"]]:
         """Get all past runs from the associated PipelineView.
@@ -704,39 +589,194 @@ class BasePipeline(metaclass=BasePipelineMeta):
         with open(path, "w") as f:
             f.write(yaml_string)
 
-    @classmethod
-    def from_model(cls: Type[T], model: "PipelineResponseModel") -> T:
-        """Creates a pipeline instance from a model.
+    def _apply_class_configuration(self, options: Dict[str, Any]) -> None:
+        """Applies the configurations specified on the pipeline class.
 
         Args:
-            model: The model to load the pipeline instance from.
+            options: Class configurations.
+        """
+        settings = options.pop(PARAM_SETTINGS, None)
+        extra = options.pop(PARAM_EXTRA_OPTIONS, None)
+        self.configure(settings=settings, extra=extra)
 
-        Returns:
-            The pipeline instance.
+    def _apply_configuration(
+        self,
+        config: PipelineConfigurationUpdate,
+        merge: bool = True,
+    ) -> None:
+        """Applies an update to the pipeline configuration.
+
+        Args:
+            config: The configuration update.
+            merge: Whether to merge the updates with the existing configuration
+                or not. See the `BasePipeline.configure(...)` method for a
+                detailed explanation.
+        """
+        self._validate_configuration(config)
+        self._configuration = pydantic_utils.update_model(
+            self._configuration, update=config, recursive=merge
+        )
+        logger.debug("Updated pipeline configuration:")
+        logger.debug(self._configuration)
+
+    @staticmethod
+    def _validate_configuration(config: PipelineConfigurationUpdate) -> None:
+        """Validates a configuration update.
+
+        Args:
+            config: The configuration update to validate.
+        """
+        settings_utils.validate_setting_keys(list(config.settings))
+
+    def _verify_steps(self, *steps: BaseStep, **kw_steps: Any) -> None:
+        """Verifies the initialization args and kwargs of this pipeline.
+
+        This method makes sure that no missing/unexpected arguments or
+        arguments of a wrong type are passed when creating a pipeline. If
+        all arguments are correct, saves the steps to `self.__steps`.
+
+        Args:
+            *steps: The args passed to the init method of this pipeline.
+            **kw_steps: The kwargs passed to the init method of this pipeline.
 
         Raises:
-            ValueError: If the spec version of the given model is <0.2
+            PipelineInterfaceError: If there are too many/few arguments or
+                arguments with a wrong name/type.
         """
-        if version.parse(model.spec.version) < version.parse("0.2"):
-            raise ValueError(
-                "Loading a pipeline is only possible for pipeline specs with "
-                "version 0.2 or higher."
+        input_step_keys = list(self.STEP_SPEC.keys())
+        if len(steps) > len(input_step_keys):
+            raise PipelineInterfaceError(
+                f"Too many input steps for pipeline '{self.name}'. "
+                f"This pipeline expects {len(input_step_keys)} step(s) "
+                f"but got {len(steps) + len(kw_steps)}."
             )
 
-        steps = cls._load_and_verify_steps(pipeline_spec=model.spec)
-        connect_method = cls._generate_connect_method(model=model)
+        combined_steps = {}
+        step_ids: Dict[int, str] = {}
 
-        pipeline_class: Type[T] = type(
-            model.name,
-            (cls,),
-            {
-                PIPELINE_INNER_FUNC_NAME: staticmethod(connect_method),
-                "__doc__": model.docstring,
-            },
-        )
+        def _verify_step(key: str, step: BaseStep) -> None:
+            """Verifies a single step of the pipeline.
 
-        pipeline_instance = pipeline_class(**steps)
-        return pipeline_instance
+            Args:
+                key: The key of the step.
+                step: The step to verify.
+
+            Raises:
+                PipelineInterfaceError: If the step is not of the correct type
+                    or is of the same class as another step.
+            """
+            step_class = type(step)
+
+            if isinstance(step, BaseStepMeta):
+                raise PipelineInterfaceError(
+                    f"Wrong argument type (`{step_class}`) for argument "
+                    f"'{key}' of pipeline '{self.name}'. "
+                    f"A `BaseStep` subclass was provided instead of an "
+                    f"instance. "
+                    f"This might have been caused due to missing brackets of "
+                    f"your steps when creating a pipeline with `@step` "
+                    f"decorated functions, "
+                    f"for which the correct syntax is `pipeline(step=step())`."
+                )
+
+            if not isinstance(step, BaseStep):
+                raise PipelineInterfaceError(
+                    f"Wrong argument type (`{step_class}`) for argument "
+                    f"'{key}' of pipeline '{self.name}'. Only "
+                    f"`@step` decorated functions or instances of `BaseStep` "
+                    f"subclasses can be used as arguments when creating "
+                    f"a pipeline."
+                )
+
+            if id(step) in step_ids:
+                previous_key = step_ids[id(step)]
+                raise PipelineInterfaceError(
+                    f"Found the same step object for arguments "
+                    f"'{previous_key}' and '{key}' in pipeline '{self.name}'. "
+                    "Step object cannot be reused inside a ZenML pipeline. "
+                    "A possible solution is to create two instances of the "
+                    "same step class and assigning them different names: "
+                    "`first_instance = step_class(name='s1')` and "
+                    "`second_instance = step_class(name='s2')`."
+                )
+
+            step_ids[id(step)] = key
+            combined_steps[key] = step
+
+        # verify args
+        for i, step in enumerate(steps):
+            key = input_step_keys[i]
+            _verify_step(key, step)
+
+        # verify kwargs
+        for key, step in kw_steps.items():
+            if key in combined_steps:
+                # a step for this key was already set by
+                # the positional input steps
+                raise PipelineInterfaceError(
+                    f"Unexpected keyword argument '{key}' for pipeline "
+                    f"'{self.name}'. A step for this key was "
+                    f"already passed as a positional argument."
+                )
+            _verify_step(key, step)
+
+        # check if there are any missing or unexpected steps
+        expected_steps = set(self.STEP_SPEC.keys())
+        actual_steps = set(combined_steps.keys())
+        missing_steps = expected_steps - actual_steps
+        unexpected_steps = actual_steps - expected_steps
+
+        if missing_steps:
+            raise PipelineInterfaceError(
+                f"Missing input step(s) for pipeline "
+                f"'{self.name}': {missing_steps}."
+            )
+
+        if unexpected_steps:
+            raise PipelineInterfaceError(
+                f"Unexpected input step(s) for pipeline "
+                f"'{self.name}': {unexpected_steps}. This pipeline "
+                f"only requires the following steps: {expected_steps}."
+            )
+
+        self.__steps = combined_steps
+
+    def _get_pipeline_analytics_metadata(
+        self,
+        deployment: "PipelineDeploymentResponseModel",
+        stack: "Stack",
+    ) -> Dict[str, Any]:
+        """Returns the pipeline deployment metadata.
+
+        Args:
+            deployment: The pipeline deployment to track.
+            stack: The stack on which the pipeline will be deployed.
+
+        Returns:
+            the metadata about the pipeline deployment
+        """
+        custom_materializer = False
+        for step in deployment.step_configurations.values():
+            for output in step.config.outputs.values():
+                if not output.materializer_source.startswith("zenml."):
+                    custom_materializer = True
+
+        stack_creator = Client().get_stack(stack.id).user
+        active_user = Client().active_user
+        own_stack = stack_creator and stack_creator.id == active_user.id
+
+        stack_metadata = {
+            component_type.value: component.flavor
+            for component_type, component in stack.components.items()
+        }
+        return {
+            "store_type": Client().zen_store.type.value,
+            **stack_metadata,
+            "total_steps": len(self.steps),
+            "schedule": bool(deployment.schedule),
+            "custom_materializer": custom_materializer,
+            "own_stack": own_stack,
+        }
 
     @staticmethod
     def _load_and_verify_steps(
@@ -893,15 +933,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
         )
 
         return deployment, pipeline_spec, run_config.schedule, run_config.build
-
-    def register(self) -> "PipelineResponseModel":
-        """Register the pipeline in the server.
-
-        Returns:
-            The registered pipeline model.
-        """
-        pipeline_spec = Compiler().compile_spec(self)
-        return self._register(pipeline_spec=pipeline_spec)
 
     def _register(
         self, pipeline_spec: "PipelineSpec"
@@ -1066,37 +1097,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
         return build_model
 
-    def build(
-        self,
-        *,
-        settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
-        step_configurations: Optional[
-            Mapping[str, "StepConfigurationUpdateOrDict"]
-        ] = None,
-        config_path: Optional[str] = None,
-    ) -> Optional["PipelineBuildResponseModel"]:
-        """Builds Docker images for the pipeline.
-
-        Args:
-            settings: Settings for the pipeline.
-            step_configurations: Configurations for steps of the pipeline.
-            config_path: Path to a yaml configuration file. This file will
-                be parsed as a `zenml.config.pipeline_configurations.PipelineRunConfiguration`
-                object. Options provided in this file will be overwritten by
-                options provided in code using the other arguments of this
-                method.
-
-        Returns:
-            The build output.
-        """
-        deployment, pipeline_spec, _, _ = self._compile(
-            config_path=config_path,
-            steps=step_configurations,
-            settings=settings,
-        )
-        pipeline_id = self._register(pipeline_spec=pipeline_spec).id
-        return self._build(deployment=deployment, pipeline_id=pipeline_id)
-
     def _build(
         self,
         deployment: "PipelineDeploymentBaseModel",
@@ -1110,6 +1110,10 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
         Returns:
             The build output.
+
+        Raises:
+            RuntimeError: If multiple builds with the same key but different
+                settings were specified.
         """
         client = Client()
         stack = client.active_stack
@@ -1126,22 +1130,29 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
         docker_image_builder = PipelineDockerImageBuilder()
         images: Dict[str, BuildItem] = {}
-        checksums: Dict[str, str] = {}
         image_names: Dict[str, str] = {}
 
         for build_config in required_builds:
             combined_key = PipelineBuildBaseModel.get_key(
                 key=build_config.key, step=build_config.step_name
             )
+            checksum = build_config.settings_checksum
 
             if combined_key in images:
-                logger.warning(
-                    "Image with key %s already exists",
-                    combined_key,
-                )
-                continue
+                previous_checksum = images[combined_key].settings_checksum
 
-            checksum = build_config.settings_checksum
+                if previous_checksum != checksum:
+                    raise RuntimeError(
+                        f"Trying to build image for key `{combined_key}` but "
+                        "an image for this key was already built with a "
+                        "different configuration. This happens if multiple "
+                        "stack components specified Docker builds for the same "
+                        "key in the `StackComponent.get_docker_builds(...)` "
+                        "method. If you're using custom components, make sure "
+                        "to provide unique keys when returning your build "
+                        "configurations to avoid this error."
+                    )
+
             if checksum in image_names:
                 image_name_or_digest = image_names[checksum]
             else:
@@ -1158,23 +1169,10 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     extra_files=build_config.extra_files,
                 )
 
-            if (
-                image_name_or_digest in checksums
-                and checksums[image_name_or_digest] != checksum
-            ):
-                logger.warning(
-                    "The image `%s` was built twice with different Docker "
-                    "settings. Only the latest version will be used which "
-                    "might lead to failure. To fix this warning, assign "
-                    "different repository or tag names for all images of your "
-                    "in your Docker settings.",
-                    image_name_or_digest,
-                )
-            checksums[image_name_or_digest] = checksum
-
             images[combined_key] = BuildItem(
                 image=image_name_or_digest, settings_checksum=checksum
             )
+            image_names[checksum] = image_name_or_digest
 
         logger.info("Finished building Docker image(s).")
 
