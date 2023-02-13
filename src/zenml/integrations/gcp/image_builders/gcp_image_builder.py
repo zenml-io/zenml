@@ -125,7 +125,8 @@ class GCPImageBuilder(BaseImageBuilder, GoogleCredentialsMixin):
             image_name=image_name, cloud_build_context=cloud_build_context
         )
         image_digest = self._run_cloud_build(build=build)
-        image_name_with_digest = f"{image_name}@{image_digest}"
+        image_name_without_tag, _ = image_name.rsplit(":", 1)
+        image_name_with_digest = f"{image_name_without_tag}@{image_digest}"
         return image_name_with_digest
 
     def _configure_cloud_build(

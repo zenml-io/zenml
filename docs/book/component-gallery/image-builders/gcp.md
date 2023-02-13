@@ -39,5 +39,5 @@ zenml image-builder register <IMAGE_BUILDER_NAME> \
     --cloud_builder_image=<BUILDER_IMAGE_NAME>
 
 # Register and activate a stack with the new image builder
-zenml stack register <STACK_NAME> -im <IMAGE_BUILDER_NAME> ... --set
+zenml stack register <STACK_NAME> -i <IMAGE_BUILDER_NAME> ... --set
 ```
