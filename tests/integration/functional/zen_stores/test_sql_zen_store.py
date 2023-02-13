@@ -41,6 +41,10 @@ from zenml.models import (
     ComponentUpdateModel,
     FlavorFilterModel,
     FlavorRequestModel,
+    PipelineBuildFilterModel,
+    PipelineBuildRequestModel,
+    PipelineDeploymentFilterModel,
+    PipelineDeploymentRequestModel,
     PipelineFilterModel,
     PipelineRequestModel,
     PipelineRunFilterModel,
@@ -1138,6 +1142,178 @@ def test_deleting_nonexistent_pipeline_fails(
     """Tests deleting nonexistent pipeline fails."""
     with pytest.raises(KeyError):
         sql_store["store"].delete_pipeline(uuid.uuid4())
+
+
+# ---------------
+# Pipeline Builds
+# ---------------
+
+
+def test_creating_a_build(sql_store):
+    """Tests creating a build."""
+    store = sql_store["store"]
+    request = PipelineBuildRequestModel(
+        user=sql_store["active_user"].id,
+        workspace=sql_store["default_workspace"].id,
+        images={},
+        is_local=False,
+    )
+    with does_not_raise():
+        store.create_build(request)
+
+
+def test_listing_builds(sql_store):
+    """Tests listing builds."""
+    store = sql_store["store"]
+    builds = store.list_builds(PipelineBuildFilterModel())
+    assert len(builds) == 0
+
+    request = PipelineBuildRequestModel(
+        user=sql_store["active_user"].id,
+        workspace=sql_store["default_workspace"].id,
+        images={},
+        is_local=False,
+    )
+    response = store.create_build(request)
+
+    builds = store.list_builds(PipelineBuildFilterModel())
+    assert len(builds) == 1
+    assert builds[0] == response
+
+    builds = store.list_builds(PipelineBuildFilterModel(stack_id=uuid.uuid4()))
+    assert len(builds) == 0
+
+
+def test_getting_builds(sql_store):
+    """Tests getting builds."""
+    store = sql_store["store"]
+
+    with pytest.raises(KeyError):
+        store.get_build(uuid.uuid4())
+
+    request = PipelineBuildRequestModel(
+        user=sql_store["active_user"].id,
+        workspace=sql_store["default_workspace"].id,
+        images={},
+        is_local=False,
+    )
+    response = store.create_build(request)
+
+    with does_not_raise():
+        build = store.get_build(response.id)
+
+    assert build == response
+
+
+def test_deleting_builds(sql_store):
+    """Tests deleting builds."""
+    store = sql_store["store"]
+
+    with pytest.raises(KeyError):
+        store.delete_build(uuid.uuid4())
+
+    request = PipelineBuildRequestModel(
+        user=sql_store["active_user"].id,
+        workspace=sql_store["default_workspace"].id,
+        images={},
+        is_local=False,
+    )
+    response = store.create_build(request)
+
+    with does_not_raise():
+        store.delete_build(response.id)
+
+    with pytest.raises(KeyError):
+        store.get_build(response.id)
+
+
+# --------------------
+# Pipeline Deployments
+# --------------------
+
+
+def test_creating_a_deployment(sql_store):
+    """Tests creating a deployment."""
+    store = sql_store["store"]
+    request = PipelineDeploymentRequestModel(
+        user=sql_store["active_user"].id,
+        workspace=sql_store["default_workspace"].id,
+        stack=sql_store["default_stack"].id,
+        run_name_template="",
+        pipeline_configuration={"name": "pipeline_name"},
+    )
+    with does_not_raise():
+        store.create_deployment(request)
+
+
+def test_listing_deployments(sql_store):
+    """Tests listing deployments."""
+    store = sql_store["store"]
+    deployments = store.list_deployments(PipelineDeploymentFilterModel())
+    assert len(deployments) == 0
+
+    request = PipelineDeploymentRequestModel(
+        user=sql_store["active_user"].id,
+        workspace=sql_store["default_workspace"].id,
+        stack=sql_store["default_stack"].id,
+        run_name_template="",
+        pipeline_configuration={"name": "pipeline_name"},
+    )
+    response = store.create_deployment(request)
+
+    deployments = store.list_deployments(PipelineDeploymentFilterModel())
+    assert len(deployments) == 1
+    assert deployments[0] == response
+
+    deployments = store.list_deployments(
+        PipelineDeploymentFilterModel(stack_id=uuid.uuid4())
+    )
+    assert len(deployments) == 0
+
+
+def test_getting_deployments(sql_store):
+    """Tests getting deployments."""
+    store = sql_store["store"]
+
+    with pytest.raises(KeyError):
+        store.get_deployment(uuid.uuid4())
+
+    request = PipelineDeploymentRequestModel(
+        user=sql_store["active_user"].id,
+        workspace=sql_store["default_workspace"].id,
+        stack=sql_store["default_stack"].id,
+        run_name_template="",
+        pipeline_configuration={"name": "pipeline_name"},
+    )
+    response = store.create_deployment(request)
+
+    with does_not_raise():
+        deployment = store.get_deployment(response.id)
+
+    assert deployment == response
+
+
+def test_deleting_deployments(sql_store):
+    """Tests deleting deployments."""
+    store = sql_store["store"]
+
+    with pytest.raises(KeyError):
+        store.delete_deployment(uuid.uuid4())
+
+    request = PipelineDeploymentRequestModel(
+        user=sql_store["active_user"].id,
+        workspace=sql_store["default_workspace"].id,
+        stack=sql_store["default_stack"].id,
+        run_name_template="",
+        pipeline_configuration={"name": "pipeline_name"},
+    )
+    response = store.create_deployment(request)
+
+    with does_not_raise():
+        store.delete_deployment(response.id)
+
+    with pytest.raises(KeyError):
+        store.get_deployment(response.id)
 
 
 # ---------
