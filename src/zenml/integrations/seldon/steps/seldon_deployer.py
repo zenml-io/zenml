@@ -411,6 +411,13 @@ def seldon_mlflow_registry_deployer_step(
 
     Returns:
         Seldon Core deployment service
+
+    Raises:
+        ValueError: if registry_model_name is not provided
+        ValueError: if neither registry_model_version nor
+            registry_model_stage is provided
+        get_missing_mlflow_experiment_tracker_error: if the MLflow
+            experiment tracker is not available in the active stack
     """
     # import here to avoid failing the pipeline if the step is not used
     from zenml.integrations.mlflow.experiment_trackers import (

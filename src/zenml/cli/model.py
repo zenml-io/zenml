@@ -84,7 +84,7 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
         """List of all registered models within the model registry.
 
         The list can be filtered by tags using the --tags flag.
-        Example: zenm model-registry models listy-model --tags key1 value1 key2 value2
+        Example: zenml model-registry models list-versions --tags key1 value1 key2 value2
 
         Args:
             model_registry: The model registry stack component.

@@ -97,6 +97,10 @@ def mlflow_model_deployer_step(
 
     Returns:
         MLflow deployment service
+    
+    Raises:
+        get_missing_mlflow_experiment_tracker_error: if the MLflow experiment
+            tracker is not found
     """
     model_deployer = cast(
         MLFlowModelDeployer, MLFlowModelDeployer.get_active_model_deployer()
@@ -228,6 +232,13 @@ def mlflow_model_registry_deployer_step(
 
     Returns:
         MLflow deployment service
+    
+    Raises:
+        ValueError: if the registry_model_name is not provided
+        ValueError: if the registry_model_version or registry_model_stage is not provided
+        get_missing_mlflow_experiment_tracker_error: if No MLflow experiment tracker is found
+            in the current active stack
+
     """
     if not params.registry_model_name:
         raise ValueError(

@@ -71,6 +71,10 @@ class MLFlowModelRegistry(BaseModelRegistry):
     def mlflow_client(self) -> MlflowClient:
         """Get the MLFlow client.
 
+        Raises:
+            get_missing_mlflow_experiment_tracker_error: If the stack does not
+                contain an MLFlow experiment tracker.
+
         Returns:
             The MLFlowClient.
         """
@@ -85,14 +89,14 @@ class MLFlowModelRegistry(BaseModelRegistry):
 
     @property
     def validator(self) -> Optional[StackValidator]:
-        """Validates that the stack contains an mlflow expirement tracker.
+        """Validates that the stack contains an mlflow experiment tracker.
 
         Returns:
             A StackValidator instance.
         """
 
         def _validate_stack_requirements(stack: "Stack") -> Tuple[bool, str]:
-            """Validates that the expirement tracker is an mlflow expirement tracker.
+            """Validates that the experiment tracker is an mlflow experiment tracker.
 
             Args:
                 stack: The stack to validate.
@@ -100,13 +104,13 @@ class MLFlowModelRegistry(BaseModelRegistry):
             Returns:
                 A tuple of (is_valid, error_message).
             """
-            # Validate that the expirement tracker is an mlflow expirementb tracker.
+            # Validate that the experiment tracker is an mlflow experiment tracker.
             expirement_tracker = stack.experiment_tracker
             assert expirement_tracker is not None
             if expirement_tracker.flavor != "mlflow":
                 return False, (
-                    "The MLFlow model registry requires a MLFlow expirement "
-                    "tracker. You should register a MLFlow expirement "
+                    "The MLFlow model registry requires a MLFlow experiment "
+                    "tracker. You should register a MLFlow experiment "
                     "tracker to the stack using the following command: "
                     "`zenml stack register expirement_tracker ..."
                 )
@@ -177,6 +181,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
 
         Raises:
             MlflowException: If the model does not exist.
+            KeyError: If the model does not exist.
         """
         # Check if model exists.
         if not self.check_model_exists(name):
@@ -210,7 +215,8 @@ class MLFlowModelRegistry(BaseModelRegistry):
             tags (Dict, optional): The tags of the model.
 
         Raises:
-            MlflowException: If the model does not exist.
+            MlflowException: If mlflow fails to update the model.
+            KeyError: If the model does not exist.
 
         Returns:
             The updated model.
@@ -262,7 +268,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
             The model.
 
         Raises:
-            MlflowException: If the model does not exist.
+            MlflowException: If mlflow fails to get the model.
         """
         # Get the registered model.
         try:
@@ -440,7 +446,8 @@ class MLFlowModelRegistry(BaseModelRegistry):
             version (str): The version of the model.
 
         Raises:
-            MlflowException: If the model version does not exist.
+            MlflowException: If mlflow fails to delete the model version.
+            KeyError: If the model version does not exist.
         """
         if not self.check_model_version_exists(name, version):
             raise KeyError(
@@ -477,7 +484,8 @@ class MLFlowModelRegistry(BaseModelRegistry):
             version_stage (ModelVersionStage, Optional): The stage of the model version.
 
         Raises:
-            MlflowException: If the model version does not exist.
+            MlflowException: If mlflow fails to update the model version.
+            KeyError: If the model version does not exist.
 
         Returns:
             The updated model version.
@@ -545,7 +553,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
             version (str): The version of the model.
 
         Raises:
-            MlflowException: If the model version does not exist.
+            MlflowException: If mlflow fails to get the model version.
 
         Returns:
             The model version.
@@ -659,6 +667,9 @@ class MLFlowModelRegistry(BaseModelRegistry):
 
         Returns:
             The latest model versions or None if no model versions exist.
+        
+        Raises:
+            KeyError: If the model does not exist.
         """
         if self.check_model_exists(name):
             raise KeyError(f"Model '{name}' does not exist.")

@@ -415,12 +415,14 @@ LookupError
 MERCHANTABILITY
 MIIDETCCAfmgAwIBAgIQYUmQg
 MLFlow
+MLFlowClient
 MLFlowDeployerConfig
 MLFlowDeployerParameters
 MLFlowDeploymentConfig
 MLFlowDeploymentLoaderStepConfig
 MLFlowDeploymentLoaderStepParameters
 MLFlowDeploymentService
+MlflowException
 MLFlowExperimentTracker
 MLFlowExperimentTrackerSettings
 MLFlowModelDeployer
@@ -456,8 +458,12 @@ Mixin
 MjYxMzI
 ModelArtifact
 ModelMesh
+ModelRegistration
 ModelRun
 ModelServer
+ModelVersion
+ModelVersionStage
+ZenMLModelMetadata
 ModuleNotFoundError
 MyAlerterConfig
 MyArtifacStoreFlavor
