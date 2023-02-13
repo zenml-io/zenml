@@ -16,6 +16,7 @@
 import os
 import subprocess
 import sys
+from datetime import datetime
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -43,6 +44,10 @@ from zenml.console import console, zenml_style_defaults
 from zenml.constants import FILTERING_DATETIME_FORMAT, IS_DEBUG_ENV
 from zenml.enums import GenericFilterOps, StackComponentType, StoreType
 from zenml.logger import get_logger
+from zenml.model_registries.base_model_registry import (
+    ModelRegistration,
+    ModelVersion,
+)
 from zenml.models import BaseFilterModel
 from zenml.models.base_models import BaseResponseModel
 from zenml.models.filter_models import (
@@ -725,6 +730,106 @@ def pretty_print_model_deployer(
     print_table(
         model_service_dicts, UUID=table.Column(header="UUID", min_width=36)
     )
+
+
+def pretty_print_registered_model_table(
+    registered_models: List["ModelRegistration"],
+) -> None:
+    """Given a list of registered_models, print all associated key-value pairs.
+
+    Args:
+        registered_models: list of registered models
+    """
+    registered_model_dicts = []
+    for registered_model in registered_models:
+        registered_model_dicts.append(
+            {
+                "NAME": registered_model.name,
+                "DESCRIPTION": registered_model.description,
+                "TAGS": registered_model.tags,
+            }
+        )
+    print_table(
+        registered_model_dicts, UUID=table.Column(header="UUID", min_width=36)
+    )
+
+
+def pretty_print_model_version_table(
+    model_versions: List["ModelVersion"],
+) -> None:
+    """Given a list of model_versions, print all associated key-value pairs.
+
+    Args:
+        model_versions: list of model versions
+    """
+    model_version_dicts = []
+    for model_version in model_versions:
+        model_version_dicts.append(
+            {
+                "NAME": model_version.model_registration.name,
+                "MODEL_VERSION": model_version.version,
+                "DESCRIPTION": model_version.description,
+                "TAGS": model_version.tags,
+            }
+        )
+    print_table(
+        model_version_dicts, UUID=table.Column(header="UUID", min_width=36)
+    )
+
+
+def pretty_print_model_version_details(
+    model_version: "ModelVersion",
+) -> None:
+    """Given a model_version, print all associated key-value pairs.
+
+    Args:
+        model_version: model version
+    """
+    title_ = f"Properties of model `{model_version.model_registration.name}` version `{model_version.version}`"
+
+    rich_table = table.Table(
+        box=box.HEAVY_EDGE,
+        title=title_,
+        show_lines=True,
+    )
+    rich_table.add_column("MODEL VERSION PROPERTY", overflow="fold")
+    rich_table.add_column("VALUE", overflow="fold")
+    model_version_info = {
+        "REGISTERED_MODEL_NAME": model_version.model_registration.name,
+        "VERSION": model_version.version,
+        "DESCRIPTION": model_version.description,
+        "CREATED_AT": str(
+            datetime.fromtimestamp(int(model_version.created_at) / 1000.0)
+        ),
+        "UPDATED_AT": str(
+            datetime.fromtimestamp(int(model_version.last_updated_at) / 1000.0)
+        ),
+        "ZENML_VERSION": model_version.zenml_metadata.zenml_version or "N/A",
+        "ZENML_PIPELINE_RUN_ID": model_version.zenml_metadata.zenml_pipeline_run_id
+        or "N/A",
+        "ZENML_PIPELINE_NAME": model_version.zenml_metadata.zenml_pipeline_name
+        or "N/A",
+        "ZENML_PIPELINE_STEP_NAME": model_version.zenml_metadata.zenml_step_name
+        or "N/A",
+        "TAGS": model_version.tags,
+        "MODEL_SOURCE_URI": model_version.model_source_uri,
+        "CURRENT_STAGE": model_version.current_stage,
+    }
+    for key, value in model_version.registry_metadata.items():
+        model_version_info[key.upper()] = value or "N/A"
+
+    # Sort fields alphabetically
+    # sorted_items = {k: v for k, v in sorted(model_version_info.items())}
+
+    for item in model_version_info.items():
+        rich_table.add_row(*[str(elem) for elem in item])
+
+    # capitalize entries in first column
+    rich_table.columns[0]._cells = [
+        component.upper()  # type: ignore[union-attr]
+        for component in rich_table.columns[0]._cells
+    ]
+    console.print(rich_table)
 
 
 def print_served_model_configuration(

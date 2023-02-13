@@ -16,7 +16,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Type, cast
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, root_validator
 
 from zenml.enums import StackComponentType
 from zenml.stack import Flavor, StackComponent
@@ -58,16 +58,16 @@ class ZenMLModelMetadata(BaseModel):
     ID, pipeline run name, and pipeline step.
 
     Attributes:
-        zenml_version: The ZenML version associated with this model version.
-        pipeline_run_id: The pipeline run ID associated with this model version.
-        pipeline_run_name: The pipeline run name associated with this model version.
-        pipeline_step: The pipeline step associated with this model version.
+        zenml_version: The ZenML version used to create this model version.
+        zenml_pipeline_run_id: The pipeline run ID used to create this model version.
+        zenml_pipeline_name: The pipeline name used to create this model version.
+        zenml_step_name: The pipeline step name used to create this model version.
     """
 
     zenml_version: Optional[str] = None
-    pipeline_run_id: Optional[str] = None
-    pipeline_run_name: Optional[str] = None
-    pipeline_step: Optional[str] = None
+    zenml_pipeline_run_id: Optional[str] = None
+    zenml_pipeline_name: Optional[str] = None
+    zenml_step_name: Optional[str] = None
 
 
 class ModelVersion(BaseModel):
@@ -90,7 +90,7 @@ class ModelVersion(BaseModel):
         last_updated_at: The last updated time of this model version
         current_stage: The current stage of this model version
         tags: Tags associated with this model version
-        model_registry_metadata: The metadata associated with this model version
+        registry_metadata: The metadata associated with this model version
     """
 
     model_registration: ModelRegistration
@@ -101,7 +101,46 @@ class ModelVersion(BaseModel):
     last_updated_at: Optional[str] = None
     current_stage: Optional[str] = None
     tags: Dict[str, str] = Field(default_factory=dict)
-    model_registry_metadata: Dict[str, str] = Field(default_factory=dict)
+    registry_metadata: Dict[str, str] = Field(default_factory=dict)
+    zenml_metadata: Optional[ZenMLModelMetadata] = Field(
+        default_factory=ZenMLModelMetadata
+    )
+
+    @root_validator
+    def fill_in_out_zenml_metadata(
+        cls, values: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Fills in ZenML metadata if not provided.
+
+        Args:
+            values: The values to validate.
+
+        Returns:
+            The validated values.
+        """
+        if values.get("zenml_metadata") is None:
+            values["zenml_metadata"] = ZenMLModelMetadata()
+        if "zenml_version" in values.get("tags", {}).keys():
+            values["zenml_metadata"].zenml_version = values.get("tags").get(
+                "zenml_version"
+            )
+            values["tags"].pop("zenml_version")
+        if "zenml_pipeline_run_id" in values.get("tags", {}).keys():
+            values["zenml_metadata"].zenml_pipeline_run_id = values.get(
+                "tags"
+            ).get("zenml_pipeline_run_id")
+            values["tags"].pop("zenml_pipeline_run_id")
+        if "zenml_pipeline_name" in values.get("tags", {}).keys():
+            values["zenml_metadata"].zenml_pipeline_name = values.get(
+                "tags"
+            ).get("zenml_pipeline_name")
+            values["tags"].pop("zenml_pipeline_name")
+        if "zenml_step_name" in values.get("tags", {}).keys():
+            values["zenml_metadata"].zenml_step_name = values.get("tags").get(
+                "zenml_step_name"
+            )
+            values["tags"].pop("zenml_step_name")
+        return values
 
 
 class BaseModelRegistryConfig(StackComponentConfig):
@@ -191,14 +230,41 @@ class BaseModelRegistry(StackComponent, ABC):
     @abstractmethod
     def register_model_version(
         self,
-        model_version: ModelVersion,
+        name: str,
+        registered_model_description: Optional[str] = None,
+        registered_model_tags: Optional[Dict[str, str]] = None,
+        model_source_uri: Optional[str] = None,
+        version: Optional[str] = None,
+        description: Optional[str] = None,
+        tags: Optional[Dict[str, str]] = None,
+        registery_metadata: Optional[Dict[str, str]] = None,
+        zenm_version: Optional[str] = None,
+        zenml_pipeline_run_id: Optional[str] = None,
+        zenml_pipeline_name: Optional[str] = None,
+        zenml_step_name: Optional[str] = None,
         **kwargs: Any,
     ) -> ModelVersion:
         """Registers a model version in the model registry.
 
         Args:
-            model_version: The model version to register.
-            kwargs: Additional keyword arguments.
+            name: The name of the registered model.
+            registered_model_description: The description of the registered
+                model.
+            registered_model_tags: The tags associated with the registered
+                model.
+            model_source_uri: The source URI of the model.
+            version: The version of the model version.
+            description: The description of the model version.
+            tags: The tags associated with the model version.
+            registery_metadata: The metadata associated with the model
+                version.
+            zenm_version: The ZenML version of the model version.
+            zenml_pipeline_run_id: The ZenML pipeline run ID of the model
+                version.
+            zenml_pipeline_name: The ZenML pipeline run name of the model
+                version.
+            zenml_step_name: The ZenML step name of the model version.
+            **kwargs: Additional keyword arguments.
 
         Returns:
             The registered model version.
@@ -287,6 +353,33 @@ class BaseModelRegistry(StackComponent, ABC):
 
         Returns:
             The loaded model version.
+        """
+
+    @abstractmethod
+    def check_model_exists(self, name: str) -> bool:
+        """Checks if a model exists in the model registry.
+
+        Args:
+            name: The name of the registered model.
+
+        Returns:
+            True if the model exists, False otherwise.
+        """
+
+    @abstractmethod
+    def check_model_version_exists(
+        self,
+        name: str,
+        version: str,
+    ) -> bool:
+        """Checks if a model version exists in the model registry.
+
+        Args:
+            name: The name of the registered model.
+            version: The version of the model version to check.
+
+        Returns:
+            True if the model version exists, False otherwise.
         """
 
 

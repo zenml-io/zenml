@@ -31,10 +31,6 @@ from zenml.integrations.mlflow.model_registries.mlflow_model_registry import (
 )
 from zenml.logger import get_logger
 from zenml.materializers.unmaterialized_artifact import UnmaterializedArtifact
-from zenml.model_registries.base_model_registry import (
-    ModelRegistration,
-    ModelVersion,
-)
 from zenml.steps import (
     STEP_ENVIRONMENT_NAME,
     BaseParameters,
@@ -49,7 +45,7 @@ class MLFlowRegistryParameters(BaseParameters):
     """Model deployer step parameters for MLflow.
 
     Args:
-        registered_model_name: Name of the registered model.
+        name: Name of the registered model.
         registered_model_description: Description of the registered model.
         registered_model_tags: Tags to be added to the registered model.
         trained_model_name: Name of the model to be deployed.
@@ -60,9 +56,10 @@ class MLFlowRegistryParameters(BaseParameters):
             will be fetched from the MLflow tracking server.
         description: Description of the model.
         tags: Tags to be added to the model.
+        registry_metadata: Metadata to be added to the model registry.
     """
 
-    registered_model_name: str
+    name: str
     registered_model_description: Optional[str] = None
     registered_model_tags: Optional[Dict[str, str]] = None
     trained_model_name: Optional[str] = "model"
@@ -72,6 +69,7 @@ class MLFlowRegistryParameters(BaseParameters):
     run_id: Optional[str] = None
     description: Optional[str] = None
     tags: Optional[Dict[str, str]] = None
+    registry_metadata: Optional[Dict[str, str]] = None
 
 
 @step(enable_cache=False)
@@ -147,30 +145,23 @@ def mlflow_register_model_step(
             "MLflow tracking server for the given inputs."
         )
 
-    # Add zenml tags
-    tags = params.tags or {}
-    tags["zenml_pipeline_name"] = pipeline_name
-    tags["zenml_pipeline_run_id"] = pipeline_run_id
-    tags["zenml_step_name"] = step_name
-    tags["zenml_version"] = __version__
-
-    # Create model version
-    model_version = ModelVersion(
-        model_registration=ModelRegistration(
-            name=params.registered_model_name,
-            description=params.registered_model_description,
-            tags=params.registered_model_tags,
-        ),
+    # Register model version
+    model_version = model_registry.register_model_version(
+        name=params.name,
+        registered_model_description=params.registered_model_description,
+        registered_model_tags=params.registered_model_tags,
         model_source_uri=model_source_uri,
         description=params.description,
-        tags=tags,
+        tags=params.tags,
+        zenml_version=__version__,
+        zenml_pipeline_run_id=pipeline_run_id,
+        zenml_pipeline_name=pipeline_name,
+        zenml_step_name=step_name,
+        registry_metadata=params.registry_metadata,
     )
 
-    # Register model version
-    model_registry.register_model_version(model_version)
-
     logger.info(
-        f"Registered model {params.registered_model_name} "
+        f"Registered model {params.name} "
         f"with version {model_version.version} "
         f"from source {model_source_uri}."
     )

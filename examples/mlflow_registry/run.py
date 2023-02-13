@@ -49,7 +49,7 @@ if __name__ == "__main__":
             evaluator=tf_evaluator(),
             model_register=mlflow_register_model_step(
                 params=MLFlowRegistryParameters(
-                    registered_model_name="Tensorflow-mnist-model",
+                    name="Tensorflow-mnist-model",
                     registered_model_description="A simple mnist model trained with zenml",
                     tags={"framework": "tensorflow", "dataset": "mnist"},
                     description=f"The {i+1}th run of the mlflow_training_pipeline with a learning rate of {lr}",

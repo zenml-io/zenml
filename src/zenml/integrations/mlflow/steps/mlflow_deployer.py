@@ -285,7 +285,7 @@ def mlflow_model_registry_deployer_step(
     # Set the pipeline information from the model version
     pipeline_name = model_version.tags.get("zenml_pipeline_name", "")
     pipeline_run_id = model_version.tags.get("zenml_pipeline_run_id", "")
-    step_name = model_version.tags.get("zenml_pipeline_step_name", "")
+    step_name = model_version.tags.get("zenml_step_name", "")
 
     # fetch existing services with same pipeline name, step name and model name
     existing_services = model_deployer.find_model_server(
