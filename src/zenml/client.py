@@ -33,6 +33,8 @@ from typing import (
 )
 from uuid import UUID
 
+from pydantic import SecretStr
+
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
     ENV_ZENML_ACTIVE_STACK_ID,
@@ -3179,6 +3181,8 @@ class Client(metaclass=ClientMetaClass):
         self,
         name_id_or_prefix: Union[str, UUID],
         scope: Optional[SecretScope] = None,
+        allow_partial_name_match: bool = True,
+        allow_partial_id_match: bool = True,
     ) -> "SecretResponseModel":
         """Get a secret.
 
@@ -3197,6 +3201,8 @@ class Client(metaclass=ClientMetaClass):
             scope: The scope of the secret. If not set, all scopes will be
                 searched starting with the innermost scope (user) to the
                 outermost scope (global) until a secret is found.
+            allow_partial_name_match: If True, allow partial name matches.
+            allow_partial_id_match: If True, allow partial ID matches.
 
         Returns:
             The secret.
@@ -3210,7 +3216,7 @@ class Client(metaclass=ClientMetaClass):
         if is_valid_uuid(name_id_or_prefix):
             # Fetch by ID; filter by scope if provided
             secret = self.zen_store.get_secret(
-                id=UUID(name_id_or_prefix)
+                secret_id=UUID(name_id_or_prefix)
                 if isinstance(name_id_or_prefix, str)
                 else name_id_or_prefix
             )
@@ -3233,8 +3239,12 @@ class Client(metaclass=ClientMetaClass):
 
         secrets = self.list_secrets(
             logical_operator=LogicalOperators.OR,
-            name=f"contains:{name_id_or_prefix}",
-            id=f"startswith:{name_id_or_prefix}",
+            name=f"contains:{name_id_or_prefix}"
+            if allow_partial_name_match
+            else f"equals:{name_id_or_prefix}",
+            id=f"startswith:{name_id_or_prefix}"
+            if allow_partial_id_match
+            else None,
         )
 
         for search_scope in search_scopes:
@@ -3250,11 +3260,17 @@ class Client(metaclass=ClientMetaClass):
                 partial_matches.append(secret)
 
             if len(partial_matches) > 1:
+                match_summary = "\n".join(
+                    [
+                        f"[{secret.id}]: name = {secret.name}"
+                        for secret in partial_matches
+                    ]
+                )
                 raise ZenKeyError(
                     f"{len(partial_matches)} secrets have been found that have "
                     f"a name or ID that matches the provided "
                     f"string '{name_id_or_prefix}':\n"
-                    f"{partial_matches}.\n"
+                    f"{match_summary}.\n"
                     f"Please use the id to uniquely identify "
                     f"only one of the secrets."
                 )
@@ -3272,17 +3288,53 @@ class Client(metaclass=ClientMetaClass):
 
         raise KeyError(msg)
 
-    def delete_secret(self, name_id_or_prefix: str) -> None:
-        """Deletes a secret.
+    def get_secret_by_name_and_scope(
+        self, name: str, scope: Optional[SecretScope] = None
+    ) -> "SecretResponseModel":
+        """Fetches a registered secret with a given name and optional scope.
+
+        This is a version of get_secret that restricts the search to a given
+        name and an optional scope, without doing any prefix or UUID matching.
+
+        If no scope is provided, the search will be done first in the user
+        scope, then in the workspace scope.
 
         Args:
-            name_id_or_prefix: The name, id or prefix of the id for the
-                secret to delete.
-        """
-        secret = self.get_secret(name_id_or_prefix)
-        self.zen_store.delete_secret(secret_id=secret.id)
+            name: The name of the secret to get.
+            scope: The scope of the secret to get.
 
-        logger.info(f"Deleted secret '{secret.name}'.")
+        Returns:
+            The registered secret.
+
+        Raises:
+            KeyError: If no secret exists for the given name in the given scope.
+        """
+        logger.debug(
+            f"Fetching the secret with name '{name}' and scope '{scope}'."
+        )
+
+        # Scopes to search in order of priority
+        search_scopes = (
+            [SecretScope.USER, SecretScope.WORKSPACE]
+            if scope is None
+            else [scope]
+        )
+
+        for search_scope in search_scopes:
+            secrets = self.list_secrets(
+                logical_operator=LogicalOperators.AND,
+                name=f"equals:{name}",
+                scope=search_scope,
+            )
+
+            if len(secrets.items) >= 1:
+                return secrets.items[0]
+
+        msg = f"No secret with name '{name}' was found"
+        if scope is not None:
+            msg += f" in scope '{scope.value}'"
+
+        raise KeyError(msg)
 
     def list_secrets(
         self,
@@ -3333,7 +3385,7 @@ class Client(metaclass=ClientMetaClass):
             secret_filter_model=secret_filter_model
         )
 
-    def get_secrets_by_scope(
+    def list_secrets_in_scope(
         self,
         scope: SecretScope,
     ) -> Page[SecretResponseModel]:
@@ -3347,56 +3399,9 @@ class Client(metaclass=ClientMetaClass):
         """
         logger.debug(f"Fetching the secrets in scope {scope.value}.")
 
-        if scope == SecretScope.WORKSPACE:
-            return self.list_secrets(
-                scope=scope,
-            )
-
-        if scope == SecretScope.USER:
-            return self.list_secrets(
-                scope=scope,
-                user_id=self.active_user.id,
-            )
-
-        raise ValueError(f"Unknown scope {scope.value}.")
-
-    def get_secret_by_name_and_type(
-        self, name: str, component_type: "StackComponentType"
-    ) -> "SecretResponseModel":
-        """Fetches a registered secret.
-
-        Args:
-            component_type: The type of the component to fetch.
-            name: The name of the secret to fetch.
-
-        Returns:
-            The registered secret.
-
-        Raises:
-            KeyError: If no secret exists for the given type and name.
-        """
-        logger.debug(
-            f"Fetching the secret of type {component_type} with name {name}."
+        return self.list_secrets(
+            scope=scope,
         )
-
-        secrets = self.list_secrets(
-            type=component_type,
-            name=name,
-        ).items
-
-        if secrets:
-            if len(secrets) > 1:
-                raise KeyError(
-                    f"More than one secret with name {name} and type "
-                    f"{component_type} exists."
-                )
-
-            return secrets[0]
-        else:
-            raise KeyError(
-                f"No secret with name '{name}' and type '{component_type}' "
-                "exists."
-            )
 
     def update_secret(
         self,
@@ -3422,7 +3427,11 @@ class Client(metaclass=ClientMetaClass):
             The updated secret.
         """
         secret = self.get_secret(
-            name_id_or_prefix=name_id_or_prefix, scope=scope
+            name_id_or_prefix=name_id_or_prefix,
+            scope=scope,
+            # Don't allow partial name matches, but allow partial ID matches
+            allow_partial_name_match=False,
+            allow_partial_id_match=True,
         )
 
         secret_update = SecretUpdateModel()
@@ -3438,18 +3447,29 @@ class Client(metaclass=ClientMetaClass):
             for key in remove_values:
                 values[key] = None
         if values:
-            secret_update.values = values
+            secret_update.values = cast(Dict[str, Optional[SecretStr]], values)
 
         return Client().zen_store.update_secret(
             secret_id=secret.id, secret_update=secret_update
         )
 
-    def delete_secret(self, name_id_or_prefix: str) -> None:
+    def delete_secret(
+        self, name_id_or_prefix: str, scope: Optional[SecretScope] = None
+    ) -> None:
         """Deletes a secret.
 
         Args:
             name_id_or_prefix: The name or ID of the secret.
+            scope: The scope of the secret to delete.
         """
+        secret = self.get_secret(
+            name_id_or_prefix=name_id_or_prefix,
+            scope=scope,
+            # Don't allow partial name matches, but allow partial ID matches
+            allow_partial_name_match=False,
+            allow_partial_id_match=True,
+        )
+
         secret = self.get_secret(name_id_or_prefix=name_id_or_prefix)
         self.zen_store.delete_secret(secret_id=secret.id)
 

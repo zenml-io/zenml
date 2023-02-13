@@ -163,7 +163,8 @@ def make_proxy_class(interface: Type[ABC], attribute: str) -> Callable[[C], C]:
                     f"Interface '{interface.__name__}' must be implemented by "
                     f"the '{cls.__name__}' '{attribute}' attribute."
                 )
-            return getattr(proxied_obj, _method.__name__)(*args, **kw)
+            proxied_method = getattr(proxied_obj, _method.__name__)
+            return proxied_method(*args[1:], **kw)
 
         return cast(F, proxy_method)
 

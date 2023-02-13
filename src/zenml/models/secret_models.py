@@ -91,8 +91,8 @@ class SecretFilterModel(WorkspaceScopedFilterModel):
         description="Name of the secret",
     )
 
-    scope: SecretScope = Field(
-        default=SecretScope.WORKSPACE,
+    scope: Optional[Union[SecretScope, str]] = Field(
+        default=None,
         description="Scope in which to filter secrets",
     )
 
