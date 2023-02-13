@@ -103,6 +103,12 @@ class BaseSecretsStore(
             )
 
             return SqlSecretsStore
+        elif store_type == SecretsStoreType.REST:
+            from zenml.zen_stores.secrets_stores.rest_secrets_store import (
+                RestSecretsStore,
+            )
+
+            return RestSecretsStore
         else:
             raise TypeError(
                 f"No store implementation found for secrets store type "

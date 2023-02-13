@@ -16,7 +16,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, Type, TypeVar, Union
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import Field, SecretStr
 
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 
@@ -46,11 +46,6 @@ class BaseResponseModel(AnalyticsTrackedModelMixin):
     updated: datetime = Field(
         title="Time when this resource was last updated."
     )
-
-    class Config:
-        """Allow extras on Response Models."""
-
-        extra = "allow"
 
     def __hash__(self) -> int:
         """Implementation of hash magic method.
@@ -83,6 +78,18 @@ class BaseResponseModel(AnalyticsTrackedModelMixin):
         metadata = super().get_analytics_metadata()
         metadata["entity_id"] = self.id
         return metadata
+
+    class Config:
+        """Pydantic configuration class."""
+
+        # This is needed to allow the REST API client to unpack SecretStr
+        # values correctly before sending them to the server.
+        json_encoders = {
+            SecretStr: lambda v: v.get_secret_value() if v else None
+        }
+
+        # Allow extras on Response Models
+        extra = "allow"
 
 
 class UserScopedResponseModel(BaseResponseModel):
@@ -163,6 +170,18 @@ class BaseRequestModel(AnalyticsTrackedModelMixin):
 
     Used as a base class for all request models.
     """
+
+    class Config:
+        """Pydantic configuration class."""
+
+        # This is needed to allow the REST API client to unpack SecretStr
+        # values correctly before sending them to the server.
+        json_encoders = {
+            SecretStr: lambda v: v.get_secret_value() if v else None
+        }
+
+        # Allow extras on Request Models
+        extra = "allow"
 
 
 class UserScopedRequestModel(BaseRequestModel):

@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""SQL Zen Store implementation."""
+"""SQL Secrets Store implementation."""
 
 from typing import (
     TYPE_CHECKING,
@@ -25,6 +25,7 @@ from uuid import UUID
 
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import NoResultFound
+from sqlalchemy_utils.types.encrypted.encrypted_type import AesGcmEngine
 from sqlmodel import Session, select
 
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
@@ -64,9 +65,12 @@ class SqlSecretsStoreConfiguration(SecretsStoreConfiguration):
 
     Attributes:
         type: The type of the store.
+        encryption_key: The encryption key to use for the SQL secrets store.
+            If not set, the passwords will not be encrypted in the database.
     """
 
     type: SecretsStoreType = SecretsStoreType.SQL
+    encryption_key: Optional[str] = None
 
     class Config:
         """Pydantic configuration class."""
@@ -98,6 +102,7 @@ class SqlSecretsStore(BaseSecretsStore):
     ] = SqlSecretsStoreConfiguration
 
     _engine: Optional[Engine] = None
+    _encryption_engine: Optional[AesGcmEngine] = None
 
     def __init__(
         self,
@@ -110,6 +115,10 @@ class SqlSecretsStore(BaseSecretsStore):
             zen_store: The ZenML store that owns this SQL secrets store.
             **kwargs: Additional keyword arguments to pass to the Pydantic
                 constructor.
+
+        Raises:
+            IllegalOperationError: If the ZenML store to which this secrets
+                store belongs is not a SQL ZenML store.
         """
         from zenml.zen_stores.sql_zen_store import SqlZenStore
 
@@ -155,12 +164,13 @@ class SqlSecretsStore(BaseSecretsStore):
     # --------------------------------
 
     def _initialize(self) -> None:
-        """Initialize the secrets SQL store.
-
-        Raises:
-            OperationalError: If connecting to the database failed.
-        """
+        """Initialize the secrets SQL store."""
         logger.debug("Initializing SqlSecretsStore")
+
+        # Initialize the encryption engine
+        if self.config.encryption_key:
+            self._encryption_engine = AesGcmEngine()
+            self._encryption_engine._update_key(self.config.encryption_key)
 
         # Nothing else to do here, the SQL ZenML store back-end is already
         # initialized
@@ -217,7 +227,9 @@ class SqlSecretsStore(BaseSecretsStore):
         existing_secret = session.exec(scope_filter).first()
 
         if existing_secret is not None:
-            existing_secret_model = existing_secret.to_model()
+            existing_secret_model = existing_secret.to_model(
+                encryption_engine=self._encryption_engine
+            )
 
             msg = (
                 f"Found an existing '{scope.value}' scoped secret with the "
@@ -257,10 +269,8 @@ class SqlSecretsStore(BaseSecretsStore):
             The newly created secret.
 
         Raises:
-            KeyError: if the user or workspace does not exist.
             EntityExistsError: If a secret with the same name already exists in
                 the same scope.
-            ValueError: if the secret is invalid.
         """
         with Session(self.engine) as session:
             # Check if a secret with the same name already exists in the same
@@ -275,11 +285,61 @@ class SqlSecretsStore(BaseSecretsStore):
             if secret_exists:
                 raise EntityExistsError(msg)
 
-            new_secret = SecretSchema.from_request(secret)
+            new_secret = SecretSchema.from_request(
+                secret, encryption_engine=self._encryption_engine
+            )
             session.add(new_secret)
             session.commit()
 
-            return new_secret.to_model()
+            return new_secret.to_model(
+                encryption_engine=self._encryption_engine
+            )
+
+    def get_secret(self, secret_id: UUID) -> SecretResponseModel:
+        """Get a secret by ID.
+
+        Args:
+            secret_id: The ID of the secret to fetch.
+
+        Returns:
+            The secret.
+
+        Raises:
+            KeyError: if the secret doesn't exist.
+        """
+        with Session(self.engine) as session:
+            secret_in_db = session.exec(
+                select(SecretSchema).where(SecretSchema.id == secret_id)
+            ).first()
+            if secret_in_db is None:
+                raise KeyError(f"Secret with ID {secret_id} not found.")
+            return secret_in_db.to_model(
+                encryption_engine=self._encryption_engine
+            )
+
+    def list_secrets(
+        self, secret_filter_model: SecretFilterModel
+    ) -> Page[SecretResponseModel]:
+        """List all secrets matching the given filter criteria.
+
+        Args:
+            secret_filter_model: All filter parameters including pagination
+                params
+
+        Returns:
+            List of all the secrets matching the given criteria.
+        """
+        with Session(self.engine) as session:
+            query = select(SecretSchema)
+            return self.zen_store.filter_and_paginate(
+                session=session,
+                query=query,
+                table=SecretSchema,
+                filter_model=secret_filter_model,
+                custom_schema_to_model_conversion=lambda secret: secret.to_model(
+                    encryption_engine=self._encryption_engine
+                ),
+            )
 
     @track(AnalyticsEvent.UPDATED_SECRET)
     def update_secret(
@@ -311,7 +371,6 @@ class SqlSecretsStore(BaseSecretsStore):
             KeyError: if the secret doesn't exist.
             EntityExistsError: If a secret with the same name already exists in
                 the same scope.
-            ValueError: if the secret is invalid.
         """
         with Session(self.engine) as session:
             existing_secret = session.exec(
@@ -339,53 +398,17 @@ class SqlSecretsStore(BaseSecretsStore):
                 if secret_exists:
                     raise EntityExistsError(msg)
 
-            existing_secret.update(secret_update=secret_update)
+            existing_secret.update(
+                secret_update=secret_update,
+                encryption_engine=self._encryption_engine,
+            )
             session.add(existing_secret)
             session.commit()
 
             # Refresh the Model that was just created
             session.refresh(existing_secret)
-            return existing_secret.to_model()
-
-    def get_secret(self, secret_id: UUID) -> SecretResponseModel:
-        """Get a secret by ID.
-
-        Args:
-            secret_id: The ID of the secret to fetch.
-
-        Returns:
-            The secret.
-
-        Raises:
-            KeyError: if the secret doesn't exist.
-        """
-        with Session(self.engine) as session:
-            secret_in_db = session.exec(
-                select(SecretSchema).where(SecretSchema.id == secret_id)
-            ).first()
-            if secret_in_db is None:
-                raise KeyError(f"Secret with ID {secret_id} not found.")
-            return secret_in_db.to_model()
-
-    def list_secrets(
-        self, secret_filter_model: SecretFilterModel
-    ) -> Page[SecretResponseModel]:
-        """List all secrets matching the given filter criteria.
-
-        Args:
-            secret_filter_model: All filter parameters including pagination
-                params
-
-        Returns:
-            List of all the secrets matching the given criteria.
-        """
-        with Session(self.engine) as session:
-            query = select(SecretSchema)
-            return self.zen_store.filter_and_paginate(
-                session=session,
-                query=query,
-                table=SecretSchema,
-                filter_model=secret_filter_model,
+            return existing_secret.to_model(
+                encryption_engine=self._encryption_engine
             )
 
     @track(AnalyticsEvent.DELETED_SECRET)
@@ -397,7 +420,6 @@ class SqlSecretsStore(BaseSecretsStore):
 
         Raises:
             KeyError: if the secret doesn't exist.
-            IllegalOperationError: if the secret is used by a stack component.
         """
         with Session(self.engine) as session:
             try:

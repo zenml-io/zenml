@@ -3209,6 +3209,7 @@ class Client(metaclass=ClientMetaClass):
 
         Raises:
             KeyError: If no secret is found.
+            ZenKeyError: If multiple secrets are found.
         """
         from zenml.utils.uuid_utils import is_valid_uuid
 
@@ -3362,8 +3363,6 @@ class Client(metaclass=ClientMetaClass):
             user_id: The  id of the user to filter by.
             name: The name of the secret to filter by.
             scope: The scope of the secret to filter by.
-            type: The type of the secret to filter by.
-            integration: The integration of the secret to filter by.
 
         Returns:
             A list of all the secret models.

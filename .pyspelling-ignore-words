@@ -630,7 +630,7 @@ SecretExistsError
 SecretReferenceMixin
 SecretSchema
 SecretSchemas
-SecretStrs
+SecretStr
 SecretsManager
 SecretsManagerReadWrite
 SecretsManagerScope
@@ -1004,6 +1004,7 @@ de
 debian
 dec
 decodable
+decrypt
 deduplicated
 deepchecks
 defaultPassword

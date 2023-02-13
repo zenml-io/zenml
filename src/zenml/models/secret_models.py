@@ -52,7 +52,7 @@ class SecretBaseModel(BaseModel):
     def get_clear_values(self) -> Dict[str, str]:
         """A dictionary with all un-obfuscated values stored in this secret.
 
-        The values are returned as strings, not SecretStrs. If a value is
+        The values are returned as strings, not SecretStr. If a value is
         None, it is not included in the returned dictionary. This is to enable
         the use of None values in the update model to indicate that a secret
         value should be deleted.
@@ -65,6 +65,10 @@ class SecretBaseModel(BaseModel):
             for k, v in self.values.items()
             if v is not None
         }
+
+    def remove_secrets(self) -> None:
+        """Removes all secret values from the secret but keep the keys."""
+        self.values = {k: None for k in self.values.keys()}
 
 
 # -------- #

@@ -139,12 +139,18 @@ def make_proxy_class(interface: Type[ABC], attribute: str) -> Callable[[C], C]:
             """Proxy method.
 
             Args:
-                self: The instance to use as the base.
                 *args: The arguments to pass to the method.
                 **kw: The keyword arguments to pass to the method.
 
             Returns:
                 The return value of the proxied method.
+
+            Raises:
+                TypeError: If the class does not have the attribute specified
+                    in the decorator or if the attribute does not implement
+                    the specified interface.
+                NotImplementedError: If the attribute specified in the
+                    decorator is None, i.e. the interface is not implemented.
             """
             self = args[0]
             if not hasattr(self, attribute):
@@ -176,6 +182,10 @@ def make_proxy_class(interface: Type[ABC], attribute: str) -> Callable[[C], C]:
 
         Returns:
             The decorated class.
+
+        Raises:
+            TypeError: If the decorated class does not implement the specified
+                interface.
         """
         if not issubclass(_cls, interface):
             raise TypeError(

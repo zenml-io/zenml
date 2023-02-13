@@ -24,6 +24,7 @@ from zenml.constants import (
     RUN_METADATA,
     RUNS,
     SCHEDULES,
+    SECRETS,
     STACK_COMPONENTS,
     STACKS,
     STATISTICS,
@@ -61,6 +62,7 @@ from zenml.models import (
     WorkspaceUpdateModel,
 )
 from zenml.models.page_model import Page
+from zenml.models.secret_models import SecretRequestModel, SecretResponseModel
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import (
     error_response,
@@ -799,6 +801,55 @@ def create_run_metadata(
         )
 
     return zen_store().create_run_metadata(run_metadata=run_metadata)
+
+
+@router.post(
+    WORKSPACES + "/{workspace_name_or_id}" + SECRETS,
+    response_model=SecretResponseModel,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@router.post(
+    PROJECTS + "/{workspace_name_or_id}" + SECRETS,
+    response_model=SecretResponseModel,
+    responses={401: error_response, 409: error_response, 422: error_response},
+    deprecated=True,
+)
+@handle_exceptions
+def create_secret(
+    workspace_name_or_id: Union[str, UUID],
+    secret: SecretRequestModel,
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
+) -> SecretResponseModel:
+    """Creates a secret.
+
+    Args:
+        workspace_name_or_id: Name or ID of the workspace.
+        secret: Secret to create.
+        auth_context: Authentication context.
+
+    Returns:
+        The created secret.
+
+    Raises:
+        IllegalOperationError: If the workspace or user specified in the
+            secret does not match the current workspace or authenticated user.
+    """
+    workspace = zen_store().get_workspace(workspace_name_or_id)
+
+    if secret.workspace != workspace.id:
+        raise IllegalOperationError(
+            "Creating pipeline runs outside of the workspace scope "
+            f"of this endpoint `{workspace_name_or_id}` is "
+            f"not supported."
+        )
+    if secret.user != auth_context.user.id:
+        raise IllegalOperationError(
+            "Creating pipeline runs for a user other than yourself "
+            "is not supported."
+        )
+    return zen_store().create_secret(secret=secret)
 
 
 @router.get(

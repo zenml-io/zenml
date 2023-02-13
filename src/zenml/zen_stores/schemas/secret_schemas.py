@@ -19,6 +19,7 @@ from typing import Dict, Optional, cast
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column
+from sqlalchemy_utils.types.encrypted.encrypted_type import AesGcmEngine
 from sqlmodel import Field, Relationship
 
 from zenml.enums import SecretScope
@@ -69,55 +70,78 @@ class SecretSchema(NamedSchema, table=True):
     user: Optional["UserSchema"] = Relationship(back_populates="secrets")
 
     @classmethod
-    def _dump_secret_values(cls, values: Dict[str, str]) -> bytes:
+    def _dump_secret_values(
+        cls, values: Dict[str, str], encryption_engine: Optional[AesGcmEngine]
+    ) -> bytes:
         """Dump the secret values to a string.
 
         Args:
             values: The secret values to dump.
+            encryption_engine: The encryption engine to use to encrypt the
+                secret values. If None, the values will be base64 encoded.
 
         Raises:
             ValueError: If the secret values do not fit in the database field.
 
         Returns:
-            The dumped secret values.
+            The serialized encrypted secret values.
         """
-        serialized_values = base64.b64encode(
-            json.dumps(values).encode("utf-8")
-        )
+        serialized_values = json.dumps(values)
 
-        if len(serialized_values) > TEXT_FIELD_MAX_LENGTH:
+        if encryption_engine is None:
+            encrypted_values = base64.b64encode(
+                serialized_values.encode("utf-8")
+            )
+        else:
+            encrypted_values = encryption_engine.encrypt(serialized_values)
+
+        if len(encrypted_values) > TEXT_FIELD_MAX_LENGTH:
             raise ValueError(
                 "Database representation of secret values exceeds max "
                 "length. Please use fewer values or consider using shorter "
                 "secret keys and/or values."
             )
 
-        return serialized_values
+        return encrypted_values
 
     @classmethod
     def _load_secret_values(
         cls,
-        serialized_values: bytes,
+        encrypted_values: bytes,
+        encryption_engine: Optional[AesGcmEngine],
     ) -> Dict[str, str]:
         """Load the secret values from a base64 encoded byte string.
 
         Args:
-            serialized_values: The serialized secret values.
+            encrypted_values: The serialized encrypted secret values.
+            encryption_engine: The encryption engine to use to decrypt the
+                secret values. If None, the values will be base64 decoded.
 
         Returns:
             The loaded secret values.
         """
+        if encryption_engine is None:
+            serialized_values = base64.b64decode(encrypted_values).decode()
+        else:
+            serialized_values = encryption_engine.decrypt(encrypted_values)
+
         return cast(
             Dict[str, str],
-            json.loads(base64.b64decode(serialized_values).decode()),
+            json.loads(serialized_values),
         )
 
     @classmethod
-    def from_request(cls, secret: SecretRequestModel) -> "SecretSchema":
+    def from_request(
+        cls,
+        secret: SecretRequestModel,
+        encryption_engine: Optional[AesGcmEngine],
+    ) -> "SecretSchema":
         """Create a `SecretSchema` from a `SecretRequestModel`.
 
         Args:
             secret: The `SecretRequestModel` from which to create the schema.
+            encryption_engine: The encryption engine to use to encrypt the
+                secret values. If None, the values will be base64 encoded.
 
         Returns:
             The created `SecretSchema`.
@@ -128,10 +152,16 @@ class SecretSchema(NamedSchema, table=True):
             scope=secret.scope,
             workspace_id=secret.workspace,
             user_id=secret.user,
-            values=cls._dump_secret_values(secret.get_clear_values),
+            values=cls._dump_secret_values(
+                secret.get_clear_values, encryption_engine
+            ),
         )
 
-    def update(self, secret_update: SecretUpdateModel) -> "SecretSchema":
+    def update(
+        self,
+        secret_update: SecretUpdateModel,
+        encryption_engine: Optional[AesGcmEngine],
+    ) -> "SecretSchema":
         """Update a `SecretSchema` from a `SecretUpdateModel`.
 
         The method also knows how to handle the `values` field of the secret
@@ -140,6 +170,8 @@ class SecretSchema(NamedSchema, table=True):
 
         Args:
             secret_update: The `SecretUpdateModel` from which to update the schema.
+            encryption_engine: The encryption engine to use to encrypt the
+                secret values. If None, the values will be base64 encoded.
 
         Returns:
             The updated `SecretSchema`.
@@ -148,21 +180,31 @@ class SecretSchema(NamedSchema, table=True):
             exclude_unset=True, exclude={"workspace", "user"}
         ).items():
             if field == "values":
-                existing_values = self._load_secret_values(self.values)
+                existing_values = self._load_secret_values(
+                    self.values, encryption_engine
+                )
                 existing_values.update(value)
                 # Drop None values
                 existing_values = {
                     k: v for k, v in existing_values.items() if v is not None
                 }
-                self.values = self._dump_secret_values(existing_values)
+                self.values = self._dump_secret_values(
+                    existing_values, encryption_engine
+                )
             else:
                 setattr(self, field, value)
 
         self.updated = datetime.utcnow()
         return self
 
-    def to_model(self) -> SecretResponseModel:
+    def to_model(
+        self, encryption_engine: Optional[AesGcmEngine]
+    ) -> SecretResponseModel:
         """Converts a secret schema to a secret model.
+
+        Args:
+            encryption_engine: The encryption engine to use to decrypt the
+                secret values. If None, the values will be base64 decoded.
 
         Returns:
             The secret model.
@@ -171,7 +213,7 @@ class SecretSchema(NamedSchema, table=True):
             id=self.id,
             name=self.name,
             scope=self.scope,
-            values=self._load_secret_values(self.values),
+            values=self._load_secret_values(self.values, encryption_engine),
             user=self.user.to_model() if self.user else None,
             workspace=self.workspace.to_model(),
             created=self.created,

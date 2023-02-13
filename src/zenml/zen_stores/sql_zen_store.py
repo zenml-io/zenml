@@ -173,6 +173,9 @@ from zenml.zen_stores.schemas import (
     UserSchema,
     WorkspaceSchema,
 )
+from zenml.zen_stores.secrets_stores.sql_secrets_store import (
+    SqlSecretsStoreConfiguration,
+)
 
 AnyNamedSchema = TypeVar("AnyNamedSchema", bound=NamedSchema)
 AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -221,6 +224,9 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
     Attributes:
         type: The type of the store.
+        secrets_store: The configuration of the secrets store to use.
+            This defaults to a SQL secrets store that extends the SQL ZenML
+            store.
         driver: The SQL database driver.
         database: database name. If not already present on the server, it will
             be created automatically on first access.
@@ -242,6 +248,10 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     """
 
     type: StoreType = StoreType.SQL
+
+    secrets_store: SqlSecretsStoreConfiguration = (
+        SqlSecretsStoreConfiguration()
+    )
 
     driver: Optional[SQLDatabaseDriver] = None
     database: Optional[str] = None
