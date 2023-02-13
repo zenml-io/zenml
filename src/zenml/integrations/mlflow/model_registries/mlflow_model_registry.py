@@ -296,6 +296,15 @@ class MLFlowModelRegistry(BaseModelRegistry):
         Returns:
             The registered model version.
         """
+        if not self._check_model_exists(model_version.model_registration.name):
+            logger.info(
+                f"Model '{model_version.model_registration.name}' does not exist. Creating model."
+            )
+            self.register_model(
+                name=model_version.model_registration.name,
+                description=model_version.model_registration.description,
+                tags=model_version.model_registration.tags,
+            )
         try:
             registered_model_version = self.mlflow_client.create_model_version(
                 name=model_version.model_registration.name,
@@ -588,6 +597,24 @@ class MLFlowModelRegistry(BaseModelRegistry):
 
         # Return the model.
         return model
+
+    def _check_model_exists(
+        self,
+        name: str,
+    ) -> bool:
+        """Check if a model exists in the MLFlow model registry.
+
+        Args:
+            name: The name of the model.
+
+        Returns:
+            True if the model exists, False otherwise.
+        """
+        try:
+            self.mlflow_client.get_registered_model(name=name)
+        except MlflowException:
+            return False
+        return True
 
     def _check_model_version_exists(
         self,

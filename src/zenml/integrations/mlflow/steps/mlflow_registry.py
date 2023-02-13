@@ -30,7 +30,9 @@ from zenml.integrations.mlflow.model_registries.mlflow_model_registry import (
     MLFlowModelRegistry,
 )
 from zenml.logger import get_logger
+from zenml.materializers.unmaterialized_artifact import UnmaterializedArtifact
 from zenml.model_registries.base_model_registry import (
+    ModelRegistration,
     ModelVersion,
 )
 from zenml.steps import (
@@ -74,13 +76,14 @@ class MLFlowRegistryParameters(BaseParameters):
 
 @step(enable_cache=False)
 def mlflow_register_model_step(
-    run_id: str,
+    model: UnmaterializedArtifact,
     params: MLFlowRegistryParameters,
 ) -> None:
     """MLflow model registry step.
 
     Args:
-        run_id: ID of the run to be used.
+        model: Model to be registered, This is not used in the step, but is
+            required to trigger the step when the model is trained.
         params: Parameters for the step.
 
     Raises:
@@ -151,16 +154,13 @@ def mlflow_register_model_step(
     tags["zenml_step_name"] = step_name
     tags["zenml_version"] = __version__
 
-    # Register model
-    model_registration = model_registry.register_model(
-        name=params.registered_model_name,
-        description=params.registered_model_description,
-        tags=params.registered_model_tags,
-    )
-
     # Create model version
     model_version = ModelVersion(
-        model_registration=model_registration,
+        model_registration=ModelRegistration(
+            name=params.registered_model_name,
+            description=params.registered_model_description,
+            tags=params.registered_model_tags,
+        ),
         model_source_uri=model_source_uri,
         description=params.description,
         tags=tags,

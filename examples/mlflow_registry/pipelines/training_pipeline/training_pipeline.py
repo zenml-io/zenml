@@ -31,6 +31,6 @@ def mlflow_training_pipeline(
     x_trained_normed, x_test_normed = normalizer(
         x_train=x_train, x_test=x_test
     )
-    model, run_id = trainer(x_train=x_trained_normed, y_train=y_train)
+    model = trainer(x_train=x_trained_normed, y_train=y_train)
     evaluator(x_test=x_test_normed, y_test=y_test, model=model)
-    model_register(run_id)
+    model_register(model)
