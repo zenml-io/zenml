@@ -15,6 +15,10 @@ or other data types, for which materialization is not defined by ZenML itself.
 * [Specifying Hardware Resources for Steps](./step-resources.md) explains
 how to specify hardware resources like memory or the amount of CPUs and GPUs that
 a step requires to execute.
+* [Enabling GPU-backed hardware](./gpu-hardware.md) goes through best practices of
+running in remote settings with a GPU attached.
+* [Scheduling Pipeline Runs](./scheduling-runs.md) describes how to deploy pipelines
+to run on a schedule.
 * [Access metadata within steps](./step-metadata.md)
 via **Step Fixtures** can, for instance, be used to load the best performing
 prior model to compare newly trained models against.
