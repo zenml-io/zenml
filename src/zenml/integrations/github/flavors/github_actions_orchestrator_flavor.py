@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """GitHub Actions orchestrator flavor."""
 
-from typing import TYPE_CHECKING, Type
+from typing import TYPE_CHECKING, Optional, Type
 
 from zenml.integrations.github import GITHUB_ORCHESTRATOR_FLAVOR
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
@@ -68,6 +68,24 @@ class GitHubActionsOrchestratorFlavor(BaseOrchestratorFlavor):
             Name of the orchestrator flavor.
         """
         return GITHUB_ORCHESTRATOR_FLAVOR
+
+    @property
+    def docs_url(self) -> Optional[str]:
+        """A url to point at docs explaining this flavor.
+
+        Returns:
+            A flavor docs url.
+        """
+        return self.generate_default_docs_url()
+
+    @property
+    def logo_url(self) -> str:
+        """A url to represent the flavor in the dashboard.
+
+        Returns:
+            The flavor logo.
+        """
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/github.png"
 
     @property
     def config_class(self) -> Type[GitHubActionsOrchestratorConfig]:

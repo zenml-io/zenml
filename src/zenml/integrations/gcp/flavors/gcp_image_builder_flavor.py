@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Google Cloud image builder flavor."""
 
-from typing import TYPE_CHECKING, Type
+from typing import TYPE_CHECKING, Optional, Type
 
 from zenml.image_builders import BaseImageBuilderConfig, BaseImageBuilderFlavor
 from zenml.integrations.gcp import GCP_IMAGE_BUILDER_FLAVOR
@@ -51,6 +51,24 @@ class GCPImageBuilderFlavor(BaseImageBuilderFlavor):
             The name of the flavor.
         """
         return GCP_IMAGE_BUILDER_FLAVOR
+
+    @property
+    def docs_url(self) -> Optional[str]:
+        """A url to point at docs explaining this flavor.
+
+        Returns:
+            A flavor docs url.
+        """
+        return self.generate_default_docs_url()
+
+    @property
+    def logo_url(self) -> str:
+        """A url to represent the flavor in the dashboard.
+
+        Returns:
+            The flavor logo.
+        """
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/image_builder/gcp.png"
 
     @property
     def config_class(self) -> Type[BaseImageBuilderConfig]:
