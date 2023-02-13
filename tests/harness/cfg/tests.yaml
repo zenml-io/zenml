@@ -168,10 +168,8 @@ tests:
     requirements:
       - integrations:
           - sklearn
-          - dash
           - mlflow
           - evidently
-          - facets
         stacks:
           - type: experiment_tracker
             flavor: mlflow
