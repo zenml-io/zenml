@@ -15,14 +15,16 @@ import os
 import random
 import string
 from contextlib import ExitStack as does_not_raise
-from typing import Optional
+from contextlib import contextmanager
+from typing import Generator, Optional
 from uuid import uuid4
 
 import pytest
 
 from zenml.client import Client
-from zenml.enums import StackComponentType
+from zenml.enums import SecretScope, StackComponentType
 from zenml.exceptions import (
+    EntityExistsError,
     IllegalOperationError,
     InitializationException,
     StackComponentExistsError,
@@ -32,6 +34,7 @@ from zenml.io import fileio
 from zenml.metadata.metadata_types import MetadataTypeEnum
 from zenml.models import ComponentResponseModel, StackResponseModel
 from zenml.utils import io_utils
+from zenml.utils.string_utils import random_str
 
 
 def _create_local_orchestrator(
@@ -637,3 +640,109 @@ def test_create_run_metadata_fails_if_linked_to_multiple_entities(
             step_run_id=step_run.id,
             artifact_id=artifact.id,
         )
+
+
+# .---------.
+# | SECRETS |
+# '---------'
+
+
+def random_secret_name(prefix: str = "aria") -> str:
+    """Function to get a random secret name or prefix."""
+    return f"pytest_{prefix}_{random_str(4)}"
+
+
+@contextmanager
+def random_secret_context() -> Generator[str, None, None]:
+    """Context for testing secrets.
+
+    Generates a random secret prefix to avoid conflicts. Yields the prefix.
+    After the context is exited, all secrets with that prefix are deleted.
+    """
+    prefix = random_secret_name()
+    yield prefix
+
+    client = Client()
+    for secret in client.list_secrets(name=f"startswith:{prefix}").items:
+        client.delete_secret(secret.id)
+
+
+def test_create_secret_default_scope():
+    """Test that secrets are created in the workspace scope by default."""
+    client = Client()
+    with random_secret_context() as name:
+        s = client.create_secret(
+            name=name,
+            values={"key": "value"},
+        )
+        assert s.scope == SecretScope.WORKSPACE
+        assert s.name == name
+        assert s.secret_values == {"key": "value"}
+
+
+def test_create_secret_user_scope():
+    """Test creating secrets in the user scope."""
+    client = Client()
+    with random_secret_context() as name:
+        s = client.create_secret(
+            name=name,
+            scope=SecretScope.USER,
+            values={"key": "value"},
+        )
+        assert s.scope == SecretScope.USER
+        assert s.name == name
+        assert s.secret_values == {"key": "value"}
+
+
+def test_create_secret_existing_name_scope():
+    """Test that creating a secret with an existing name fails."""
+    client = Client()
+    with random_secret_context() as name:
+        client.create_secret(
+            name=name,
+            values={"key": "value"},
+        )
+
+        with pytest.raises(EntityExistsError):
+            client.create_secret(
+                name=name,
+                values={"key": "value"},
+            )
+
+
+def test_create_secret_existing_name_user_scope():
+    """Test that creating a secret with an existing name in the user scope fails."""
+    client = Client()
+    with random_secret_context() as name:
+        client.create_secret(
+            name=name,
+            scope=SecretScope.USER,
+            values={"key": "value"},
+        )
+
+        with pytest.raises(EntityExistsError):
+            client.create_secret(
+                name=name,
+                scope=SecretScope.USER,
+                values={"key": "value"},
+            )
+
+
+def test_create_secret_existing_name_different_scope():
+    """Test that creating a secret with the same name in different scopes succeeds."""
+    client = Client()
+    with random_secret_context() as name:
+        s1 = client.create_secret(
+            name=name,
+            values={"key": "value"},
+        )
+
+        with does_not_raise():
+            s2 = client.create_secret(
+                name=name,
+                scope=SecretScope.USER,
+                values={"key": "value"},
+            )
+
+        assert s1.id != s2.id
+        assert s1.name == s2.name

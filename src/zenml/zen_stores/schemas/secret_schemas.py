@@ -153,7 +153,7 @@ class SecretSchema(NamedSchema, table=True):
             workspace_id=secret.workspace,
             user_id=secret.user,
             values=cls._dump_secret_values(
-                secret.get_clear_values, encryption_engine
+                secret.secret_values, encryption_engine
             ),
         )
 

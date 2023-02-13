@@ -55,7 +55,7 @@ class AuthContext(BaseModel):
     @property
     def permissions(self) -> List[PermissionType]:
         """Returns the permissions of the user.
-        
+
         Returns:
             The permissions of the user.
         """

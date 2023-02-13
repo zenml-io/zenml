@@ -37,7 +37,7 @@ from typing import (
 from uuid import UUID
 
 import pymysql
-from pydantic import root_validator
+from pydantic import root_validator, validator
 from sqlalchemy import asc, desc, func, text
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import ArgumentError, NoResultFound, OperationalError
@@ -249,9 +249,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
     type: StoreType = StoreType.SQL
 
-    secrets_store: SqlSecretsStoreConfiguration = (
-        SqlSecretsStoreConfiguration()
-    )
+    secrets_store: Optional[SqlSecretsStoreConfiguration] = None
 
     driver: Optional[SQLDatabaseDriver] = None
     database: Optional[str] = None
@@ -263,6 +261,23 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     ssl_verify_server_cert: bool = False
     pool_size: int = 20
     max_overflow: int = 20
+
+    @validator("secrets_store")
+    def validate_secrets_store(
+        cls, secrets_store: Optional[SqlSecretsStoreConfiguration]
+    ) -> SqlSecretsStoreConfiguration:
+        """Ensures that the secrets store is initialized with a default SQL secrets store.
+
+        Args:
+            secrets_store: The secrets store config to be validated.
+
+        Returns:
+            The validated secrets store config.
+        """
+        if secrets_store is None:
+            secrets_store = SqlSecretsStoreConfiguration()
+
+        return secrets_store
 
     @root_validator(pre=True)
     def _remove_grpc_attributes(cls, values: Dict[str, Any]) -> Dict[str, Any]:

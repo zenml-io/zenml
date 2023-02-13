@@ -210,9 +210,12 @@ class SqlSecretsStore(BaseSecretsStore):
             True if a secret with the given name already exists in the given
             scope, False otherwise, and an error message.
         """
-        scope_filter = select(SecretSchema).where(
-            SecretSchema.name == secret_name
+        scope_filter = (
+            select(SecretSchema)
+            .where(SecretSchema.name == secret_name)
+            .where(SecretSchema.scope == scope.value)
         )
+
         if scope in [SecretScope.WORKSPACE, SecretScope.USER]:
             scope_filter = scope_filter.where(
                 SecretSchema.workspace_id == workspace
@@ -232,7 +235,7 @@ class SqlSecretsStore(BaseSecretsStore):
             )
 
             msg = (
-                f"Found an existing '{scope.value}' scoped secret with the "
+                f"Found an existing {scope.value} scoped secret with the "
                 f"same '{secret_name}' name"
             )
             if scope in [SecretScope.WORKSPACE, SecretScope.USER]:

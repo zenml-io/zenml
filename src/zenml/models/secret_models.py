@@ -45,11 +45,11 @@ class SecretBaseModel(BaseModel):
     )
 
     values: Dict[str, Optional[SecretStr]] = Field(
-        title="The values stored in this secret."
+        default_factory=dict, title="The values stored in this secret."
     )
 
     @property
-    def get_clear_values(self) -> Dict[str, str]:
+    def secret_values(self) -> Dict[str, str]:
         """A dictionary with all un-obfuscated values stored in this secret.
 
         The values are returned as strings, not SecretStr. If a value is
@@ -65,6 +65,23 @@ class SecretBaseModel(BaseModel):
             for k, v in self.values.items()
             if v is not None
         }
+
+    def add_secret(self, key: str, value: str) -> None:
+        """Adds a secret value to the secret.
+
+        Args:
+            key: The key of the secret value.
+            value: The secret value.
+        """
+        self.values[key] = SecretStr(value)
+
+    def remove_secret(self, key: str) -> None:
+        """Removes a secret value from the secret.
+
+        Args:
+            key: The key of the secret value.
+        """
+        del self.values[key]
 
     def remove_secrets(self) -> None:
         """Removes all secret values from the secret but keep the keys."""
