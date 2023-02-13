@@ -82,11 +82,21 @@ class PipelineDockerImageBuilder:
             the image was pushed or is just stored locally.
 
         Raises:
+            RuntimeError: If the stack does not contain an image builder.
             ValueError: If no Dockerfile and/or custom parent image is
                 specified and the Docker configuration doesn't require an
                 image build.
-            RuntimeError: If the stack does not contain an image builder.
         """
+        if docker_settings.skip_build:
+            assert (
+                docker_settings.parent_image
+            )  # checked via validator already
+
+            # Should we tag this here and push it to the container registry of
+            # the stack to make sure it's always accessible when running the
+            # pipeline?
+            return docker_settings.parent_image
+
         image_builder = stack.image_builder
         if not image_builder:
             raise RuntimeError(

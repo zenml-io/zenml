@@ -82,7 +82,7 @@ def test_builds_with_no_docker_settings():
 
 
 def test_builds_with_custom_docker_settings_for_some_steps():
-    """Tests that steps with custom Docker settings get their own build and 
+    """Tests that steps with custom Docker settings get their own build and
     the remaining steps use a shared pipeline image."""
     orchestrator = _get_orchestrator()
     custom_step_1_settings = DockerSettings(

@@ -16,7 +16,7 @@
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import Extra
+from pydantic import Extra, root_validator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.logger import get_logger
@@ -102,6 +102,8 @@ class DockerSettings(BaseSettings):
             args or a target stage. See
             https://docker-py.readthedocs.io/en/stable/images.html#docker.models.images.ImageCollection.build
             for a full list of available options.
+        skip_build: If set to `True`, the parent image will be used directly to
+            run the steps of your pipeline.
         docker_target_repository: Name of the Docker repository to which the
             image should be pushed. This repository will be appended to the
             registry URI of the container registry of your stack and should
@@ -148,6 +150,8 @@ class DockerSettings(BaseSettings):
     build_context_root: Optional[str] = None
     build_options: Dict[str, Any] = {}
 
+    skip_build: bool = False
+
     target_repository: str = "zenml"
 
     replicate_local_python_environment: Optional[
@@ -164,6 +168,33 @@ class DockerSettings(BaseSettings):
     copy_files: bool = True
     copy_global_config: bool = True
     user: Optional[str] = None
+
+    @root_validator
+    def _validate_skip_build(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Ensures that a parent image is passed when trying to skip the build.
+
+        Args:
+            values: The settings values.
+
+        Returns:
+            The validated settings values.
+
+        Raises:
+            ValueError: If the build should be skipped but no parent image
+                was specified.
+        """
+        skip_build = values.get("skip_build", False)
+        parent_image = values.get("parent_image")
+
+        if skip_build and not parent_image:
+            raise ValueError(
+                "Docker settings that specify `skip_build=True` must always "
+                "contain a `parent_image`. This parent image will be used "
+                "to run the steps of your pipeline directly without additional "
+                "Docker builds on top of it."
+            )
+
+        return values
 
     class Config:
         """Pydantic configuration class."""
