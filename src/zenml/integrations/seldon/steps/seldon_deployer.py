@@ -22,15 +22,6 @@ from zenml.client import Client
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.environment import Environment
 from zenml.exceptions import DoesNotExistException
-from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker import (
-    MLFlowExperimentTracker,
-)
-from zenml.integrations.mlflow.mlflow_utils import (
-    get_missing_mlflow_experiment_tracker_error,
-)
-from zenml.integrations.mlflow.model_registries.mlflow_model_registry import (
-    MLFlowModelRegistry,
-)
 from zenml.integrations.seldon.constants import (
     SELDON_CUSTOM_DEPLOYMENT,
     SELDON_DOCKER_IMAGE_KEY,
@@ -49,6 +40,7 @@ from zenml.integrations.seldon.services.seldon_deployment import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers import UnmaterializedArtifact
+from zenml.model_registries.base_model_registry import ModelVersionStage
 from zenml.steps import (
     STEP_ENVIRONMENT_NAME,
     BaseParameters,
@@ -122,7 +114,7 @@ class SeldonDeployerStepParameters(BaseParameters):
     custom_deploy_parameters: Optional[CustomDeployParameters] = None
     registry_model_name: Optional[str] = None
     registry_model_version: Optional[str] = None
-    registry_model_stage: Optional[str] = None
+    registry_model_stage: Optional[ModelVersionStage] = None
     timeout: int = DEFAULT_SELDON_DEPLOYMENT_START_STOP_TIMEOUT
 
 
@@ -420,6 +412,17 @@ def seldon_mlflow_registry_deployer_step(
     Returns:
         Seldon Core deployment service
     """
+    # import here to avoid failing the pipeline if the step is not used
+    from zenml.integrations.mlflow.experiment_trackers import (
+        MLFlowExperimentTracker,
+    )
+    from zenml.integrations.mlflow.mlflow_utils import (
+        get_missing_mlflow_experiment_tracker_error,
+    )
+    from zenml.integrations.mlflow.model_registries import MLFlowModelRegistry
+
+    # check if the MLflow experiment tracker, MLflow model registry and
+    # Seldon Core model deployer are available
     if not params.registry_model_name:
         raise ValueError(
             "registry_model_name must be provided to the MLflow"

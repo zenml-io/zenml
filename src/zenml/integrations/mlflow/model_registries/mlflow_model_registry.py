@@ -382,12 +382,12 @@ class MLFlowModelRegistry(BaseModelRegistry):
                     f"a version will be assigned automatically."
                 )
             # Set the tags.
-            if not tags:
-                tags = {}
-            tags["zenml_version"] = zenm_version or __version__
-            tags["zenml_pipeline_run_id"] = zenml_pipeline_run_id or ""
-            tags["zenml_pipeline_name"] = zenml_pipeline_name or ""
-            tags["zenml_step_name"] = zenml_step_name or ""
+            if not version_tags:
+                version_tags = {}
+            version_tags["zenml_version"] = zenm_version or __version__
+            version_tags["zenml_pipeline_run_id"] = zenml_pipeline_run_id or ""
+            version_tags["zenml_pipeline_name"] = zenml_pipeline_name or ""
+            version_tags["zenml_step_name"] = zenml_step_name or ""
             # Register the model version.
             registered_model_version = self.mlflow_client.create_model_version(
                 name=name,
@@ -399,7 +399,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
                 if registry_metadata
                 else "",
                 description=version_description,
-                tags=tags,
+                tags=version_tags,
             )
         except MlflowException as e:
             logger.error(

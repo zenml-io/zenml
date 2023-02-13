@@ -120,26 +120,28 @@ class ModelVersion(BaseModel):
         """
         if values.get("zenml_metadata") is None:
             values["zenml_metadata"] = ZenMLModelMetadata()
-        tags = values.get("tags")
-        if tags:
-            if "zenml_version" in tags.keys():
-                values["zenml_metadata"].zenml_version = tags["zenml_version"]
-                values["tags"].pop("zenml_version")
-            if "zenml_pipeline_run_id" in tags.keys():
-                values["zenml_metadata"].zenml_pipeline_run_id = tags[
+        version_tags = values.get("version_tags")
+        if version_tags:
+            if "zenml_version" in version_tags.keys():
+                values["zenml_metadata"].zenml_version = version_tags[
+                    "zenml_version"
+                ]
+                values["version_tags"].pop("zenml_version")
+            if "zenml_pipeline_run_id" in version_tags.keys():
+                values["zenml_metadata"].zenml_pipeline_run_id = version_tags[
                     "zenml_pipeline_run_id"
                 ]
-                values["tags"].pop("zenml_pipeline_run_id")
-            if "zenml_pipeline_name" in tags.keys():
-                values["zenml_metadata"].zenml_pipeline_name = tags[
+                values["version_tags"].pop("zenml_pipeline_run_id")
+            if "zenml_pipeline_name" in version_tags.keys():
+                values["zenml_metadata"].zenml_pipeline_name = version_tags[
                     "zenml_pipeline_name"
                 ]
-                values["tags"].pop("zenml_pipeline_name")
-            if "zenml_step_name" in tags.keys():
-                values["zenml_metadata"].zenml_step_name = tags[
+                values["version_tags"].pop("zenml_pipeline_name")
+            if "zenml_step_name" in version_tags.keys():
+                values["zenml_metadata"].zenml_step_name = version_tags[
                     "zenml_step_name"
                 ]
-                values["tags"].pop("zenml_step_name")
+                values["version_tags"].pop("zenml_step_name")
         return values
 
 

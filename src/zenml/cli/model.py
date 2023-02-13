@@ -104,12 +104,9 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
         "register",
         help="Register a model with the active model registry.",
     )
-    @click.option(
-        "--name",
-        "-n",
-        type=str,
-        default=None,
-        help="Name of the model to register.",
+    @click.argument(
+        "name",
+        type=click.STRING,
         required=True,
     )
     @click.option(
@@ -161,12 +158,9 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
         "delete",
         help="Delete a model from the active model registry.",
     )
-    @click.option(
-        "--name",
-        "-n",
-        type=str,
-        default=None,
-        help="Name of the model to delete.",
+    @click.argument(
+        "name",
+        type=click.STRING,
         required=True,
     )
     @click.pass_obj
@@ -193,12 +187,9 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
         "update",
         help="Update a model in the active model registry.",
     )
-    @click.option(
-        "--name",
-        "-n",
-        type=str,
-        default=None,
-        help="Name of the model to update.",
+    @click.argument(
+        "name",
+        type=click.STRING,
         required=True,
     )
     @click.option(
@@ -250,12 +241,9 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
         "get",
         help="Get a model from the active model registry.",
     )
-    @click.option(
-        "--name",
-        "-n",
-        type=str,
-        default=None,
-        help="Name of the model to get.",
+    @click.argument(
+        "name",
+        type=click.STRING,
         required=True,
     )
     @click.pass_obj
@@ -282,12 +270,9 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
         "get-version",
         help="Get a model version from the active model registry.",
     )
-    @click.option(
-        "--name",
-        "-n",
-        type=str,
-        default=None,
-        help="Name of the model to get.",
+    @click.argument(
+        "name",
+        type=click.STRING,
         required=True,
     )
     @click.option(
@@ -326,12 +311,9 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
         "delete-version",
         help="Delete a model version from the active model registry.",
     )
-    @click.option(
-        "--name",
-        "-n",
-        type=str,
-        default=None,
-        help="Name of the model to delete.",
+    @click.argument(
+        "name",
+        type=click.STRING,
         required=True,
     )
     @click.option(
@@ -370,12 +352,9 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
         "update-version",
         help="Update a model version in the active model registry.",
     )
-    @click.option(
-        "--name",
-        "-n",
-        type=str,
-        default=None,
-        help="Name of the model to update.",
+    @click.argument(
+        "name",
+        type=click.STRING,
         required=True,
     )
     @click.option(
@@ -452,12 +431,9 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
         "list-versions",
         help="List all model versions in the active model registry.",
     )
-    @click.option(
-        "--name",
-        "-n",
-        type=str,
-        default=None,
-        help="Name of the model to list versions for.",
+    @click.argument(
+        "name",
+        type=click.STRING,
         required=True,
     )
     @click.option(
@@ -505,12 +481,9 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
         "register-version",
         help="Register a model version in the active model registry.",
     )
-    @click.option(
-        "--name",
-        "-n",
-        type=str,
-        default=None,
-        help="Name of the model to register.",
+    @click.argument(
+        "name",
+        type=click.STRING,
         required=True,
     )
     @click.option(
