@@ -29,12 +29,16 @@ from zenml.cli.utils import (
     print_list_items,
     warning,
 )
+from zenml.client import Client
 from zenml.console import console
-from zenml.enums import StackComponentType
+from zenml.enums import CliCategories, SecretScope, StackComponentType
 from zenml.exceptions import SecretExistsError
+from zenml.logger import get_logger
 
 if TYPE_CHECKING:
     from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
+
+logger = get_logger(__name__)
 
 
 def register_secrets_manager_subcommands() -> None:
@@ -527,3 +531,108 @@ def register_secrets_manager_subcommands() -> None:
         with console.status("Deleting all secrets..."):
             secrets_manager.delete_all_secrets()
             console.print("Deleted all secrets.")
+
+
+@cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
+def secret() -> None:
+    """Create, list, update, or delete secrets."""
+
+
+@secret.command("create", help="Create a new secret.")
+@click.argument("name", type=click.STRING)
+@click.option(
+    "--scope",
+    "-s",
+    "scope",
+    type=click.Choice([scope.value for scope in list(SecretScope)]),
+    default=SecretScope.WORKSPACE.value,
+)
+@click.argument("args", nargs=-1, type=click.UNPROCESSED)
+def create_secret(name: str, scope: str, args: List[str]) -> None:
+    """Create a secret.
+
+    Args:
+        name: The name of the secret to create.
+        scope: The scope of the secret to create.
+        args: The arguments to pass to the secret.
+    """
+    Client()
+    return None
+
+
+@secret.command("list", help="List all registered secrets.")
+@click.option(
+    "--scope",
+    "-s",
+    "scope",
+    type=click.Choice([scope.value for scope in list(SecretScope)]),
+    default=SecretScope.WORKSPACE.value,
+)
+@click.option(
+    "--workspace_id",
+    "-w",
+    "workspace_id",
+    type=click.STRING,
+)
+@click.option(
+    "--user_id",
+    "-u",
+    "user_id",
+    type=click.STRING,
+)
+def list_secrets(scope: str, workspace_id: str, user_id: str) -> None:
+    """List all registered secrets.
+
+    Args:
+        scope: The scope of the secret to list.
+        workspace_id: The workspace ID to list secrets for.
+        user_id: The user ID to list secrets for.
+    """
+    Client()
+    return None
+
+
+@secret.command("get", help="Get a secret with a given name, prefix or id.")
+@click.argument(
+    "secret_name",
+    type=click.STRING,
+)
+def get_secret(secret_name: str) -> None:
+    """Get a secret for a given name.
+
+    Args:
+        secret_name: The name of the secret to get.
+    """
+    Client()
+    return None
+
+
+@secret.command("update", help="Update a secret with a given name or id.")
+@click.argument(
+    "secret_name_or_id",
+    type=click.STRING,
+)
+@click.option("--values", "-v", "values", type=click.STRING, multiple=True)
+def update_secret(secret_name_or_id: str) -> None:
+    """Update a secret for a given name or id.
+
+    Args:
+        secret_name_or_id: The name or id of the secret to update.
+    """
+    Client()
+    return None
+
+
+@secret.command("delete", help="Delete a secret with a given name or id.")
+@click.argument(
+    "secret_name_or_id",
+    type=click.STRING,
+)
+def delete_secret(secret_name_or_id: str) -> None:
+    """Delete a secret for a given name or id.
+
+    Args:
+        secret_name_or_id: The name or id of the secret to delete.
+    """
+    Client()
+    return None
