@@ -768,8 +768,8 @@ def pretty_print_model_version_table(
             {
                 "NAME": model_version.model_registration.name,
                 "MODEL_VERSION": model_version.version,
-                "DESCRIPTION": model_version.description,
-                "TAGS": model_version.tags,
+                "VERSION_DESCRIPTION": model_version.version_description,
+                "VERSION_TAGS": model_version.version_tags,
             }
         )
     print_table(
@@ -797,23 +797,32 @@ def pretty_print_model_version_details(
     model_version_info = {
         "REGISTERED_MODEL_NAME": model_version.model_registration.name,
         "VERSION": model_version.version,
-        "DESCRIPTION": model_version.description,
+        "VERSION_DESCRIPTION": model_version.version_description,
         "CREATED_AT": str(
-            datetime.fromtimestamp(int(model_version.created_at) / 1000.0)
-        ),
+            datetime.fromtimestamp(model_version.created_at / 1000.0)
+        )
+        if model_version.created_at
+        else "N/A",
         "UPDATED_AT": str(
-            datetime.fromtimestamp(int(model_version.last_updated_at) / 1000.0)
+            datetime.fromtimestamp(model_version.last_updated_at / 1000.0)
+        )
+        if model_version.last_updated_at
+        else "N/A",
+        "ZENML_VERSION": getattr(
+            model_version.zenml_metadata, "zenml_version", "N/A"
         ),
-        "ZENML_VERSION": model_version.zenml_metadata.zenml_version or "N/A",
-        "ZENML_PIPELINE_RUN_ID": model_version.zenml_metadata.zenml_pipeline_run_id
-        or "N/A",
-        "ZENML_PIPELINE_NAME": model_version.zenml_metadata.zenml_pipeline_name
-        or "N/A",
-        "ZENML_PIPELINE_STEP_NAME": model_version.zenml_metadata.zenml_step_name
-        or "N/A",
-        "TAGS": model_version.tags,
+        "ZENML_PIPELINE_RUN_ID": getattr(
+            model_version.zenml_metadata, "zenml_pipeline_name", "N/A"
+        ),
+        "ZENML_PIPELINE_NAME": getattr(
+            model_version.zenml_metadata, "zenml_pipeline_run_id", "N/A"
+        ),
+        "ZENML_PIPELINE_STEP_NAME": getattr(
+            model_version.zenml_metadata, "zenml_step_name", "N/A"
+        ),
+        "VERSION_TAGS": model_version.version_tags,
         "MODEL_SOURCE_URI": model_version.model_source_uri,
-        "CURRENT_STAGE": model_version.current_stage,
+        "VERSION_STAGE": model_version.version_stage.value,
     }
     for key, value in model_version.registry_metadata.items():
         model_version_info[key.upper()] = value or "N/A"

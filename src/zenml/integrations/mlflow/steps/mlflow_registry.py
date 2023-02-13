@@ -46,33 +46,33 @@ class MLFlowRegistryParameters(BaseParameters):
 
     Args:
         name: Name of the registered model.
-        registered_model_description: Description of the registered model.
-        registered_model_tags: Tags to be added to the registered model.
+        description: Description of the registered model.
+        tags: Tags to be added to the registered model.
         trained_model_name: Name of the model to be deployed.
         experiment_name: Name of the experiment to be used for the run.
         run_name: Name of the run to be created.
         run_id: ID of the run to be used.
         model_source_uri: URI of the model source. If not provided, the model
             will be fetched from the MLflow tracking server.
-        description: Description of the model.
-        tags: Tags to be added to the model.
+        version_description: Description of the model.
+        version_tags: Tags to be added to the model.
         registry_metadata: Metadata to be added to the model registry.
     """
 
     name: str
-    registered_model_description: Optional[str] = None
-    registered_model_tags: Optional[Dict[str, str]] = None
+    description: Optional[str] = None
+    tags: Optional[Dict[str, str]] = None
     trained_model_name: Optional[str] = "model"
     model_source_uri: Optional[str] = None
     experiment_name: Optional[str] = None
     run_name: Optional[str] = None
     run_id: Optional[str] = None
-    description: Optional[str] = None
-    tags: Optional[Dict[str, str]] = None
+    version_description: Optional[str] = None
+    version_tags: Optional[Dict[str, str]] = None
     registry_metadata: Optional[Dict[str, str]] = None
 
 
-@step(enable_cache=False)
+@step(enable_cache=True)
 def mlflow_register_model_step(
     model: UnmaterializedArtifact,
     params: MLFlowRegistryParameters,
@@ -109,8 +109,6 @@ def mlflow_register_model_step(
     step_name = step_env.step_name
     pipeline_run_id = step_env.run_name
 
-    client = model_registry.mlflow_client
-
     # Get MLflow run ID either from params or from experiment tracker using
     # pipeline name and run name
     mlflow_run_id = params.run_id or experiment_tracker.get_run_id(
@@ -120,9 +118,12 @@ def mlflow_register_model_step(
     # If no value was set at all, raise an error
     if not mlflow_run_id:
         raise ValueError(
-            f"Could not find MLflow run for pipeline {pipeline_name} "
-            f"and run {pipeline_run_id} in experiment {params.experiment_name}."
+            f"Could not find MLflow run for experiment {pipeline_name} "
+            f"and run {pipeline_run_id}."
         )
+
+    # Get MLflow client
+    client = model_registry.mlflow_client
     # Lastly, check if the run ID is valid
     try:
         client.get_run(run_id=mlflow_run_id).info.run_id
@@ -148,11 +149,11 @@ def mlflow_register_model_step(
     # Register model version
     model_version = model_registry.register_model_version(
         name=params.name,
-        registered_model_description=params.registered_model_description,
-        registered_model_tags=params.registered_model_tags,
-        model_source_uri=model_source_uri,
         description=params.description,
         tags=params.tags,
+        model_source_uri=model_source_uri,
+        version_description=params.version_description,
+        version_tags=params.version_tags,
         zenml_version=__version__,
         zenml_pipeline_run_id=pipeline_run_id,
         zenml_pipeline_name=pipeline_name,

@@ -14,6 +14,7 @@
 """Base class for all ZenML model registries."""
 
 from abc import ABC, abstractmethod
+from enum import Enum
 from typing import Any, Dict, List, Optional, Type, cast
 
 from pydantic import BaseModel, Field, root_validator
@@ -21,16 +22,15 @@ from pydantic import BaseModel, Field, root_validator
 from zenml.enums import StackComponentType
 from zenml.stack import Flavor, StackComponent
 from zenml.stack.stack_component import StackComponentConfig
-from zenml.utils.enum_utils import StrEnum
 
 
-class ModelVersionStageEnum(StrEnum):
-    """String Enum of the possible stages of a registered model."""
+class ModelVersionStage(Enum):
+    """Enum of the possible stages of a registered model."""
 
-    NONE = "none"
-    STAGING = "staging"
-    PRODUCTION = "production"
-    ARCHIVED = "archived"
+    NONE = "None"
+    STAGING = "Staging"
+    PRODUCTION = "Production"
+    ARCHIVED = "Archived"
 
 
 class ModelRegistration(BaseModel):
@@ -85,22 +85,22 @@ class ModelVersion(BaseModel):
         model_registration: The registered model associated with this model
         model_source_uri: The URI of the model bundle associated with this model
         version: The version number of this model version
-        description: The description of this model version
+        version_description: The description of this model version
         created_at: The creation time of this model version
         last_updated_at: The last updated time of this model version
-        current_stage: The current stage of this model version
-        tags: Tags associated with this model version
+        version_stage: The current stage of this model version
+        version_tags: Tags associated with this model version
         registry_metadata: The metadata associated with this model version
     """
 
     model_registration: ModelRegistration
     model_source_uri: str
-    description: Optional[str] = None
+    version_description: Optional[str] = None
     version: Optional[str] = None
-    created_at: Optional[str] = None
-    last_updated_at: Optional[str] = None
-    current_stage: Optional[str] = None
-    tags: Dict[str, str] = Field(default_factory=dict)
+    created_at: Optional[int] = None
+    last_updated_at: Optional[int] = None
+    version_stage: ModelVersionStage = ModelVersionStage.NONE
+    version_tags: Dict[str, str] = Field(default_factory=dict)
     registry_metadata: Dict[str, str] = Field(default_factory=dict)
     zenml_metadata: Optional[ZenMLModelMetadata] = Field(
         default_factory=ZenMLModelMetadata
@@ -120,26 +120,26 @@ class ModelVersion(BaseModel):
         """
         if values.get("zenml_metadata") is None:
             values["zenml_metadata"] = ZenMLModelMetadata()
-        if "zenml_version" in values.get("tags", {}).keys():
-            values["zenml_metadata"].zenml_version = values.get("tags").get(
-                "zenml_version"
-            )
-            values["tags"].pop("zenml_version")
-        if "zenml_pipeline_run_id" in values.get("tags", {}).keys():
-            values["zenml_metadata"].zenml_pipeline_run_id = values.get(
-                "tags"
-            ).get("zenml_pipeline_run_id")
-            values["tags"].pop("zenml_pipeline_run_id")
-        if "zenml_pipeline_name" in values.get("tags", {}).keys():
-            values["zenml_metadata"].zenml_pipeline_name = values.get(
-                "tags"
-            ).get("zenml_pipeline_name")
-            values["tags"].pop("zenml_pipeline_name")
-        if "zenml_step_name" in values.get("tags", {}).keys():
-            values["zenml_metadata"].zenml_step_name = values.get("tags").get(
-                "zenml_step_name"
-            )
-            values["tags"].pop("zenml_step_name")
+        tags = values.get("tags")
+        if tags:
+            if "zenml_version" in tags.keys():
+                values["zenml_metadata"].zenml_version = tags["zenml_version"]
+                values["tags"].pop("zenml_version")
+            if "zenml_pipeline_run_id" in tags.keys():
+                values["zenml_metadata"].zenml_pipeline_run_id = tags[
+                    "zenml_pipeline_run_id"
+                ]
+                values["tags"].pop("zenml_pipeline_run_id")
+            if "zenml_pipeline_name" in tags.keys():
+                values["zenml_metadata"].zenml_pipeline_name = tags[
+                    "zenml_pipeline_name"
+                ]
+                values["tags"].pop("zenml_pipeline_name")
+            if "zenml_step_name" in tags.keys():
+                values["zenml_metadata"].zenml_step_name = tags[
+                    "zenml_step_name"
+                ]
+                values["tags"].pop("zenml_step_name")
         return values
 
 
@@ -231,13 +231,13 @@ class BaseModelRegistry(StackComponent, ABC):
     def register_model_version(
         self,
         name: str,
-        registered_model_description: Optional[str] = None,
-        registered_model_tags: Optional[Dict[str, str]] = None,
-        model_source_uri: Optional[str] = None,
-        version: Optional[str] = None,
         description: Optional[str] = None,
         tags: Optional[Dict[str, str]] = None,
-        registery_metadata: Optional[Dict[str, str]] = None,
+        model_source_uri: Optional[str] = None,
+        version: Optional[str] = None,
+        version_description: Optional[str] = None,
+        version_tags: Optional[Dict[str, str]] = None,
+        registry_metadata: Optional[Dict[str, str]] = None,
         zenm_version: Optional[str] = None,
         zenml_pipeline_run_id: Optional[str] = None,
         zenml_pipeline_name: Optional[str] = None,
@@ -248,15 +248,15 @@ class BaseModelRegistry(StackComponent, ABC):
 
         Args:
             name: The name of the registered model.
-            registered_model_description: The description of the registered
+            description: The description of the registered
                 model.
-            registered_model_tags: The tags associated with the registered
+            tags: The tags associated with the registered
                 model.
             model_source_uri: The source URI of the model.
             version: The version of the model version.
-            description: The description of the model version.
-            tags: The tags associated with the model version.
-            registery_metadata: The metadata associated with the model
+            version_description: The description of the model version.
+            version_tags: The tags associated with the model version.
+            registry_metadata: The metadata associated with the model
                 version.
             zenm_version: The ZenML version of the model version.
             zenml_pipeline_run_id: The ZenML pipeline run ID of the model
@@ -288,18 +288,18 @@ class BaseModelRegistry(StackComponent, ABC):
         self,
         name: str,
         version: str,
-        description: Optional[str] = None,
-        tags: Optional[Dict[str, str]] = None,
-        stage: Optional[ModelVersionStageEnum] = None,
+        version_description: Optional[str] = None,
+        version_tags: Optional[Dict[str, str]] = None,
+        version_stage: Optional[ModelVersionStage] = None,
     ) -> ModelVersion:
         """Updates a model version in the model registry.
 
         Args:
             name: The name of the registered model.
             version: The version of the model version to update.
-            description: The description of the model version.
-            tags: The tags associated with the model version.
-            stage: The stage of the model version.
+            version_description: The description of the model version.
+            version_tags: The tags associated with the model version.
+            version_stage: The stage of the model version.
 
         Returns:
             The updated model version.
@@ -310,7 +310,7 @@ class BaseModelRegistry(StackComponent, ABC):
         self,
         name: Optional[str] = None,
         model_source_uri: Optional[str] = None,
-        tags: Optional[Dict[str, str]] = None,
+        version_tags: Optional[Dict[str, str]] = None,
         **kwargs: Any,
     ) -> List[ModelVersion]:
         """Lists all model versions for a registered model.
@@ -318,7 +318,7 @@ class BaseModelRegistry(StackComponent, ABC):
         Args:
             name: The name of the registered model.
             model_source_uri: The model source URI of the registered model.
-            tags: The tags associated with the registered model.
+            version_tags: The tags associated with the registered model.
             kwargs: Additional keyword arguments.
 
         Returns:
@@ -335,24 +335,6 @@ class BaseModelRegistry(StackComponent, ABC):
 
         Returns:
             The model version.
-        """
-
-    @abstractmethod
-    def load_model_version(
-        self,
-        name: str,
-        version: str,
-        **kwargs: Any,
-    ) -> Any:
-        """Loads a model version for a registered model.
-
-        Args:
-            name: The name of the registered model.
-            version: The version of the model version to load.
-            kwargs: Additional keyword arguments.
-
-        Returns:
-            The loaded model version.
         """
 
     @abstractmethod

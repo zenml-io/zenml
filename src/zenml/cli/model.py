@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Functionality for model-deployer CLI subcommands."""
 
-from typing import TYPE_CHECKING, Optional, cast
+from typing import TYPE_CHECKING, Dict, Optional, cast
 
 import click
 
@@ -26,6 +26,7 @@ from zenml.cli.utils import (
     pretty_print_registered_model_table,
 )
 from zenml.enums import StackComponentType
+from zenml.model_registries.base_model_registry import ModelVersionStage
 
 if TYPE_CHECKING:
     from zenml.model_registries import BaseModelRegistry
@@ -78,12 +79,12 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
     @click.pass_obj
     def list_registered_models(
         model_registry: "BaseModelRegistry",
-        tags: Optional[dict],
+        tags: Optional[Dict[str, str]],
     ) -> None:
         """List of all registered models within the model registry.
 
         The list can be filtered by tags using the --tags flag.
-        Example: zenm model-registry models listy-model --tags '{"key1":"value1","key2":"value2"}'
+        Example: zenm model-registry models listy-model --tags key1 value1 key2 value2
 
         Args:
             model_registry: The model registry stack component.
@@ -131,7 +132,7 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
         model_registry: "BaseModelRegistry",
         name: str,
         description: Optional[str],
-        tags: Optional[dict],
+        tags: Optional[Dict[str, str]],
     ) -> None:
         """Register a model with the active model registry.
 
@@ -220,7 +221,7 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
         model_registry: "BaseModelRegistry",
         name: str,
         description: Optional[str],
-        tags: Optional[dict],
+        tags: Optional[Dict[str, str]],
     ) -> None:
         """Update a model in the active model registry.
 
@@ -301,7 +302,7 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
     def get_model_version(
         model_registry: "BaseModelRegistry",
         name: str,
-        version: int,
+        version: str,
     ) -> None:
         """Get a model version from the active model registry.
 
@@ -345,7 +346,7 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
     def delete_model_version(
         model_registry: "BaseModelRegistry",
         name: str,
-        version: int,
+        version: str,
     ) -> None:
         """Delete a model version from the active model registry.
 
@@ -403,7 +404,7 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
     @click.option(
         "--stage",
         "-s",
-        type=str,
+        type=click.Choice(["None", "Staging", "Production", "Archived"]),
         default=None,
         help="Stage of the model to update.",
     )
@@ -411,9 +412,9 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
     def update_model_version(
         model_registry: "BaseModelRegistry",
         name: str,
-        version: int,
+        version: str,
         description: Optional[str],
-        tags: Optional[dict],
+        tags: Optional[Dict[str, str]],
         stage: Optional[str],
     ) -> None:
         """Update a model version in the active model registry.
@@ -438,9 +439,9 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
         updated_version = model_registry.update_model_version(
             name=name,
             version=version,
-            description=description,
-            tags=tags,
-            stage=stage,
+            version_description=description,
+            version_tags=tags,
+            version_stage=ModelVersionStage(stage),
         )
         # Declare success
         declare(f"Model {name} version {version} updated successfully.")
@@ -479,7 +480,7 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
         model_registry: "BaseModelRegistry",
         name: str,
         model_uri: Optional[str],
-        tags: Optional[dict],
+        tags: Optional[Dict[str, str]],
     ) -> None:
         """List all model versions in the active model registry.
 
@@ -495,7 +496,7 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
         model_versions = model_registry.list_model_versions(
             name=name,
             model_source_uri=model_uri,
-            tags=tags,
+            version_tags=tags,
         )
         # Print model versions
         pretty_print_model_version_table(model_versions)
@@ -513,15 +514,15 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
         required=True,
     )
     @click.option(
-        "--registered-model-description",
-        "-rmd",
+        "--description",
+        "-d",
         type=str,
         default=None,
         help="Description of the registered model to register.",
     )
     @click.option(
-        "--registered-model-tags",
-        "-rmt",
+        "--tags",
+        "-t",
         type=(str, str),
         default=None,
         help="Tags to add to the registered model. can be used like: --tags key1 value1 key2 value",
@@ -535,27 +536,12 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
         help="Version of the model to register.",
     )
     @click.option(
-        "--model-uri",
-        "-m",
+        "--model-source-uri",
+        "-uri",
         type=str,
         default=None,
         help="Model URI of the model to register.",
         required=True,
-    )
-    @click.option(
-        "--description",
-        "-d",
-        type=str,
-        default=None,
-        help="Description of the model to register.",
-    )
-    @click.option(
-        "--tags",
-        "-t",
-        type=(str, str),
-        default=None,
-        help="Tags to add to the model. can be used like: --tags key1 value1 key2 value",
-        multiple=True,
     )
     @click.option(
         "--registry-metadata",
@@ -567,21 +553,21 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
     )
     @click.option(
         "--zenml-version",
-        "-z",
+        "-zv",
         type=str,
         default=None,
         help="ZenML version of the model to register.",
     )
     @click.option(
         "--zenml-pipeline-run-id",
-        "-pi",
+        "-rid",
         type=str,
         default=None,
         help="ZenML pipeline run ID of the model to register.",
     )
     @click.option(
         "zenml-pipeline-run-name",
-        "-pn",
+        "-rn",
         type=str,
         default=None,
         help="ZenML pipeline run name of the model to register.",
@@ -600,8 +586,8 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
         version: Optional[str],
         model_uri: str,
         description: Optional[str],
-        tags: Optional[dict],
-        registry_metadata: Optional[dict],
+        tags: Optional[Dict[str, str]],
+        registry_metadata: Optional[Dict[str, str]],
         zenml_version: Optional[str],
         zenml_pipeline_run_id: Optional[str],
         zenml_pipeline_name: Optional[str],
@@ -632,8 +618,8 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
             name=name,
             version=version,
             model_source_uri=model_uri,
-            description=description,
-            tags=tags,
+            version_description=description,
+            version_tags=tags,
             registry_metadata=registry_metadata,
             zenml_version=zenml_version,
             zenml_pipeline_run_id=zenml_pipeline_run_id,

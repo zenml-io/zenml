@@ -61,8 +61,8 @@ if __name__ == "__main__":
     pipeline = deployment_inference_pipeline(
         mlflow_model_deployer=mlflow_model_registry_deployer_step(
             params=MLFlowDeployerParameters(
-                registered_model_name="Tensorflow-mnist-model",
-                registered_model_version="2",
+                registry_model_name="Tensorflow-mnist-model",
+                registry_model_version="2",
                 # or you can use the model stage if you have set it in the mlflow registry
                 # registered_model_stage="Staging",
             )

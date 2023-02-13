@@ -38,6 +38,7 @@ from zenml.integrations.mlflow.services.mlflow_deployment import (
 )
 from zenml.logger import get_logger
 from zenml.materializers import UnmaterializedArtifact
+from zenml.model_registries.base_model_registry import ModelVersionStage
 from zenml.steps import (
     STEP_ENVIRONMENT_NAME,
     BaseParameters,
@@ -62,13 +63,16 @@ class MLFlowDeployerParameters(BaseParameters):
         mlserver: set to True to use the MLflow MLServer backend (see
             https://github.com/SeldonIO/MLServer). If False, the
             MLflow built-in scoring server will be used.
+        registry_model_name: the name of the model in the model registry
+        registry_model_version: the version of the model in the model registry
+        registry_model_stage: the stage of the model in the model registry
         timeout: the number of seconds to wait for the service to start/stop.
     """
 
     model_name: str = "model"
-    registered_model_name: Optional[str] = None
-    registered_model_version: Optional[str] = None
-    registered_model_stage: Optional[str] = None
+    registry_model_name: Optional[str] = None
+    registry_model_version: Optional[str] = None
+    registry_model_stage: Optional[ModelVersionStage] = None
     experiment_name: Optional[str] = None
     run_name: Optional[str] = None
     workers: int = 1
@@ -137,8 +141,8 @@ def mlflow_model_deployer_step(
         model_uri=model_uri,
         workers=params.workers,
         mlserver=params.mlserver,
-        registered_model_name=params.registered_model_name or "",
-        registered_model_version=params.registered_model_version or "",
+        registry_model_name=params.registry_model_name or "",
+        registry_model_version=params.registry_model_version or "",
         pipeline_name=pipeline_name,
         pipeline_run_id=run_name,
         pipeline_step_name=step_name,
@@ -219,25 +223,20 @@ def mlflow_model_registry_deployer_step(
 ) -> MLFlowDeploymentService:
     """Model deployer pipeline step for MLflow.
 
-    # noqa: DAR401
-
     Args:
         params: parameters for the deployer step
 
     Returns:
         MLflow deployment service
     """
-    if not params.registered_model_name:
+    if not params.registry_model_name:
         raise ValueError(
-            "registered_model_name must be provided to the MLflow"
+            "registry_model_name must be provided to the MLflow"
             "model registry deployer step."
         )
-    elif (
-        not params.registered_model_version
-        and not params.registered_model_stage
-    ):
+    elif not params.registry_model_version and not params.registry_model_stage:
         raise ValueError(
-            "Either registered_model_version or registered_model_stage must"
+            "Either registry_model_version or registry_model_stage must"
             "be provided in addition to registered_model_name to the MLflow"
             "model registry deployer step. Since the"
             "mlflow_model_registry_deployer_step is used in conjunction with"
@@ -263,47 +262,51 @@ def mlflow_model_registry_deployer_step(
         )
 
     # fetch the model version
-    if params.registered_model_version:
+    if params.registry_model_version:
         model_version = model_registry.get_model_version(
-            name=params.registered_model_name,
-            version=params.registered_model_version,
+            name=params.registry_model_name,
+            version=params.registry_model_version,
         )
-    elif params.registered_model_stage:
+    elif params.registry_model_stage:
         model_version = model_registry.get_latest_model_versions(
-            name=params.registered_model_name,
-            stages=[params.registered_model_stage],
+            name=params.registry_model_name,
+            version_stages=[params.registry_model_stage],
         )[0]
 
     if not model_version:
         raise ValueError(
             f"No Model Version found for model name "
-            f"{params.registered_model_name} and version "
-            f"{params.registered_model_version} or stage "
-            f"{params.registered_model_stage}"
+            f"{params.registry_model_name} and version "
+            f"{params.registry_model_version} or stage "
+            f"{params.registry_model_stage}"
         )
 
     # Set the pipeline information from the model version
-    pipeline_name = model_version.tags.get("zenml_pipeline_name", "")
-    pipeline_run_id = model_version.tags.get("zenml_pipeline_run_id", "")
-    step_name = model_version.tags.get("zenml_step_name", "")
+    pipeline_name = getattr(
+        model_version.zenml_metadata, "zenml_pipeline_name", ""
+    )
+    pipeline_run_id = getattr(
+        model_version.zenml_metadata, "zenml_pipeline_run_id", ""
+    )
+    step_name = getattr(model_version.zenml_metadata, "zenml_step_name", "")
 
     # fetch existing services with same pipeline name, step name and model name
     existing_services = model_deployer.find_model_server(
-        registered_model_name=params.registered_model_name,
-        registered_model_version=params.registered_model_version,
+        registry_model_name=params.registry_model_name,
+        registry_model_version=params.registry_model_version,
     )
 
     # create a config for the new model service
     predictor_cfg = MLFlowDeploymentConfig(
         model_name=params.model_name or "",
         model_uri=model_version.model_source_uri,
-        registered_model_name=params.model_name or "",
-        registered_model_version=model_version.version or "",
+        registry_model_name=model_version.model_registration.name or "",
+        registry_model_version=model_version.version or "",
         workers=params.workers,
         mlserver=params.mlserver,
-        pipeline_name=pipeline_name,
-        pipeline_run_id=pipeline_run_id,
-        pipeline_step_name=step_name,
+        pipeline_name=pipeline_name or "",
+        pipeline_run_id=pipeline_run_id or "",
+        pipeline_step_name=step_name or "",
         timeout=params.timeout,
     )
 

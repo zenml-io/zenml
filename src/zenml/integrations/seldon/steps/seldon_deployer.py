@@ -112,13 +112,17 @@ class SeldonDeployerStepParameters(BaseParameters):
             access the Artifact Store where the models are stored). If supplied,
             the information fetched from these secrets is passed to the Seldon
             Core deployment server as a list of environment variables.
+        custom_deploy_parameters: custom deployment parameters
+        registry_model_name: name of the model in the model registry
+        registry_model_version: version of the model in the model registry
+        registry_model_stage: stage of the model in the model registry
     """
 
     service_config: SeldonDeploymentConfig
     custom_deploy_parameters: Optional[CustomDeployParameters] = None
-    registered_model_name: Optional[str] = None
-    registered_model_version: Optional[str] = None
-    registered_model_stage: Optional[str] = None
+    registry_model_name: Optional[str] = None
+    registry_model_version: Optional[str] = None
+    registry_model_stage: Optional[str] = None
     timeout: int = DEFAULT_SELDON_DEPLOYMENT_START_STOP_TIMEOUT
 
 
@@ -411,26 +415,20 @@ def seldon_mlflow_registry_deployer_step(
     deployment for a ML model with Seldon Core.
 
     Args:
-        deploy_decision: whether to deploy the model or not
         params: parameters for the deployer step
-        model: the model artifact to deploy
-        context: the step context
 
     Returns:
         Seldon Core deployment service
     """
-    if not params.registered_model_name:
+    if not params.registry_model_name:
         raise ValueError(
-            "registered_model_name must be provided to the MLflow"
+            "registry_model_name must be provided to the MLflow"
             "model registry deployer step."
         )
-    elif (
-        not params.registered_model_version
-        and not params.registered_model_stage
-    ):
+    elif not params.registry_model_version and not params.registry_model_stage:
         raise ValueError(
-            "Either registered_model_version or registered_model_stage must"
-            "be provided in addition to registered_model_name to the MLflow"
+            "Either registry_model_version or registry_model_stage must"
+            "be provided in addition to registry_model_name to the MLflow"
             "model registry deployer step. Since the"
             "mlflow_model_registry_deployer_step is used in conjunction with"
             "the mlflow_model_registry."
@@ -459,28 +457,32 @@ def seldon_mlflow_registry_deployer_step(
         )
 
     # fetch the model version
-    if params.registered_model_version:
+    if params.registry_model_version:
         model_version = model_registry.get_model_version(
-            name=params.registered_model_name,
-            version=params.registered_model_version,
+            name=params.registry_model_name,
+            version=params.registry_model_version,
         )
-    elif params.registered_model_stage:
+    elif params.registry_model_stage:
         model_version = model_registry.get_latest_model_versions(
-            name=params.registered_model_name,
-            stages=[params.registered_model_stage],
+            name=params.registry_model_name,
+            version_stages=[params.registry_model_stage],
         )[0]
 
     if not model_version:
         raise ValueError(
             f"No Model Version found for model name "
-            f"{params.registered_model_name} and version "
-            f"{params.registered_model_version} or stage "
-            f"{params.registered_model_stage}"
+            f"{params.registry_model_name} and version "
+            f"{params.registry_model_version} or stage "
+            f"{params.registry_model_stage}"
         )
     # Set the pipeline information from the model version
-    pipeline_name = model_version.tags.get("zenml_pipeline_name", "")
-    pipeline_run_id = model_version.tags.get("zenml_pipeline_run_id", "")
-    step_name = model_version.tags.get("zenml_step_name", "")
+    pipeline_name = getattr(
+        model_version.zenml_metadata, "zenml_pipeline_name", ""
+    )
+    pipeline_run_id = getattr(
+        model_version.zenml_metadata, "zenml_pipeline_run_id", ""
+    )
+    step_name = getattr(model_version.zenml_metadata, "zenml_step_name", "")
 
     # update the step configuration with the real pipeline runtime information
     params.service_config.pipeline_name = pipeline_name
