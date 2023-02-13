@@ -278,9 +278,9 @@ Filesync
 FirstPipeline
 FixtureRequest
 FlavorModel
+FlavorRegistry
 FlavorSchema
 FlavorWrapper
-FlavorRegistry
 Flyte
 Formatter
 FullAccess
@@ -957,6 +957,7 @@ conjuncted
 conll
 containerise
 containerregistry
+contextmanager
 copyfile
 cors
 cp
