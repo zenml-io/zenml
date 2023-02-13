@@ -113,6 +113,14 @@ class KubernetesSparkStepOperator(SparkStepOperator):
     def get_docker_builds(
         self, deployment: "PipelineDeploymentBaseModel"
     ) -> List["BuildConfiguration"]:
+        """Gets the Docker builds required for the component.
+
+        Args:
+            deployment: The pipeline deployment for which to get the builds.
+
+        Returns:
+            The required Docker builds.
+        """
         builds = []
         extra_files = {ENTRYPOINT_NAME: LOCAL_ENTRYPOINT}
         for step_name, step in deployment.step_configurations.items():

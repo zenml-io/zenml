@@ -12,9 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """CLI functionality to interact with pipelines."""
-import contextlib
 import os
-from typing import Any, Iterator, Optional, Union
+from typing import Any, Optional, Union
 from uuid import UUID
 
 import click
@@ -33,22 +32,6 @@ from zenml.pipelines import BasePipeline
 from zenml.utils import source_utils, uuid_utils
 
 logger = get_logger(__name__)
-
-
-@contextlib.contextmanager
-def temporary_active_stack(
-    stack_name_or_id: Optional[Union[UUID, str]] = None
-) -> Iterator[None]:
-    try:
-        if stack_name_or_id:
-            old_stack_id = Client().active_stack_model.id
-            Client().activate_stack(stack_name_or_id)
-        else:
-            old_stack_id = None
-        yield
-    finally:
-        if old_stack_id:
-            Client().activate_stack(old_stack_id)
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
@@ -106,9 +89,7 @@ def register_pipeline(source: str) -> None:
     pipeline_instance.register()
 
 
-@pipeline.command(
-    "build",
-)
+@pipeline.command("build", help="Build Docker images for a pipeline.")
 @click.argument("pipeline_name_or_id")
 @click.option(
     "--version",
@@ -144,6 +125,16 @@ def build_pipeline(
     stack_name_or_id: Optional[str] = None,
     output_path: Optional[str] = None,
 ) -> None:
+    """Build Docker images for a pipeline.
+
+    Args:
+        pipeline_name_or_id: Name or ID of the pipeline.
+        version: Version of the pipeline.
+        config_path: Path to pipeline configuration file.
+        stack_name_or_id: Name or ID of the stack for which the images should
+            be built.
+        output_path: Optional file path to write the output to.
+    """
     cli_utils.print_active_config()
 
     if not Client().root:
@@ -161,7 +152,7 @@ def build_pipeline(
             name=pipeline_name_or_id, version=version
         )
 
-    with temporary_active_stack(stack_name_or_id=stack_name_or_id):
+    with cli_utils.temporary_active_stack(stack_name_or_id=stack_name_or_id):
         pipeline_instance = BasePipeline.from_model(pipeline_model)
         build = pipeline_instance.build(config_path=config_path)
 
@@ -178,7 +169,7 @@ def build_pipeline(
         cli_utils.declare("No docker builds required.")
 
 
-@pipeline.command("run")
+@pipeline.command("run", help="Run a pipeline.")
 @click.argument("pipeline_name_or_id")
 @click.option(
     "--version",
@@ -214,6 +205,17 @@ def run_pipeline(
     stack_name_or_id: Optional[str] = None,
     build_path_or_id: Optional[str] = None,
 ) -> None:
+    """Run a pipeline.
+
+    Args:
+        pipeline_name_or_id: Name or ID of the pipeline.
+        version: Version of the pipeline.
+        config_path: Path to pipeline configuration file.
+        stack_name_or_id: Name or ID of the stack on which the pipeline should
+            run.
+        build_path_or_id: ID of file path of the build to use for the pipeline
+            run.
+    """
     cli_utils.print_active_config()
 
     if not Client().root:
@@ -243,7 +245,7 @@ def run_pipeline(
                 "or file path."
             )
 
-    with temporary_active_stack(stack_name_or_id=stack_name_or_id):
+    with cli_utils.temporary_active_stack(stack_name_or_id=stack_name_or_id):
         pipeline_instance = BasePipeline.from_model(pipeline_model)
         pipeline_instance.run(config_path=config_path, build=build)
 

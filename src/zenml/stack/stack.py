@@ -790,6 +790,14 @@ class Stack:
     def get_docker_builds(
         self, deployment: "PipelineDeploymentBaseModel"
     ) -> List["BuildConfiguration"]:
+        """Gets the Docker builds required for the stack.
+
+        Args:
+            deployment: The pipeline deployment for which to get the builds.
+
+        Returns:
+            The required Docker builds.
+        """
         return list(
             itertools.chain.from_iterable(
                 component.get_docker_builds(deployment=deployment)
@@ -815,12 +823,21 @@ class Stack:
         self,
         deployment: "PipelineDeploymentResponseModel",
     ) -> None:
+        """Validates the build of a pipeline deployment.
+
+        Args:
+            deployment: The deployment for which to validate the build.
+
+        Raises:
+            RuntimeError: If some required images for the deployment are missing
+                in the build.
+        """
         required_builds = self.get_docker_builds(deployment=deployment)
 
         if required_builds and not deployment.build:
             raise RuntimeError("Missing docker builds.")
         elif not deployment.build:
-            return None
+            return
 
         for build_config in required_builds:
             try:

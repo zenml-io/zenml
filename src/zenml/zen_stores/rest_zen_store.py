@@ -1266,10 +1266,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The newly created build.
-
-        Raises:
-            KeyError: If the workspace does not exist.
-            EntityExistsError: If an identical build already exists.
         """
         return self._create_workspace_scoped_resource(
             resource=build,

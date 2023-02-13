@@ -130,6 +130,14 @@ class KServeModelDeployer(BaseModelDeployer):
     def get_docker_builds(
         self, deployment: "PipelineDeploymentBaseModel"
     ) -> List["BuildConfiguration"]:
+        """Gets the Docker builds required for the component.
+
+        Args:
+            deployment: The pipeline deployment for which to get the builds.
+
+        Returns:
+            The required Docker builds.
+        """
         builds = []
         for step_name, step in deployment.step_configurations.items():
             if step.config.extra.get(KSERVE_CUSTOM_DEPLOYMENT, False) is True:

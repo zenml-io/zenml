@@ -73,6 +73,9 @@ class PipelineDockerImageBuilder:
             stack: The stack on which the pipeline will be deployed.
             entrypoint: Entrypoint to use for the final image. If left empty,
                 no entrypoint will be included in the image.
+            extra_files: Extra files to add to the build context. Keys are the
+                path inside the build context, values are either the file
+                content or a file path.
 
         Returns:
             The Docker image repo digest or local name, depending on whether

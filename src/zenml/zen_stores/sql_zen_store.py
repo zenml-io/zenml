@@ -2750,10 +2750,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The newly created build.
-
-        Raises:
-            KeyError: If the workspace does not exist.
-            EntityExistsError: If an identical build already exists.
         """
         with Session(self.engine) as session:
             # Create the build
@@ -2852,10 +2848,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The newly created deployment.
-
-        Raises:
-            KeyError: If the workspace does not exist.
-            EntityExistsError: If an identical deployment already exists.
         """
         with Session(self.engine) as session:
             # Create the build

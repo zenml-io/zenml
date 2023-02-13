@@ -35,6 +35,13 @@ if TYPE_CHECKING:
 
 
 class BuildItem(BaseModel):
+    """Pipeline build item.
+
+    Attributes:
+        image: The image name or digest.
+        settings_checksum: Checksum of the settings used for the build.
+    """
+
     image: str
     settings_checksum: Optional[str] = None
 
@@ -43,8 +50,9 @@ class PipelineBuildBaseModel(pydantic_utils.YAMLSerializationMixin):
     """Base model for pipeline builds.
 
     Attributes:
-        pipeline_images: General Docker images built for the entire pipeline.
-        step_images: Docker images built for specific steps of the pipeline.
+        images: Docker images of this build.
+        is_local: Whether the images are stored locally or in a container
+            registry.
     """
 
     images: Dict[str, BuildItem] = {}
@@ -52,25 +60,19 @@ class PipelineBuildBaseModel(pydantic_utils.YAMLSerializationMixin):
 
     @staticmethod
     def get_key(key: str, step: Optional[str] = None) -> str:
+        """Get the image key.
+
+        Args:
+            key: The image key.
+            step: The name of the step for which the image was built.
+
+        Returns:
+            The image key.
+        """
         if step:
             return f"{step}.{key}"
         else:
             return key
-
-    def _get_item(self, key: str, step: Optional[str] = None) -> BuildItem:
-        if step:
-            try:
-                k = self.get_key(key=key, step=step)
-                return self.images[k]
-            except KeyError:
-                pass
-
-        return self.images[key]
-
-        # raise KeyError(
-        #         f"Unable to find image for key {key}. Available keys: "
-        #         f"{set(images)}."
-        #     )
 
     def get_image(self, key: str, step: Optional[str] = None) -> str:
         """Get the image built for a specific key.
@@ -81,9 +83,6 @@ class PipelineBuildBaseModel(pydantic_utils.YAMLSerializationMixin):
                 exists for this step, will fallback to the pipeline image for
                 the same key.
 
-        Raises:
-            KeyError: If no image exists for the given key.
-
         Returns:
             The image name or digest.
         """
@@ -92,7 +91,48 @@ class PipelineBuildBaseModel(pydantic_utils.YAMLSerializationMixin):
     def get_settings_checksum(
         self, key: str, step: Optional[str] = None
     ) -> Optional[str]:
+        """Get the settings checksum for a specific key.
+
+        Args:
+            key: The key for which to get the checksum.
+            step: The name of the step for which to get the checksum. If no
+                image exists for this step, will fallback to the pipeline image
+                for the same key.
+
+        Returns:
+            The settings checksum.
+        """
         return self._get_item(key=key, step=step).settings_checksum
+
+    def _get_item(self, key: str, step: Optional[str] = None) -> BuildItem:
+        """Get the item for a specific key.
+
+        Args:
+            key: The key for which to get the item.
+            step: The name of the step for which to get the item. If no item
+                exists for this step, will fallback to the item for
+                the same key.
+
+        Raises:
+            KeyError: If no item exists for the given key.
+
+        Returns:
+            The build item.
+        """
+        if step:
+            try:
+                combined_key = self.get_key(key=key, step=step)
+                return self.images[combined_key]
+            except KeyError:
+                pass
+
+        try:
+            return self.images[key]
+        except KeyError:
+            raise KeyError(
+                f"Unable to find image for key {key}. Available keys: "
+                f"{set(self.images)}."
+            )
 
 
 # -------- #

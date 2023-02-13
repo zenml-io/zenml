@@ -444,7 +444,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         extra: Optional[Dict[str, Any]] = None,
         config_path: Optional[str] = None,
         unlisted: bool = False,
-    ) -> Any:
+    ) -> None:
         """Runs the pipeline on the active stack of the current repository.
 
         Args:
@@ -452,8 +452,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
             enable_cache: If caching should be enabled for this pipeline run.
             enable_artifact_metadata: If artifact metadata should be enabled
                 for this pipeline run.
-            schedule: Optional schedule of the pipeline.
-            settings: settings for this pipeline run.
+            schedule: Optional schedule to use for the run.
+            build: Optional build to use for the run.
+            settings: Settings for this pipeline run.
             step_configurations: Configurations for steps of the pipeline.
             extra: Extra configurations for this pipeline run.
             config_path: Path to a yaml configuration file. This file will
@@ -463,9 +464,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 method.
             unlisted: Whether the pipeline run should be unlisted (not assigned
                 to any pipeline).
-
-        Returns:
-            The result of the pipeline.
         """
         if constants.SHOULD_PREVENT_PIPELINE_EXECUTION:
             # An environment variable was set to stop the execution of
@@ -586,7 +584,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             # unexpected behavior
             constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True
             try:
-                return_value = stack.deploy_pipeline(
+                stack.deploy_pipeline(
                     deployment=deployment_model,
                 )
             finally:
@@ -596,8 +594,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
             dashboard_utils.print_run_url(
                 run_name=deployment.run_name_template, pipeline_id=pipeline_id
             )
-
-            return return_value
 
     def _apply_configuration(
         self,
@@ -865,6 +861,16 @@ class BasePipeline(metaclass=BasePipelineMeta):
         Optional["Schedule"],
         Union["PipelineBuildBaseModel", UUID, None],
     ]:
+        """Compiles the pipeline.
+
+        Args:
+            config_path: Path to a config file.
+            **run_configuration_args: Configurations for the pipeline run.
+
+        Returns:
+            A tuple containing the deployment, spec, schedule and build of
+            the compiled pipeline.
+        """
         # Activating the built-in integrations to load all materializers
         from zenml.integrations.registry import integration_registry
 
@@ -995,6 +1001,20 @@ class BasePipeline(metaclass=BasePipelineMeta):
         pipeline_id: Optional[UUID] = None,
         build: Union["UUID", "PipelineBuildBaseModel", None] = None,
     ) -> Optional["PipelineBuildResponseModel"]:
+        """Loads or creates a pipeline build.
+
+        Args:
+            deployment: The pipeline deployment for which to load or create the
+                build.
+            pipeline_spec: Spec of the pipeline.
+            pipeline_id: Optional ID of the pipeline to reference in the build.
+            build: Optional existing build. If given, the build will be loaded
+                (or registered) in the database. If not given, a new build will
+                be created.
+
+        Returns:
+            The build response.
+        """
         if not build:
             return self._build(deployment=deployment, pipeline_id=pipeline_id)
 
@@ -1055,6 +1075,20 @@ class BasePipeline(metaclass=BasePipelineMeta):
         ] = None,
         config_path: Optional[str] = None,
     ) -> Optional["PipelineBuildResponseModel"]:
+        """Builds Docker images for the pipeline.
+
+        Args:
+            settings: Settings for the pipeline.
+            step_configurations: Configurations for steps of the pipeline.
+            config_path: Path to a yaml configuration file. This file will
+                be parsed as a `zenml.config.pipeline_configurations.PipelineRunConfiguration`
+                object. Options provided in this file will be overwritten by
+                options provided in code using the other arguments of this
+                method.
+
+        Returns:
+            The build output.
+        """
         deployment, pipeline_spec, _, _ = self._compile(
             config_path=config_path,
             steps=step_configurations,
@@ -1068,6 +1102,15 @@ class BasePipeline(metaclass=BasePipelineMeta):
         deployment: "PipelineDeploymentBaseModel",
         pipeline_id: Optional[UUID] = None,
     ) -> Optional["PipelineBuildResponseModel"]:
+        """Builds images and registers the output in the server.
+
+        Args:
+            deployment: The compiled pipeline deployment.
+            pipeline_id: The ID of the pipeline.
+
+        Returns:
+            The build output.
+        """
         client = Client()
         stack = client.active_stack
         required_builds = stack.get_docker_builds(deployment=deployment)

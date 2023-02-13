@@ -2633,7 +2633,7 @@ class Client(metaclass=ClientMetaClass):
             user_id: The  id of the user to filter by.
             pipeline_id: The id of the pipeline to filter by.
             stack_id: The id of the stack to filter by.
-            stack_id: The id of the build to filter by.
+            build_id: The id of the build to filter by.
 
         Returns:
             A page with deployments fitting the filter description

@@ -27,6 +27,14 @@ class ContainerizedOrchestrator(BaseOrchestrator, ABC):
     def get_docker_builds(
         self, deployment: "PipelineDeploymentBaseModel"
     ) -> List["BuildConfiguration"]:
+        """Gets the Docker builds required for the component.
+
+        Args:
+            deployment: The pipeline deployment for which to get the builds.
+
+        Returns:
+            The required Docker builds.
+        """
         pipeline_settings = deployment.pipeline_configuration.docker_settings
 
         included_pipeline_build = False

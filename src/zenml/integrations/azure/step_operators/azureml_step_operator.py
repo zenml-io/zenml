@@ -259,9 +259,6 @@ class AzureMLStepOperator(BaseStepOperator):
         Args:
             info: Information about the step run.
             entrypoint_command: Command that executes the step.
-
-        Raises:
-            RuntimeError: If the deployment config can't be found.
         """
         if not info.config.resource_settings.empty:
             logger.warning(
