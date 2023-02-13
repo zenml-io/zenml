@@ -1249,6 +1249,8 @@ def temporary_active_stack(
     Yields:
         The active stack.
     """
+    from zenml.client import Client
+
     try:
         if stack_name_or_id:
             old_stack_id = Client().active_stack_model.id
