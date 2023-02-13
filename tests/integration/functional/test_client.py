@@ -33,6 +33,8 @@ from zenml.io import fileio
 from zenml.metadata.metadata_types import MetadataTypeEnum
 from zenml.models import (
     ComponentResponseModel,
+    PipelineBuildRequestModel,
+    PipelineDeploymentRequestModel,
     PipelineRequestModel,
     StackResponseModel,
 )
@@ -721,3 +723,137 @@ def test_create_run_metadata_fails_if_linked_to_multiple_entities(
             step_run_id=step_run.id,
             artifact_id=artifact.id,
         )
+
+
+# ---------------
+# Pipeline Builds
+# ---------------
+
+
+def test_listing_builds(clean_client):
+    """Tests listing builds."""
+    builds = clean_client.list_builds()
+    assert len(builds) == 0
+
+    request = PipelineBuildRequestModel(
+        user=clean_client.active_user.id,
+        workspace=clean_client.active_workspace.id,
+        images={},
+        is_local=False,
+    )
+    response = clean_client.zen_store.create_build(request)
+
+    builds = clean_client.list_builds()
+    assert len(builds) == 1
+    assert builds[0] == response
+
+    builds = clean_client.list_builds(stack_id=uuid4())
+    assert len(builds) == 0
+
+
+def test_getting_builds(clean_client):
+    """Tests getting builds."""
+
+    with pytest.raises(KeyError):
+        clean_client.get_build(str(uuid4()))
+
+    request = PipelineBuildRequestModel(
+        user=clean_client.active_user.id,
+        workspace=clean_client.active_workspace.id,
+        images={},
+        is_local=False,
+    )
+    response = clean_client.zen_store.create_build(request)
+
+    with does_not_raise():
+        build = clean_client.get_build(str(response.id))
+
+    assert build == response
+
+
+def test_deleting_builds(clean_client):
+    """Tests deleting builds."""
+    with pytest.raises(KeyError):
+        clean_client.delete_build(str(uuid4()))
+
+    request = PipelineBuildRequestModel(
+        user=clean_client.active_user.id,
+        workspace=clean_client.active_workspace.id,
+        images={},
+        is_local=False,
+    )
+    response = clean_client.zen_store.create_build(request)
+
+    with does_not_raise():
+        clean_client.delete_build(str(response.id))
+
+    with pytest.raises(KeyError):
+        clean_client.get_build(str(response.id))
+
+
+# --------------------
+# Pipeline Deployments
+# --------------------
+
+
+def test_listing_deployments(clean_client):
+    """Tests listing deployments."""
+    deployments = clean_client.list_deployments()
+    assert len(deployments) == 0
+
+    request = PipelineDeploymentRequestModel(
+        user=clean_client.active_user.id,
+        workspace=clean_client.active_workspace.id,
+        stack=clean_client.active_stack.id,
+        run_name_template="",
+        pipeline_configuration={"name": "pipeline_name"},
+    )
+    response = clean_client.zen_store.create_deployment(request)
+
+    deployments = clean_client.list_deployments()
+    assert len(deployments) == 1
+    assert deployments[0] == response
+
+    deployments = clean_client.list_deployments(stack_id=uuid4())
+    assert len(deployments) == 0
+
+
+def test_getting_deployments(clean_client):
+    """Tests getting deployments."""
+    with pytest.raises(KeyError):
+        clean_client.get_deployment(str(uuid4()))
+
+    request = PipelineDeploymentRequestModel(
+        user=clean_client.active_user.id,
+        workspace=clean_client.active_workspace.id,
+        stack=clean_client.active_stack.id,
+        run_name_template="",
+        pipeline_configuration={"name": "pipeline_name"},
+    )
+    response = clean_client.zen_store.create_deployment(request)
+
+    with does_not_raise():
+        deployment = clean_client.get_deployment(str(response.id))
+
+    assert deployment == response
+
+
+def test_deleting_deployments(clean_client):
+    """Tests deleting deployments."""
+    with pytest.raises(KeyError):
+        clean_client.delete_deployment(str(uuid4()))
+
+    request = PipelineDeploymentRequestModel(
+        user=clean_client.active_user.id,
+        workspace=clean_client.active_workspace.id,
+        stack=clean_client.active_stack.id,
+        run_name_template="",
+        pipeline_configuration={"name": "pipeline_name"},
+    )
+    response = clean_client.zen_store.create_deployment(request)
+
+    with does_not_raise():
+        clean_client.delete_deployment(str(response.id))
+
+    with pytest.raises(KeyError):
+        clean_client.get_deployment(str(response.id))
