@@ -18,6 +18,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, SecretStr
 
+from zenml.enums import SecretScope
 from zenml.models.base_models import (
     WorkspaceScopedRequestModel,
     WorkspaceScopedResponseModel,
@@ -25,18 +26,10 @@ from zenml.models.base_models import (
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.filter_models import WorkspaceScopedFilterModel
-from zenml.utils.enum_utils import StrEnum
 
 # ---- #
 # BASE #
 # ---- #
-
-
-class SecretScope(StrEnum):
-    """Enum for the scope of a secret."""
-
-    WORKSPACE = "workspace"
-    USER = "user"
 
 
 class SecretBaseModel(BaseModel):
@@ -56,7 +49,7 @@ class SecretBaseModel(BaseModel):
     )
 
     @property
-    def clear_values(self) -> Dict[str, str]:
+    def get_clear_values(self) -> Dict[str, str]:
         """A dictionary with all un-obfuscated values stored in this secret.
 
         The values are returned as strings, not SecretStrs. If a value is

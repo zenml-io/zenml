@@ -79,6 +79,13 @@ class StackComponentType(StrEnum):
         return f"{self.value}s"
 
 
+class SecretScope(StrEnum):
+    """Enum for the scope of a secret."""
+
+    WORKSPACE = "workspace"
+    USER = "user"
+
+
 class StoreType(StrEnum):
     """Zen Store Backend Types."""
 

@@ -29,6 +29,7 @@ from sqlmodel import Session, select
 
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.enums import (
+    SecretScope,
     SecretsStoreType,
 )
 from zenml.exceptions import (
@@ -43,7 +44,6 @@ from zenml.models import (
     SecretUpdateModel,
 )
 from zenml.models.page_model import Page
-from zenml.models.secret_models import SecretScope
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.zen_stores.schemas import (
     SecretSchema,

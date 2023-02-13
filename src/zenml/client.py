@@ -47,6 +47,7 @@ from zenml.enums import (
     ArtifactType,
     LogicalOperators,
     PermissionType,
+    SecretScope,
     StackComponentType,
     StoreType,
 )
@@ -79,6 +80,10 @@ from zenml.models import (
     RoleUpdateModel,
     RunMetadataRequestModel,
     RunMetadataResponseModel,
+    SecretFilterModel,
+    SecretRequestModel,
+    SecretResponseModel,
+    SecretUpdateModel,
     StackFilterModel,
     StackRequestModel,
     StackResponseModel,
@@ -3139,6 +3144,314 @@ class Client(metaclass=ClientMetaClass):
         )
         metadata_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_run_metadata(metadata_filter_model)
+
+    # .---------.
+    # | SECRETS |
+    # '---------'
+
+    def create_secret(
+        self,
+        name: str,
+        values: Dict[str, str],
+        scope: SecretScope = SecretScope.WORKSPACE,
+    ) -> "SecretResponseModel":
+        """Creates a new secret.
+
+        Args:
+            name: The name of the secret.
+            values: The values of the secret.
+            scope: The scope of the secret.
+
+        Returns:
+            The created secret (in model form).
+        """
+        create_secret_request = SecretRequestModel(
+            name=name,
+            values=values,
+            scope=scope,
+            user=self.active_user.id,
+            workspace=self.active_workspace.id,
+        )
+
+        return self.zen_store.create_secret(secret=create_secret_request)
+
+    def get_secret(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        scope: Optional[SecretScope] = None,
+    ) -> "SecretResponseModel":
+        """Get a secret.
+
+        Get a secret identified by a name, ID or prefix of the name or ID and
+        optionally a scope.
+
+        If a scope is not provided, the secret will be searched for in all
+        scopes starting with the innermost scope (user) to the outermost scope
+        (workspace). When a name or prefix is used instead of a UUID value, each
+        scope is first searched for an exact match, then for a ID prefix or
+        name substring match before moving on to the next scope.
+
+        Args:
+            name_id_or_prefix: The name, ID or prefix to the id of the secret
+                to get.
+            scope: The scope of the secret. If not set, all scopes will be
+                searched starting with the innermost scope (user) to the
+                outermost scope (global) until a secret is found.
+
+        Returns:
+            The secret.
+
+        Raises:
+            KeyError: If no secret is found.
+        """
+        from zenml.utils.uuid_utils import is_valid_uuid
+
+        # First interpret as full UUID
+        if is_valid_uuid(name_id_or_prefix):
+            # Fetch by ID; filter by scope if provided
+            secret = self.zen_store.get_secret(
+                id=UUID(name_id_or_prefix)
+                if isinstance(name_id_or_prefix, str)
+                else name_id_or_prefix
+            )
+            if scope is not None and secret.scope != scope:
+                raise KeyError(
+                    f"No secret found with ID {str(name_id_or_prefix)}"
+                )
+
+            return secret
+
+        # If not a UUID, try to find by name and then by prefix
+        assert not isinstance(name_id_or_prefix, UUID)
+
+        # Scopes to search in order of priority
+        search_scopes = (
+            [SecretScope.USER, SecretScope.WORKSPACE]
+            if scope is None
+            else [scope]
+        )
+
+        secrets = self.list_secrets(
+            logical_operator=LogicalOperators.OR,
+            name=f"contains:{name_id_or_prefix}",
+            id=f"startswith:{name_id_or_prefix}",
+        )
+
+        for search_scope in search_scopes:
+
+            partial_matches: List[SecretResponseModel] = []
+            for secret in secrets.items:
+                if secret.scope != search_scope:
+                    continue
+                # Exact match
+                if secret.name == name_id_or_prefix:
+                    return secret
+                # Partial match
+                partial_matches.append(secret)
+
+            if len(partial_matches) > 1:
+                raise ZenKeyError(
+                    f"{len(partial_matches)} secrets have been found that have "
+                    f"a name or ID that matches the provided "
+                    f"string '{name_id_or_prefix}':\n"
+                    f"{partial_matches}.\n"
+                    f"Please use the id to uniquely identify "
+                    f"only one of the secrets."
+                )
+
+            # If only a single secret is found, return it
+            if len(partial_matches) == 1:
+                return partial_matches[0]
+
+        msg = (
+            f"No secret found with name, ID or prefix "
+            f"'{name_id_or_prefix}'"
+        )
+        if scope is not None:
+            msg += f" in scope '{scope}'"
+
+        raise KeyError(msg)
+
+    def delete_secret(self, name_id_or_prefix: str) -> None:
+        """Deletes a secret.
+
+        Args:
+            name_id_or_prefix: The name, id or prefix of the id for the
+                secret to delete.
+        """
+        secret = self.get_secret(name_id_or_prefix)
+        self.zen_store.delete_secret(secret_id=secret.id)
+
+        logger.info(f"Deleted secret '{secret.name}'.")
+
+    def list_secrets(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[datetime] = None,
+        updated: Optional[datetime] = None,
+        name: Optional[str] = None,
+        scope: Optional[SecretScope] = None,
+        user_id: Optional[Union[str, UUID]] = None,
+    ) -> Page[SecretResponseModel]:
+        """Fetches all the secret models.
+
+        Args:
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            id: Use the id of secrets to filter by.
+            created: Use to secrets by time of creation
+            updated: Use the last updated date for filtering
+            user_id: The  id of the user to filter by.
+            name: The name of the secret to filter by.
+            scope: The scope of the secret to filter by.
+            type: The type of the secret to filter by.
+            integration: The integration of the secret to filter by.
+
+        Returns:
+            A list of all the secret models.
+        """
+        secret_filter_model = SecretFilterModel(
+            page=page,
+            size=size,
+            sort_by=sort_by,
+            logical_operator=logical_operator,
+            user_id=user_id,
+            name=name,
+            scope=scope,
+            id=id,
+            created=created,
+            updated=updated,
+        )
+        secret_filter_model.set_scope_workspace(self.active_workspace.id)
+        return self.zen_store.list_secrets(
+            secret_filter_model=secret_filter_model
+        )
+
+    def get_secrets_by_scope(
+        self,
+        scope: SecretScope,
+    ) -> Page[SecretResponseModel]:
+        """Fetches the list of secret in a given scope.
+
+        Args:
+            scope: The secrets scope to search for.
+
+        Returns:
+            The list of secrets.
+        """
+        logger.debug(f"Fetching the secrets in scope {scope.value}.")
+
+        if scope == SecretScope.WORKSPACE:
+            return self.list_secrets(
+                scope=scope,
+            )
+
+        if scope == SecretScope.USER:
+            return self.list_secrets(
+                scope=scope,
+                user_id=self.active_user.id,
+            )
+
+        raise ValueError(f"Unknown scope {scope.value}.")
+
+    def get_secret_by_name_and_type(
+        self, name: str, component_type: "StackComponentType"
+    ) -> "SecretResponseModel":
+        """Fetches a registered secret.
+
+        Args:
+            component_type: The type of the component to fetch.
+            name: The name of the secret to fetch.
+
+        Returns:
+            The registered secret.
+
+        Raises:
+            KeyError: If no secret exists for the given type and name.
+        """
+        logger.debug(
+            f"Fetching the secret of type {component_type} with name {name}."
+        )
+
+        secrets = self.list_secrets(
+            type=component_type,
+            name=name,
+        ).items
+
+        if secrets:
+            if len(secrets) > 1:
+                raise KeyError(
+                    f"More than one secret with name {name} and type "
+                    f"{component_type} exists."
+                )
+
+            return secrets[0]
+        else:
+            raise KeyError(
+                f"No secret with name '{name}' and type '{component_type}' "
+                "exists."
+            )
+
+    def update_secret(
+        self,
+        name_id_or_prefix: str,
+        scope: Optional[SecretScope] = None,
+        new_name: Optional[str] = None,
+        new_scope: Optional[SecretScope] = None,
+        add_or_update_values: Optional[Dict[str, str]] = None,
+        remove_values: Optional[List[str]] = None,
+    ) -> SecretResponseModel:
+        """Updates a secret.
+
+        Args:
+            name_id_or_prefix: The name, id or prefix of the id for the
+                secret to update.
+            scope: The scope of the secret to update.
+            new_name: The new name of the secret.
+            new_scope: The new scope of the secret.
+            add_or_update_values: The values to add or update.
+            remove_values: The values to remove.
+
+        Returns:
+            The updated secret.
+        """
+        secret = self.get_secret(
+            name_id_or_prefix=name_id_or_prefix, scope=scope
+        )
+
+        secret_update = SecretUpdateModel()
+
+        if new_name:
+            secret_update.name = new_name
+        if new_scope:
+            secret_update.scope = new_scope
+        values: Dict[str, Optional[str]] = {}
+        if add_or_update_values:
+            values.update(add_or_update_values)
+        if remove_values:
+            for key in remove_values:
+                values[key] = None
+        if values:
+            secret_update.values = values
+
+        return Client().zen_store.update_secret(
+            secret_id=secret.id, secret_update=secret_update
+        )
+
+    def delete_secret(self, name_id_or_prefix: str) -> None:
+        """Deletes a secret.
+
+        Args:
+            name_id_or_prefix: The name or ID of the secret.
+        """
+        secret = self.get_secret(name_id_or_prefix=name_id_or_prefix)
+        self.zen_store.delete_secret(secret_id=secret.id)
 
     # ---- utility prefix matching get functions -----
 

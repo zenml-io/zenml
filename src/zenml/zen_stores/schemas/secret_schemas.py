@@ -21,11 +21,11 @@ from uuid import UUID
 from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
+from zenml.enums import SecretScope
 from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.models.secret_models import (
     SecretRequestModel,
     SecretResponseModel,
-    SecretScope,
     SecretUpdateModel,
 )
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
@@ -128,7 +128,7 @@ class SecretSchema(NamedSchema, table=True):
             scope=secret.scope,
             workspace_id=secret.workspace,
             user_id=secret.user,
-            values=cls._dump_secret_values(secret.clear_values),
+            values=cls._dump_secret_values(secret.get_clear_values),
         )
 
     def update(self, secret_update: SecretUpdateModel) -> "SecretSchema":
