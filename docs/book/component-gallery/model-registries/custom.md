@@ -221,4 +221,4 @@ the actual `CustomModelRegistry`).
 {% endhint %}
 
 For a full implementation example, please check out the
-[MlflowModelRegistry](https://apidocs.zenml.io/latest/integration_code_docs/integrations-mlflow/#zenml.integrations.mlflow.model_registry.MLFlowModelRegistry)
+[MLFlowModelRegistry](https://apidocs.zenml.io/latest/integration_code_docs/integrations-mlflow/#zenml.integrations.mlflow.model_registry.MLFlowModelRegistry)

@@ -13,7 +13,7 @@ pipeline in which the model was trained and how to reproduce it.
 
 ## Model Registry Concepts and Terminology
 
-As ZenML the list of the integrated model registries tools and platfornms will grow, 
+As ZenML the list of the integrated model registries tools and platforms will grow, 
 each with their own way of managing model groups, versions, and stages. It will
 become increasingly difficult to manage model groups, versions, and stages, a 
 consistent way regardless of the underlying registry tool or service being used.
@@ -57,7 +57,7 @@ your pipeline and managing their state in a centralized way.
 Using a model registry in your stack is particularly useful if you want to
 interact with all of the logged models in your pipeline, or if you need to
 manage the state of your models in a centralized way and make it easy to
-retrive, load, and deploy these models.
+retrieve, load, and deploy these models.
 
 ## How they model registries slot into the ZenML stack
 

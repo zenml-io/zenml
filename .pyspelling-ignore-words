@@ -1651,3 +1651,5 @@ BaseModelRegistryConfig
 CustomModelRegistry
 CustomModelRegistryConfig
 CustomModelRegistryFlavor
+MLFlowModelRegistry
+MLFlowRegistryParameters
