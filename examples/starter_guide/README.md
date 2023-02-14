@@ -14,12 +14,11 @@ ML context:
 in general, but also particularly useful for the following applications:
     * data ingestion, data transformation and data train/test splitting
     * model training and evaluation
-* Using [step parameterization and caching](https://docs.zenml.io/starter-guide/pipelines/parameters-and-caching)
+* Using [step parameterization and caching](https://docs.zenml.io/starter-guide/pipelines/parameters)
 to design flexible and reusable steps
 * Using [custom data types for your artifacts and writing materializers for them](https://docs.zenml.io/advanced-guide/pipelines/materializers)
 * Constructing and running a [ZenML pipeline](https://docs.zenml.io/starter-guide/pipelines#pipeline)
-* Accessing ZenML pipeline run artifacts in [the post-execution phase](https://docs.zenml.io/starter-guide/pipelines/fetching-pipelines),
-after a pipeline run has concluded
+* Accessing ZenML pipeline run artifacts in [the post-execution phase](https://docs.zenml.io/starter-guide/pipelines/fetching-pipelines),after a pipeline run has concluded
 * Best practices for implementing and running reproducible and reliable ML
 pipelines with ZenML
 

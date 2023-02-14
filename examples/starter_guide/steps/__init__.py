@@ -15,34 +15,20 @@
 # limitations under the License.
 #
 
-from steps.data_loaders import (
-    data_loader,
+from examples.starter_guide.steps.data_processors import (
     data_processor,
     data_splitter,
-    DataLoaderStepParameters,
-    SklearnDataset,
-    DataProcessorStepParameters,
-    DataSplitterStepParameters,
+    model_metadata_reporter,
 )
 from steps.model_trainers import (
-    model_trainer,
-    model_evaluator,
-    SklearnClassifierModel,
-    ModelTrainerStepParameters,
-    ModelEvaluatorStepParameters,
+    simple_svc_trainer,
+    SVCTrainerParams,
 )
 
 __all__ = [
     "data_loader",
     "data_processor",
     "data_splitter",
-    "model_trainer",
-    "model_evaluator",
-    "DataLoaderStepParameters",
-    "SklearnDataset",
-    "DataProcessorStepParameters",
-    "DataSplitterStepParameters",
-    "SklearnClassifierModel",
-    "ModelTrainerStepParameters",
-    "ModelEvaluatorStepParameters",
+    "simple_svc_trainer",
+    "SVCTrainerParams",
 ]

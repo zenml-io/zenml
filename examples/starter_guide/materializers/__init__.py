@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-from materializers.model_metadata import ModelMetadataMaterializer
+from examples.starter_guide.materializers.model_metadata_materializer import ModelMetadataMaterializer
 
 __all__ = [
     "ModelMetadataMaterializer",

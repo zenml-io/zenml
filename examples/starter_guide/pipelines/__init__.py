@@ -15,8 +15,8 @@
 # limitations under the License.
 #
 
-from pipelines.model_training import model_training_pipeline
+from pipelines.simple_training import simple_training_pipeline
 
 __all__ = [
-    "model_training_pipeline",
+    "simple_training_pipeline",
 ]
