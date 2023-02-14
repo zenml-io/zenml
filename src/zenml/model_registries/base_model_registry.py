@@ -161,6 +161,10 @@ class BaseModelRegistry(StackComponent, ABC):
         """
         return cast(BaseModelRegistryConfig, self._config)
 
+    # ---------
+    # Model Registration Methods
+    # ---------
+
     @abstractmethod
     def register_model(
         self,
@@ -228,6 +232,21 @@ class BaseModelRegistry(StackComponent, ABC):
         Returns:
             A list of registered models.
         """
+
+    @abstractmethod
+    def check_model_exists(self, name: str) -> bool:
+        """Checks if a model exists in the model registry.
+
+        Args:
+            name: The name of the registered model.
+
+        Returns:
+            True if the model exists, False otherwise.
+        """
+
+    # ---------
+    # Model Version Methods
+    # ---------
 
     @abstractmethod
     def register_model_version(
@@ -337,17 +356,6 @@ class BaseModelRegistry(StackComponent, ABC):
 
         Returns:
             The model version.
-        """
-
-    @abstractmethod
-    def check_model_exists(self, name: str) -> bool:
-        """Checks if a model exists in the model registry.
-
-        Args:
-            name: The name of the registered model.
-
-        Returns:
-            True if the model exists, False otherwise.
         """
 
     @abstractmethod

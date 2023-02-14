@@ -125,7 +125,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
         )
 
     # ---------
-    # Model Group Methods
+    # Model Registration Methods
     # ---------
 
     def register_model(
