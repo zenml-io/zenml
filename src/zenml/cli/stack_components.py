@@ -858,17 +858,36 @@ def generate_stack_component_flavor_register_command(
     def register_stack_component_flavor_command(source: str) -> None:
         """Adds a flavor for a stack component type.
 
+        Example:
+            Let's say you create an artifact store flavor class `MyArtifactStoreFlavor`
+            in the file path `flavors/my_flavor.py`. You would register it as:
+            
+            ```shell
+            zenml artifact-store flavor register flavors.my_flavor.MyArtifactStoreFlavor
+            ```
+        
         Args:
-            source: The source file to read the flavor from.
+            source: The source path of the flavor class in dot notation format.
+            
+        Raises:
+            ClickException: Raises a CLI exception when underlying exception triggers.
         """
         client = Client()
 
         with console.status(f"Registering a new {display_name} flavor`...\n"):
-            # Register the new model
-            new_flavor = client.create_flavor(
-                source=source,
-                component_type=component_type,
-            )
+            try:
+                # Register the new model
+                new_flavor = client.create_flavor(
+                    source=source,
+                    component_type=component_type,
+                )
+            except ValueError as e:
+                root_path = Client.find_repository()
+                cli_utils.error(
+                    f"Flavor registration failed! ZenML tried loading the module `{source}` from path " 
+                    f"`{root_path}`. If this is not what you expect, then please ensure you have run "
+                    f"`zenml init` at the root of your repository.\n\nOriginal exception: {str(e)}"
+                )
 
             cli_utils.declare(
                 f"Successfully registered new flavor '{new_flavor.name}' "
