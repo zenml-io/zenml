@@ -240,7 +240,7 @@ class BaseModelRegistry(StackComponent, ABC):
         version_description: Optional[str] = None,
         version_tags: Optional[Dict[str, str]] = None,
         registry_metadata: Optional[Dict[str, str]] = None,
-        zenm_version: Optional[str] = None,
+        zenml_version: Optional[str] = None,
         zenml_pipeline_run_id: Optional[str] = None,
         zenml_pipeline_name: Optional[str] = None,
         zenml_step_name: Optional[str] = None,
@@ -260,7 +260,7 @@ class BaseModelRegistry(StackComponent, ABC):
             version_tags: The tags associated with the model version.
             registry_metadata: The metadata associated with the model
                 version.
-            zenm_version: The ZenML version of the model version.
+            zenml_version: The ZenML version of the model version.
             zenml_pipeline_run_id: The ZenML pipeline run ID of the model
                 version.
             zenml_pipeline_name: The ZenML pipeline run name of the model

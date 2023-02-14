@@ -79,7 +79,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
             The MLFlowClient.
         """
         if not self._client:
-            # TODO: if this sounds like a hacky way how can we do this better?
+            # TODO: can this be done in a better way?
             experiment_tracker = Client().active_stack.experiment_tracker
             if not isinstance(experiment_tracker, MLFlowExperimentTracker):
                 raise get_missing_mlflow_experiment_tracker_error()
@@ -337,7 +337,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
         version_description: Optional[str] = None,
         version_tags: Optional[Dict[str, str]] = None,
         registry_metadata: Optional[Dict[str, str]] = None,
-        zenm_version: Optional[str] = None,
+        zenml_version: Optional[str] = None,
         zenml_pipeline_run_id: Optional[str] = None,
         zenml_pipeline_name: Optional[str] = None,
         zenml_step_name: Optional[str] = None,
@@ -356,7 +356,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
             version_tags (Dict, optional): The tags of the model version.
             registry_metadata (Dict, optional): The registry metadata of the
                 model version.
-            zenm_version (str, optional): The ZenML version.
+            zenml_version (str, optional): The ZenML version.
             zenml_pipeline_run_id (str, optional): The ZenML pipeline run ID.
             zenml_pipeline_name (str, optional): The ZenML pipeline name.
             zenml_step_name (str, optional): The ZenML step name.
@@ -390,7 +390,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
             # Set the tags.
             if not version_tags:
                 version_tags = {}
-            version_tags["zenml_version"] = zenm_version or __version__
+            version_tags["zenml_version"] = zenml_version or __version__
             version_tags["zenml_pipeline_run_id"] = zenml_pipeline_run_id or ""
             version_tags["zenml_pipeline_name"] = zenml_pipeline_name or ""
             version_tags["zenml_step_name"] = zenml_step_name or ""
@@ -667,7 +667,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
 
         Returns:
             The latest model versions or None if no model versions exist.
-        
+
         Raises:
             KeyError: If the model does not exist.
         """
