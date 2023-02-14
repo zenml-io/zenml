@@ -20,6 +20,7 @@ import pytest
 from pytest_mock import MockFixture
 
 from zenml.client import Client
+from zenml.config.build_configuration import BuildConfiguration
 from zenml.config.compiler import Compiler
 from zenml.config.pipeline_configurations import (
     PipelineRunConfiguration,
@@ -32,8 +33,12 @@ from zenml.exceptions import (
 from zenml.models.page_model import Page
 from zenml.models.pipeline_build_models import PipelineBuildBaseModel
 from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
-from zenml.pipelines import BasePipeline, Schedule, pipeline
+from zenml.pipelines import BasePipeline, DockerSettings, Schedule, pipeline
+from zenml.stack import Stack
 from zenml.steps import BaseParameters, BaseStep, step
+from zenml.utils.pipeline_docker_image_builder import (
+    PipelineDockerImageBuilder,
+)
 
 
 def create_pipeline_with_param_value(param_value: int):
@@ -849,3 +854,207 @@ def test_compiling_a_pipeline_merges_build(empty_pipeline, tmp_path):
         config_path=str(config_path_with_build), build=in_code_build
     )
     assert build == in_code_build
+
+
+def test_build_is_skipped_when_not_required(mocker, empty_pipeline):
+    """Tests that no build is performed when the stack doesn't require it."""
+    mocker.patch.object(Stack, "get_docker_builds", return_value=[])
+    mock_build_docker_image = mocker.patch.object(
+        PipelineDockerImageBuilder,
+        "build_docker_image",
+        return_value="image_name",
+    )
+
+    deployment = PipelineDeploymentBaseModel(
+        run_name_template="",
+        pipeline_configuration={"name": "pipeline"},
+        step_configurations={},
+    )
+
+    pipeline_instance = empty_pipeline()
+    assert pipeline_instance._build(deployment=deployment) is None
+    mock_build_docker_image.assert_not_called()
+
+
+def test_build_uses_correct_settings(clean_client, mocker, empty_pipeline):
+    """Tests that the build settings and pipeline ID get correctly forwarded."""
+    build_config = BuildConfiguration(
+        key="key",
+        settings=DockerSettings(),
+        step_name="step_name",
+        entrypoint="entrypoint",
+        extra_files={"key": "value"},
+    )
+    mocker.patch.object(
+        Stack, "get_docker_builds", return_value=[build_config]
+    )
+    mock_build_docker_image = mocker.patch.object(
+        PipelineDockerImageBuilder,
+        "build_docker_image",
+        return_value="image_name",
+    )
+
+    deployment = PipelineDeploymentBaseModel(
+        run_name_template="",
+        pipeline_configuration={"name": "pipeline"},
+        step_configurations={},
+    )
+
+    pipeline_instance = empty_pipeline()
+    pipeline_id = pipeline_instance.register().id
+    build = pipeline_instance._build(
+        deployment=deployment, pipeline_id=pipeline_id
+    )
+
+    mock_build_docker_image.assert_called_with(
+        docker_settings=build_config.settings,
+        tag="pipeline-step_name-key",
+        stack=ANY,
+        entrypoint=build_config.entrypoint,
+        extra_files=build_config.extra_files,
+    )
+    assert build.pipeline.id == pipeline_id
+    assert build.is_local is True
+    assert len(build.images) == 1
+    image = build.images["step_name.key"]
+    assert image.image == "image_name"
+    assert image.settings_checksum == build_config.settings_checksum
+
+
+def test_building_with_identical_keys_and_settings(
+    clean_client, mocker, empty_pipeline
+):
+    """Tests that two build configurations with identical keys and identical
+    settings don't lead to two builds."""
+    build_config_1 = BuildConfiguration(key="key", settings=DockerSettings())
+    build_config_2 = BuildConfiguration(key="key", settings=DockerSettings())
+
+    mocker.patch.object(
+        Stack,
+        "get_docker_builds",
+        return_value=[build_config_1, build_config_2],
+    )
+    mock_build_docker_image = mocker.patch.object(
+        PipelineDockerImageBuilder,
+        "build_docker_image",
+        return_value="image_name",
+    )
+
+    deployment = PipelineDeploymentBaseModel(
+        run_name_template="",
+        pipeline_configuration={"name": "pipeline"},
+        step_configurations={},
+    )
+
+    build = empty_pipeline()._build(deployment=deployment)
+    assert len(build.images) == 1
+    assert build.images["key"].image == "image_name"
+
+    mock_build_docker_image.assert_called_once()
+
+
+def test_building_with_identical_keys_and_different_settings(
+    clean_client, mocker, empty_pipeline
+):
+    """Tests that two build configurations with identical keys and different
+    settings lead to an error."""
+    build_config_1 = BuildConfiguration(key="key", settings=DockerSettings())
+    build_config_2 = BuildConfiguration(
+        key="key", settings=DockerSettings(requirements="requirements.txt")
+    )
+
+    mocker.patch.object(
+        Stack,
+        "get_docker_builds",
+        return_value=[build_config_1, build_config_2],
+    )
+    mocker.patch.object(
+        PipelineDockerImageBuilder,
+        "build_docker_image",
+        return_value="image_name",
+    )
+
+    deployment = PipelineDeploymentBaseModel(
+        run_name_template="",
+        pipeline_configuration={"name": "pipeline"},
+        step_configurations={},
+    )
+
+    pipeline_instance = empty_pipeline()
+    with pytest.raises(RuntimeError):
+        pipeline_instance._build(deployment=deployment)
+
+
+def test_building_with_different_keys_and_identical_settings(
+    clean_client, mocker, empty_pipeline
+):
+    """Tests that two build configurations with different keys and identical
+    settings don't lead to two builds."""
+    build_config_1 = BuildConfiguration(key="key1", settings=DockerSettings())
+    build_config_2 = BuildConfiguration(key="key2", settings=DockerSettings())
+
+    mocker.patch.object(
+        Stack,
+        "get_docker_builds",
+        return_value=[build_config_1, build_config_2],
+    )
+    mock_build_docker_image = mocker.patch.object(
+        PipelineDockerImageBuilder,
+        "build_docker_image",
+        return_value="image_name",
+    )
+
+    deployment = PipelineDeploymentBaseModel(
+        run_name_template="",
+        pipeline_configuration={"name": "pipeline"},
+        step_configurations={},
+    )
+
+    build = empty_pipeline()._build(deployment=deployment)
+    assert len(build.images) == 2
+    assert build.images["key1"].image == "image_name"
+    assert build.images["key2"].image == "image_name"
+
+    mock_build_docker_image.assert_called_once()
+
+
+def test_stack_with_container_registry_creates_non_local_build(
+    clean_client, mocker, empty_pipeline, remote_container_registry
+):
+    """Tests that building for a stack with container registry creates a
+    non-local build."""
+    build_config = BuildConfiguration(key="key", settings=DockerSettings())
+    mocker.patch.object(
+        Stack, "get_docker_builds", return_value=[build_config]
+    )
+    mocker.patch.object(
+        Stack,
+        "container_registry",
+        new_callable=mocker.PropertyMock,
+        return_value=remote_container_registry,
+    )
+
+    mocker.patch.object(
+        PipelineDockerImageBuilder,
+        "build_docker_image",
+        return_value="image_name",
+    )
+
+    deployment = PipelineDeploymentBaseModel(
+        run_name_template="",
+        pipeline_configuration={"name": "pipeline"},
+        step_configurations={},
+    )
+
+    build = empty_pipeline()._build(deployment=deployment)
+    assert build.is_local is False
+
+
+def test_building_a_pipeline_registers_it(clean_client, empty_pipeline):
+    """Tests that building a pipeline registers it in the server."""
+    pipeline_instance = empty_pipeline()
+    with pytest.raises(KeyError):
+        clean_client.get_pipeline(name=pipeline_instance.name)
+
+    pipeline_instance.build()
+    assert clean_client.get_pipeline(name=pipeline_instance.name) is not None

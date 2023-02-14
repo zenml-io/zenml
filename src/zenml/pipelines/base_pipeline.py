@@ -1153,6 +1153,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
                         "to provide unique keys when returning your build "
                         "configurations to avoid this error."
                     )
+                else:
+                    continue
 
             if checksum in image_names:
                 image_name_or_digest = image_names[checksum]
