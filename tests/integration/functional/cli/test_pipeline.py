@@ -20,13 +20,19 @@ from click.testing import CliRunner
 
 from zenml.cli.cli import cli
 from zenml.client import Client
+from zenml.config import DockerSettings
+from zenml.config.build_configuration import BuildConfiguration
 from zenml.config.pipeline_configurations import PipelineRunConfiguration
 from zenml.models.pipeline_build_models import (
     PipelineBuildBaseModel,
     PipelineBuildRequestModel,
 )
 from zenml.pipelines import pipeline
+from zenml.stack import Stack
 from zenml.steps import step
+from zenml.utils.pipeline_docker_image_builder import (
+    PipelineDockerImageBuilder,
+)
 
 
 def test_pipeline_list(clean_workspace_with_run):
@@ -167,6 +173,135 @@ def test_pipeline_build_without_repo_fails(clean_client):
 
     result = runner.invoke(build_command, [pipeline_instance.name])
     assert result.exit_code == 1
+
+
+def test_pipeline_build_with_nonexistent_name_fails(clean_workspace):
+    """Tests that the build command fails if no pipeline with the given name
+    exists."""
+    runner = CliRunner()
+    build_command = cli.commands["pipeline"].commands["build"]
+
+    pipeline_instance.register()
+
+    # name of unregistered pipeline
+    assert (
+        runner.invoke(build_command, ["not_a_registered_pipeline"]).exit_code
+        == 1
+    )
+
+
+def test_pipeline_build_writes_output_file(clean_workspace, mocker, tmp_path):
+    """Tests that the build command writes the build to the given output
+    path if given."""
+    build_config = BuildConfiguration(key="key", settings=DockerSettings())
+    mocker.patch.object(
+        Stack, "get_docker_builds", return_value=[build_config]
+    )
+    mocker.patch.object(
+        PipelineDockerImageBuilder,
+        "build_docker_image",
+        return_value="image_name",
+    )
+
+    runner = CliRunner()
+    build_command = cli.commands["pipeline"].commands["build"]
+
+    pipeline_instance.register()
+
+    output_path = str(tmp_path / "output.yaml")
+    result = runner.invoke(
+        build_command, [pipeline_instance.name, "--output", output_path]
+    )
+    assert result.exit_code == 0
+
+    build_output = PipelineBuildBaseModel.from_yaml(output_path)
+    assert build_output.is_local is True
+    assert len(build_output.images) == 1
+    assert build_output.images["key"].image == "image_name"
+
+
+def test_pipeline_build_doesnt_write_output_file_if_no_build_needed(
+    clean_workspace, mocker, tmp_path
+):
+    """Tests that the build command doesn't write to the given output path
+    if no build was needed for the pipeline."""
+    mocker.patch.object(Stack, "get_docker_builds", return_value=[])
+
+    runner = CliRunner()
+    build_command = cli.commands["pipeline"].commands["build"]
+
+    pipeline_instance.register()
+
+    output_path = tmp_path / "output.yaml"
+    result = runner.invoke(
+        build_command, [pipeline_instance.name, "--output", str(output_path)]
+    )
+    assert result.exit_code == 0
+    assert not output_path.exists()
+
+
+def test_pipeline_build_with_config_file(clean_workspace, mocker, tmp_path):
+    """Tests that the build command works with a config file."""
+    mock_get_docker_builds = mocker.patch.object(
+        Stack, "get_docker_builds", return_value=[]
+    )
+
+    runner = CliRunner()
+    build_command = cli.commands["pipeline"].commands["build"]
+
+    pipeline_instance.register().id
+
+    config_path = tmp_path / "config.yaml"
+    config = PipelineRunConfiguration(
+        settings={"docker": DockerSettings(parent_image="custom_parent_image")}
+    )
+    config_path.write_text(config.yaml())
+
+    result = runner.invoke(
+        build_command, [pipeline_instance.name, "--config", str(config_path)]
+    )
+    assert result.exit_code == 0
+
+    _, call_kwargs = mock_get_docker_builds.call_args
+    assert (
+        call_kwargs["deployment"]
+        .pipeline_configuration.settings["docker"]
+        .parent_image
+        == "custom_parent_image"
+    )
+
+
+def test_pipeline_build_with_different_stack(clean_workspace, mocker):
+    """Tests that the build command works with a different stack."""
+    build_config = BuildConfiguration(key="key", settings=DockerSettings())
+    mocker.patch.object(
+        Stack, "get_docker_builds", return_value=[build_config]
+    )
+    mocker.patch.object(
+        PipelineDockerImageBuilder,
+        "build_docker_image",
+        return_value="image_name",
+    )
+
+    components = {
+        key: components[0].id
+        for key, components in Client().active_stack_model.components.items()
+    }
+    new_stack = Client().create_stack(name="new", components=components)
+
+    runner = CliRunner()
+    build_command = cli.commands["pipeline"].commands["build"]
+
+    pipeline_id = pipeline_instance.register().id
+
+    result = runner.invoke(
+        build_command, [pipeline_instance.name, "--stack", str(new_stack.id)]
+    )
+    assert result.exit_code == 0
+
+    builds = Client().list_builds(pipeline_id=pipeline_id)
+    assert len(builds) == 1
+    assert builds[0].stack.id == new_stack.id
 
 
 def test_pipeline_run_without_repo_fails(clean_client):
