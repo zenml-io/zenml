@@ -13,13 +13,10 @@ pipeline in which the model was trained and how to reproduce it.
 
 ## Model Registry Concepts and Terminology
 
-As ZenML the list of the integrated model registries tools and platforms will grow, 
-each with their own way of managing model groups, versions, and stages. It will
-become increasingly difficult to manage model groups, versions, and stages, a 
-consistent way regardless of the underlying registry tool or service being used.
-To address this, ZenML provides a unified abstraction for model registries using
-the concepts and terminology of `ModelRegistration`, `ModelVersion`, and 
-`ModelVersionStage`.
+To handle and manage the concepts of model groups, versions, and stages, in a 
+consistent way regardless of the underlying registry tool or platform being used.
+ZenML provides a unified abstraction for model registries by defining the
+following concepts:
 
 * **ModelRegistration**: ModelRegistration: A logical grouping of models that
     can be used to track different versions of a model. It holds information

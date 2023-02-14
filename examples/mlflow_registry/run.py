@@ -52,7 +52,8 @@ if __name__ == "__main__":
                     name="Tensorflow-mnist-model",
                     description="A simple mnist model trained with zenml",
                     tags={"framework": "tensorflow", "dataset": "mnist"},
-                    version_description=f"The {i+1}th run of the mlflow_training_pipeline with a learning rate of {lr}",
+                    version_tags={"lr": lr},
+                    version_description=f"The {i+1}th run of the mlflow_training_pipeline.",
                 )
             ),
         ).run()
