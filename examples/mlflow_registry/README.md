@@ -1,19 +1,24 @@
-# 🛤️ Track experiments with MLflow Tracking
+# 🛤️ Manage Model Versions with MLflow Model Registry
 
-[MLflow Tracking](https://www.mlflow.org/docs/latest/tracking.html) is a popular
-tool that tracks and visualizes experiment runs with their many parameters,
-metrics and output files.
+[MLflow](https://www.mlflow.org/docs/latest/tracking.html) is a popular
+tool that helps you track experiments, manage models and even deploy them to
+different environments. ZenML already provides a [MLflow Experiment Tracker]()
+that you can use to track your experiments, and an [MLFlow Model Deployer]() that
+you can use to deploy your models locally. In this example, we will see the newest
+addition to the MLflow integration, the [MLflow Model Registry](). This component
+allows you to manage and track your model versions, and enables you to deploy
+them to different environments with ease.
 
 ## 🗺 Overview
 
-This example showcases how easily mlflow tracking can be integrated into a 
-ZenML pipeline with just a few simple lines of code.
+This example showcases how easily MLFlow Model Registry can be integrated into
+your ZenML pipelines and how you can use it to manage your model versions.
 
 We'll be using the
 [MNIST-digits](https://keras.io/api/datasets/mnist/) dataset and
 will train a classifier using [Tensorflow (Keras)](https://www.tensorflow.org/).
-We will run two experiments with different parameters (epochs and learning rate)
-and log these experiments into a local mlflow backend.
+We will run three experiments with different parameters (epochs and learning rate)
+and log these experiments and the models into a local mlflow backend.
 
 This example uses an mlflow setup that is based on the local filesystem for
 things like the artifact store. See the [mlflow
@@ -31,85 +36,124 @@ orchestrator and artifact store. See the [mlflow
 documentation](https://www.mlflow.org/docs/latest/tracking.html#scenario-1-mlflow-on-localhost)
 for details.
 
-## 🧰 How the example is implemented
-Adding MLflow tracking to a step is enabling the experiment tracker for a step. 
-Now you're free to log anything from within the step to mlflow. 
+The example consists of two individual pipelines:
 
-ZenML ties all the logs from all steps within a pipeline run together into one mlflow run so that you can see everything
-in one place.
+1. `train_pipeline`: Trains a model with different parameters and logs the
+   results to mlflow and finishes by registering the model with the mlflow model
+    registry using a built-in ZenML step.
+2. `deploy_inference_pipeline`: Deploys a model from the mlflow model registry to a local
+    mlflow server using a built-in ZenML step that takes the model name and
+    version as input. Then it runs inference on the deployed model.
+
+## 🧰 How the example is implemented
+This example contains two very important aspects that should be highlighted.
+
+### 🛠️ Model Version Registration within a ZenML pipeline 
+
+ZenML provides a built-in step that allows you to register your model with the
+MLflow Model Registry. This step is called `mlflow_model_register_step` and can
+be used as follows:
+
+Define a pipeline with a `mlflow_model_register_step`:
 
  ```python
-@step(experiment_tracker="<NAME_OF_EXPERIMENT_TRACKER>")
-def tf_trainer(
-    x_train: np.ndarray,
-    y_train: np.ndarray,
-) -> tf.keras.Model:
-    """Train a neural net from scratch to recognize MNIST digits return our
-    model or the learner"""
-    
-    # compile model
-
-    mlflow.tensorflow.autolog()
-    
-    # train model
-    
-    return model
+@pipeline(enable_cache=False, settings={"docker": docker_settings})
+def mlflow_training_pipeline(
+    importer,
+    normalizer,
+    trainer,
+    evaluator,
+    model_register,
+):
+    # Link all the steps artifacts together
+    x_train, y_train, x_test, y_test = importer()
+    x_trained_normed, x_test_normed = normalizer(
+        x_train=x_train, x_test=x_test
+    )
+    model = trainer(x_train=x_trained_normed, y_train=y_train)
+    evaluator(x_test=x_test_normed, y_test=y_test, model=model)
+    model_register(model)
 ```
-You can also log parameters, metrics and artifacts into nested runs, which 
-will be children of the pipeline run. To do so, enable it in the settings like this:
+
+When referencing the step in the pipeline, you can pass list of parameters that
+will be passed to the `mlflow_model_register_step` that will be used to register
+the model with the MLflow Model Registry. By default, the step can extract some
+of the parameters from the pipeline context, but you can also pass them
+explicitly. The following code shows an example of how you can use the step:
 
 ```python
-from zenml.integrations.mlflow.flavors.mlflow_experiment_tracker_flavor import MLFlowExperimentTrackerSettings
-
-@step(
-    experiment_tracker="<NAME_OF_EXPERIMENT_TRACKER>",
-    settings={
-        "experiment_tracker.mlflow": MLFlowExperimentTrackerSettings(
-            nested=True
-        )
-    }
+from zenml.integrations.mlflow.steps.mlflow_deployer import (
+    MLFlowDeployerParameters,
+    mlflow_model_registry_deployer_step,
 )
-def tf_trainer(
-    x_train: np.ndarray,
-    y_train: np.ndarray,
-) -> tf.keras.Model:
-    """Train a neural net from scratch to recognize MNIST digits return our
-    model or the learner"""
-    
-    # compile model
 
-    mlflow.tensorflow.autolog()
-    
-    # train model
-    
-    return model
+mlflow_training_pipeline(
+    importer=loader_mnist(),
+    normalizer=normalizer(),
+    trainer=tf_trainer(params=TrainerParameters(epochs=5, lr=0.003)),
+    evaluator=tf_evaluator(),
+    model_register=mlflow_register_model_step(
+        params=MLFlowRegistryParameters(
+            name="Tensorflow-mnist-model",
+            description="A simple mnist model trained with zenml",
+            tags={"framework": "tensorflow", "dataset": "mnist"},
+            version_tags={"lr": 0.003},
+            version_description=f"The 1st run of the mlflow_training_pipeline.",
+        )
+    ),
+).run()
+
+# The list of parameters that can be passed to the mlflow_model_register_step:
+"""
+    name: Name of the registered model.
+    description: Description of the registered model.
+    tags: Tags to be added to the registered model.
+    experiment_name: Name of the MLFlow experiment to be used for the run.
+    run_name: Name of the MLFlow run to be created.
+    run_id: ID of the MLFlow run to be used.
+    model_source_uri: URI of the model source. If not provided, the model
+        will be fetched from the MLflow tracking server.
+    version_description: Description of the model.
+    version_tags: Tags to be added to the model.
+"""
 ```
-If you want to enable MLflow tracking when using the class-based API, simply 
-configure your step as follows:
+
+### 🚀 Deploying a model from the Model Registry to a local MLflow server
+
+Once you have registered your model with the MLflow Model Registry, you can
+deploy it to a local MLflow server using the `mlflow_model_registry_deployer_step` step.
 
 ```python
-class TFTrainer(BaseStep):
-    def entrypoint(
-        self,
-        x_train: np.ndarray,
-        y_train: np.ndarray,
-    ) -> tf.keras.Model:
-        mlflow.tensorflow.autolog()
-        ...
 
-step_instance = TFTrainer()
-step_instance.configure(experiment_tracker="<NAME_OF_EXPERIMENT_TRACKER>")
+from zenml.integrations.mlflow.steps.mlflow_deployer import (
+    MLFlowDeployerParameters,
+    mlflow_model_registry_deployer_step,
+)
+
+deployment_inference_pipeline(
+    mlflow_model_deployer=mlflow_model_registry_deployer_step(
+        params=MLFlowDeployerParameters(
+            registry_model_name="Tensorflow-mnist-model",
+            registry_model_version="1",
+            # or you can use the model stage if you have set it in the mlflow registry
+            # registered_model_stage="Staging",
+        )
+    ),
+    dynamic_importer=dynamic_importer(),
+    predict_preprocessor=tf_predict_preprocessor(),
+    predictor=predictor(),
+).run()
 ```
 # 🖥 Run it locally
 
-## ⏩ SuperQuick `mlflow_tracking` run
+## ⏩ SuperQuick `mlflow_registry` run
 
 If you're really in a hurry and just want to see this example pipeline run
 without wanting to fiddle around with all the individual installation and
 configuration steps, just run the following:
 
 ```shell
-zenml example run mlflow_tracking
+zenml example run mlflow_registry
 ```
 
 ## 👣 Step-by-Step
@@ -124,8 +168,8 @@ pip install "zenml[server]"
 zenml integration install mlflow tensorflow
 
 # pull example
-zenml example pull mlflow_tracking
-cd zenml_examples/mlflow_tracking
+zenml example pull mlflow_registry
+cd zenml_examples/mlflow_registry
 
 # Initialize ZenML repo
 zenml init
@@ -133,7 +177,7 @@ zenml init
 # Start the ZenServer to enable dashboard access
 zenml up
 
-# Create and activate the stack with the mlflow experiment tracker component
+# Create and activate the stack with the mlflow model registry, tracker and deployer stack components.
 zenml experiment-tracker register mlflow_tracker --flavor=mlflow
 zenml model-registry register mlflow_registry --flavor=mlflow
 zenml model-deployer register mlflow_deployer --flavor=mlflow
@@ -151,12 +195,6 @@ Now we're ready. Execute:
 
 ```bash
 python run.py
-```
-
-Alternatively, if you want to run based on the config.yaml you can run with:
-
-```bash
-zenml pipeline run pipelines/training_pipeline/training_pipeline.py -c config.yaml
 ```
 
 ## Running on a local Kubernetes cluster
@@ -215,10 +253,10 @@ rm -rf <SPECIFIC_MLRUNS_PATH_GOES_HERE>
 
 # 📜 Learn more
 
-Our docs regarding the MLflow experiment tracker integration can be found 
-[here](https://docs.zenml.io/component-gallery/experiment-trackers/mlflow).
+Our docs regarding the MLflow model registry integration can be found 
+[here](https://docs.zenml.io/component-gallery/model-registries/mlflow).
 
 
-If you want to learn more about experiment trackers in general or about how to 
-build your own experiment trackers in ZenML check out our 
-[docs](https://docs.zenml.io/component-gallery/experiment-trackers/custom).
+If you want to learn more about model registries in general or about how to 
+build your own model registry in ZenML check out our 
+[docs](https://docs.zenml.io/component-gallery/model-registries/custom).
