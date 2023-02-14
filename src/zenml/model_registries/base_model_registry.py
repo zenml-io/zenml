@@ -392,6 +392,7 @@ class BaseModelRegistry(StackComponent, ABC):
             The loaded model version.
         """
 
+
 class BaseModelRegistryFlavor(Flavor):
     """Base class for all ZenML model registry flavors."""
 

@@ -19,6 +19,7 @@ from typing import Any, Dict, List, Optional, Tuple, cast
 from mlflow import MlflowClient
 from mlflow.exceptions import MlflowException
 from mlflow.pyfunc import load_model
+
 from zenml import __version__
 from zenml.client import Client
 from zenml.enums import StackComponentType
@@ -349,7 +350,6 @@ class MLFlowModelRegistry(BaseModelRegistry):
         except MlflowException:
             return False
         return True
-
 
     # ---------
     # Model Version Methods
@@ -780,9 +780,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
             KeyError: If the model version does not exist.
         """
         if not self.check_model_version_exists(name, version):
-            raise KeyError(
-                f"Model version '{name}:{version}' does not exist."
-            )
+            raise KeyError(f"Model version '{name}:{version}' does not exist.")
         # Load the model version.
         mlflow_model_version = self.mlflow_client.get_model_version(
             name=name,
