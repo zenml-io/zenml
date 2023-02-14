@@ -17,6 +17,7 @@ from pydantic import BaseModel
 
 from tests.integration.functional.utils import sample_name
 from zenml.client import Client
+from zenml.config.global_config import GlobalConfiguration
 from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.enums import ArtifactType, ExecutionStatus, StackComponentType
 from zenml.models import (
@@ -53,6 +54,7 @@ from zenml.models.base_models import BaseRequestModel, BaseResponseModel
 from zenml.models.page_model import Page
 from zenml.pipelines import pipeline
 from zenml.steps import step
+from zenml.zen_stores.base_zen_store import BaseZenStore
 
 
 @step
@@ -123,17 +125,46 @@ class PipelineRunContext:
 
 
 class UserContext:
-    def __init__(self, user_name: str = "aria"):
+    def __init__(self, user_name: str = "aria", login: bool = False):
         self.user_name = sample_name(user_name)
         self.client = Client()
         self.store = self.client.zen_store
+        self.login = login
 
     def __enter__(self):
-        new_user = UserRequestModel(name=self.user_name)
+        new_user = UserRequestModel(name=self.user_name, password="abcd")
         self.created_user = self.store.create_user(new_user)
+
+        if self.login:
+            self.client.create_user_role_assignment(
+                role_name_or_id="admin", user_name_or_id=self.created_user.id
+            )
+            self.original_config = GlobalConfiguration.get_instance()
+            self.original_client = Client.get_instance()
+
+            GlobalConfiguration._reset_instance()
+            Client._reset_instance()
+            self.client = Client()
+
+            url = self.original_config.zen_store.url
+            store_type = self.original_config.zen_store.type
+            store_dict = {
+                "url": url,
+                "username": self.user_name,
+                "password": "abcd",
+            }
+            store_config_class = BaseZenStore.get_store_config_class(
+                store_type
+            )
+            store_config = store_config_class.parse_obj(store_dict)
+            GlobalConfiguration().set_store(store_config)
+
         return self.created_user
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
+        if self.login:
+            GlobalConfiguration._reset_instance(self.original_config)
+            Client._reset_instance(self.original_client)
         try:
             self.store.delete_user(self.created_user.id)
         except KeyError:
@@ -325,7 +356,6 @@ flavor_crud_test_config = CrudTestConfig(
         integration="",
         source="",
         config_schema="",
-        user=uuid.uuid4(),
         workspace=uuid.uuid4(),
     ),
     filter_model=FlavorFilterModel,

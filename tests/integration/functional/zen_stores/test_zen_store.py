@@ -487,7 +487,7 @@ def test_assigning_role_to_team_succeeds():
                 )
     # With user and role deleted the assignment should be deleted as well
     with pytest.raises(KeyError):
-        zen_store.delete_team_role_assignment(assignment.id)
+        zen_store.get_team_role_assignment(assignment.id)
 
 
 def test_assigning_role_if_assignment_already_exists_fails():
@@ -829,47 +829,78 @@ def test_deleting_a_stack_succeeds():
                     store.get_stack(stack.id)
 
 
-def test_scoping_a_stack_succeeds():
+def test_private_stacks_are_inaccessible():
+    """Tests stack scoping via sharing on rest zen stores."""
+    if Client().zen_store.type == StoreType.SQL:
+        pytest.skip("SQL Zen Stores do not support stack scoping")
+
+    default_user_id = Client().active_user.id
+    with ComponentContext(
+        c_type=StackComponentType.ORCHESTRATOR,
+        flavor="local",
+        config={},
+        user_id=default_user_id,
+    ) as orchestrator:
+        with ComponentContext(
+            c_type=StackComponentType.ARTIFACT_STORE,
+            flavor="local",
+            config={},
+            user_id=default_user_id,
+        ) as artifact_store:
+            components = {
+                StackComponentType.ORCHESTRATOR: [orchestrator.id],
+                StackComponentType.ARTIFACT_STORE: [artifact_store.id],
+            }
+            with StackContext(
+                components=components, user_id=default_user_id
+            ) as stack:
+                with UserContext(login=True):
+                    # Unshared stack should be invisible to the current user
+                    #  Client() needs to be instantiated here with the new
+                    #  logged-in user
+                    filtered_stacks = Client().zen_store.list_stacks(
+                        StackFilterModel(name=stack.name)
+                    )
+                    assert len(filtered_stacks) == 0
+
+
+def test_public_stacks_are_accessible():
     """Tests stack scoping via sharing on rest zen stores."""
     client = Client()
     store = client.zen_store
     if store.type == StoreType.SQL:
         pytest.skip("SQL Zen Stores do not support stack scoping")
 
-    with UserContext() as user:
+    default_user_id = client.active_user.id
+    with ComponentContext(
+        c_type=StackComponentType.ORCHESTRATOR,
+        flavor="local",
+        config={},
+        user_id=default_user_id,
+    ) as orchestrator:
         with ComponentContext(
-            c_type=StackComponentType.ORCHESTRATOR,
+            c_type=StackComponentType.ARTIFACT_STORE,
             flavor="local",
             config={},
-            user_id=user.id,
-        ) as orchestrator:
-            with ComponentContext(
-                c_type=StackComponentType.ARTIFACT_STORE,
-                flavor="local",
-                config={},
-                user_id=user.id,
-            ) as artifact_store:
-                components = {
-                    StackComponentType.ORCHESTRATOR: [orchestrator.id],
-                    StackComponentType.ARTIFACT_STORE: [artifact_store.id],
-                }
-                with StackContext(
-                    components=components, user_id=user.id
-                ) as stack:
-                    # Unshared stack should be invisible to the current user
+            user_id=default_user_id,
+        ) as artifact_store:
+            components = {
+                StackComponentType.ORCHESTRATOR: [orchestrator.id],
+                StackComponentType.ARTIFACT_STORE: [artifact_store.id],
+            }
+            with StackContext(
+                components=components, user_id=default_user_id
+            ) as stack:
+                # Update
+                stack_update = StackUpdateModel(is_shared=True)
+                store.update_stack(
+                    stack_id=stack.id, stack_update=stack_update
+                )
 
-                    filtered_stacks = store.list_stacks(
-                        StackFilterModel(name=stack.name)
-                    )
-                    assert len(filtered_stacks) == 0
-
-                    # Update
-                    stack_update = StackUpdateModel(is_shared=True)
-                    store.update_stack(
-                        stack_id=stack.id, stack_update=stack_update
-                    )
-
-                    filtered_stacks = store.list_stacks(
+                with UserContext(login=True):
+                    #  Client() needs to be instantiated here with the new
+                    #  logged-in user
+                    filtered_stacks = Client().zen_store.list_stacks(
                         StackFilterModel(name=stack.name)
                     )
                     assert len(filtered_stacks) == 1
