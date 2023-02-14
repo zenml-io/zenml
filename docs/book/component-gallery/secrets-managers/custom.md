@@ -97,11 +97,36 @@ from the `BaseSecretsManagerConfig` class add your configuration parameters.
 from the `BaseSecretsManagerFlavor` class. Make sure that you give a `name`
 to the flavor through its abstract property.
 
-Once you are done with the implementation, you can register it through the CLI 
-as:
+
+Once you are done with the implementation, you can register it through the CLI.
+Please ensure you **point to the flavor class via dot notation**: 
 
 ```shell
-zenml secrets-manager flavor register <THE-SOURCE-PATH-OF-YOUR-SECRETS-MANAGER-FLAVOR>
+zenml secrets-manager flavor register <path.to.MySecretsManagerFlavor>
+```
+
+For example, your flavor class `MySecretsManagerFlavor` is defined in `flavors/my_flavor.py`,
+you'd register it by doing:
+
+```shell
+zenml secrets-manager flavor register flavors.my_flavor.MySecretsManagerFlavor
+```
+
+{% hint style="warning" %}
+ZenML resolves the flavor class by taking the path where you initialized zenml
+(via `zenml init`) as the starting point of resolution. Therefore, please ensure
+you follow [the best practice](../../guidelines/best-practices.md) of initializing
+zenml at the root of your respository.
+
+If ZenML does not find an initialized ZenML repository in any parent directory, it
+will default to the current working directory, but usually its better to not have to
+rely on this mechanism, and initialize zenml at the root.
+{% endhint %}
+
+Afterwards, you should see the new flavor in the list of available flavors:
+
+```shell
+zenml secrets-manager flavor list
 ```
 
 {% hint style="warning" %}
