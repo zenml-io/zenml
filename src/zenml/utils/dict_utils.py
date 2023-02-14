@@ -25,9 +25,6 @@ def recursive_update(
         original: The dictionary to update.
         update: The dictionary containing the updated values.
 
-    Raises:
-        TypeError: If the value types of original and update don't match.
-
     Returns:
         The updated dictionary.
     """
