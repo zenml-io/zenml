@@ -160,6 +160,14 @@ class LocalDaemonServiceStatus(ServiceStatus):
             try:
                 p = psutil.Process(pid)
                 cmd_line = p.cmdline()
+                
+                # Empty cmd_line implies no process
+                if not cmd_line:
+                    logger.debug(
+                        f"Process with PID {pid} not found!"
+                    )
+                    return None
+
                 config_file = self.config_file
                 if config_file is None:
                     return pid
