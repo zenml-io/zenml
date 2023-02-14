@@ -159,6 +159,21 @@ if you want to learn more about how ZenML builds these images and how you can
 customize them.
 {% endhint %}
 
+### Airflow UI
+
+Airflow comes with its own UI that you can use to find further details about
+your pipeline runs, such as the logs of your steps. For local Airflow, you can
+find the Airflow UI at [http://localhost:8080](http://localhost:8080) by 
+default. Alternatively, you can get the orchestrator UI URL in Python using the
+following code snippet:
+
+```python
+from zenml.post_execution import get_run
+
+pipeline_run = get_run("<PIPELINE_RUN_NAME>")
+orchestrator_url = deployer_step.metadata["orchestrator_url"].value
+```
+
 ### Additional configuration
 
 For additional configuration of the Airflow orchestrator, you can pass
