@@ -142,7 +142,7 @@ def predictor(
 ) -> Output(predictions=np.ndarray):
     """Run a inference request against a prediction service"""
 
-    service.start(timeout=10)  # should be a NOP if already started
+    service.start(timeout=60)  # should be a NOP if already started
     prediction = service.predict(data)
     prediction = prediction.argmax(axis=-1)
 
