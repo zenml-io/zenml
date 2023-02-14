@@ -1263,4 +1263,7 @@ def print_user_info(info: Dict[str, Any]) -> None:
         info: The information to print.
     """
     for key, value in info.items():
+        if key in ["packages", "query_packages"] and not bool(value):
+            continue
+
         declare(f"{key.upper()}: {value}")
