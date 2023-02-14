@@ -18,7 +18,7 @@ from typing import Any, Dict, List, Optional, Tuple, cast
 
 from mlflow import MlflowClient
 from mlflow.exceptions import MlflowException
-
+from mlflow.pyfunc import load_model
 from zenml import __version__
 from zenml.client import Client
 from zenml.enums import StackComponentType
@@ -123,6 +123,10 @@ class MLFlowModelRegistry(BaseModelRegistry):
             },
             custom_validation_function=_validate_stack_requirements,
         )
+
+    # ---------
+    # Model Group Methods
+    # ---------
 
     def register_model(
         self,
@@ -326,6 +330,30 @@ class MLFlowModelRegistry(BaseModelRegistry):
             )
             for registered_model in registered_models
         ]
+
+    def check_model_exists(
+        self,
+        name: str,
+    ) -> bool:
+        """Check if a model exists in the MLFlow model registry.
+
+        Args:
+            name (str): The name of the model.
+
+        Returns:
+            True if the model exists, False otherwise.
+        """
+        # Check if the model exists.
+        try:
+            self.mlflow_client.get_registered_model(name=name)
+        except MlflowException:
+            return False
+        return True
+
+
+    # ---------
+    # Model Version Methods
+    # ---------
 
     def register_model_version(
         self,
@@ -708,25 +736,6 @@ class MLFlowModelRegistry(BaseModelRegistry):
             for mlflow_model_version in mlflow_model_versions
         ]
 
-    def check_model_exists(
-        self,
-        name: str,
-    ) -> bool:
-        """Check if a model exists in the MLFlow model registry.
-
-        Args:
-            name (str): The name of the model.
-
-        Returns:
-            True if the model exists, False otherwise.
-        """
-        # Check if the model exists.
-        try:
-            self.mlflow_client.get_registered_model(name=name)
-        except MlflowException:
-            return False
-        return True
-
     def check_model_version_exists(
         self,
         name: str,
@@ -750,3 +759,36 @@ class MLFlowModelRegistry(BaseModelRegistry):
         except MlflowException:
             return False
         return True
+
+    def load_model_version(
+        self,
+        name: str,
+        version: str,
+        **kwargs: Any,
+    ) -> Any:
+        """Load a model version from the MLFlow model registry.
+
+        Args:
+            name (str): The name of the model.
+            version (str): The version of the model.
+            kwargs (dict, optional): Additional keyword arguments.
+
+        Returns:
+            The model version.
+
+        Raises:
+            KeyError: If the model version does not exist.
+        """
+        if not self.check_model_version_exists(name, version):
+            raise KeyError(
+                f"Model version '{name}:{version}' does not exist."
+            )
+        # Load the model version.
+        mlflow_model_version = self.mlflow_client.get_model_version(
+            name=name,
+            version=version,
+        )
+        return load_model(
+            model_uri=mlflow_model_version.source,
+            **kwargs,
+        )
