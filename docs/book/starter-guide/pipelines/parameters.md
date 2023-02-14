@@ -19,7 +19,8 @@ where we dive into how to do this with `BaseSettings`.
 
 You can parameterize a step by creating a subclass of the `BaseParameters`. When
 an object like this is passed to a step, it is not handled like other 
-[Artifacts](../../starter-guide/pipelines/pipelines.md#artifacts-link-steps-in-pipelines) within ZenML.Instead, it gets passed into the step when the pipeline is instantiated.
+[Artifacts](../../starter-guide/pipelines/pipelines.md#artifacts-link-steps-in-pipelines) within ZenML.
+Instead, it gets passed into the step when the pipeline is instantiated.
 
 ```python
 import numpy as np
@@ -37,8 +38,8 @@ class SVCTrainerParams(BaseParameters):
 @step
 def parameterized_svc_trainer(
     params: SVCTrainerParams,
-    X_train: np.ndarray,
-    y_train: np.ndarray,
+    train_set: pd.DataFrame,
+    test_set: pd.DataFrame,
 ) -> ClassifierMixin:
     """Train a sklearn SVC classifier with hyper-parameters."""
     X_train, y_train = train_set.drop("target", axis=1), train_set["target"]

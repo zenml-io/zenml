@@ -235,7 +235,7 @@ Notice the last log, that indicates running a command to view the dashboard.
 Check out the dashboard guide [in the next section](./dashboard.md) to inspect
 your pipeline there.
 
-### 💯 Give each pipeline run a name
+### 💯 Give each pipeline run a (dynamic) name
 
 When running a pipeline by calling `my_pipeline.run()`, ZenML uses the current
 date and time as the name for the pipeline run. In order to change the name

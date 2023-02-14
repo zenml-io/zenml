@@ -42,12 +42,12 @@ changing step definitions or you have an external API state change in your
 function that ZenML does not detect.
 
 There are multiple ways to take control of when and where caching is used:
-- [Configuring caching for the entire pipeline](#disabling-caching-for-the-entire-pipeline):
+- [Configuring caching for the entire pipeline](#configuring-caching-for-the-entire-pipeline):
 Do this if you want to configure caching for all steps of a pipeline.
-- [Configuring caching for individual steps](#disabling-caching-for-individual-steps):
+- [Configuring caching for individual steps](#configuring-caching-for-individual-steps):
 Do this to configure caching for individual steps. This is, e.g., useful to 
 disable caching for steps that depend on external input.
-- [Dynamically configuring caching for a pipeline run](#dynamically-disabling-caching-for-a-pipeline-run):
+- [Dynamically configuring caching for a pipeline run](#dynamically-configuring-caching-for-a-pipeline-run):
 Do this if you want to change the caching behaviour at runtime. This is, e.g.,
 useful to force a complete rerun of a pipeline.
 
@@ -103,7 +103,7 @@ you have configured in the `@step` or `@parameter` decorators.
 ### Code Example
 
 The following example shows caching in action with the code example from the
-previous section.
+starter guide.
 
 For a more detailed example on how caching is used at ZenML and how it works
 under the hood, checkout 
@@ -115,12 +115,16 @@ under the hood, checkout
 ```python
 import numpy as np
 from sklearn.base import ClassifierMixin
-from sklearn.datasets import load_digits
+from sklearn.datasets import load_wine
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
 
 from zenml.steps import BaseParameters, Output, step
 from zenml.pipelines import pipeline
+
+class SVCTrainerParams(BaseParameters):
+    """Trainer params"""
+    gamma: float = 0.001
 
 
 @step
@@ -137,20 +141,20 @@ def simple_data_splitter(
     return train_set, test_set
 
 
-class SVCTrainerParams(BaseParameters):
-    """Trainer params"""
-    gamma: float = 0.001
-
-
 @step(enable_cache=False)  # never cache this step, always retrain
+@step
 def parameterized_svc_trainer(
-    params SVCTrainerParams,
-    X_train: np.ndarray,
-    y_train: np.ndarray,
+    params: SVCTrainerParams,
+    train_set: pd.DataFrame,
+    test_set: pd.DataFrame,
 ) -> ClassifierMixin:
-    """Train a sklearn SVC classifier."""
-    model = SVC(gamma=config.gamma)
+    """Train a sklearn SVC classifier with hyper-parameters."""
+    X_train, y_train = train_set.drop("target", axis=1), train_set["target"]
+    X_test, y_test = test_set.drop("target", axis=1), test_set["target"]
+    model = SVC(gamma=params.gamma) # Parameterized!
     model.fit(X_train, y_train)
+    test_acc = model.score(X_test, y_test)
+    print(f"Test accuracy: {test_acc}")
     return model
 
 
