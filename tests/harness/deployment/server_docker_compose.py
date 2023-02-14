@@ -191,6 +191,7 @@ services:
             "--no-build": False,
             "--no-color": False,
             "--detach": True,
+            "--no-log-prefix": False,
             "--scale": "",
         }
 
