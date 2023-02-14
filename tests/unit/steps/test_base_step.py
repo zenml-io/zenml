@@ -1014,13 +1014,19 @@ def test_configure_step_with_invalid_parameters():
     def step_with_parameters(params: StepParams) -> None:
         pass
 
-    # Missing key
-    with pytest.raises(StepInterfaceError):
-        step_with_parameters().configure(parameters={"invalid_key": 1})
-
-    # Wrong type
-    with pytest.raises(StepInterfaceError):
-        step_with_parameters().configure(parameters={"key": "not_an_int"})
-
     with does_not_raise():
         step_with_parameters().configure(parameters={"key": 1})
+
+    # Missing key (only fail once step is called)
+    step_instance = step_with_parameters().configure(
+        parameters={"invalid_key": 1}
+    )
+    with pytest.raises(MissingStepParameterError):
+        step_instance()
+
+    # Wrong type (only fail once step is called)
+    step_instance = step_with_parameters().configure(
+        parameters={"key": "not_an_int"}
+    )
+    with pytest.raises(StepInterfaceError):
+        step_instance()
