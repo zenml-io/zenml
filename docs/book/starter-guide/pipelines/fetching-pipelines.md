@@ -142,9 +142,10 @@ Each run has a collection of useful metadata which you can access to ensure all 
 are reproducible:
 
 #### Git SHA
-The Git commit SHA that the pipeline run was performed on. This will only be set 
-if the pipeline code is in a git repository and there are no uncommitted files 
-when running the pipeline.
+The [Git commit SHA](https://www.mikestreety.co.uk/blog/the-git-commit-hash/)
+that the pipeline run was performed on. This will only be set if the pipeline 
+code is in a git repository and there are no uncommitted files when running the 
+pipeline.
 ```python
 commit = run.git_sha
 ```
@@ -158,7 +159,7 @@ status = run.status
 
 #### Configuration
 
-The `pipeline_configuration` is a super object that contains all configuration of 
+The `pipeline_configuration` is an object that contains all configuration of 
 the pipeline and pipeline run, including 
 [pipeline-level `BaseSettings`](../../advanced-guide/pipelines/settings.md), 
 which we will learn more about later. 

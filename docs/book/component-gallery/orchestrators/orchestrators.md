@@ -62,9 +62,9 @@ python file_that_runs_a_zenml_pipeline.py
 
 ### Inspecting Runs in the Orchestrator UI
 
-If your orchestrator comes with a separate user interface (currently: Kubeflow, 
-Airflow, Vertex), you can get the URL to the orchestrator UI of a specific
-pipeline run using the following code snippet:
+If your orchestrator comes with a separate user interface (for example: 
+Kubeflow, Airflow, Vertex), you can get the URL to the orchestrator UI of a 
+specific pipeline run using the following code snippet:
 
 ```python
 from zenml.post_execution import get_run
