@@ -922,9 +922,10 @@ class BasePipeline(metaclass=BasePipelineMeta):
             run_config = PipelineRunConfiguration()
 
         new_values = dict_utils.remove_none_values(run_configuration_args)
+        update = PipelineRunConfiguration.parse_obj(new_values)
 
         # Update with the values in code so they take precedence
-        run_config = pydantic_utils.update_model(run_config, update=new_values)
+        run_config = pydantic_utils.update_model(run_config, update=update)
 
         deployment, pipeline_spec = Compiler().compile(
             pipeline=self,

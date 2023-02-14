@@ -34,14 +34,10 @@ def recursive_update(
     for key, value in update.items():
         if isinstance(value, Dict):
             original_value = original.get(key, None) or {}
-            if not isinstance(original_value, Dict):
-                raise TypeError(
-                    f"Type of dictionary values for key {key} does not match "
-                    "in original and update dict (original="
-                    f"{type(original_value)}, update={type(value)})."
-                )
-
-            original[key] = recursive_update(original_value, value)
+            if isinstance(original_value, Dict):
+                original[key] = recursive_update(original_value, value)
+            else:
+                original[key] = value
         else:
             original[key] = value
     return original

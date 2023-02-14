@@ -14,6 +14,7 @@
 import inspect
 from contextlib import ExitStack as does_not_raise
 from unittest.mock import ANY
+from uuid import uuid4
 
 import pytest
 from pytest_mock import MockFixture
@@ -29,8 +30,9 @@ from zenml.exceptions import (
     StackValidationError,
 )
 from zenml.models.page_model import Page
+from zenml.models.pipeline_build_models import PipelineBuildBaseModel
 from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
-from zenml.pipelines import BasePipeline, pipeline
+from zenml.pipelines import BasePipeline, Schedule, pipeline
 from zenml.steps import BaseParameters, BaseStep, step
 
 
@@ -787,3 +789,63 @@ def test_loading_pipeline_from_old_spec_fails(create_pipeline_model):
 
     with pytest.raises(ValueError):
         BasePipeline.from_model(model)
+
+
+def test_compiling_a_pipeline_merges_schedule(empty_pipeline, tmp_path):
+    """Tests that compiling a pipeline merges the schedule from the config
+    file and in-code configuration."""
+    config_path = tmp_path / "config.yaml"
+    run_config = PipelineRunConfiguration(
+        schedule=Schedule(name="schedule_name", cron_expression="* * * * *")
+    )
+    config_path.write_text(run_config.yaml())
+
+    _, _, schedule, _ = empty_pipeline()._compile(
+        config_path=str(config_path),
+        schedule=Schedule(cron_expression="5 * * * *", catchup=True),
+    )
+
+    assert schedule.name == "schedule_name"
+    assert schedule.cron_expression == "5 * * * *"
+    assert schedule.catchup is True
+
+
+def test_compiling_a_pipeline_merges_build(empty_pipeline, tmp_path):
+    """Tests that compiling a pipeline merges the build/build ID from the config
+    file and in-code configuration."""
+    config_path_with_build_id = tmp_path / "config.yaml"
+    config_path_with_build = tmp_path / "config2.yaml"
+
+    run_config_with_build_id = PipelineRunConfiguration(build=uuid4())
+    config_path_with_build_id.write_text(run_config_with_build_id.yaml())
+
+    run_config_with_build = PipelineRunConfiguration(
+        build=PipelineBuildBaseModel(is_local=True)
+    )
+    config_path_with_build.write_text(run_config_with_build.yaml())
+
+    in_code_build_id = uuid4()
+    # Config with ID
+    _, _, _, build = empty_pipeline()._compile(
+        config_path=str(config_path_with_build_id), build=in_code_build_id
+    )
+    assert build == in_code_build_id
+    # Config with build object
+    _, _, _, build = empty_pipeline()._compile(
+        config_path=str(config_path_with_build), build=in_code_build_id
+    )
+    assert build == in_code_build_id
+
+    in_code_build = PipelineBuildBaseModel(
+        images={"key": {"image": "image_name"}}, is_local=False
+    )
+    # Config with ID
+    _, _, _, build = empty_pipeline()._compile(
+        config_path=str(config_path_with_build_id), build=in_code_build
+    )
+    assert build == in_code_build
+    # Config with build object
+    _, _, _, build = empty_pipeline()._compile(
+        config_path=str(config_path_with_build), build=in_code_build
+    )
+    assert build == in_code_build
