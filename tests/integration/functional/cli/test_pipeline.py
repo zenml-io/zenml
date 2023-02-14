@@ -13,10 +13,18 @@
 #  permissions and limitations under the License.
 """Test zenml pipeline CLI commands."""
 
+from uuid import uuid4
+
 import pytest
 from click.testing import CliRunner
 
 from zenml.cli.cli import cli
+from zenml.client import Client
+from zenml.config.pipeline_configurations import PipelineRunConfiguration
+from zenml.models.pipeline_build_models import (
+    PipelineBuildBaseModel,
+    PipelineBuildRequestModel,
+)
 from zenml.pipelines import pipeline
 from zenml.steps import step
 
@@ -148,3 +156,152 @@ def test_pipeline_registration_with_repo(clean_workspace):
     )
     assert result.exit_code == 0
     assert clean_workspace.list_pipelines(name="p").total == 1
+
+
+def test_pipeline_build_without_repo_fails(clean_client):
+    """Tests that the build command outside of a repo fails."""
+    runner = CliRunner()
+    build_command = cli.commands["pipeline"].commands["build"]
+
+    pipeline_instance.register()
+
+    result = runner.invoke(build_command, [pipeline_instance.name])
+    assert result.exit_code == 1
+
+
+def test_pipeline_run_without_repo_fails(clean_client):
+    """Tests that the run command outside of a repo fails."""
+    runner = CliRunner()
+    run_command = cli.commands["pipeline"].commands["run"]
+
+    pipeline_instance.register()
+
+    result = runner.invoke(run_command, [pipeline_instance.name])
+    assert result.exit_code == 1
+
+
+def test_pipeline_run_with_nonexistent_name_fails(clean_workspace):
+    """Tests that the run command fails if no pipeline with the given name
+    exists."""
+    runner = CliRunner()
+    run_command = cli.commands["pipeline"].commands["run"]
+
+    pipeline_instance.register()
+
+    # name of unregistered pipeline
+    assert (
+        runner.invoke(run_command, ["not_a_registered_pipeline"]).exit_code
+        == 1
+    )
+
+
+def test_pipeline_run_with_config_file(clean_workspace, tmp_path):
+    """Tests that the run command works with a run config file."""
+    runner = CliRunner()
+    run_command = cli.commands["pipeline"].commands["run"]
+
+    pipeline_id = pipeline_instance.register().id
+
+    config_path = tmp_path / "config.yaml"
+    run_config = PipelineRunConfiguration(run_name="custom_run_name")
+    config_path.write_text(run_config.yaml())
+
+    result = runner.invoke(
+        run_command, [pipeline_instance.name, "--config", str(config_path)]
+    )
+    assert result.exit_code == 0
+
+    runs = Client().list_runs(pipeline_id=pipeline_id)
+    assert len(runs) == 1
+    assert runs[0].name == "custom_run_name"
+
+
+def test_pipeline_run_with_different_stack(clean_workspace):
+    """Tests that the run command works with a different stack."""
+    runner = CliRunner()
+    run_command = cli.commands["pipeline"].commands["run"]
+
+    pipeline_id = pipeline_instance.register().id
+
+    components = {
+        key: components[0].id
+        for key, components in Client().active_stack_model.components.items()
+    }
+    new_stack = Client().create_stack(name="new", components=components)
+
+    result = runner.invoke(
+        run_command, [pipeline_instance.name, "--stack", str(new_stack.id)]
+    )
+    assert result.exit_code == 0
+
+    runs = Client().list_runs(pipeline_id=pipeline_id)
+    assert len(runs) == 1
+    assert runs[0].stack.id == new_stack.id
+
+
+def test_pipeline_run_with_invalid_build_id_fails(clean_workspace):
+    """Tests that the run command with an invalid build id fails."""
+    runner = CliRunner()
+    run_command = cli.commands["pipeline"].commands["run"]
+
+    pipeline_instance.register().id
+
+    result = runner.invoke(
+        run_command, [pipeline_instance.name, "--build", "not_a_build_id"]
+    )
+    assert result.exit_code == 1
+
+    # not a registered build ID
+    result = runner.invoke(
+        run_command, [pipeline_instance.name, "--build", str(uuid4())]
+    )
+    assert result.exit_code == 1
+
+
+def test_pipeline_run_with_custom_build_id(clean_workspace):
+    """Tests that the run command works with a custom build id."""
+    runner = CliRunner()
+    run_command = cli.commands["pipeline"].commands["run"]
+
+    pipeline_id = pipeline_instance.register().id
+
+    request = PipelineBuildRequestModel(
+        user=Client().active_user.id,
+        workspace=Client().active_workspace.id,
+        is_local=True,
+        images={},
+    )
+    build = Client().zen_store.create_build(request)
+
+    result = runner.invoke(
+        run_command, [pipeline_instance.name, "--build", str(build.id)]
+    )
+    assert result.exit_code == 0
+
+    runs = Client().list_runs(pipeline_id=pipeline_id)
+    assert len(runs) == 1
+    assert runs[0].build.id == build.id
+
+
+def test_pipeline_run_with_custom_build_file(clean_workspace, tmp_path):
+    """Tests that the run command works with a custom build file."""
+    runner = CliRunner()
+    run_command = cli.commands["pipeline"].commands["run"]
+
+    pipeline_id = pipeline_instance.register().id
+
+    build_path = tmp_path / "build.yaml"
+    build = PipelineBuildBaseModel(
+        is_local=True, images={"my_key": {"image": "image_name"}}
+    )
+    build_path.write_text(build.yaml())
+
+    result = runner.invoke(
+        run_command, [pipeline_instance.name, "--build", str(build_path)]
+    )
+    assert result.exit_code == 0
+
+    runs = Client().list_runs(pipeline_id=pipeline_id)
+    assert len(runs) == 1
+    assert runs[0].build.images == build.images
+    assert runs[0].build.is_local == build.is_local
