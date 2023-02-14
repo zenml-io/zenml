@@ -106,16 +106,16 @@ class MLFlowModelRegistry(BaseModelRegistry):
                 A tuple of (is_valid, error_message).
             """
             # Validate that the experiment tracker is an mlflow experiment tracker.
-            expirement_tracker = stack.experiment_tracker
-            assert expirement_tracker is not None
-            if expirement_tracker.flavor != "mlflow":
+            experiment_tracker = stack.experiment_tracker
+            assert experiment_tracker is not None
+            if experiment_tracker.flavor != "mlflow":
                 return False, (
                     "The MLFlow model registry requires a MLFlow experiment "
                     "tracker. You should register a MLFlow experiment "
                     "tracker to the stack using the following command: "
-                    "`zenml stack register expirement_tracker ..."
+                    "`zenml stack register experiment_tracker ..."
                 )
-            expirement_tracker
+            experiment_tracker
             return True, ""
 
         return StackValidator(

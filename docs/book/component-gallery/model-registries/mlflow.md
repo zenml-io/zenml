@@ -10,7 +10,7 @@ to manage and track ML models and their artifacts.
 ## When would you want to use it?
 
 [MLflow Model Registry](https://mlflow.org/docs/latest/model-registry.html)) is
-a powerful tool that you would typically use in the expirementing, QA and
+a powerful tool that you would typically use in the experimenting, QA and
 production phase to manage and track machine learning model versions. It is
 designed to help teams collaborate on model development and deployment, and keep
 track of which models are being used in which environments. With MLflow Model
@@ -32,7 +32,7 @@ environment or to a staging environment for testing.
 The MLflow Experiment Tracker flavor is provided by the MLflow ZenML
 integration, you need to install it on your local machine to be able to register
 an MLflow Model Registry component. Note that MLFlow model registry requires
-[MLFLow Experiment Tracker](../experiment-trackers/mlflow.md) to be present in
+[MLFlow Experiment Tracker](../experiment-trackers/mlflow.md) to be present in
 the stack.
 
 ```shell

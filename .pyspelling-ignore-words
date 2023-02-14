@@ -1646,3 +1646,8 @@ zenmlserver
 zenprojects
 zenserver
 ziph
+BaseModelRegistry
+BaseModelRegistryConfig
+CustomModelRegistry
+CustomModelRegistryConfig
+CustomModelRegistryFlavor

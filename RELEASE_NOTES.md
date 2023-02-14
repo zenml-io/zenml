@@ -1557,7 +1557,7 @@ We improved a few of our error messages, too, like for when the return type of a
 ZenML 0.5.7 is here  :100:  and it brings not one, but :fire:TWO:fire: brand new integrations :rocket:! ZenML now support [MLFlow](https://www.mlflow.org/docs/latest/tracking.html) for tracking pipelines as experiments and [Evidently](https://github.com/evidentlyai/evidently) for detecting drift in your ML pipelines in production!
 
 ## New Features
-* Introducing the [MLFLow Tracking](https://www.mlflow.org/docs/latest/tracking.html) Integration, a first step towards 
+* Introducing the [MLFlow Tracking](https://www.mlflow.org/docs/latest/tracking.html) Integration, a first step towards 
 our complete MLFlow Integration as described in the [#115 poll](https://github.com/zenml-io/zenml/discussions/115). 
 Full example found [here](https://github.com/zenml-io/zenml/tree/0.5.7/examples/mlflow).
 * Introducing the [Evidently](https://github.com/evidentlyai/evidently) integration. Use the standard 

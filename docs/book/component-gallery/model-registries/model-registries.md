@@ -13,28 +13,26 @@ pipeline in which the model was trained and how to reproduce it.
 
 ## Model Registry Concepts and Terminology
 
-The following are some of the key concepts and terminology used in model
-registries: 
+As ZenML the list of the integrated model registries tools and platfornms will grow, 
+each with their own way of managing model groups, versions, and stages. It will
+become increasingly difficult to manage model groups, versions, and stages, a 
+consistent way regardless of the underlying registry tool or service being used.
+To address this, ZenML provides a unified abstraction for model registries using
+the concepts and terminology of `ModelRegistration`, `ModelVersion`, and 
+`ModelVersionStage`.
 
-* **ModelRegistration**: A model registration is a presentation of a model
-    group or bucket of different versions of the same model. It is a logical
-    grouping of models that can be used to track the different versions of a
-    model. A model registration can be created by the user or automatically
-    created by the model registry when a new model is logged. It helds 
-    information about the model, such as its name, description, and tags that
-    can be set for all versions of the model.
+* **ModelRegistration**: ModelRegistration: A logical grouping of models that
+    can be used to track different versions of a model. It holds information
+    about the model, such as its name, description, and tags, and can be created
+    by the user or automatically created by the model registry when a new model
+    is logged.
 
-* **ModelVersion**: A model version is a specific version of a model. It is
-    identified by a unique version number or string and can be associated with
-    a specific pipeline run or expirement run in the context of an experiment 
-    tracking system or tool. The model version holds information about the model, 
-    such as its name, description, tags, and metrics. It also holds a reference 
-    to the model artifact that was logged to the model registry. 
-    In ZenML model version holds a reference to the zenml metadata such as the
-    pipeline name, pipeline run id, and the step name.
-    Its also worth noting that a model version have a model registration 
-    associated with it. This is the model registration that the model version
-    belongs to.
+* **ModelVersion**: A specific version of a model identified by a unique version
+    number or string. It holds information about the model, such as its name,
+    description, tags, and metrics, and a reference to the model artifact logged
+    to the model registry. In ZenML, it also holds a reference to the pipeline
+    name, pipeline run ID, and step name. Each model version is associated with
+    a model registration.
 
 * **ModelVersionStage**: A model version stage is a state that a model version
     can be in. It can be one of the following: `None`, `Staging`, `Production`,
@@ -43,28 +41,23 @@ registries:
     `Staging` stage while it is being tested and then moved to the `Production`
     stage once it is ready for deployment.
 
-All the model registry tools and services that ZenML integrates with have
-their own way of managing model groups, versions, and stages. For that reason,
-ZenML provides a unified abstraction for model registries using the previously
-mentioned concepts and terminology. This allows ZenML to integrate with any
-model registry tool or service in a consistent way.
-
 ## When to use it
 
-ZenML already provides a way to store and version your pipeline artifacts by
-means of the mandatory [Artifact Store](../artifact-stores/artifact-stores.md).
-However, these ZenML mechanisms are meant to be used programmatically and can be
-more difficult to work with without a visual interface.
+ZenML provides a built-in mechanism for storing and versioning pipeline artifacts
+through its mandatory Artifact Store. While this is a powerful way to manage
+artifacts programmatically, it can be challenging to work with without a visual
+interface.
 
-Model registries offer a visual way to manage and track model metadata, which
-is especially useful if you're using a remote orchestrator. They allow for easy
-retrieval and loading of models from storage, thanks to built-in integrations.
-A model registry is ideal for interacting with all the models in your pipeline
-and managing their state in a centralized way.
+Model registries, on the other hand, offer a visual way to manage and track
+model metadata, particularly when using a remote orchestrator. They make it
+easy to retrieve and load models from storage, thanks to built-in integrations.
+A model registry is an excellent choice for interacting with all the models in
+your pipeline and managing their state in a centralized way.
 
-You want to use a model registry in your stack if you want to interact with all
-the logged models in your pipeline, or if you want to manage the state of your
-models in a centralized way.
+Using a model registry in your stack is particularly useful if you want to
+interact with all of the logged models in your pipeline, or if you need to
+manage the state of your models in a centralized way and make it easy to
+retrive, load, and deploy these models.
 
 ## How they model registries slot into the ZenML stack
 
