@@ -14,7 +14,7 @@
 """Functionality to generate stack component CLI commands."""
 
 import getpass
-from typing import TYPE_CHECKING, List, cast
+from typing import TYPE_CHECKING, List, Optional, cast
 
 import click
 from pydantic import ValidationError
@@ -627,20 +627,54 @@ def get_secret(secret_name_id_or_prefix: str, scope: str) -> None:
         error(str(e))
 
 
-@secret.command("update", help="Update a secret with a given name or id.")
+@secret.command(
+    "update",
+    context_settings={"ignore_unknown_options": True},
+    help="Update a secret with a given name or id.",
+)
 @click.argument(
-    "secret_name_or_id",
+    "secret_name_id_or_prefix",
     type=click.STRING,
 )
-@click.option("--values", "-v", "values", type=click.STRING, multiple=True)
-def update_secret(secret_name_or_id: str) -> None:
+@click.option(
+    "--new_name",
+    "-n",
+    type=click.STRING,
+)
+@click.option(
+    "--new_scope",
+    "-s",
+    type=click.STRING,
+)
+@click.argument("args", nargs=-1, type=click.UNPROCESSED)
+def update_secret(
+    secret_name_id_or_prefix: str,
+    args: List[str],
+    new_name: Optional[str] = None,
+    new_scope: Optional[str] = None,
+) -> None:
     """Update a secret for a given name or id.
 
     Args:
-        secret_name_or_id: The name or id of the secret to update.
+        secret_name_id_or_prefix: The name or id of the secret to update.
+        new_name: The new name of the secret.
+        new_scope: The new scope of the secret.
+        args: The arguments to pass to the secret.
     """
-    Client()
-    return None
+    name, parsed_args = parse_name_and_extra_arguments(  # type: ignore[assignment]
+        list(args) + [secret_name_id_or_prefix], expand_args=True
+    )
+    secret_args_add_update = {k: v for k, v in parsed_args.items() if v}
+    secret_args_remove = {k: v for k, v in parsed_args.items() if v == ""}
+    client = Client()
+    client.update_secret(
+        name_id_or_prefix=name,
+        scope=new_scope,
+        new_name=new_name,
+        add_or_update_values=secret_args_add_update,
+        remove_values=secret_args_remove,
+    )
+    declare(f"Secret '{name}' successfully updated.")
 
 
 @secret.command("delete", help="Delete a secret with a given name or id.")
