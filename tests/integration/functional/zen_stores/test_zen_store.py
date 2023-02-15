@@ -56,6 +56,7 @@ from zenml.models import (
 from zenml.models.base_models import (
     WorkspaceScopedRequestModel,
 )
+from zenml.models.flavor_models import FlavorBaseModel
 from zenml.zen_stores.base_zen_store import (
     DEFAULT_ADMIN_ROLE,
     DEFAULT_GUEST_ROLE,
@@ -141,7 +142,9 @@ def test_create_entity_twice_fails(crud_test_config: CrudTestConfig):
     client = Client()
     # Create the entity
     create_model = crud_test_config.create_model
-    if isinstance(create_model, WorkspaceScopedRequestModel):
+    if isinstance(create_model, WorkspaceScopedRequestModel) or isinstance(
+        create_model, FlavorBaseModel
+    ):
         create_model.user = client.active_user.id
         create_model.workspace = client.active_workspace.id
     # First creation is successful
@@ -388,18 +391,16 @@ def test_team_for_user_succeeds():
 def test_creating_role_with_empty_permissions_succeeds():
     """Tests creating a role."""
     zen_store = Client().zen_store
-    try:
+
+    with RoleContext() as created_role:
         new_role = RoleRequestModel(name=sample_name("cat"), permissions=set())
         created_role = zen_store.create_role(new_role)
         with does_not_raise():
-            zen_store.get_role(role_name_or_id=new_role.name)
+            zen_store.get_role(role_name_or_id=created_role.name)
         list_of_roles = zen_store.list_roles(
-            RoleFilterModel(name=new_role.name)
+            RoleFilterModel(name=created_role.name)
         )
         assert list_of_roles.total > 0
-    finally:
-        # Cleanup
-        zen_store.delete_role(created_role.id)
 
 
 def test_deleting_builtin_role_fails():
