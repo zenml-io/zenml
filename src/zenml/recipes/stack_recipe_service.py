@@ -63,7 +63,7 @@ class StackRecipeService(TerraformService):
         "stack_recipes",
     )
 
-    
+    config: StackRecipeServiceConfig
 
     def check_installation(self) -> None:
         """Checks if necessary tools are installed on the host system.
@@ -199,6 +199,10 @@ class StackRecipeService(TerraformService):
             derived from the tfvars.json file.
         """
         vars = super().get_vars()
+
+        # add input variables
+        if self.config.input_variables:
+            vars.update(self.config.input_variables)
 
         # enable services
         if self.config.enabled_services:

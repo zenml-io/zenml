@@ -18,7 +18,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 import click
 from rich.text import Text
@@ -799,6 +799,13 @@ def pull(
     help="The flavor of secrets manager to use. "
     "If not specified, no secrets manager will be deployed.",
 )
+@click.option(
+    "--config",
+    help="Use a YAML or JSON configuration or configuration file to pass"
+    "variables to the stack recipe.",
+    required=False,
+    type=str,
+)
 @pass_git_stack_recipes_handler
 @click.pass_context
 def deploy(
@@ -819,6 +826,7 @@ def deploy(
     no_server: bool,
     skip_pull: bool,
     stack_name: Optional[str],
+    config: Optional[str],
 ) -> None:
     """Run the stack_recipe at the specified relative path.
 
@@ -856,6 +864,8 @@ def deploy(
         secrets_manager: The flavor of secrets manager to use. In the case of
             the secrets manager, it doesn't matter what you specify here, as
             there's only one flavor per cloud provider and that will be deployed.
+        config: Use a YAML or JSON configuration or configuration file to pass
+            variables to the stack recipe.
     """
     with event_handler(
         event=AnalyticsEvent.RUN_STACK_RECIPE,
@@ -863,6 +873,7 @@ def deploy(
     ):
 
         import python_terraform
+        import yaml
 
         cli_utils.warning(ALPHA_MESSAGE)
         stack_recipes_dir = Path(os.getcwd()) / path
@@ -971,6 +982,20 @@ def deploy(
                             config=terraform_config,
                         )
                     
+                    # get input variables
+                    variables_dict: Dict[str, Any] = {}
+
+                    if config:
+                        if os.path.isfile(config):
+                            variables_dict = yaml_utils.read_yaml(config)
+                        else:
+                            variables_dict = yaml.safe_load(config)
+                        if not isinstance(variables_dict, dict):
+                            cli_utils.error(
+                                "The configuration argument must be JSON/YAML content or "
+                                "point to a valid configuration file."
+                            )
+
                     # add all values that are not None to the enabled services list
                     enabled_services = [
                         service
@@ -991,6 +1016,7 @@ def deploy(
                         enabled_services.append("secrets_manager")
 
                     stack_recipe_service.config.enabled_services = enabled_services
+                    stack_recipe_service.config.input_variables = variables_dict
                     # start the service (the init and apply operation)
                     stack_recipe_service.start()
 
