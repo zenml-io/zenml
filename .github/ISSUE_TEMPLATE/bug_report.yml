@@ -21,7 +21,7 @@ body:
     id: system-information
     attributes:
       label: System Information
-      description: python -c "import zenml.environment; print(zenml.environment.get_system_details())"
+      description: zenml info -a
       placeholder: "Copy paste the output of the above command here. If using ZenML version < 0.8.0, then paste in Python version, OS, ZenML version, and installed integrations."
     validations:
       required: true
