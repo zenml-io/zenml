@@ -252,7 +252,10 @@ class StackRecipeService(TerraformService):
 
         return cast(str, yaml.dump(config))
 
-
+    def provision(self) -> None:
+        super().provision()
+        self.enabled_services = []
+        self._update_service_config()
 
     
     def deprovision(self, force: bool = False) -> None:
@@ -270,7 +273,8 @@ class StackRecipeService(TerraformService):
         # disable the services
         if self.disabled_services:
             self._init_and_apply()
-
+            self.disabled_services = []
+            self._update_service_config()
         else:
             # if no services are specified, destroy the whole stack
             # using the values of the existing tfvars.json file
