@@ -865,10 +865,10 @@ def generate_stack_component_flavor_register_command(
             ```shell
             zenml artifact-store flavor register flavors.my_flavor.MyArtifactStoreFlavor
             ```
-        
+
         Args:
             source: The source path of the flavor class in dot notation format.
-            
+
         Raises:
             ClickException: Raises a CLI exception when underlying exception triggers.
         """
