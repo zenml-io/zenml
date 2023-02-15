@@ -309,6 +309,11 @@ class BasePipeline(metaclass=BasePipelineMeta):
         Returns:
             The registered pipeline model.
         """
+        # Activating the built-in integrations to load all materializers
+        from zenml.integrations.registry import integration_registry
+
+        integration_registry.activate_integrations()
+
         pipeline_spec = Compiler().compile_spec(self)
         return self._register(pipeline_spec=pipeline_spec)
 
