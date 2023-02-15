@@ -14,7 +14,7 @@
 """Authentication module for ZenML server."""
 
 import os
-from typing import Callable, List, Optional, Union
+from typing import Callable, List, Optional, Set, Union
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, status
@@ -53,7 +53,7 @@ class AuthContext(BaseModel):
     user: UserResponseModel
 
     @property
-    def permissions(self) -> List[PermissionType]:
+    def permissions(self) -> Set[PermissionType]:
         """Returns the permissions of the user.
 
         Returns:
@@ -66,10 +66,9 @@ class AuthContext(BaseModel):
                 permissions.extend(role.permissions)
 
             # Remove duplicates
-            permissions = list(set(permissions))
-            return permissions
+            return set(permissions)
 
-        return []
+        return set()
 
 
 def authentication_scheme() -> AuthScheme:

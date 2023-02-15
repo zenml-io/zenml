@@ -67,7 +67,7 @@ class SecretSchema(NamedSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
-    user: Optional["UserSchema"] = Relationship(back_populates="secrets")
+    user: "UserSchema" = Relationship(back_populates="secrets")
 
     @classmethod
     def _dump_secret_values(
