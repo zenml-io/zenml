@@ -61,21 +61,22 @@ def register_pipeline(source: str) -> None:
             "resolves to a pipeline object."
         )
 
-    repo_root = Client().root
-    if not repo_root:
-        cli_utils.error(
-            "`zenml pipeline register` can only be called within a ZenML "
-            "repository. Run `zenml init` at your source code root and try "
-            "again."
+    if not Client().root:
+        cli_utils.warning(
+            "You're running the `zenml pipeline register` command without a "
+            "ZenML repository. Your current working directory will be used "
+            "as the source root relative to which the `source` argument is "
+            "expected. To silence this warning, run `zenml init` at your "
+            "source code root."
         )
 
     try:
-        with source_utils.prepend_python_path([str(repo_root)]):
-            pipeline_instance = source_utils.import_by_path(source)
+        pipeline_instance = source_utils.load_source_path(source)
     except ModuleNotFoundError as e:
+        source_root = source_utils.get_source_root_path()
         cli_utils.error(
             f"Unable to import module `{e.name}`. Make sure the source path is "
-            "relative to your PYTHONPATH."
+            f"relative to your source root `{source_root}`."
         )
     except AttributeError as e:
         cli_utils.error("Unable to load attribute from module: " + str(e))
@@ -96,6 +97,7 @@ def register_pipeline(source: str) -> None:
     "-v",
     type=str,
     required=False,
+    help="Optional version of the pipeline.",
 )
 @click.option(
     "--config",
@@ -103,6 +105,7 @@ def register_pipeline(source: str) -> None:
     "config_path",
     type=click.Path(exists=True, dir_okay=False),
     required=False,
+    help="Path to configuration file for the build.",
 )
 @click.option(
     "--stack",
@@ -110,6 +113,7 @@ def register_pipeline(source: str) -> None:
     "stack_name_or_id",
     type=str,
     required=False,
+    help="Name or ID of the stack to use for the build.",
 )
 @click.option(
     "--output",
@@ -117,6 +121,7 @@ def register_pipeline(source: str) -> None:
     "output_path",
     type=click.Path(exists=False, dir_okay=False),
     required=False,
+    help="Output path for the build information.",
 )
 def build_pipeline(
     pipeline_name_or_id: str,
@@ -138,10 +143,12 @@ def build_pipeline(
     cli_utils.print_active_config()
 
     if not Client().root:
-        cli_utils.error(
-            "`zenml pipeline build` can only be called within a ZenML "
-            "repository. Run `zenml init` at your source code root and try "
-            "again."
+        cli_utils.warning(
+            "You're running the `zenml pipeline build` command without a "
+            "ZenML repository. Your current working directory will be used "
+            "as the source root relative to which the registered step classes "
+            "will be resolved. To silence this warning, run `zenml init` at "
+            "your source code root."
         )
 
     try:
@@ -176,6 +183,7 @@ def build_pipeline(
     "-v",
     type=str,
     required=False,
+    help="Optional version of the pipeline.",
 )
 @click.option(
     "--config",
@@ -183,6 +191,7 @@ def build_pipeline(
     "config_path",
     type=click.Path(exists=True, dir_okay=False),
     required=False,
+    help="Path to configuration file for the run.",
 )
 @click.option(
     "--stack",
@@ -190,6 +199,7 @@ def build_pipeline(
     "stack_name_or_id",
     type=str,
     required=False,
+    help="Name or ID of the stack to run on.",
 )
 @click.option(
     "--build",
@@ -197,6 +207,7 @@ def build_pipeline(
     "build_path_or_id",
     type=str,
     required=False,
+    help="ID or path of the build to use.",
 )
 def run_pipeline(
     pipeline_name_or_id: str,
@@ -219,10 +230,12 @@ def run_pipeline(
     cli_utils.print_active_config()
 
     if not Client().root:
-        cli_utils.error(
-            "`zenml pipeline run` can only be called within a ZenML "
-            "repository. Run `zenml init` at your source code root and try "
-            "again."
+        cli_utils.warning(
+            "You're running the `zenml pipeline run` command without a "
+            "ZenML repository. Your current working directory will be used "
+            "as the source root relative to which the registered step classes "
+            "will be resolved. To silence this warning, run `zenml init` at "
+            "your source code root."
         )
 
     try:

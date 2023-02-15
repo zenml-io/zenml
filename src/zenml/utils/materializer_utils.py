@@ -132,7 +132,7 @@ def _load_artifact(
     """
     # Resolve the materializer class
     try:
-        materializer_class = source_utils.load_source_path_class(materializer)
+        materializer_class = source_utils.load_source_path(materializer)
     except (ModuleNotFoundError, AttributeError) as e:
         logger.error(
             f"ZenML cannot locate and import the materializer module "
@@ -142,7 +142,7 @@ def _load_artifact(
 
     # Resolve the artifact class
     try:
-        artifact_class = source_utils.load_source_path_class(data_type)
+        artifact_class = source_utils.load_source_path(data_type)
     except (ModuleNotFoundError, AttributeError) as e:
         logger.error(
             f"ZenML cannot locate and import the data type of this "

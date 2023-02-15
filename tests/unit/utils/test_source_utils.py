@@ -107,12 +107,12 @@ def test_loading_class_by_path_prepends_repo_path(
     with does_not_raise():
         # the repo root should be in the python path right now, so this file
         # can be imported
-        source_utils.load_source_path_class("some_directory.python_file.test")
+        source_utils.load_source_path("some_directory.python_file.test")
 
     with pytest.raises(ModuleNotFoundError):
         # the subdirectory will not be in the python path and therefore this
         # import should not work
-        source_utils.load_source_path_class("python_file.test")
+        source_utils.load_source_path("python_file.test")
 
 
 def test_import_python_file_for_first_time(

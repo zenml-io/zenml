@@ -455,7 +455,7 @@ class BaseStep(metaclass=BaseStepMeta):
         for name, output in self.configuration.outputs.items():
             if output.materializer_source:
                 key = f"{name}_materializer_source"
-                materializer_class = source_utils.load_source_path_class(
+                materializer_class = source_utils.load_source_path(
                     output.materializer_source
                 )
                 parameters[key] = source_utils.get_hashed_source(
