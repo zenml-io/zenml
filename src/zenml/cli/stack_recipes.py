@@ -953,12 +953,12 @@ def deploy(
                     "resources with the same values as above don't already "
                     "exist on your cloud account."
                 ):
-                    from zenml.recipes import StackRecipeService
-                    from zenml.services.terraform.terraform_service import (
-                        TerraformServiceConfig,
+                    from zenml.recipes import (
+                        StackRecipeService, 
+                        StackRecipeServiceConfig,
                     )
 
-                    terraform_config = TerraformServiceConfig(
+                    terraform_config = StackRecipeServiceConfig(
                         root_runtime_path=str(
                             StackRecipeService.STACK_RECIPES_CONFIG_PATH
                         ),
@@ -1364,3 +1364,114 @@ def destroy(
                     "there's any active nodes.Ignore this warning if there "
                     "are no active nodes."
                 )
+
+# a function to get the value of outputs passed as input, from a stack recipe
+@stack_recipe.command(
+    name="output",
+    help="Get a specific output or a list of all outputs from a stack recipe."
+)
+@click.argument("stack_recipe_name", type=str)
+@click.option(
+    "--path",
+    "-p",
+    type=click.STRING,
+    default="zenml_stack_recipes",
+    help="Relative path at which you want to install the stack_recipe(s)",
+)
+@click.option(
+    "--output",
+    "-o",
+    type=click.STRING,
+    default=None,
+    help="Name of the output you want to get the value of. If none is given,"
+    "all outputs are returned.",
+)
+@pass_git_stack_recipes_handler
+def get_outputs(
+    git_stack_recipes_handler: GitStackRecipesHandler,
+    stack_recipe_name: str,
+    path: str,
+    output: Optional[str],
+) -> Dict[str, str]:
+    """Get the outputs of the stack recipe at the specified relative path.
+
+    `zenml stack_recipe deploy stack_recipe_name` has to be called with the
+    same relative path before the get_outputs command.
+
+    Args:
+        git_stack_recipes_handler: The GitStackRecipesHandler instance.
+        stack_recipe_name: The name of the stack_recipe.
+        path: The path of the stack recipe you want to get the outputs from.
+        output: The name of the output you want to get the value of. If none is given,
+            all outputs are returned.
+    Returns:
+        A dictionary with the outputs of the stack recipe.
+    Raises:
+        ModuleNotFoundError: If the recipe is found at the given path.
+    """
+    with event_handler(
+        event=AnalyticsEvent.GET_STACK_RECIPE_OUTPUTS,
+        metadata={"stack_recipe_name": stack_recipe_name},
+    ):
+        import python_terraform
+
+        cli_utils.warning(ALPHA_MESSAGE)
+
+        stack_recipes_dir = Path(os.getcwd()) / path
+
+        try:
+            _ = git_stack_recipes_handler.get_stack_recipes(stack_recipe_name)[
+                0
+            ]
+        except KeyError as e:
+            cli_utils.error(str(e))
+        else:
+            stack_recipe_dir = stack_recipes_dir / stack_recipe_name
+            local_stack_recipe = LocalStackRecipe(
+                stack_recipe_dir, stack_recipe_name
+            )
+
+            if not local_stack_recipe.is_present():
+                raise ModuleNotFoundError(
+                    f"The recipe {stack_recipe_name} "
+                    "has not been pulled at the specified path. "
+                    f"Run `zenml stack recipe pull {stack_recipe_name}` "
+                    f"followed by `zenml stack recipe deploy "
+                    f"{stack_recipe_name}` first."
+                )
+
+            try:
+                # use the stack recipe directory path to find the service instance
+                from zenml.recipes import StackRecipeService
+
+                stack_recipe_service = StackRecipeService.get_service(
+                    str(local_stack_recipe.path)
+                )
+                if not stack_recipe_service:
+                    cli_utils.error(
+                        "No stack recipe found with the path "
+                        f"{local_stack_recipe.path}. You need to first deploy "
+                        "the recipe by running \nzenml stack recipe deploy "
+                        f"{stack_recipe_name}"
+                    )
+                outputs = stack_recipe_service.get_outputs()
+                if output:
+                    if output in outputs:
+                        cli_utils.declare(f"Output {output}: ")
+                        return outputs[output]
+                    else:
+                        cli_utils.error(
+                            f"Output {output} not found in stack recipe "
+                            f"{stack_recipe_name}"
+                        )
+                else:
+                    cli_utils.declare("Outputs: ")
+                    # delete all items that have empty values
+                    outputs = {
+                        k: v for k, v in outputs.items() if v is not ''
+                    }
+                    cli_utils.declare(outputs)
+                    return outputs
+            except python_terraform.TerraformCommandError as e:
+                cli_utils.error(str(e))
+

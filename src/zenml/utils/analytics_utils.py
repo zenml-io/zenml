@@ -121,6 +121,7 @@ class AnalyticsEvent(str, Enum):
     PULL_STACK_RECIPE = "Stack recipes pulled"
     RUN_STACK_RECIPE = "Stack recipe created"
     DESTROY_STACK_RECIPE = "Stack recipe destroyed"
+    GET_STACK_RECIPE_OUTPUTS = "Stack recipe outputs fetched"
 
     # ZenML server events
     ZENML_SERVER_STARTED = "ZenML server started"
