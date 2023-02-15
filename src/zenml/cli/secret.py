@@ -22,6 +22,7 @@ from pydantic import ValidationError
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
     confirmation,
+    declare,
     error,
     expand_argument_value_from_file,
     parse_name_and_extra_arguments,
@@ -533,12 +534,19 @@ def register_secrets_manager_subcommands() -> None:
             console.print("Deleted all secrets.")
 
 
+### NEW SECRETS STORE PARADIGM
+
+
 @cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
 def secret() -> None:
     """Create, list, update, or delete secrets."""
 
 
-@secret.command("create", help="Create a new secret.")
+@secret.command(
+    "create",
+    context_settings={"ignore_unknown_options": True},
+    help="Create a new secret.",
+)
 @click.argument("name", type=click.STRING)
 @click.option(
     "--scope",
@@ -556,8 +564,15 @@ def create_secret(name: str, scope: str, args: List[str]) -> None:
         scope: The scope of the secret to create.
         args: The arguments to pass to the secret.
     """
-    Client()
-    return None
+    from pydantic.types import SecretStr
+
+    name, parsed_args = parse_name_and_extra_arguments(  # type: ignore[assignment]
+        list(args) + [name], expand_args=True
+    )
+    secret_args = {k: SecretStr(v) for k, v in parsed_args.items()}
+    client = Client()
+    client.create_secret(name=name, values=secret_args, scope=scope)
+    declare(f"Secret '{name}' successfully created.")
 
 
 @secret.command("list", help="List all registered secrets.")
@@ -588,8 +603,12 @@ def list_secrets(scope: str, workspace_id: str, user_id: str) -> None:
         workspace_id: The workspace ID to list secrets for.
         user_id: The user ID to list secrets for.
     """
-    Client()
-    return None
+    client = Client()
+    secret_names = [secret.name for secret in client.list_secrets().items]
+    if not secret_names:
+        warning("No secrets registered.")
+        return
+    print_list_items(list_items=secret_names, column_title="SECRET_NAMES")
 
 
 @secret.command("get", help="Get a secret with a given name, prefix or id.")
