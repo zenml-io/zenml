@@ -1,4 +1,4 @@
-"""add build and deployment tables [19f27d5b234e].
+"""Add build and deployment tables [19f27d5b234e].
 
 Revision ID: 19f27d5b234e
 Revises: e65aa6708ff7
