@@ -311,7 +311,8 @@ module = [
     "jose.*",
     "fastapi_utils.*",
     "sqlalchemy_utils.*",
-    "copier.*"
+    "copier.*",
+    "modin.*",
 ]
 ignore_missing_imports = true
 
