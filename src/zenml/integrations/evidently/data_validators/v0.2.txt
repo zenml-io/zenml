@@ -1,0 +1,55 @@
+dashboard tabs and profile sections are replaced by metrics
+
+metrics input can be 
+- a preset
+- a list of metrics
+- multiple colunmns for each metric specified using the generate_column_metrics sync_function
+
+return
+- report
+- report.json()
+
+```
+from zenml.integrations.evidently.metrics import (
+    xyzMetric,
+    xyzPreset,
+    ...
+)
+
+evidently_report_step
+EvidentlyReportParameters(
+    column_mapping=,
+    metrics=[
+        xyzMetric,
+        xyzPreset,
+    ],
+)
+
+
+
+
+
+tests are metrics with thresholds
+
+similar API to report
+
+tests input can be 
+- a preset
+- list of tests
+- a combination of tests and test presets
+- generate_column_tests
+
+return
+- test_suite
+- test_suite.json()
+
+
+example
+TextOverviewPreset
+metrics:
+DataDriftPreset
+{ColumnMissingValuesMetric(column_name="name")}
+
+test:
+datadrifttestpreset
+{TestNumberOfMissingValues()}

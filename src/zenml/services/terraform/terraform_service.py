@@ -168,6 +168,18 @@ class TerraformService(BaseService):
         else:
             return (ServiceState.ERROR, f"Deployment error: \n{err}")
 
+    def _update_service_config(self) -> None:
+        """Update the service configuration file.
+
+        This function is called after the service has been started, to update
+        the service configuration file with the runtime path of the service.
+        """
+        # write the service information in the service config file
+        assert self.status.config_file is not None
+
+        with open(self.status.config_file, "w") as f:
+            f.write(self.json(indent=4))
+    
     def _init_and_apply(self) -> None:
         """Function to call terraform init and terraform apply.
 
@@ -177,11 +189,7 @@ class TerraformService(BaseService):
         Raises:
             RuntimeError: if init or apply function fails.
         """
-        # write the service information in the service config file
-        assert self.status.config_file is not None
-
-        with open(self.status.config_file, "w") as f:
-            f.write(self.json(indent=4))
+        self._update_service_config()
 
         # this directory gets created after a successful init
         previous_run_dir = os.path.join(
@@ -207,6 +215,7 @@ class TerraformService(BaseService):
             input=False,
             capture_output=False,
             raise_on_error=True,
+            refresh=False,
         )
 
     def get_vars(self) -> Dict[str, Any]:

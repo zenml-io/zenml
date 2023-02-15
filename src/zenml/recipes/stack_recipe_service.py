@@ -14,10 +14,12 @@
 """Service for ZenML Stack Recipes."""
 
 import os
+import shutil
 import subprocess
 from typing import Any, ClassVar, Dict, List, Optional, cast
-
+from pathlib import Path
 import yaml
+import json
 
 import zenml
 from zenml.cli.stack_recipes import logger
@@ -54,6 +56,8 @@ class StackRecipeService(TerraformService):
 
     # list of all enabled stack components
     enabled_services: List[str] = []
+    # list of services to be disabled
+    disabled_services: List[str] = []
 
     def check_installation(self) -> None:
         """Checks if necessary tools are installed on the host system.
@@ -191,12 +195,32 @@ class StackRecipeService(TerraformService):
         vars = super().get_vars()
 
         # enable services
-        for service in self.enabled_services:
-            vars[f"enable_{service}"] = True
+        if self.enabled_services:
+            for service in self.enabled_services:
+                vars[f"enable_{service}"] = True
+        # disable services
+        elif self.disabled_services:
+            for service in self.disabled_services:
+                vars[f"enable_{service}"] = False
 
         # update zenml version to current version
         vars[ZENML_VERSION_VARIABLE] = zenml.__version__
+
+        self._write_vars_to_file(vars)
         return vars
+
+    def _write_vars_to_file(self, vars: Dict[str, Any]) -> None:
+        """Write variables to the variables file.
+
+        Args:
+            vars: The variables to write to the file.
+        """
+        path = self.terraform_client.working_dir
+        variables_file_path = os.path.join(
+            path, self.config.variables_file_path
+        )
+        with open(variables_file_path, "w") as f:
+            json.dump(vars, f)
 
     def get_deployment_info(self) -> str:
         """Return deployment details as a YAML document.
@@ -227,3 +251,33 @@ class StackRecipeService(TerraformService):
             )
 
         return cast(str, yaml.dump(config))
+
+
+
+    
+    def deprovision(self, force: bool = False) -> None:
+        """Deprovision the service.
+
+        Args:
+            force: if True, the service will be deprovisioned even if it is
+                in a failed state.
+        """
+        self.check_installation()
+        self._set_log_level()
+
+        # if a list of disabled services is provided, call apply
+        # which will use the variables from get_vars and selectively
+        # disable the services
+        if self.disabled_services:
+            self._init_and_apply()
+
+        else:
+            # if no services are specified, destroy the whole stack
+            # using the values of the existing tfvars.json file
+            self._destroy()
+            
+            # in case of singleton services, this will remove the config
+            # path as a whole and otherwise, this removes the specific UUID
+            # directory
+            assert self.status.config_file is not None
+            shutil.rmtree(Path(self.status.config_file).parent)
