@@ -1,0 +1,16 @@
+# Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
+_commit: 8e128ac
+_src_path: gh:zenml-io/zenml-project-templates
+auto_format: false
+configurable_dataset: true
+configurable_model: true
+email: ''
+full_name: ZenML GmbH
+open_source_license: apache
+project_name: ZenML Starter
+sklearn_dataset_name: wine
+sklearn_model_name: LogisticRegression
+template: starter
+use_custom_artifacts: true
+use_step_params: true
+version: 0.1.0
