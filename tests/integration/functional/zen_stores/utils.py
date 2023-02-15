@@ -165,6 +165,7 @@ class UserContext:
         if self.login:
             GlobalConfiguration._reset_instance(self.original_config)
             Client._reset_instance(self.original_client)
+            _ = Client().zen_store
         try:
             self.store.delete_user(self.created_user.id)
         except KeyError:
