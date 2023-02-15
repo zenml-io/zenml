@@ -479,5 +479,5 @@ def test_pipeline_build_delete(clean_workspace):
     with pytest.raises(KeyError):
         clean_workspace.get_build(str(build_id))
 
-    # this now fails because ethe build doesn't exist anymore
+    # this now fails because the build doesn't exist anymore
     assert runner.invoke(delete_command, [str(build_id), "-y"]).exit_code == 1
