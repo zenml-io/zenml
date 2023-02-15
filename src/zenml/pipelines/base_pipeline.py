@@ -241,6 +241,19 @@ class BasePipeline(metaclass=BasePipelineMeta):
         )
 
         pipeline_instance = pipeline_class(**steps)
+
+        version_hash = pipeline_instance._compute_unique_identifier(
+            pipeline_spec=model.spec
+        )
+        if version_hash != model.version_hash:
+            logger.warning(
+                "Trying to load pipeline version `%s`, but the local step code "
+                "changed since this pipeline version was registered. Using "
+                "this pipeline instance will result in a different pipeline "
+                "version being registered or reused.",
+                model.version,
+            )
+
         return pipeline_instance
 
     def configure(
