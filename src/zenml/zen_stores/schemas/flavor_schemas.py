@@ -45,15 +45,17 @@ class FlavorSchema(NamedSchema, table=True):
     config_schema: str = Field(sa_column=Column(TEXT, nullable=False))
     integration: Optional[str] = Field(default="")
 
-    workspace_id: UUID = build_foreign_key_field(
+    workspace_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
         target=WorkspaceSchema.__tablename__,
         source_column="workspace_id",
         target_column="id",
         ondelete="CASCADE",
-        nullable=False,
+        nullable=True,
     )
-    workspace: "WorkspaceSchema" = Relationship(back_populates="flavors")
+    workspace: Optional["WorkspaceSchema"] = Relationship(
+        back_populates="flavors"
+    )
 
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,

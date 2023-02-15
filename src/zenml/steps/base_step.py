@@ -874,11 +874,10 @@ class BaseStep(metaclass=BaseStepMeta):
             parameters: The parameters to validate.
 
         Raises:
-            StepInterfaceError: If the step requires no function parameters or
-                invalid function parameters were given.
+            StepInterfaceError: If the step requires no function parameters but
+                parameters were configured.
         """
         if not parameters:
-            # No parameters set (yet), defer validation to a later point
             return
 
         if not self.PARAMETERS_CLASS:
@@ -886,11 +885,6 @@ class BaseStep(metaclass=BaseStepMeta):
                 f"Function parameters configured for step {self.name} which "
                 "does not accept any function parameters."
             )
-
-        try:
-            self.PARAMETERS_CLASS(**parameters)
-        except ValidationError:
-            raise StepInterfaceError("Failed to validate function parameters.")
 
     def _validate_inputs(
         self, inputs: Mapping[str, ArtifactConfiguration]
@@ -1041,6 +1035,7 @@ class BaseStep(metaclass=BaseStepMeta):
         Raises:
             MissingStepParameterError: If no value could be found for one or
                 more config parameters.
+            StepInterfaceError: If the parameter class validation failed.
         """
         if not self.PARAMETERS_CLASS:
             return {}
@@ -1052,6 +1047,7 @@ class BaseStep(metaclass=BaseStepMeta):
         for name, field in self.PARAMETERS_CLASS.__fields__.items():
             if name in self.configuration.parameters:
                 # a value for this parameter has been set already
+                values[name] = self.configuration.parameters[name]
                 continue
 
             if field.required:
@@ -1066,5 +1062,10 @@ class BaseStep(metaclass=BaseStepMeta):
             raise MissingStepParameterError(
                 self.name, missing_keys, self.PARAMETERS_CLASS
             )
+
+        try:
+            self.PARAMETERS_CLASS(**values)
+        except ValidationError:
+            raise StepInterfaceError("Failed to validate function parameters.")
 
         return values
