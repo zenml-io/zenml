@@ -37,7 +37,10 @@ class GCPImageBuilderConfig(
         cloud_builder_image: The name of the Docker image to use for the build
             steps. Defaults to `gcr.io/cloud-builders/docker`.
         network: The network name to which the build container will be
-            attached while building the Docker image. Defaults to `cloudbuild`.
+            attached while building the Docker image. More information about
+            this:
+            https://cloud.google.com/build/docs/build-config-file-schema#network.
+            Defaults to `cloudbuild`.
     """
 
     cloud_builder_image: str = DEFAULT_CLOUD_BUILDER_IMAGE
