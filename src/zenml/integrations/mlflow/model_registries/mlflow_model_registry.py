@@ -16,6 +16,7 @@
 
 from typing import Any, Dict, List, Optional, Tuple, cast
 
+import mlflow
 from mlflow import MlflowClient
 from mlflow.exceptions import MlflowException
 from mlflow.pyfunc import load_model
@@ -68,6 +69,13 @@ class MLFlowModelRegistry(BaseModelRegistry):
         """
         return cast(MLFlowModelRegistryConfig, self._config)
 
+    def configure_mlflow(self) -> None:
+        """Configures the MLflow Client with the experiment tracker config."""
+        experiment_tracker = Client().active_stack.experiment_tracker
+        if not isinstance(experiment_tracker, MLFlowExperimentTracker):
+            raise get_missing_mlflow_experiment_tracker_error()
+        experiment_tracker.configure_mlflow()
+
     @property
     def mlflow_client(self) -> MlflowClient:
         """Get the MLflow client.
@@ -80,11 +88,8 @@ class MLFlowModelRegistry(BaseModelRegistry):
             The MLFlowClient.
         """
         if not self._client:
-            experiment_tracker = Client().active_stack.experiment_tracker
-            if not isinstance(experiment_tracker, MLFlowExperimentTracker):
-                raise get_missing_mlflow_experiment_tracker_error()
-            experiment_tracker.configure_mlflow()
-            self._client = MlflowClient()
+            self.configure_mlflow()
+            self._client = mlflow.tracking.MlflowClient()
         return self._client
 
     @property
