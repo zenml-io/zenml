@@ -576,35 +576,15 @@ def create_secret(name: str, scope: str, args: List[str]) -> None:
 
 
 @secret.command("list", help="List all registered secrets.")
-@click.option(
-    "--scope",
-    "-s",
-    "scope",
-    type=click.Choice([scope.value for scope in list(SecretScope)]),
-    default=SecretScope.WORKSPACE.value,
-)
-@click.option(
-    "--workspace_id",
-    "-w",
-    "workspace_id",
-    type=click.STRING,
-)
-@click.option(
-    "--user_id",
-    "-u",
-    "user_id",
-    type=click.STRING,
-)
-def list_secrets(scope: str, workspace_id: str, user_id: str) -> None:
+def list_secrets() -> None:
     """List all registered secrets.
 
     Args:
         scope: The scope of the secret to list.
-        workspace_id: The workspace ID to list secrets for.
-        user_id: The user ID to list secrets for.
     """
     client = Client()
-    secret_names = [secret.name for secret in client.list_secrets().items]
+    secrets = client.list_secrets()
+    secret_names = [secret.name for secret in secrets.items]
     if not secret_names:
         warning("No secrets registered.")
         return
