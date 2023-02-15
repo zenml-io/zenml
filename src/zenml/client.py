@@ -2456,6 +2456,9 @@ class Client(metaclass=ClientMetaClass):
                     "pipeline. Ignoring the version and fetching the "
                     "pipeline by ID."
                 )
+            if not isinstance(name_id_or_prefix, UUID):
+                name_id_or_prefix = UUID(name_id_or_prefix, version=4)
+
             return self.zen_store.get_pipeline(name_id_or_prefix)
 
         assert not isinstance(name_id_or_prefix, UUID)

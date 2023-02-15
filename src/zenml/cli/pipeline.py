@@ -505,7 +505,7 @@ def list_pipeline_builds(**kwargs: Any) -> None:
     is_flag=True,
     help="Don't ask for confirmation.",
 )
-def delete_pipeline_run(
+def delete_pipeline_build(
     build_id: str,
     yes: bool = False,
 ) -> None:
