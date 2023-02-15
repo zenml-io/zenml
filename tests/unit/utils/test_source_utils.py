@@ -28,9 +28,9 @@ from zenml.client import Client
 from zenml.utils import source_utils
 
 
-def test_is_third_party_module(module_mocker: MockerFixture):
+def test_is_third_party_module(mocker: MockerFixture):
     """Tests that third party modules get detected correctly."""
-    module_mocker.patch(
+    mocker.patch(
         "zenml.utils.source_utils.get_source_root_path",
         return_value=str(pathlib.Path(__file__).absolute().parents[3]),
     )
@@ -48,13 +48,13 @@ class EmptyClass:
     pass
 
 
-def test_resolve_class(module_mocker: MockerFixture):
+def test_resolve_class(mocker: MockerFixture):
     """Tests that class resolving works as expected."""
     os.getcwd()
     parent_directory = os.path.dirname(os.path.dirname(__file__))
     os.chdir(parent_directory)
 
-    module_mocker.patch(
+    mocker.patch(
         "zenml.utils.source_utils.get_source_root_path",
         return_value=str(pathlib.Path(__file__).absolute().parents[1]),
     )
@@ -253,10 +253,10 @@ def test_internal_pin_removal():
     )
 
 
-def test_settings_custom_source_root():
+def test_setting_a_custom_source_root():
     """Tests setting and resetting a custom source root."""
     initial_source_root = source_utils.get_source_root_path()
-    source_utils.set_custom_source_root("custom_source_root")
+    source_utils.set_custom_source_root(source_root="custom_source_root")
     assert source_utils.get_source_root_path() == "custom_source_root"
-    source_utils.set_custom_source_root(None)
+    source_utils.set_custom_source_root(source_root=None)
     assert source_utils.get_source_root_path() == initial_source_root

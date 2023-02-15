@@ -1054,7 +1054,10 @@ def test_building_a_pipeline_registers_it(clean_client, empty_pipeline):
     """Tests that building a pipeline registers it in the server."""
     pipeline_instance = empty_pipeline()
     with pytest.raises(KeyError):
-        clean_client.get_pipeline(name=pipeline_instance.name)
+        clean_client.get_pipeline(name_id_or_prefix=pipeline_instance.name)
 
     pipeline_instance.build()
-    assert clean_client.get_pipeline(name=pipeline_instance.name) is not None
+    assert (
+        clean_client.get_pipeline(name_id_or_prefix=pipeline_instance.name)
+        is not None
+    )
