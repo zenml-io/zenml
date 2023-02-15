@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Implementation of the MLflow model deployer pipeline step."""
+"""Implementation of the MLflow model registration pipeline step."""
 
 from typing import Dict, Optional, cast
 
@@ -42,7 +42,7 @@ logger = get_logger(__name__)
 
 
 class MLFlowRegistryParameters(BaseParameters):
-    """Model deployer step parameters for MLflow.
+    """Model registry step parameters for MLflow.
 
     Args:
         name: Name of the registered model.
@@ -90,7 +90,7 @@ def mlflow_register_model_step(
             is not an MLflow experiment tracker.
         ValueError: If no model source URI is provided and no model is found
     """
-    # fetch the MLflow artifacts logged during the pipeline run
+    # get the experiment tracker and check if it is an MLflow experiment tracker.
     experiment_tracker = Client().active_stack.experiment_tracker
     if not isinstance(experiment_tracker, MLFlowExperimentTracker):
         raise get_missing_mlflow_experiment_tracker_error()

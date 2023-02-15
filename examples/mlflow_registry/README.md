@@ -3,7 +3,7 @@
 [MLflow](https://www.mlflow.org/docs/latest/tracking.html) is a popular
 tool that helps you track experiments, manage models and even deploy them to
 different environments. ZenML already provides a [MLflow Experiment Tracker]()
-that you can use to track your experiments, and an [MLFlow Model Deployer]() that
+that you can use to track your experiments, and an [MLflow Model Deployer]() that
 you can use to deploy your models locally. In this example, we will see the newest
 addition to the MLflow integration, the [MLflow Model Registry](). This component
 allows you to manage and track your model versions, and enables you to deploy
@@ -11,7 +11,7 @@ them to different environments with ease.
 
 ## 🗺 Overview
 
-This example showcases how easily MLFlow Model Registry can be integrated into
+This example showcases how easily MLflow Model Registry can be integrated into
 your ZenML pipelines and how you can use it to manage your model versions.
 
 We'll be using the
@@ -108,9 +108,9 @@ mlflow_training_pipeline(
     name: Name of the registered model.
     description: Description of the registered model.
     tags: Tags to be added to the registered model.
-    experiment_name: Name of the MLFlow experiment to be used for the run.
-    run_name: Name of the MLFlow run to be created.
-    run_id: ID of the MLFlow run to be used.
+    experiment_name: Name of the MLflow experiment to be used for the run.
+    run_name: Name of the MLflow run to be created.
+    run_id: ID of the MLflow run to be used.
     model_source_uri: URI of the model source. If not provided, the model
         will be fetched from the MLflow tracking server.
     version_description: Description of the model.
@@ -211,13 +211,17 @@ zenml pipeline run pipelines/deployment_inference_pipeline/deployment_inference_
 
 ## 📄 Infrastructure Requirements (Pre-requisites)
 
-You don't need to set up any infrastructure to run your pipelines with MLflow on a Kubernetes cluster, locally. However, you need the following tools installed:
+You don't need to set up any infrastructure to run your pipelines with MLflow on
+a Kubernetes cluster, locally. However, you need the following tools installed:
   * Docker must be installed on your local machine.
   * Install k3d by running `curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash`.
 
 ## Create a local MLflow Stack
 
-To get a stack with MLflow installed with authentication and potential other components, you can make use of ZenML's Stack Recipes that are a set of terraform based modules that take care of setting up a cluster with MLflow among other things.
+To get a stack with MLflow installed with authentication and potential other
+components, you can make use of [ZenML's Stack Recipes](https://github.com/zenml-io/mlops-stacks)
+that are a set of Terraform-based modules that take care of setting up a cluster
+with MLflow among other things.
 
 Run the following command to deploy the local MLflow stack:
 
@@ -229,10 +233,10 @@ zenml stack recipe deploy k3d-modular
 > This recipe comes with MLflow, Kubeflow and Minio enabled by default. If you want any other components like KServe, Seldon or Tekton, you can specify that using the `--install/-i` flag.
 
 This will deploy a local Kubernetes cluster with MLflow installed. 
-It will also generate a stack YAML file that you can import as a ZenML stack by running 
+It will also generate a stack YAML file that you can import as a ZenML stack by running:
 
 ```bash
-zenml stack import -f <path-to-stack-yaml>
+zenml stack import -f <PATH_TO_STACK_YAML>
 ```
 Once the stack is set, you can then simply proceed to running your pipelines.
 
@@ -256,6 +260,7 @@ is already in use on your machine you may have to specify another port:
 In order to clean up, delete the remaining ZenML references.
 
 ```shell
+zenml stack recipe destroy <STACK_RECIPE_NAME>
 rm -rf zenml_examples
 rm -rf <SPECIFIC_MLRUNS_PATH_GOES_HERE>
 ```

@@ -51,7 +51,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
     _client: Optional[MlflowClient] = None
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Initialize the experiment tracker and validate the tracking uri.
+        """Initialize the model registry and validate the tracking uri.
 
         Args:
             *args: Variable length argument list.
@@ -80,7 +80,6 @@ class MLFlowModelRegistry(BaseModelRegistry):
             The MLFlowClient.
         """
         if not self._client:
-            # TODO: can this be done in a better way?
             experiment_tracker = Client().active_stack.experiment_tracker
             if not isinstance(experiment_tracker, MLFlowExperimentTracker):
                 raise get_missing_mlflow_experiment_tracker_error()
@@ -694,7 +693,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
             version_stages (list, optional): The stages of the model version.
 
         Returns:
-            The latest model versions or None if no model versions exist.
+            The latest model versions.
 
         Raises:
             KeyError: If the model does not exist.

@@ -186,7 +186,7 @@ zenml stack import -f <path-to-stack-yaml>
 Once the stack is set, you can then simply proceed to running your pipelines.
 
 ### 🔮 See results
-Now we just need to start the mlflow UI to have a look at our two pipeline runs.
+Now we just need to start the MLflow UI to have a look at our two pipeline runs.
 To do this we need to run:
 
 ```shell
@@ -194,8 +194,9 @@ mlflow ui --backend-store-uri <SPECIFIC_MLRUNS_PATH_GOES_HERE>
 ```
 
 Check the terminal output of the pipeline run to see the exact path appropriate
-in your specific case. This will start mlflow at `localhost:5000`. If this port
-is already in use on your machine you may have to specify another port:
+in your specific case. This will start MLflow at [`localhost:5000`](http://localhost:5000/).
+If this port. If this port is already in use on your machine you may have to
+specify another port:
 
 ```shell
  mlflow ui --backend-store-uri <SPECIFIC_MLRUNS_PATH_GOES_HERE> -p 5001

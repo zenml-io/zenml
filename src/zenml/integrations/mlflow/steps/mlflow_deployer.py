@@ -106,7 +106,6 @@ def mlflow_model_deployer_step(
         MLFlowModelDeployer, MLFlowModelDeployer.get_active_model_deployer()
     )
 
-    # fetch the MLflow artifacts logged during the pipeline run
     experiment_tracker = Client().active_stack.experiment_tracker
 
     if not isinstance(experiment_tracker, MLFlowExperimentTracker):
@@ -258,9 +257,7 @@ def mlflow_model_registry_deployer_step(
         MLFlowModelDeployer, MLFlowModelDeployer.get_active_model_deployer()
     )
 
-    # fetch the MLflow artifacts logged during the pipeline run
     experiment_tracker = Client().active_stack.experiment_tracker
-
     if not isinstance(experiment_tracker, MLFlowExperimentTracker):
         raise get_missing_mlflow_experiment_tracker_error()
 

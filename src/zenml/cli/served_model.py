@@ -42,7 +42,7 @@ def register_model_deployer_subcommands() -> None:  # noqa: C901
 
     @model_deployer_group.group(
         cls=TagGroup,
-        help="Commands for interacting with annotation datasets.",
+        help="Commands for interacting with served models.",
     )
     @click.pass_context
     def models(ctx: click.Context) -> None:

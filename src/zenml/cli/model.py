@@ -90,9 +90,7 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
             model_registry: The model registry stack component.
             tags: Filter models by tags.
         """
-        # Set tags to None if empty
         tags = dict(tags) if tags else None
-        # Get registered models
         registered_models = model_registry.list_models(tags=tags)
         # Print registered models if any
         if registered_models:
@@ -139,19 +137,15 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
             description: Description of the model to register.
             tags: Tags to add to the model.
         """
-        # Set tags to None if empty
         tags = dict(tags) if tags else None
-        # Check if model already exists in registry
         if model_registry.check_model_exists(name):
             error(f"Model with name {name} already exists.")
             return
-        # Register model
         model_registry.register_model(
             name=name,
             description=description,
             tags=tags,
         )
-        # Declare success
         declare(f"Model {name} registered successfully.")
 
     @models.command(
@@ -174,13 +168,10 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
             model_registry: The model registry stack component.
             name: Name of the model to delete.
         """
-        # Check if model exists in registry
         if not model_registry.check_model_exists(name):
             error(f"Model with name {name} does not exist.")
             return
-        # Delete model
         model_registry.delete_model(name)
-        # Declare success
         declare(f"Model {name} deleted successfully.")
 
     @models.command(
@@ -222,19 +213,15 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
             description: Description of the model to update.
             tags: Tags to add to the model.
         """
-        # Set tags to None if empty
         tags = dict(tags) if tags else None
-        # Check if model exists in registry
         if not model_registry.check_model_exists(name):
             error(f"Model with name {name} does not exist.")
             return
-        # Update model
         model_registry.update_model(
             name=name,
             description=description,
             tags=tags,
         )
-        # Declare success
         declare(f"Model {name} updated successfully.")
 
     @models.command(
@@ -257,13 +244,10 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
             model_registry: The model registry stack component.
             name: Name of the model to get.
         """
-        # Check if model exists in registry
         if not model_registry.check_model_exists(name):
             error(f"Model with name {name} does not exist.")
             return
-        # Get model
         model = model_registry.get_model(name)
-        # Print model
         pretty_print_registered_model_table([model])
 
     @models.command(
@@ -296,15 +280,12 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
             name: Name of the model to get.
             version: Version of the model to get.
         """
-        # Check if model exists in registry
         if not model_registry.check_model_version_exists(name, version):
             error(
                 f"Model with name {name} and version {version} does not exist."
             )
             return
-        # Get model version
         model_version = model_registry.get_model_version(name, version)
-        # Print model version
         pretty_print_model_version_details(model_version)
 
     @models.command(
@@ -337,15 +318,12 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
             name: Name of the model to delete.
             version: Version of the model to delete.
         """
-        # Check if model exists in registry
         if not model_registry.check_model_version_exists(name, version):
             error(
                 f"Model with name {name} and version {version} does not exist."
             )
             return
-        # Delete model version
         model_registry.delete_model_version(name, version)
-        # Declare success
         declare(f"Model {name} version {version} deleted successfully.")
 
     @models.command(
@@ -406,15 +384,12 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
             tags: Tags to add to the model.
             stage: Stage of the model to update.
         """
-        # Set tags to None if empty
         tags = dict(tags) if tags else None
-        # Check if model exists in registry
         if not model_registry.check_model_version_exists(name, version):
             error(
                 f"Model with name {name} and version {version} does not exist."
             )
             return
-        # Update model version
         updated_version = model_registry.update_model_version(
             name=name,
             version=version,
@@ -422,9 +397,7 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
             version_tags=tags,
             version_stage=ModelVersionStage(stage),
         )
-        # Declare success
         declare(f"Model {name} version {version} updated successfully.")
-        # Print model version
         pretty_print_model_version_details(updated_version)
 
     @models.command(
@@ -466,15 +439,12 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
             model_uri: Model URI of the model to list versions for.
             tags: Tags to filter the model versions by.
         """
-        # Set tags to None if empty
         tags = dict(tags) if tags else None
-        # Get model versions
         model_versions = model_registry.list_model_versions(
             name=name,
             model_source_uri=model_uri,
             version_tags=tags,
         )
-        # Print model versions
         pretty_print_model_version_table(model_versions)
 
     @models.command(
@@ -510,7 +480,7 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
     )
     @click.option(
         "--model-uri",
-        "-uri",
+        "-u",
         type=str,
         default=None,
         help="Model URI of the model to register.",
@@ -526,28 +496,24 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
     )
     @click.option(
         "--zenml-version",
-        "-zv",
         type=str,
         default=None,
         help="ZenML version of the model to register.",
     )
     @click.option(
         "--zenml-pipeline-run-id",
-        "-rid",
         type=str,
         default=None,
         help="ZenML pipeline run ID of the model to register.",
     )
     @click.option(
         "--zenml-pipeline-name",
-        "-rn",
         type=str,
         default=None,
-        help="ZenML pipeline run name of the model to register.",
+        help="ZenML pipeline name of the model to register.",
     )
     @click.option(
         "--zenml-step-name",
-        "-sn",
         type=str,
         default=None,
         help="ZenML step name of the model to register.",
@@ -578,15 +544,13 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
             registry_metadata: Registry metadata to add to the model.
             zenml_version: ZenML version of the model to register.
             zenml_pipeline_run_id: ZenML pipeline run ID of the model to register.
-            zenml_pipeline_name: ZenML pipeline run name of the model to register.
+            zenml_pipeline_name: ZenML pipeline name of the model to register.
             zenml_step_name: ZenML step name of the model to register.
         """
-        # Set tags to None if empty
         tags = dict(tags) if tags else None
         registry_metadata = (
             dict(registry_metadata) if registry_metadata else None
         )
-        # Register model version
         model_version = model_registry.register_model_version(
             name=name,
             version=version,
@@ -599,7 +563,5 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
             zenml_pipeline_name=zenml_pipeline_name,
             zenml_step_name=zenml_step_name,
         )
-        # Declare success
         declare(f"Model {name} version {version} registered successfully.")
-        # Print model version
         pretty_print_model_version_details(model_version)

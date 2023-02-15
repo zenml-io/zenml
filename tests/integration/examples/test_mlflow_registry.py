@@ -49,7 +49,6 @@ def test_example(request: pytest.FixtureRequest) -> None:
         experiment_tracker.configure_mlflow()
         model_registry = client.active_stack.model_registry
         assert isinstance(model_registry, MLFlowModelRegistry)
-        
 
         # fetch the MLflow experiment created for the pipeline runs
         mlflow_experiment = mlflow.get_experiment_by_name(pipeline.name)

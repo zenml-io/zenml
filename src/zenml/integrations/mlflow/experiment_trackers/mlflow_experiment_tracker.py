@@ -157,11 +157,11 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         artifact_store = client.active_stack.artifact_store
         local_mlflow_tracking_uri = os.path.join(artifact_store.path, "mlruns")
         if not os.path.exists(local_mlflow_tracking_uri):
-            os.makedirs(local_mlflow_tracking_uri)        
+            os.makedirs(local_mlflow_tracking_uri)
         return "file://" + local_mlflow_tracking_uri
 
     @staticmethod
-    def _local_mlflow_registry()  -> str:
+    def _local_mlflow_registry() -> str:
         """Gets the local MLflow backend inside the ZenML artifact repository directory.
 
         Returns:
@@ -169,8 +169,10 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         """
         client = Client()
         artifact_store = client.active_stack.artifact_store
-        local_mlflow_registry_uri =  f"sqlite:///{artifact_store.path}/mlruns.db"
-        os.environ[ MLFLOW_BACKEND_STORE_URI ] = local_mlflow_registry_uri
+        local_mlflow_registry_uri = (
+            f"sqlite:///{artifact_store.path}/mlruns.db"
+        )
+        os.environ[MLFLOW_BACKEND_STORE_URI] = local_mlflow_registry_uri
         return local_mlflow_registry_uri
 
     def get_tracking_uri(self) -> str:
@@ -188,7 +190,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
             The registry URI.
         """
         return self.config.tracking_uri or self._local_mlflow_registry()
-    
+
     def prepare_step_run(self, info: "StepRunInfo") -> None:
         """Sets the MLflow tracking uri and credentials.
 

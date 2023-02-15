@@ -19,6 +19,7 @@ from zenml.steps import Output, step
 
 
 def get_data_from_api():
+    """Downloads the latest data from a mock API."""
     url = (
         "https://storage.googleapis.com/zenml-public-bucket/mnist"
         "/mnist_handwritten_test.json"
@@ -32,6 +33,6 @@ def get_data_from_api():
 
 @step(enable_cache=False)
 def dynamic_importer() -> Output(data=np.ndarray):
-    """Downloads the latest data from a mock API."""
+    """Step that imports a function dynamically."""
     data = get_data_from_api()
     return data

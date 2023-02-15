@@ -452,9 +452,8 @@ def seldon_mlflow_registry_deployer_step(
         SeldonModelDeployer, SeldonModelDeployer.get_active_model_deployer()
     )
 
-    # fetch the MLflow artifacts logged during the pipeline run
+    # fetch the MLflow experiment tracker
     experiment_tracker = Client().active_stack.experiment_tracker
-
     if not isinstance(experiment_tracker, MLFlowExperimentTracker):
         raise get_missing_mlflow_experiment_tracker_error()
 

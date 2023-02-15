@@ -40,7 +40,7 @@ from zenml.integrations.mlflow.steps.mlflow_registry import (
 )
 
 if __name__ == "__main__":
-    # Initialize a training pipeline runs that will be logged to mlflow
+    # Initialize a training pipeline that will be logged to MLflow
     for i, lr in enumerate([0.001, 0.003, 0.005]):
         mlflow_training_pipeline(
             importer=loader_mnist(),
@@ -53,7 +53,7 @@ if __name__ == "__main__":
                     description="A simple MNIST model trained with ZenML",
                     tags={"framework": "tensorflow", "dataset": "mnist"},
                     version_tags={"lr": lr},
-                    version_description=f"The {i+1}th run of the mlflow_training_pipeline.",
+                    version_description=f"Run #{i+1} of the mlflow_training_pipeline.",
                 )
             ),
         ).run()
@@ -77,7 +77,7 @@ if __name__ == "__main__":
     print(
         "Now run \n "
         f"    mlflow ui --backend-store-uri '{get_tracking_uri()}'\n"
-        "To inspect your experiment runs within the MLflow UI.\n"
+        "to inspect your experiment runs within the MLflow UI.\n"
         "You can find your runs tracked within the `mlflow_example_pipeline`"
         "experiment. Here you'll also be able to compare the two runs.)"
     )

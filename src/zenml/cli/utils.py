@@ -740,15 +740,14 @@ def pretty_print_registered_model_table(
     Args:
         registered_models: list of registered models
     """
-    registered_model_dicts = []
-    for registered_model in registered_models:
-        registered_model_dicts.append(
-            {
-                "NAME": registered_model.name,
-                "DESCRIPTION": registered_model.description,
-                "TAGS": registered_model.tags,
-            }
-        )
+    registered_model_dicts = [
+        {
+            "NAME": registered_model.name,
+            "DESCRIPTION": registered_model.description,
+            "TAGS": registered_model.tags,
+        }
+        for registered_model in registered_models
+    ]
     print_table(
         registered_model_dicts, UUID=table.Column(header="UUID", min_width=36)
     )
@@ -762,16 +761,15 @@ def pretty_print_model_version_table(
     Args:
         model_versions: list of model versions
     """
-    model_version_dicts = []
-    for model_version in model_versions:
-        model_version_dicts.append(
-            {
-                "NAME": model_version.model_registration.name,
-                "MODEL_VERSION": model_version.version,
-                "VERSION_DESCRIPTION": model_version.version_description,
-                "VERSION_TAGS": model_version.version_tags,
-            }
-        )
+    model_version_dicts = [
+        {
+            "NAME": model_version.model_registration.name,
+            "MODEL_VERSION": model_version.version,
+            "VERSION_DESCRIPTION": model_version.version_description,
+            "VERSION_TAGS": model_version.version_tags,
+        }
+        for model_version in model_versions
+    ]
     print_table(
         model_version_dicts, UUID=table.Column(header="UUID", min_width=36)
     )
@@ -826,9 +824,6 @@ def pretty_print_model_version_details(
     }
     for key, value in model_version.registry_metadata.items():
         model_version_info[key.upper()] = value or "N/A"
-
-    # Sort fields alphabetically
-    # sorted_items = {k: v for k, v in sorted(model_version_info.items())}
 
     for item in model_version_info.items():
         rich_table.add_row(*[str(elem) for elem in item])
