@@ -1090,6 +1090,9 @@ class SqlZenStore(BaseZenStore):
                 stack = session.exec(
                     select(StackSchema).where(StackSchema.id == stack_id)
                 ).one()
+
+                if stack is None:
+                    raise KeyError(f"Stack with ID {stack_id} not found.")
                 if stack.name == DEFAULT_STACK_NAME:
                     raise IllegalOperationError(
                         "The default stack cannot be deleted."
@@ -1385,6 +1388,9 @@ class SqlZenStore(BaseZenStore):
                         StackComponentSchema.id == component_id
                     )
                 ).one()
+
+                if stack_component is None:
+                    raise KeyError(f"Stack with ID {component_id} not found.")
                 if (
                     stack_component.name == DEFAULT_STACK_COMPONENT_NAME
                     and stack_component.type
@@ -1649,6 +1655,9 @@ class SqlZenStore(BaseZenStore):
                 flavor_in_db = session.exec(
                     select(FlavorSchema).where(FlavorSchema.id == flavor_id)
                 ).one()
+
+                if flavor_in_db is None:
+                    raise KeyError(f"Flavor with ID {flavor_id} not found.")
                 components_of_flavor = session.exec(
                     select(StackComponentSchema).where(
                         StackComponentSchema.flavor == flavor_in_db.name
@@ -1666,6 +1675,7 @@ class SqlZenStore(BaseZenStore):
                     )
                 else:
                     session.delete(flavor_in_db)
+                    session.commit()
             except NoResultFound as error:
                 raise KeyError from error
 
