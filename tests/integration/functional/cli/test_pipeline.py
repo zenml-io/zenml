@@ -53,7 +53,7 @@ def test_pipeline_delete(clean_workspace_with_run):
     result = runner.invoke(delete_command, [pipeline_name, "-y"])
     assert result.exit_code == 0
     with pytest.raises(KeyError):
-        clean_workspace_with_run.get_pipeline(name=pipeline_name)
+        clean_workspace_with_run.get_pipeline(name_id_or_prefix=pipeline_name)
     existing_pipelines = clean_workspace_with_run.list_pipelines()
     assert len(existing_pipelines) == 0
 

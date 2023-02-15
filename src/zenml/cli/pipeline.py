@@ -14,7 +14,6 @@
 """CLI functionality to interact with pipelines."""
 import os
 from typing import Any, Optional, Union
-from uuid import UUID
 
 import click
 
@@ -155,13 +154,9 @@ def build_pipeline(
             "your source code root."
         )
 
-    try:
-        id_ = UUID(pipeline_name_or_id, version=4)
-        pipeline_model = Client().get_pipeline(id=id_)
-    except ValueError:
-        pipeline_model = Client().get_pipeline(
-            name=pipeline_name_or_id, version=version
-        )
+    pipeline_model = Client().get_pipeline(
+        name_id_or_prefix=pipeline_name_or_id, version=version
+    )
 
     with cli_utils.temporary_active_stack(stack_name_or_id=stack_name_or_id):
         pipeline_instance = BasePipeline.from_model(pipeline_model)
@@ -242,13 +237,9 @@ def run_pipeline(
             "your source code root."
         )
 
-    try:
-        id_ = UUID(pipeline_name_or_id, version=4)
-        pipeline_model = Client().get_pipeline(id=id_)
-    except ValueError:
-        pipeline_model = Client().get_pipeline(
-            name=pipeline_name_or_id, version=version
-        )
+    pipeline_model = Client().get_pipeline(
+        name_id_or_prefix=pipeline_name_or_id, version=version
+    )
 
     build: Union[str, "PipelineBuildBaseModel", None] = None
     if build_path_or_id:
@@ -318,16 +309,7 @@ def delete_pipeline(
     """
     cli_utils.print_active_config()
 
-    try:
-        id_ = UUID(pipeline_name_or_id, version=4)
-        name = None
-        version_suffix = ""
-    except ValueError:
-        id_ = None
-        name = pipeline_name_or_id
-        version_suffix = (
-            f" (version {version})" if version else " (latest version)"
-        )
+    version_suffix = f" (version {version})" if version else ""
 
     if not yes:
         confirmation = cli_utils.confirmation(
@@ -340,7 +322,9 @@ def delete_pipeline(
             return
 
     try:
-        Client().delete_pipeline(id=id_, name=name, version=version)
+        Client().delete_pipeline(
+            name_id_or_prefix=pipeline_name_or_id, version=version
+        )
     except KeyError as e:
         cli_utils.error(str(e))
     else:

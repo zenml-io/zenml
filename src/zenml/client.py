@@ -2429,15 +2429,13 @@ class Client(metaclass=ClientMetaClass):
 
     def get_pipeline(
         self,
-        id: Optional[UUID] = None,
-        name: Optional[str] = None,
+        name_id_or_prefix: Union[str, UUID],
         version: Optional[str] = None,
     ) -> PipelineResponseModel:
         """Get a pipeline by name, id or prefix.
 
         Args:
-            id: The id of the pipeline.
-            name: The name of the pipeline.
+            name_id_or_prefix: The name, ID or ID prefix of the pipeline.
             version: The pipeline version. If left empty, will return
                 the latest version.
 
@@ -2445,52 +2443,75 @@ class Client(metaclass=ClientMetaClass):
             The pipeline.
 
         Raises:
-            ValueError: If both name and ID are unset.
-            KeyError: If no pipelines were found for the given name and version.
+            KeyError: If no pipelines were found for the given ID/name and
+                version.
+            ZenKeyError: If multiple pipelines match the ID prefix.
         """
-        if id and (name or version):
-            logger.warning(
-                "You specified both an ID as well as name/version of the "
-                "pipeline to get. Ignoring name and version and fetching the "
-                "pipeline by ID."
-            )
-            name = None
-            version = None
-        if not (id or name):
-            raise ValueError(
-                "Please specify either the ID or the name of the pipeline to "
-                "get."
-            )
+        from zenml.utils.uuid_utils import is_valid_uuid
 
-        if id:
-            return self.zen_store.get_pipeline(id)
-        else:
-            pipelines = self.list_pipelines(
-                size=1, sort_by="desc:created", name=name, version=version
-            )
-            if pipelines.total == 0:
-                version_suffix = f" (version {version})" if version else ""
-                raise KeyError(
-                    f"No pipelines found for name {name}{version_suffix}."
+        if is_valid_uuid(name_id_or_prefix):
+            if version:
+                logger.warning(
+                    "You specified both an ID as well as a version of the "
+                    "pipeline. Ignoring the version and fetching the "
+                    "pipeline by ID."
                 )
+            return self.zen_store.get_pipeline(name_id_or_prefix)
 
-            return pipelines.items[0]
+        assert not isinstance(name_id_or_prefix, UUID)
+        exact_name_matches = self.list_pipelines(
+            size=1,
+            sort_by="desc:created",
+            name=f"equals:{name_id_or_prefix}",
+            version=version,
+        )
+
+        if len(exact_name_matches) == 1:
+            # If the name matches exactly, use the explicitly specified version
+            # or fallback to the latest if not given
+            return exact_name_matches.items[0]
+
+        partial_id_matches = self.list_pipelines(
+            id=f"startswith:{name_id_or_prefix}"
+        )
+        if partial_id_matches.total == 1:
+            if version:
+                logger.warning(
+                    "You specified both an ID as well as a version of the "
+                    "pipeline. Ignoring the version and fetching the "
+                    "pipeline by ID."
+                )
+            return partial_id_matches[0]
+        elif partial_id_matches.total == 0:
+            raise KeyError(
+                f"No pipelines found for name, ID or prefix "
+                f"{name_id_or_prefix}."
+            )
+        else:
+            raise ZenKeyError(
+                f"{partial_id_matches.total} pipelines have been found that "
+                "have an id prefix that matches the provided string "
+                f"'{name_id_or_prefix}':\n"
+                f"{partial_id_matches.items}.\n"
+                f"Please provide more characters to uniquely identify "
+                f"only one of the pipelines."
+            )
 
     def delete_pipeline(
         self,
-        id: Optional[UUID] = None,
-        name: Optional[str] = None,
+        name_id_or_prefix: Union[str, UUID],
         version: Optional[str] = None,
     ) -> None:
         """Delete a pipeline.
 
         Args:
-            id: The id of the pipeline.
-            name: The name of the pipeline.
+            name_id_or_prefix: The name, ID or ID prefix of the pipeline.
             version: The pipeline version. If left empty, will delete
                 the latest version.
         """
-        pipeline = self.get_pipeline(id=id, name=name, version=version)
+        pipeline = self.get_pipeline(
+            name_id_or_prefix=name_id_or_prefix, version=version
+        )
         self.zen_store.delete_pipeline(pipeline_id=pipeline.id)
 
     # ----------

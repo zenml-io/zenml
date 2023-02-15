@@ -418,17 +418,13 @@ def test_deregistering_a_stack_component_that_is_part_of_a_registered_stack(
 
 def test_getting_a_pipeline(clean_client):
     """Tests fetching of a pipeline."""
-    # Missing ID or name
-    with pytest.raises(ValueError):
-        clean_client.get_pipeline()
-
     # Non-existent ID
     with pytest.raises(KeyError):
-        clean_client.get_pipeline(id=uuid4())
+        clean_client.get_pipeline(name_id_or_prefix=uuid4())
 
     # Non-existent name
     with pytest.raises(KeyError):
-        clean_client.get_pipeline(name="non_existent")
+        clean_client.get_pipeline(name_id_or_prefix="non_existent")
 
     request = PipelineRequestModel(
         user=clean_client.active_user.id,
@@ -440,24 +436,26 @@ def test_getting_a_pipeline(clean_client):
     )
     response_1 = clean_client.zen_store.create_pipeline(request)
 
-    pipeline = clean_client.get_pipeline(id=response_1.id)
+    pipeline = clean_client.get_pipeline(name_id_or_prefix=response_1.id)
     assert pipeline == response_1
 
-    pipeline = clean_client.get_pipeline(name="pipeline")
+    pipeline = clean_client.get_pipeline(name_id_or_prefix="pipeline")
     assert pipeline == response_1
 
-    pipeline = clean_client.get_pipeline(name="pipeline", version="1")
+    pipeline = clean_client.get_pipeline(
+        name_id_or_prefix="pipeline", version="1"
+    )
     assert pipeline == response_1
 
     # Non-existent version
     with pytest.raises(KeyError):
-        clean_client.get_pipeline(name="pipeline", version="2")
+        clean_client.get_pipeline(name_id_or_prefix="pipeline", version="2")
 
     request.version = "2"
     response_2 = clean_client.zen_store.create_pipeline(request)
 
     # Gets latest version
-    pipeline = clean_client.get_pipeline(name="pipeline")
+    pipeline = clean_client.get_pipeline(name_id_or_prefix="pipeline")
     assert pipeline == response_2
 
 
