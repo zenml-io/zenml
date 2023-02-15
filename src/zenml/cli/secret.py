@@ -688,5 +688,12 @@ def delete_secret(secret_name_or_id: str) -> None:
     Args:
         secret_name_or_id: The name or id of the secret to delete.
     """
-    Client()
-    return None
+    client = Client()
+    try:
+        client.delete_secret(name_id_or_prefix=secret_name_or_id)
+        declare(f"Secret '{secret_name_or_id}' successfully deleted.")
+    except KeyError as e:
+        error(
+            f"Secret with name or id `{secret_name_or_id}` does not exist or "
+            f"could not be loaded: {str(e)}."
+        )
