@@ -251,7 +251,7 @@ class StackRecipeRepo:
 
             logger.info(f"Downloading recipes to {self.cloning_path}")
             self.repo = Repo.clone_from(
-                STACK_RECIPES_GITHUB_REPO, self.cloning_path, branch="main"
+                STACK_RECIPES_GITHUB_REPO, self.cloning_path, branch="feature/add-stack-wise-registration"
             )
         except KeyboardInterrupt:
             self.delete()
@@ -633,7 +633,7 @@ def pull(
         path: The path at which you want to install the stack_recipe(s).
     """
     cli_utils.warning(ALPHA_MESSAGE)
-    git_stack_recipes_handler.pull(branch="main", force=force)
+    git_stack_recipes_handler.pull(branch="feature/add-stack-wise-registration", force=force)
 
     stack_recipes_dir = os.path.join(os.getcwd(), path)
     io_utils.create_dir_if_not_exists(stack_recipes_dir)
@@ -764,10 +764,40 @@ def pull(
     "specify the directory that hosts your recipe(s).",
 )
 @click.option(
-    "--install",
-    "-i",
-    "enabled_services",
-    multiple=True,
+    "--artifact-store",
+    "-a",
+    help="The flavor of artifact store to use. "
+    "If not specified, the default artifact store will be used.",
+)
+@click.option(
+    "--orchestrator",
+    "-o",
+    help="The flavor of orchestrator to use. "
+    "If not specified, the default orchestrator will be used.",
+)
+@click.option(
+    "--container-registry",
+    "-c",
+    help="The flavor of container registry to use. "
+    "If not specified, no container registry will be deployed.",
+)
+@click.option(
+    "--model-deployer",
+    "-d",
+    help="The flavor of model deployer to use. "
+    "If not specified, no model deployer will be deployed.",
+)
+@click.option(
+    "--experiment-tracker",
+    "-e",
+    help="The flavor of experiment tracker to use. "
+    "If not specified, no experiment tracker will be deployed.",
+)
+@click.option(
+    "--secrets-manager",
+    "-x",
+    help="The flavor of secrets manager to use. "
+    "If not specified, no secrets manager will be deployed.",
 )
 @pass_git_stack_recipes_handler
 @click.pass_context
@@ -775,6 +805,12 @@ def deploy(
     ctx: click.Context,
     git_stack_recipes_handler: GitStackRecipesHandler,
     stack_recipe_name: str,
+    artifact_store: Optional[str],
+    orchestrator: Optional[str],
+    container_registry: Optional[str],
+    model_deployer: Optional[str],
+    experiment_tracker: Optional[str],
+    secrets_manager: Optional[str],
     path: str,
     force: bool,
     import_stack_flag: bool,
@@ -783,7 +819,6 @@ def deploy(
     no_server: bool,
     skip_pull: bool,
     stack_name: Optional[str],
-    enabled_services: Tuple[str],
 ) -> None:
     """Run the stack_recipe at the specified relative path.
 
@@ -809,8 +844,18 @@ def deploy(
             deployment.
         skip_pull: Skip the pull of the stack recipe before deploying. This
             should be used if you have a local copy of your recipe already.
-        enabled_services: A list of services to install. Choose from mlflow, seldon,
-            kserve, kubeflow, tekton.
+        artifact_store: The flavor of artifact store to use. In the case of
+            the artifact store, it doesn't matter what you specify here, as
+            there's only one flavor per cloud provider and that will be deployed.
+        orchestrator: The flavor of orchestrator to use.
+        container_registry: The flavor of container registry to use. In the case of
+            the container registry, it doesn't matter what you specify here, as
+            there's only one flavor per cloud provider and that will be deployed.
+        model_deployer: The flavor of model deployer to use.
+        experiment_tracker: The flavor of experiment tracker to use.
+        secrets_manager: The flavor of secrets manager to use. In the case of
+            the secrets manager, it doesn't matter what you specify here, as
+            there's only one flavor per cloud provider and that will be deployed.
     """
     with event_handler(
         event=AnalyticsEvent.RUN_STACK_RECIPE,
@@ -924,9 +969,28 @@ def deploy(
                     else:
                         stack_recipe_service = StackRecipeService(
                             config=terraform_config,
-                            enabled_services=enabled_services,
                         )
+                    
+                    # add all values that are not None to the enabled services list
+                    enabled_services = [
+                        service
+                        for service in [
+                            orchestrator,
+                            experiment_tracker,
+                            model_deployer,
+                        ]
+                        if service is not None
+                    ]
+                    # if artifact store, container registry or secrets manager
+                    # are not none, add them as strings to the list of enabled services
+                    if artifact_store:
+                        enabled_services.append("artifact_store")
+                    if container_registry:
+                        enabled_services.append("container_registry")
+                    if secrets_manager:
+                        enabled_services.append("secrets_manager")
 
+                    stack_recipe_service.enabled_services = enabled_services
                     # start the service (the init and apply operation)
                     stack_recipe_service.start()
 
@@ -1079,22 +1143,79 @@ def zen_server_exists() -> bool:
     default="zenml_stack_recipes",
     help="Relative path at which you want to install the stack_recipe(s)",
 )
+@click.option(
+    "--artifact-store",
+    "-a",
+    help="The flavor of artifact store to destroy. "
+    "If not specified, the default artifact store will be assumed.",
+)
+@click.option(
+    "--orchestrator",
+    "-o",
+    help="The flavor of orchestrator to destroy. "
+    "If not specified, the default orchestrator will be used.",
+)
+@click.option(
+    "--container-registry",
+    "-c",
+    help="The flavor of container registry to destroy. "
+    "If not specified, no container registry will be destroyed.",
+)
+@click.option(
+    "--model-deployer",
+    "-d",
+    help="The flavor of model deployer to destroy. "
+    "If not specified, no model deployer will be destroyed.",
+)
+@click.option(
+    "--experiment-tracker",
+    "-e",
+    help="The flavor of experiment tracker to destroy. "
+    "If not specified, no experiment tracker will be destroyed.",
+)
+@click.option(
+    "--secrets-manager",
+    "-x",
+    help="The flavor of secrets manager to destroy. "
+    "If not specified, no secrets manager will be destroyed.",
+)
 @pass_git_stack_recipes_handler
 def destroy(
     git_stack_recipes_handler: GitStackRecipesHandler,
     stack_recipe_name: str,
     path: str,
+    artifact_store: Optional[str],
+    orchestrator: Optional[str],
+    container_registry: Optional[str],
+    model_deployer: Optional[str],
+    experiment_tracker: Optional[str],
+    secrets_manager: Optional[str],
 ) -> None:
     """Destroy all resources from the stack_recipe at the specified relative path.
 
     `zenml stack_recipe deploy stack_recipe_name` has to be called with the
-    same relative path before the destroy command.
+    same relative path before the destroy command. If you want to destroy
+    specific components of the stack, you can specify the component names
+    with the corresponding options. If no component is specified, all
+    components will be destroyed.
 
     Args:
         git_stack_recipes_handler: The GitStackRecipesHandler instance.
         stack_recipe_name: The name of the stack_recipe.
         path: The path of the stack recipe you want to destroy.
-
+        artifact_store: The flavor of the artifact store to destroy. In the case of
+            the artifact store, it doesn't matter what you specify here, as
+            there's only one flavor per cloud provider and that will be destroyed.
+        orchestrator: The flavor of the orchestrator to destroy.
+        container_registry: The flavor of the container registry to destroy. In the
+            case of the container registry, it doesn't matter what you specify
+            here, as there's only one flavor per cloud provider and that will be
+            destroyed.
+        model_deployer: The flavor of the model deployer to destroy.
+        experiment_tracker: The flavor of the experiment tracker to destroy.
+        secrets_manager: The flavor of the secrets manager to destroy. In the case
+            of the secrets manager, it doesn't matter what you specify here, as
+            there's only one flavor per cloud provider and that will be destroyed.
     Raises:
         ModuleNotFoundError: If the recipe is found at the given path.
     """
@@ -1152,6 +1273,27 @@ def destroy(
                         "the recipe by running \nzenml stack recipe deploy "
                         f"{stack_recipe_name}"
                     )
+
+                # add all values that are not None to the disabled services list
+                disabled_services = [
+                    service
+                    for service in [
+                        orchestrator,
+                        experiment_tracker,
+                        model_deployer,
+                    ]
+                    if service is not None
+                ]
+                # if artifact store, container registry or secrets manager
+                # are not none, add them as strings to the list of disabled services
+                if artifact_store:
+                    disabled_services.append("artifact_store")
+                if container_registry:
+                    disabled_services.append("container_registry")
+                if secrets_manager:
+                    disabled_services.append("secrets_manager")
+                    
+                stack_recipe_service.disabled_services = disabled_services
                 # stop the service to destroy resources created by recipe
                 stack_recipe_service.stop()
 
