@@ -193,6 +193,7 @@ services:
             "--detach": True,
             "--no-log-prefix": False,
             "--scale": "",
+            "--no-log-prefix": False,
         }
 
         project = project_from_options(str(path), options)
