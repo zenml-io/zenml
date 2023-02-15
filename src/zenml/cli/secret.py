@@ -33,7 +33,7 @@ from zenml.cli.utils import (
 from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories, SecretScope, StackComponentType
-from zenml.exceptions import SecretExistsError
+from zenml.exceptions import SecretExistsError, ZenKeyError
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
@@ -593,17 +593,38 @@ def list_secrets() -> None:
 
 @secret.command("get", help="Get a secret with a given name, prefix or id.")
 @click.argument(
-    "secret_name",
+    "secret_name_id_or_prefix",
     type=click.STRING,
 )
-def get_secret(secret_name: str) -> None:
+@click.option(
+    "--scope",
+    "-s",
+    type=click.STRING,
+)
+def get_secret(secret_name_id_or_prefix: str, scope: str) -> None:
     """Get a secret for a given name.
 
     Args:
-        secret_name: The name of the secret to get.
+        secret_name_id_or_prefix: The name of the secret to get.
+        scope: The scope of the secret to get.
     """
-    Client()
-    return None
+    client = Client()
+    try:
+        secret = client.get_secret(
+            name_id_or_prefix=secret_name_id_or_prefix, scope=scope
+        )
+        secret_values = {
+            k: v.get_secret_value() for k, v in secret.values.items()
+        }
+        # TODO: add pretty print
+        declare(secret_values)
+    except KeyError as e:
+        error(
+            f"Secret with name id or prefix `{secret_name_id_or_prefix}` does "
+            f"not exist or could not be loaded: {str(e)}."
+        )
+    except ZenKeyError as e:
+        error(str(e))
 
 
 @secret.command("update", help="Update a secret with a given name or id.")
