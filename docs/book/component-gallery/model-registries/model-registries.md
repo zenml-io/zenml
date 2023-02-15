@@ -7,22 +7,22 @@ machine learning models across various stages of development and deployment.
 They help track the different versions and configurations of each model and
 enable reproducibility. By storing metadata such as version, configuration, and
 metrics, model registries help streamline the management of trained models. In
-ZenML, model registries are Stack Components that allow for easy retrieval,
+ZenML, model registries are Stack Components that allow for the easy retrieval,
 loading, and deployment of trained models. They also provide information on the
 pipeline in which the model was trained and how to reproduce it.
 
 ## Model Registry Concepts and Terminology
 
-To handle and manage the concepts of model groups, versions, and stages, in a 
-consistent way regardless of the underlying registry tool or platform being used.
-ZenML provides a unified abstraction for model registries by defining the
-following concepts:
+ZenML provides a unified abstraction for model registries through which 
+it is possible to handle and manage the concepts of model groups, versions, 
+and stages in a consistent manner regardless of the underlying registry tool or
+platform being used. The following following concepts are useful to be aware of
+for this abstraction:
 
-* **ModelRegistration**: ModelRegistration: A logical grouping of models that
-    can be used to track different versions of a model. It holds information
-    about the model, such as its name, description, and tags, and can be created
-    by the user or automatically created by the model registry when a new model
-    is logged.
+* **ModelRegistration**: A logical grouping of models that can be used to track
+    different versions of a model. It holds information about the model, such
+    as its name, description, and tags, and can be created by the user or
+    automatically created by the model registry when a new model is logged.
 
 * **ModelVersion**: A specific version of a model identified by a unique version
     number or string. It holds information about the model, such as its name,
@@ -42,7 +42,7 @@ following concepts:
 
 ZenML provides a built-in mechanism for storing and versioning pipeline artifacts
 through its mandatory Artifact Store. While this is a powerful way to manage
-artifacts programmatically, it can be challenging to work with without a visual
+artifacts programmatically, it can be challenging to use without a visual
 interface.
 
 Model registries, on the other hand, offer a visual way to manage and track
@@ -56,9 +56,9 @@ interact with all of the logged models in your pipeline, or if you need to
 manage the state of your models in a centralized way and make it easy to
 retrieve, load, and deploy these models.
 
-## How they model registries slot into the ZenML stack
+## How model registries fit into the ZenML stack
 
-Here is an architecture diagram that shows how experiment trackers fit into the 
+Here is an architecture diagram that shows how a model registry fits into the 
 overall story of a remote stack.
 
 ![Model Registries](../../assets/diagrams/Remote_with_model_registry.png)
@@ -86,8 +86,7 @@ the experiment tracker. This means that a model registry can only be used if you
 are also using an experiment tracker. If you're not using an experiment tracker,
 you can still store your models in ZenML, but you will need to manually retrieve
 model artifacts from the artifact store. More information on this can be found
-in the [Fetching pipelines](../../starter-guide/pipelines/fetching-pipelines.md)
-documentation.
+in the [documentation on the post-execution workflow](../../starter-guide/pipelines/fetching-pipelines.md).
 
 To use model registries, you first need to register a model registry in your
 stack with the same flavor as your experiment tracker. Then, you can register

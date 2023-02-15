@@ -1,18 +1,18 @@
 ---
-description: How to integrate your own Model Registry flavor
+description: How to develop a custom model registry
 ---
 
 {% hint style="warning" %}
 **Base abstraction in progress!**
 
-The Model registry stack component is relatively new in ZenML, While it is fully
-functional, it can be challenging to cover how every possible ML system deals with
+The Model registry stack component is relatively new in ZenML. While it is fully
+functional, it can be challenging to cover all the ways ML systems deal with
 model versioning. This means that the API might change in the future. We will 
-keep this page up to date with the latest changes.
+keep this page up-to-date with the latest changes.
 
-If you are writing a custom Model Registry flavor, and you found that the base
-abstraction is lacking or not flexible enough, please let us know by talking to
-us on [Slack](https://zenml.io/slack) or by opening an issue on
+If you are writing a custom model registry flavor, and you found that the base
+abstraction is lacking or not flexible enough, please let us know by messaging
+us on [Slack](https://zenml.io/slack), or by opening an issue on
 [GitHub](https://github.com/zenml-io/zenml/issues/new/choose)
 {% endhint %}
 
@@ -44,7 +44,7 @@ class BaseModelRegistry(StackComponent, ABC):
 
     @property
     def config(self) -> BaseModelRegistryConfig:
-        """Returns the config of the model registries."""
+        """Returns the config of the model registry."""
         return cast(BaseModelRegistryConfig, self._config)
 
     # ---------
@@ -168,47 +168,47 @@ class BaseModelRegistry(StackComponent, ABC):
 
 {% hint style="info" %}
 This is a slimmed-down version of the base implementation which aims to 
-highlight the abstraction layer. In order to see the full implementation 
+highlight the abstraction layer. To see the full implementation 
 and get the complete docstrings, please check
 [the source code on GitHub](https://github.com/zenml-io/zenml/blob/main/src/zenml/model_registries/base_model_registry.py).
 {% endhint %}
 
-## Build your own custom Model Registry
+## Build your own custom model registry
 
-If you want to create your own custom flavor for an image builder, you can 
+If you want to create your own custom flavor for an model registry, you can 
 follow the following steps:
 
-1. Read About the Concept and Terminology of the Model Registry 
-   [here](model-registries.md#model-registry-concepts-and-terminology) and 
-   define the scope of your custom model registry and how it can leverage the
-   theses concepts.
+1. Learn more about the core concepts for the model registry 
+   [here](model-registries.md#model-registry-concepts-and-terminology). Your 
+   custom model registry will be build on top of these concepts so it helps to be 
+   aware of them.
 2. Create a class that inherits from `BaseModelRegistry` and implement the 
    abstract methods. 
 3. Create a `ModelRegistryConfig` class that inherits from 
    `BaseModelRegistryConfig` and add any additional configuration parameters 
    that you need.
-4. Bring both of the implementation and the configuration together by inheriting
+4. Bring the implementation and the configuration together by inheriting
 from the `BaseModelRegistryFlavor` class. Make sure that you give a `name`
 to the flavor through its abstract property.
 
 Once you are done with the implementation, you can register it through the CLI 
-as:
+with the following command:
 
 ```shell
 zenml model-registry flavor register <IMAGE-BUILDER-FLAVOR-SOURCE-PATH>
 ```
 
 {% hint style="warning" %}
-It is important to draw attention to when and how these base abstractions are 
+It is important to draw attention to how and when these base abstractions are 
 coming into play in a ZenML workflow.
 
 - The **CustomModelRegistryFlavor** class is imported and utilized upon the 
 creation of the custom flavor through the CLI.
 - The **CustomModelRegistryConfig** class is imported when someone tries to 
-register/update a stack component with this custom flavor. Especially, 
+register/update a stack component with this custom flavor. Most of all, 
 during the registration process of the stack component, the config will be used 
-to validate the values given by the user. As `Config` object are inherently 
-`pydantic` objects, you can also add your own custom validators here.
+to validate the values given by the user. As `Config` objects are 
+`pydantic` objects under the hood, you can also add your own custom validators here.
 - The **CustomModelRegistry** only comes into play when the component is 
 ultimately in use. 
 

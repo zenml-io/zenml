@@ -15,19 +15,19 @@ will train a classifier using [Tensorflow (Keras)](https://www.tensorflow.org/).
 We will run two experiments with different parameters (epochs and learning rate)
 and log these experiments into a local mlflow backend.
 
-This example uses an mlflow setup that is based on the local filesystem for
-things like the artifact store. See the [mlflow
+This example uses an MLflow setup that is based on the local filesystem for
+things like the artifact store. See the [MLflow
 documentation](https://www.mlflow.org/docs/latest/tracking.html#scenario-1-mlflow-on-localhost) 
 for details.
 
-In the example script the [mlflow autologger for
+In the example script the [MLflow autologger for
 Keras](https://www.mlflow.org/docs/latest/tracking.html#tensorflow-and-keras) is
 used within the training step to directly hook into the TensorFlow training, and
 it will log out all relevant parameters, metrics and output files. Additionally,
 we explicitly log the test accuracy within the evaluation step.
 
 This example uses an mlflow setup that is based on the local filesystem as
-orchestrator and artifact store. See the [mlflow
+orchestrator and artifact store. See the [MLflow
 documentation](https://www.mlflow.org/docs/latest/tracking.html#scenario-1-mlflow-on-localhost)
 for details.
 

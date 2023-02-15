@@ -49,8 +49,8 @@ if __name__ == "__main__":
             evaluator=tf_evaluator(),
             model_register=mlflow_register_model_step(
                 params=MLFlowRegistryParameters(
-                    name="Tensorflow-mnist-model",
-                    description="A simple mnist model trained with zenml",
+                    name="tensorflow-mnist-model",
+                    description="A simple MNIST model trained with ZenML",
                     tags={"framework": "tensorflow", "dataset": "mnist"},
                     version_tags={"lr": lr},
                     version_description=f"The {i+1}th run of the mlflow_training_pipeline.",
@@ -62,9 +62,9 @@ if __name__ == "__main__":
     pipeline = deployment_inference_pipeline(
         mlflow_model_deployer=mlflow_model_registry_deployer_step(
             params=MLFlowDeployerParameters(
-                registry_model_name="Tensorflow-mnist-model",
+                registry_model_name="tensorflow-mnist-model",
                 registry_model_version="2",
-                # or you can use the model stage if you have set it in the mlflow registry
+                # or you can use the model stage if you have set it in the MLflow registry
                 # registered_model_stage="Staging",
             )
         ),
@@ -77,7 +77,7 @@ if __name__ == "__main__":
     print(
         "Now run \n "
         f"    mlflow ui --backend-store-uri '{get_tracking_uri()}'\n"
-        "To inspect your experiment runs within the mlflow UI.\n"
+        "To inspect your experiment runs within the MLflow UI.\n"
         "You can find your runs tracked within the `mlflow_example_pipeline`"
         "experiment. Here you'll also be able to compare the two runs.)"
     )

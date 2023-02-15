@@ -2,7 +2,7 @@
 description: How to manage MLFlow logged models and artifacts
 ---
 
-The MLflow Model Registry is a [Model Registry](./model-registries.md) flavor
+The MLflow Model Registry is a [model registry](./model-registries.md) flavor
 provided with the MLflow ZenML integration that uses
 [the MLflow model registry service](https://mlflow.org/docs/latest/model-registry.html)
 to manage and track ML models and their artifacts.
@@ -30,8 +30,8 @@ environment or to a staging environment for testing.
 ## How do you deploy it?
 
 The MLflow Experiment Tracker flavor is provided by the MLflow ZenML
-integration, you need to install it on your local machine to be able to register
-an MLflow Model Registry component. Note that MLFlow model registry requires
+integration, so you need to install it on your local machine to be able to register
+an MLflow Model Registry component. Note that the MLFlow model registry requires
 [MLFlow Experiment Tracker](../experiment-trackers/mlflow.md) to be present in
 the stack.
 
@@ -43,10 +43,9 @@ Once the MLflow integration is installed, you can register an MLflow Model
 Registry component in your stack:
 
 ```shell
-# Register the MLflow model registry
 zenml model-registry register mlflow_model_registry --flavor=mlflow
 
-# Register and set a stack with the new model registry
+# Register and set a stack with the new model registry as the active stack
 zenml stack register custom_stack -r mlflow_model_registry ... --set
 ```
 
@@ -59,17 +58,21 @@ configuration.
 
 ## How do you use it?
 
+There are different ways to use the MLflow Model Registry. You can use it in
+your ZenML pipelines with the built-in step, or you can use the ZenML CLI to
+register your model manually or call the Model Registry API withing a custom
+step in your pipeline. The following sections show you how to use the MLflow
+Model Registry in your ZenML pipelines and with the ZenML CLI:
 
 ### Built-in MLflow Model Registry step
 
 After registering the MLflow Model Registry component in your stack, you can
 use it in a pipeline by using the `mlflow_model_registry_step` which is a
 built-in step that is provided by the MLflow ZenML integration. This step
-automatically register the model that was produced by the previous step in the
+automatically registers the model that was produced by the previous step in the
 pipeline.
 
 ```python
-# Pipeline run with MLflow model registry step
 mlflow_training_pipeline(
     importer=loader_mnist(),
     normalizer=normalizer(),
@@ -77,8 +80,8 @@ mlflow_training_pipeline(
     evaluator=tf_evaluator(),
     model_register=mlflow_register_model_step(
         params=MLFlowRegistryParameters(
-            name="Tensorflow-mnist-model",
-            description="A simple mnist model trained with zenml",
+            name="tensorflow-mnist-model",
+            description="A simple MNIST model trained with ZenML",
             tags={"framework": "tensorflow", "dataset": "mnist"},
             version_description=f"A run of the mlflow_training_pipeline with a learning rate of 0.0003",
         )
@@ -86,7 +89,7 @@ mlflow_training_pipeline(
 ).run()
 ```
 
-### ZenML Command line interface (CLI)
+### Model Registry CLI Commands
 
 Sometimes adding a step to your pipeline is not the best option for you, as it
 will register the model in the MLflow Model Registry every time you run the
@@ -136,8 +139,7 @@ displayed in the URL.
 {% endhint %}
 
 Check out the
-[API docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-mlflow/#zenml.integrations.mlflow.model_registry.MLFlowModelRegistry)
-You can also check out our examples pages for working examples that use the
-MLflow Model Registry Example:
-
-- [Manage Models with MLflow](https://github.com/zenml-io/zenml/tree/main/examples/mlflow_registry)
+[API docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-mlflow/#zenml.integrations.mlflow.model_registry.MLFlowModelRegistry) 
+to see more about the interface and implementation.
+You can also [check out our examples page](https://github.com/zenml-io/zenml/tree/main/examples/mlflow_registry) for a working example that uses the
+MLflow Model Registry.

@@ -15,34 +15,34 @@ This example showcases how easily MLFlow Model Registry can be integrated into
 your ZenML pipelines and how you can use it to manage your model versions.
 
 We'll be using the
-[MNIST-digits](https://keras.io/api/datasets/mnist/) dataset and
+[MNIST-digits](https://keras.io/api/datasets/mnist/) and
 will train a classifier using [Tensorflow (Keras)](https://www.tensorflow.org/).
 We will run three experiments with different parameters (epochs and learning rate)
-and log these experiments and the models into a local mlflow backend.
+and log these experiments and the models into a local MLflow backend.
 
-This example uses an mlflow setup that is based on the local filesystem for
-things like the artifact store. See the [mlflow
+This example uses an MLflow setup that is based on the local filesystem for
+things like the artifact store. See the [MLflow
 documentation](https://www.mlflow.org/docs/latest/tracking.html#scenario-1-mlflow-on-localhost) 
 for details.
 
-In the example script the [mlflow autologger for
+In the example script the [MLflow autologger for
 Keras](https://www.mlflow.org/docs/latest/tracking.html#tensorflow-and-keras) is
 used within the training step to directly hook into the TensorFlow training, and
 it will log out all relevant parameters, metrics and output files. Additionally,
 we explicitly log the test accuracy within the evaluation step.
 
-This example uses an mlflow setup that is based on the local filesystem as
-orchestrator and artifact store. See the [mlflow
+This example uses an MLflow setup that is based on the local filesystem as
+orchestrator and artifact store. See the [MLflow
 documentation](https://www.mlflow.org/docs/latest/tracking.html#scenario-1-mlflow-on-localhost)
 for details.
 
 The example consists of two individual pipelines:
 
 1. `train_pipeline`: Trains a model with different parameters and logs the
-   results to mlflow and finishes by registering the model with the mlflow model
+   results to MLflow and finishes by registering the model with the MLflow model
     registry using a built-in ZenML step.
-2. `deploy_inference_pipeline`: Deploys a model from the mlflow model registry to a local
-    mlflow server using a built-in ZenML step that takes the model name and
+2. `deploy_inference_pipeline`: Deploys a model from the MLflow model registry to a local
+    MLflow server using a built-in ZenML step that takes the model name and
     version as input. Then it runs inference on the deployed model.
 
 ## 🧰 How the example is implemented
@@ -94,8 +94,8 @@ mlflow_training_pipeline(
     evaluator=tf_evaluator(),
     model_register=mlflow_register_model_step(
         params=MLFlowRegistryParameters(
-            name="Tensorflow-mnist-model",
-            description="A simple mnist model trained with zenml",
+            name="tensorflow-mnist-model",
+            description="A simple MNIST model trained with ZenML",
             tags={"framework": "tensorflow", "dataset": "mnist"},
             version_tags={"lr": 0.003},
             version_description=f"The 1st run of the mlflow_training_pipeline.",
@@ -133,7 +133,7 @@ from zenml.integrations.mlflow.steps.mlflow_deployer import (
 deployment_inference_pipeline(
     mlflow_model_deployer=mlflow_model_registry_deployer_step(
         params=MLFlowDeployerParameters(
-            registry_model_name="Tensorflow-mnist-model",
+            registry_model_name="tensorflow-mnist-model",
             registry_model_version="1",
             # or you can use the model stage if you have set it in the mlflow registry
             # registered_model_stage="Staging",
@@ -177,7 +177,7 @@ zenml init
 # Start the ZenServer to enable dashboard access
 zenml up
 
-# Create and activate the stack with the mlflow model registry, tracker and deployer stack components.
+# Create and activate the stack with the MLflow model registry, tracker and deployer stack components.
 zenml experiment-tracker register mlflow_tracker --flavor=mlflow
 zenml model-registry register mlflow_registry --flavor=mlflow
 zenml model-deployer register mlflow_deployer --flavor=mlflow
@@ -237,7 +237,7 @@ zenml stack import -f <path-to-stack-yaml>
 Once the stack is set, you can then simply proceed to running your pipelines.
 
 ### 🔮 See results
-Now we just need to start the mlflow UI to have a look at our two pipeline runs.
+Now we just need to start the MLflow UI to have a look at our two pipeline runs.
 To do this we need to run:
 
 ```shell
@@ -245,7 +245,7 @@ mlflow ui --backend-store-uri <SPECIFIC_MLRUNS_PATH_GOES_HERE>
 ```
 
 Check the terminal output of the pipeline run to see the exact path appropriate
-in your specific case. This will start mlflow at `localhost:5000`. If this port
+in your specific case. This will start MLflow at `localhost:5000`. If this port
 is already in use on your machine you may have to specify another port:
 
 ```shell

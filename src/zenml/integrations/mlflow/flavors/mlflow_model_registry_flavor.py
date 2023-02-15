@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""MLFlow model registry flavor."""
+"""MLflow model registry flavor."""
 
 from typing import TYPE_CHECKING, Optional, Type
 
@@ -32,7 +32,7 @@ class MLFlowModelRegistryConfig(BaseModelRegistryConfig):
 
 
 class MLFlowModelRegistryFlavor(BaseModelRegistryFlavor):
-    """Model registry flavor for MLFlow models."""
+    """Model registry flavor for MLflow models."""
 
     @property
     def name(self) -> str:
