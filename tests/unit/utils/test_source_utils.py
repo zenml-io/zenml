@@ -251,3 +251,12 @@ def test_internal_pin_removal():
         source_utils.remove_internal_version_pin("zenml.client.Client")
         == "zenml.client.Client"
     )
+
+
+def test_settings_custom_source_root():
+    """Tests setting and resetting a custom source root."""
+    initial_source_root = source_utils.get_source_root_path()
+    source_utils.set_custom_source_root("custom_source_root")
+    assert source_utils.get_source_root_path() == "custom_source_root"
+    source_utils.set_custom_source_root(None)
+    assert source_utils.get_source_root_path() == initial_source_root

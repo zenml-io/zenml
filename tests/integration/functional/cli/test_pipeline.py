@@ -124,15 +124,15 @@ step_instance = s()
 pipeline_instance = p(step_instance)
 
 
-def test_pipeline_registration_without_repo():
-    """Tests that the register command outside of a repo fails."""
+def test_pipeline_registration_without_repo(clean_client):
+    """Tests that the register command outside of a repo works."""
     runner = CliRunner()
     register_command = cli.commands["pipeline"].commands["register"]
 
     result = runner.invoke(
         register_command, [f"{pipeline_instance.__module__}.pipeline_instance"]
     )
-    assert result.exit_code == 1
+    assert result.exit_code == 0
 
 
 def test_pipeline_registration_with_repo(clean_workspace):
@@ -164,15 +164,15 @@ def test_pipeline_registration_with_repo(clean_workspace):
     assert clean_workspace.list_pipelines(name="p").total == 1
 
 
-def test_pipeline_build_without_repo_fails(clean_client):
-    """Tests that the build command outside of a repo fails."""
+def test_pipeline_build_without_repo(clean_client):
+    """Tests that the build command outside of a repo works."""
     runner = CliRunner()
     build_command = cli.commands["pipeline"].commands["build"]
 
     pipeline_instance.register()
 
     result = runner.invoke(build_command, [pipeline_instance.name])
-    assert result.exit_code == 1
+    assert result.exit_code == 0
 
 
 def test_pipeline_build_with_nonexistent_name_fails(clean_workspace):
@@ -304,15 +304,15 @@ def test_pipeline_build_with_different_stack(clean_workspace, mocker):
     assert builds[0].stack.id == new_stack.id
 
 
-def test_pipeline_run_without_repo_fails(clean_client):
-    """Tests that the run command outside of a repo fails."""
+def test_pipeline_run_without_repo(clean_client):
+    """Tests that the run command outside of a repo works."""
     runner = CliRunner()
     run_command = cli.commands["pipeline"].commands["run"]
 
     pipeline_instance.register()
 
     result = runner.invoke(run_command, [pipeline_instance.name])
-    assert result.exit_code == 1
+    assert result.exit_code == 0
 
 
 def test_pipeline_run_with_nonexistent_name_fails(clean_workspace):
