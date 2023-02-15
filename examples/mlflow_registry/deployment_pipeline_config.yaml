@@ -1,0 +1,24 @@
+name: deployment_inference_pipeline
+steps:
+  mlflow_model_deployer:
+    source:
+      file: zenml.integrations.mlflow.steps.mlflow_deployer.py
+      name: mlflow_model_registry_deployer_step
+    parameters:
+      registry_model_name: "mnist-model"
+      registry_model_version: "1"
+  dynamic_importer:
+    source:
+      file: steps/dynamic_importer/dynamic_importer_step
+      name: dynamic_importer
+  predict_preprocessor:
+    source:
+      file: steps/tf_predict_preprocessor/tf_predict_preprocessor_step
+      name: tf_predict_preprocessor
+  predictor:
+    source:
+      file: steps/predictor/predictor_step
+      name: predictor
+
+
+      

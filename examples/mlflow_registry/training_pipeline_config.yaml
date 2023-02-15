@@ -1,0 +1,32 @@
+name: mlflow_training_pipeline
+steps:
+  importer:
+    source:
+      file: steps/loader/loader_step
+      name: loader_mnist
+  normalizer:
+    source:
+      file: steps/normalizer/normalizer_step
+      name: normalizer
+  trainer:
+    source:
+      file: steps/trainer/trainer_step
+      name: tf_trainer
+  evaluator:
+    source:
+      file: steps/evaluator/evaluator_step
+      name: tf_evaluator
+  model_register:
+    source:
+      file: zenml.integrations.mlflow.steps.mlflow_registry.py
+      name: mlflow_register_model_step
+    parameters:
+      name: "mnist-model"
+      description: "MLFlow model registry example run using config"
+      tags:
+        dataset: "mnist"
+        model: "tf"
+      version_description: "MLFlow model registry example run 1 using config"
+
+
+      
