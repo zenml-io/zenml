@@ -1344,3 +1344,40 @@ def list_options(filter_model: Type[BaseFilterModel]) -> Callable[[F], F]:
         return wrapper(func)
 
     return inner_decorator
+
+
+def get_package_information(
+    package_names: Optional[List[str]] = None,
+) -> Dict[str, str]:
+    """Get a dictionary of installed packages.
+
+    Args:
+        package_names: Specific package names to get the information for.
+
+    Returns:
+        A dictionary of the name:version for the package names passed in or
+            all packages and their respective versions.
+    """
+    import pkg_resources
+
+    if package_names:
+        return {
+            pkg.key: pkg.version
+            for pkg in pkg_resources.working_set
+            if pkg.key in package_names
+        }
+
+    return {pkg.key: pkg.version for pkg in pkg_resources.working_set}
+
+
+def print_user_info(info: Dict[str, Any]) -> None:
+    """Print user information to the terminal.
+
+    Args:
+        info: The information to print.
+    """
+    for key, value in info.items():
+        if key in ["packages", "query_packages"] and not bool(value):
+            continue
+
+        declare(f"{key.upper()}: {value}")

@@ -278,9 +278,9 @@ Filesync
 FirstPipeline
 FixtureRequest
 FlavorModel
+FlavorRegistry
 FlavorSchema
 FlavorWrapper
-FlavorRegistry
 Flyte
 Formatter
 FullAccess
@@ -1631,6 +1631,7 @@ workspaces
 www
 xf
 xgboost
+xxxxxxx
 yMjA
 yMzA
 yaml
