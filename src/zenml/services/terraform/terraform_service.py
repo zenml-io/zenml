@@ -263,6 +263,7 @@ class TerraformService(BaseService):
             capture_output=False,
             raise_on_error=True,
             force=python_terraform.IsNotFlagged,
+            refresh=False,
         )
 
     def _setup_runtime_path(self) -> None:
