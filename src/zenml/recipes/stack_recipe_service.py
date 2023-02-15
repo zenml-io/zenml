@@ -27,6 +27,7 @@ from zenml.services import ServiceType
 from zenml.services.terraform.terraform_service import (
     SERVICE_CONFIG_FILE_NAME,
     TerraformService,
+    TerraformServiceConfig
 )
 from zenml.utils import io_utils, yaml_utils
 
@@ -38,6 +39,14 @@ INGRESS_CONTROLLER_HOST_OUTPUT = "ingress-controller-host"
 PROJECT_ID_OUTPUT = "project-id"
 ZENML_VERSION_VARIABLE = "zenml-version"
 
+class StackRecipeServiceConfig(TerraformServiceConfig):
+    """Class to represent the configuration of a stack recipe service."""
+    # list of all enabled stack components
+    enabled_services: List[str] = []
+    # list of services to be disabled
+    disabled_services: List[str] = []
+    # input variables from the CLI
+    input_variables: Dict[str, Any] = {}
 
 class StackRecipeService(TerraformService):
     """Class to represent terraform applications."""
@@ -54,10 +63,7 @@ class StackRecipeService(TerraformService):
         "stack_recipes",
     )
 
-    # list of all enabled stack components
-    enabled_services: List[str] = []
-    # list of services to be disabled
-    disabled_services: List[str] = []
+    
 
     def check_installation(self) -> None:
         """Checks if necessary tools are installed on the host system.
@@ -195,12 +201,12 @@ class StackRecipeService(TerraformService):
         vars = super().get_vars()
 
         # enable services
-        if self.enabled_services:
-            for service in self.enabled_services:
+        if self.config.enabled_services:
+            for service in self.config.enabled_services:
                 vars[f"enable_{service}"] = True
         # disable services
-        elif self.disabled_services:
-            for service in self.disabled_services:
+        elif self.config.disabled_services:
+            for service in self.config.disabled_services:
                 vars[f"enable_{service}"] = False
 
         # update zenml version to current version
@@ -254,7 +260,7 @@ class StackRecipeService(TerraformService):
 
     def provision(self) -> None:
         super().provision()
-        self.enabled_services = []
+        self.config.enabled_services = []
         self._update_service_config()
 
     
@@ -271,9 +277,9 @@ class StackRecipeService(TerraformService):
         # if a list of disabled services is provided, call apply
         # which will use the variables from get_vars and selectively
         # disable the services
-        if self.disabled_services:
+        if self.config.disabled_services:
             self._init_and_apply()
-            self.disabled_services = []
+            self.config.disabled_services = []
             self._update_service_config()
         else:
             # if no services are specified, destroy the whole stack

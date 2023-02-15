@@ -990,7 +990,7 @@ def deploy(
                     if secrets_manager:
                         enabled_services.append("secrets_manager")
 
-                    stack_recipe_service.enabled_services = enabled_services
+                    stack_recipe_service.config.enabled_services = enabled_services
                     # start the service (the init and apply operation)
                     stack_recipe_service.start()
 
@@ -1293,7 +1293,7 @@ def destroy(
                 if secrets_manager:
                     disabled_services.append("secrets_manager")
                     
-                stack_recipe_service.disabled_services = disabled_services
+                stack_recipe_service.config.disabled_services = disabled_services
                 # stop the service to destroy resources created by recipe
                 stack_recipe_service.stop()
 
