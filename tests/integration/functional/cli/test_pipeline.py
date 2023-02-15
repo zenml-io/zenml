@@ -440,3 +440,44 @@ def test_pipeline_run_with_custom_build_file(clean_workspace, tmp_path):
     assert len(runs) == 1
     assert runs[0].build.images == build.images
     assert runs[0].build.is_local == build.is_local
+
+
+def test_pipeline_build_list(clean_workspace):
+    """Test that `zenml pipeline builds list` does not fail."""
+    runner = CliRunner()
+    list_command = cli.commands["pipeline"].commands["builds"].commands["list"]
+    assert runner.invoke(list_command).exit_code == 0
+
+    request = PipelineBuildRequestModel(
+        user=clean_workspace.active_user.id,
+        workspace=clean_workspace.active_workspace.id,
+        images={},
+        is_local=False,
+    )
+    clean_workspace.zen_store.create_build(request)
+
+    assert runner.invoke(list_command).exit_code == 0
+
+
+def test_pipeline_build_delete(clean_workspace):
+    """Test that `zenml pipeline builds delete` works as expected."""
+    request = PipelineBuildRequestModel(
+        user=clean_workspace.active_user.id,
+        workspace=clean_workspace.active_workspace.id,
+        images={},
+        is_local=False,
+    )
+    build_id = clean_workspace.zen_store.create_build(request).id
+
+    runner = CliRunner()
+    delete_command = (
+        cli.commands["pipeline"].commands["builds"].commands["delete"]
+    )
+    result = runner.invoke(delete_command, [str(build_id), "-y"])
+    assert result.exit_code == 0
+
+    with pytest.raises(KeyError):
+        clean_workspace.get_build(str(build_id))
+
+    # this now fails because ethe build doesn't exist anymore
+    assert runner.invoke(delete_command, [str(build_id), "-y"]).exit_code == 1

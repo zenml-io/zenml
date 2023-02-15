@@ -25,7 +25,11 @@ from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
-from zenml.models import PipelineFilterModel, PipelineRunFilterModel
+from zenml.models import (
+    PipelineBuildFilterModel,
+    PipelineFilterModel,
+    PipelineRunFilterModel,
+)
 from zenml.models.pipeline_build_models import PipelineBuildBaseModel
 from zenml.models.schedule_model import ScheduleFilterModel
 from zenml.pipelines import BasePipeline
@@ -424,7 +428,7 @@ def list_pipeline_runs(**kwargs: Any) -> None:
 
     client = Client()
     try:
-        with console.status("Listing roles...\n"):
+        with console.status("Listing pipeline runs...\n"):
             pipeline_runs = client.list_runs(**kwargs)
     except KeyError as err:
         cli_utils.error(str(err))
@@ -475,3 +479,71 @@ def delete_pipeline_run(
         cli_utils.error(str(e))
     else:
         cli_utils.declare(f"Deleted pipeline run '{run_name_or_id}'.")
+
+
+@pipeline.group()
+def builds() -> None:
+    """Commands for pipeline builds."""
+
+
+@builds.command("list", help="List all pipeline builds.")
+@list_options(PipelineBuildFilterModel)
+def list_pipeline_builds(**kwargs: Any) -> None:
+    """List all pipeline builds for the filter.
+
+    Args:
+        **kwargs: Keyword arguments to filter pipeline builds.
+    """
+    cli_utils.print_active_config()
+
+    client = Client()
+    try:
+        with console.status("Listing pipeline builds...\n"):
+            pipeline_builds = client.list_builds(**kwargs)
+    except KeyError as err:
+        cli_utils.error(str(err))
+    else:
+        if not pipeline_builds.items:
+            cli_utils.declare("No pipeline builds found for this filter.")
+            return
+
+        cli_utils.print_pydantic_models(
+            pipeline_builds,
+            exclude_columns=["created", "updated", "user", "workspace"],
+        )
+
+
+@builds.command("delete")
+@click.argument("build_id", type=str, required=True)
+@click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    help="Don't ask for confirmation.",
+)
+def delete_pipeline_run(
+    build_id: str,
+    yes: bool = False,
+) -> None:
+    """Delete a pipeline build.
+
+    Args:
+        build_id: The ID of the pipeline build to delete.
+        yes: If set, don't ask for confirmation.
+    """
+    cli_utils.print_active_config()
+
+    if not yes:
+        confirmation = cli_utils.confirmation(
+            f"Are you sure you want to delete pipeline build `{build_id}`?"
+        )
+        if not confirmation:
+            cli_utils.declare("Pipeline build deletion canceled.")
+            return
+
+    try:
+        Client().delete_build(build_id)
+    except KeyError as e:
+        cli_utils.error(str(e))
+    else:
+        cli_utils.declare(f"Deleted pipeline build '{build_id}'.")
