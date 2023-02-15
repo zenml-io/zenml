@@ -42,10 +42,18 @@ if TYPE_CHECKING:
 class PipelineDeploymentBaseModel(BaseModel):
     """Base model for pipeline deployments."""
 
-    run_name_template: str
-    pipeline_configuration: PipelineConfiguration
-    step_configurations: Dict[str, Step] = {}
-    client_environment: Dict[str, str] = {}
+    run_name_template: str = Field(
+        title="The run name template for runs created using this deployment.",
+    )
+    pipeline_configuration: PipelineConfiguration = Field(
+        title="The pipeline configuration for this deployment."
+    )
+    step_configurations: Dict[str, Step] = Field(
+        default={}, title="The step configurations for this deployment."
+    )
+    client_environment: Dict[str, str] = Field(
+        default={}, title="The client environment for this deployment."
+    )
 
 
 # -------- #
@@ -80,23 +88,23 @@ class PipelineDeploymentResponseModel(
 class PipelineDeploymentFilterModel(WorkspaceScopedFilterModel):
     """Model to enable advanced filtering of all pipeline deployments."""
 
-    workspace_id: Union[UUID, str] = Field(
-        default=None, description="Workspace for this deployment."
+    workspace_id: Union[UUID, str, None] = Field(
+        description="Workspace for this deployment."
     )
-    user_id: Union[UUID, str] = Field(
-        default=None, description="User that created this deployment."
+    user_id: Union[UUID, str, None] = Field(
+        description="User that created this deployment."
     )
-    pipeline_id: Union[UUID, str] = Field(
-        default=None, description="Pipeline associated with the deployment."
+    pipeline_id: Union[UUID, str, None] = Field(
+        description="Pipeline associated with the deployment."
     )
-    stack_id: Union[UUID, str] = Field(
-        default=None, description="Stack associated with the deployment."
+    stack_id: Union[UUID, str, None] = Field(
+        description="Stack associated with the deployment."
     )
-    build_id: Union[UUID, str] = Field(
-        default=None, description="Build associated with the deployment."
+    build_id: Union[UUID, str, None] = Field(
+        description="Build associated with the deployment."
     )
-    schedule_id: Union[UUID, str] = Field(
-        default=None, description="Schedule associated with the deployment."
+    schedule_id: Union[UUID, str, None] = Field(
+        description="Schedule associated with the deployment."
     )
 
 
@@ -110,7 +118,13 @@ class PipelineDeploymentRequestModel(
 ):
     """Request model for pipeline deployments."""
 
-    stack: UUID
-    pipeline: Optional[UUID] = None
-    build: Optional[UUID] = None
-    schedule: Optional[UUID] = None
+    stack: UUID = Field(title="The stack associated with the deployment.")
+    pipeline: Optional[UUID] = Field(
+        title="The pipeline associated with the deployment."
+    )
+    build: Optional[UUID] = Field(
+        title="The build associated with the deployment."
+    )
+    schedule: Optional[UUID] = Field(
+        title="The schedule associated with the deployment."
+    )

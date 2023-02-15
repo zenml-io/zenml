@@ -42,8 +42,10 @@ class BuildItem(BaseModel):
         settings_checksum: Checksum of the settings used for the build.
     """
 
-    image: str
-    settings_checksum: Optional[str] = None
+    image: str = Field(title="The image name or digest.")
+    settings_checksum: Optional[str] = Field(
+        title="The checksum of the build settings."
+    )
 
 
 class PipelineBuildBaseModel(pydantic_utils.YAMLSerializationMixin):
@@ -55,8 +57,12 @@ class PipelineBuildBaseModel(pydantic_utils.YAMLSerializationMixin):
             registry.
     """
 
-    images: Dict[str, BuildItem] = {}
-    is_local: bool
+    images: Dict[str, BuildItem] = Field(
+        default={}, title="The images of this build."
+    )
+    is_local: bool = Field(
+        title="Whether the build images are stored in a container registry or locally.",
+    )
 
     @staticmethod
     def get_key(key: str, step: Optional[str] = None) -> str:
@@ -146,7 +152,7 @@ class PipelineBuildResponseModel(
     """Response model for pipeline builds."""
 
     pipeline: Optional["PipelineResponseModel"] = Field(
-        title="The pipeline this build belongs to."
+        title="The pipeline that was used for this build."
     )
     stack: Optional["StackResponseModel"] = Field(
         title="The stack that was used for this build."
@@ -161,18 +167,17 @@ class PipelineBuildResponseModel(
 class PipelineBuildFilterModel(WorkspaceScopedFilterModel):
     """Model to enable advanced filtering of all pipeline builds."""
 
-    workspace_id: Union[UUID, str] = Field(
-        default=None, description="Workspace for this pipeline build."
+    workspace_id: Union[UUID, str, None] = Field(
+        description="Workspace for this pipeline build."
     )
-    user_id: Union[UUID, str] = Field(
-        default=None, description="User that produced this pipeline build."
+    user_id: Union[UUID, str, None] = Field(
+        description="User that produced this pipeline build."
     )
-    pipeline_id: Union[UUID, str] = Field(
-        default=None,
+    pipeline_id: Union[UUID, str, None] = Field(
         description="Pipeline associated with the pipeline build.",
     )
-    stack_id: Union[UUID, str] = Field(
-        default=None, description="Stack used for the Pipeline Run"
+    stack_id: Union[UUID, str, None] = Field(
+        description="Stack used for the Pipeline Run"
     )
 
 
@@ -186,5 +191,9 @@ class PipelineBuildRequestModel(
 ):
     """Request model for pipelines builds."""
 
-    stack: Optional[UUID] = None
-    pipeline: Optional[UUID] = None
+    stack: Optional[UUID] = Field(
+        title="The stack that was used for this build."
+    )
+    pipeline: Optional[UUID] = Field(
+        title="The pipeline that was used for this build."
+    )
