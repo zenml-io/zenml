@@ -835,9 +835,25 @@ class Stack:
         required_builds = self.get_docker_builds(deployment=deployment)
 
         if required_builds and not deployment.build:
-            raise RuntimeError("Missing docker builds.")
+            # This should never actually happen as we either used a build
+            # provided by the user or run the build process
+            raise RuntimeError(
+                f"Running the pipeline "
+                f"{deployment.pipeline_configuration.name} on stack "
+                f"{self.name} requires Docker builds but no pipeline build "
+                "was passed."
+            )
         elif not deployment.build:
             return
+
+        build_stack = deployment.build.stack
+        if build_stack and build_stack.id != self.id:
+            logger.warning(
+                f"The stack `{build_stack.name}` used for the build "
+                f"`{deployment.build.id}` is not the same as the stack "
+                f"`{self.name}` that the pipeline will run on. This could lead "
+                "to issues if the stacks have different build requirements."
+            )
 
         for build_config in required_builds:
             try:
