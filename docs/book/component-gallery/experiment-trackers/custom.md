@@ -34,7 +34,7 @@ Please ensure you **point to the flavor class via dot notation**:
 zenml experiment-tracker flavor register <path.to.MyExperimentTrackerFlavor>
 ```
 
-For example, your flavor class `MyExperimentTrackerFlavor` is defined in `flavors/my_flavor.py`,
+For example, if your flavor class `MyExperimentTrackerFlavor` is defined in `flavors/my_flavor.py`,
 you'd register it by doing:
 
 ```shell

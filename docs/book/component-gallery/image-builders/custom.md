@@ -89,7 +89,7 @@ Please ensure you **point to the flavor class via dot notation**:
 zenml image-builder flavor register <path.to.MyImageBuilderFlavor>
 ```
 
-For example, your flavor class `MyImageBuilderFlavor` is defined in `flavors/my_flavor.py`,
+For example, if your flavor class `MyImageBuilderFlavor` is defined in `flavors/my_flavor.py`,
 you'd register it by doing:
 
 ```shell

@@ -49,7 +49,7 @@ you can use:
 zenml orchestrator flavor register <path.to.MyOrchestratorFlavor>
 ```
 
-For example, your flavor class `MyOrchestratorFlavor` is defined in `flavors/my_flavor.py`,
+For example, if your flavor class `MyOrchestratorFlavor` is defined in `flavors/my_flavor.py`,
 you'd register it by doing:
 
 ```shell

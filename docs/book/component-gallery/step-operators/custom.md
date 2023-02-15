@@ -111,7 +111,7 @@ Please ensure you **point to the flavor class via dot notation**:
 zenml step-operator flavor register <path.to.MyStepOperatorFlavor>
 ```
 
-For example, your flavor class `MyStepOperatorFlavor` is defined in `flavors/my_flavor.py`,
+For example, if your flavor class `MyStepOperatorFlavor` is defined in `flavors/my_flavor.py`,
 you'd register it by doing:
 
 ```shell

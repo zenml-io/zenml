@@ -185,7 +185,7 @@ Please ensure you **point to the flavor class via dot notation**:
 zenml model-deployer flavor register <path.to.MyModelDeployerFlavor>
 ```
 
-For example, your flavor class `MyModelDeployerFlavor` is defined in `flavors/my_flavor.py`,
+For example, if your flavor class `MyModelDeployerFlavor` is defined in `flavors/my_flavor.py`,
 you'd register it by doing:
 
 ```shell

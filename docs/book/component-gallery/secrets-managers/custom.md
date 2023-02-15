@@ -105,7 +105,7 @@ Please ensure you **point to the flavor class via dot notation**:
 zenml secrets-manager flavor register <path.to.MySecretsManagerFlavor>
 ```
 
-For example, your flavor class `MySecretsManagerFlavor` is defined in `flavors/my_flavor.py`,
+For example, if your flavor class `MySecretsManagerFlavor` is defined in `flavors/my_flavor.py`,
 you'd register it by doing:
 
 ```shell

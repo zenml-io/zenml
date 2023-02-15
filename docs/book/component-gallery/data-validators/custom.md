@@ -44,7 +44,7 @@ Please ensure you **point to the flavor class via dot notation**:
 zenml data-validator flavor register <path.to.MyDataValidatorFlavor>
 ```
 
-For example, your flavor class `MyDataValidatorFlavor` is defined in `flavors/my_flavor.py`,
+For example, if your flavor class `MyDataValidatorFlavor` is defined in `flavors/my_flavor.py`,
 you'd register it by doing:
 
 ```shell
