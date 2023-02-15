@@ -34,14 +34,14 @@ def test_create_secret(clean_client):
     runner = CliRunner()
     result = runner.invoke(
         secret_create_command,
-        [TEST_SECRET_NAME, "--test_value=aria", "--test_value2=blupus"],
+        [TEST_SECRET_NAME, "--test_value=aria", "--test_value2=axl"],
     )
     assert result.exit_code == 0
     client = Client()
     created_secret = client.get_secret(TEST_SECRET_NAME)
     assert created_secret is not None
     assert created_secret.values["test_value"].get_secret_value() == "aria"
-    assert created_secret.values["test_value2"].get_secret_value() == "blupus"
+    assert created_secret.values["test_value2"].get_secret_value() == "axl"
 
 
 def test_create_secret_with_scope(clean_client):
@@ -84,7 +84,7 @@ def test_list_secret_works(clean_client):
     runner = CliRunner()
     runner.invoke(
         secret_create_command,
-        [TEST_SECRET_NAME, "--test_value=aria", "--test_value2=blupus"],
+        [TEST_SECRET_NAME, "--test_value=aria", "--test_value2=axl"],
     )
 
     result2 = runner.invoke(
@@ -106,7 +106,7 @@ def test_get_secret_works(clean_client):
 
     runner.invoke(
         secret_create_command,
-        [TEST_SECRET_NAME, "--test_value=aria", "--test_value2=blupus"],
+        [TEST_SECRET_NAME, "--test_value=aria", "--test_value2=axl"],
     )
 
     result2 = runner.invoke(
@@ -130,7 +130,7 @@ def test_get_secret_with_prefix_works(clean_client):
 
     runner.invoke(
         secret_create_command,
-        [TEST_SECRET_NAME, "--test_value=aria", "--test_value2=blupus"],
+        [TEST_SECRET_NAME, "--test_value=aria", "--test_value2=axl"],
     )
 
     result2 = runner.invoke(
