@@ -19,18 +19,26 @@ from zenml.cli.cli import cli
 from zenml.client import Client
 from zenml.enums import SecretScope
 
+TEST_SECRET_NAME = "test_secret"
+TEST_SECRET_NAME_PREFIX = TEST_SECRET_NAME[:4]
+
+secret_create_command = cli.commands["secret"].commands["create"]
+secret_list_command = cli.commands["secret"].commands["list"]
+secret_get_command = cli.commands["secret"].commands["get"]
+secret_update_command = cli.commands["secret"].commands["update"]
+secret_delete_command = cli.commands["secret"].commands["delete"]
+
 
 def test_create_secret(clean_client):
     """Test that creating a new secret succeeds."""
-    secret_create_command = cli.commands["secret"].commands["create"]
     runner = CliRunner()
     result = runner.invoke(
         secret_create_command,
-        ["test_secret", "--test_value=aria", "--test_value2=blupus"],
+        [TEST_SECRET_NAME, "--test_value=aria", "--test_value2=blupus"],
     )
     assert result.exit_code == 0
     client = Client()
-    created_secret = client.get_secret("test_secret")
+    created_secret = client.get_secret(TEST_SECRET_NAME)
     assert created_secret is not None
     assert created_secret.values["test_value"].get_secret_value() == "aria"
     assert created_secret.values["test_value2"].get_secret_value() == "blupus"
@@ -38,28 +46,97 @@ def test_create_secret(clean_client):
 
 def test_create_secret_with_scope(clean_client):
     """Tests creating a secret with a scope."""
-    secret_create_command = cli.commands["secret"].commands["create"]
     runner = CliRunner()
     result = runner.invoke(
         secret_create_command,
-        ["test_secret", "--test_value=aria", f"--scope={SecretScope.USER}"],
+        [TEST_SECRET_NAME, "--test_value=aria", f"--scope={SecretScope.USER}"],
     )
     assert result.exit_code == 0
     client = Client()
-    created_secret = client.get_secret("test_secret")
+    created_secret = client.get_secret(TEST_SECRET_NAME)
     assert created_secret is not None
     assert created_secret.values["test_value"].get_secret_value() == "aria"
     assert created_secret.scope == SecretScope.USER
 
 
 def test_create_fails_with_bad_scope(clean_client):
-    secret_create_command = cli.commands["secret"].commands["create"]
+    """Tests that creating a secret with a bad scope fails."""
     runner = CliRunner()
     result = runner.invoke(
         secret_create_command,
-        ["test_secret", "--test_value=aria", f"--scope=axl_scope"],
+        [TEST_SECRET_NAME, "--test_value=aria", f"--scope=axl_scope"],
     )
     assert result.exit_code != 0
     client = Client()
     with pytest.raises(KeyError):
-        client.get_secret("test_secret")
+        client.get_secret(TEST_SECRET_NAME)
+
+
+def test_list_secret_works(clean_client):
+    """Test that the secret list command works."""
+    runner = CliRunner()
+    result1 = runner.invoke(
+        secret_list_command,
+    )
+    assert result1.exit_code == 0
+    assert TEST_SECRET_NAME not in result1.output
+
+    runner = CliRunner()
+    runner.invoke(
+        secret_create_command,
+        [TEST_SECRET_NAME, "--test_value=aria", "--test_value2=blupus"],
+    )
+
+    result2 = runner.invoke(
+        secret_list_command,
+    )
+    assert result2.exit_code == 0
+    assert TEST_SECRET_NAME in result2.output
+
+
+def test_get_secret_works(clean_client):
+    """Test that the secret get command works."""
+    runner = CliRunner()
+    result1 = runner.invoke(
+        secret_get_command,
+        [TEST_SECRET_NAME],
+    )
+    assert result1.exit_code != 0
+    assert "not exist" in result1.output
+
+    runner.invoke(
+        secret_create_command,
+        [TEST_SECRET_NAME, "--test_value=aria", "--test_value2=blupus"],
+    )
+
+    result2 = runner.invoke(
+        secret_get_command,
+        [TEST_SECRET_NAME],
+    )
+    assert result2.exit_code == 0
+    assert "test_value" in result2.output
+    assert "test_value2" in result2.output
+
+
+def test_get_secret_with_prefix_works(clean_client):
+    """Test that the secret get command works with a prefix."""
+    runner = CliRunner()
+    result1 = runner.invoke(
+        secret_get_command,
+        [TEST_SECRET_NAME_PREFIX],
+    )
+    assert result1.exit_code != 0
+    assert "not exist" in result1.output
+
+    runner.invoke(
+        secret_create_command,
+        [TEST_SECRET_NAME, "--test_value=aria", "--test_value2=blupus"],
+    )
+
+    result2 = runner.invoke(
+        secret_get_command,
+        [TEST_SECRET_NAME_PREFIX],
+    )
+    assert result2.exit_code == 0
+    assert "test_value" in result2.output
+    assert "test_value2" in result2.output
