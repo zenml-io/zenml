@@ -676,32 +676,6 @@ class BaseStep(metaclass=BaseStepMeta):
         else:
             return returns
 
-    def with_return_materializers(
-        self: T,
-        materializers: Union[
-            Type[BaseMaterializer], Dict[str, Type[BaseMaterializer]]
-        ],
-    ) -> T:
-        """DEPRECATED: Register materializers for step outputs.
-
-        If a single materializer is passed, it will be used for all step
-        outputs. Otherwise, the dictionary keys specify the output names
-        for which the materializers will be used.
-
-        Args:
-            materializers: The materializers for the outputs of this step.
-
-        Returns:
-            The step that this method was called on.
-        """
-        logger.warning(
-            "The `with_return_materializers(...)` method is deprecated. "
-            "Use `step.configure(output_materializers=...)` instead."
-        )
-
-        self.configure(output_materializers=materializers)
-        return self
-
     @property
     def name(self) -> str:
         """The name of the step.

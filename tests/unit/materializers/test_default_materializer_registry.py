@@ -110,4 +110,4 @@ def test_materializer_with_conflicting_parameter_and_explicit_materializer():
         return MyConflictingType()
 
     with does_not_raise():
-        some_step().with_return_materializers(MyFirstMaterializer)()
+        some_step().configure(output_materializers=MyFirstMaterializer)()

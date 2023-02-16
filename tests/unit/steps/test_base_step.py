@@ -24,7 +24,6 @@ from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.models.artifact_models import ArtifactResponseModel
 from zenml.pipelines import pipeline
 from zenml.steps import BaseParameters, BaseStep, Output, StepContext, step
-from zenml.utils import source_utils
 
 
 def test_step_decorator_creates_class_in_same_module_as_decorated_function():
@@ -233,122 +232,6 @@ def test_enabling_a_custom_step_operator_for_a_step():
     assert (
         step_with_step_operator().configuration.step_operator
         == "some_step_operator"
-    )
-
-
-def test_configure_step_with_wrong_materializer_class():
-    """Tests that passing a random class as a materializer raises a StepInterfaceError."""
-
-    @step
-    def some_step() -> Output(some_output=int):
-        pass
-
-    with pytest.raises(StepInterfaceError):
-        some_step().with_return_materializers(str)  # noqa
-
-
-def test_configure_step_with_wrong_materializer_key():
-    """Tests that passing a materializer for a non-existent argument raises a StepInterfaceError."""
-
-    @step
-    def some_step() -> Output(some_output=int):
-        pass
-
-    with pytest.raises(StepInterfaceError):
-        materializers = {"some_nonexistent_output": BaseMaterializer}
-        some_step().with_return_materializers(materializers)
-
-
-def test_configure_step_with_wrong_materializer_class_in_dict():
-    """Tests that passing a wrong class as materializer for a specific output raises a StepInterfaceError."""
-
-    @step
-    def some_step() -> Output(some_output=int):
-        pass
-
-    materializers = {"some_output": "not_a_materializer_class"}
-    with pytest.raises(StepInterfaceError):
-        some_step().with_return_materializers(materializers)  # noqa
-
-
-def test_setting_a_materializer_for_a_step_with_multiple_outputs():
-    """Tests that setting a materializer for a step with multiple outputs sets the materializer for all the outputs."""
-
-    @step
-    def some_step() -> Output(some_output=int, some_other_output=str):
-        pass
-
-    step_instance = some_step().with_return_materializers(BaseMaterializer)
-
-    base_materializer_source = source_utils.resolve_class(BaseMaterializer)
-
-    assert (
-        step_instance.configuration.outputs["some_output"].materializer_source
-        == base_materializer_source
-    )
-    assert (
-        step_instance.configuration.outputs[
-            "some_other_output"
-        ].materializer_source
-        == base_materializer_source
-    )
-
-
-def test_overwriting_step_materializers():
-    """Tests that calling `with_return_materializers` multiple times allows overwriting of the step materializers."""
-    base_materializer_source = source_utils.resolve_class(BaseMaterializer)
-    builtin_materializer_source = source_utils.resolve_class(
-        BuiltInMaterializer
-    )
-
-    @step
-    def some_step() -> Output(some_output=int, some_other_output=str):
-        pass
-
-    step_instance = some_step()
-    assert not step_instance.configuration.outputs
-
-    step_instance = step_instance.with_return_materializers(
-        {"some_output": BaseMaterializer}
-    )
-    assert (
-        step_instance.configuration.outputs["some_output"].materializer_source
-        == base_materializer_source
-    )
-    assert "some_other_output" not in step_instance.configuration.outputs
-
-    step_instance = step_instance.with_return_materializers(
-        {"some_other_output": BuiltInMaterializer}
-    )
-    assert (
-        step_instance.configuration.outputs[
-            "some_other_output"
-        ].materializer_source
-        == builtin_materializer_source
-    )
-    assert (
-        step_instance.configuration.outputs["some_output"].materializer_source
-        == base_materializer_source
-    )
-
-    step_instance = step_instance.with_return_materializers(
-        {"some_output": BuiltInMaterializer}
-    )
-    assert (
-        step_instance.configuration.outputs["some_output"].materializer_source
-        == builtin_materializer_source
-    )
-
-    step_instance.with_return_materializers(BaseMaterializer)
-    assert (
-        step_instance.configuration.outputs["some_output"].materializer_source
-        == base_materializer_source
-    )
-    assert (
-        step_instance.configuration.outputs[
-            "some_other_output"
-        ].materializer_source
-        == base_materializer_source
     )
 
 
