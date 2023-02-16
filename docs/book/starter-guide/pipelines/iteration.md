@@ -4,10 +4,78 @@ description: Iteration is native to ZenML with fast caching.
 
 # Quickly iterating in ZenML
 
-While iterating through experiments as pipelines in ZenML,
-one need not process the data again and again that has already been computed in the pipeline. This is where caching kicks in and show enormous benefits!
+ZenML tries its best to get out of the way as you run your ML experiments. For this, it has
+build in pipeline versioning and caching support to help your local work be as fast as
+possible.
+
+## Versioning Pipelines
+
+You might have noticed that each time you run a pipeline in ZenML with the same name, but with
+different configurations, it creates a new *version*, noticeable in the version column in the
+[dashboard](dashboard.md). This turns out to be quite important when iterating over pipelines, but
+still keeping track of all the work being done. Consider our example pipeline:
+
+```python
+first_pipeline_instance = first_pipeline(
+    step_1=simple_data_splitter(),
+    step_2=parameterized_svc_trainer(SVCTrainerParams(gamma=0.01)),
+)
+
+first_pipeline_instance.run()
+```
+
+Running this the first time will create a single `run` for `version 1` of the pipeline called `first_pipeline`. If you do it again with different params:
+
+```python
+first_pipeline_instance = first_pipeline(
+    step_1=simple_data_splitter(),
+    step_2=parameterized_svc_trainer(SVCTrainerParams(gamma=0.02)),  # Changed!
+)
+
+first_pipeline_instance.run()
+```
+
+This will create *yet another* `run` for `version 1` of the pipeline called `first_pipeline`. So
+now the same pipeline has two runs.
+
+However, now lets change the pipelines configuration itself. You can do this by either modifying
+the step connections within the `@pipeline` function or replace a concrete step with another one.
+For example, lets replace the `parameterized_svc_trainer` with another function that has the same signature but different name and logic:
+
+```python
+@step
+def parameterized_tree_trainer(
+    train_set: pd.DataFrame,
+    test_set: pd.DataFrame,
+) -> ClassifierMixin:
+    """Train a sklearn SVC classifier with hyper-parameters."""
+    X_train, y_train = train_set.drop("target", axis=1), train_set["target"]
+    X_test, y_test = test_set.drop("target", axis=1), test_set["target"]
+    model = DecisionTreeClassifier() # Changed!
+    model.fit(X_train, y_train)
+    test_acc = model.score(X_test, y_test)
+    print(f"Test accuracy: {test_acc}")
+    return model
+
+
+first_pipeline_instance = first_pipeline(
+    step_1=simple_data_splitter(),
+    step_2=parameterized_tree_trainer(),
+)
+
+first_pipeline_instance.run()
+```
+
+This will now create a single `run` for `version 2` of the pipeline called `first_pipeline`. This
+way, you can continuously update a pipeline as you iterate, and not lose velocity, all the while
+ensuring that when you do get to production it should make things easier.
+
+You might also notice that running the above pipelines in that order actually got faster as you went. Which brings us to...
 
 ## Caching in ZenML
+
+While iterating through experiments as pipelines in ZenML,
+one need not process the data again and again that has already been computed in the pipeline. This is where caching kicks in and show enormous benefits!
 
 When you tweaked the `gamma` variable in the [previous chapter](./parameters.md), you must have noticed that the 
 `simple_data_splitter` step does not re-execute for each subsequent run.  This is because ZenML 
@@ -113,7 +181,7 @@ under the hood, checkout
 <summary>Code Example of this Section</summary>
 
 ```python
-import numpy as np
+pd.DataFrame
 from sklearn.base import ClassifierMixin
 from sklearn.datasets import load_wine
 from sklearn.model_selection import train_test_split
@@ -221,3 +289,4 @@ Pipeline run first_pipeline-07_Jul_22-12_05_56_718489 has finished in 0.219s.
 ```
 
 </details>
+

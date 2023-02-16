@@ -52,7 +52,7 @@ with some annotations. You can see your first steps in the
 `steps/data_loaders.py` file in the starter template, specifically the last one:
 
 ```python
-import numpy as np
+import pandas as pd
 from sklearn.datasets import load_wine
 from sklearn.model_selection import train_test_split
 
@@ -85,7 +85,7 @@ vector machine classifier on the training data and score it with the test set.
 You can see the step in the file `steps/model_trainers.py`. 
 
 ```python
-import numpy as np
+import pandas as pd
 from sklearn.base import ClassifierMixin
 from sklearn.svm import SVC
 
@@ -130,7 +130,7 @@ In ZenML there are two different ways how you can define pipelines or steps. Wha
 Alternatively, you can also define steps and pipelines using the Class-Based API by creating Python classes that subclass ZenML's abstract base classes BaseStep and BasePipeline directly. Internally, both APIs will result in similar definitions, so it is entirely up to you which API to use.
 
 ```python
-import numpy as np
+import pandas as pd
 from sklearn.base import ClassifierMixin
 from sklearn.svm import SVC
 
@@ -310,7 +310,7 @@ starter template.
 <summary>Code Example for this Section</summary>
 
 ```python
-import numpy as np
+import pandas as pd
 from sklearn.base import ClassifierMixin
 from sklearn.datasets import load_wine
 from sklearn.model_selection import train_test_split

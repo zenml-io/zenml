@@ -23,7 +23,7 @@ an object like this is passed to a step, it is not handled like other
 Instead, it gets passed into the step when the pipeline is instantiated.
 
 ```python
-import numpy as np
+import pandas as pd
 from sklearn.base import ClassifierMixin
 from sklearn.svm import SVC
 

@@ -243,7 +243,7 @@ an instance of the class or even the name of the step as a string:
 Similar to the run, for reproducibility, you can use the `step` object
 to access:
 
-* The [`BaseParameters`](parameters-and-caching.md) used to run the step via `step.parameters`,
+* The [`BaseParameters`](parameters.md) used to run the step via `step.parameters`,
 * [Step-level `BaseSettings`](../../advanced-guide/pipelines/settings.md)
 via `step.step_configuration`,
 * Component-specific step metadata, such as the URL of an experiment tracker or

@@ -17,6 +17,8 @@
 import pandas as pd
 
 from sklearn.base import ClassifierMixin
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
 
 from zenml.logger import get_logger
 from zenml.steps import (
@@ -31,6 +33,7 @@ class SVCTrainerParams(BaseParameters):
     """Trainer params"""
     gamma: float = 0.001
     
+
 @step
 def simple_svc_trainer(
     train_set: pd.DataFrame,
@@ -45,6 +48,7 @@ def simple_svc_trainer(
     print(f"Test accuracy: {test_acc}")
     return model
 
+
 @step
 def parameterized_svc_trainer(
     params: SVCTrainerParams,
@@ -55,6 +59,20 @@ def parameterized_svc_trainer(
     X_train, y_train = train_set.drop("target", axis=1), train_set["target"]
     X_test, y_test = test_set.drop("target", axis=1), test_set["target"]
     model = SVC(gamma=params.gamma) # Parameterized!
+    model.fit(X_train, y_train)
+    test_acc = model.score(X_test, y_test)
+    print(f"Test accuracy: {test_acc}")
+    return model
+
+@step
+def parameterized_tree_trainer(
+    train_set: pd.DataFrame,
+    test_set: pd.DataFrame,
+) -> ClassifierMixin:
+    """Train a sklearn SVC classifier with hyper-parameters."""
+    X_train, y_train = train_set.drop("target", axis=1), train_set["target"]
+    X_test, y_test = test_set.drop("target", axis=1), test_set["target"]
+    model = DecisionTreeClassifier() # Changed!
     model.fit(X_train, y_train)
     test_acc = model.score(X_test, y_test)
     print(f"Test accuracy: {test_acc}")
