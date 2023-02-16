@@ -13,13 +13,14 @@
 #  permissions and limitations under the License.
 
 from zenml.integrations.evidently.steps import (
-    EvidentlyProfileParameters,
-    evidently_profile_step,
+    EvidentlyReportParameters,
+    evidently_report_step,
 )
 
-evidently_profile_params = EvidentlyProfileParameters(
-    profile_sections=["datadrift"]
+# configure the Evidently step
+evidently_report_params = EvidentlyReportParameters(
+    metrics=["DatasetDriftMetric"]
 )
-drift_detector = evidently_profile_step(
-    step_name="drift_detector", params=evidently_profile_params
+drift_detector = evidently_report_step(
+    step_name="drift_detector", params=evidently_report_params
 )
