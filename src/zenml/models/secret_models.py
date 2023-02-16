@@ -107,6 +107,11 @@ class SecretResponseModel(SecretBaseModel, WorkspaceScopedResponseModel):
 class SecretFilterModel(WorkspaceScopedFilterModel):
     """Model to enable advanced filtering of all Secrets."""
 
+    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *WorkspaceScopedFilterModel.FILTER_EXCLUDE_FIELDS,
+        "values",
+    ]
+
     name: Optional[str] = Field(
         default=None,
         description="Name of the secret",
@@ -145,3 +150,7 @@ class SecretRequestModel(SecretBaseModel, WorkspaceScopedRequestModel):
 @update_model
 class SecretUpdateModel(SecretRequestModel):
     """Secret update model."""
+
+    scope: Optional[SecretScope] = Field(
+        None, title="The scope of the secret."
+    )

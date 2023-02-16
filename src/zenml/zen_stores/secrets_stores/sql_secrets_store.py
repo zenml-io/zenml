@@ -229,6 +229,7 @@ class SqlSecretsStore(BaseSecretsStore):
         existing_secret = session.exec(scope_filter).first()
 
         if existing_secret is not None:
+
             existing_secret_model = existing_secret.to_model(
                 encryption_engine=self._encryption_engine
             )
@@ -388,15 +389,22 @@ class SqlSecretsStore(BaseSecretsStore):
                 and existing_secret.name != secret_update.name
                 or secret_update.scope is not None
                 and existing_secret.scope != secret_update.scope
+                or secret_update.workspace is not None
+                and existing_secret.workspace.id != secret_update.workspace
+                or secret_update.user is not None
+                and existing_secret.user.id != secret_update.user
             ):
                 secret_exists, msg = self._check_secret_scope(
                     session=session,
-                    secret_name=secret_update.name,
-                    scope=secret_update.scope,
-                    workspace=secret_update.workspace,
-                    user=secret_update.user,
+                    secret_name=secret_update.name or existing_secret.name,
+                    scope=secret_update.scope
+                    or SecretScope(existing_secret.scope),
+                    workspace=secret_update.workspace
+                    or existing_secret.workspace.id,
+                    user=secret_update.user or existing_secret.user.id,
                     exclude_secret_id=secret_id,
                 )
+
                 if secret_exists:
                     raise EntityExistsError(msg)
 
