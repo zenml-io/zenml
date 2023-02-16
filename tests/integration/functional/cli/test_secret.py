@@ -140,3 +140,69 @@ def test_get_secret_with_prefix_works(clean_client):
     assert result2.exit_code == 0
     assert "test_value" in result2.output
     assert "test_value2" in result2.output
+
+
+def test_get_secret_with_scope_works(clean_client):
+    """Test that the secret get command works with a scope."""
+    runner = CliRunner()
+    result1 = runner.invoke(
+        secret_get_command,
+        [TEST_SECRET_NAME, f"--scope={SecretScope.USER}"],
+    )
+    assert result1.exit_code != 0
+    assert "not exist" in result1.output
+
+    runner.invoke(
+        secret_create_command,
+        [
+            TEST_SECRET_NAME,
+            "--test_value=aria",
+            "--test_value2=axl",
+            "--scope=user",
+        ],
+    )
+
+    result2 = runner.invoke(
+        secret_get_command,
+        [TEST_SECRET_NAME, f"--scope={SecretScope.USER}"],
+    )
+    assert result2.exit_code == 0
+    assert "test_value" in result2.output
+    assert "test_value2" in result2.output
+
+    result3 = runner.invoke(
+        secret_get_command,
+        [TEST_SECRET_NAME, f"--scope={SecretScope.WORKSPACE}"],
+    )
+    assert result3.exit_code != 0
+    assert "not exist" in result3.output
+
+
+def _check_deleting_nonexistent_secret_fails(runner):
+    """Helper method to check that deleting a nonexistent secret fails."""
+    result1 = runner.invoke(
+        secret_delete_command,
+        [TEST_SECRET_NAME, "-y"],
+    )
+    assert result1.exit_code != 0
+    assert "not exist" in result1.output
+
+
+def test_delete_secret_works(clean_client):
+    """Test that the secret delete command works."""
+    runner = CliRunner()
+    _check_deleting_nonexistent_secret_fails(runner)
+
+    runner.invoke(
+        secret_create_command,
+        [TEST_SECRET_NAME, "--test_value=aria", "--test_value2=axl"],
+    )
+
+    result2 = runner.invoke(
+        secret_delete_command,
+        [TEST_SECRET_NAME, "-y"],
+    )
+    assert result2.exit_code == 0
+    assert "deleted" in result2.output
+
+    _check_deleting_nonexistent_secret_fails(runner)

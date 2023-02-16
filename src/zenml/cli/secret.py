@@ -27,14 +27,13 @@ from zenml.cli.utils import (
     expand_argument_value_from_file,
     parse_name_and_extra_arguments,
     pretty_print_secret,
-    pretty_print_secret_values,
     print_list_items,
     warning,
 )
 from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories, SecretScope, StackComponentType
-from zenml.exceptions import SecretExistsError, ZenKeyError
+from zenml.exceptions import EntityExistsError, SecretExistsError, ZenKeyError
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
@@ -496,31 +495,16 @@ def register_secrets_manager_subcommands() -> None:
         help="Force the deletion of all secrets",
         type=click.BOOL,
     )
-    @click.option(
-        "--force",
-        "-f",
-        "force",
-        is_flag=True,
-        help="DEPRECATED: Force the deletion of all secrets. Use `-y/--yes` "
-        "instead.",
-        type=click.BOOL,
-    )
     @click.pass_obj
     def delete_all_secrets(
-        secrets_manager: "BaseSecretsManager", yes: bool, force: bool
+        secrets_manager: "BaseSecretsManager", yes: bool
     ) -> None:
         """Delete all secrets tracked by your Secrets Manager.
 
         Args:
             secrets_manager: The secrets manager to use.
             yes: Skip asking for confirmation.
-            force: DEPRECATED: Skip asking for confirmation.
         """
-        if force:
-            warning(
-                "The `--force` flag will soon be deprecated. Use `--yes` or "
-                "`-y` instead."
-            )
         if not yes:
             confirmation_response = confirmation(
                 "This will delete all secrets. Are you sure you want to "
@@ -556,13 +540,24 @@ def secret() -> None:
     type=click.Choice([scope.value for scope in list(SecretScope)]),
     default=SecretScope.WORKSPACE.value,
 )
+@click.option(
+    "--interactive",
+    "-i",
+    "interactive",
+    is_flag=True,
+    help="Use interactive mode to enter the secret values.",
+    type=click.BOOL,
+)
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
-def create_secret(name: str, scope: str, args: List[str]) -> None:
+def create_secret(
+    name: str, scope: str, interactive: bool, args: List[str]
+) -> None:
     """Create a secret.
 
     Args:
         name: The name of the secret to create.
         scope: The scope of the secret to create.
+        interactive: Whether to use interactive mode to enter the secret values.
         args: The arguments to pass to the secret.
     """
     from pydantic.types import SecretStr
@@ -571,9 +566,62 @@ def create_secret(name: str, scope: str, args: List[str]) -> None:
         list(args) + [name], expand_args=True
     )
     secret_args = {k: SecretStr(v) for k, v in parsed_args.items()}
+
+    if "name" in parsed_args:
+        error("You can't use 'name' as the key for one of your secrets.")
+    elif name == "name":
+        error("Secret names cannot be named 'name'.")
+
     client = Client()
-    client.create_secret(name=name, values=secret_args, scope=scope)
-    declare(f"Secret '{name}' successfully created.")
+    if interactive:
+        # check and exit early if secret already exists
+        current_secrets = [item.name for item in client.list_secrets().items]
+        if name in current_secrets:
+            error(f"Secret with name `{name}` already exists.")
+
+        if parsed_args:
+            error(
+                "Cannot pass secret fields as arguments when using "
+                "interactive mode."
+            )
+        else:
+            click.echo("Entering interactive mode:")
+            while True:
+                k = click.prompt("Please enter a secret key")
+                if k in secret_args:
+                    warning(
+                        f"Key {k} already in this secret. Please restart "
+                        f"this process or use 'zenml "
+                        f"secret update {name} --{k}=...' to update this "
+                        f"key after the secret is registered. Skipping ..."
+                    )
+                else:
+                    v = getpass.getpass(
+                        f"Please enter the secret value for the key [{k}]:"
+                    )
+                    secret_args[k] = SecretStr(v)
+
+                if not confirmation(
+                    "Do you want to add another key-value pair to this "
+                    "secret?"
+                ):
+                    break
+    elif not parsed_args:
+        error(
+            "Secret fields must be passed as arguments when not using "
+            "interactive mode."
+        )
+
+    declare("The following secret will be registered.")
+    pretty_print_secret(secret=secret_args, hide_secret=True)
+
+    with console.status(f"Saving secret `{name}`..."):
+        try:
+            client.create_secret(name=name, values=secret_args, scope=scope)
+            declare(f"Secret '{name}' successfully created.")
+        except EntityExistsError as e:
+            # should never hit this on account of the check above
+            error(f"Secret with name already exists. {str(e)}")
 
 
 @secret.command("list", help="List all registered secrets.")
@@ -615,7 +663,7 @@ def get_secret(name_id_or_prefix: str, scope: str) -> None:
         secret = client.get_secret(
             name_id_or_prefix=name_id_or_prefix, scope=scope
         )
-        pretty_print_secret_values(secret.secret_values)
+        pretty_print_secret(secret.secret_values, hide_secret=False)
     except KeyError as e:
         error(
             f"Secret with name id or prefix `{name_id_or_prefix}` does "
@@ -631,7 +679,7 @@ def get_secret(name_id_or_prefix: str, scope: str) -> None:
     help="Update a secret with a given name or id.",
 )
 @click.argument(
-    "secret_name_id_or_prefix",
+    "name_or_id",
     type=click.STRING,
 )
 @click.option(
@@ -644,27 +692,107 @@ def get_secret(name_id_or_prefix: str, scope: str) -> None:
     "-s",
     type=click.STRING,
 )
-@click.argument("args", nargs=-1, type=click.UNPROCESSED)
+@click.option(
+    "--interactive",
+    "-i",
+    "interactive",
+    is_flag=True,
+    help="Use interactive mode to update the secret values.",
+    type=click.BOOL,
+)
+@click.option("--remove_keys", "-r", type=click.STRING, multiple=True)
+@click.argument("extra_args", nargs=-1, type=click.UNPROCESSED)
 def update_secret(
-    secret_name_id_or_prefix: str,
-    args: List[str],
+    name_or_id: str,
+    extra_args: List[str],
     new_name: Optional[str] = None,
     new_scope: Optional[str] = None,
+    remove_keys: List[str] = [],
+    interactive: bool = False,
 ) -> None:
     """Update a secret for a given name or id.
 
     Args:
-        secret_name_id_or_prefix: The name or id of the secret to update.
+        name_or_id: The name or id of the secret to update.
         new_name: The new name of the secret.
         new_scope: The new scope of the secret.
-        args: The arguments to pass to the secret.
+        extra_args: The arguments to pass to the secret.
+        interactive: Whether to use interactive mode to update the secret.
+        remove_keys: The keys to remove from the secret.
     """
+    from pydantic.types import SecretStr
+
     name, parsed_args = parse_name_and_extra_arguments(  # type: ignore[assignment]
-        list(args) + [secret_name_id_or_prefix], expand_args=True
+        list(extra_args) + [name_or_id], expand_args=True
     )
-    secret_args_add_update = {k: v for k, v in parsed_args.items() if v}
-    secret_args_remove = {k: v for k, v in parsed_args.items() if v == ""}
+
     client = Client()
+
+    with console.status(f"Checking secret `{name}`..."):
+        try:
+            secret = client.get_secret(name_id_or_prefix=name)
+        except KeyError as e:
+            error(
+                f"Secret with name `{name}` does not exist or could not be "
+                f"loaded: {str(e)}."
+            )
+
+    if "name" in parsed_args:
+        error("The word 'name' cannot be used as a key for a secret.")
+
+    if interactive:
+        if parsed_args:
+            error(
+                "Cannot pass secret fields as arguments when using "
+                "interactive mode."
+            )
+
+        declare(
+            "You will now have a chance to overwrite each secret "
+            "one by one."
+        )
+        secret_args_add_update = {}
+        secret_args_remove = {}
+        for k, v in secret.secret_values.items():
+            item_choice = (
+                click.prompt(
+                    text=f"Key '{k}': what do you want to do? (u)pdate, (r)emove, (s)kip, (a)dd",
+                    type=click.Choice(
+                        choices=[
+                            "a",
+                            "u",
+                            "r",
+                            "s",
+                        ]
+                    ),
+                    default="s",
+                ),
+            )
+            if item_choice == "s":
+                continue
+            elif item_choice == "r":
+                secret_args_remove[k] = v
+                continue
+            elif item_choice == "u":
+                new_value = getpass.getpass(
+                    f"Please enter the new secret value for the key [{k}]:"
+                )
+                if new_value:
+                    secret_args_add_update[k] = SecretStr(new_value)
+            elif item_choice == "a":
+                new_key = click.prompt(
+                    text=f"Please enter the new key name for the key [{k}]:",
+                    type=click.STRING,
+                )
+                new_value = getpass.getpass(
+                    f"Please enter the new secret value for the key [{new_key}]:"
+                )
+                if new_value:
+                    secret_args_add_update[new_key] = SecretStr(new_value)
+    else:
+        secret_args_add_update = parsed_args
+        secret_args_remove = remove_keys
+
     client.update_secret(
         name_id_or_prefix=name,
         scope=new_scope,
