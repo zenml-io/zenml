@@ -570,25 +570,36 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                 env_store_config["type"] = BaseZenStore.get_store_type(
                     env_store_config["url"]
                 )
-            if "type" not in env_secrets_store_config:
-                env_secrets_store_config["type"] = env_store_config["type"]
 
             logger.debug(
                 "Using environment variables to configure the default store"
             )
-            return StoreConfiguration(
+
+            config = StoreConfiguration(
                 **env_store_config,
-                secrets_store=SecretsStoreConfiguration(
-                    **env_secrets_store_config
-                ),
+            )
+        else:
+            config = BaseZenStore.get_default_store_config(
+                path=os.path.join(
+                    self.local_stores_path,
+                    DEFAULT_STORE_DIRECTORY_NAME,
+                )
             )
 
-        return BaseZenStore.get_default_store_config(
-            path=os.path.join(
-                self.local_stores_path,
-                DEFAULT_STORE_DIRECTORY_NAME,
+        if len(env_secrets_store_config):
+
+            if "type" not in env_secrets_store_config:
+                env_secrets_store_config["type"] = config.type.value
+
+            logger.debug(
+                "Using environment variables to configure the secrets store"
             )
-        )
+
+            config.secrets_store = SecretsStoreConfiguration(
+                **env_secrets_store_config
+            )
+
+        return config
 
     def set_default_store(self) -> None:
         """Creates and sets the default store configuration.

@@ -3348,6 +3348,7 @@ class Client(metaclass=ClientMetaClass):
         updated: Optional[datetime] = None,
         name: Optional[str] = None,
         scope: Optional[SecretScope] = None,
+        workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
     ) -> Page[SecretResponseModel]:
         """Fetches all the secret models.
@@ -3360,9 +3361,10 @@ class Client(metaclass=ClientMetaClass):
             id: Use the id of secrets to filter by.
             created: Use to secrets by time of creation
             updated: Use the last updated date for filtering
-            user_id: The  id of the user to filter by.
             name: The name of the secret to filter by.
             scope: The scope of the secret to filter by.
+            workspace_id: The id of the workspace to filter by.
+            user_id: The  id of the user to filter by.
 
         Returns:
             A list of all the secret models.
@@ -3373,6 +3375,7 @@ class Client(metaclass=ClientMetaClass):
             sort_by=sort_by,
             logical_operator=logical_operator,
             user_id=user_id,
+            workspace_id=workspace_id,
             name=name,
             scope=scope,
             id=id,

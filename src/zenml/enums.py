@@ -100,6 +100,7 @@ class SecretsStoreType(StrEnum):
     store backends includes all the backends supported for zen stores.
     """
 
+    NONE = "none"  # indicates that the secrets store is disabled
     SQL = StoreType.SQL.value
     REST = StoreType.REST.value
 

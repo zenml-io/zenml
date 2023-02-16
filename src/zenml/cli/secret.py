@@ -14,7 +14,7 @@
 """Functionality to generate stack component CLI commands."""
 
 import getpass
-from typing import TYPE_CHECKING, List, Optional, cast
+from typing import TYPE_CHECKING, Any, List, Optional, cast
 
 import click
 from pydantic import ValidationError
@@ -25,10 +25,13 @@ from zenml.cli.utils import (
     declare,
     error,
     expand_argument_value_from_file,
+    list_options,
     parse_name_and_extra_arguments,
     pretty_print_secret,
     print_list_items,
+    print_page_info,
     print_table,
+    warn_deprecated_secrets_manager,
     warning,
 )
 from zenml.client import Client
@@ -36,6 +39,7 @@ from zenml.console import console
 from zenml.enums import CliCategories, SecretScope, StackComponentType
 from zenml.exceptions import EntityExistsError, SecretExistsError, ZenKeyError
 from zenml.logger import get_logger
+from zenml.models.secret_models import SecretFilterModel
 
 if TYPE_CHECKING:
     from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
@@ -62,6 +66,8 @@ def register_secrets_manager_subcommands() -> None:
         """
         from zenml.client import Client
         from zenml.stack.stack_component import StackComponent
+
+        warn_deprecated_secrets_manager()
 
         client = Client()
         secrets_manager_models = client.active_stack_model.components.get(
@@ -570,93 +576,85 @@ def create_secret(
     elif name == "name":
         error("Secret names cannot be named 'name'.")
 
-    client = Client()
-    if interactive:
-        # check and exit early if secret already exists
-        current_secrets = [item.name for item in client.list_secrets().items]
-        if name in current_secrets:
-            error(f"Secret with name `{name}` already exists.")
+    try:
+        client = Client()
+        if interactive:
+            # check and exit early if secret already exists
+            current_secrets = [
+                item.name for item in client.list_secrets().items
+            ]
+            if name in current_secrets:
+                error(f"Secret with name `{name}` already exists.")
 
-        if parsed_args:
+            if parsed_args:
+                error(
+                    "Cannot pass secret fields as arguments when using "
+                    "interactive mode."
+                )
+            else:
+                click.echo("Entering interactive mode:")
+                while True:
+                    k = click.prompt("Please enter a secret key")
+                    if k in parsed_args:
+                        warning(
+                            f"Key {k} already in this secret. Please restart "
+                            f"this process or use 'zenml "
+                            f"secret update {name} --{k}=...' to update this "
+                            f"key after the secret is registered. Skipping ..."
+                        )
+                    else:
+                        v = getpass.getpass(
+                            f"Please enter the secret value for the key [{k}]:"
+                        )
+                        parsed_args[k] = v
+
+                    if not confirmation(
+                        "Do you want to add another key-value pair to this "
+                        "secret?"
+                    ):
+                        break
+        elif not parsed_args:
             error(
-                "Cannot pass secret fields as arguments when using "
+                "Secret fields must be passed as arguments when not using "
                 "interactive mode."
             )
-        else:
-            click.echo("Entering interactive mode:")
-            while True:
-                k = click.prompt("Please enter a secret key")
-                if k in parsed_args:
-                    warning(
-                        f"Key {k} already in this secret. Please restart "
-                        f"this process or use 'zenml "
-                        f"secret update {name} --{k}=...' to update this "
-                        f"key after the secret is registered. Skipping ..."
-                    )
-                else:
-                    v = getpass.getpass(
-                        f"Please enter the secret value for the key [{k}]:"
-                    )
-                    parsed_args[k] = v
 
-                if not confirmation(
-                    "Do you want to add another key-value pair to this "
-                    "secret?"
-                ):
-                    break
-    elif not parsed_args:
-        error(
-            "Secret fields must be passed as arguments when not using "
-            "interactive mode."
-        )
+        declare("The following secret will be registered.")
+        pretty_print_secret(secret=parsed_args, hide_secret=True)
 
-    declare("The following secret will be registered.")
-    pretty_print_secret(secret=parsed_args, hide_secret=True)
-
-    with console.status(f"Saving secret `{name}`..."):
-        try:
-            client.create_secret(
-                name=name, values=parsed_args, scope=SecretScope(scope)
-            )
-            declare(f"Secret '{name}' successfully created.")
-        except EntityExistsError as e:
-            # should never hit this on account of the check above
-            error(f"Secret with name already exists. {str(e)}")
+        with console.status(f"Saving secret `{name}`..."):
+            try:
+                client.create_secret(
+                    name=name, values=parsed_args, scope=SecretScope(scope)
+                )
+                declare(f"Secret '{name}' successfully created.")
+            except EntityExistsError as e:
+                # should never hit this on account of the check above
+                error(f"Secret with name already exists. {str(e)}")
+    except NotImplementedError as e:
+        error(f"Centralized secrets management is disabled: {str(e)}")
 
 
-@secret.command("list", help="List all registered secrets.")
-@click.option(
-    "--name",
-    "-n",
-    type=click.STRING,
-    default=None,
-    help="Filter secrets by name (can be a prefix, suffix or substring).",
+@secret.command(
+    "list", help="List all registered secrets that match the filter criteria."
 )
-@click.option(
-    "--scope",
-    "-s",
-    type=click.Choice([scope.value for scope in list(SecretScope)]),
-    default=None,
-    help="Filter secrets by scope.",
-)
-def list_secrets(
-    name: Optional[str] = None, scope: Optional[str] = None
-) -> None:
-    """List all registered secrets.
+@list_options(SecretFilterModel)
+def list_secrets(**kwargs: Any) -> None:
+    """List all secrets that fulfill the filter criteria.
 
     Args:
-        name: The name to filter by.
-        scope: The scope of the secrets to list.
+        kwargs: Keyword arguments to filter the secrets.
     """
     client = Client()
-    with console.status("Getting secrets..."):
-        secrets = client.list_secrets(
-            name=f"contains:{name}" if name else None,
-            scope=SecretScope(scope) if scope else None,
-        )
+    with console.status("Listing secrets..."):
+        try:
+            secrets = client.list_secrets(**kwargs)
+        except NotImplementedError as e:
+            error(f"Centralized secrets management is disabled: {str(e)}")
         if not secrets.items:
-            warning("No secrets found.")
+            warning("No secrets found for the given filters.")
             return
+
         secret_rows = [
             dict(
                 name=secret.name,
@@ -666,6 +664,7 @@ def list_secrets(
             for secret in secrets.items
         ]
         print_table(secret_rows)
+        print_page_info(secrets)
 
 
 @secret.command("get", help="Get a secret with a given name, prefix or id.")
@@ -713,6 +712,8 @@ def get_secret(name_id_or_prefix: str, scope: str) -> None:
             f"Could not find a secret with name id or prefix "
             f"`{name_id_or_prefix}`: {str(e)}."
         )
+    except NotImplementedError as e:
+        error(f"Centralized secrets management is disabled: {str(e)}")
 
 
 @secret.command(
@@ -771,6 +772,8 @@ def update_secret(
                 f"Secret with name `{name}` does not exist or could not be "
                 f"loaded: {str(e)}."
             )
+        except NotImplementedError as e:
+            error(f"Centralized secrets management is disabled: {str(e)}")
 
     declare(
         f"Updating secret with name '{secret.name}' and ID '{secret.id}' in "
@@ -874,6 +877,8 @@ def rename_secret(
                 f"Secret with name `{name_or_id}` does not exist or could not "
                 f"be loaded: {str(e)}."
             )
+        except NotImplementedError as e:
+            error(f"Centralized secrets management is disabled: {str(e)}")
 
     client.update_secret(
         name_id_or_prefix=name_or_id,
@@ -922,3 +927,5 @@ def delete_secret(name_or_id: str, yes: bool = False) -> None:
                 f"Secret with name or id `{name_or_id}` does not exist or "
                 f"could not be loaded: {str(e)}."
             )
+        except NotImplementedError as e:
+            error(f"Centralized secrets management is disabled: {str(e)}")

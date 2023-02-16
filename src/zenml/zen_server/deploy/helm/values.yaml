@@ -80,6 +80,45 @@ zenml:
     # sslKey: /path/to/client-key.pem
     # sslVerifyServerCert: True
 
+
+  # Secrets store settings. This is used to store centralized secrets.
+  secretsStore:
+
+    # Set to false to disable the secrets store.
+    enabled: true
+
+    # The type of secrets store to use. Use one of:
+    #
+    # SQL - Use the same SQL database as the ZenML server
+    # (More options will be added in the near future).
+    type: SQL
+
+    # The secret key used to encrypt secrets in the SQL database. Only relevant
+    # if the SQL secrets store type is used. This should be set to a random
+    # string with a recommended length of at least 32 characters, e.g.:
+    #
+    #   ```python
+    #   from secrets import token_hex
+    #   token_hex(32)
+    #   ```
+    #   
+    # or:
+    #
+    #   ```shell
+    #   openssl rand -hex 32
+    #   ```
+    #
+    # If not set, database secret encryption will be disabled.
+    #
+    # IMPORTANT: If you configure encryption for your SQL database secrets
+    # store, you should keep this value somewhere safe and secure, as it will be
+    # required to decrypt the secrets in the database. If you lose the
+    # encryption key, you will not be able to decrypt the secrets in the
+    # database and will have to reset them. You should not change this value
+    # after you have already configured encryption for your SQL database
+    # secrets store.
+    encryptionKey:
+
   service:
     type: ClusterIP
     port: 80

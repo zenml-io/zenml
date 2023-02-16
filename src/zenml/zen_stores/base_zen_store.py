@@ -242,7 +242,10 @@ class BaseZenStore(
         secrets_store_config = store.config.secrets_store
 
         # Initialize the secrets store
-        if secrets_store_config:
+        if (
+            secrets_store_config
+            and secrets_store_config.type != SecretsStoreType.NONE
+        ):
             secrets_store_class = BaseSecretsStore.get_store_class(
                 secrets_store_config.type
             )

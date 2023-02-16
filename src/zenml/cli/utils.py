@@ -1267,3 +1267,14 @@ def print_user_info(info: Dict[str, Any]) -> None:
             continue
 
         declare(f"{key.upper()}: {value}")
+
+
+def warn_deprecated_secrets_manager() -> None:
+    """Warning for deprecating secrets managers."""
+    warning(
+        "Secrets managers are deprecated and will be removed in an upcoming "
+        "release in favor of centralized secrets management. Please see the "
+        "`zenml secret` CLI command and the "
+        "https://docs.zenml.io/advanced-guide/practical-mlops/secrets-management#centralized-secrets-store "
+        "documentation page for more information."
+    )
