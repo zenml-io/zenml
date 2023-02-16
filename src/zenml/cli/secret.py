@@ -27,6 +27,7 @@ from zenml.cli.utils import (
     expand_argument_value_from_file,
     parse_name_and_extra_arguments,
     pretty_print_secret,
+    pretty_print_secret_values,
     print_list_items,
     warning,
 )
@@ -583,17 +584,18 @@ def list_secrets() -> None:
         scope: The scope of the secret to list.
     """
     client = Client()
-    secrets = client.list_secrets()
-    secret_names = [secret.name for secret in secrets.items]
-    if not secret_names:
-        warning("No secrets registered.")
-        return
-    print_list_items(list_items=secret_names, column_title="SECRET_NAMES")
+    with console.status("Getting secret names..."):
+        secrets = client.list_secrets()
+        secret_names = [secret.name for secret in secrets.items]
+        if not secret_names:
+            warning("No secrets registered.")
+            return
+        print_list_items(list_items=secret_names, column_title="SECRET_NAMES")
 
 
 @secret.command("get", help="Get a secret with a given name, prefix or id.")
 @click.argument(
-    "secret_name_id_or_prefix",
+    "name_id_or_prefix",
     type=click.STRING,
 )
 @click.option(
@@ -601,26 +603,22 @@ def list_secrets() -> None:
     "-s",
     type=click.STRING,
 )
-def get_secret(secret_name_id_or_prefix: str, scope: str) -> None:
+def get_secret(name_id_or_prefix: str, scope: str) -> None:
     """Get a secret for a given name.
 
     Args:
-        secret_name_id_or_prefix: The name of the secret to get.
+        name_id_or_prefix: The name of the secret to get.
         scope: The scope of the secret to get.
     """
     client = Client()
     try:
         secret = client.get_secret(
-            name_id_or_prefix=secret_name_id_or_prefix, scope=scope
+            name_id_or_prefix=name_id_or_prefix, scope=scope
         )
-        secret_values = {
-            k: v.get_secret_value() for k, v in secret.values.items()
-        }
-        # TODO: add pretty print
-        declare(secret_values)
+        pretty_print_secret_values(secret.secret_values)
     except KeyError as e:
         error(
-            f"Secret with name id or prefix `{secret_name_id_or_prefix}` does "
+            f"Secret with name id or prefix `{name_id_or_prefix}` does "
             f"not exist or could not be loaded: {str(e)}."
         )
     except ZenKeyError as e:
