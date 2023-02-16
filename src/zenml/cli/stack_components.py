@@ -848,6 +848,7 @@ def generate_stack_component_flavor_register_command(
     Returns:
         A function that can be used as a `click` command.
     """
+    command_name = component_type.value.replace("_", "-")
     display_name = _component_display_name(component_type)
 
     @click.argument(
@@ -862,6 +863,15 @@ def generate_stack_component_flavor_register_command(
             source: The source file to read the flavor from.
         """
         client = Client()
+
+        if not client.root:
+            cli_utils.warning(
+                f"You're running the `zenml {command_name} flavor register` "
+                "command without a ZenML repository. Your current working "
+                "directory will be used as the source root relative to which "
+                "the `source` argument is expected. To silence this warning, "
+                "run `zenml init` at your source code root."
+            )
 
         with console.status(f"Registering a new {display_name} flavor`...\n"):
             # Register the new model
@@ -1094,7 +1104,7 @@ def register_single_stack_component_cli_commands(
     )
     flavor_group.command(
         "register",
-        help=f"Identify a new flavor for {plural_display_name}.",
+        help=f"Register a new {singular_display_name} flavor.",
     )(register_flavor_command)
 
     # zenml stack-component flavor list
