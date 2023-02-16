@@ -263,22 +263,12 @@ def register_model_deployer_subcommands() -> None:  # noqa: C901
         "shutdown processes and try to force the model server to stop "
         "immediately, if possible.",
     )
-    @click.option(
-        "--force",
-        "-f",
-        "old_force",
-        is_flag=True,
-        help="DEPRECATED: Force the model server to stop. This will bypass "
-        "any graceful shutdown processes and try to force the model "
-        "server to stop immediately, if possible. Use `-y/--yes` instead.",
-    )
     @click.pass_obj
     def stop_model_service(
         model_deployer: "BaseModelDeployer",
         served_model_uuid: str,
         timeout: int,
         force: bool,
-        old_force: bool,
     ) -> None:
         """Stop a specified model server.
 
@@ -287,14 +277,7 @@ def register_model_deployer_subcommands() -> None:  # noqa: C901
             served_model_uuid: The UUID of the served model.
             timeout: Time in seconds to wait for the model to stop.
             force: Force the model server to stop.
-            old_force: DEPRECATED: Force the model server to stop.
         """
-        if old_force:
-            force = old_force
-            warning(
-                "The `--force` flag will soon be deprecated. Use `--yes` or "
-                "`-y` instead."
-            )
         served_models = model_deployer.find_model_server(
             service_uuid=uuid.UUID(served_model_uuid)
         )
@@ -328,23 +311,12 @@ def register_model_deployer_subcommands() -> None:  # noqa: C901
         "graceful shutdown processes and try to force the model server to "
         "stop and delete immediately, if possible.",
     )
-    @click.option(
-        "--force",
-        "-f",
-        "old_force",
-        is_flag=True,
-        help="DEPRECATED: Force the model server to stop and delete. This will "
-        "bypass any graceful shutdown processes and try to force the model "
-        "server to stop and delete immediately, if possible. Use `-y/--yes` "
-        "instead.",
-    )
     @click.pass_obj
     def delete_model_service(
         model_deployer: "BaseModelDeployer",
         served_model_uuid: str,
         timeout: int,
         force: bool,
-        old_force: bool,
     ) -> None:
         """Delete a specified model server.
 
@@ -353,14 +325,7 @@ def register_model_deployer_subcommands() -> None:  # noqa: C901
             served_model_uuid: The UUID of the served model.
             timeout: Time in seconds to wait for the model to be deleted.
             force: Force the model server to stop and delete.
-            old_force: DEPRECATED: Force the model server to stop and delete.
         """
-        if old_force:
-            force = old_force
-            warning(
-                "The `--force` flag will soon be deprecated. Use `--yes` or "
-                "`-y` instead."
-            )
         served_models = model_deployer.find_model_server(
             service_uuid=uuid.UUID(served_model_uuid)
         )
