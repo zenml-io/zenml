@@ -1773,9 +1773,13 @@ class RestZenStore(BaseZenStore):
             raise IllegalOperationError(msg)
         elif response.status_code == 404:
             if "KeyError" in response.text:
-                raise KeyError(
-                    response.json().get("detail", (response.text,))[1]
-                )
+                # In case the backend does not return more detailed info
+                error_message = "KeyError"
+
+                error_output = response.json().get("detail", (response.text,))
+                if len(error_output) > 1:
+                    error_message = error_output[1]
+                raise KeyError(error_message)
             elif "DoesNotExistException" in response.text:
                 message = ": ".join(
                     response.json().get("detail", (response.text,))
