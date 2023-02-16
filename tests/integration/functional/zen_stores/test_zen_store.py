@@ -87,6 +87,9 @@ def test_basic_crud_for_entity(crud_test_config: CrudTestConfig):
         create_model.user = client.active_user.id
     if "workspace" in create_model.__fields__:
         create_model.workspace = client.active_workspace.id
+    if "stack" in create_model.__fields__:
+        create_model.stack = client.active_stack_model.id
+
     # Test the creation
     created_entity = crud_test_config.create_method(create_model)
 
