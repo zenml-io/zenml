@@ -27,6 +27,7 @@ secret_list_command = cli.commands["secret"].commands["list"]
 secret_get_command = cli.commands["secret"].commands["get"]
 secret_update_command = cli.commands["secret"].commands["update"]
 secret_delete_command = cli.commands["secret"].commands["delete"]
+secret_rename_command = cli.commands["secret"].commands["rename"]
 
 
 def test_create_secret(clean_client):
@@ -206,3 +207,43 @@ def test_delete_secret_works(clean_client):
     assert "deleted" in result2.output
 
     _check_deleting_nonexistent_secret_fails(runner)
+
+
+def test_rename_secret_works(clean_client):
+    """Test that the secret rename command works."""
+    A_GOOD_NEW_NAME = "axl"
+
+    runner = CliRunner()
+    result1 = runner.invoke(
+        secret_rename_command,
+        [TEST_SECRET_NAME, "-n", A_GOOD_NEW_NAME],
+    )
+    assert result1.exit_code != 0
+    assert "not exist" in result1.output
+
+    runner.invoke(
+        secret_create_command,
+        [TEST_SECRET_NAME, "--test_value=aria", "--test_value2=axl"],
+    )
+
+    result2 = runner.invoke(
+        secret_rename_command,
+        [TEST_SECRET_NAME, "-n", A_GOOD_NEW_NAME],
+    )
+    assert result2.exit_code == 0
+    assert "renamed" in result2.output
+
+    result3 = runner.invoke(
+        secret_get_command,
+        [A_GOOD_NEW_NAME],
+    )
+    assert result3.exit_code == 0
+    assert "test_value" in result3.output
+    assert "test_value2" in result3.output
+
+    result4 = runner.invoke(
+        secret_rename_command,
+        [TEST_SECRET_NAME, "-n", "name"],
+    )
+    assert result4.exit_code != 0
+    assert "cannot be called" in result4.output
