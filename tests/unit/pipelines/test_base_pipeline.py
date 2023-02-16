@@ -962,7 +962,7 @@ def test_building_with_identical_keys_and_different_settings(
     settings lead to an error."""
     build_config_1 = BuildConfiguration(key="key", settings=DockerSettings())
     build_config_2 = BuildConfiguration(
-        key="key", settings=DockerSettings(requirements="requirements.txt")
+        key="key", settings=DockerSettings(requirements=["requirement"])
     )
 
     mocker.patch.object(
