@@ -170,7 +170,7 @@ def build_pipeline(
                 f"Writing pipeline build output to `{output_path}`."
             )
             with open(output_path, "w") as f:
-                f.write(build.yaml())
+                f.write(build.yaml(include={"id", "images", "is_local"}))
     else:
         cli_utils.declare("No docker builds required.")
 
