@@ -192,6 +192,7 @@ services:
             "--no-color": False,
             "--detach": True,
             "--scale": "",
+            "--no-log-prefix": False,
         }
 
         project = project_from_options(str(path), options)

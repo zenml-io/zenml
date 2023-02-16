@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Integration tests for pipeline run post-execution functionality."""
-
 import pytest
 
 from tests.integration.functional.conftest import (
