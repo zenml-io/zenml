@@ -247,3 +247,53 @@ def test_rename_secret_works(clean_client):
     )
     assert result4.exit_code != 0
     assert "cannot be called" in result4.output
+
+
+def test_update_secret_works(clean_client):
+    """Test that the secret update command works."""
+    runner = CliRunner()
+    client = Client()
+
+    result1 = runner.invoke(
+        secret_update_command,
+        [TEST_SECRET_NAME, "--test_value=aria", "--test_value2=axl"],
+    )
+    assert result1.exit_code != 0
+    assert "not exist" in result1.output
+
+    runner.invoke(
+        secret_create_command,
+        [TEST_SECRET_NAME, "--test_value=aria", "--test_value2=axl"],
+    )
+
+    result2 = runner.invoke(
+        secret_update_command,
+        [TEST_SECRET_NAME, "--test_value=blupus", "--test_value2=kami"],
+    )
+    assert result2.exit_code == 0
+    assert "updated" in result2.output
+
+    updated_secret = client.get_secret(TEST_SECRET_NAME)
+    assert updated_secret is not None
+    assert updated_secret.secret_values["test_value"] == "blupus"
+    assert updated_secret.secret_values["test_value2"] == "kami"
+
+    result3 = runner.invoke(
+        secret_update_command,
+        [TEST_SECRET_NAME, "-r", "test_value2"],
+    )
+    assert result3.exit_code == 0
+    assert "updated" in result3.output
+    newly_updated_secret = client.get_secret(TEST_SECRET_NAME)
+    assert newly_updated_secret is not None
+    assert "test_value2" not in newly_updated_secret.secret_values
+
+    result4 = runner.invoke(
+        secret_update_command,
+        [TEST_SECRET_NAME, "-s", "user"],
+    )
+    assert result4.exit_code == 0
+    assert "updated" in result4.output
+    final_updated_secret = client.get_secret(TEST_SECRET_NAME)
+    assert final_updated_secret is not None
+    assert final_updated_secret.scope == SecretScope.USER
