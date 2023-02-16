@@ -88,7 +88,6 @@ def main() -> None:
         Args:
             step_name: Name of the step.
         """
-
         # Define Kubernetes pod name.
         pod_name = f"{orchestrator_run_id}-{step_name}"
         pod_name = kube_utils.sanitize_pod_name(pod_name)
