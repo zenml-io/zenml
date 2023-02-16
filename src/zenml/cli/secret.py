@@ -782,12 +782,19 @@ def update_secret(
     else:
         secret_args_add_update = parsed_args
 
-    client.update_secret(
-        name_id_or_prefix=name_or_id,
-        scope=SecretScope(new_scope),
-        add_or_update_values=secret_args_add_update,
-        remove_values=remove_keys,
-    )
+    if new_scope:
+        client.update_secret(
+            name_id_or_prefix=name_or_id,
+            new_scope=SecretScope(new_scope),
+            add_or_update_values=secret_args_add_update,
+            remove_values=remove_keys,
+        )
+    else:
+        client.update_secret(
+            name_id_or_prefix=name_or_id,
+            add_or_update_values=secret_args_add_update,
+            remove_values=remove_keys,
+        )
     declare(f"Secret '{name}' successfully updated.")
 
 
