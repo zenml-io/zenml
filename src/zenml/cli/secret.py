@@ -645,6 +645,7 @@ def list_secrets() -> None:
     "--scope",
     "-s",
     type=click.STRING,
+    default=None,
 )
 def get_secret(name_id_or_prefix: str, scope: str) -> None:
     """Get a secret for a given name.
@@ -654,10 +655,14 @@ def get_secret(name_id_or_prefix: str, scope: str) -> None:
         scope: The scope of the secret to get.
     """
     client = Client()
+
     try:
-        secret = client.get_secret(
-            name_id_or_prefix=name_id_or_prefix, scope=SecretScope(scope)
-        )
+        if scope:
+            secret = client.get_secret(
+                name_id_or_prefix=name_id_or_prefix, scope=SecretScope(scope)
+            )
+        else:
+            secret = client.get_secret(name_id_or_prefix=name_id_or_prefix)
         if not secret.secret_values:
             warning(f"Secret with name `{name_id_or_prefix}` is empty.")
         else:
