@@ -176,3 +176,33 @@ def test_get_secret_with_scope_works(clean_client):
     )
     assert result3.exit_code != 0
     assert "not exist" in result3.output
+
+
+def test_delete_secret_works(clean_client):
+    """Test that the secret delete command works."""
+    runner = CliRunner()
+    result1 = runner.invoke(
+        secret_delete_command,
+        [TEST_SECRET_NAME, "-y"],
+    )
+    assert result1.exit_code != 0
+    assert "not exist" in result1.output
+
+    runner.invoke(
+        secret_create_command,
+        [TEST_SECRET_NAME, "--test_value=aria", "--test_value2=axl"],
+    )
+
+    result2 = runner.invoke(
+        secret_delete_command,
+        [TEST_SECRET_NAME, "-y"],
+    )
+    assert result2.exit_code == 0
+    assert "deleted" in result2.output
+
+    result3 = runner.invoke(
+        secret_delete_command,
+        [TEST_SECRET_NAME],
+    )
+    assert result3.exit_code != 0
+    assert "not exist" in result3.output
