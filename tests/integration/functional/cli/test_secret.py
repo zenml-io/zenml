@@ -140,3 +140,39 @@ def test_get_secret_with_prefix_works(clean_client):
     assert result2.exit_code == 0
     assert "test_value" in result2.output
     assert "test_value2" in result2.output
+
+
+def test_get_secret_with_scope_works(clean_client):
+    """Test that the secret get command works with a scope."""
+    runner = CliRunner()
+    result1 = runner.invoke(
+        secret_get_command,
+        [TEST_SECRET_NAME, f"--scope={SecretScope.USER}"],
+    )
+    assert result1.exit_code != 0
+    assert "not exist" in result1.output
+
+    runner.invoke(
+        secret_create_command,
+        [
+            TEST_SECRET_NAME,
+            "--test_value=aria",
+            "--test_value2=axl",
+            "--scope=user",
+        ],
+    )
+
+    result2 = runner.invoke(
+        secret_get_command,
+        [TEST_SECRET_NAME, f"--scope={SecretScope.USER}"],
+    )
+    assert result2.exit_code == 0
+    assert "test_value" in result2.output
+    assert "test_value2" in result2.output
+
+    result3 = runner.invoke(
+        secret_get_command,
+        [TEST_SECRET_NAME, f"--scope={SecretScope.WORKSPACE}"],
+    )
+    assert result3.exit_code != 0
+    assert "not exist" in result3.output
