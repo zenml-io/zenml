@@ -272,6 +272,17 @@ $ zenml model-deployer models get-url 8cbe671b-9fce-4394-a051-68e001f92765
 $ zenml model-deployer models delete 8cbe671b-9fce-4394-a051-68e001f92765
 ```
 
+In Python, you can alternatively discover the prediction URL of a deployed model
+by inspecting the metadata of the step that deployed the model:
+
+```python
+from zenml.post_execution import get_run
+
+pipeline_run = get_run("<PIPELINE_RUN_NAME>")
+deployer_step = pipeline_run.get_step("<NAME_OF_MODEL_DEPLOYER_STEP>")
+deployed_model_url = deployer_step.metadata["deployed_model_url"].value
+```
+
 Services can be passed through steps like any other object, and used to interact
 with the external systems that they represent:
 

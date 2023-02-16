@@ -75,6 +75,20 @@ You can now run any ZenML pipeline using the Vertex orchestrator:
 python file_that_runs_a_zenml_pipeline.py
 ```
 
+### Vertex UI
+
+Vertex comes with its own UI that you can use to find further details about
+your pipeline runs, such as the logs of your steps. For any runs executed on
+Vertex, you can get the URL to the Vertex UI in Python using the following 
+code snippet:
+
+```python
+from zenml.post_execution import get_run
+
+pipeline_run = get_run("<PIPELINE_RUN_NAME>")
+orchestrator_url = deployer_step.metadata["orchestrator_url"].value
+```
+
 ### Run pipelines on a schedule
 
 The Vertex Pipelines orchestrator supports running pipelines on a schedule, using
