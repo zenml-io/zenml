@@ -92,7 +92,7 @@ repository yet, take a look at the [deployment section](#how-to-deploy-it).
 
 ## How to use it
 
-To use the Azure container registry, we need:
+To use the GCP container registry, we need:
 * [Docker](https://www.docker.com) installed and running.
 * The [GCP CLI](https://cloud.google.com/sdk/docs/install) installed and 
 authenticated.

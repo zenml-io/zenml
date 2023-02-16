@@ -81,10 +81,22 @@ steps in your pipeline by decorating them with the included decorator
 data) to the Experiment Tracker same as you would if you were using the tool
 independently of ZenML
 * finally, you can access the Experiment Tracker UI to browse and visualize the
-information logged during your pipeline runs
+information logged during your pipeline runs. You can use the following code
+snippet to get the URL of the experiment tracker UI for the experiment linked
+to a certain step of your pipeline run:
 
-Note: the Expirement Tracker will declare run as failed if the pipeline step
-fails.
+```python
+from zenml.post_execution import get_run
+
+pipeline_run = get_run("<PIPELINE_RUN_NAME>")
+step = pipeline_run.get_step("<STEP_NAME>")
+experiment_tracker_url = step.metadata["experiment_tracker_url"].value
+```
+
+{% hint style="info" %}
+Experiment trackers will automatically declare runs as failed if the 
+corresponding ZenML pipeline step fails.
+{% endhint %}
 
 Consult the documentation for the particular [Experiment Tracker flavor](#experiment-tracker-flavors)
 that you plan on using or are using in your stack for detailed information about

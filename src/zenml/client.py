@@ -2434,7 +2434,7 @@ class Client(metaclass=ClientMetaClass):
             "pipeline by setting the 'unlisted' argument to `True`, e.g., "
             "via `my_pipeline_instance.run(unlisted=True)`. "
             "Unlisted runs are not linked to any pipeline, but are still "
-            "tracked by ZenML and can be accessed via the 'All Runs' tab. \n"
+            "tracked by ZenML and can be accessed via the 'Runs' tab. \n"
             "3) You can delete the existing pipeline via "
             f"`zenml pipeline delete {pipeline_name}`. This will then "
             "change all existing runs of this pipeline to become unlisted."
