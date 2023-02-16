@@ -19,7 +19,13 @@ from tests.integration.functional.utils import sample_name
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.pipeline_configurations import PipelineSpec
-from zenml.enums import ArtifactType, ExecutionStatus, StackComponentType
+from zenml.config.store_config import StoreConfiguration
+from zenml.enums import (
+    ArtifactType,
+    ExecutionStatus,
+    SecretScope,
+    StackComponentType,
+)
 from zenml.models import (
     ArtifactFilterModel,
     ArtifactRequestModel,
@@ -38,6 +44,8 @@ from zenml.models import (
     RoleFilterModel,
     RoleRequestModel,
     RoleUpdateModel,
+    SecretFilterModel,
+    SecretRequestModel,
     StackRequestModel,
     StepRunFilterModel,
     TeamFilterModel,
@@ -145,20 +153,14 @@ class UserContext:
             GlobalConfiguration._reset_instance()
             Client._reset_instance()
             self.client = Client()
-
-            url = self.original_config.zen_store.url
-            store_type = self.original_config.zen_store.type
-            store_dict = {
-                "url": url,
-                "username": self.user_name,
-                "password": "abcd",
-            }
-            store_config_class = BaseZenStore.get_store_config_class(
-                store_type
+            store_config = StoreConfiguration(
+                url=self.original_config.store.url,
+                type=self.original_config.store.type,
+                username=self.user_name,
+                password="abcd",
+                secrets_store=self.original_config.store.secrets_store,
             )
-            store_config = store_config_class.parse_obj(store_dict)
-            GlobalConfiguration().set_store(store_config)
-
+            GlobalConfiguration().set_store(config=store_config)
         return self.created_user
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
@@ -272,6 +274,84 @@ class RoleContext:
     def __exit__(self, exc_type, exc_value, exc_traceback):
         try:
             self.store.delete_role(self.created_role.id)
+        except KeyError:
+            pass
+
+
+class WorkspaceContext:
+    def __init__(
+        self,
+        workspace_name: str = "super_axl",
+        create: bool = True,
+        activate: bool = False,
+    ):
+        self.workspace_name = (
+            sample_name(workspace_name) if create else workspace_name
+        )
+        self.client = Client()
+        self.store = self.client.zen_store
+        self.create = create
+        self.activate = activate
+
+    def __enter__(self):
+        if self.create:
+            new_workspace = WorkspaceRequestModel(name=self.workspace_name)
+            self.workspace = self.store.create_workspace(new_workspace)
+        else:
+            self.workspace = self.store.get_workspace(self.workspace_name)
+
+        if self.activate:
+            self.original_workspace = self.client.active_workspace
+            self.client.set_active_workspace(self.workspace.id)
+        return self.workspace
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        if self.activate:
+            self.client.set_active_workspace(self.original_workspace.id)
+        if self.create:
+            try:
+                self.store.delete_workspace(self.workspace.id)
+            except KeyError:
+                pass
+
+
+class SecretContext:
+    def __init__(
+        self,
+        secret_name: Optional[str] = None,
+        scope: SecretScope = SecretScope.WORKSPACE,
+        values: Dict[str, str] = {
+            "sleep": "yes",
+            "food": "hell yeah",
+            "bath": "NO!",
+        },
+        user_id: Optional[uuid.UUID] = None,
+        workspace_id: Optional[uuid.UUID] = None,
+    ):
+        self.secret_name = (
+            sample_name("axls_secrets") if not secret_name else secret_name
+        )
+        self.scope = scope
+        self.values = values
+        self.user_id = user_id
+        self.workspace_id = workspace_id
+        self.client = Client()
+        self.store = self.client.zen_store
+
+    def __enter__(self):
+        new_secret = SecretRequestModel(
+            name=self.secret_name,
+            scope=self.scope,
+            values=self.values,
+            user=self.user_id or self.client.active_user.id,
+            workspace=self.workspace_id or self.client.active_workspace.id,
+        )
+        self.created_secret = self.store.create_secret(new_secret)
+        return self.created_secret
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        try:
+            self.store.delete_secret(self.created_secret.id)
         except KeyError:
             pass
 
@@ -416,6 +496,16 @@ artifact_crud_test_config = CrudTestConfig(
     filter_model=ArtifactFilterModel,
     entity_name="artifact",
 )
+secret_crud_test_config = CrudTestConfig(
+    create_model=SecretRequestModel(
+        name=sample_name("sample_secret"),
+        values={"key": "value"},
+        user=uuid.uuid4(),
+        workspace=uuid.uuid4(),
+    ),
+    filter_model=SecretFilterModel,
+    entity_name="secret",
+)
 
 # step_run_crud_test_config = CrudTestConfig(
 #     create_model=StepRunRequestModel(
@@ -446,4 +536,5 @@ list_of_entities = [
     # step_run_crud_test_config,
     pipeline_run_crud_test_config,
     artifact_crud_test_config,
+    secret_crud_test_config,
 ]

@@ -239,16 +239,17 @@ class BaseZenStore(
             **kwargs,
         )
 
-        # Initialize the secrets store if configured
-        if config.secrets_store:
+        secrets_store_config = store.config.secrets_store
+
+        # Initialize the secrets store
+        if secrets_store_config:
             secrets_store_class = BaseSecretsStore.get_store_class(
-                config.secrets_store.type
+                secrets_store_config.type
             )
             store._secrets_store = secrets_store_class(
                 zen_store=store,
-                config=config.secrets_store,
+                config=secrets_store_config,
             )
-
             # Update the config with the actual secrets store config
             # to reflect the default values in the saved configuration
             store.config.secrets_store = store._secrets_store.config
