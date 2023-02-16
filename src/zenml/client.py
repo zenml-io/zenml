@@ -3404,7 +3404,7 @@ class Client(metaclass=ClientMetaClass):
 
     def update_secret(
         self,
-        name_id_or_prefix: str,
+        name_id_or_prefix: Union[str, UUID],
         scope: Optional[SecretScope] = None,
         new_name: Optional[str] = None,
         new_scope: Optional[SecretScope] = None,
@@ -3424,6 +3424,11 @@ class Client(metaclass=ClientMetaClass):
 
         Returns:
             The updated secret.
+
+        Raises:
+            KeyError: If trying to remove a value that doesn't exist.
+            ValueError: If a key is provided in both add_or_update_values and
+                remove_values.
         """
         secret = self.get_secret(
             name_id_or_prefix=name_id_or_prefix,
@@ -3449,6 +3454,16 @@ class Client(metaclass=ClientMetaClass):
             )
         if remove_values:
             for key in remove_values:
+                if key not in secret.values:
+                    raise KeyError(
+                        f"Cannot remove value '{key}' from secret "
+                        f"'{secret.name}' because it does not exist."
+                    )
+                if key in values:
+                    raise ValueError(
+                        f"Key '{key}' is supplied both in the values to add or "
+                        f"update and the values to be removed."
+                    )
                 values[key] = None
         if values:
             secret_update.values = values

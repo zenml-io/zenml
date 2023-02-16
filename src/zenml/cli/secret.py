@@ -28,6 +28,7 @@ from zenml.cli.utils import (
     parse_name_and_extra_arguments,
     pretty_print_secret,
     print_list_items,
+    print_table,
     warning,
 )
 from zenml.client import Client
@@ -624,16 +625,47 @@ def create_secret(
 
 
 @secret.command("list", help="List all registered secrets.")
-def list_secrets() -> None:
-    """List all registered secrets."""
+@click.option(
+    "--name",
+    "-n",
+    type=click.STRING,
+    default=None,
+    help="Filter secrets by name (can be a prefix, suffix or substring).",
+)
+@click.option(
+    "--scope",
+    "-s",
+    type=click.Choice([scope.value for scope in list(SecretScope)]),
+    default=None,
+    help="Filter secrets by scope.",
+)
+def list_secrets(
+    name: Optional[str] = None, scope: Optional[str] = None
+) -> None:
+    """List all registered secrets.
+
+    Args:
+        name: The name to filter by.
+        scope: The scope of the secrets to list.
+    """
     client = Client()
-    with console.status("Getting secret names..."):
-        secrets = client.list_secrets()
-        secret_names = [secret.name for secret in secrets.items]
-        if not secret_names:
-            warning("No secrets registered.")
+    with console.status("Getting secrets..."):
+        secrets = client.list_secrets(
+            name=f"contains:{name}" if name else None,
+            scope=SecretScope(scope) if scope else None,
+        )
+        if not secrets.items:
+            warning("No secrets found.")
             return
-        print_list_items(list_items=secret_names, column_title="SECRET_NAMES")
+        secret_rows = [
+            dict(
+                name=secret.name,
+                id=str(secret.id),
+                scope=secret.scope.value,
+            )
+            for secret in secrets.items
+        ]
+        print_table(secret_rows)
 
 
 @secret.command("get", help="Get a secret with a given name, prefix or id.")
@@ -644,7 +676,7 @@ def list_secrets() -> None:
 @click.option(
     "--scope",
     "-s",
-    type=click.STRING,
+    type=click.Choice([scope.value for scope in list(SecretScope)]),
     default=None,
 )
 def get_secret(name_id_or_prefix: str, scope: str) -> None:
@@ -663,17 +695,24 @@ def get_secret(name_id_or_prefix: str, scope: str) -> None:
             )
         else:
             secret = client.get_secret(name_id_or_prefix=name_id_or_prefix)
+        declare(
+            f"Fetched secret with name `{secret.name}` and ID `{secret.id}` in "
+            f"scope `{secret.scope.value}`:"
+        )
         if not secret.secret_values:
             warning(f"Secret with name `{name_id_or_prefix}` is empty.")
         else:
             pretty_print_secret(secret.secret_values, hide_secret=False)
+    except ZenKeyError as e:
+        error(
+            f"Error fetching secret with name id or prefix "
+            f"`{name_id_or_prefix}`: {str(e)}."
+        )
     except KeyError as e:
         error(
-            f"Secret with name id or prefix `{name_id_or_prefix}` does "
-            f"not exist or could not be loaded: {str(e)}."
+            f"Could not find a secret with name id or prefix "
+            f"`{name_id_or_prefix}`: {str(e)}."
         )
-    except ZenKeyError as e:
-        error(str(e))
 
 
 @secret.command(
@@ -688,7 +727,7 @@ def get_secret(name_id_or_prefix: str, scope: str) -> None:
 @click.option(
     "--new_scope",
     "-s",
-    type=click.STRING,
+    type=click.Choice([scope.value for scope in list(SecretScope)]),
 )
 @click.option(
     "--interactive",
@@ -724,12 +763,19 @@ def update_secret(
 
     with console.status(f"Checking secret `{name}`..."):
         try:
-            secret = client.get_secret(name_id_or_prefix=name_or_id)
+            secret = client.get_secret(
+                name_id_or_prefix=name_or_id, allow_partial_name_match=False
+            )
         except KeyError as e:
             error(
                 f"Secret with name `{name}` does not exist or could not be "
                 f"loaded: {str(e)}."
             )
+
+    declare(
+        f"Updating secret with name '{secret.name}' and ID '{secret.id}' in "
+        f"scope '{secret.scope.value}:"
+    )
 
     if "name" in parsed_args:
         error("The word 'name' cannot be used as a key for a secret.")
@@ -782,20 +828,13 @@ def update_secret(
     else:
         secret_args_add_update = parsed_args
 
-    if new_scope:
-        client.update_secret(
-            name_id_or_prefix=name_or_id,
-            new_scope=SecretScope(new_scope),
-            add_or_update_values=secret_args_add_update,
-            remove_values=remove_keys,
-        )
-    else:
-        client.update_secret(
-            name_id_or_prefix=name_or_id,
-            add_or_update_values=secret_args_add_update,
-            remove_values=remove_keys,
-        )
-    declare(f"Secret '{name}' successfully updated.")
+    client.update_secret(
+        name_id_or_prefix=secret.id,
+        new_scope=SecretScope(new_scope) if new_scope else None,
+        add_or_update_values=secret_args_add_update,
+        remove_values=remove_keys,
+    )
+    declare(f"Secret '{secret.name}' successfully updated.")
 
 
 @secret.command(

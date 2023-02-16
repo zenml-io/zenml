@@ -151,6 +151,6 @@ class SecretRequestModel(SecretBaseModel, WorkspaceScopedRequestModel):
 class SecretUpdateModel(SecretRequestModel):
     """Secret update model."""
 
-    scope: Optional[SecretScope] = Field(
+    scope: Optional[SecretScope] = Field(  # type: ignore[assignment]
         None, title="The scope of the secret."
     )

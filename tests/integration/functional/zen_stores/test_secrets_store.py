@@ -120,6 +120,34 @@ def test_update_secret_remove_values():
         assert saved_secret.secret_values == values
 
 
+def test_update_secret_remove_nonexisting_values():
+    """Tests that a secret can be updated to remove non-existing values."""
+    client = Client()
+    store = client.zen_store
+
+    values = dict(
+        aria="space cat",
+        axl="the only space cat",
+    )
+    with SecretContext(values=values) as secret:
+        saved_secret = store.get_secret(secret_id=secret.id)
+        assert saved_secret.secret_values == values
+
+        updated_secret = store.update_secret(
+            secret_id=secret.id,
+            secret_update=SecretUpdateModel(
+                values=dict(
+                    blupus=None,
+                ),
+            ),
+        )
+
+        assert updated_secret.secret_values == values
+
+        saved_secret = store.get_secret(secret_id=secret.id)
+        assert saved_secret.secret_values == values
+
+
 def test_update_secret_name():
     """Tests that a secret name can be updated."""
     client = Client()
