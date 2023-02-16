@@ -24,7 +24,7 @@ cd mlops_starter
 zenml example pull starter_guide  # soon to be replaced with `zenml init --starter`
 cd starter_guide
 
-# If you have VS Code, nows the time to open it!
+# If you have VS Code, now is the time to open it!
 code .
 ```
 

@@ -1661,3 +1661,5 @@ MyOrchestratorFlavor
 MyContainerRegistryFlavor
 MyModelDeployerFlavor
 MyOrchestratorFlavor
+DecisionTreeClassifier
+iter
