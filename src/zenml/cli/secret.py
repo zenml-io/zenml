@@ -34,7 +34,7 @@ from zenml.cli.utils import (
 from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories, SecretScope, StackComponentType
-from zenml.exceptions import SecretExistsError, ZenKeyError
+from zenml.exceptions import EntityExistsError, SecretExistsError, ZenKeyError
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
@@ -541,24 +541,79 @@ def secret() -> None:
     type=click.Choice([scope.value for scope in list(SecretScope)]),
     default=SecretScope.WORKSPACE.value,
 )
+@click.option(
+    "--interactive",
+    "-i",
+    "interactive",
+    is_flag=True,
+    help="Use interactive mode to enter the secret values.",
+    type=click.BOOL,
+)
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
-def create_secret(name: str, scope: str, args: List[str]) -> None:
+def create_secret(
+    name: str, scope: str, interactive: bool, args: List[str]
+) -> None:
     """Create a secret.
 
     Args:
         name: The name of the secret to create.
         scope: The scope of the secret to create.
+        interactive: Whether to use interactive mode to enter the secret values.
         args: The arguments to pass to the secret.
     """
     from pydantic.types import SecretStr
+
+    client = Client()
+
+    # check and exit early if secret already exists
+    current_secrets = [item.name for item in client.list_secrets().items]
+    if name in current_secrets:
+        error(f"Secret with name `{name}` already exists.")
 
     name, parsed_args = parse_name_and_extra_arguments(  # type: ignore[assignment]
         list(args) + [name], expand_args=True
     )
     secret_args = {k: SecretStr(v) for k, v in parsed_args.items()}
-    client = Client()
-    client.create_secret(name=name, values=secret_args, scope=scope)
-    declare(f"Secret '{name}' successfully created.")
+
+    if "name" in parsed_args:
+        error("You can't use 'name' as the key for one of your secrets.")
+    elif name == "name":
+        error("Secret names cannot be named 'name'.")
+
+    if interactive:
+        if parsed_args:
+            error(
+                "Cannot pass secret fields as arguments when using "
+                "interactive mode."
+            )
+        else:
+            click.echo("Entering interactive mode:")
+            while True:
+                k = click.prompt("Please enter a secret key")
+                if k not in secret_args:
+                    v = getpass.getpass(
+                        f"Please enter the secret value for the key [{k}]:"
+                    )
+                    secret_args[k] = SecretStr(v)
+                else:
+                    warning(
+                        f"Key {k} already in this secret. Please restart "
+                        f"this process or use 'zenml "
+                        f"secret update {name} --{k}=...' to update this "
+                        f"key after the secret is registered. Skipping ..."
+                    )
+
+                if not confirmation(
+                    "Do you want to add another key-value pair to this "
+                    "secret?"
+                ):
+                    break
+    try:
+        client.create_secret(name=name, values=secret_args, scope=scope)
+        declare(f"Secret '{name}' successfully created.")
+    except EntityExistsError as e:
+        # should never hit this on account of the check above
+        error(f"Secret with name already exists. {str(e)}")
 
 
 @secret.command("list", help="List all registered secrets.")
