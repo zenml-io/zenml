@@ -490,31 +490,16 @@ def register_secrets_manager_subcommands() -> None:
         help="Force the deletion of all secrets",
         type=click.BOOL,
     )
-    @click.option(
-        "--force",
-        "-f",
-        "force",
-        is_flag=True,
-        help="DEPRECATED: Force the deletion of all secrets. Use `-y/--yes` "
-        "instead.",
-        type=click.BOOL,
-    )
     @click.pass_obj
     def delete_all_secrets(
-        secrets_manager: "BaseSecretsManager", yes: bool, force: bool
+        secrets_manager: "BaseSecretsManager", yes: bool
     ) -> None:
         """Delete all secrets tracked by your Secrets Manager.
 
         Args:
             secrets_manager: The secrets manager to use.
             yes: Skip asking for confirmation.
-            force: DEPRECATED: Skip asking for confirmation.
         """
-        if force:
-            warning(
-                "The `--force` flag will soon be deprecated. Use `--yes` or "
-                "`-y` instead."
-            )
         if not yes:
             confirmation_response = confirmation(
                 "This will delete all secrets. Are you sure you want to "

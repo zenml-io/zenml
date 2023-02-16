@@ -46,7 +46,7 @@ user_update_command = cli.commands["user"].commands["update"]
 user_delete_command = cli.commands["user"].commands["delete"]
 
 
-def sample_user_name(prefix: str = "aria") -> str:
+def sample_name(prefix: str = "aria") -> str:
     """Function to get random username."""
     return f"{prefix}_{random_str(4)}"
 
@@ -58,7 +58,7 @@ def create_sample_user(
 ) -> UserResponseModel:
     """Function to create a sample user."""
     return Client().create_user(
-        name=sample_user_name(prefix),
+        name=sample_name(prefix),
         password=password if password is not None else random_str(16),
         initial_role=initial_role,
     )
