@@ -184,10 +184,10 @@ class SecretSchema(NamedSchema, table=True):
                     self.values, encryption_engine
                 )
                 existing_values.update(secret_update.secret_values)
-                # Drop None values
-                existing_values = {
-                    k: v for k, v in existing_values.items() if v is not None
-                }
+                # Drop values removed in the update
+                for k, v in secret_update.values.items():
+                    if v is None:
+                        del existing_values[k]
                 self.values = self._dump_secret_values(
                     existing_values, encryption_engine
                 )

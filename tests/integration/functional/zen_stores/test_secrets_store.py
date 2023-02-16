@@ -45,7 +45,63 @@ def test_update_secret_existing_values():
         store.update_secret(
             secret_id=secret.id,
             secret_update=SecretUpdateModel(
-                values=values,
+                values=dict(
+                    axl=values["axl"],
+                ),
+            ),
+        )
+
+        saved_secret = store.get_secret(secret_id=secret.id)
+        assert saved_secret.secret_values == values
+
+
+def test_update_secret_add_new_values():
+    """Tests that a secret can be updated with new values."""
+    client = Client()
+    store = client.zen_store
+
+    values = dict(
+        aria="space cat",
+        axl="also space cat",
+    )
+    with SecretContext(values=values) as secret:
+        saved_secret = store.get_secret(secret_id=secret.id)
+        assert saved_secret.secret_values == values
+
+        values["blupus"] = "another space cat"
+        store.update_secret(
+            secret_id=secret.id,
+            secret_update=SecretUpdateModel(
+                values=dict(
+                    blupus=values["blupus"],
+                ),
+            ),
+        )
+
+        saved_secret = store.get_secret(secret_id=secret.id)
+        assert saved_secret.secret_values == values
+
+
+def test_update_secret_remove_values():
+    """Tests that a secret can be updated to remove values."""
+    client = Client()
+    store = client.zen_store
+
+    values = dict(
+        aria="space cat",
+        axl="the only space cat",
+    )
+    with SecretContext(values=values) as secret:
+        saved_secret = store.get_secret(secret_id=secret.id)
+        assert saved_secret.secret_values == values
+
+        del values["aria"]
+        store.update_secret(
+            secret_id=secret.id,
+            secret_update=SecretUpdateModel(
+                values=dict(
+                    aria=None,
+                ),
             ),
         )
 
