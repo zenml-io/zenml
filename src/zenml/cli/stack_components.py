@@ -861,7 +861,7 @@ def generate_stack_component_flavor_register_command(
         Example:
             Let's say you create an artifact store flavor class `MyArtifactStoreFlavor`
             in the file path `flavors/my_flavor.py`. You would register it as:
-            
+
             ```shell
             zenml artifact-store flavor register flavors.my_flavor.MyArtifactStoreFlavor
             ```
@@ -881,7 +881,7 @@ def generate_stack_component_flavor_register_command(
             except ValueError as e:
                 root_path = Client.find_repository()
                 cli_utils.error(
-                    f"Flavor registration failed! ZenML tried loading the module `{source}` from path " 
+                    f"Flavor registration failed! ZenML tried loading the module `{source}` from path "
                     f"`{root_path}`. If this is not what you expect, then please ensure you have run "
                     f"`zenml init` at the root of your repository.\n\nOriginal exception: {str(e)}"
                 )
