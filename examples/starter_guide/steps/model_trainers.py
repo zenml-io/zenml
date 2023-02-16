@@ -15,7 +15,6 @@
 # limitations under the License.
 
 import pandas as pd
-
 from sklearn.base import ClassifierMixin
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
@@ -31,8 +30,9 @@ logger = get_logger(__name__)
 
 class SVCTrainerParams(BaseParameters):
     """Trainer params"""
+
     gamma: float = 0.001
-    
+
 
 @step
 def simple_svc_trainer(
@@ -58,11 +58,12 @@ def parameterized_svc_trainer(
     """Train a sklearn SVC classifier with hyper-parameters."""
     X_train, y_train = train_set.drop("target", axis=1), train_set["target"]
     X_test, y_test = test_set.drop("target", axis=1), test_set["target"]
-    model = SVC(gamma=params.gamma) # Parameterized!
+    model = SVC(gamma=params.gamma)  # Parameterized!
     model.fit(X_train, y_train)
     test_acc = model.score(X_test, y_test)
     print(f"Test accuracy: {test_acc}")
     return model
+
 
 @step
 def parameterized_tree_trainer(
@@ -72,7 +73,7 @@ def parameterized_tree_trainer(
     """Train a sklearn SVC classifier with hyper-parameters."""
     X_train, y_train = train_set.drop("target", axis=1), train_set["target"]
     X_test, y_test = test_set.drop("target", axis=1), test_set["target"]
-    model = DecisionTreeClassifier() # Changed!
+    model = DecisionTreeClassifier()  # Changed!
     model.fit(X_train, y_train)
     test_acc = model.score(X_test, y_test)
     print(f"Test accuracy: {test_acc}")
