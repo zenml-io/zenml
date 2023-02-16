@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from contextlib import ExitStack as does_not_raise
 
 import pytest
 
@@ -22,12 +21,36 @@ from tests.integration.functional.zen_stores.utils import (
 )
 from zenml.client import Client
 from zenml.enums import SecretScope, StoreType
-from zenml.models.secret_models import SecretFilterModel
-
+from zenml.models.secret_models import SecretFilterModel, SecretUpdateModel
 
 # .---------.
 # | SECRETS |
 # '---------'
+
+
+def test_update_secret_existing_values():
+    """Tests that existing values a secret can be updated."""
+    client = Client()
+    store = client.zen_store
+
+    values = dict(
+        aria="space cat",
+        axl="space dog",
+    )
+    with SecretContext(values=values) as secret:
+        saved_secret = store.get_secret(secret_id=secret.id)
+        assert saved_secret.secret_values == values
+
+        values["axl"] = "also space cat"
+        store.update_secret(
+            secret_id=secret.id,
+            secret_update=SecretUpdateModel(
+                values=values,
+            ),
+        )
+
+        saved_secret = store.get_secret(secret_id=secret.id)
+        assert saved_secret.secret_values == values
 
 
 def test_workspace_secret_is_visible_to_other_users():
