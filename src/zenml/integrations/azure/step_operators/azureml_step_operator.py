@@ -190,6 +190,7 @@ class AzureMLStepOperator(BaseStepOperator):
         requirements_files = docker_image_builder._gather_requirements_files(
             docker_settings=docker_settings,
             stack=Client().active_stack,
+            log=False,
         )
         requirements = list(
             itertools.chain.from_iterable(
@@ -282,7 +283,7 @@ class AzureMLStepOperator(BaseStepOperator):
             "copy_global_config",
             "apt_packages",
         ]
-        docker_settings = info.pipeline.docker_settings
+        docker_settings = info.config.docker_settings
         ignored_docker_fields = docker_settings.__fields_set__.intersection(
             unused_docker_fields
         )
