@@ -327,6 +327,19 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
         integration_registry.activate_integrations()
 
+        custom_configurations = self.configuration.dict(
+            exclude_defaults=True, exclude={"name"}
+        )
+        if custom_configurations:
+            logger.warning(
+                f"The pipeline `{self.name}` that you're registering has "
+                "custom configurations applied to it. These will not be "
+                "registered with the pipeline and won't be set when you build "
+                "images or run the pipeline from the CLI. To provide these "
+                "configurations, use the `--config` option of the `zenml "
+                "pipeline build/run` commands."
+            )
+
         pipeline_spec = Compiler().compile_spec(self)
         return self._register(pipeline_spec=pipeline_spec)
 
