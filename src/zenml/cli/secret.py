@@ -830,8 +830,8 @@ def rename_secret(
             client.get_secret(name_id_or_prefix=name_or_id)
         except KeyError as e:
             error(
-                f"Secret with name `{name_or_id}` does not exist or could not be "
-                f"loaded: {str(e)}."
+                f"Secret with name `{name_or_id}` does not exist or could not "
+                f"be loaded: {str(e)}."
             )
 
     client.update_secret(
