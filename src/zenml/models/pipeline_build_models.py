@@ -70,7 +70,7 @@ class PipelineBuildBaseModel(pydantic_utils.YAMLSerializationMixin):
 
         Args:
             key: The image key.
-            step: The name of the step for which the image was built.
+            step: The pipeline step for which the image was built.
 
         Returns:
             The image key.
@@ -85,7 +85,7 @@ class PipelineBuildBaseModel(pydantic_utils.YAMLSerializationMixin):
 
         Args:
             key: The key for which to get the image.
-            step: The name of the step for which to get the image. If no image
+            step: The pipeline step for which to get the image. If no image
                 exists for this step, will fallback to the pipeline image for
                 the same key.
 
@@ -101,7 +101,7 @@ class PipelineBuildBaseModel(pydantic_utils.YAMLSerializationMixin):
 
         Args:
             key: The key for which to get the checksum.
-            step: The name of the step for which to get the checksum. If no
+            step: The pipeline step for which to get the checksum. If no
                 image exists for this step, will fallback to the pipeline image
                 for the same key.
 
@@ -115,7 +115,7 @@ class PipelineBuildBaseModel(pydantic_utils.YAMLSerializationMixin):
 
         Args:
             key: The key for which to get the item.
-            step: The name of the step for which to get the item. If no item
+            step: The pipeline step for which to get the item. If no item
                 exists for this step, will fallback to the item for
                 the same key.
 
