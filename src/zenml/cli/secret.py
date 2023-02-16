@@ -560,7 +560,6 @@ def create_secret(
         interactive: Whether to use interactive mode to enter the secret values.
         args: The arguments to pass to the secret.
     """
-
     name, parsed_args = parse_name_and_extra_arguments(  # type: ignore[assignment]
         list(args) + [name], expand_args=True
     )
@@ -615,7 +614,9 @@ def create_secret(
 
     with console.status(f"Saving secret `{name}`..."):
         try:
-            client.create_secret(name=name, values=parsed_args, scope=scope)
+            client.create_secret(
+                name=name, values=parsed_args, scope=SecretScope(scope)
+            )
             declare(f"Secret '{name}' successfully created.")
         except EntityExistsError as e:
             # should never hit this on account of the check above
@@ -655,7 +656,7 @@ def get_secret(name_id_or_prefix: str, scope: str) -> None:
     client = Client()
     try:
         secret = client.get_secret(
-            name_id_or_prefix=name_id_or_prefix, scope=scope
+            name_id_or_prefix=name_id_or_prefix, scope=SecretScope(scope)
         )
         if not secret.secret_values:
             warning(f"Secret with name `{name_id_or_prefix}` is empty.")
@@ -710,7 +711,7 @@ def update_secret(
         interactive: Whether to use interactive mode to update the secret.
         remove_keys: The keys to remove from the secret.
     """
-    name, parsed_args = parse_name_and_extra_arguments(  # type: ignore[assignment]
+    name, parsed_args = parse_name_and_extra_arguments(
         list(extra_args) + [name_or_id], expand_args=True
     )
 
@@ -718,7 +719,7 @@ def update_secret(
 
     with console.status(f"Checking secret `{name}`..."):
         try:
-            secret = client.get_secret(name_id_or_prefix=name)
+            secret = client.get_secret(name_id_or_prefix=name_or_id)
         except KeyError as e:
             error(
                 f"Secret with name `{name}` does not exist or could not be "
@@ -777,8 +778,8 @@ def update_secret(
         secret_args_add_update = parsed_args
 
     client.update_secret(
-        name_id_or_prefix=name,
-        scope=new_scope,
+        name_id_or_prefix=name_or_id,
+        scope=SecretScope(new_scope),
         add_or_update_values=secret_args_add_update,
         remove_values=remove_keys,
     )
