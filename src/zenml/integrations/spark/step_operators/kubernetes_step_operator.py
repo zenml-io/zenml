@@ -16,7 +16,6 @@ from typing import TYPE_CHECKING, Any, List, Optional, Tuple, cast
 
 from pyspark.conf import SparkConf
 
-from zenml.client import Client
 from zenml.entrypoints import entrypoint
 from zenml.enums import StackComponentType
 from zenml.integrations.spark.flavors.spark_on_kubernetes_step_operator_flavor import (
@@ -150,13 +149,7 @@ class KubernetesSparkStepOperator(SparkStepOperator):
                 configuration parameters
             info: Information about the step run.
         """
-        run = Client().get_pipeline_run(info.run_id)
-        assert run.build
-        # TODO: use StepRunInfo property once available
-        pipeline_step_name = Client().get_run_step(info.step_run_id).name
-        image_name = run.build.get_image(
-            key=SPARK_DOCKER_IMAGE_KEY, step=pipeline_step_name
-        )
+        image_name = info.get_image(key=SPARK_DOCKER_IMAGE_KEY)
 
         # Adjust the spark configuration
         spark_config.set("spark.kubernetes.container.image", image_name)

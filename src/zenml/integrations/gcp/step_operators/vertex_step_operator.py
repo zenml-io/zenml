@@ -24,7 +24,6 @@ from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Type, cast
 from google.cloud import aiplatform
 
 from zenml import __version__
-from zenml.client import Client
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.enums import StackComponentType
 from zenml.integrations.gcp.constants import (
@@ -207,13 +206,7 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
         # Step 1: Authenticate with Google
         credentials, project_id = self._get_authentication()
 
-        run = Client().get_pipeline_run(info.run_id)
-        assert run.build
-        # TODO: use StepRunInfo property once available
-        pipeline_step_name = Client().get_run_step(info.step_run_id).name
-        image_name = run.build.get_image(
-            key=VERTEX_DOCKER_IMAGE_KEY, step=pipeline_step_name
-        )
+        image_name = info.get_image(key=VERTEX_DOCKER_IMAGE_KEY)
 
         # Step 3: Launch the job
         # The AI Platform services require regional API endpoints.

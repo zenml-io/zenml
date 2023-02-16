@@ -18,7 +18,6 @@ from typing import Optional, cast
 
 from pydantic import BaseModel, validator
 
-from zenml.client import Client
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.environment import Environment
 from zenml.exceptions import DoesNotExistException
@@ -341,15 +340,7 @@ def seldon_custom_model_deployer_step(
             "Please make sure that you have registered and set a stack."
         )
 
-    run = Client().get_pipeline_run(step_env.step_run_info.run_id)
-    assert run.build
-    # TODO: use StepRunInfo property once available
-    pipeline_step_name = (
-        Client().get_run_step(step_env.step_run_info.step_run_id).name
-    )
-    image_name = run.build.get_image(
-        key=SELDON_DOCKER_IMAGE_KEY, step=pipeline_step_name
-    )
+    image_name = step_env.step_run_info.get_image(key=SELDON_DOCKER_IMAGE_KEY)
 
     # copy the model files to new specific directory for the deployment
     served_model_uri = os.path.join(
