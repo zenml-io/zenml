@@ -808,12 +808,6 @@ def create_run_metadata(
     response_model=SecretResponseModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
-@router.post(
-    PROJECTS + "/{workspace_name_or_id}" + SECRETS,
-    response_model=SecretResponseModel,
-    responses={401: error_response, 409: error_response, 422: error_response},
-    deprecated=True,
-)
 @handle_exceptions
 def create_secret(
     workspace_name_or_id: Union[str, UUID],

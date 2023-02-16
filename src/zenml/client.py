@@ -3439,14 +3439,19 @@ class Client(metaclass=ClientMetaClass):
             secret_update.name = new_name
         if new_scope:
             secret_update.scope = new_scope
-        values: Dict[str, Optional[str]] = {}
+        values: Dict[str, Optional[SecretStr]] = {}
         if add_or_update_values:
-            values.update(add_or_update_values)
+            values.update(
+                {
+                    key: SecretStr(value)
+                    for key, value in add_or_update_values.items()
+                }
+            )
         if remove_values:
             for key in remove_values:
                 values[key] = None
         if values:
-            secret_update.values = cast(Dict[str, Optional[SecretStr]], values)
+            secret_update.values = values
 
         return Client().zen_store.update_secret(
             secret_id=secret.id, secret_update=secret_update
@@ -3469,7 +3474,6 @@ class Client(metaclass=ClientMetaClass):
             allow_partial_id_match=True,
         )
 
-        secret = self.get_secret(name_id_or_prefix=name_id_or_prefix)
         self.zen_store.delete_secret(secret_id=secret.id)
 
     # ---- utility prefix matching get functions -----

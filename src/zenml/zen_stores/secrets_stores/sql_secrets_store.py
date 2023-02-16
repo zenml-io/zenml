@@ -101,7 +101,6 @@ class SqlSecretsStore(BaseSecretsStore):
         Type[SecretsStoreConfiguration]
     ] = SqlSecretsStoreConfiguration
 
-    _engine: Optional[Engine] = None
     _encryption_engine: Optional[AesGcmEngine] = None
 
     def __init__(
@@ -430,9 +429,6 @@ class SqlSecretsStore(BaseSecretsStore):
                     select(SecretSchema).where(SecretSchema.id == secret_id)
                 ).one()
                 session.delete(secret_in_db)
-            except NoResultFound as error:
-                raise KeyError from error
-
-    # =======================
-    # Internal helper methods
-    # =======================
+                session.commit()
+            except NoResultFound:
+                raise KeyError(f"Secret with ID {secret_id} not found.")

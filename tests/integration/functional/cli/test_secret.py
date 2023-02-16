@@ -64,7 +64,7 @@ def test_create_fails_with_bad_scope(clean_client):
     runner = CliRunner()
     result = runner.invoke(
         secret_create_command,
-        [TEST_SECRET_NAME, "--test_value=aria", f"--scope=axl_scope"],
+        [TEST_SECRET_NAME, "--test_value=aria", "--scope=axl_scope"],
     )
     assert result.exit_code != 0
     client = Client()

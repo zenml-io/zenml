@@ -1691,6 +1691,7 @@ class SqlZenStore(BaseZenStore):
                     )
                 else:
                     session.delete(flavor_in_db)
+                    session.commit()
             except NoResultFound as error:
                 raise KeyError from error
 

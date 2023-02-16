@@ -36,7 +36,7 @@ class SecretsStoreInterface(ABC):
 
     @abstractmethod
     def _initialize(self) -> None:
-        """Initialize the secrets manager.
+        """Initialize the secrets store.
 
         This method is called immediately after the secrets store is created.
         It should be used to set up the backend (database, connection etc.).
