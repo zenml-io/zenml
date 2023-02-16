@@ -32,7 +32,7 @@ class ContainerizedOrchestrator(BaseOrchestrator, ABC):
         deployment: "PipelineDeploymentResponseModel",
         step_name: Optional[str] = None,
     ) -> str:
-        """Gets the Docker image name or digest for a step.
+        """Gets the Docker image for the pipeline/a step.
 
         Args:
             deployment: The deployment from which to get the image.
@@ -47,7 +47,8 @@ class ContainerizedOrchestrator(BaseOrchestrator, ABC):
         """
         if not deployment.build:
             raise RuntimeError(
-                f"Missing build for deployment {deployment.id}."
+                f"Missing build for deployment {deployment.id}. This is "
+                "probably because the build was manually deleted."
             )
 
         return deployment.build.get_image(

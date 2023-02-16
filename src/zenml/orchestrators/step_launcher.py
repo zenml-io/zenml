@@ -144,7 +144,8 @@ class StepLauncher:
 
         if not deployment.stack:
             raise RuntimeError(
-                f"Missing stack for deployment {deployment.id}."
+                f"Missing stack for deployment {deployment.id}. This is "
+                "probably because the stack was manually deleted."
             )
 
         self._stack = Stack.from_model(deployment.stack)

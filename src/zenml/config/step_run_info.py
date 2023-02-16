@@ -46,7 +46,10 @@ class StepRunInfo(StrictBaseModel):
 
         run = Client().get_pipeline_run(self.run_id)
         if not run.build:
-            raise RuntimeError(f"Missing build for run {run.id}.")
+            raise RuntimeError(
+                f"Missing build for run {run.id}. This is probably because "
+                "the build was manually deleted."
+            )
 
         # TODO: use property once available
         pipeline_step_name = Client().get_run_step(self.step_run_id).name
