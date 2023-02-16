@@ -659,7 +659,10 @@ def get_secret(name_id_or_prefix: str, scope: str) -> None:
         secret = client.get_secret(
             name_id_or_prefix=name_id_or_prefix, scope=scope
         )
-        pretty_print_secret(secret.secret_values, hide_secret=False)
+        if not secret.secret_values:
+            warning(f"Secret with name `{name_id_or_prefix}` is empty.")
+        else:
+            pretty_print_secret(secret.secret_values, hide_secret=False)
     except KeyError as e:
         error(
             f"Secret with name id or prefix `{name_id_or_prefix}` does "
@@ -709,7 +712,6 @@ def update_secret(
         interactive: Whether to use interactive mode to update the secret.
         remove_keys: The keys to remove from the secret.
     """
-
     name, parsed_args = parse_name_and_extra_arguments(  # type: ignore[assignment]
         list(extra_args) + [name_or_id], expand_args=True
     )
