@@ -683,11 +683,6 @@ def get_secret(name_id_or_prefix: str, scope: str) -> None:
     type=click.STRING,
 )
 @click.option(
-    "--new_name",
-    "-n",
-    type=click.STRING,
-)
-@click.option(
     "--new_scope",
     "-s",
     type=click.STRING,
@@ -705,7 +700,6 @@ def get_secret(name_id_or_prefix: str, scope: str) -> None:
 def update_secret(
     name_or_id: str,
     extra_args: List[str],
-    new_name: Optional[str] = None,
     new_scope: Optional[str] = None,
     remove_keys: List[str] = [],
     interactive: bool = False,
@@ -714,7 +708,6 @@ def update_secret(
 
     Args:
         name_or_id: The name or id of the secret to update.
-        new_name: The new name of the secret.
         new_scope: The new scope of the secret.
         extra_args: The arguments to pass to the secret.
         interactive: Whether to use interactive mode to update the secret.
@@ -801,6 +794,51 @@ def update_secret(
         remove_values=secret_args_remove,
     )
     declare(f"Secret '{name}' successfully updated.")
+
+
+@secret.command(
+    "rename",
+    context_settings={"ignore_unknown_options": True},
+    help="Rename a secret with a given name or id.",
+)
+@click.argument(
+    "name_or_id",
+    type=click.STRING,
+)
+@click.option(
+    "--new_name",
+    "-n",
+    type=click.STRING,
+)
+def rename_secret(
+    name_or_id: str,
+    new_name: str,
+) -> None:
+    """Update a secret for a given name or id.
+
+    Args:
+        name_or_id: The name or id of the secret to update.
+        new_name: The new name of the secret.
+    """
+    if new_name == "name":
+        error("Your secret cannot be called 'name'.")
+
+    client = Client()
+
+    with console.status(f"Checking secret `{name_or_id}`..."):
+        try:
+            client.get_secret(name_id_or_prefix=name_or_id)
+        except KeyError as e:
+            error(
+                f"Secret with name `{name_or_id}` does not exist or could not be "
+                f"loaded: {str(e)}."
+            )
+
+    client.update_secret(
+        name_id_or_prefix=name_or_id,
+        new_name=new_name,
+    )
+    declare(f"Secret '{name_or_id}' successfully renamed to '{new_name}'.")
 
 
 @secret.command("delete", help="Delete a secret with a given name or id.")
