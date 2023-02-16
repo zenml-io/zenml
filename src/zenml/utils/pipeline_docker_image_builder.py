@@ -473,15 +473,6 @@ class PipelineDockerImageBuilder:
         """
         lines = [f"FROM {parent_image}", f"WORKDIR {DOCKER_IMAGE_WORKDIR}"]
 
-        lines.append(f"ENV {ENV_ZENML_ENABLE_REPO_INIT_WARNINGS}=False")
-        if docker_settings.copy_global_config:
-            lines.append(
-                f"ENV {ENV_ZENML_CONFIG_PATH}={DOCKER_IMAGE_ZENML_CONFIG_PATH}"
-            )
-
-        for key, value in docker_settings.environment.items():
-            lines.append(f"ENV {key.upper()}={value}")
-
         if apt_packages:
             apt_packages = " ".join(f"'{p}'" for p in apt_packages)
 
@@ -495,6 +486,15 @@ class PipelineDockerImageBuilder:
             lines.append(
                 f"RUN pip install --default-timeout=60 --no-cache-dir -r {file}"
             )
+
+        lines.append(f"ENV {ENV_ZENML_ENABLE_REPO_INIT_WARNINGS}=False")
+        if docker_settings.copy_global_config:
+            lines.append(
+                f"ENV {ENV_ZENML_CONFIG_PATH}={DOCKER_IMAGE_ZENML_CONFIG_PATH}"
+            )
+
+        for key, value in docker_settings.environment.items():
+            lines.append(f"ENV {key.upper()}={value}")
 
         if docker_settings.copy_files:
             lines.append("COPY . .")
