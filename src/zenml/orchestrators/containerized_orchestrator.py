@@ -13,16 +13,46 @@
 #  permissions and limitations under the License.
 """Containerized orchestrator class."""
 from abc import ABC
-from typing import List
+from typing import List, Optional
 
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
-from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
+from zenml.models.pipeline_deployment_models import (
+    PipelineDeploymentBaseModel,
+    PipelineDeploymentResponseModel,
+)
 from zenml.orchestrators import BaseOrchestrator
 
 
 class ContainerizedOrchestrator(BaseOrchestrator, ABC):
     """Base class for containerized orchestrators."""
+
+    @staticmethod
+    def get_image(
+        deployment: "PipelineDeploymentResponseModel",
+        step_name: Optional[str] = None,
+    ) -> str:
+        """Gets the Docker image name or digest for a step.
+
+        Args:
+            deployment: The deployment from which to get the image.
+            step_name: Pipeline step name for which to get the image. If not
+                given the generic pipeline image will be returned.
+
+        Raises:
+            RuntimeError: If the deployment does not have an associated build.
+
+        Returns:
+            The image name or digest.
+        """
+        if not deployment.build:
+            raise RuntimeError(
+                f"Missing build for deployment {deployment.id}."
+            )
+
+        return deployment.build.get_image(
+            component_key=ORCHESTRATOR_DOCKER_IMAGE_KEY, step=step_name
+        )
 
     def get_docker_builds(
         self, deployment: "PipelineDeploymentBaseModel"

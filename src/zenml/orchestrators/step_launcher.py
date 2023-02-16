@@ -134,11 +134,19 @@ class StepLauncher:
             deployment: The pipeline deployment.
             step: The step to launch.
             orchestrator_run_id: The orchestrator pipeline run id.
+
+        Raises:
+            RuntimeError: If the deployment has no associated stack.
         """
         self._deployment = deployment
         self._step = step
         self._orchestrator_run_id = orchestrator_run_id
-        assert deployment.stack
+
+        if not deployment.stack:
+            raise RuntimeError(
+                f"Missing stack for deployment {deployment.id}."
+            )
+
         self._stack = Stack.from_model(deployment.stack)
         self._step_name = _get_step_name_in_pipeline(
             step=step, deployment=deployment

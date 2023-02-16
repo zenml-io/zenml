@@ -22,7 +22,6 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, cast
 from git.exc import InvalidGitRepositoryError
 from git.repo.base import Repo
 
-from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
 from zenml.container_registries import (
     BaseContainerRegistry,
     GitHubContainerRegistryFlavor,
@@ -331,7 +330,6 @@ class GitHubActionsOrchestrator(ContainerizedOrchestrator):
             ValueError: If a schedule without a cron expression or with an
                 invalid cron expression is passed.
         """
-        assert deployment.build
         schedule = deployment.schedule
 
         workflow_name = deployment.pipeline_configuration.name
@@ -436,9 +434,7 @@ class GitHubActionsOrchestrator(ContainerizedOrchestrator):
             if docker_login_step:
                 job_steps.append(copy.deepcopy(docker_login_step))
 
-            image = deployment.build.get_image(
-                component_key=ORCHESTRATOR_DOCKER_IMAGE_KEY, step=step_name
-            )
+            image = self.get_image(deployment=deployment, step_name=step_name)
 
             entrypoint_command = (
                 StepEntrypointConfiguration.get_entrypoint_command()

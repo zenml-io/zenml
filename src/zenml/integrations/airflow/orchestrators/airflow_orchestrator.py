@@ -34,7 +34,6 @@ from uuid import UUID
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
     METADATA_ORCHESTRATOR_URL,
-    ORCHESTRATOR_DOCKER_IMAGE_KEY,
 )
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.enums import StackComponentType
@@ -220,7 +219,6 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
             deployment: The pipeline deployment to prepare or run.
             stack: The stack the pipeline will run on.
         """
-        assert deployment.build
         pipeline_settings = cast(
             AirflowOrchestratorSettings, self.get_settings(deployment)
         )
@@ -236,9 +234,7 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
             settings = cast(
                 AirflowOrchestratorSettings, self.get_settings(step)
             )
-            image = deployment.build.get_image(
-                component_key=ORCHESTRATOR_DOCKER_IMAGE_KEY, step=step_name
-            )
+            image = self.get_image(deployment=deployment, step_name=step_name)
             arguments = StepEntrypointConfiguration.get_entrypoint_arguments(
                 step_name=step_name, deployment_id=deployment.id
             )

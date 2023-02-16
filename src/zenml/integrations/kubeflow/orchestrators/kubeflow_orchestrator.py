@@ -48,7 +48,6 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
     ENV_ZENML_LOCAL_STORES_PATH,
     METADATA_ORCHESTRATOR_URL,
-    ORCHESTRATOR_DOCKER_IMAGE_KEY,
 )
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.enums import StackComponentType
@@ -447,13 +446,12 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
             method of a KFPCompiler all dsl.ContainerOp instances will be
             automatically added to a singular dsl.Pipeline instance.
             """
-            assert deployment.build
             # Dictionary of container_ops index by the associated step name
             step_name_to_container_op: Dict[str, dsl.ContainerOp] = {}
 
             for step_name, step in deployment.step_configurations.items():
-                image = deployment.build.get_image(
-                    component_key=ORCHESTRATOR_DOCKER_IMAGE_KEY, step=step_name
+                image = self.get_image(
+                    deployment=deployment, step_name=step_name
                 )
 
                 # The command will be needed to eventually call the python step

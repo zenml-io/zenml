@@ -19,7 +19,6 @@ import socket
 from kubernetes import client as k8s_client
 
 from zenml.client import Client
-from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
 )
@@ -29,6 +28,7 @@ from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import
 from zenml.integrations.kubernetes.orchestrators import kube_utils
 from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator import (
     ENV_ZENML_KUBERNETES_RUN_ID,
+    KubernetesOrchestrator,
 )
 from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
     build_pod_manifest,
@@ -88,16 +88,14 @@ def main() -> None:
         Args:
             step_name: Name of the step.
         """
-        assert deployment_config.build
 
         # Define Kubernetes pod name.
         pod_name = f"{orchestrator_run_id}-{step_name}"
         pod_name = kube_utils.sanitize_pod_name(pod_name)
 
         pipeline_step_name = step_name_to_pipeline_step_name[step_name]
-        image = deployment_config.build.get_image(
-            component_key=ORCHESTRATOR_DOCKER_IMAGE_KEY,
-            step=pipeline_step_name,
+        image = KubernetesOrchestrator.get_image(
+            deployment=deployment_config, step_name=pipeline_step_name
         )
         step_args = StepEntrypointConfiguration.get_entrypoint_arguments(
             step_name=pipeline_step_name, deployment_id=deployment_config.id

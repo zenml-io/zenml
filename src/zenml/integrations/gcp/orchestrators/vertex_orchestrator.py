@@ -42,7 +42,6 @@ from kfp.v2.compiler import Compiler as KFPV2Compiler
 
 from zenml.constants import (
     METADATA_ORCHESTRATOR_URL,
-    ORCHESTRATOR_DOCKER_IMAGE_KEY,
 )
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.enums import StackComponentType
@@ -387,13 +386,12 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             `KFPV2Compiler` all `dsl.ContainerOp` instances will be
             automatically added to a singular `dsl.Pipeline` instance.
             """
-            assert deployment.build
             command = StepEntrypointConfiguration.get_entrypoint_command()
             step_name_to_container_op: Dict[str, dsl.ContainerOp] = {}
 
             for step_name, step in deployment.step_configurations.items():
-                image = deployment.build.get_image(
-                    component_key=ORCHESTRATOR_DOCKER_IMAGE_KEY, step=step_name
+                image = self.get_image(
+                    deployment=deployment, step_name=step_name
                 )
                 arguments = (
                     StepEntrypointConfiguration.get_entrypoint_arguments(

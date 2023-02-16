@@ -27,7 +27,6 @@ from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
     ENV_ZENML_LOCAL_STORES_PATH,
-    ORCHESTRATOR_DOCKER_IMAGE_KEY,
 )
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.enums import StackComponentType
@@ -337,13 +336,12 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             Additionally, this gives each container_op information about its
             direct downstream steps.
             """
-            assert deployment.build
             # Dictionary of container_ops index by the associated step name
             step_name_to_container_op: Dict[str, dsl.ContainerOp] = {}
 
             for step_name, step in deployment.step_configurations.items():
-                image = deployment.build.get_image(
-                    component_key=ORCHESTRATOR_DOCKER_IMAGE_KEY, step=step_name
+                image = self.get_image(
+                    deployment=deployment, step_name=step_name
                 )
 
                 command = StepEntrypointConfiguration.get_entrypoint_command()

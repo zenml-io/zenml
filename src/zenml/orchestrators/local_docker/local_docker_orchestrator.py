@@ -27,7 +27,6 @@ from zenml.config.base_settings import BaseSettings
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
     ENV_ZENML_LOCAL_STORES_PATH,
-    ORCHESTRATOR_DOCKER_IMAGE_KEY,
 )
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.enums import StackComponentType
@@ -107,8 +106,6 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
             deployment: The pipeline deployment to prepare or run.
             stack: The stack the pipeline will run on.
         """
-        assert deployment.build
-
         if deployment.schedule:
             logger.warning(
                 "Local Docker Orchestrator currently does not support the"
@@ -155,9 +152,7 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
                 LocalDockerOrchestratorSettings,
                 self.get_settings(step),
             )
-            image = deployment.build.get_image(
-                component_key=ORCHESTRATOR_DOCKER_IMAGE_KEY, step=step_name
-            )
+            image = self.get_image(deployment=deployment, step_name=step_name)
 
             user = None
             if sys.platform != "win32":

@@ -23,7 +23,6 @@ from sagemaker.workflow.pipeline import Pipeline
 from sagemaker.workflow.steps import ProcessingStep
 
 from zenml.config.base_settings import BaseSettings
-from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.enums import StackComponentType
 from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
@@ -138,7 +137,6 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             deployment: The deployment to prepare or run.
             stack: The stack to run on.
         """
-        assert deployment.build
         if deployment.schedule:
             logger.warning(
                 "The Sagemaker Orchestrator currently does not support the "
@@ -154,9 +152,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
         sagemaker_steps = []
         for step_name, step in deployment.step_configurations.items():
-            image = deployment.build.get_image(
-                component_key=ORCHESTRATOR_DOCKER_IMAGE_KEY, step=step_name
-            )
+            image = self.get_image(deployment=deployment, step_name=step_name)
             command = StepEntrypointConfiguration.get_entrypoint_command()
             arguments = StepEntrypointConfiguration.get_entrypoint_arguments(
                 step_name=step_name, deployment_id=deployment.id
