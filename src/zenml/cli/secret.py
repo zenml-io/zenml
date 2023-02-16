@@ -560,12 +560,10 @@ def create_secret(
         interactive: Whether to use interactive mode to enter the secret values.
         args: The arguments to pass to the secret.
     """
-    from pydantic.types import SecretStr
 
     name, parsed_args = parse_name_and_extra_arguments(  # type: ignore[assignment]
         list(args) + [name], expand_args=True
     )
-    secret_args = {k: SecretStr(v) for k, v in parsed_args.items()}
 
     if "name" in parsed_args:
         error("You can't use 'name' as the key for one of your secrets.")
@@ -588,7 +586,7 @@ def create_secret(
             click.echo("Entering interactive mode:")
             while True:
                 k = click.prompt("Please enter a secret key")
-                if k in secret_args:
+                if k in parsed_args:
                     warning(
                         f"Key {k} already in this secret. Please restart "
                         f"this process or use 'zenml "
@@ -599,7 +597,7 @@ def create_secret(
                     v = getpass.getpass(
                         f"Please enter the secret value for the key [{k}]:"
                     )
-                    secret_args[k] = SecretStr(v)
+                    parsed_args[k] = v
 
                 if not confirmation(
                     "Do you want to add another key-value pair to this "
@@ -613,11 +611,11 @@ def create_secret(
         )
 
     declare("The following secret will be registered.")
-    pretty_print_secret(secret=secret_args, hide_secret=True)
+    pretty_print_secret(secret=parsed_args, hide_secret=True)
 
     with console.status(f"Saving secret `{name}`..."):
         try:
-            client.create_secret(name=name, values=secret_args, scope=scope)
+            client.create_secret(name=name, values=parsed_args, scope=scope)
             declare(f"Secret '{name}' successfully created.")
         except EntityExistsError as e:
             # should never hit this on account of the check above
