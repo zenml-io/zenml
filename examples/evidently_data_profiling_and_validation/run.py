@@ -44,6 +44,8 @@ if __name__ == "__main__":
 
     last_run = pipeline_instance.get_runs()[-1]
     text_analysis_step = last_run.get_step(step="text_analyzer")
-    # print(f"Data drift detected: {drift_analysis_step.output.read()}")
+    
+    print("Reference missing values: ", text_analysis_step.outputs["ref_missing_values"].read())
+    print("Comparison missing values: ", text_analysis_step.outputs["comp_missing_values"].read())
 
     visualize_statistics()
