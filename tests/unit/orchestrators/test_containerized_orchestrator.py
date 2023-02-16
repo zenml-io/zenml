@@ -15,9 +15,13 @@ from datetime import datetime
 from typing import Optional
 from uuid import uuid4
 
+import pytest
+
 from zenml.config import DockerSettings
 from zenml.config.step_configurations import Step
+from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
 from zenml.enums import StackComponentType
+from zenml.models.pipeline_build_models import BuildItem
 from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
 from zenml.orchestrators import ContainerizedOrchestrator
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
@@ -146,3 +150,34 @@ def test_builds_with_custom_docker_settings_for_all_steps():
     assert step_2_build.key == "orchestrator"
     assert step_2_build.step_name == "step_2"
     assert step_2_build.settings == custom_step_2_settings
+
+
+def test_getting_image_from_deployment(
+    sample_deployment_response_model, sample_build_response_model
+):
+    """Tests getting the image from a deployment."""
+    assert not sample_deployment_response_model.build
+    with pytest.raises(RuntimeError):
+        # Missing build in deployment
+        ContainerizedOrchestrator.get_image(
+            deployment=sample_deployment_response_model
+        )
+
+    sample_deployment_response_model.build = sample_build_response_model
+    assert not sample_build_response_model.images
+
+    with pytest.raises(KeyError):
+        # Missing the image in build
+        ContainerizedOrchestrator.get_image(
+            deployment=sample_deployment_response_model
+        )
+
+    sample_build_response_model.images = {
+        ORCHESTRATOR_DOCKER_IMAGE_KEY: BuildItem(image="image_name")
+    }
+    assert (
+        ContainerizedOrchestrator.get_image(
+            deployment=sample_deployment_response_model
+        )
+        == "image_name"
+    )
