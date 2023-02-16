@@ -339,7 +339,7 @@ class PipelineDockerImageBuilder:
 
     @staticmethod
     def _gather_requirements_files(
-        docker_settings: DockerSettings, stack: "Stack"
+        docker_settings: DockerSettings, stack: "Stack", log: bool = True
     ) -> List[Tuple[str, str]]:
         """Gathers and/or generates pip requirements files.
 
@@ -347,6 +347,7 @@ class PipelineDockerImageBuilder:
             docker_settings: Docker settings that specifies which
                 requirements to install.
             stack: The stack on which the pipeline will run.
+            log: If `True`, will log the requirements.
 
         Raises:
             RuntimeError: If the command to export the local python packages
@@ -360,7 +361,6 @@ class PipelineDockerImageBuilder:
             - Requirements defined by user-defined and/or stack integrations
         """
         requirements_files = []
-        logger.info("Gathering requirements for Docker build:")
 
         # Generate requirements file for the local environment if configured
         if docker_settings.replicate_local_python_environment:
@@ -388,23 +388,28 @@ class PipelineDockerImageBuilder:
             requirements_files.append(
                 (".zenml_local_requirements", local_requirements)
             )
-            logger.info("\t- Including python packages from local environment")
+            if log:
+                logger.info(
+                    "- Including python packages from local environment"
+                )
 
         # Generate/Read requirements file for user-defined requirements
         if isinstance(docker_settings.requirements, str):
             user_requirements = io_utils.read_file_contents_as_string(
                 docker_settings.requirements
             )
-            logger.info(
-                "\t- Including user-defined requirements from file `%s`",
-                os.path.abspath(docker_settings.requirements),
-            )
+            if log:
+                logger.info(
+                    "- Including user-defined requirements from file `%s`",
+                    os.path.abspath(docker_settings.requirements),
+                )
         elif isinstance(docker_settings.requirements, List):
             user_requirements = "\n".join(docker_settings.requirements)
-            logger.info(
-                "\t- Including user-defined requirements: %s",
-                ", ".join(f"`{r}`" for r in docker_settings.requirements),
-            )
+            if log:
+                logger.info(
+                    "- Including user-defined requirements: %s",
+                    ", ".join(f"`{r}`" for r in docker_settings.requirements),
+                )
         else:
             user_requirements = None
 
@@ -437,10 +442,11 @@ class PipelineDockerImageBuilder:
                     integration_requirements_file,
                 )
             )
-            logger.info(
-                "\t- Including integration requirements: %s",
-                ", ".join(f"`{r}`" for r in integration_requirements_list),
-            )
+            if log:
+                logger.info(
+                    "- Including integration requirements: %s",
+                    ", ".join(f"`{r}`" for r in integration_requirements_list),
+                )
 
         return requirements_files
 

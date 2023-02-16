@@ -918,7 +918,9 @@ def test_build_uses_correct_settings(clean_client, mocker, empty_pipeline):
     assert len(build.images) == 1
     image = build.images["step_name.key"]
     assert image.image == "image_name"
-    assert image.settings_checksum == build_config.settings_checksum
+    assert image.settings_checksum == build_config.compute_settings_checksum(
+        stack=clean_client.active_stack
+    )
 
 
 def test_building_with_identical_keys_and_settings(

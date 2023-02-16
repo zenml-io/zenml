@@ -1155,7 +1155,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             combined_key = PipelineBuildBaseModel.get_key(
                 key=build_config.key, step=build_config.step_name
             )
-            checksum = build_config.settings_checksum
+            checksum = build_config.compute_settings_checksum(stack=stack)
 
             if combined_key in images:
                 previous_checksum = images[combined_key].settings_checksum

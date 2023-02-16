@@ -865,11 +865,10 @@ class Stack:
                     f"Missing build for key: {build_config.key}."
                 )
 
-            if (
-                build_config.settings_checksum
-                != deployment.build.get_settings_checksum(
-                    key=build_config.key, step=build_config.step_name
-                )
+            if build_config.compute_settings_checksum(
+                stack=self
+            ) != deployment.build.get_settings_checksum(
+                key=build_config.key, step=build_config.step_name
             ):
                 logger.warning(
                     "The Docker settings used to build the image `%s` are "

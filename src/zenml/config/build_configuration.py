@@ -14,11 +14,14 @@
 """Build configuration class."""
 
 import hashlib
-from typing import Dict, Optional
+from typing import TYPE_CHECKING, Dict, Optional
 
 from pydantic import BaseModel
 
 from zenml.config import DockerSettings
+
+if TYPE_CHECKING:
+    from zenml.stack import Stack
 
 
 class BuildConfiguration(BaseModel):
@@ -38,9 +41,13 @@ class BuildConfiguration(BaseModel):
     entrypoint: Optional[str] = None
     extra_files: Dict[str, str] = {}
 
-    @property
-    def settings_checksum(self) -> str:
+    def compute_settings_checksum(self, stack: "Stack") -> str:
         """Checksum for all build settings.
+
+        Args:
+            stack: The stack for which to compute the checksum. This is needed
+                to gather the stack integration requirements in case the
+                Docker settings specify to install them.
 
         Returns:
             The checksum.
@@ -53,5 +60,17 @@ class BuildConfiguration(BaseModel):
         for destination, source in self.extra_files.items():
             hash_.update(destination.encode())
             hash_.update(source.encode())
+
+        from zenml.utils.pipeline_docker_image_builder import (
+            PipelineDockerImageBuilder,
+        )
+
+        requirements_files = (
+            PipelineDockerImageBuilder._gather_requirements_files(
+                docker_settings=self.settings, stack=stack, log=False
+            )
+        )
+        for _, requirements in requirements_files:
+            hash_.update(requirements.encode())
 
         return hash_.hexdigest()
