@@ -560,12 +560,9 @@ def create_secret(
         interactive: Whether to use interactive mode to enter the secret values.
         args: The arguments to pass to the secret.
     """
-    from pydantic.types import SecretStr
-
     name, parsed_args = parse_name_and_extra_arguments(  # type: ignore[assignment]
         list(args) + [name], expand_args=True
     )
-    secret_args = {k: SecretStr(v) for k, v in parsed_args.items()}
 
     if "name" in parsed_args:
         error("You can't use 'name' as the key for one of your secrets.")
@@ -588,7 +585,7 @@ def create_secret(
             click.echo("Entering interactive mode:")
             while True:
                 k = click.prompt("Please enter a secret key")
-                if k in secret_args:
+                if k in parsed_args:
                     warning(
                         f"Key {k} already in this secret. Please restart "
                         f"this process or use 'zenml "
@@ -599,7 +596,7 @@ def create_secret(
                     v = getpass.getpass(
                         f"Please enter the secret value for the key [{k}]:"
                     )
-                    secret_args[k] = SecretStr(v)
+                    parsed_args[k] = v
 
                 if not confirmation(
                     "Do you want to add another key-value pair to this "
@@ -613,11 +610,13 @@ def create_secret(
         )
 
     declare("The following secret will be registered.")
-    pretty_print_secret(secret=secret_args, hide_secret=True)
+    pretty_print_secret(secret=parsed_args, hide_secret=True)
 
     with console.status(f"Saving secret `{name}`..."):
         try:
-            client.create_secret(name=name, values=secret_args, scope=scope)
+            client.create_secret(
+                name=name, values=parsed_args, scope=SecretScope(scope)
+            )
             declare(f"Secret '{name}' successfully created.")
         except EntityExistsError as e:
             # should never hit this on account of the check above
@@ -626,11 +625,7 @@ def create_secret(
 
 @secret.command("list", help="List all registered secrets.")
 def list_secrets() -> None:
-    """List all registered secrets.
-
-    Args:
-        scope: The scope of the secret to list.
-    """
+    """List all registered secrets."""
     client = Client()
     with console.status("Getting secret names..."):
         secrets = client.list_secrets()
@@ -650,6 +645,7 @@ def list_secrets() -> None:
     "--scope",
     "-s",
     type=click.STRING,
+    default=None,
 )
 def get_secret(name_id_or_prefix: str, scope: str) -> None:
     """Get a secret for a given name.
@@ -659,11 +655,18 @@ def get_secret(name_id_or_prefix: str, scope: str) -> None:
         scope: The scope of the secret to get.
     """
     client = Client()
+
     try:
-        secret = client.get_secret(
-            name_id_or_prefix=name_id_or_prefix, scope=scope
-        )
-        pretty_print_secret(secret.secret_values, hide_secret=False)
+        if scope:
+            secret = client.get_secret(
+                name_id_or_prefix=name_id_or_prefix, scope=SecretScope(scope)
+            )
+        else:
+            secret = client.get_secret(name_id_or_prefix=name_id_or_prefix)
+        if not secret.secret_values:
+            warning(f"Secret with name `{name_id_or_prefix}` is empty.")
+        else:
+            pretty_print_secret(secret.secret_values, hide_secret=False)
     except KeyError as e:
         error(
             f"Secret with name id or prefix `{name_id_or_prefix}` does "
@@ -680,11 +683,6 @@ def get_secret(name_id_or_prefix: str, scope: str) -> None:
 )
 @click.argument(
     "name_or_id",
-    type=click.STRING,
-)
-@click.option(
-    "--new_name",
-    "-n",
     type=click.STRING,
 )
 @click.option(
@@ -705,7 +703,6 @@ def get_secret(name_id_or_prefix: str, scope: str) -> None:
 def update_secret(
     name_or_id: str,
     extra_args: List[str],
-    new_name: Optional[str] = None,
     new_scope: Optional[str] = None,
     remove_keys: List[str] = [],
     interactive: bool = False,
@@ -714,15 +711,12 @@ def update_secret(
 
     Args:
         name_or_id: The name or id of the secret to update.
-        new_name: The new name of the secret.
         new_scope: The new scope of the secret.
         extra_args: The arguments to pass to the secret.
         interactive: Whether to use interactive mode to update the secret.
         remove_keys: The keys to remove from the secret.
     """
-    from pydantic.types import SecretStr
-
-    name, parsed_args = parse_name_and_extra_arguments(  # type: ignore[assignment]
+    name, parsed_args = parse_name_and_extra_arguments(
         list(extra_args) + [name_or_id], expand_args=True
     )
 
@@ -730,7 +724,7 @@ def update_secret(
 
     with console.status(f"Checking secret `{name}`..."):
         try:
-            secret = client.get_secret(name_id_or_prefix=name)
+            secret = client.get_secret(name_id_or_prefix=name_or_id)
         except KeyError as e:
             error(
                 f"Secret with name `{name}` does not exist or could not be "
@@ -748,59 +742,105 @@ def update_secret(
             )
 
         declare(
-            "You will now have a chance to overwrite each secret "
+            "You will now have a chance to update each secret pair "
             "one by one."
         )
         secret_args_add_update = {}
-        secret_args_remove = {}
-        for k, v in secret.secret_values.items():
+        for k, _ in secret.secret_values.items():
             item_choice = (
                 click.prompt(
-                    text=f"Key '{k}': what do you want to do? (u)pdate, (r)emove, (s)kip, (a)dd",
-                    type=click.Choice(
-                        choices=[
-                            "a",
-                            "u",
-                            "r",
-                            "s",
-                        ]
-                    ),
-                    default="s",
+                    text=f"Do you want to update key '{k}'? (enter to skip)",
+                    type=click.Choice(["y", "n"]),
+                    default="n",
                 ),
             )
-            if item_choice == "s":
+            if "n" in item_choice:
                 continue
-            elif item_choice == "r":
-                secret_args_remove[k] = v
-                continue
-            elif item_choice == "u":
+            elif "y" in item_choice:
                 new_value = getpass.getpass(
-                    f"Please enter the new secret value for the key [{k}]:"
+                    f"Please enter the new secret value for the key '{k}'"
                 )
                 if new_value:
-                    secret_args_add_update[k] = SecretStr(new_value)
-            elif item_choice == "a":
-                new_key = click.prompt(
-                    text=f"Please enter the new key name for the key [{k}]:",
-                    type=click.STRING,
-                )
-                new_value = getpass.getpass(
-                    f"Please enter the new secret value for the key [{new_key}]:"
-                )
-                if new_value:
-                    secret_args_add_update[new_key] = SecretStr(new_value)
+                    secret_args_add_update[k] = new_value
+
+        # check if any additions to be made
+        while True:
+            addition_check = confirmation(
+                "Do you want to add a new key:value pair?"
+            )
+            if not addition_check:
+                break
+
+            new_key = click.prompt(
+                text="Please enter the new key name",
+                type=click.STRING,
+            )
+            new_value = getpass.getpass(
+                f"Please enter the new secret value for the key '{new_key}'"
+            )
+            secret_args_add_update[new_key] = new_value
     else:
         secret_args_add_update = parsed_args
-        secret_args_remove = remove_keys
+
+    if new_scope:
+        client.update_secret(
+            name_id_or_prefix=name_or_id,
+            new_scope=SecretScope(new_scope),
+            add_or_update_values=secret_args_add_update,
+            remove_values=remove_keys,
+        )
+    else:
+        client.update_secret(
+            name_id_or_prefix=name_or_id,
+            add_or_update_values=secret_args_add_update,
+            remove_values=remove_keys,
+        )
+    declare(f"Secret '{name}' successfully updated.")
+
+
+@secret.command(
+    "rename",
+    context_settings={"ignore_unknown_options": True},
+    help="Rename a secret with a given name or id.",
+)
+@click.argument(
+    "name_or_id",
+    type=click.STRING,
+)
+@click.option(
+    "--new_name",
+    "-n",
+    type=click.STRING,
+)
+def rename_secret(
+    name_or_id: str,
+    new_name: str,
+) -> None:
+    """Update a secret for a given name or id.
+
+    Args:
+        name_or_id: The name or id of the secret to update.
+        new_name: The new name of the secret.
+    """
+    if new_name == "name":
+        error("Your secret cannot be called 'name'.")
+
+    client = Client()
+
+    with console.status(f"Checking secret `{name_or_id}`..."):
+        try:
+            client.get_secret(name_id_or_prefix=name_or_id)
+        except KeyError as e:
+            error(
+                f"Secret with name `{name_or_id}` does not exist or could not "
+                f"be loaded: {str(e)}."
+            )
 
     client.update_secret(
-        name_id_or_prefix=name,
-        scope=new_scope,
+        name_id_or_prefix=name_or_id,
         new_name=new_name,
-        add_or_update_values=secret_args_add_update,
-        remove_values=secret_args_remove,
     )
-    declare(f"Secret '{name}' successfully updated.")
+    declare(f"Secret '{name_or_id}' successfully renamed to '{new_name}'.")
 
 
 @secret.command("delete", help="Delete a secret with a given name or id.")
