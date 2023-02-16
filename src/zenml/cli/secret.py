@@ -27,7 +27,6 @@ from zenml.cli.utils import (
     expand_argument_value_from_file,
     parse_name_and_extra_arguments,
     pretty_print_secret,
-    pretty_print_secret_values,
     print_list_items,
     warning,
 )
@@ -590,30 +589,40 @@ def create_secret(
             click.echo("Entering interactive mode:")
             while True:
                 k = click.prompt("Please enter a secret key")
-                if k not in secret_args:
-                    v = getpass.getpass(
-                        f"Please enter the secret value for the key [{k}]:"
-                    )
-                    secret_args[k] = SecretStr(v)
-                else:
+                if k in secret_args:
                     warning(
                         f"Key {k} already in this secret. Please restart "
                         f"this process or use 'zenml "
                         f"secret update {name} --{k}=...' to update this "
                         f"key after the secret is registered. Skipping ..."
                     )
+                else:
+                    v = getpass.getpass(
+                        f"Please enter the secret value for the key [{k}]:"
+                    )
+                    secret_args[k] = SecretStr(v)
 
                 if not confirmation(
                     "Do you want to add another key-value pair to this "
                     "secret?"
                 ):
                     break
-    try:
-        client.create_secret(name=name, values=secret_args, scope=scope)
-        declare(f"Secret '{name}' successfully created.")
-    except EntityExistsError as e:
-        # should never hit this on account of the check above
-        error(f"Secret with name already exists. {str(e)}")
+    elif not parsed_args:
+        error(
+            "Secret fields must be passed as arguments when not using "
+            "interactive mode."
+        )
+
+    declare("The following secret will be registered.")
+    pretty_print_secret(secret=secret_args, hide_secret=True)
+
+    with console.status(f"Saving secret `{name}`..."):
+        try:
+            client.create_secret(name=name, values=secret_args, scope=scope)
+            declare(f"Secret '{name}' successfully created.")
+        except EntityExistsError as e:
+            # should never hit this on account of the check above
+            error(f"Secret with name already exists. {str(e)}")
 
 
 @secret.command("list", help="List all registered secrets.")
@@ -655,7 +664,7 @@ def get_secret(name_id_or_prefix: str, scope: str) -> None:
         secret = client.get_secret(
             name_id_or_prefix=name_id_or_prefix, scope=scope
         )
-        pretty_print_secret_values(secret.secret_values)
+        pretty_print_secret(secret.secret_values, hide_secret=False)
     except KeyError as e:
         error(
             f"Secret with name id or prefix `{name_id_or_prefix}` does "

@@ -631,45 +631,29 @@ def uninstall_package(package: str) -> None:
 
 
 def pretty_print_secret(
-    secret: "BaseSecretSchema", hide_secret: bool = True
+    secret: "Union[BaseSecretSchema, Dict[str, str]]", hide_secret: bool = True
 ) -> None:
-    """Given a secret set, print all key-value pairs associated with the secret.
+    """Given a secret with values, print all key-value pairs associated with the secret.
 
     Args:
         secret: Secret of type BaseSecretSchema
         hide_secret: boolean that configures if the secret values are shown
             on the CLI
     """
+    if isinstance(secret, BaseSecretSchema):
+        secret = secret.content
 
     def get_secret_value(value: Any) -> str:
         if value is None:
             return ""
-        if hide_secret:
-            return "***"
-        return str(value)
+        return "***" if hide_secret else str(value)
 
     stack_dicts = [
         {
             "SECRET_KEY": key,
             "SECRET_VALUE": get_secret_value(value),
         }
-        for key, value in secret.content.items()
-    ]
-    print_table(stack_dicts)
-
-
-def pretty_print_secret_values(values: Dict[str, str]) -> None:
-    """Pretty print secret values in dictionary format.
-
-    Args:
-        values: Dictionary of secret values
-    """
-    stack_dicts = [
-        {
-            "SECRET_KEY": key,
-            "SECRET_VALUE": value,
-        }
-        for key, value in values.items()
+        for key, value in secret.items()
     ]
     print_table(stack_dicts)
 
