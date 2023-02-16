@@ -141,30 +141,56 @@ zenml pipeline runs list -p <MY_PIPELINE_NAME_OR_ID>
 Each run has a collection of useful metadata which you can access to ensure all runs 
 are reproducible:
 
-#### git_sha
-The Git commit SHA that the pipeline run was performed on. This will only be set 
-if the pipeline code is in a git repository and there are no uncommitted files 
-when running the pipeline.
+#### Git SHA
+The [Git commit SHA](https://www.mikestreety.co.uk/blog/the-git-commit-hash/)
+that the pipeline run was performed on. This will only be set if the pipeline 
+code is in a git repository and there are no uncommitted files when running the 
+pipeline.
 ```python
 commit = run.git_sha
 ```
 
-#### status
+#### Status
 The status of a pipeline run can also be found here. There are four 
 possible states: failed, completed, running, cached:
 ```python
 status = run.status
 ```
 
-#### pipeline_configuration
+#### Configuration
 
-The `pipeline_configuration` is a super object that contains all configuration of 
+The `pipeline_configuration` is an object that contains all configuration of 
 the pipeline and pipeline run, including 
-[pipeline-level `BaseSettings`](../../advanced-guide/pipelines/settings.md), which we will learn more about later. You can also access the settings directly via the `settings` variable.
+[pipeline-level `BaseSettings`](../../advanced-guide/pipelines/settings.md), 
+which we will learn more about later. 
+You can also access the settings directly via the `settings` variable.
 
-#### docstring
+```python
+pipeline_config = run.pipeline_configuration
+pipeline_settings = run.settings
+```
 
-The docstring of the step.
+#### Docstring
+
+If you wrote a docstring into your pipeline function, you can retrieve it here
+as well:
+
+```python
+pipeline_docstring = run.docstring
+```
+
+#### Component-Specific Metadata
+
+Depending on the stack components you use, you might have additional
+component-specific metadata associated with your run, such as the URL to the UI
+of a remote orchestrator. You can access this component-specific metadata via
+the `metadata` attribute:
+
+```python
+run_metadata = run.metadata
+# The following only works for runs on certain remote orchestrators
+orchestrator_url = run_metadata["orchestrator_url"]
+```
 
 ## Steps
 
@@ -217,9 +243,11 @@ an instance of the class or even the name of the step as a string:
 Similar to the run, for reproducibility, you can use the `step` object
 to access:
 
-* [`BaseParameters`](iterating.md) via `step.parameters`: The parameters used to run the step.
+* The [`BaseParameters`](parameters-and-caching.md) used to run the step via `step.parameters`,
 * [Step-level `BaseSettings`](../../advanced-guide/pipelines/settings.md)
-via `step.step_configuration`
+via `step.step_configuration`,
+* Component-specific step metadata, such as the URL of an experiment tracker or
+model deployer, via `step.metadata`,
 * Input and output artifacts.
 
 ## Outputs
@@ -252,6 +280,19 @@ def some_step() -> Output(output_name=int):
     ...
 ```
 {% endhint %}
+
+### Output Artifact Metadata
+
+All output artifacts saved through ZenML will automatically have certain
+datatype-specific metadata saved with them. NumPy Arrays, for instance, always
+have their storage size, `shape`, `dtype`, and some statistical properties
+saved with them. You can access such metadata via the `metadata` attribute of 
+an output, e.g.:
+
+```python
+output_metadata = output.metadata
+storage_size = output_metadata["storage_size"]
+```
 
 ## Code Example
 

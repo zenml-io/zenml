@@ -213,6 +213,8 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                 reset to an empty value.
         """
         cls._global_config = config
+        if config:
+            config._write_config()
 
     @validator("version")
     def _validate_version(cls, v: Optional[str]) -> Optional[str]:
