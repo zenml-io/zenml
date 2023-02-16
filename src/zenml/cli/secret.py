@@ -562,13 +562,6 @@ def create_secret(
     """
     from pydantic.types import SecretStr
 
-    client = Client()
-
-    # check and exit early if secret already exists
-    current_secrets = [item.name for item in client.list_secrets().items]
-    if name in current_secrets:
-        error(f"Secret with name `{name}` already exists.")
-
     name, parsed_args = parse_name_and_extra_arguments(  # type: ignore[assignment]
         list(args) + [name], expand_args=True
     )
@@ -579,7 +572,13 @@ def create_secret(
     elif name == "name":
         error("Secret names cannot be named 'name'.")
 
+    client = Client()
     if interactive:
+        # check and exit early if secret already exists
+        current_secrets = [item.name for item in client.list_secrets().items]
+        if name in current_secrets:
+            error(f"Secret with name `{name}` already exists.")
+
         if parsed_args:
             error(
                 "Cannot pass secret fields as arguments when using "
@@ -680,7 +679,7 @@ def get_secret(name_id_or_prefix: str, scope: str) -> None:
     help="Update a secret with a given name or id.",
 )
 @click.argument(
-    "secret_name_id_or_prefix",
+    "name_or_id",
     type=click.STRING,
 )
 @click.option(
@@ -693,27 +692,107 @@ def get_secret(name_id_or_prefix: str, scope: str) -> None:
     "-s",
     type=click.STRING,
 )
-@click.argument("args", nargs=-1, type=click.UNPROCESSED)
+@click.option(
+    "--interactive",
+    "-i",
+    "interactive",
+    is_flag=True,
+    help="Use interactive mode to update the secret values.",
+    type=click.BOOL,
+)
+@click.option("--remove_keys", "-r", type=click.STRING, multiple=True)
+@click.argument("extra_args", nargs=-1, type=click.UNPROCESSED)
 def update_secret(
-    secret_name_id_or_prefix: str,
-    args: List[str],
+    name_or_id: str,
+    extra_args: List[str],
     new_name: Optional[str] = None,
     new_scope: Optional[str] = None,
+    remove_keys: List[str] = [],
+    interactive: bool = False,
 ) -> None:
     """Update a secret for a given name or id.
 
     Args:
-        secret_name_id_or_prefix: The name or id of the secret to update.
+        name_or_id: The name or id of the secret to update.
         new_name: The new name of the secret.
         new_scope: The new scope of the secret.
-        args: The arguments to pass to the secret.
+        extra_args: The arguments to pass to the secret.
+        interactive: Whether to use interactive mode to update the secret.
+        remove_keys: The keys to remove from the secret.
     """
+    from pydantic.types import SecretStr
+
     name, parsed_args = parse_name_and_extra_arguments(  # type: ignore[assignment]
-        list(args) + [secret_name_id_or_prefix], expand_args=True
+        list(extra_args) + [name_or_id], expand_args=True
     )
-    secret_args_add_update = {k: v for k, v in parsed_args.items() if v}
-    secret_args_remove = {k: v for k, v in parsed_args.items() if v == ""}
+
     client = Client()
+
+    with console.status(f"Checking secret `{name}`..."):
+        try:
+            secret = client.get_secret(name_id_or_prefix=name)
+        except KeyError as e:
+            error(
+                f"Secret with name `{name}` does not exist or could not be "
+                f"loaded: {str(e)}."
+            )
+
+    if "name" in parsed_args:
+        error("The word 'name' cannot be used as a key for a secret.")
+
+    if interactive:
+        if parsed_args:
+            error(
+                "Cannot pass secret fields as arguments when using "
+                "interactive mode."
+            )
+
+        declare(
+            "You will now have a chance to overwrite each secret "
+            "one by one."
+        )
+        secret_args_add_update = {}
+        secret_args_remove = {}
+        for k, v in secret.secret_values.items():
+            item_choice = (
+                click.prompt(
+                    text=f"Key '{k}': what do you want to do? (u)pdate, (r)emove, (s)kip, (a)dd",
+                    type=click.Choice(
+                        choices=[
+                            "a",
+                            "u",
+                            "r",
+                            "s",
+                        ]
+                    ),
+                    default="s",
+                ),
+            )
+            if item_choice == "s":
+                continue
+            elif item_choice == "r":
+                secret_args_remove[k] = v
+                continue
+            elif item_choice == "u":
+                new_value = getpass.getpass(
+                    f"Please enter the new secret value for the key [{k}]:"
+                )
+                if new_value:
+                    secret_args_add_update[k] = SecretStr(new_value)
+            elif item_choice == "a":
+                new_key = click.prompt(
+                    text=f"Please enter the new key name for the key [{k}]:",
+                    type=click.STRING,
+                )
+                new_value = getpass.getpass(
+                    f"Please enter the new secret value for the key [{new_key}]:"
+                )
+                if new_value:
+                    secret_args_add_update[new_key] = SecretStr(new_value)
+    else:
+        secret_args_add_update = parsed_args
+        secret_args_remove = remove_keys
+
     client.update_secret(
         name_id_or_prefix=name,
         scope=new_scope,
