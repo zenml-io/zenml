@@ -658,6 +658,22 @@ def pretty_print_secret(
     print_table(stack_dicts)
 
 
+def pretty_print_secret_values(values: Dict[str, str]) -> None:
+    """Pretty print secret values in dictionary format.
+
+    Args:
+        values: Dictionary of secret values
+    """
+    stack_dicts = [
+        {
+            "SECRET_KEY": key,
+            "SECRET_VALUE": value,
+        }
+        for key, value in values.items()
+    ]
+    print_table(stack_dicts)
+
+
 def print_list_items(list_items: List[str], column_title: str) -> None:
     """Prints the configuration options of a stack.
 

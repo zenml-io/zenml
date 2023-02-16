@@ -27,6 +27,7 @@ from zenml.cli.utils import (
     expand_argument_value_from_file,
     parse_name_and_extra_arguments,
     pretty_print_secret,
+    pretty_print_secret_values,
     print_list_items,
     warning,
 )
@@ -583,17 +584,18 @@ def list_secrets() -> None:
         scope: The scope of the secret to list.
     """
     client = Client()
-    secrets = client.list_secrets()
-    secret_names = [secret.name for secret in secrets.items]
-    if not secret_names:
-        warning("No secrets registered.")
-        return
-    print_list_items(list_items=secret_names, column_title="SECRET_NAMES")
+    with console.status("Getting secret names..."):
+        secrets = client.list_secrets()
+        secret_names = [secret.name for secret in secrets.items]
+        if not secret_names:
+            warning("No secrets registered.")
+            return
+        print_list_items(list_items=secret_names, column_title="SECRET_NAMES")
 
 
 @secret.command("get", help="Get a secret with a given name, prefix or id.")
 @click.argument(
-    "secret_name_id_or_prefix",
+    "name_id_or_prefix",
     type=click.STRING,
 )
 @click.option(
@@ -601,26 +603,22 @@ def list_secrets() -> None:
     "-s",
     type=click.STRING,
 )
-def get_secret(secret_name_id_or_prefix: str, scope: str) -> None:
+def get_secret(name_id_or_prefix: str, scope: str) -> None:
     """Get a secret for a given name.
 
     Args:
-        secret_name_id_or_prefix: The name of the secret to get.
+        name_id_or_prefix: The name of the secret to get.
         scope: The scope of the secret to get.
     """
     client = Client()
     try:
         secret = client.get_secret(
-            name_id_or_prefix=secret_name_id_or_prefix, scope=scope
+            name_id_or_prefix=name_id_or_prefix, scope=scope
         )
-        secret_values = {
-            k: v.get_secret_value() for k, v in secret.values.items()
-        }
-        # TODO: add pretty print
-        declare(secret_values)
+        pretty_print_secret_values(secret.secret_values)
     except KeyError as e:
         error(
-            f"Secret with name id or prefix `{secret_name_id_or_prefix}` does "
+            f"Secret with name id or prefix `{name_id_or_prefix}` does "
             f"not exist or could not be loaded: {str(e)}."
         )
     except ZenKeyError as e:
@@ -679,21 +677,41 @@ def update_secret(
 
 @secret.command("delete", help="Delete a secret with a given name or id.")
 @click.argument(
-    "secret_name_or_id",
+    "name_or_id",
     type=click.STRING,
 )
-def delete_secret(secret_name_or_id: str) -> None:
+@click.option(
+    "--yes",
+    "-y",
+    type=click.BOOL,
+    default=False,
+    is_flag=True,
+    help="Skip asking for confirmation.",
+)
+def delete_secret(name_or_id: str, yes: bool = False) -> None:
     """Delete a secret for a given name or id.
 
     Args:
-        secret_name_or_id: The name or id of the secret to delete.
+        name_or_id: The name or id of the secret to delete.
+        yes: Skip asking for confirmation.
     """
-    client = Client()
-    try:
-        client.delete_secret(name_id_or_prefix=secret_name_or_id)
-        declare(f"Secret '{secret_name_or_id}' successfully deleted.")
-    except KeyError as e:
-        error(
-            f"Secret with name or id `{secret_name_or_id}` does not exist or "
-            f"could not be loaded: {str(e)}."
+    if not yes:
+        confirmation_response = confirmation(
+            f"This will delete all data associated with the `{name_or_id}` "
+            f"secret. Are you sure you want to proceed?"
         )
+        if not confirmation_response:
+            console.print("Aborting secret deletion...")
+            return
+
+    client = Client()
+
+    with console.status(f"Deleting secret `{name_or_id}`..."):
+        try:
+            client.delete_secret(name_id_or_prefix=name_or_id)
+            declare(f"Secret '{name_or_id}' successfully deleted.")
+        except KeyError as e:
+            error(
+                f"Secret with name or id `{name_or_id}` does not exist or "
+                f"could not be loaded: {str(e)}."
+            )
