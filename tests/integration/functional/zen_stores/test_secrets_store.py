@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from contextlib import ExitStack as does_not_raise
 
 import pytest
 
@@ -23,7 +22,6 @@ from tests.integration.functional.zen_stores.utils import (
 from zenml.client import Client
 from zenml.enums import SecretScope, StoreType
 from zenml.models.secret_models import SecretFilterModel
-
 
 # .---------.
 # | SECRETS |

@@ -62,7 +62,6 @@ from zenml.models.base_models import BaseRequestModel, BaseResponseModel
 from zenml.models.page_model import Page
 from zenml.pipelines import pipeline
 from zenml.steps import step
-from zenml.zen_stores.base_zen_store import BaseZenStore
 
 
 @step
