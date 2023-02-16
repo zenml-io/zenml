@@ -301,7 +301,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         # Get Docker image for the orchestrator pod
         try:
             image = deployment.build.get_image(
-                key=ORCHESTRATOR_DOCKER_IMAGE_KEY
+                component_key=ORCHESTRATOR_DOCKER_IMAGE_KEY
             )
         except KeyError:
             # If no generic pipeline image exists (which means all steps have
@@ -309,7 +309,8 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             # dependencies for the active stack
             pipeline_step_name = next(iter(deployment.step_configurations))
             image = deployment.build.get_image(
-                key=ORCHESTRATOR_DOCKER_IMAGE_KEY, step=pipeline_step_name
+                component_key=ORCHESTRATOR_DOCKER_IMAGE_KEY,
+                step=pipeline_step_name,
             )
 
         # Build entrypoint command and args for the orchestrator pod.

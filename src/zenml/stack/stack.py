@@ -858,7 +858,7 @@ class Stack:
         for build_config in required_builds:
             try:
                 image = deployment.build.get_image(
-                    key=build_config.key, step=build_config.step_name
+                    component_key=build_config.key, step=build_config.step_name
                 )
             except KeyError:
                 raise RuntimeError(
@@ -868,7 +868,7 @@ class Stack:
             if build_config.compute_settings_checksum(
                 stack=self
             ) != deployment.build.get_settings_checksum(
-                key=build_config.key, step=build_config.step_name
+                component_key=build_config.key, step=build_config.step_name
             ):
                 logger.warning(
                     "The Docker settings used to build the image `%s` are "

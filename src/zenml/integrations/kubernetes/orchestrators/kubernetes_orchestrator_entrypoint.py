@@ -96,7 +96,8 @@ def main() -> None:
 
         pipeline_step_name = step_name_to_pipeline_step_name[step_name]
         image = deployment_config.build.get_image(
-            key=ORCHESTRATOR_DOCKER_IMAGE_KEY, step=pipeline_step_name
+            component_key=ORCHESTRATOR_DOCKER_IMAGE_KEY,
+            step=pipeline_step_name,
         )
         step_args = StepEntrypointConfiguration.get_entrypoint_arguments(
             step_name=pipeline_step_name, deployment_id=deployment_config.id

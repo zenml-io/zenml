@@ -437,7 +437,7 @@ class GitHubActionsOrchestrator(ContainerizedOrchestrator):
                 job_steps.append(copy.deepcopy(docker_login_step))
 
             image = deployment.build.get_image(
-                key=ORCHESTRATOR_DOCKER_IMAGE_KEY, step=step_name
+                component_key=ORCHESTRATOR_DOCKER_IMAGE_KEY, step=step_name
             )
 
             entrypoint_command = (

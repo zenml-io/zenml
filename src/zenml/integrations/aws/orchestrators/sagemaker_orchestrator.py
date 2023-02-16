@@ -155,7 +155,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         sagemaker_steps = []
         for step_name, step in deployment.step_configurations.items():
             image = deployment.build.get_image(
-                key=ORCHESTRATOR_DOCKER_IMAGE_KEY, step=step_name
+                component_key=ORCHESTRATOR_DOCKER_IMAGE_KEY, step=step_name
             )
             command = StepEntrypointConfiguration.get_entrypoint_command()
             arguments = StepEntrypointConfiguration.get_entrypoint_arguments(

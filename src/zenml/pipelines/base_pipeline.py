@@ -1152,8 +1152,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
         image_names: Dict[str, str] = {}
 
         for build_config in required_builds:
-            combined_key = PipelineBuildBaseModel.get_key(
-                key=build_config.key, step=build_config.step_name
+            combined_key = PipelineBuildBaseModel.get_image_key(
+                component_key=build_config.key, step=build_config.step_name
             )
             checksum = build_config.compute_settings_checksum(stack=stack)
 
