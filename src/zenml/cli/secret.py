@@ -626,11 +626,7 @@ def create_secret(
 
 @secret.command("list", help="List all registered secrets.")
 def list_secrets() -> None:
-    """List all registered secrets.
-
-    Args:
-        scope: The scope of the secret to list.
-    """
+    """List all registered secrets."""
     client = Client()
     with console.status("Getting secret names..."):
         secrets = client.list_secrets()
@@ -713,7 +709,6 @@ def update_secret(
         interactive: Whether to use interactive mode to update the secret.
         remove_keys: The keys to remove from the secret.
     """
-    from pydantic.types import SecretStr
 
     name, parsed_args = parse_name_and_extra_arguments(  # type: ignore[assignment]
         list(extra_args) + [name_or_id], expand_args=True
@@ -741,57 +736,51 @@ def update_secret(
             )
 
         declare(
-            "You will now have a chance to overwrite each secret "
+            "You will now have a chance to update each secret pair "
             "one by one."
         )
         secret_args_add_update = {}
-        secret_args_remove = {}
-        for k, v in secret.secret_values.items():
+        for k, _ in secret.secret_values.items():
             item_choice = (
                 click.prompt(
-                    text=f"Key '{k}': what do you want to do? (u)pdate, (r)emove, (s)kip, (a)dd",
-                    type=click.Choice(
-                        choices=[
-                            "a",
-                            "u",
-                            "r",
-                            "s",
-                        ]
-                    ),
-                    default="s",
+                    text=f"Do you want to update key '{k}'? (enter to skip)",
+                    type=click.Choice(["y", "n"]),
+                    default="n",
                 ),
             )
-            if item_choice == "s":
+            if "n" in item_choice:
                 continue
-            elif item_choice == "r":
-                secret_args_remove[k] = v
-                continue
-            elif item_choice == "u":
+            elif "y" in item_choice:
                 new_value = getpass.getpass(
-                    f"Please enter the new secret value for the key [{k}]:"
+                    f"Please enter the new secret value for the key '{k}'"
                 )
                 if new_value:
-                    secret_args_add_update[k] = SecretStr(new_value)
-            elif item_choice == "a":
-                new_key = click.prompt(
-                    text=f"Please enter the new key name for the key [{k}]:",
-                    type=click.STRING,
-                )
-                new_value = getpass.getpass(
-                    f"Please enter the new secret value for the key [{new_key}]:"
-                )
-                if new_value:
-                    secret_args_add_update[new_key] = SecretStr(new_value)
+                    secret_args_add_update[k] = new_value
+
+        # check if any additions to be made
+        while True:
+            addition_check = confirmation(
+                "Do you want to add a new key:value pair?"
+            )
+            if not addition_check:
+                break
+
+            new_key = click.prompt(
+                text="Please enter the new key name",
+                type=click.STRING,
+            )
+            new_value = getpass.getpass(
+                f"Please enter the new secret value for the key '{new_key}'"
+            )
+            secret_args_add_update[new_key] = new_value
     else:
         secret_args_add_update = parsed_args
-        secret_args_remove = remove_keys
 
     client.update_secret(
         name_id_or_prefix=name,
         scope=new_scope,
-        new_name=new_name,
         add_or_update_values=secret_args_add_update,
-        remove_values=secret_args_remove,
+        remove_values=remove_keys,
     )
     declare(f"Secret '{name}' successfully updated.")
 
