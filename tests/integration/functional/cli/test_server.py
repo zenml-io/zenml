@@ -11,28 +11,31 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import logging
-import os
 import platform
 
-import click
-from zenml.cli.cli import cli
 import pytest
 import requests
+from click.testing import CliRunner
 
+from zenml.cli.cli import cli
 from zenml.cli.server import LOCAL_ZENML_SERVER_NAME
 from zenml.config.global_config import GlobalConfiguration
 from zenml.utils.networking_utils import scan_for_available_port
-from zenml.zen_server.deploy import ServerDeployer, ServerDeploymentConfig
+from zenml.zen_server.deploy import ServerDeployer
 
 SERVER_START_STOP_TIMEOUT = 30
+
+
+@pytest.fixture(scope="function")
+def runner(request):
+    return CliRunner()
 
 
 @pytest.mark.skipif(
     platform.system() == "Windows",
     reason="ZenServer not supported as daemon on Windows.",
 )
-def test_server_up_down(clean_client, cli_runner):
+def test_server_cli_up_down(clean_client, cli_runner):
     """Test spinning up and shutting down ZenServer."""
     port = scan_for_available_port(start=8003, stop=9000)
     up_command = cli.commands["up"]
@@ -52,7 +55,7 @@ def test_server_up_down(clean_client, cli_runner):
     platform.system() == "Windows",
     reason="ZenServer not supported as daemon on Windows.",
 )
-def test_server_up_and_connect(clean_client, cli_runner):
+def test_server_cli_up_and_connect(clean_client, cli_runner):
     """Test spinning up and connecting to ZenServer."""
     port = scan_for_available_port(start=8003, stop=9000)
     up_command = cli.commands["up"]

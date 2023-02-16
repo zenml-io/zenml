@@ -15,12 +15,19 @@ import logging
 import os
 from pathlib import Path
 
+import pytest
+from click.testing import CliRunner
+
 from zenml.cli.cli import cli
 from zenml.cli.stack_recipes import STACK_RECIPES_REPO_DIR
-
 from zenml.utils import io_utils
 
 SERVER_START_STOP_TIMEOUT = 30
+
+
+@pytest.fixture(scope="module")
+def cli_runner():
+    return CliRunner()
 
 
 def test_stack_recipes_pull(clean_client, cli_runner):
