@@ -679,21 +679,41 @@ def update_secret(
 
 @secret.command("delete", help="Delete a secret with a given name or id.")
 @click.argument(
-    "secret_name_or_id",
+    "name_or_id",
     type=click.STRING,
 )
-def delete_secret(secret_name_or_id: str) -> None:
+@click.option(
+    "--yes",
+    "-y",
+    type=click.BOOL,
+    default=False,
+    is_flag=True,
+    help="Skip asking for confirmation.",
+)
+def delete_secret(name_or_id: str, yes: bool = False) -> None:
     """Delete a secret for a given name or id.
 
     Args:
-        secret_name_or_id: The name or id of the secret to delete.
+        name_or_id: The name or id of the secret to delete.
+        yes: Skip asking for confirmation.
     """
-    client = Client()
-    try:
-        client.delete_secret(name_id_or_prefix=secret_name_or_id)
-        declare(f"Secret '{secret_name_or_id}' successfully deleted.")
-    except KeyError as e:
-        error(
-            f"Secret with name or id `{secret_name_or_id}` does not exist or "
-            f"could not be loaded: {str(e)}."
+    if not yes:
+        confirmation_response = confirmation(
+            f"This will delete all data associated with the `{name_or_id}` "
+            f"secret. Are you sure you want to proceed?"
         )
+        if not confirmation_response:
+            console.print("Aborting secret deletion...")
+            return
+
+    client = Client()
+
+    with console.status(f"Deleting secret `{name_or_id}`..."):
+        try:
+            client.delete_secret(name_id_or_prefix=name_or_id)
+            declare(f"Secret '{name_or_id}' successfully deleted.")
+        except KeyError as e:
+            error(
+                f"Secret with name or id `{name_or_id}` does not exist or "
+                f"could not be loaded: {str(e)}."
+            )
