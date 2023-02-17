@@ -88,7 +88,7 @@ def main(config: str, epochs: int, lr: float, min_accuracy: float):
                 )
             ),
             model_deployer=model_deployer(
-                params=MLFlowDeployerParameters(workers=3, timeout=10)
+                params=MLFlowDeployerParameters(workers=3, timeout=60)
             ),
         )
 

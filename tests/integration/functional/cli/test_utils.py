@@ -16,7 +16,10 @@ from typing import Generator, Optional, Tuple
 
 from tests.harness.harness import TestHarness
 from zenml.cli import cli
-from zenml.cli.utils import parse_name_and_extra_arguments
+from zenml.cli.utils import (
+    parse_name_and_extra_arguments,
+    temporary_active_stack,
+)
 from zenml.client import Client
 from zenml.enums import PermissionType
 from zenml.models import (
@@ -43,7 +46,7 @@ user_update_command = cli.commands["user"].commands["update"]
 user_delete_command = cli.commands["user"].commands["delete"]
 
 
-def sample_user_name(prefix: str = "aria") -> str:
+def sample_name(prefix: str = "aria") -> str:
     """Function to get random username."""
     return f"{prefix}_{random_str(4)}"
 
@@ -55,7 +58,7 @@ def create_sample_user(
 ) -> UserResponseModel:
     """Function to create a sample user."""
     return Client().create_user(
-        name=sample_user_name(prefix),
+        name=sample_name(prefix),
         password=password if password is not None else random_str(16),
         initial_role=initial_role,
     )
@@ -134,3 +137,21 @@ def create_sample_workspace() -> WorkspaceResponseModel:
         description="This workspace aims to ensure world domination for all "
         "cat-kind.",
     )
+
+
+def test_temporarily_setting_the_active_stack():
+    """Tests the context manager to temporarily activate a stack."""
+    initial_stack = Client().active_stack_model
+    components = {
+        key: components[0].id
+        for key, components in initial_stack.components.items()
+    }
+    new_stack = Client().create_stack(name="new", components=components)
+
+    with temporary_active_stack():
+        assert Client().active_stack_model == initial_stack
+
+    with temporary_active_stack(stack_name_or_id=new_stack.id):
+        assert Client().active_stack_model == new_stack
+
+    assert Client().active_stack_model == initial_stack

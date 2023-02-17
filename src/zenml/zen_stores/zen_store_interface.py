@@ -27,6 +27,13 @@ from zenml.models import (
     FlavorFilterModel,
     FlavorRequestModel,
     FlavorResponseModel,
+    FlavorUpdateModel,
+    PipelineBuildFilterModel,
+    PipelineBuildRequestModel,
+    PipelineBuildResponseModel,
+    PipelineDeploymentFilterModel,
+    PipelineDeploymentRequestModel,
+    PipelineDeploymentResponseModel,
     PipelineFilterModel,
     PipelineRequestModel,
     PipelineResponseModel,
@@ -342,6 +349,20 @@ class ZenStoreInterface(ABC):
         Raises:
             EntityExistsError: If a flavor with the same name and type
                 is already owned by this user in this workspace.
+        """
+
+    @abstractmethod
+    def update_flavor(
+        self, flavor_id: UUID, flavor_update: FlavorUpdateModel
+    ) -> FlavorResponseModel:
+        """Updates an existing user.
+
+        Args:
+            flavor_id: The id of the flavor to update.
+            flavor_update: The update to be applied to the flavor.
+
+        Returns:
+            The updated flavor.
         """
 
     @abstractmethod
@@ -888,6 +909,130 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: if the pipeline doesn't exist.
+        """
+
+    # ---------
+    # Builds
+    # ---------
+
+    @abstractmethod
+    def create_build(
+        self,
+        build: PipelineBuildRequestModel,
+    ) -> PipelineBuildResponseModel:
+        """Creates a new build in a workspace.
+
+        Args:
+            build: The build to create.
+
+        Returns:
+            The newly created build.
+
+        Raises:
+            KeyError: If the workspace does not exist.
+            EntityExistsError: If an identical build already exists.
+        """
+
+    @abstractmethod
+    def get_build(self, build_id: UUID) -> PipelineBuildResponseModel:
+        """Get a build with a given ID.
+
+        Args:
+            build_id: ID of the build.
+
+        Returns:
+            The build.
+
+        Raises:
+            KeyError: If the build does not exist.
+        """
+
+    @abstractmethod
+    def list_builds(
+        self, build_filter_model: PipelineBuildFilterModel
+    ) -> Page[PipelineBuildResponseModel]:
+        """List all builds matching the given filter criteria.
+
+        Args:
+            build_filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all builds matching the filter criteria.
+        """
+
+    @abstractmethod
+    def delete_build(self, build_id: UUID) -> None:
+        """Deletes a build.
+
+        Args:
+            build_id: The ID of the build to delete.
+
+        Raises:
+            KeyError: if the build doesn't exist.
+        """
+
+    # ----------------------
+    # Pipeline Deployments
+    # ----------------------
+
+    @abstractmethod
+    def create_deployment(
+        self,
+        deployment: PipelineDeploymentRequestModel,
+    ) -> PipelineDeploymentResponseModel:
+        """Creates a new deployment in a workspace.
+
+        Args:
+            deployment: The deployment to create.
+
+        Returns:
+            The newly created deployment.
+
+        Raises:
+            KeyError: If the workspace does not exist.
+            EntityExistsError: If an identical deployment already exists.
+        """
+
+    @abstractmethod
+    def get_deployment(
+        self, deployment_id: UUID
+    ) -> PipelineDeploymentResponseModel:
+        """Get a deployment with a given ID.
+
+        Args:
+            deployment_id: ID of the deployment.
+
+        Returns:
+            The deployment.
+
+        Raises:
+            KeyError: If the deployment does not exist.
+        """
+
+    @abstractmethod
+    def list_deployments(
+        self, deployment_filter_model: PipelineDeploymentFilterModel
+    ) -> Page[PipelineDeploymentResponseModel]:
+        """List all deployments matching the given filter criteria.
+
+        Args:
+            deployment_filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all deployments matching the filter criteria.
+        """
+
+    @abstractmethod
+    def delete_deployment(self, deployment_id: UUID) -> None:
+        """Deletes a deployment.
+
+        Args:
+            deployment_id: The ID of the deployment to delete.
+
+        Raises:
+            KeyError: If the deployment doesn't exist.
         """
 
     # ---------

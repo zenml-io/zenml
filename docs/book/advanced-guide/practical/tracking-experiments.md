@@ -35,7 +35,7 @@ ZenML.
 zenml experiment-tracker register mlflow_tracker --flavor=mlflow
 ```
 
-## Alternative Tool: Weights & Biases
+## Weights & Biases
 
 Of course, MLflow is not the only tool you can use for experiment tracking. We
 could achieve the same with another experiment tracking tool: [Weights &
@@ -76,7 +76,28 @@ For a more detailed example of how to use Weights & Biases experiment tracking
 in your ZenML pipeline, see [the ZenML wandb_tracking
 example](https://github.com/zenml-io/zenml/tree/main/examples/wandb_tracking).
 
-{% hint style="info" %}
-To read a more detailed guide about how Experiment Trackers function in ZenML,
-[click here](../../component-gallery/experiment-trackers/experiment-trackers.md).
-{% endhint %}
+## Neptune
+
+Another alternative, and our most recently-added experiment tracker integration
+is [Neptune](https://neptune.ai/product/experiment-tracking), a popular tool
+that you would normally use in the iterative ML experimentation phase to track
+and visualize experiment results or as a model registry for your
+production-ready models. Neptune can also track and visualize the results
+produced by your automated pipeline runs, as you make the transition towards a
+more production oriented workflow.
+
+![Neptune experiment tracker](../../assets/neptune/neptune_charts.png)
+
+ZenML handles initializing Neptune and ensures that the experiment name is the
+same as the pipeline name, and that the experiment run is the same name as the
+pipeline run name. This establishes a lineage between pipelines in ZenML and
+experiments in Neptune.
+
+For a more concrete example of Neptune used as an experiment tracker within a
+pipeline, [check out our example on
+GitHub](https://github.com/zenml-io/zenml/tree/main/examples/neptune_tracking).
+
+{% hint style="info" %} To read a more detailed guide about how Experiment
+Trackers function in ZenML, [click
+here](../../component-gallery/experiment-trackers/experiment-trackers.md). {%
+endhint %}

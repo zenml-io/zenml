@@ -148,7 +148,7 @@ DISABLE_CLIENT_SERVER_MISMATCH_WARNING = handle_bool_env_var(
 )
 
 # Services
-DEFAULT_SERVICE_START_STOP_TIMEOUT = 10
+DEFAULT_SERVICE_START_STOP_TIMEOUT = 60
 DEFAULT_LOCAL_SERVICE_IP_ADDRESS = "127.0.0.1"
 ZEN_SERVER_ENTRYPOINT = "zenml.zen_server.zen_server_api:app"
 
@@ -175,6 +175,8 @@ PIPELINE_RUNS = "/pipeline_runs"
 LOGIN = "/login"
 LOGOUT = "/logout"
 PIPELINES = "/pipelines"
+PIPELINE_BUILDS = "/pipeline_builds"
+PIPELINE_DEPLOYMENTS = "/pipeline_deployments"
 TRIGGERS = "/triggers"
 RUNS = "/runs"
 RUN_METADATA = "/run-metadata"
@@ -204,8 +206,7 @@ MANDATORY_COMPONENT_ATTRIBUTES = ["name", "uuid"]
 MODEL_METADATA_YAML_FILE_NAME = "model_metadata.yaml"
 
 # orchestrator constants
-ORCHESTRATOR_DOCKER_IMAGE_KEY = "orchestrator_docker_image"
-DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE = ".zenml_deployment_config.yaml"
+ORCHESTRATOR_DOCKER_IMAGE_KEY = "orchestrator"
 
 # Secret constants
 ARBITRARY_SECRET_SCHEMA_TYPE = "arbitrary"

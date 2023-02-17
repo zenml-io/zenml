@@ -47,6 +47,8 @@ from zenml.constants import (
     GET_OR_CREATE,
     INFO,
     LOGIN,
+    PIPELINE_BUILDS,
+    PIPELINE_DEPLOYMENTS,
     PIPELINES,
     ROLES,
     RUN_METADATA,
@@ -85,6 +87,13 @@ from zenml.models import (
     FlavorFilterModel,
     FlavorRequestModel,
     FlavorResponseModel,
+    FlavorUpdateModel,
+    PipelineBuildFilterModel,
+    PipelineBuildRequestModel,
+    PipelineBuildResponseModel,
+    PipelineDeploymentFilterModel,
+    PipelineDeploymentRequestModel,
+    PipelineDeploymentResponseModel,
     PipelineFilterModel,
     PipelineRequestModel,
     PipelineResponseModel,
@@ -131,7 +140,6 @@ from zenml.models.base_models import (
     BaseRequestModel,
     BaseResponseModel,
     WorkspaceScopedRequestModel,
-    WorkspaceScopedResponseModel,
 )
 from zenml.models.page_model import Page
 from zenml.models.run_metadata_models import RunMetadataFilterModel
@@ -153,14 +161,8 @@ if TYPE_CHECKING:
 Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
 
 AnyRequestModel = TypeVar("AnyRequestModel", bound=BaseRequestModel)
-AnyProjestRequestModel = TypeVar(
-    "AnyProjestRequestModel", bound=WorkspaceScopedRequestModel
-)
-
 AnyResponseModel = TypeVar("AnyResponseModel", bound=BaseResponseModel)
-AnyProjestResponseModel = TypeVar(
-    "AnyProjestResponseModel", bound=WorkspaceScopedResponseModel
-)
+
 
 DEFAULT_HTTP_TIMEOUT = 30
 
@@ -578,8 +580,27 @@ class RestZenStore(BaseZenStore):
         Returns:
             The newly created flavor.
         """
-        return self._create_workspace_scoped_resource(
+        return self._create_resource(
             resource=flavor,
+            route=FLAVORS,
+            response_model=FlavorResponseModel,
+        )
+
+    def update_flavor(
+        self, flavor_id: UUID, flavor_update: FlavorUpdateModel
+    ) -> FlavorResponseModel:
+        """Updates an existing user.
+
+        Args:
+            flavor_id: The id of the flavor to update.
+            flavor_update: The update to be applied to the flavor.
+
+        Returns:
+            The updated flavor.
+        """
+        return self._update_resource(
+            resource_id=flavor_id,
+            resource_update=flavor_update,
             route=FLAVORS,
             response_model=FlavorResponseModel,
         )
@@ -1231,6 +1252,140 @@ class RestZenStore(BaseZenStore):
         )
 
     # ---------
+    # Builds
+    # ---------
+
+    def create_build(
+        self,
+        build: PipelineBuildRequestModel,
+    ) -> PipelineBuildResponseModel:
+        """Creates a new build in a workspace.
+
+        Args:
+            build: The build to create.
+
+        Returns:
+            The newly created build.
+        """
+        return self._create_workspace_scoped_resource(
+            resource=build,
+            route=PIPELINE_BUILDS,
+            response_model=PipelineBuildResponseModel,
+        )
+
+    def get_build(self, build_id: UUID) -> PipelineBuildResponseModel:
+        """Get a build with a given ID.
+
+        Args:
+            build_id: ID of the build.
+
+        Returns:
+            The build.
+        """
+        return self._get_resource(
+            resource_id=build_id,
+            route=PIPELINE_BUILDS,
+            response_model=PipelineBuildResponseModel,
+        )
+
+    def list_builds(
+        self, build_filter_model: PipelineBuildFilterModel
+    ) -> Page[PipelineBuildResponseModel]:
+        """List all builds matching the given filter criteria.
+
+        Args:
+            build_filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all builds matching the filter criteria.
+        """
+        return self._list_paginated_resources(
+            route=PIPELINE_BUILDS,
+            response_model=PipelineBuildResponseModel,
+            filter_model=build_filter_model,
+        )
+
+    def delete_build(self, build_id: UUID) -> None:
+        """Deletes a build.
+
+        Args:
+            build_id: The ID of the build to delete.
+        """
+        self._delete_resource(
+            resource_id=build_id,
+            route=PIPELINE_BUILDS,
+        )
+
+    # ----------------------
+    # Pipeline Deployments
+    # ----------------------
+
+    def create_deployment(
+        self,
+        deployment: PipelineDeploymentRequestModel,
+    ) -> PipelineDeploymentResponseModel:
+        """Creates a new deployment in a workspace.
+
+        Args:
+            deployment: The deployment to create.
+
+        Returns:
+            The newly created deployment.
+        """
+        return self._create_workspace_scoped_resource(
+            resource=deployment,
+            route=PIPELINE_DEPLOYMENTS,
+            response_model=PipelineDeploymentResponseModel,
+        )
+
+    def get_deployment(
+        self, deployment_id: UUID
+    ) -> PipelineDeploymentResponseModel:
+        """Get a deployment with a given ID.
+
+        Args:
+            deployment_id: ID of the deployment.
+
+        Returns:
+            The deployment.
+        """
+        return self._get_resource(
+            resource_id=deployment_id,
+            route=PIPELINE_DEPLOYMENTS,
+            response_model=PipelineDeploymentResponseModel,
+        )
+
+    def list_deployments(
+        self, deployment_filter_model: PipelineDeploymentFilterModel
+    ) -> Page[PipelineDeploymentResponseModel]:
+        """List all deployments matching the given filter criteria.
+
+        Args:
+            deployment_filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all deployments matching the filter criteria.
+        """
+        return self._list_paginated_resources(
+            route=PIPELINE_DEPLOYMENTS,
+            response_model=PipelineDeploymentResponseModel,
+            filter_model=deployment_filter_model,
+        )
+
+    def delete_deployment(self, deployment_id: UUID) -> None:
+        """Deletes a deployment.
+
+        Args:
+            deployment_id: The ID of the deployment to delete.
+        """
+        self._delete_resource(
+            resource_id=deployment_id,
+            route=PIPELINE_DEPLOYMENTS,
+        )
+
+    # ---------
     # Schedules
     # ---------
 
@@ -1724,9 +1879,13 @@ class RestZenStore(BaseZenStore):
             raise IllegalOperationError(msg)
         elif response.status_code == 404:
             if "KeyError" in response.text:
-                raise KeyError(
-                    response.json().get("detail", (response.text,))[1]
-                )
+                # In case the backend does not return more detailed info
+                error_message = "KeyError"
+
+                error_output = response.json().get("detail", (response.text,))
+                if len(error_output) > 1:
+                    error_message = error_output[1]
+                raise KeyError(error_message)
             elif "DoesNotExistException" in response.text:
                 message = ": ".join(
                     response.json().get("detail", (response.text,))
@@ -1936,10 +2095,10 @@ class RestZenStore(BaseZenStore):
     def _create_workspace_scoped_resource(
         self,
         resource: WorkspaceScopedRequestModel,
-        response_model: Type[AnyProjestResponseModel],
+        response_model: Type[AnyResponseModel],
         route: str,
         params: Optional[Dict[str, Any]] = None,
-    ) -> AnyProjestResponseModel:
+    ) -> AnyResponseModel:
         """Create a new workspace scoped resource.
 
         Args:
@@ -2012,10 +2171,10 @@ class RestZenStore(BaseZenStore):
     def _get_or_create_workspace_scoped_resource(
         self,
         resource: WorkspaceScopedRequestModel,
-        response_model: Type[AnyProjestResponseModel],
+        response_model: Type[AnyResponseModel],
         route: str,
         params: Optional[Dict[str, Any]] = None,
-    ) -> Tuple[AnyProjestResponseModel, bool]:
+    ) -> Tuple[AnyResponseModel, bool]:
         """Get or create a workspace scoped resource.
 
         Args:

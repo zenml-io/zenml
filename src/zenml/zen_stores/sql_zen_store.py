@@ -78,6 +78,13 @@ from zenml.models import (
     FlavorFilterModel,
     FlavorRequestModel,
     FlavorResponseModel,
+    FlavorUpdateModel,
+    PipelineBuildFilterModel,
+    PipelineBuildRequestModel,
+    PipelineBuildResponseModel,
+    PipelineDeploymentFilterModel,
+    PipelineDeploymentRequestModel,
+    PipelineDeploymentResponseModel,
     PipelineFilterModel,
     PipelineRequestModel,
     PipelineResponseModel,
@@ -124,10 +131,12 @@ from zenml.models import (
     WorkspaceUpdateModel,
 )
 from zenml.models.base_models import BaseResponseModel
+from zenml.models.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.models.page_model import Page
 from zenml.models.run_metadata_models import RunMetadataFilterModel
 from zenml.models.schedule_model import ScheduleFilterModel
 from zenml.models.server_models import ServerDatabaseType, ServerModel
+from zenml.stack.flavor_registry import FlavorRegistry
 from zenml.utils import uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.enum_utils import StrEnum
@@ -151,6 +160,8 @@ from zenml.zen_stores.schemas import (
     FlavorSchema,
     IdentitySchema,
     NamedSchema,
+    PipelineBuildSchema,
+    PipelineDeploymentSchema,
     PipelineRunSchema,
     PipelineSchema,
     RolePermissionSchema,
@@ -859,6 +870,18 @@ class SqlZenStore(BaseZenStore):
                 self.alembic.stamp(ZENML_ALEMBIC_START_REVISION)
                 self.alembic.upgrade()
 
+        # If an alembic migration took place, all non-custom flavors are purged
+        #  and the FlavorRegistry recreates all in-built and integration
+        #  flavors in the db.
+        revisions_afterwards = self.alembic.current_revisions()
+
+        if revisions != revisions_afterwards:
+            self._sync_flavors()
+
+    def _sync_flavors(self) -> None:
+        """Purge all in-built and integration flavors from the DB and sync."""
+        FlavorRegistry().register_flavors(store=self)
+
     def get_store_info(self) -> ServerModel:
         """Get information about the store.
 
@@ -1075,6 +1098,9 @@ class SqlZenStore(BaseZenStore):
                 stack = session.exec(
                     select(StackSchema).where(StackSchema.id == stack_id)
                 ).one()
+
+                if stack is None:
+                    raise KeyError(f"Stack with ID {stack_id} not found.")
                 if stack.name == DEFAULT_STACK_NAME:
                     raise IllegalOperationError(
                         "The default stack cannot be deleted."
@@ -1370,6 +1396,9 @@ class SqlZenStore(BaseZenStore):
                         StackComponentSchema.id == component_id
                     )
                 ).one()
+
+                if stack_component is None:
+                    raise KeyError(f"Stack with ID {component_id} not found.")
                 if (
                     stack_component.name == DEFAULT_STACK_COMPONENT_NAME
                     and stack_component.type
@@ -1487,7 +1516,6 @@ class SqlZenStore(BaseZenStore):
     # Stack component flavors
     # -----------------------
 
-    @track(AnalyticsEvent.CREATED_FLAVOR)
     def create_flavor(self, flavor: FlavorRequestModel) -> FlavorResponseModel:
         """Creates a new stack component flavor.
 
@@ -1500,9 +1528,10 @@ class SqlZenStore(BaseZenStore):
         Raises:
             EntityExistsError: If a flavor with the same name and type
                 is already owned by this user in this workspace.
+            ValueError: In case the config_schema string exceeds the max length.
         """
         with Session(self.engine) as session:
-            # Check if component with the same domain key (name, type, workspace,
+            # Check if flavor with the same domain key (name, type, workspace,
             # owner) already exists
             existing_flavor = session.exec(
                 select(FlavorSchema)
@@ -1521,19 +1550,61 @@ class SqlZenStore(BaseZenStore):
                     f"'{flavor.user}' user."
                 )
 
-            new_flavor = FlavorSchema(
-                name=flavor.name,
-                type=flavor.type,
-                source=flavor.source,
-                config_schema=flavor.config_schema,
-                integration=flavor.integration,
-                workspace_id=flavor.workspace,
-                user_id=flavor.user,
-            )
-            session.add(new_flavor)
+            config_schema = json.dumps(flavor.config_schema)
+
+            if len(config_schema) > TEXT_FIELD_MAX_LENGTH:
+                raise ValueError(
+                    "Json representation of configuration schema"
+                    "exceeds max length."
+                )
+
+            else:
+                new_flavor = FlavorSchema(
+                    name=flavor.name,
+                    type=flavor.type,
+                    source=flavor.source,
+                    config_schema=config_schema,
+                    integration=flavor.integration,
+                    workspace_id=flavor.workspace,
+                    user_id=flavor.user,
+                    logo_url=flavor.logo_url,
+                    docs_url=flavor.docs_url,
+                    is_custom=flavor.is_custom,
+                )
+                session.add(new_flavor)
+                session.commit()
+
+                return new_flavor.to_model()
+
+    def update_flavor(
+        self, flavor_id: UUID, flavor_update: FlavorUpdateModel
+    ) -> FlavorResponseModel:
+        """Updates an existing user.
+
+        Args:
+            flavor_id: The id of the flavor to update.
+            flavor_update: The update to be applied to the flavor.
+
+        Returns:
+            The updated flavor.
+
+        Raises:
+            KeyError: If no flavor with the given id exists.
+        """
+        with Session(self.engine) as session:
+            existing_flavor = session.exec(
+                select(FlavorSchema).where(FlavorSchema.id == flavor_id)
+            ).first()
+
+            if not existing_flavor:
+                raise KeyError(f"Flavor with ID {flavor_id} not found.")
+            existing_flavor.update(flavor_update=flavor_update)
+            session.add(existing_flavor)
             session.commit()
 
-            return new_flavor.to_model()
+            # Refresh the Model that was just created
+            session.refresh(existing_flavor)
+            return existing_flavor.to_model()
 
     def get_flavor(self, flavor_id: UUID) -> FlavorResponseModel:
         """Get a flavor by ID.
@@ -1592,6 +1663,9 @@ class SqlZenStore(BaseZenStore):
                 flavor_in_db = session.exec(
                     select(FlavorSchema).where(FlavorSchema.id == flavor_id)
                 ).one()
+
+                if flavor_in_db is None:
+                    raise KeyError(f"Flavor with ID {flavor_id} not found.")
                 components_of_flavor = session.exec(
                     select(StackComponentSchema).where(
                         StackComponentSchema.flavor == flavor_in_db.name
@@ -1601,7 +1675,7 @@ class SqlZenStore(BaseZenStore):
                     raise IllegalOperationError(
                         f"Stack Component `{flavor_in_db.name}` of type "
                         f"`{flavor_in_db.type} cannot be "
-                        f"deleted as it is used by"
+                        f"deleted as it is used by "
                         f"{len(components_of_flavor)} "
                         f"components. Before deleting this "
                         f"flavor, make sure to delete all "
@@ -1609,10 +1683,9 @@ class SqlZenStore(BaseZenStore):
                     )
                 else:
                     session.delete(flavor_in_db)
+                    session.commit()
             except NoResultFound as error:
                 raise KeyError from error
-
-            session.commit()
 
     # -----
     # Users
@@ -2547,26 +2620,20 @@ class SqlZenStore(BaseZenStore):
             existing_pipeline = session.exec(
                 select(PipelineSchema)
                 .where(PipelineSchema.name == pipeline.name)
+                .where(PipelineSchema.version == pipeline.version)
                 .where(PipelineSchema.workspace_id == pipeline.workspace)
             ).first()
             if existing_pipeline is not None:
                 raise EntityExistsError(
                     f"Unable to create pipeline in workspace "
-                    f"'{pipeline.workspace}': A pipeline with this name "
-                    f"already exists."
+                    f"'{pipeline.workspace}': A pipeline with this name and "
+                    f"version already exists."
                 )
 
             # Create the pipeline
-            new_pipeline = PipelineSchema(
-                name=pipeline.name,
-                workspace_id=pipeline.workspace,
-                user_id=pipeline.user,
-                docstring=pipeline.docstring,
-                spec=pipeline.spec.json(sort_keys=True),
-            )
+            new_pipeline = PipelineSchema.from_request(pipeline)
             session.add(new_pipeline)
             session.commit()
-            # Refresh the Model that was just created
             session.refresh(new_pipeline)
 
             return new_pipeline.to_model()
@@ -2676,6 +2743,204 @@ class SqlZenStore(BaseZenStore):
                 )
 
             session.delete(pipeline)
+            session.commit()
+
+    # ---------
+    # Builds
+    # ---------
+
+    def create_build(
+        self,
+        build: PipelineBuildRequestModel,
+    ) -> PipelineBuildResponseModel:
+        """Creates a new build in a workspace.
+
+        Args:
+            build: The build to create.
+
+        Returns:
+            The newly created build.
+        """
+        with Session(self.engine) as session:
+            # Create the build
+            new_build = PipelineBuildSchema.from_request(build)
+            session.add(new_build)
+            session.commit()
+            session.refresh(new_build)
+
+            return new_build.to_model()
+
+    def get_build(self, build_id: UUID) -> PipelineBuildResponseModel:
+        """Get a build with a given ID.
+
+        Args:
+            build_id: ID of the build.
+
+        Returns:
+            The build.
+
+        Raises:
+            KeyError: If the build does not exist.
+        """
+        with Session(self.engine) as session:
+            # Check if build with the given ID exists
+            build = session.exec(
+                select(PipelineBuildSchema).where(
+                    PipelineBuildSchema.id == build_id
+                )
+            ).first()
+            if build is None:
+                raise KeyError(
+                    f"Unable to get build with ID '{build_id}': "
+                    "No build with this ID found."
+                )
+
+            return build.to_model()
+
+    def list_builds(
+        self, build_filter_model: PipelineBuildFilterModel
+    ) -> Page[PipelineBuildResponseModel]:
+        """List all builds matching the given filter criteria.
+
+        Args:
+            build_filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all builds matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            query = select(PipelineBuildSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=PipelineBuildSchema,
+                filter_model=build_filter_model,
+            )
+
+    def delete_build(self, build_id: UUID) -> None:
+        """Deletes a build.
+
+        Args:
+            build_id: The ID of the build to delete.
+
+        Raises:
+            KeyError: if the build doesn't exist.
+        """
+        with Session(self.engine) as session:
+            # Check if build with the given ID exists
+            build = session.exec(
+                select(PipelineBuildSchema).where(
+                    PipelineBuildSchema.id == build_id
+                )
+            ).first()
+            if build is None:
+                raise KeyError(
+                    f"Unable to delete build with ID {build_id}: "
+                    f"No build with this ID found."
+                )
+
+            session.delete(build)
+            session.commit()
+
+    # ----------------------
+    # Pipeline Deployments
+    # ----------------------
+
+    def create_deployment(
+        self,
+        deployment: PipelineDeploymentRequestModel,
+    ) -> PipelineDeploymentResponseModel:
+        """Creates a new deployment in a workspace.
+
+        Args:
+            deployment: The deployment to create.
+
+        Returns:
+            The newly created deployment.
+        """
+        with Session(self.engine) as session:
+            # Create the build
+            new_deployment = PipelineDeploymentSchema.from_request(deployment)
+            session.add(new_deployment)
+            session.commit()
+            session.refresh(new_deployment)
+
+            return new_deployment.to_model()
+
+    def get_deployment(
+        self, deployment_id: UUID
+    ) -> PipelineDeploymentResponseModel:
+        """Get a deployment with a given ID.
+
+        Args:
+            deployment_id: ID of the deployment.
+
+        Returns:
+            The deployment.
+
+        Raises:
+            KeyError: If the deployment does not exist.
+        """
+        with Session(self.engine) as session:
+            # Check if deployment with the given ID exists
+            deployment = session.exec(
+                select(PipelineDeploymentSchema).where(
+                    PipelineDeploymentSchema.id == deployment_id
+                )
+            ).first()
+            if deployment is None:
+                raise KeyError(
+                    f"Unable to get deployment with ID '{deployment_id}': "
+                    "No deployment with this ID found."
+                )
+
+            return deployment.to_model()
+
+    def list_deployments(
+        self, deployment_filter_model: PipelineDeploymentFilterModel
+    ) -> Page[PipelineDeploymentResponseModel]:
+        """List all deployments matching the given filter criteria.
+
+        Args:
+            deployment_filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all deployments matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            query = select(PipelineDeploymentSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=PipelineDeploymentSchema,
+                filter_model=deployment_filter_model,
+            )
+
+    def delete_deployment(self, deployment_id: UUID) -> None:
+        """Deletes a deployment.
+
+        Args:
+            deployment_id: The ID of the deployment to delete.
+
+        Raises:
+            KeyError: If the deployment doesn't exist.
+        """
+        with Session(self.engine) as session:
+            # Check if build with the given ID exists
+            deployment = session.exec(
+                select(PipelineDeploymentSchema).where(
+                    PipelineDeploymentSchema.id == deployment_id
+                )
+            ).first()
+            if deployment is None:
+                raise KeyError(
+                    f"Unable to delete deployment with ID {deployment_id}: "
+                    f"No deployment with this ID found."
+                )
+
+            session.delete(deployment)
             session.commit()
 
     # ---------

@@ -18,6 +18,11 @@ from zenml.models.artifact_models import (
     ArtifactRequestModel,
     ArtifactResponseModel,
 )
+from zenml.models.pipeline_build_models import (
+    PipelineBuildFilterModel,
+    PipelineBuildRequestModel,
+    PipelineBuildResponseModel,
+)
 from zenml.models.component_models import (
     ComponentFilterModel,
     ComponentRequestModel,
@@ -29,12 +34,18 @@ from zenml.models.flavor_models import (
     FlavorFilterModel,
     FlavorRequestModel,
     FlavorResponseModel,
+    FlavorUpdateModel,
 )
 from zenml.models.pipeline_models import (
     PipelineFilterModel,
     PipelineRequestModel,
     PipelineResponseModel,
     PipelineUpdateModel,
+)
+from zenml.models.pipeline_deployment_models import (
+    PipelineDeploymentFilterModel,
+    PipelineDeploymentRequestModel,
+    PipelineDeploymentResponseModel,
 )
 from zenml.models.pipeline_run_models import (
     PipelineRunFilterModel,
@@ -147,6 +158,21 @@ ScheduleResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
     WorkspaceResponseModel=WorkspaceResponseModel,
 )
+PipelineBuildResponseModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
+    PipelineResponseModel=PipelineResponseModel,
+    StackResponseModel=StackResponseModel,
+)
+
+PipelineDeploymentResponseModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
+    PipelineResponseModel=PipelineResponseModel,
+    StackResponseModel=StackResponseModel,
+    PipelineBuildResponseModel=PipelineBuildResponseModel,
+    ScheduleResponseModel=ScheduleResponseModel,
+)
 
 PipelineRunResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
@@ -154,6 +180,8 @@ PipelineRunResponseModel.update_forward_refs(
     PipelineResponseModel=PipelineResponseModel,
     StackResponseModel=StackResponseModel,
     RunMetadataResponseModel=RunMetadataResponseModel,
+    PipelineBuildResponseModel=PipelineBuildResponseModel,
+    PipelineDeploymentResponseModel=PipelineDeploymentResponseModel,
 )
 
 StepRunResponseModel.update_forward_refs(
@@ -172,8 +200,10 @@ ArtifactResponseModel.update_forward_refs(
 __all__ = [
     "ArtifactRequestModel",
     "ArtifactResponseModel",
-    "ArtifactUpdateModel",
     "ArtifactFilterModel",
+    "PipelineBuildFilterModel",
+    "PipelineBuildRequestModel",
+    "PipelineBuildResponseModel",
     "ComponentRequestModel",
     "ComponentResponseModel",
     "ComponentUpdateModel",
@@ -181,11 +211,15 @@ __all__ = [
     "FlavorRequestModel",
     "FlavorResponseModel",
     "FlavorFilterModel",
+    "FlavorUpdateModel",
     "BaseFilterModel",
     "PipelineRequestModel",
     "PipelineResponseModel",
     "PipelineUpdateModel",
     "PipelineFilterModel",
+    "PipelineDeploymentRequestModel",
+    "PipelineDeploymentResponseModel",
+    "PipelineDeploymentFilterModel",
     "PipelineRunRequestModel",
     "PipelineRunResponseModel",
     "PipelineRunUpdateModel",
