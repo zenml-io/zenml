@@ -16,7 +16,14 @@
 from hashlib import md5
 from typing import Any, List, Optional
 
-import neptune.new as neptune  # type: ignore
+try:
+    # neptune-client=0.9.0+ package structure
+    import neptune.new as neptune  # type: ignore
+    from neptune.new.metadata_containers import Run  # type: ignore
+except ImportError:
+    # neptune-client>=1.0.0 package structure
+    import neptune  # type: ignore
+    from neptune import Run  # type: ignore
 
 import zenml
 from zenml.client import Client
@@ -114,7 +121,7 @@ class RunProvider(metaclass=SingletonMetaClass):
         self._tags = tags
 
     @property
-    def active_run(self) -> neptune.metadata_containers.Run:
+    def active_run(self) -> Run:
         """Initializes a new neptune run every time it is called.
 
         The run is closed and the active run state is set to stopped
@@ -139,7 +146,7 @@ class RunProvider(metaclass=SingletonMetaClass):
         self._active_run = None
 
 
-def get_neptune_run() -> neptune.metadata_containers.Run:
+def get_neptune_run() -> Run:
     """Helper function to fetch an existing Neptune run or create a new one.
 
     Returns:
