@@ -7,6 +7,8 @@
 *** https://www.markdownguide.org/basic-syntax/#reference-style-links
 -->
 
+<img referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=0fcbab94-8fbe-4a38-93e8-c2348450a42e" />
+
 [![PyPi][pypi-shield]][pypi-url]
 [![PyPi][pypiversion-shield]][pypi-url]
 [![PyPi][downloads-shield]][downloads-url]
