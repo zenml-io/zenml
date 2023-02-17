@@ -141,6 +141,7 @@ def evidently_profile_step(
     params: EvidentlyProfileParameters,
 ) -> BaseStep:
     """Shortcut function to create a new instance of the EvidentlyProfileConfig step.
+    
     The returned EvidentlyProfileStep can be used in a pipeline to
     run model drift analyses on two input pd.DataFrame datasets and return the
     results as an Evidently profile object and a rendered dashboard object.

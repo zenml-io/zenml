@@ -20,7 +20,8 @@ def text_analyzer(
     report: str,
 ) -> Output(ref_missing_values=int, comp_missing_values=int):
     """Analyze the Evidently text Report and return the number of missing
-    values in the reference and comparison datasets."""
+    values in the reference and comparison datasets.
+    """
     result = json.loads(report)["metrics"][0]["result"]
     return (
         result["current"]["number_of_missing_values"],

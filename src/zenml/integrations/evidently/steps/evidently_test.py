@@ -16,9 +16,6 @@
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union, cast
 
 import pandas as pd
-from evidently.pipeline.column_mapping import (  # type: ignore[import]
-    ColumnMapping,
-)
 from pydantic import Field
 
 from zenml.integrations.evidently.data_validators import EvidentlyDataValidator

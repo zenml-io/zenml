@@ -203,7 +203,7 @@ class EvidentlyReportStep(BaseStep):
             column_mapping=column_mapping,
             report_options=params.report_options,
         )
-        return [report.json(), report.show(mode='inline').data]
+        return [report.json(), report.show(mode="inline").data]
 
 
 def evidently_report_step(
