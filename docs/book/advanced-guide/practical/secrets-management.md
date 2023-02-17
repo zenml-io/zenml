@@ -251,8 +251,9 @@ If you have secrets registered through both the [centralized secrets management]
 and [a secrets manager](#secrets-management-with-secrets-managers), ZenML will
 first try to fetch the secret from the centralized secrets management and only
 fall back to the secrets manager if the secret is not found. This means that if
-you have a secret registered with the same name in both centralized secrets
-store 
+you have a secret registered with the same name in both the centralized secrets
+store and the secrets manager, the secret registered in the secrets store
+will take precedence.
 {% endhint %}
 
 ### Fetch secret values in a step
