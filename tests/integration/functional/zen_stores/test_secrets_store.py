@@ -1243,7 +1243,7 @@ def test_list_secrets_pagination_and_sorting():
         assert secrets.total_pages == 2
         assert secrets.total == 4
 
-        assert [secret_two.id, secret_four.id] == [s.id for s in secrets.items]
+        assert {secret_two.id, secret_four.id} == {s.id for s in secrets.items}
 
         secrets = store.list_secrets(
             SecretFilterModel(
@@ -1258,9 +1258,9 @@ def test_list_secrets_pagination_and_sorting():
         assert secrets.total_pages == 2
         assert secrets.total == 4
 
-        assert [secret_one.id, secret_three.id] == [
+        assert {secret_one.id, secret_three.id} == {
             s.id for s in secrets.items
-        ]
+        }
 
         secrets = store.list_secrets(
             SecretFilterModel(
@@ -1275,9 +1275,11 @@ def test_list_secrets_pagination_and_sorting():
         assert secrets.total_pages == 2
         assert secrets.total == 4
 
-        assert [secret_one.id, secret_two.id, secret_three.id] == [
-            s.id for s in secrets.items
-        ]
+        # NOTE: it's impossible to tell for sure which order these will be in,
+        # because they are created in less than one second and the granularity
+        # of the sorting algorithm is one second, but we can at least assert
+        # that they're all there
+        page_one = [s.id for s in secrets.items]
 
         secrets = store.list_secrets(
             SecretFilterModel(
@@ -1292,7 +1294,13 @@ def test_list_secrets_pagination_and_sorting():
         assert secrets.total_pages == 2
         assert secrets.total == 4
 
-        assert [secret_four.id] == [s.id for s in secrets.items]
+        page_two = [s.id for s in secrets.items]
+        assert set(page_one + page_two) == {
+            secret_one.id,
+            secret_two.id,
+            secret_three.id,
+            secret_four.id,
+        }
 
         # To give the updated time a chance to change
         time.sleep(1)
@@ -1303,6 +1311,9 @@ def test_list_secrets_pagination_and_sorting():
                 name=f"arias_dreams_{suffix}",
             ),
         )
+
+        # To give the updated time a chance to change
+        time.sleep(1)
 
         secret_two = store.update_secret(
             secret_two.id,
@@ -1344,10 +1355,14 @@ def test_list_secrets_pagination_and_sorting():
         assert secrets.total_pages == 2
         assert secrets.total == 4
 
-        assert [
+        # NOTE: the second page of secrets were never updated, so they have
+        # almost the same updated time (under one second difference). We can't
+        # assert that they're in a specific order, but we can assert that they
+        # are all there
+        assert {
             secret_four.id,
             secret_three.id,
-        ] == [s.id for s in secrets.items]
+        } == {s.id for s in secrets.items}
 
         secrets = store.list_secrets(
             SecretFilterModel(

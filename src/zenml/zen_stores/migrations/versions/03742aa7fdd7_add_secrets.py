@@ -1,8 +1,8 @@
 """add_secrets [03742aa7fdd7].
 
 Revision ID: 03742aa7fdd7
-Revises: bea8a6ce3015
-Create Date: 2023-02-09 17:43:34.207799
+Revises: 19f27d5b234e
+Create Date: 2023-02-17 17:43:34.207799
 
 """
 import sqlalchemy as sa
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "03742aa7fdd7"
-down_revision = "bea8a6ce3015"
+down_revision = "19f27d5b234e"
 branch_labels = None
 depends_on = None
 

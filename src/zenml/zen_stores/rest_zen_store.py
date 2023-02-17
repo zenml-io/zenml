@@ -1893,6 +1893,8 @@ class RestZenStore(BaseZenStore):
                 entity already exists.
             ValueError: If the response indicates that the requested entity
                 does not exist.
+            NotImplementedError: If the response indicates that the requested
+                operation is not implemented.
         """
         if 200 <= response.status_code < 300:
             try:
