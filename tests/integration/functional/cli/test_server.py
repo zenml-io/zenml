@@ -16,14 +16,10 @@ from contextlib import ExitStack as does_not_raise
 import pytest
 from click.testing import CliRunner
 
-from tests.integration.functional.cli.test_utils import (
-    sample_role_name,
-    sample_user_name,
-    user_create_command,
-)
 from zenml.cli.cli import cli
 from zenml.config.global_config import GlobalConfiguration
 
+user_create_command = cli.commands["user"].commands["create"]
 role_create_command = cli.commands["role"].commands["create"]
 
 
@@ -34,8 +30,8 @@ def test_server_doesnt_raise_error_for_permissionless_user() -> None:
     """Test that the server doesn't raise an error for a permissionless user."""
     runner = CliRunner()
 
-    new_role_name = sample_role_name()
-    new_user_name = sample_user_name()
+    new_role_name = "permissionless_role_for_axl"
+    new_user_name = "aria_and_blupus"
     new_password = "kamicat"
 
     # create a role without any permissions
