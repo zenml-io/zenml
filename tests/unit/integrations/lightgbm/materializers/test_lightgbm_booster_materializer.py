@@ -39,4 +39,6 @@ def test_lightgbm_booster_materializer(empty_model_file):
         return lgb.Booster(model_file=empty_model_file)
 
     with does_not_raise():
-        some_step().with_return_materializers(LightGBMBoosterMaterializer)()
+        some_step().configure(
+            output_materializers=LightGBMBoosterMaterializer
+        )()

@@ -177,6 +177,8 @@ PIPELINE_RUNS = "/pipeline_runs"
 LOGIN = "/login"
 LOGOUT = "/logout"
 PIPELINES = "/pipelines"
+PIPELINE_BUILDS = "/pipeline_builds"
+PIPELINE_DEPLOYMENTS = "/pipeline_deployments"
 TRIGGERS = "/triggers"
 RUNS = "/runs"
 RUN_METADATA = "/run-metadata"
@@ -207,8 +209,7 @@ MANDATORY_COMPONENT_ATTRIBUTES = ["name", "uuid"]
 MODEL_METADATA_YAML_FILE_NAME = "model_metadata.yaml"
 
 # orchestrator constants
-ORCHESTRATOR_DOCKER_IMAGE_KEY = "orchestrator_docker_image"
-DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE = ".zenml_deployment_config.yaml"
+ORCHESTRATOR_DOCKER_IMAGE_KEY = "orchestrator"
 
 # Secret constants
 ARBITRARY_SECRET_SCHEMA_TYPE = "arbitrary"

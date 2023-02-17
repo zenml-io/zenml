@@ -47,7 +47,7 @@ from zenml.integrations.evidently.flavors.evidently_data_validator_flavor import
     EvidentlyDataValidatorFlavor,
 )
 from zenml.logger import get_logger
-from zenml.utils.source_utils import load_source_path_class
+from zenml.utils.source_utils import load_source_path
 
 logger = get_logger(__name__)
 
@@ -173,7 +173,7 @@ class EvidentlyDataValidator(BaseDataValidator):
         options = []
         for option_clspath, option_args in option_list:
             try:
-                option_cls = load_source_path_class(option_clspath)
+                option_cls = load_source_path(option_clspath)
             except AttributeError:
                 raise ValueError(
                     f"Could not map the `{option_clspath}` Evidently option "

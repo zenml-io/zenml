@@ -29,6 +29,8 @@ from zenml.zen_server.routers import (
     artifacts_endpoints,
     auth_endpoints,
     flavors_endpoints,
+    pipeline_builds_endpoints,
+    pipeline_deployments_endpoints,
     pipelines_endpoints,
     role_assignments_endpoints,
     roles_endpoints,
@@ -154,6 +156,8 @@ app.include_router(teams_endpoints.router)
 app.include_router(users_endpoints.router)
 app.include_router(users_endpoints.current_user_router)
 app.include_router(users_endpoints.activation_router)
+app.include_router(pipeline_builds_endpoints.router)
+app.include_router(pipeline_deployments_endpoints.router)
 
 
 def get_root_static_files() -> List[str]:

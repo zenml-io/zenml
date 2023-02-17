@@ -17,13 +17,13 @@ from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional
 from pydantic import root_validator
 
 from zenml.config.base_settings import BaseSettings, SettingsOrDict
-from zenml.config.constants import RESOURCE_SETTINGS_KEY
+from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
 from zenml.config.strict_base_model import StrictBaseModel
 from zenml.logger import get_logger
 from zenml.utils import source_utils
 
 if TYPE_CHECKING:
-    from zenml.config import ResourceSettings
+    from zenml.config import DockerSettings, ResourceSettings
 
 logger = get_logger(__name__)
 
@@ -120,6 +120,20 @@ class StepConfiguration(PartialStepConfiguration):
         )
         return ResourceSettings.parse_obj(model_or_dict)
 
+    @property
+    def docker_settings(self) -> "DockerSettings":
+        """Docker settings of this step configuration.
+
+        Returns:
+            The Docker settings of this step configuration.
+        """
+        from zenml.config import DockerSettings
+
+        model_or_dict: SettingsOrDict = self.settings.get(
+            DOCKER_SETTINGS_KEY, {}
+        )
+        return DockerSettings.parse_obj(model_or_dict)
+
 
 class InputSpec(StrictBaseModel):
     """Step input specification."""
@@ -134,6 +148,8 @@ class StepSpec(StrictBaseModel):
     source: str
     upstream_steps: List[str]
     inputs: Dict[str, InputSpec] = {}
+    # The default value is to ensure compatibility with specs of version <0.2
+    pipeline_parameter_name: str = ""
 
     @property
     def module_name(self) -> str:
@@ -174,12 +190,11 @@ class StepSpec(StrictBaseModel):
             if self.upstream_steps != other.upstream_steps:
                 return False
 
-            # TODO: rethink this once we have pipeline versioning
-            # for now we don't compare the inputs because that would force
-            # users to re-register their pipeline if they change an output or
-            # input name
-            # if self.inputs != other.inputs:
-            #     return False
+            if self.inputs != other.inputs:
+                return False
+
+            if self.pipeline_parameter_name != other.pipeline_parameter_name:
+                return False
 
             # Remove internal version pin from older sources for backwards
             # compatibility

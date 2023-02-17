@@ -87,13 +87,19 @@ def test_basic_crud_for_entity(crud_test_config: CrudTestConfig):
         create_model.user = client.active_user.id
     if "workspace" in create_model.__fields__:
         create_model.workspace = client.active_workspace.id
+    if "stack" in create_model.__fields__:
+        create_model.stack = client.active_stack_model.id
+
     # Test the creation
     created_entity = crud_test_config.create_method(create_model)
-    # Filter by name to verify the entity was actually created
-    entities_list = crud_test_config.list_method(
-        crud_test_config.filter_model(name=create_model.name)
-    )
-    assert entities_list.total == 1
+
+    if hasattr(created_entity, "name"):
+        # Filter by name to verify the entity was actually created
+        entities_list = crud_test_config.list_method(
+            crud_test_config.filter_model(name=create_model.name)
+        )
+        assert entities_list.total == 1
+
     # Filter by id to verify the entity was actually created
     entities_list = crud_test_config.list_method(
         crud_test_config.filter_model(id=created_entity.id)
@@ -118,7 +124,7 @@ def test_basic_crud_for_entity(crud_test_config: CrudTestConfig):
     # Cleanup
     with does_not_raise():
         crud_test_config.delete_method(created_entity.id)
-    # Filter by name to verify the entity was actually deleted
+    # Filter by id to verify the entity was actually deleted
     with pytest.raises(KeyError):
         crud_test_config.get_method(created_entity.id)
     # Filter by id to verify the entity was actually deleted
@@ -135,9 +141,10 @@ def test_basic_crud_for_entity(crud_test_config: CrudTestConfig):
 )
 def test_create_entity_twice_fails(crud_test_config: CrudTestConfig):
     """Tests getting a non-existent entity by id."""
-    if crud_test_config.entity_name == "artifact":
-        # Artifacts do not check for duplicates
-        pytest.skip("Duplicates of artifacts are allowed.")
+    if crud_test_config.entity_name in {"artifact", "build", "deployment"}:
+        pytest.skip(
+            f"Duplicates of {crud_test_config.entity_name} are allowed."
+        )
 
     client = Client()
     # Create the entity

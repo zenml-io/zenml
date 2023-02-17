@@ -28,6 +28,8 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
         ArtifactSchema,
         FlavorSchema,
+        PipelineBuildSchema,
+        PipelineDeploymentSchema,
         PipelineRunSchema,
         PipelineSchema,
         RunMetadataSchema,
@@ -84,6 +86,10 @@ class WorkspaceSchema(NamedSchema, table=True):
         back_populates="workspace",
         sa_relationship_kwargs={"cascade": "delete"},
     )
+    builds: List["PipelineBuildSchema"] = Relationship(
+        back_populates="workspace",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
     artifacts: List["ArtifactSchema"] = Relationship(
         back_populates="workspace",
         sa_relationship_kwargs={"cascade": "delete"},
@@ -93,6 +99,10 @@ class WorkspaceSchema(NamedSchema, table=True):
         sa_relationship_kwargs={"cascade": "delete"},
     )
     secrets: List["SecretSchema"] = Relationship(
+        back_populates="workspace",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
+    deployments: List["PipelineDeploymentSchema"] = Relationship(
         back_populates="workspace",
         sa_relationship_kwargs={"cascade": "delete"},
     )

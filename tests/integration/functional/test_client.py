@@ -22,6 +22,7 @@ from uuid import uuid4
 import pytest
 
 from zenml.client import Client
+from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.enums import SecretScope, StackComponentType
 from zenml.exceptions import (
     EntityExistsError,
@@ -32,7 +33,13 @@ from zenml.exceptions import (
 )
 from zenml.io import fileio
 from zenml.metadata.metadata_types import MetadataTypeEnum
-from zenml.models import ComponentResponseModel, StackResponseModel
+from zenml.models import (
+    ComponentResponseModel,
+    PipelineBuildRequestModel,
+    PipelineDeploymentRequestModel,
+    PipelineRequestModel,
+    StackResponseModel,
+)
 from zenml.utils import io_utils
 from zenml.utils.string_utils import random_str
 
@@ -412,6 +419,83 @@ def test_deregistering_a_stack_component_that_is_part_of_a_registered_stack(
         )
 
 
+def test_getting_a_pipeline(clean_client):
+    """Tests fetching of a pipeline."""
+    # Non-existent ID
+    with pytest.raises(KeyError):
+        clean_client.get_pipeline(name_id_or_prefix=uuid4())
+
+    # Non-existent name
+    with pytest.raises(KeyError):
+        clean_client.get_pipeline(name_id_or_prefix="non_existent")
+
+    request = PipelineRequestModel(
+        user=clean_client.active_user.id,
+        workspace=clean_client.active_workspace.id,
+        name="pipeline",
+        version="1",
+        version_hash="",
+        spec=PipelineSpec(steps=[]),
+    )
+    response_1 = clean_client.zen_store.create_pipeline(request)
+
+    pipeline = clean_client.get_pipeline(name_id_or_prefix=response_1.id)
+    assert pipeline == response_1
+
+    pipeline = clean_client.get_pipeline(name_id_or_prefix="pipeline")
+    assert pipeline == response_1
+
+    pipeline = clean_client.get_pipeline(
+        name_id_or_prefix="pipeline", version="1"
+    )
+    assert pipeline == response_1
+
+    # Non-existent version
+    with pytest.raises(KeyError):
+        clean_client.get_pipeline(name_id_or_prefix="pipeline", version="2")
+
+    request.version = "2"
+    response_2 = clean_client.zen_store.create_pipeline(request)
+
+    # Gets latest version
+    pipeline = clean_client.get_pipeline(name_id_or_prefix="pipeline")
+    assert pipeline == response_2
+
+
+def test_listing_pipelines(clean_client):
+    """Tests listing of pipelines."""
+    assert clean_client.list_pipelines().total == 0
+
+    request = PipelineRequestModel(
+        user=clean_client.active_user.id,
+        workspace=clean_client.active_workspace.id,
+        name="pipeline",
+        version="1",
+        version_hash="",
+        spec=PipelineSpec(steps=[]),
+    )
+    response_1 = clean_client.zen_store.create_pipeline(request)
+    request.name = "other_pipeline"
+    request.version = "2"
+    response_2 = clean_client.zen_store.create_pipeline(request)
+
+    assert clean_client.list_pipelines().total == 2
+
+    assert clean_client.list_pipelines(name="pipeline").total == 1
+    assert clean_client.list_pipelines(name="pipeline").items[0] == response_1
+
+    assert clean_client.list_pipelines(version="1").total == 1
+    assert clean_client.list_pipelines(version="1").items[0] == response_1
+
+    assert clean_client.list_pipelines(version="2").total == 1
+    assert clean_client.list_pipelines(version="2").items[0] == response_2
+
+    assert (
+        clean_client.list_pipelines(name="other_pipeline", version="3").total
+        == 0
+    )
+
+
 def test_create_run_metadata_for_pipeline_run(clean_client_with_run):
     """Test creating run metadata linked only to a pipeline run."""
     pipeline_run = clean_client_with_run.list_runs()[0]
@@ -746,3 +830,137 @@ def test_create_secret_existing_name_different_scope():
 
         assert s1.id != s2.id
         assert s1.name == s2.name
+
+
+# ---------------
+# Pipeline Builds
+# ---------------
+
+
+def test_listing_builds(clean_client):
+    """Tests listing builds."""
+    builds = clean_client.list_builds()
+    assert len(builds) == 0
+
+    request = PipelineBuildRequestModel(
+        user=clean_client.active_user.id,
+        workspace=clean_client.active_workspace.id,
+        images={},
+        is_local=False,
+    )
+    response = clean_client.zen_store.create_build(request)
+
+    builds = clean_client.list_builds()
+    assert len(builds) == 1
+    assert builds[0] == response
+
+    builds = clean_client.list_builds(stack_id=uuid4())
+    assert len(builds) == 0
+
+
+def test_getting_builds(clean_client):
+    """Tests getting builds."""
+
+    with pytest.raises(KeyError):
+        clean_client.get_build(str(uuid4()))
+
+    request = PipelineBuildRequestModel(
+        user=clean_client.active_user.id,
+        workspace=clean_client.active_workspace.id,
+        images={},
+        is_local=False,
+    )
+    response = clean_client.zen_store.create_build(request)
+
+    with does_not_raise():
+        build = clean_client.get_build(str(response.id))
+
+    assert build == response
+
+
+def test_deleting_builds(clean_client):
+    """Tests deleting builds."""
+    with pytest.raises(KeyError):
+        clean_client.delete_build(str(uuid4()))
+
+    request = PipelineBuildRequestModel(
+        user=clean_client.active_user.id,
+        workspace=clean_client.active_workspace.id,
+        images={},
+        is_local=False,
+    )
+    response = clean_client.zen_store.create_build(request)
+
+    with does_not_raise():
+        clean_client.delete_build(str(response.id))
+
+    with pytest.raises(KeyError):
+        clean_client.get_build(str(response.id))
+
+
+# --------------------
+# Pipeline Deployments
+# --------------------
+
+
+def test_listing_deployments(clean_client):
+    """Tests listing deployments."""
+    deployments = clean_client.list_deployments()
+    assert len(deployments) == 0
+
+    request = PipelineDeploymentRequestModel(
+        user=clean_client.active_user.id,
+        workspace=clean_client.active_workspace.id,
+        stack=clean_client.active_stack.id,
+        run_name_template="",
+        pipeline_configuration={"name": "pipeline_name"},
+    )
+    response = clean_client.zen_store.create_deployment(request)
+
+    deployments = clean_client.list_deployments()
+    assert len(deployments) == 1
+    assert deployments[0] == response
+
+    deployments = clean_client.list_deployments(stack_id=uuid4())
+    assert len(deployments) == 0
+
+
+def test_getting_deployments(clean_client):
+    """Tests getting deployments."""
+    with pytest.raises(KeyError):
+        clean_client.get_deployment(str(uuid4()))
+
+    request = PipelineDeploymentRequestModel(
+        user=clean_client.active_user.id,
+        workspace=clean_client.active_workspace.id,
+        stack=clean_client.active_stack.id,
+        run_name_template="",
+        pipeline_configuration={"name": "pipeline_name"},
+    )
+    response = clean_client.zen_store.create_deployment(request)
+
+    with does_not_raise():
+        deployment = clean_client.get_deployment(str(response.id))
+
+    assert deployment == response
+
+
+def test_deleting_deployments(clean_client):
+    """Tests deleting deployments."""
+    with pytest.raises(KeyError):
+        clean_client.delete_deployment(str(uuid4()))
+
+    request = PipelineDeploymentRequestModel(
+        user=clean_client.active_user.id,
+        workspace=clean_client.active_workspace.id,
+        stack=clean_client.active_stack.id,
+        run_name_template="",
+        pipeline_configuration={"name": "pipeline_name"},
+    )
+    response = clean_client.zen_store.create_deployment(request)
+
+    with does_not_raise():
+        clean_client.delete_deployment(str(response.id))
+
+    with pytest.raises(KeyError):
+        clean_client.get_deployment(str(response.id))

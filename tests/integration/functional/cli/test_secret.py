@@ -15,7 +15,7 @@
 import pytest
 from click.testing import CliRunner
 
-from tests.integration.functional.cli.test_utils import cleanup_secrets
+from tests.integration.functional.cli.utils import cleanup_secrets
 from tests.integration.functional.utils import sample_name
 from zenml.cli.cli import cli
 from zenml.client import Client
