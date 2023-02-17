@@ -92,7 +92,7 @@ templates = ["copier", "jinja2-time", "black", "ruff"]
 [tool.poetry.dev-dependencies]
 black = "^22.3.0"
 pytest = "^6.2.4"
-mypy = "^0.991"
+mypy = "^1.0.0"
 ruff = "^0.0.246"
 coverage = { extras = ["toml"], version = "^5.5" }
 pre-commit = "^2.14.0"
