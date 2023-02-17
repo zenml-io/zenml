@@ -138,6 +138,7 @@
 
 * [Contribution Guide](misc/contributing.md)
 * [Debugging Guide](misc/debugging.md)
+* [Handling Dependencies](misc/handling-dependencies.md)
 * [External Integration Guide](misc/integrating.md)
 * [Usage Analytics](misc/usage-analytics.md)
 
