@@ -6,7 +6,7 @@ description: Don't change the code, change the config!
 
 Machine learning pipelines are rerun many times over throughout their development lifecycle.
 
-In order to iterate quickly, one must be able to quickly tweak pipeline runs by
+In order to [iterate quickly](iteration.md), one must be able to quickly tweak pipeline runs by
 changing various parameters for the steps that make up your pipeline.
 
 {% hint style="info" %}

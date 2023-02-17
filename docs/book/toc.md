@@ -17,10 +17,10 @@
 ## Starter Guide
 
 * [Pipelines](./starter-guide/pipelines/pipelines.md)
-  * [Step Parameterization](./starter-guide/pipelines/parameters.md)
-  * [Iterating Pipelines](./starter-guide/pipelines/iterating.md)
-  * [Dashboard Overview](./starter-guide/pipelines/dashboard.md)
+  * [Iterating Pipelines](./starter-guide/pipelines/iteration.md.md)
+  * [Parameters in pipelines](./starter-guide/pipelines/parameters.md)
   * [Fetching Pipelines](./starter-guide/pipelines/fetching-pipelines.md)
+  * [Dashboard Overview](./starter-guide/pipelines/dashboard.md)
 * [Stacks](./starter-guide/stacks/stacks.md)
   * [Registering Stacks](./starter-guide/stacks/registering-stacks.md)
   * [Managing Stacks](./starter-guide/stacks/managing-stacks.md)

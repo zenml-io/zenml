@@ -24,7 +24,7 @@ first_pipeline_instance = first_pipeline(
 first_pipeline_instance.run()
 ```
 
-Running this the first time will create a single `run` for `version 1` of the pipeline called `first_pipeline`. If you do it again with different params:
+Running this the first time will create a single `run` for `version 1` of the pipeline called `first_pipeline`. If you do it again with different [run time parameters](parameters.md):
 
 ```python
 first_pipeline_instance = first_pipeline(

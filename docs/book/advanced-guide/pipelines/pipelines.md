@@ -9,14 +9,15 @@ regarding the configuration of different ZenML resources.
 
 * [Runtime Settings](./settings.md) showcases how to
 configure different ZenML resource during the runtime of a pipeline.
+* [Containerization (Docker)](./advanced-guide/pipelines/containerization.md)
 * [Passing Custom Data Types through Steps](./materializers.md)
 via **Materializers** is required if one of your steps outputs a custom class
 or other data types, for which materialization is not defined by ZenML itself.
+* [Enabling GPU-backed hardware](./gpu-hardware.md) goes through best practices of
+running in remote settings with a GPU attached.
 * [Specifying Hardware Resources for Steps](./step-resources.md) explains
 how to specify hardware resources like memory or the amount of CPUs and GPUs that
 a step requires to execute.
-* [Enabling GPU-backed hardware](./gpu-hardware.md) goes through best practices of
-running in remote settings with a GPU attached.
 * [Scheduling Pipeline Runs](./scheduling-runs.md) describes how to deploy pipelines
 to run on a schedule.
 * [Access metadata within steps](./step-metadata.md)

@@ -4,8 +4,8 @@ description: How to inspect a finished pipeline run
 
 # Inspecting Pipeline Runs
 
-Once a pipeline run has completed, we can access it using the post-execution
-utilities.
+As you keep running and [iterating over](iteration.md) pipelines, there will
+be occasions you will want to inspect the pipelines results.
 
 Each pipeline can have multiple runs associated with it, and for each run there
 might be several outputs for each step. Thus, to inspect a specific output, we

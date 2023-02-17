@@ -265,7 +265,7 @@ the `unlisted` parameter when running a pipeline: `pipeline_instance.run(unliste
 - Pipelines can be deleted and created again using `zenml pipeline delete <PIPELINE_ID_OR_NAME>`.
 - Pipelines can be given [unique names](#give-each-pipeline-run-a-name) each time they are run to uniquely identify them.
 
-We will dive into quickly iterating over pipelines [later in this section](iterating.md).
+We will dive into quickly iterating over pipelines [later in this section](iteration.md.md).
 
 
 ## 🦖 Artifacts link steps in pipelines
