@@ -59,9 +59,7 @@ from sklearn.model_selection import train_test_split
 from zenml.steps import Output, step
 
 @step
-def simple_data_splitter(
-    dataset: pd.DataFrame,
-) -> Output(train_set=pd.DataFrame, test_set=pd.DataFrame):
+def simple_data_splitter() -> Output(train_set=pd.DataFrame, test_set=pd.DataFrame):
     # Load the wine dataset
     dataset = load_wine(as_frame=True).frame
 
@@ -154,7 +152,7 @@ class SVCTrainerStep(BaseStep):
 ```
 </details>
 
-## 🔌 Connecting steps with Pipeline
+## 🔌 Connecting steps with Pipelines
 
 Let us now define our first ML pipeline. This is agnostic of the implementation and can be
 done by routing outputs through the steps within the pipeline. You can think of
@@ -212,6 +210,13 @@ You can then execute your pipeline instance with the `.run()` method:
 first_pipeline_instance.run()
 ```
 
+If you're not in the mood of copy-pasting the above into another file, we got you covered! Just
+use the starter template and run:
+
+```
+python run.py --chap1
+```
+
 You should see the following output in your terminal:
 
 ```shell
@@ -232,8 +237,12 @@ We will dive deeper into how to inspect the finished run within the chapter on
 ### 👀 Inspect your pipeline in the dashboard
 
 Notice the last log, that indicates running a command to view the dashboard.
-Check out the dashboard guide [in the next section](./dashboard.md) to inspect
+Check out the dashboard guide [in another section](./dashboard.md) to inspect
 your pipeline there.
+
+```
+zenml up
+```
 
 ### 💯 Give each pipeline run a (dynamic) name
 
@@ -321,9 +330,7 @@ from zenml.pipelines import pipeline
 
 
 @step
-def simple_data_splitter(
-    dataset: pd.DataFrame,
-) -> Output(train_set=pd.DataFrame, test_set=pd.DataFrame):
+def simple_data_splitter() -> Output(train_set=pd.DataFrame, test_set=pd.DataFrame):
     # Load the wine dataset
     dataset = load_wine(as_frame=True).frame
 

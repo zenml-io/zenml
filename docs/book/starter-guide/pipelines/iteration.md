@@ -196,9 +196,7 @@ class SVCTrainerParams(BaseParameters):
 
 
 @step
-def simple_data_splitter(
-    dataset: pd.DataFrame,
-) -> Output(train_set=pd.DataFrame, test_set=pd.DataFrame):
+def simple_data_splitter() -> Output(train_set=pd.DataFrame, test_set=pd.DataFrame):
     # Load the wine dataset
     dataset = load_wine(as_frame=True).frame
 
