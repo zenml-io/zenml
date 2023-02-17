@@ -26,8 +26,8 @@ from zenml.zen_server.deploy import ServerDeployer
 SERVER_START_STOP_TIMEOUT = 30
 
 
-@pytest.fixture(scope="function")
-def runner(request):
+@pytest.fixture(scope="module")
+def cli_runner():
     return CliRunner()
 
 
