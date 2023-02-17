@@ -17,8 +17,10 @@ import string
 from typing import TYPE_CHECKING, Any, Dict, List, Sequence, Tuple
 
 from zenml.config.base_settings import BaseSettings, ConfigurationLevel
-from zenml.config.pipeline_configurations import PipelineRunConfiguration
-from zenml.config.pipeline_deployment import PipelineDeployment
+from zenml.config.pipeline_configurations import (
+    PipelineRunConfiguration,
+    PipelineSpec,
+)
 from zenml.config.settings_resolver import SettingsResolver
 from zenml.config.step_configurations import (
     Step,
@@ -27,6 +29,7 @@ from zenml.config.step_configurations import (
 )
 from zenml.environment import get_run_environment_dict
 from zenml.exceptions import PipelineInterfaceError, StackValidationError
+from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
 from zenml.utils import pydantic_utils, settings_utils, source_utils
 
 if TYPE_CHECKING:
@@ -47,7 +50,7 @@ class Compiler:
         pipeline: "BasePipeline",
         stack: "Stack",
         run_configuration: PipelineRunConfiguration,
-    ) -> PipelineDeployment:
+    ) -> Tuple[PipelineDeploymentBaseModel, PipelineSpec]:
         """Compiles a ZenML pipeline to a serializable representation.
 
         Args:
@@ -56,7 +59,7 @@ class Compiler:
             run_configuration: The run configuration for this pipeline.
 
         Returns:
-            The compiled pipeline.
+            The compiled pipeline deployment and spec
         """
         logger.debug("Compiling pipeline `%s`.", pipeline.name)
         # Copy the pipeline before we apply any run-level configurations so
@@ -87,6 +90,7 @@ class Compiler:
 
         steps = {
             name: self._compile_step(
+                pipeline_parameter_name=name,
                 step=step,
                 pipeline_settings=settings_to_passdown,
                 pipeline_extra=pipeline.configuration.extra,
@@ -103,16 +107,53 @@ class Compiler:
             pipeline_name=pipeline.name
         )
 
-        deployment = PipelineDeployment(
-            run_name=run_name,
-            stack_id=stack.id,
-            schedule=run_configuration.schedule,
-            pipeline=pipeline.configuration,
-            steps=steps,
+        deployment = PipelineDeploymentBaseModel(
+            run_name_template=run_name,
+            pipeline_configuration=pipeline.configuration,
+            step_configurations=steps,
             client_environment=get_run_environment_dict(),
         )
+
+        step_specs = [step.spec for step in steps.values()]
+        pipeline_spec = PipelineSpec(steps=step_specs)
         logger.debug("Compiled pipeline deployment: %s", deployment)
-        return deployment
+        logger.debug("Compiled pipeline spec: %s", pipeline_spec)
+
+        return deployment, pipeline_spec
+
+    def compile_spec(self, pipeline: "BasePipeline") -> PipelineSpec:
+        """Compiles a ZenML pipeline to a pipeline spec.
+
+        This method can be used when a pipeline spec is needed but the full
+        deployment including stack information is not required.
+
+        Args:
+            pipeline: The pipeline to compile.
+
+        Returns:
+            The compiled pipeline spec.
+        """
+        logger.debug(
+            "Compiling pipeline spec for pipeline `%s`.", pipeline.name
+        )
+        # Copy the pipeline before we connect the steps so we don't mess with
+        # the pipeline object/step objects in any way
+        pipeline = copy.deepcopy(pipeline)
+        self._verify_distinct_step_names(pipeline=pipeline)
+        pipeline.connect(**pipeline.steps)
+
+        steps = [
+            self._get_step_spec(
+                pipeline_parameter_name=pipeline_parameter_name,
+                step=step,
+            )
+            for pipeline_parameter_name, step in self._get_sorted_steps(
+                steps=pipeline.steps
+            )
+        ]
+        pipeline_spec = PipelineSpec(steps=steps)
+        logger.debug("Compiled pipeline spec: %s", pipeline_spec)
+        return pipeline_spec
 
     def _apply_run_configuration(
         self, pipeline: "BasePipeline", config: PipelineRunConfiguration
@@ -292,10 +333,15 @@ class Compiler:
 
         return validated_settings
 
-    def _get_step_spec(self, step: "BaseStep") -> StepSpec:
+    def _get_step_spec(
+        self,
+        pipeline_parameter_name: str,
+        step: "BaseStep",
+    ) -> StepSpec:
         """Gets the spec for a step.
 
         Args:
+            pipeline_parameter_name: Name of the step in the pipeline.
             step: The step for which to get the spec.
 
         Returns:
@@ -305,10 +351,12 @@ class Compiler:
             source=source_utils.resolve_class(step.__class__),
             upstream_steps=sorted(step.upstream_steps),
             inputs=step.inputs,
+            pipeline_parameter_name=pipeline_parameter_name,
         )
 
     def _compile_step(
         self,
+        pipeline_parameter_name: str,
         step: "BaseStep",
         pipeline_settings: Dict[str, "BaseSettings"],
         pipeline_extra: Dict[str, Any],
@@ -317,6 +365,7 @@ class Compiler:
         """Compiles a ZenML step.
 
         Args:
+            pipeline_parameter_name: Name of the step in the pipeline.
             step: The step to compile.
             pipeline_settings: settings configured on the
                 pipeline of the step.
@@ -326,7 +375,9 @@ class Compiler:
         Returns:
             The compiled step.
         """
-        step_spec = self._get_step_spec(step=step)
+        step_spec = self._get_step_spec(
+            pipeline_parameter_name=pipeline_parameter_name, step=step
+        )
         step_settings = self._filter_and_validate_settings(
             settings=step.configuration.settings,
             configuration_level=ConfigurationLevel.STEP,

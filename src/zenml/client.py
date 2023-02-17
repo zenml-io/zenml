@@ -51,7 +51,6 @@ from zenml.enums import (
     StoreType,
 )
 from zenml.exceptions import (
-    AlreadyExistsException,
     EntityExistsError,
     IllegalOperationError,
     InitializationException,
@@ -68,8 +67,11 @@ from zenml.models import (
     FlavorFilterModel,
     FlavorRequestModel,
     FlavorResponseModel,
+    PipelineBuildFilterModel,
+    PipelineBuildResponseModel,
+    PipelineDeploymentFilterModel,
+    PipelineDeploymentResponseModel,
     PipelineFilterModel,
-    PipelineRequestModel,
     PipelineResponseModel,
     PipelineRunFilterModel,
     PipelineRunResponseModel,
@@ -121,7 +123,6 @@ from zenml.utils.analytics_utils import AnalyticsEvent, event_handler, track
 from zenml.utils.filesync_model import FileSyncModel
 
 if TYPE_CHECKING:
-    from zenml.config.pipeline_configurations import PipelineSpec
     from zenml.metadata.metadata_types import MetadataType
     from zenml.stack import Stack, StackComponentConfig
     from zenml.zen_stores.base_zen_store import BaseZenStore
@@ -2370,77 +2371,6 @@ class Client(metaclass=ClientMetaClass):
     # - PIPELINES -
     # -------------
 
-    def create_pipeline(
-        self,
-        pipeline_name: str,
-        pipeline_spec: "PipelineSpec",
-        pipeline_docstring: Optional[str],
-    ) -> UUID:
-        """Registers a pipeline in the ZenStore within the active workspace.
-
-        This will do one of the following three things:
-        A) If there is no pipeline with this name, register a new pipeline.
-        B) If a pipeline exists that has the same config, use that pipeline.
-        C) If a pipeline with different config exists, raise an error.
-
-        Args:
-            pipeline_name: The name of the pipeline to register.
-            pipeline_spec: The spec of the pipeline.
-            pipeline_docstring: The docstring of the pipeline.
-
-        Returns:
-            The id of the existing or newly registered pipeline.
-
-        Raises:
-            AlreadyExistsException: If there is an existing pipeline in the
-                workspace with the same name but a different configuration.
-        """
-        existing_pipelines = self.list_pipelines(name=pipeline_name)
-
-        # A) If there is no pipeline with this name, register a new pipeline.
-        if len(existing_pipelines.items) == 0:
-            create_pipeline_request = PipelineRequestModel(
-                workspace=self.active_workspace.id,
-                user=self.active_user.id,
-                name=pipeline_name,
-                spec=pipeline_spec,
-                docstring=pipeline_docstring,
-            )
-            pipeline = self.zen_store.create_pipeline(
-                pipeline=create_pipeline_request
-            )
-            logger.info(f"Registered new pipeline with name {pipeline.name}.")
-            return pipeline.id
-
-        else:
-            if len(existing_pipelines.items) == 1:
-                existing_pipeline = existing_pipelines.items[0]
-                # B) If a pipeline exists that has the same config, use that
-                # pipeline.
-                if pipeline_spec == existing_pipeline.spec:
-                    logger.debug(
-                        "Did not register pipeline since it already exists."
-                    )
-                    return existing_pipeline.id
-
-        # C) If a pipeline with different config exists, raise an error.
-        error_msg = (
-            f"Cannot run pipeline '{pipeline_name}' since this name has "
-            "already been registered with a different pipeline "
-            "configuration. You have three options to resolve this issue:\n"
-            "1) You can register a new pipeline by changing the name "
-            "of your pipeline, e.g., via `@pipeline(name='new_pipeline_name')."
-            "\n2) You can execute the current run without linking it to any "
-            "pipeline by setting the 'unlisted' argument to `True`, e.g., "
-            "via `my_pipeline_instance.run(unlisted=True)`. "
-            "Unlisted runs are not linked to any pipeline, but are still "
-            "tracked by ZenML and can be accessed via the 'Runs' tab. \n"
-            "3) You can delete the existing pipeline via "
-            f"`zenml pipeline delete {pipeline_name}`. This will then "
-            "change all existing runs of this pipeline to become unlisted."
-        )
-        raise AlreadyExistsException(error_msg)
-
     def list_pipelines(
         self,
         sort_by: str = "created",
@@ -2451,6 +2381,8 @@ class Client(metaclass=ClientMetaClass):
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
+        version: Optional[str] = None,
+        version_hash: Optional[str] = None,
         docstring: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
@@ -2462,13 +2394,15 @@ class Client(metaclass=ClientMetaClass):
             page: The page of items
             size: The maximum size of all pages
             logical_operator: Which logical operator to use [and, or]
-            id: Use the id of stacks to filter by.
+            id: Use the id of pipeline to filter by.
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
-            docstring: Use the stack description for filtering
+            name: The name of the pipeline to filter by.
+            version: The version of the pipeline to filter by.
+            version_hash: The version hash of the pipeline to filter by.
+            docstring: The docstring of the pipeline to filter by.
             workspace_id: The id of the workspace to filter by.
-            user_id: The  id of the user to filter by.
-            name: The name of the stack to filter by.
+            user_id: The id of the user to filter by.
 
         Returns:
             A page with Pipeline fitting the filter description
@@ -2482,6 +2416,8 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
             name=name,
+            version=version,
+            version_hash=version_hash,
             docstring=docstring,
             workspace_id=workspace_id,
             user_id=user_id,
@@ -2492,31 +2428,313 @@ class Client(metaclass=ClientMetaClass):
         )
 
     def get_pipeline(
-        self, name_id_or_prefix: Union[str, UUID]
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        version: Optional[str] = None,
     ) -> PipelineResponseModel:
         """Get a pipeline by name, id or prefix.
 
         Args:
-            name_id_or_prefix: The name, id or prefix of the pipeline.
+            name_id_or_prefix: The name, ID or ID prefix of the pipeline.
+            version: The pipeline version. If left empty, will return
+                the latest version.
 
         Returns:
             The pipeline.
+
+        Raises:
+            KeyError: If no pipelines were found for the given ID/name and
+                version.
+            ZenKeyError: If multiple pipelines match the ID prefix.
         """
-        return self._get_entity_by_id_or_name_or_prefix(
-            get_method=self.zen_store.get_pipeline,
-            list_method=self.list_pipelines,
-            name_id_or_prefix=name_id_or_prefix,
+        from zenml.utils.uuid_utils import is_valid_uuid
+
+        if is_valid_uuid(name_id_or_prefix):
+            if version:
+                logger.warning(
+                    "You specified both an ID as well as a version of the "
+                    "pipeline. Ignoring the version and fetching the "
+                    "pipeline by ID."
+                )
+            if not isinstance(name_id_or_prefix, UUID):
+                name_id_or_prefix = UUID(name_id_or_prefix, version=4)
+
+            return self.zen_store.get_pipeline(name_id_or_prefix)
+
+        assert not isinstance(name_id_or_prefix, UUID)
+        exact_name_matches = self.list_pipelines(
+            size=1,
+            sort_by="desc:created",
+            name=f"equals:{name_id_or_prefix}",
+            version=version,
         )
 
-    def delete_pipeline(self, name_id_or_prefix: Union[str, UUID]) -> None:
+        if len(exact_name_matches) == 1:
+            # If the name matches exactly, use the explicitly specified version
+            # or fallback to the latest if not given
+            return exact_name_matches.items[0]
+
+        partial_id_matches = self.list_pipelines(
+            id=f"startswith:{name_id_or_prefix}"
+        )
+        if partial_id_matches.total == 1:
+            if version:
+                logger.warning(
+                    "You specified both an ID as well as a version of the "
+                    "pipeline. Ignoring the version and fetching the "
+                    "pipeline by ID."
+                )
+            return partial_id_matches[0]
+        elif partial_id_matches.total == 0:
+            raise KeyError(
+                f"No pipelines found for name, ID or prefix "
+                f"{name_id_or_prefix}."
+            )
+        else:
+            raise ZenKeyError(
+                f"{partial_id_matches.total} pipelines have been found that "
+                "have an id prefix that matches the provided string "
+                f"'{name_id_or_prefix}':\n"
+                f"{partial_id_matches.items}.\n"
+                f"Please provide more characters to uniquely identify "
+                f"only one of the pipelines."
+            )
+
+    def delete_pipeline(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        version: Optional[str] = None,
+    ) -> None:
         """Delete a pipeline.
 
         Args:
-            name_id_or_prefix: The name, id or prefix id of the pipeline
-                to delete.
+            name_id_or_prefix: The name, ID or ID prefix of the pipeline.
+            version: The pipeline version. If left empty, will delete
+                the latest version.
         """
-        pipeline = self.get_pipeline(name_id_or_prefix=name_id_or_prefix)
+        pipeline = self.get_pipeline(
+            name_id_or_prefix=name_id_or_prefix, version=version
+        )
         self.zen_store.delete_pipeline(pipeline_id=pipeline.id)
+
+    # ----------
+    # - BUILDS -
+    # ----------
+
+    def list_builds(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        workspace_id: Optional[Union[str, UUID]] = None,
+        user_id: Optional[Union[str, UUID]] = None,
+        pipeline_id: Optional[Union[str, UUID]] = None,
+        stack_id: Optional[Union[str, UUID]] = None,
+    ) -> Page[PipelineBuildResponseModel]:
+        """List all builds.
+
+        Args:
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            id: Use the id of build to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            workspace_id: The id of the workspace to filter by.
+            user_id: The  id of the user to filter by.
+            pipeline_id: The id of the pipeline to filter by.
+            stack_id: The id of the stack to filter by.
+
+        Returns:
+            A page with builds fitting the filter description
+        """
+        build_filter_model = PipelineBuildFilterModel(
+            sort_by=sort_by,
+            page=page,
+            size=size,
+            logical_operator=logical_operator,
+            id=id,
+            created=created,
+            updated=updated,
+            workspace_id=workspace_id,
+            user_id=user_id,
+            pipeline_id=pipeline_id,
+            stack_id=stack_id,
+        )
+        build_filter_model.set_scope_workspace(self.active_workspace.id)
+        return self.zen_store.list_builds(
+            build_filter_model=build_filter_model
+        )
+
+    def get_build(self, id_or_prefix: str) -> PipelineBuildResponseModel:
+        """Get a build by id or prefix.
+
+        Args:
+            id_or_prefix: The id or id prefix of the build.
+
+        Returns:
+            The build.
+
+        Raises:
+            KeyError: If no build was found for the given id or prefix.
+            ZenKeyError: If multiple builds were found that match the given
+                id or prefix.
+        """
+        from zenml.utils.uuid_utils import is_valid_uuid
+
+        # First interpret as full UUID
+        if is_valid_uuid(id_or_prefix):
+            return self.zen_store.get_build(UUID(id_or_prefix))
+
+        entity = self.list_builds(
+            id=f"startswith:{id_or_prefix}",
+        )
+
+        # If only a single entity is found, return it.
+        if entity.total == 1:
+            return entity.items[0]
+
+        # If no entity is found, raise an error.
+        if entity.total == 0:
+            raise KeyError(
+                f"No builds have been found that have either an id or prefix "
+                f"that matches the provided string '{id_or_prefix}'."
+            )
+
+        raise ZenKeyError(
+            f"{entity.total} builds have been found that have "
+            f"an ID that matches the provided "
+            f"string '{id_or_prefix}':\n"
+            f"{[entity.items]}.\n"
+            f"Please use the id to uniquely identify "
+            f"only one of the builds."
+        )
+
+    def delete_build(self, id_or_prefix: str) -> None:
+        """Delete a build.
+
+        Args:
+            id_or_prefix: The id or id prefix of the build.
+        """
+        build = self.get_build(id_or_prefix=id_or_prefix)
+        self.zen_store.delete_build(build_id=build.id)
+
+    # ---------------
+    # - DEPLOYMENTS -
+    # ---------------
+
+    def list_deployments(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        workspace_id: Optional[Union[str, UUID]] = None,
+        user_id: Optional[Union[str, UUID]] = None,
+        pipeline_id: Optional[Union[str, UUID]] = None,
+        stack_id: Optional[Union[str, UUID]] = None,
+        build_id: Optional[Union[str, UUID]] = None,
+    ) -> Page[PipelineDeploymentResponseModel]:
+        """List all deployments.
+
+        Args:
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            id: Use the id of build to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            workspace_id: The id of the workspace to filter by.
+            user_id: The  id of the user to filter by.
+            pipeline_id: The id of the pipeline to filter by.
+            stack_id: The id of the stack to filter by.
+            build_id: The id of the build to filter by.
+
+        Returns:
+            A page with deployments fitting the filter description
+        """
+        deployment_filter_model = PipelineDeploymentFilterModel(
+            sort_by=sort_by,
+            page=page,
+            size=size,
+            logical_operator=logical_operator,
+            id=id,
+            created=created,
+            updated=updated,
+            workspace_id=workspace_id,
+            user_id=user_id,
+            pipeline_id=pipeline_id,
+            stack_id=stack_id,
+            build_id=build_id,
+        )
+        deployment_filter_model.set_scope_workspace(self.active_workspace.id)
+        return self.zen_store.list_deployments(
+            deployment_filter_model=deployment_filter_model
+        )
+
+    def get_deployment(
+        self, id_or_prefix: str
+    ) -> PipelineDeploymentResponseModel:
+        """Get a deployment by id or prefix.
+
+        Args:
+            id_or_prefix: The id or id prefix of the build.
+
+        Returns:
+            The deployment.
+
+        Raises:
+            KeyError: If no deployment was found for the given id or prefix.
+            ZenKeyError: If multiple deployments were found that match the given
+                id or prefix.
+        """
+        from zenml.utils.uuid_utils import is_valid_uuid
+
+        # First interpret as full UUID
+        if is_valid_uuid(id_or_prefix):
+            return self.zen_store.get_deployment(UUID(id_or_prefix))
+
+        entity = self.list_deployments(
+            id=f"startswith:{id_or_prefix}",
+        )
+
+        # If only a single entity is found, return it.
+        if entity.total == 1:
+            return entity.items[0]
+
+        # If no entity is found, raise an error.
+        if entity.total == 0:
+            raise KeyError(
+                f"No deployment have been found that have either an id or "
+                f"prefix that matches the provided string '{id_or_prefix}'."
+            )
+
+        raise ZenKeyError(
+            f"{entity.total} deployments have been found that have "
+            f"an ID that matches the provided "
+            f"string '{id_or_prefix}':\n"
+            f"{[entity.items]}.\n"
+            f"Please use the id to uniquely identify "
+            f"only one of the deployments."
+        )
+
+    def delete_deployment(self, id_or_prefix: str) -> None:
+        """Delete a deployment.
+
+        Args:
+            id_or_prefix: The id or id prefix of the deployment.
+        """
+        deployment = self.get_deployment(id_or_prefix=id_or_prefix)
+        self.zen_store.delete_deployment(deployment_id=deployment.id)
 
     # -------------
     # - SCHEDULES -
@@ -2644,6 +2862,8 @@ class Client(metaclass=ClientMetaClass):
         user_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[Union[str, UUID]] = None,
         schedule_id: Optional[Union[str, UUID]] = None,
+        build_id: Optional[Union[str, UUID]] = None,
+        deployment_id: Optional[Union[str, UUID]] = None,
         orchestrator_run_id: Optional[str] = None,
         status: Optional[str] = None,
         start_time: Optional[Union[datetime, str]] = None,
@@ -2666,6 +2886,8 @@ class Client(metaclass=ClientMetaClass):
             user_id: The id of the user to filter by.
             stack_id: The id of the stack to filter by.
             schedule_id: The id of the schedule to filter by.
+            build_id: The id of the build to filter by.
+            deployment_id: The id of the deployment to filter by.
             orchestrator_run_id: The run id of the orchestrator to filter by.
             name: The name of the run to filter by.
             status: The status of the pipeline run
@@ -2689,6 +2911,8 @@ class Client(metaclass=ClientMetaClass):
             workspace_id=workspace_id,
             pipeline_id=pipeline_id,
             schedule_id=schedule_id,
+            build_id=build_id,
+            deployment_id=deployment_id,
             orchestrator_run_id=orchestrator_run_id,
             user_id=user_id,
             stack_id=stack_id,

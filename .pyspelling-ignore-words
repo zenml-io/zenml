@@ -542,6 +542,7 @@ PipelineDockerImageBuilder
 PipelineInterfaceError
 PipelineModel
 PipelineNode
+PipelineResponseModel
 PipelineRun
 PipelineRunLineageVisualizer
 PipelineRunModel
@@ -976,6 +977,7 @@ conjuncted
 conll
 containerise
 containerregistry
+contextmanager
 copyfile
 cors
 cp
