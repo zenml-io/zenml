@@ -1657,3 +1657,13 @@ zenmlserver
 zenprojects
 zenserver
 ziph
+MySecretsManagerFlavor
+MyImageBuilderFlavor
+MyStepOperatorFlavor
+MyExperimentTrackerFlavor
+MyDataValidatorFlavor
+MyAlerterFlavor
+MyOrchestratorFlavor
+MyContainerRegistryFlavor
+MyModelDeployerFlavor
+MyOrchestratorFlavor
