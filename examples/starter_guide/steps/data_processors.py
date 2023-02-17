@@ -30,11 +30,10 @@ logger = get_logger(__name__)
 
 
 @step
-def simple_data_splitter(
-    dataset: pd.DataFrame,
-) -> Output(train_set=pd.DataFrame, test_set=pd.DataFrame):
+def simple_data_splitter() -> Output(train_set=pd.DataFrame, test_set=pd.DataFrame):
     """Load and split a dataset."""
     # Load the wine dataset
+    logger.info("Loading wine dataset!")
     dataset = load_wine(as_frame=True).frame
 
     # Split the dataset into training and dev subsets
