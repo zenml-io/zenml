@@ -93,7 +93,7 @@ templates = ["copier", "jinja2-time", "black", "ruff"]
 black = "^22.3.0"
 pytest = "^6.2.4"
 mypy = "^1.0.0"
-ruff = "^0.0.246"
+ruff = "^0.0.247"
 coverage = { extras = ["toml"], version = "^5.5" }
 pre-commit = "^2.14.0"
 pyment = "^0.3.3"
@@ -106,7 +106,6 @@ darglint = "^1.8.1"
 pytest-randomly = "^3.10.1"
 pytest-mock = "^3.6.1"
 pytest-clarity = "^1.0.1"
-pytest-xdist = "^3.0.2"
 
 # mkdocs including plugins
 mkdocs="^1.2.3"
