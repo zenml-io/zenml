@@ -126,7 +126,7 @@ def delete_pipeline(
     """Deletes a specific pipeline.
 
     Args:
-        pipeline_id: ID of the pipeline to get.
+        pipeline_id: ID of the pipeline to delete.
     """
     zen_store().delete_pipeline(pipeline_id=pipeline_id)
 

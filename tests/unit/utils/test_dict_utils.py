@@ -76,6 +76,17 @@ def test_recursive_update_fails_when_original_is_not_a_dict():
         dict_utils.recursive_update(original, update)
 
 
+def test_recursive_update_overrides_if_types_dont_match():
+    """Tests recursive update."""
+    original = {"a": "string", "b": {"key": 1}}
+    update = {"a": {"key": 1}, "b": "string"}
+
+    assert dict_utils.recursive_update(original, update) == {
+        "a": {"key": 1},
+        "b": "string",
+    }
+
+
 def test_remove_none_values_method_works():
     """Tests remove_none_values method."""
     original = {"a": None}

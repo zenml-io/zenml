@@ -532,6 +532,7 @@ PipelineDockerImageBuilder
 PipelineInterfaceError
 PipelineModel
 PipelineNode
+PipelineResponseModel
 PipelineRun
 PipelineRunLineageVisualizer
 PipelineRunModel
@@ -968,6 +969,7 @@ conjuncted
 conll
 containerise
 containerregistry
+contextmanager
 copyfile
 cors
 cp
@@ -1654,3 +1656,13 @@ zenmlserver
 zenprojects
 zenserver
 ziph
+MySecretsManagerFlavor
+MyImageBuilderFlavor
+MyStepOperatorFlavor
+MyExperimentTrackerFlavor
+MyDataValidatorFlavor
+MyAlerterFlavor
+MyOrchestratorFlavor
+MyContainerRegistryFlavor
+MyModelDeployerFlavor
+MyOrchestratorFlavor

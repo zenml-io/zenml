@@ -29,3 +29,28 @@ class StepRunInfo(StrictBaseModel):
 
     config: StepConfiguration
     pipeline: PipelineConfiguration
+
+    def get_image(self, key: str) -> str:
+        """Gets the Docker image for the given key.
+
+        Args:
+            key: The key for which to get the image.
+
+        Raises:
+            RuntimeError: If the run does not have an associated build.
+
+        Returns:
+            The image name or digest.
+        """
+        from zenml.client import Client
+
+        run = Client().get_pipeline_run(self.run_id)
+        if not run.build:
+            raise RuntimeError(
+                f"Missing build for run {run.id}. This is probably because "
+                "the build was manually deleted."
+            )
+
+        # TODO: use property once available
+        pipeline_step_name = Client().get_run_step(self.step_run_id).name
+        return run.build.get_image(component_key=key, step=pipeline_step_name)

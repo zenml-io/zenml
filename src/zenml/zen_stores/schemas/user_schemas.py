@@ -26,6 +26,8 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
         ArtifactSchema,
         FlavorSchema,
+        PipelineBuildSchema,
+        PipelineDeploymentSchema,
         PipelineRunSchema,
         PipelineSchema,
         RunMetadataSchema,
@@ -68,9 +70,13 @@ class UserSchema(NamedSchema, table=True):
     )
     runs: List["PipelineRunSchema"] = Relationship(back_populates="user")
     step_runs: List["StepRunSchema"] = Relationship(back_populates="user")
+    builds: List["PipelineBuildSchema"] = Relationship(back_populates="user")
     artifacts: List["ArtifactSchema"] = Relationship(back_populates="user")
     run_metadata: List["RunMetadataSchema"] = Relationship(
         back_populates="user"
+    )
+    deployments: List["PipelineDeploymentSchema"] = Relationship(
+        back_populates="user",
     )
 
     @classmethod

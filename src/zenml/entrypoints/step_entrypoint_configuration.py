@@ -21,8 +21,10 @@ from zenml.entrypoints.base_entrypoint_configuration import (
 from zenml.integrations.registry import integration_registry
 
 if TYPE_CHECKING:
-    from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.config.step_configurations import Step
+    from zenml.models import (
+        PipelineDeploymentResponseModel,
+    )
 
 STEP_NAME_OPTION = "step_name"
 
@@ -141,17 +143,17 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
 
     def run(self) -> None:
         """Prepares the environment and runs the configured step."""
-        deployment_config = self.load_deployment_config()
+        deployment = self.load_deployment()
 
         step_name = self.entrypoint_args[STEP_NAME_OPTION]
-        pipeline_name = deployment_config.pipeline.name
+        pipeline_name = deployment.pipeline_configuration.name
 
         # Activate all the integrations. This makes sure that all materializers
         # and stack component flavors are registered.
         integration_registry.activate_integrations()
 
-        step = deployment_config.steps[step_name]
-        self._run_step(step, deployment=deployment_config)
+        step = deployment.step_configurations[step_name]
+        self._run_step(step, deployment=deployment)
 
         self.post_run(
             pipeline_name=pipeline_name,
@@ -161,7 +163,7 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
     def _run_step(
         self,
         step: "Step",
-        deployment: "PipelineDeployment",
+        deployment: "PipelineDeploymentResponseModel",
     ) -> None:
         """Runs a single step.
 

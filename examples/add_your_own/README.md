@@ -74,7 +74,7 @@ def pipe(step1, step2):
 
 if __name__ == "__main__":
     pipe(
-        step1=step1().with_return_materializers(MyMaterializer), step2=step2()
+        step1=step1().configure(output_materializers=MyMaterializer), step2=step2()
     ).run()
 ```
 
