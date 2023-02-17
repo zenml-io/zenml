@@ -214,7 +214,7 @@ If you're not in the mood of copy-pasting the above into another file, we got yo
 use the starter template and run:
 
 ```
-python run.py --chap1
+python run.py --simple
 ```
 
 You should see the following output in your terminal:

@@ -122,7 +122,7 @@ def parameterized_svc_trainer(
     X_train: np.ndarray,
     y_train: np.ndarray,
 ) -> ClassifierMixin:
-    """Train a sklearn SVC classifier."""
+    """Simplified SVC classifier with np arrays."""
     model = SVC(gamma=params.gamma, C=params.C, kernel=params.kernel)
     model.fit(X_train, y_train)
     return model

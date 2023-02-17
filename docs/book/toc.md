@@ -17,7 +17,7 @@
 ## Starter Guide
 
 * [Pipelines](./starter-guide/pipelines/pipelines.md)
-  * [Iterating Pipelines](./starter-guide/pipelines/iteration.md.md)
+  * [Iterating Pipelines](./starter-guide/pipelines/iteration.md)
   * [Parameters in pipelines](./starter-guide/pipelines/parameters.md)
   * [Fetching Pipelines](./starter-guide/pipelines/fetching-pipelines.md)
   * [Dashboard Overview](./starter-guide/pipelines/dashboard.md)

@@ -24,7 +24,13 @@ first_pipeline_instance = first_pipeline(
 first_pipeline_instance.run()
 ```
 
-Running this the first time will create a single `run` for `version 1` of the pipeline called `first_pipeline`. If you do it again with different [run time parameters](parameters.md):
+Running this the first time will create a single `run` for `version 1` of the pipeline called `first_pipeline`. In case you did not run this in the first chapter, try it yourself:
+
+```shell
+python run.py --simple
+```
+
+If you do it again with different [run time parameters](parameters.md):
 
 ```python
 first_pipeline_instance = first_pipeline(
@@ -33,6 +39,12 @@ first_pipeline_instance = first_pipeline(
 )
 
 first_pipeline_instance.run()
+```
+
+Try it yourself:
+
+```python
+python run.py --simple --gamma 0.02
 ```
 
 This will create *yet another* `run` for `version 1` of the pipeline called `first_pipeline`. So
@@ -64,6 +76,12 @@ first_pipeline_instance = first_pipeline(
 )
 
 first_pipeline_instance.run()
+```
+
+Try it yourself:
+
+```python
+python run.py --simple --trainer decision_tree
 ```
 
 This will now create a single `run` for `version 2` of the pipeline called `first_pipeline`. This
@@ -101,6 +119,11 @@ system or on external APIs. Make sure to set caching to `False` on steps that
 depend on external inputs or if the step should run regardless of caching.
 {% endhint %}
 
+You can try to disable caching and see how the runtime of the pipeline changes:
+
+```python
+python run.py --simple --no-cache
+```
 
 ### Configuring caching behavior of your pipelines
 
