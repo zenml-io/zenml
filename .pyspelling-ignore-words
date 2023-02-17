@@ -1663,3 +1663,4 @@ MyModelDeployerFlavor
 MyOrchestratorFlavor
 DecisionTreeClassifier
 iter
+ModelMetadata
