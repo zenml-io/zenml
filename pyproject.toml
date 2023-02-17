@@ -101,6 +101,7 @@ tox = "^3.24.3"
 hypothesis = "^6.43.1"
 typing-extensions = ">=3.7.4"
 darglint = "^1.8.1"
+pip-tools = "^6.12.2"
 
 # pytest dev dependencies
 pytest-randomly = "^3.10.1"
