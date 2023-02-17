@@ -15,12 +15,12 @@ We are slowly deprecating secrets managers in favor of the
 Going forward, we recommend using the secrets store instead of secrets managers
 to configure and store secrets.
 
-Managing secrets through a secrets manager stack components suffers from a
+Managing secrets through a secrets manager stack component suffers from a
 number of limitations, some of which are:
 
-* you need to configure Secrets Manager stack component
+* you need to configure a Secrets Manager stack component
 and add it to your active stack before you can register and access secrets. With
-centralized secrets management, you don't need to configure anything, your ZenML
+centralized secrets management, you don't need to configure anything; your ZenML
 local deployment or ZenML server replaces the secrets manager role.
 
 * even with a secrets manager configured in your active stack, if you are using

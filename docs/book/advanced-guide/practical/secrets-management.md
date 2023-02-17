@@ -124,7 +124,7 @@ We are slowly deprecating secrets managers in favor of the [centralized ZenML se
 Going forward, we recommend using the secrets store instead of secrets managers
 to configure and store secrets.
 
-Managing secrets through a secrets manager stack components suffers from a
+Managing secrets through a secrets manager stack component suffers from a
 number of limitations, some of which are:
 
 * you need to configure [a Secrets Manager stack component](../../component-gallery/secrets-managers/secrets-managers.md)
@@ -285,7 +285,7 @@ def secret_loader() -> None:
 If you are using a Secrets Manager to manage secrets, you can access the secrets
 manager directly from within your steps through the `StepContext`. This allows
 you to use your secrets for querying APIs from  within your step without
-hard-coding your access keys. Don't forget to  make the appropriate decision
+hard-coding your access keys. Don't forget to make the appropriate decision
 regarding caching as it will be disabled by default when the `StepContext` is
 passed into the step.
 
