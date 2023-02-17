@@ -62,6 +62,7 @@ from zenml.models.base_models import BaseRequestModel, BaseResponseModel
 from zenml.models.page_model import Page
 from zenml.pipelines import pipeline
 from zenml.steps import step
+from zenml.utils.string_utils import random_str
 
 
 @step
@@ -132,20 +133,38 @@ class PipelineRunContext:
 
 
 class UserContext:
-    def __init__(self, user_name: str = "aria", login: bool = False):
-        self.user_name = sample_name(user_name)
+    def __init__(
+        self,
+        user_name: Optional[str] = "aria",
+        password: Optional[str] = None,
+        login: bool = False,
+        existing_user: bool = False,
+    ):
+        if existing_user:
+            self.user_name = user_name
+        else:
+            self.user_name = sample_name(user_name)
         self.client = Client()
         self.store = self.client.zen_store
         self.login = login
+        self.password = password or random_str(32)
+        self.existing_user = existing_user
 
     def __enter__(self):
-        new_user = UserRequestModel(name=self.user_name, password="abcd")
-        self.created_user = self.store.create_user(new_user)
-
-        if self.login:
-            self.client.create_user_role_assignment(
-                role_name_or_id="admin", user_name_or_id=self.created_user.id
+        if not self.existing_user:
+            new_user = UserRequestModel(
+                name=self.user_name, password=self.password
             )
+            self.created_user = self.store.create_user(new_user)
+        else:
+            self.created_user = self.store.get_user(self.user_name)
+
+        if self.login or self.existing_user:
+            if not self.existing_user:
+                self.client.create_user_role_assignment(
+                    role_name_or_id="admin",
+                    user_name_or_id=self.created_user.id,
+                )
             self.original_config = GlobalConfiguration.get_instance()
             self.original_client = Client.get_instance()
 
@@ -156,21 +175,22 @@ class UserContext:
                 url=self.original_config.store.url,
                 type=self.original_config.store.type,
                 username=self.user_name,
-                password="abcd",
+                password=self.password,
                 secrets_store=self.original_config.store.secrets_store,
             )
             GlobalConfiguration().set_store(config=store_config)
         return self.created_user
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
-        if self.login:
+        if self.login or self.existing_user:
             GlobalConfiguration._reset_instance(self.original_config)
             Client._reset_instance(self.original_client)
             _ = Client().zen_store
-        try:
-            self.store.delete_user(self.created_user.id)
-        except KeyError:
-            pass
+        if not self.existing_user:
+            try:
+                self.store.delete_user(self.created_user.id)
+            except KeyError:
+                pass
 
 
 class StackContext:

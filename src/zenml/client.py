@@ -3166,6 +3166,10 @@ class Client(metaclass=ClientMetaClass):
 
         Returns:
             The created secret (in model form).
+
+        Raises:
+            NotImplementedError: If centralized secrets management is not
+                enabled.
         """
         create_secret_request = SecretRequestModel(
             name=name,
@@ -3174,8 +3178,13 @@ class Client(metaclass=ClientMetaClass):
             user=self.active_user.id,
             workspace=self.active_workspace.id,
         )
-
-        return self.zen_store.create_secret(secret=create_secret_request)
+        try:
+            return self.zen_store.create_secret(secret=create_secret_request)
+        except NotImplementedError:
+            raise NotImplementedError(
+                "centralized secrets management is not supported or explicitly "
+                "disabled in the target ZenML deployment."
+            )
 
     def get_secret(
         self,
@@ -3210,23 +3219,31 @@ class Client(metaclass=ClientMetaClass):
         Raises:
             KeyError: If no secret is found.
             ZenKeyError: If multiple secrets are found.
+            NotImplementedError: If centralized secrets management is not
+                enabled.
         """
         from zenml.utils.uuid_utils import is_valid_uuid
 
-        # First interpret as full UUID
-        if is_valid_uuid(name_id_or_prefix):
-            # Fetch by ID; filter by scope if provided
-            secret = self.zen_store.get_secret(
-                secret_id=UUID(name_id_or_prefix)
-                if isinstance(name_id_or_prefix, str)
-                else name_id_or_prefix
-            )
-            if scope is not None and secret.scope != scope:
-                raise KeyError(
-                    f"No secret found with ID {str(name_id_or_prefix)}"
+        try:
+            # First interpret as full UUID
+            if is_valid_uuid(name_id_or_prefix):
+                # Fetch by ID; filter by scope if provided
+                secret = self.zen_store.get_secret(
+                    secret_id=UUID(name_id_or_prefix)
+                    if isinstance(name_id_or_prefix, str)
+                    else name_id_or_prefix
                 )
+                if scope is not None and secret.scope != scope:
+                    raise KeyError(
+                        f"No secret found with ID {str(name_id_or_prefix)}"
+                    )
 
-            return secret
+                return secret
+        except NotImplementedError:
+            raise NotImplementedError(
+                "centralized secrets management is not supported or explicitly "
+                "disabled in the target ZenML deployment."
+            )
 
         # If not a UUID, try to find by name and then by prefix
         assert not isinstance(name_id_or_prefix, UUID)
@@ -3368,6 +3385,10 @@ class Client(metaclass=ClientMetaClass):
 
         Returns:
             A list of all the secret models.
+
+        Raises:
+            NotImplementedError: If centralized secrets management is not
+                enabled.
         """
         secret_filter_model = SecretFilterModel(
             page=page,
@@ -3383,9 +3404,15 @@ class Client(metaclass=ClientMetaClass):
             updated=updated,
         )
         secret_filter_model.set_scope_workspace(self.active_workspace.id)
-        return self.zen_store.list_secrets(
-            secret_filter_model=secret_filter_model
-        )
+        try:
+            return self.zen_store.list_secrets(
+                secret_filter_model=secret_filter_model
+            )
+        except NotImplementedError:
+            raise NotImplementedError(
+                "centralized secrets management is not supported or explicitly "
+                "disabled in the target ZenML deployment."
+            )
 
     def list_secrets_in_scope(
         self,

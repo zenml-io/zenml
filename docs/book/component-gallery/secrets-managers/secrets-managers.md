@@ -32,7 +32,7 @@ With centralized secrets management, you only need to configure the ZenML server
 to access the cloud back-end.
 
 ZenML currently only supports a SQL database as a centralized secrets store, but
-we are working on repurposing all existing secrets manager flavors (AWS, GCP,
+we are working on re-purposing all existing secrets manager flavors (AWS, GCP,
 Azure and HashiCorp Vault) to act as back-ends for the centralized secrets
 store. As soon as this is available, we will deprecate the secrets manager stack
 component and provide an upgrade path for existing users.

@@ -25,8 +25,9 @@ from tests.integration.functional.zen_stores.utils import (
 )
 from zenml.client import Client
 from zenml.enums import SecretScope, StoreType
-from zenml.exceptions import EntityExistsError
+from zenml.exceptions import EntityExistsError, IllegalOperationError
 from zenml.models.secret_models import SecretFilterModel, SecretUpdateModel
+from zenml.utils.string_utils import random_str
 
 # .---------.
 # | SECRETS |
@@ -1377,3 +1378,200 @@ def test_list_secrets_pagination_and_sorting():
         )
 
         assert len(secrets.items) == 0
+
+
+def test_secret_values_cannot_be_accessed_by_readonly_user():
+    """Tests that secret values cannot be retrieved by read-only users."""
+    if Client().zen_store.type == StoreType.SQL:
+        pytest.skip("SQL Zen Stores do not support user switching.")
+
+    # Switch to a different user with read-write access
+    password = random_str(32)
+    with UserContext(password=password, login=True) as user:
+
+        client = Client()
+        store = client.zen_store
+
+        # Create a workspace-scoped and user-scoped secret
+        with SecretContext() as secret, SecretContext(
+            scope=SecretScope.USER
+        ) as user_secret:
+
+            all_secrets = store.list_secrets(SecretFilterModel()).items
+            assert len(all_secrets) == 2
+            assert secret.id in [s.id for s in all_secrets]
+            assert user_secret.id in [s.id for s in all_secrets]
+            workspace_secrets = store.list_secrets(
+                SecretFilterModel(
+                    scope=SecretScope.WORKSPACE,
+                    workspace_id=client.active_workspace.id,
+                )
+            ).items
+            assert len(workspace_secrets) == 1
+            assert secret.id == workspace_secrets[0].id
+            assert workspace_secrets[0].secret_values == secret.secret_values
+            assert set(workspace_secrets[0].values.values()) != {None}
+
+            user_secrets = store.list_secrets(
+                SecretFilterModel(
+                    scope=SecretScope.USER,
+                    user_id=client.active_user.id,
+                    workspace_id=client.active_workspace.id,
+                )
+            ).items
+            assert len(user_secrets) == 1
+            assert user_secret.id == user_secrets[0].id
+            assert user_secrets[0].secret_values == user_secret.secret_values
+            assert set(user_secrets[0].values.values()) != {None}
+
+            # Remove the user's write access
+            client.create_user_role_assignment(
+                role_name_or_id="guest", user_name_or_id=user.id
+            )
+            admin_role = client.get_role("admin")
+            role_assignment = client.list_user_role_assignment(
+                user_id=user.id,
+                role_id=admin_role.id,
+            )
+            assert len(role_assignment) == 1
+            client.delete_user_role_assignment(role_assignment[0].id)
+
+            # Re-authenticate with the updated user
+            with UserContext(
+                user_name=user.name, password=password, existing_user=True
+            ):
+
+                all_secrets = store.list_secrets(SecretFilterModel()).items
+                assert len(all_secrets) == 2
+                assert secret.id in [s.id for s in all_secrets]
+                assert user_secret.id in [s.id for s in all_secrets]
+                workspace_secrets = store.list_secrets(
+                    SecretFilterModel(
+                        scope=SecretScope.WORKSPACE,
+                        workspace_id=client.active_workspace.id,
+                    )
+                ).items
+                assert len(workspace_secrets) == 1
+                assert secret.id == workspace_secrets[0].id
+                assert set(workspace_secrets[0].values.keys()) == set(
+                    secret.values.keys()
+                )
+                assert set(workspace_secrets[0].values.values()) == {None}
+                user_secrets = store.list_secrets(
+                    SecretFilterModel(
+                        scope=SecretScope.USER,
+                        user_id=client.active_user.id,
+                        workspace_id=client.active_workspace.id,
+                    )
+                ).items
+
+                assert len(user_secrets) == 1
+                assert user_secret.id == user_secrets[0].id
+                assert set(user_secrets[0].values.values()) == {None}
+                assert set(user_secrets[0].values.keys()) == set(
+                    user_secret.values.keys()
+                )
+
+
+def test_secrets_cannot_be_created_or_updated_by_readonly_user():
+    """Tests that secret values cannot be created or updated by read-only users."""
+    if Client().zen_store.type == StoreType.SQL:
+        pytest.skip("SQL Zen Stores do not support user switching.")
+
+    # Switch to a different user with read-write access
+    password = random_str(32)
+    with UserContext(password=password, login=True) as user:
+
+        client = Client()
+        store = client.zen_store
+
+        # Create a workspace-scoped and user-scoped secret
+        with SecretContext() as secret, SecretContext(
+            scope=SecretScope.USER
+        ) as user_secret:
+
+            with does_not_raise():
+                store.update_secret(
+                    secret.id, SecretUpdateModel(name=f"{secret.name}_new")
+                )
+
+            old_secrets = store.list_secrets(
+                SecretFilterModel(name=secret.name)
+            ).items
+            assert len(old_secrets) == 0
+
+            new_secrets = store.list_secrets(
+                SecretFilterModel(name=f"{secret.name}_new")
+            ).items
+            assert len(new_secrets) == 1
+            assert new_secrets[0].id == secret.id
+
+            with does_not_raise():
+                store.update_secret(
+                    user_secret.id,
+                    SecretUpdateModel(name=f"{user_secret.name}_new"),
+                )
+
+            old_secrets = store.list_secrets(
+                SecretFilterModel(name=user_secret.name)
+            ).items
+            assert len(old_secrets) == 0
+
+            new_secrets = store.list_secrets(
+                SecretFilterModel(name=f"{user_secret.name}_new")
+            ).items
+            assert len(new_secrets) == 1
+            assert new_secrets[0].id == user_secret.id
+
+            # Remove the user's write access
+            client.create_user_role_assignment(
+                role_name_or_id="guest", user_name_or_id=user.id
+            )
+            admin_role = client.get_role("admin")
+            role_assignment = client.list_user_role_assignment(
+                user_id=user.id,
+                role_id=admin_role.id,
+            )
+            assert len(role_assignment) == 1
+            client.delete_user_role_assignment(role_assignment[0].id)
+
+            # Re-authenticate with the updated user
+            with UserContext(
+                user_name=user.name, password=password, existing_user=True
+            ):
+
+                new_client = Client()
+                new_store = new_client.zen_store
+
+                with pytest.raises(IllegalOperationError):
+                    new_store.update_secret(
+                        secret.id, SecretUpdateModel(name=f"{secret.name}")
+                    )
+
+                old_secrets = new_store.list_secrets(
+                    SecretFilterModel(name=secret.name)
+                ).items
+                assert len(old_secrets) == 0
+
+                new_secrets = new_store.list_secrets(
+                    SecretFilterModel(name=f"{secret.name}_new")
+                ).items
+                assert len(new_secrets) == 1
+                assert new_secrets[0].id == secret.id
+
+                with pytest.raises(IllegalOperationError):
+                    new_store.update_secret(
+                        user_secret.id,
+                        SecretUpdateModel(name=f"{user_secret.name}_new"),
+                    )
+
+                old_secrets = new_store.list_secrets(
+                    SecretFilterModel(name=user_secret.name)
+                ).items
+                assert len(old_secrets) == 0
+
+                new_secrets = new_store.list_secrets(
+                    SecretFilterModel(name=f"{user_secret.name}_new")
+                ).items
+                assert len(new_secrets) == 1
+                assert new_secrets[0].id == user_secret.id

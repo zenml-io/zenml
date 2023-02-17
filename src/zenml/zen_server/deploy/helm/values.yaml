@@ -89,9 +89,9 @@ zenml:
 
     # The type of secrets store to use. Use one of:
     #
-    # SQL - Use the same SQL database as the ZenML server
+    # sql - Use the same SQL database as the ZenML server
     # (More options will be added in the near future).
-    type: SQL
+    type: sql
 
     # The secret key used to encrypt secrets in the SQL database. Only relevant
     # if the SQL secrets store type is used. This should be set to a random

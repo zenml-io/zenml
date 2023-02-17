@@ -1810,6 +1810,10 @@ class RestZenStore(BaseZenStore):
                     ": ".join(response.json().get("detail", (response.text,)))
                 )
         elif response.status_code == 422:
+            if "NotImplementedError" in response.text:
+                raise NotImplementedError(
+                    ": ".join(response.json().get("detail", (response.text,)))
+                )
             response_details = response.json().get("detail", (response.text,))
             if isinstance(response_details[0], str):
                 response_msg = ": ".join(response_details)

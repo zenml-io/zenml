@@ -134,3 +134,32 @@ def create_sample_workspace() -> WorkspaceResponseModel:
         description="This workspace aims to ensure world domination for all "
         "cat-kind.",
     )
+
+
+# ------- #
+# SECRETS #
+# ------- #
+
+
+@contextmanager
+def cleanup_secrets(
+    name_prefix: Optional[str] = None,
+) -> Generator[str, None, None]:
+    """Context manager to generate a sample prefix for secret names and to clean
+    up whatever secrets are created with that prefix on exit.
+
+    Args:
+        name_prefix: An optional prefix to use to generate the name prefix (yes,
+            you read that right, the prefix to the prefix).
+
+    Yields:
+        A name prefix to be used for secret names.
+    """
+    name_prefix = sample_name(name_prefix or "axl_secret_service")
+    yield name_prefix
+
+    # Clean up
+    client = Client()
+    secrets = client.list_secrets(name=f"startswith:{name_prefix}")
+    for secret in secrets.items:
+        client.delete_secret(secret.id)
