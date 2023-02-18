@@ -155,7 +155,7 @@ def run_example(
                 try:
                     logging.debug(f"Removing Docker image {image_name}")
                     image = docker_client.images.get(image_name)
-                    docker_client.images.remove(image.id)
+                    docker_client.images.remove(image.id, force=True)
                 except ImageNotFound:
                     pass
 
