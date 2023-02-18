@@ -29,6 +29,10 @@ from zenml.models import (
     ComponentUpdateModel,
     FlavorFilterModel,
     FlavorRequestModel,
+    PipelineBuildFilterModel,
+    PipelineBuildRequestModel,
+    PipelineDeploymentFilterModel,
+    PipelineDeploymentRequestModel,
     PipelineFilterModel,
     PipelineRequestModel,
     PipelineRunFilterModel,
@@ -281,11 +285,7 @@ AnyResponseModel = TypeVar("AnyResponseModel", bound=BaseResponseModel)
 
 
 class CrudTestConfig(BaseModel):
-    """Model to collect all methods pertaining to a given entity.
-
-    Please Note: This implementation will only work for named entities,
-    (entities with a `name` field)
-    """
+    """Model to collect all methods pertaining to a given entity."""
 
     create_model: "BaseRequestModel"
     update_model: Optional["BaseModel"]
@@ -383,6 +383,8 @@ pipeline_crud_test_config = CrudTestConfig(
         spec=PipelineSpec(steps=[]),
         user=uuid.uuid4(),
         workspace=uuid.uuid4(),
+        version="1",
+        version_hash="abc123",
     ),
     update_model=PipelineUpdateModel(
         name=sample_name("updated_sample_pipeline")
@@ -416,6 +418,27 @@ artifact_crud_test_config = CrudTestConfig(
     filter_model=ArtifactFilterModel,
     entity_name="artifact",
 )
+build_crud_test_config = CrudTestConfig(
+    create_model=PipelineBuildRequestModel(
+        user=uuid.uuid4(),
+        workspace=uuid.uuid4(),
+        images={},
+        is_local=False,
+    ),
+    filter_model=PipelineBuildFilterModel,
+    entity_name="build",
+)
+deployment_crud_test_config = CrudTestConfig(
+    create_model=PipelineDeploymentRequestModel(
+        user=uuid.uuid4(),
+        workspace=uuid.uuid4(),
+        stack=uuid.uuid4(),
+        run_name_template="template",
+        pipeline_configuration={"name": "pipeline_name"},
+    ),
+    filter_model=PipelineDeploymentFilterModel,
+    entity_name="deployment",
+)
 
 # step_run_crud_test_config = CrudTestConfig(
 #     create_model=StepRunRequestModel(
@@ -446,4 +469,6 @@ list_of_entities = [
     # step_run_crud_test_config,
     pipeline_run_crud_test_config,
     artifact_crud_test_config,
+    build_crud_test_config,
+    deployment_crud_test_config,
 ]

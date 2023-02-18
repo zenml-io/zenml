@@ -21,22 +21,32 @@ from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
 from zenml.config.pipeline_configurations import PipelineSpec
-from zenml.models.pipeline_models import PipelineResponseModel
+from zenml.models.pipeline_models import (
+    PipelineRequestModel,
+    PipelineResponseModel,
+    PipelineUpdateModel,
+)
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineUpdateModel
-    from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
-    from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
+    from zenml.zen_stores.schemas import (
+        PipelineBuildSchema,
+        PipelineDeploymentSchema,
+        PipelineRunSchema,
+        ScheduleSchema,
+    )
 
 
 class PipelineSchema(NamedSchema, table=True):
     """SQL Model for pipelines."""
 
     __tablename__ = "pipeline"
+
+    version: str
+    version_hash: str
 
     docstring: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     spec: str = Field(sa_column=Column(TEXT, nullable=False))
@@ -68,6 +78,35 @@ class PipelineSchema(NamedSchema, table=True):
     runs: List["PipelineRunSchema"] = Relationship(
         back_populates="pipeline", sa_relationship_kwargs={"cascade": "delete"}
     )
+    builds: List["PipelineBuildSchema"] = Relationship(
+        back_populates="pipeline"
+    )
+    deployments: List["PipelineDeploymentSchema"] = Relationship(
+        back_populates="pipeline"
+    )
+
+    @classmethod
+    def from_request(
+        cls,
+        pipeline_request: "PipelineRequestModel",
+    ) -> "PipelineSchema":
+        """Convert a `PipelineRequestModel` to a `PipelineSchema`.
+
+        Args:
+            pipeline_request: The request model to convert.
+
+        Returns:
+            The converted schema.
+        """
+        return cls(
+            name=pipeline_request.name,
+            version=pipeline_request.version,
+            version_hash=pipeline_request.version_hash,
+            workspace_id=pipeline_request.workspace,
+            user_id=pipeline_request.user,
+            docstring=pipeline_request.docstring,
+            spec=pipeline_request.spec.json(sort_keys=True),
+        )
 
     def to_model(
         self,
@@ -91,6 +130,8 @@ class PipelineSchema(NamedSchema, table=True):
             return PipelineResponseModel(
                 id=self.id,
                 name=self.name,
+                version=self.version,
+                version_hash=self.version_hash,
                 workspace=self.workspace.to_model(),
                 user=self.user.to_model(True) if self.user else None,
                 docstring=self.docstring,
@@ -102,6 +143,8 @@ class PipelineSchema(NamedSchema, table=True):
             return PipelineResponseModel(
                 id=self.id,
                 name=self.name,
+                version=self.version,
+                version_hash=self.version_hash,
                 workspace=self.workspace.to_model(),
                 user=self.user.to_model(True) if self.user else None,
                 runs=[r.to_model(_block_recursion=True) for r in x_runs],

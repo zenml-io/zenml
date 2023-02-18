@@ -20,7 +20,7 @@ jobs:
       # on MAC OS, we need to set this environment variable
       # to fix problems with the fork() calls (see this thread
       # for more information: http://sealiesoftware.com/blog/archive/2017/6/5/Objective-C_and_fork_in_macOS_1013.html)
-      OBJC_DISABLE_INITIALIZE_FORK_SAFETY: 'YES'
+      OBJC_DISABLE_INITIALIZE_FORK_SAFETY: "YES"
     # Exit if it's a commit from Gitbook
     if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
 
@@ -31,7 +31,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]
-        python-version: [ '3.7', '3.8', '3.9', '3.10' ]
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
       fail-fast: false
 
     steps:
@@ -44,15 +44,26 @@ jobs:
           python-version: ${{ matrix.python-version }}
           os: ${{ matrix.os }}
 
-      - name: Install Prerequisites
+      - name: Install Prerequisites - Stage 1
         run: |
           source $VENV
           zenml integration export-requirements --output-file requirements.txt kubeflow s3 gcp azure vault pillow evidently deepchecks great_expectations huggingface lightgbm neural_prophet pytorch tensorflow whylogs xgboost mlflow neptune
           pip install -r requirements.txt
           rm requirements.txt
-          pip install click~=8.0.3          
+          pip install click~=8.0.3
           # Version 4.2.1 raises: AttributeError: type object 'Draft7Validator' has no attribute 'FORMAT_CHECKER'
           pip install altair==4.2.0
+
+      # ADD BACK IN IF TESTING KSERVE
+      # - name: Install Prerequisites - Stage 2
+      #   run: |
+      #     source $VENV
+      #     # install kserve on python < 3.10
+      #     # kserve is not compatible with Python 3.10 yet
+      #     zenml integration export-requirements --output-file requirements.txt kserve
+      #     pip install -r requirements.txt
+      #     rm requirements.txt
+      #   if: ${{ matrix.python-version != '3.10' }}
 
       - name: Setup tmate session
         if: ${{ github.event.inputs.tags }}
