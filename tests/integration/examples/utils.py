@@ -84,7 +84,6 @@ def run_example(
         The example and the pipeline runs that were executed and validated.
     """
     from zenml.client import Client
-    from zenml.enums import StackComponentType
 
     # Root directory of all checked out examples
     examples_directory = Path(__file__).parents[3] / "examples"
@@ -98,6 +97,9 @@ def run_example(
     existing_pipeline_ids = {
         pipeline.id
         for pipeline in client.depaginate(list_method=client.list_pipelines)
+    }
+    existing_build_ids = {
+        build.id for build in client.depaginate(list_method=client.list_builds)
     }
 
     now = datetime.utcnow()
@@ -129,19 +131,12 @@ def run_example(
     if cleanup_docker:
         # Clean up more expensive resources like docker containers, volumes and
         # images, if any were created.
+        image_names = set()
+        for build in client.depaginate(list_method=client.list_builds):
+            if build.id in existing_build_ids:
+                continue
 
-        active_stack = client.active_stack_model
-        if StackComponentType.CONTAINER_REGISTRY in active_stack.components:
-            container_registry = active_stack.components[
-                StackComponentType.CONTAINER_REGISTRY
-            ][0]
-            image_name = f"{container_registry.configuration['uri']}/zenml:{pipeline_name}"
-        else:
-            # For orchestrators that don't need a container registry (e.g. local
-            # Docker orchestrator and local Airflow orchestrator) and for step
-            # operators, we leverage the default convention used to name the
-            # image `zenml:<pipeline_name>`.
-            image_name = f"zenml:{pipeline_name}"
+            image_names.update(item.image for item in build.images.values())
 
         try:
             from docker.client import DockerClient
@@ -154,19 +149,17 @@ def run_example(
             # Docker is not installed or running
             pass
         else:
-            try:
-                # If the image is not present on the local machine, the build
-                # phase either failed or we don't even have an orchestrator that
-                # builds a container image. Either way, we don't need to clean
-                # up any Docker resources.
-                pipeline_image = docker_client.images.get(image_name)
-                docker_client.containers.prune()
-                docker_client.volumes.prune()
-                logging.debug(f"Removing Docker image {pipeline_name}")
-                docker_client.images.remove(pipeline_image.id)
-                docker_client.images.prune()
-            except ImageNotFound:
-                pass
+            docker_client.containers.prune()
+            docker_client.volumes.prune()
+            for image_name in image_names:
+                try:
+                    logging.debug(f"Removing Docker image {image_name}")
+                    image = docker_client.images.get(image_name)
+                    docker_client.images.remove(image.id)
+                except ImageNotFound:
+                    pass
+
+            docker_client.images.prune()
 
 
 def wait_and_validate_pipeline_run(
