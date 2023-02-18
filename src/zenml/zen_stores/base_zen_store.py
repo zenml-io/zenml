@@ -14,7 +14,15 @@
 """Base Zen Store implementation."""
 import os
 from abc import ABC
-from typing import Any, ClassVar, Dict, Optional, Tuple, Type, Union
+from typing import (
+    Any,
+    ClassVar,
+    Dict,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+)
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -28,7 +36,12 @@ from zenml.constants import (
     ENV_ZENML_DEFAULT_WORKSPACE_NAME,
     ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
 )
-from zenml.enums import PermissionType, StackComponentType, StoreType
+from zenml.enums import (
+    PermissionType,
+    SecretsStoreType,
+    StackComponentType,
+    StoreType,
+)
 from zenml.logger import get_logger
 from zenml.models import (
     ComponentRequestModel,
@@ -56,6 +69,14 @@ from zenml.utils.analytics_utils import (
     track,
     track_event,
 )
+from zenml.utils.proxy_utils import make_proxy_class
+from zenml.zen_stores.secrets_stores.base_secrets_store import BaseSecretsStore
+from zenml.zen_stores.secrets_stores.secrets_store_interface import (
+    SecretsStoreInterface,
+)
+from zenml.zen_stores.secrets_stores.sql_secrets_store import (
+    SqlSecretsStoreConfiguration,
+)
 from zenml.zen_stores.zen_store_interface import ZenStoreInterface
 
 logger = get_logger(__name__)
@@ -69,16 +90,25 @@ DEFAULT_ADMIN_ROLE = "admin"
 DEFAULT_GUEST_ROLE = "guest"
 
 
-class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
+@make_proxy_class(SecretsStoreInterface, "_secrets_store")
+class BaseZenStore(
+    BaseModel,
+    ZenStoreInterface,
+    SecretsStoreInterface,
+    AnalyticsTrackerMixin,
+    ABC,
+):
     """Base class for accessing and persisting ZenML core objects.
 
     Attributes:
         config: The configuration of the store.
         track_analytics: Only send analytics if set to `True`.
+        secrets_store: The secrets store to use for storing sensitive data.
     """
 
     config: StoreConfiguration
     track_analytics: bool = True
+    _secrets_store: Optional[BaseSecretsStore] = None
 
     TYPE: ClassVar[StoreType]
     CONFIG_TYPE: ClassVar[Type[StoreConfiguration]]
@@ -208,6 +238,24 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
             skip_default_registrations=skip_default_registrations,
             **kwargs,
         )
+
+        secrets_store_config = store.config.secrets_store
+
+        # Initialize the secrets store
+        if (
+            secrets_store_config
+            and secrets_store_config.type != SecretsStoreType.NONE
+        ):
+            secrets_store_class = BaseSecretsStore.get_store_class(
+                secrets_store_config.type
+            )
+            store._secrets_store = secrets_store_class(
+                zen_store=store,
+                config=secrets_store_config,
+            )
+            # Update the config with the actual secrets store config
+            # to reflect the default values in the saved configuration
+            store.config.secrets_store = store._secrets_store.config
         return store
 
     @staticmethod
@@ -228,6 +276,9 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
         config = SqlZenStoreConfiguration(
             type=StoreType.SQL,
             url=SqlZenStoreConfiguration.get_local_url(path),
+            secrets_store=SqlSecretsStoreConfiguration(
+                type=SecretsStoreType.SQL,
+            ),
         )
         return config
 
@@ -277,6 +328,15 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin, ABC):
             The type of the store.
         """
         return self.TYPE
+
+    @property
+    def secrets_store(self) -> Optional["BaseSecretsStore"]:
+        """The secrets store associated with this store.
+
+        Returns:
+            The secrets store associated with this store.
+        """
+        return self._secrets_store
 
     def validate_active_config(
         self,

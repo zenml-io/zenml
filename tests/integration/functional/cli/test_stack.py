@@ -20,7 +20,7 @@ from uuid import UUID, uuid4
 import pytest
 from click.testing import CliRunner
 
-from tests.integration.functional.cli.test_utils import (
+from tests.integration.functional.cli.utils import (
     create_sample_user_and_login,
 )
 from zenml.artifact_stores.local_artifact_store import (

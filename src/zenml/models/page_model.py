@@ -42,6 +42,7 @@ from __future__ import annotations
 
 from typing import Generic, Sequence, TypeVar
 
+from pydantic import SecretStr
 from pydantic.generics import GenericModel
 from pydantic.types import NonNegativeInt, PositiveInt
 
@@ -94,3 +95,12 @@ class Page(GenericModel, Generic[B]):
             Whether the item is in the page.
         """
         return item in self.items
+
+    class Config:
+        """Pydantic configuration class."""
+
+        # This is needed to allow the REST API server to unpack SecretStr
+        # values correctly before sending them to the client.
+        json_encoders = {
+            SecretStr: lambda v: v.get_secret_value() if v else None
+        }
