@@ -41,8 +41,8 @@ def test_adding_extra_directory(tmp_path):
     build_context.add_directory(str(tmp_path), destination="dir")
 
     extra_files = build_context._get_extra_files()
-    assert extra_files[0] == ("dir/1", "file 1")
-    assert extra_files[1] == ("dir/2", "file 2")
+    assert ("dir/1", "file 1") in extra_files
+    assert ("dir/2", "file 2") in extra_files
 
 
 def test_build_context_includes_and_excludes(tmp_path):
