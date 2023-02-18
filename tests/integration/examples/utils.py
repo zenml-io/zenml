@@ -94,6 +94,12 @@ def run_example(
     # Copy all example files into the repository directory
     copy_example_files(str(examples_directory / name), str(dst_dir))
 
+    client = Client()
+    existing_pipeline_ids = {
+        pipeline.id
+        for pipeline in client.depaginate(list_method=client.list_pipelines)
+    }
+
     now = datetime.utcnow()
 
     # Run the example
@@ -112,11 +118,11 @@ def run_example(
 
     yield example, runs
 
-    client = Client()
     # Cleanup registered pipelines so they don't cause trouble in future
     # example runs
     for pipeline in client.depaginate(list_method=client.list_pipelines):
-        client.delete_pipeline(pipeline.id)
+        if pipeline.id not in existing_pipeline_ids:
+            client.delete_pipeline(pipeline.id)
 
     cleanup_docker = request.config.getoption("cleanup_docker", False)
 
