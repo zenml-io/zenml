@@ -37,7 +37,7 @@ from zenml.secrets_managers.local.local_secrets_manager import (
     LocalSecretsManagerConfig,
 )
 
-NOT_STACKS = ["abc", "my_other_cat_is_called_blupus", "stack123"]
+NOT_STACKS = ["abc_def", "my_other_cat_is_called_blupus", "stack123"]
 
 
 def _create_local_orchestrator(
