@@ -141,17 +141,6 @@ def get_metric_class_from_mapping(metric: str) -> Union[Metric, MetricPreset]:
     Raises:
         ValueError: If the metric or metric preset is not a valid Evidently metric or metric preset.
     """
-    # metric_mapping = {
-    #     "DataQualityPreset": metric_preset.DataQualityPreset,
-    #     "DataDriftPreset": metric_preset.DataDriftPreset,
-    #     "ClassificationPreset": metric_preset.ClassificationPreset,
-    #     "RegressionPreset": metric_preset.RegressionPreset,
-    #     "TargetDriftPreset": metric_preset.TargetDriftPreset,
-    #     "TextOverviewPreset": metric_preset.TextOverviewPreset,
-    #     "DatasetSummaryMetric": metrics.DatasetSummaryMetric,
-    #     "DatasetMissingValuesMetric": metrics.DatasetMissingValuesMetric,
-    #      ...
-    # }
     try:
         # if metric contains preset in name, return an object of the class of same name from metric_preset
         if "Preset" in metric:
@@ -193,8 +182,7 @@ def get_test_class_from_mapping(test: str) -> Union[Test, TestPreset]:
 def get_metrics(
     metric_list: List[Union[str, list, Dict[str, Any]]]
 ) -> List[Union[Metric, MetricPreset, BaseGenerator]]:
-    """Get a list of Evidently metrics from a list of metric names and/or
-    dictionaries.
+    """Get a list of Evidently metrics from a list of metric names and/or dictionaries.
 
     Args:
         metric_list: List of metric names and/or dictionaries.
@@ -234,8 +222,7 @@ def get_metrics(
 def get_tests(
     test_list: List[Union[str, list, Dict[str, Any]]]
 ) -> List[Union[Test, TestPreset, BaseGenerator]]:
-    """Get a list of Evidently tests from a list of test names and/or
-    dictionaries.
+    """Get a list of Evidently tests from a list of test names and/or dictionaries.
 
     Args:
         test_list: List of test names and/or dictionaries.
