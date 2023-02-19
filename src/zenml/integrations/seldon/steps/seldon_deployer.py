@@ -478,20 +478,19 @@ def seldon_mlflow_registry_deployer_step(
         )[0]
 
     if not model_version:
-        raise ValueError(
+        raise RuntimeError(
             f"No Model Version found for model name "
             f"{params.registry_model_name} and version "
             f"{params.registry_model_version} or stage "
             f"{params.registry_model_stage}"
         )
     # Set the pipeline information from the model version
-    pipeline_name = getattr(
-        model_version.zenml_metadata, "zenml_pipeline_name", ""
-    )
-    pipeline_run_id = getattr(
-        model_version.zenml_metadata, "zenml_pipeline_run_id", ""
-    )
-    step_name = getattr(model_version.zenml_metadata, "zenml_step_name", "")
+    if model_version.zenml_metadata:
+        pipeline_name = model_version.zenml_metadata.zenml_pipeline_name or ""
+        pipeline_run_id = (
+            model_version.zenml_metadata.zenml_pipeline_run_id or ""
+        )
+        step_name = model_version.zenml_metadata.zenml_step_name or ""
 
     # update the step configuration with the real pipeline runtime information
     params.service_config.pipeline_name = pipeline_name

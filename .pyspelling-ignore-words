@@ -458,7 +458,7 @@ Mixin
 MjYxMzI
 ModelArtifact
 ModelMesh
-ModelRegistration
+RegisteredModel
 ModelRun
 ModelServer
 ModelVersion

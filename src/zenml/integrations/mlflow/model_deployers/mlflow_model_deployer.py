@@ -301,8 +301,8 @@ class MLFlowModelDeployer(BaseModelDeployer):
             pipeline_name=pipeline_name or "",
             pipeline_run_id=pipeline_run_id or "",
             pipeline_step_name=pipeline_step_name or "",
-            registry_model_name=registry_model_name or "",
-            registry_model_version=registry_model_version or "",
+            registry_model_name=registry_model_name,
+            registry_model_version=registry_model_version,
         )
 
         # find all services that match the input criteria

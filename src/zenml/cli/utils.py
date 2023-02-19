@@ -45,8 +45,8 @@ from zenml.constants import FILTERING_DATETIME_FORMAT, IS_DEBUG_ENV
 from zenml.enums import GenericFilterOps, StackComponentType, StoreType
 from zenml.logger import get_logger
 from zenml.model_registries.base_model_registry import (
-    ModelRegistration,
     ModelVersion,
+    RegisteredModel,
 )
 from zenml.models import BaseFilterModel
 from zenml.models.base_models import BaseResponseModel
@@ -733,7 +733,7 @@ def pretty_print_model_deployer(
 
 
 def pretty_print_registered_model_table(
-    registered_models: List["ModelRegistration"],
+    registered_models: List["RegisteredModel"],
 ) -> None:
     """Given a list of registered_models, print all associated key-value pairs.
 

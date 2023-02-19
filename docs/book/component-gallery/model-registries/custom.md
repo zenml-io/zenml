@@ -57,7 +57,7 @@ class BaseModelRegistry(StackComponent, ABC):
         name: str,
         description: Optional[str] = None,
         tags: Optional[Dict[str, str]] = None,
-    ) -> ModelRegistration:
+    ) -> RegisteredModel:
         """Registers a model in the model registry."""
 
     @abstractmethod
@@ -73,11 +73,11 @@ class BaseModelRegistry(StackComponent, ABC):
         name: str,
         description: Optional[str] = None,
         tags: Optional[Dict[str, str]] = None,
-    ) -> ModelRegistration:
+    ) -> RegisteredModel:
         """Updates a registered model in the model registry."""
 
     @abstractmethod
-    def get_model(self, name: str) -> ModelRegistration:
+    def get_model(self, name: str) -> RegisteredModel:
         """Gets a registered model from the model registry."""
 
     @abstractmethod
@@ -85,7 +85,7 @@ class BaseModelRegistry(StackComponent, ABC):
         self,
         name: Optional[str] = None,
         tags: Optional[Dict[str, str]] = None,
-    ) -> List[ModelRegistration]:
+    ) -> List[RegisteredModel]:
         """Lists all registered models in the model registry."""
 
     @abstractmethod

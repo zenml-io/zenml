@@ -19,7 +19,7 @@ and stages in a consistent manner regardless of the underlying registry tool or
 platform being used. The following following concepts are useful to be aware of
 for this abstraction:
 
-* **ModelRegistration**: A logical grouping of models that can be used to track
+* **RegisteredModel**: A logical grouping of models that can be used to track
     different versions of a model. It holds information about the model, such
     as its name, description, and tags, and can be created by the user or
     automatically created by the model registry when a new model is logged.

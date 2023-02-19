@@ -33,7 +33,7 @@ class ModelVersionStage(Enum):
     ARCHIVED = "Archived"
 
 
-class ModelRegistration(BaseModel):
+class RegisteredModel(BaseModel):
     """Base class for all ZenML registered models.
 
     Model Registration are the top-level entities in the model registry.
@@ -93,7 +93,7 @@ class ModelVersion(BaseModel):
         registry_metadata: The metadata associated with this model version
     """
 
-    model_registration: ModelRegistration
+    model_registration: RegisteredModel
     model_source_uri: str
     version_description: Optional[str] = None
     version: Optional[str] = None
@@ -171,7 +171,7 @@ class BaseModelRegistry(StackComponent, ABC):
         name: str,
         description: Optional[str] = None,
         tags: Optional[Dict[str, str]] = None,
-    ) -> ModelRegistration:
+    ) -> RegisteredModel:
         """Registers a model in the model registry.
 
         Args:
@@ -197,7 +197,7 @@ class BaseModelRegistry(StackComponent, ABC):
         name: str,
         description: Optional[str] = None,
         tags: Optional[Dict[str, str]] = None,
-    ) -> ModelRegistration:
+    ) -> RegisteredModel:
         """Updates a registered model in the model registry.
 
         Args:
@@ -207,7 +207,7 @@ class BaseModelRegistry(StackComponent, ABC):
         """
 
     @abstractmethod
-    def get_model(self, name: str) -> ModelRegistration:
+    def get_model(self, name: str) -> RegisteredModel:
         """Gets a registered model from the model registry.
 
         Args:
@@ -222,7 +222,7 @@ class BaseModelRegistry(StackComponent, ABC):
         self,
         name: Optional[str] = None,
         tags: Optional[Dict[str, str]] = None,
-    ) -> List[ModelRegistration]:
+    ) -> List[RegisteredModel]:
         """Lists all registered models in the model registry.
 
         Args:

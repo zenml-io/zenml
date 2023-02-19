@@ -247,7 +247,7 @@ def mlflow_model_registry_deployer_step(
     elif not params.registry_model_version and not params.registry_model_stage:
         raise ValueError(
             "Either registry_model_version or registry_model_stage must"
-            "be provided in addition to registered_model_name to the MLflow"
+            "be provided in addition to registry_model_name to the MLflow"
             "model registry deployer step. Since the"
             "mlflow_model_registry_deployer_step is used in conjunction with"
             "the mlflow_model_registry."
@@ -276,27 +276,26 @@ def mlflow_model_registry_deployer_step(
             version=params.registry_model_version,
         )
     elif params.registry_model_stage:
-        model_version = model_registry.get_latest_model_versions(
+        model_versions = model_registry.get_latest_model_versions(
             name=params.registry_model_name,
             version_stages=[params.registry_model_stage],
-        )[0]
-
-    if not model_version:
-        raise ValueError(
-            f"No Model Version found for model name "
-            f"{params.registry_model_name} and version "
-            f"{params.registry_model_version} or stage "
-            f"{params.registry_model_stage}"
         )
+        if not model_versions:
+            raise ValueError(
+                f"No Model Version found for model name "
+                f"{params.registry_model_name} and version "
+                f"{params.registry_model_version} or stage "
+                f"{params.registry_model_stage}"
+            )
+        model_version = model_versions[0]
 
     # Set the pipeline information from the model version
-    pipeline_name = getattr(
-        model_version.zenml_metadata, "zenml_pipeline_name", ""
-    )
-    pipeline_run_id = getattr(
-        model_version.zenml_metadata, "zenml_pipeline_run_id", ""
-    )
-    step_name = getattr(model_version.zenml_metadata, "zenml_step_name", "")
+    if model_version.zenml_metadata:
+        pipeline_name = model_version.zenml_metadata.zenml_pipeline_name or ""
+        pipeline_run_id = (
+            model_version.zenml_metadata.zenml_pipeline_run_id or ""
+        )
+        step_name = model_version.zenml_metadata.zenml_step_name or ""
 
     # fetch existing services with same pipeline name, step name and model name
     existing_services = model_deployer.find_model_server(

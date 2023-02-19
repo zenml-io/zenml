@@ -98,7 +98,7 @@ def mlflow_register_model_step(
     # fetch the MLflow model registry
     model_registry = Client().active_stack.model_registry
     if not isinstance(model_registry, MLFlowModelRegistry):
-        raise ValueError(
+        raise RuntimeError(
             "The MLflow model registry step can only be used with an "
             "MLflow model registry."
         )
@@ -117,7 +117,7 @@ def mlflow_register_model_step(
     )
     # If no value was set at all, raise an error
     if not mlflow_run_id:
-        raise ValueError(
+        raise RuntimeError(
             f"Could not find MLflow run for experiment {pipeline_name} "
             f"and run {pipeline_run_id}."
         )
@@ -128,7 +128,9 @@ def mlflow_register_model_step(
     try:
         client.get_run(run_id=mlflow_run_id).info.run_id
     except Exception:
-        raise ValueError(f"Could not find MLflow run with ID {mlflow_run_id}.")
+        raise RuntimeError(
+            f"Could not find MLflow run with ID {mlflow_run_id}."
+        )
 
     # Set model source URI
     model_source_uri = params.model_source_uri or None

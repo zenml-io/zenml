@@ -43,6 +43,7 @@ environments:
     requirements:
       - data-validators
       - mlflow-local-tracker
+      - mlflow-local-registry
       - mlflow-local-deployer
       - local-secrets-manager
     capabilities:
@@ -56,6 +57,7 @@ environments:
     requirements:
       - data-validators
       - mlflow-local-tracker
+      - mlflow-local-registry
       - mlflow-local-deployer
       - local-secrets-manager
     mandatory_requirements:
@@ -70,6 +72,7 @@ environments:
       - data-validators
       - mlflow-local-tracker
       - mlflow-local-deployer
+      - mlflow-local-registry
       - local-secrets-manager
     mandatory_requirements:
       - airflow-local
@@ -86,6 +89,7 @@ environments:
     requirements:
       - data-validators
       - mlflow-local-tracker
+      - mlflow-local-registry
       - mlflow-local-deployer
       - local-secrets-manager
     capabilities:
@@ -103,6 +107,7 @@ environments:
     requirements:
       - data-validators
       - mlflow-local-tracker
+      - mlflow-local-registry
       - mlflow-local-deployer
       - local-secrets-manager
     mandatory_requirements:
@@ -120,6 +125,7 @@ environments:
     requirements:
       - data-validators
       - mlflow-local-tracker
+      - mlflow-local-registry
       - mlflow-local-deployer
       - local-secrets-manager
     mandatory_requirements:
@@ -133,6 +139,7 @@ environments:
     requirements:
       - data-validators
       - mlflow-local-tracker
+      - mlflow-local-registry
       - mlflow-local-deployer
       - local-secrets-manager
     capabilities:
@@ -146,6 +153,7 @@ environments:
     requirements:
       - data-validators
       - mlflow-local-tracker
+      - mlflow-local-registry
       - mlflow-local-deployer
       - local-secrets-manager
     mandatory_requirements:
@@ -159,6 +167,7 @@ environments:
     requirements:
       - data-validators
       - mlflow-local-tracker
+      - mlflow-local-registry
       - mlflow-local-deployer
       - local-secrets-manager
     mandatory_requirements:
