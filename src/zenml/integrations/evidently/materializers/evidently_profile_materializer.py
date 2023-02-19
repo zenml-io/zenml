@@ -44,6 +44,7 @@ class EvidentlyProfileMaterializer(BaseMaterializer):
 
         Returns:
             The Evidently Profile
+
         Raises:
             TypeError: if the json file contains an invalid data type.
         """

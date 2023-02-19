@@ -80,14 +80,16 @@ class EvidentlyProfileStep(BaseStep):
             comparison_dataset: a Pandas DataFrame of new data you wish to
                 compare against the reference data
             params: the parameters for the step
-        Raises:
-            ValueError: If ignored_cols is an empty list
-            ValueError: If column is not found in reference or comparison
-                dataset
+
         Returns:
             profile: Evidently Profile generated for the data drift
             dashboard: HTML report extracted from an Evidently Dashboard
               generated for the data drift.
+
+        Raises:
+            ValueError: If ignored_cols is an empty list
+            ValueError: If column is not found in reference or comparison
+                dataset
         """
         data_validator = cast(
             EvidentlyDataValidator,
@@ -141,7 +143,7 @@ def evidently_profile_step(
     params: EvidentlyProfileParameters,
 ) -> BaseStep:
     """Shortcut function to create a new instance of the EvidentlyProfileConfig step.
-    
+
     The returned EvidentlyProfileStep can be used in a pipeline to
     run model drift analyses on two input pd.DataFrame datasets and return the
     results as an Evidently profile object and a rendered dashboard object.
@@ -149,6 +151,7 @@ def evidently_profile_step(
     Args:
         step_name: The name of the step
         params: The parameters for the step
+
     Returns:
         a EvidentlyProfileStep step instance.
     """

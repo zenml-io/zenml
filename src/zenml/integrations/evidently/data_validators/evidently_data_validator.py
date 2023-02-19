@@ -201,6 +201,9 @@ def get_metrics(
 
     Returns:
         List of Evidently metrics.
+
+    Raises:
+        ValueError: If the metric type is not a valid Evidently metric type.
     """
     metrics = []
     for metric in metric_list:
@@ -422,6 +425,9 @@ class EvidentlyDataValidator(BaseDataValidator):
                 test suite constructor.
             column_mapping: Properties of the DataFrame columns used
             **kwargs: Extra keyword arguments (unused).
+
+        Returns:
+            The Evidently Test Suite as JSON object and as HTML.
         """
         tests = get_tests(check_list)
         unpacked_test_options = self._unpack_options(test_options)
@@ -447,13 +453,15 @@ class EvidentlyDataValidator(BaseDataValidator):
         **kwargs: Any,
     ) -> Tuple[Profile, Dashboard]:
         """Analyze a dataset and generate a data profile with Evidently.
+
         The method takes in an optional list of Evidently options to be passed
         to the profile constructor (`profile_options`) and the dashboard
         constructor (`dashboard_options`). Each element in the list must be
         composed of two items: the first is a full class path of an Evidently
         option `dataclass`, the second is a dictionary of kwargs with the actual
-        option parameters, e.g.:
-        @@ -222,37 +288,59 @@ def data_profiling(
+        option parameters.
+
+        Args:
             dataset: Target dataset to be profiled.
             comparison_dataset: Optional dataset to be used for data profiles
                 that require a baseline for comparison (e.g data drift profiles).
