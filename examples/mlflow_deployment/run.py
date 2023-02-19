@@ -52,7 +52,7 @@ DEPLOY_AND_PREDICT = "deploy_and_predict"
     "--config",
     "-c",
     type=click.Choice([DEPLOY, PREDICT, DEPLOY_AND_PREDICT]),
-    default="deploy_and_predict",
+    default=DEPLOY_AND_PREDICT,
     help="Optionally you can choose to only run the deployment "
     "pipeline to train and deploy a model (`deploy`), or to "
     "only run a prediction against the deployed model "

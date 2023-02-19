@@ -12,23 +12,27 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import pytest
 
-# TODO: enable this once we figure out why the service doesn't start
-# def test_example(request: pytest.FixtureRequest) -> None:
-#     """Runs the mlflow_deployment example."""
+from tests.integration.examples.utils import run_example
+from zenml.post_execution.pipeline import get_pipeline
 
-#     with run_example(
-#         request=request,
-#         name="mlflow_deployment",
-#         pipeline_name="inference_pipeline",
-#         run_count=1,
-#         step_count=4,
-#     ):
-#         from zenml.integrations.mlflow.services import MLFlowDeploymentService
 
-#         deployment_run = get_pipeline("continuous_deployment_pipeline").runs[
-#             -1
-#         ]
+def test_example(request: pytest.FixtureRequest) -> None:
+    """Runs the mlflow_deployment example."""
 
-#         service = deployment_run.get_step("model_deployer").output.read()
-#         assert isinstance(service, MLFlowDeploymentService)
+    with run_example(
+        request=request,
+        name="mlflow_deployment",
+        pipeline_name="inference_pipeline",
+        run_count=1,
+        step_count=4,
+    ):
+        from zenml.integrations.mlflow.services import MLFlowDeploymentService
+
+        deployment_run = get_pipeline("continuous_deployment_pipeline").runs[
+            -1
+        ]
+
+        service = deployment_run.get_step("model_deployer").output.read()
+        assert isinstance(service, MLFlowDeploymentService)
