@@ -30,6 +30,7 @@ from zenml.cli.utils import (
     _component_display_name,
     list_options,
     print_page_info,
+    warn_deprecated_secrets_manager,
 )
 from zenml.client import Client
 from zenml.console import console
@@ -54,6 +55,9 @@ def generate_stack_component_get_command(
 
     def get_stack_component_command() -> None:
         """Prints the name of the active component."""
+        if component_type == StackComponentType.SECRETS_MANAGER:
+            warn_deprecated_secrets_manager()
+
         client = Client()
         display_name = _component_display_name(component_type)
 
@@ -97,6 +101,9 @@ def generate_stack_component_describe_command(
         Args:
             name_id_or_prefix: Name or id of the component to describe.
         """
+        if component_type == StackComponentType.SECRETS_MANAGER:
+            warn_deprecated_secrets_manager()
+
         client = Client()
         try:
             component_ = client.get_stack_component(
@@ -141,6 +148,9 @@ def generate_stack_component_list_command(
         Args:
             kwargs: Keyword arguments to filter the components.
         """
+        if component_type == StackComponentType.SECRETS_MANAGER:
+            warn_deprecated_secrets_manager()
+
         client = Client()
         with console.status(f"Listing {component_type.plural}..."):
             kwargs["type"] = component_type
@@ -206,6 +216,9 @@ def generate_stack_component_register_command(
             share: Share the stack with other users.
             args: Additional arguments to pass to the component.
         """
+        if component_type == StackComponentType.SECRETS_MANAGER:
+            warn_deprecated_secrets_manager()
+
         client = Client()
 
         # Parse the given args
@@ -263,6 +276,9 @@ def generate_stack_component_update_command(
             name_id_or_prefix: The name or id of the stack component to update.
             args: Additional arguments to pass to the update command.
         """
+        if component_type == StackComponentType.SECRETS_MANAGER:
+            warn_deprecated_secrets_manager()
+
         client = Client()
 
         # Parse the given args
@@ -320,6 +336,9 @@ def generate_stack_component_share_command(
         Args:
             name_id_or_prefix: The name or id of the stack component to update.
         """
+        if component_type == StackComponentType.SECRETS_MANAGER:
+            warn_deprecated_secrets_manager()
+
         client = Client()
 
         with console.status(
@@ -371,6 +390,9 @@ def generate_stack_component_remove_attribute_command(
                 attribute from.
             args: Additional arguments to pass to the remove_attribute command.
         """
+        if component_type == StackComponentType.SECRETS_MANAGER:
+            warn_deprecated_secrets_manager()
+
         client = Client()
 
         with console.status(
@@ -424,6 +446,9 @@ def generate_stack_component_rename_command(
             name_id_or_prefix: The name of the stack component to rename.
             new_name: The new name of the stack component.
         """
+        if component_type == StackComponentType.SECRETS_MANAGER:
+            warn_deprecated_secrets_manager()
+
         client = Client()
 
         with console.status(
@@ -512,6 +537,9 @@ def generate_stack_component_copy_command(
                                          component to copy.
             target_component: Name of the copied component.
         """
+        if component_type == StackComponentType.SECRETS_MANAGER:
+            warn_deprecated_secrets_manager()
+
         client = Client()
 
         with console.status(
@@ -795,6 +823,9 @@ def generate_stack_component_explain_command(
 
     def explain_stack_components_command() -> None:
         """Explains the concept of the stack component."""
+        if component_type == StackComponentType.SECRETS_MANAGER:
+            warn_deprecated_secrets_manager()
+
         component_module = import_module(f"zenml.{component_type.plural}")
 
         if component_module.__doc__ is not None:
@@ -826,6 +857,9 @@ def generate_stack_component_flavor_list_command(
 
     def list_stack_component_flavor_command() -> None:
         """Lists the flavors for a single type of stack component."""
+        if component_type == StackComponentType.SECRETS_MANAGER:
+            warn_deprecated_secrets_manager()
+
         client = Client()
 
         with console.status(f"Listing {display_name} flavors`...\n"):
@@ -870,6 +904,9 @@ def generate_stack_component_flavor_register_command(
         Args:
             source: The source path of the flavor class in dot notation format.
         """
+        if component_type == StackComponentType.SECRETS_MANAGER:
+            warn_deprecated_secrets_manager()
+
         client = Client()
 
         if not client.root:
@@ -928,6 +965,9 @@ def generate_stack_component_flavor_describe_command(
         Args:
             name: The name of the flavor.
         """
+        if component_type == StackComponentType.SECRETS_MANAGER:
+            warn_deprecated_secrets_manager()
+
         client = Client()
 
         with console.status(f"Describing {display_name} flavor: {name}`...\n"):

@@ -58,6 +58,13 @@ spec:
             - name: ZENML_STORE_SSL_VERIFY_SERVER_CERT
               value: {{ .Values.zenml.database.sslVerifyServerCert | default "false" | quote }}
             {{- end }}
+            {{- if .Values.zenml.secretsStore.enabled }}
+            - name: ZENML_SECRETS_STORE_TYPE
+              value: {{ .Values.zenml.secretsStore.type | quote }}
+            {{- else }}
+            - name: ZENML_SECRETS_STORE_TYPE
+              value: none
+            {{- end }}
           envFrom:
           - secretRef:
               name: {{ include "zenml.fullname" . }}
@@ -92,6 +99,13 @@ spec:
               value: "True"
             - name: ZENML_STORE_SSL_VERIFY_SERVER_CERT
               value: {{ .Values.zenml.database.sslVerifyServerCert | default "false" | quote }}
+            {{- end }}
+            {{- if .Values.zenml.secretsStore.enabled }}
+            - name: ZENML_SECRETS_STORE_TYPE
+              value: {{ .Values.zenml.secretsStore.type | quote }}
+            {{- else }}
+            - name: ZENML_SECRETS_STORE_TYPE
+              value: none
             {{- end }}
             - name: ZENML_SERVER_DEPLOYMENT_TYPE
               value: {{ .Values.zenml.deploymentType | default "kubernetes" }}
