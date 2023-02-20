@@ -29,6 +29,7 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.constants import ENV_AUTO_OPEN_DASHBOARD, handle_bool_env_var
 from zenml.enums import ServerProviderType, StoreType
+from zenml.exceptions import IllegalOperationError
 from zenml.logger import get_logger
 from zenml.utils import yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
@@ -785,7 +786,15 @@ def connect(
     assert store_config_class is not None
 
     store_config = store_config_class.parse_obj(store_dict)
-    GlobalConfiguration().set_store(store_config)
+    try:
+        GlobalConfiguration().set_store(store_config)
+    except IllegalOperationError as e:
+        cli_utils.warning(
+            f"User '{username}' does not have sufficient permissions to "
+            f"to access the server at '{url}'. Please ask the server "
+            f"administrator to assign a role with permissions to your "
+            f"username: {str(e)}"
+        )
 
     if workspace:
         try:

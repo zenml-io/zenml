@@ -16,7 +16,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, Type, TypeVar, Union
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import Field, SecretStr
 
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 
@@ -24,13 +24,39 @@ if TYPE_CHECKING:
     from zenml.models.user_models import UserResponseModel
     from zenml.models.workspace_models import WorkspaceResponseModel
 
+# ------------#
+# BASE MODELS #
+# ------------#
+class BaseZenModel(AnalyticsTrackedModelMixin):
+    """Base model class for all ZenML models.
+
+    This class is used as a base class for all ZenML models. It provides
+    functionality for tracking analytics events and proper encoding of
+    SecretStr values.
+    """
+
+    class Config:
+        """Pydantic configuration class."""
+
+        # This is needed to allow the REST client and server to unpack SecretStr
+        # values correctly.
+        json_encoders = {
+            SecretStr: lambda v: v.get_secret_value() if v else None
+        }
+
+        # Allow extras on all models to support forwards and backwards
+        # compatibility (e.g. new fields in newer versions of ZenML servers
+        # are allowed to be present in older versions of ZenML clients and
+        # vice versa).
+        extra = "allow"
+
 
 # --------------- #
 # RESPONSE MODELS #
 # --------------- #
 
 
-class BaseResponseModel(AnalyticsTrackedModelMixin):
+class BaseResponseModel(BaseZenModel):
     """Base domain model.
 
     Used as a base class for all domain models that have the following common
@@ -46,11 +72,6 @@ class BaseResponseModel(AnalyticsTrackedModelMixin):
     updated: datetime = Field(
         title="Time when this resource was last updated."
     )
-
-    class Config:
-        """Allow extras on Response Models."""
-
-        extra = "allow"
 
     def __hash__(self) -> int:
         """Implementation of hash magic method.
@@ -158,7 +179,7 @@ class ShareableResponseModel(WorkspaceScopedResponseModel):
 # -------------- #
 
 
-class BaseRequestModel(AnalyticsTrackedModelMixin):
+class BaseRequestModel(BaseZenModel):
     """Base request model.
 
     Used as a base class for all request models.

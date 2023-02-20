@@ -29,7 +29,9 @@ from zenml.stack import Stack
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
-    from zenml.config.pipeline_deployment import PipelineDeployment
+    from zenml.models.pipeline_deployment_models import (
+        PipelineDeploymentResponseModel,
+    )
 
 logger = get_logger(__name__)
 
@@ -45,7 +47,7 @@ class LocalOrchestrator(BaseOrchestrator):
 
     def prepare_or_run_pipeline(
         self,
-        deployment: "PipelineDeployment",
+        deployment: "PipelineDeploymentResponseModel",
         stack: "Stack",
     ) -> Any:
         """Iterates through all steps and executes them sequentially.
@@ -65,7 +67,7 @@ class LocalOrchestrator(BaseOrchestrator):
         start_time = time.time()
 
         # Run each step
-        for step in deployment.steps.values():
+        for step in deployment.step_configurations.values():
             if self.requires_resources_in_orchestration_environment(step):
                 logger.warning(
                     "Specifying step resources is not supported for the local "
