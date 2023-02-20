@@ -6,7 +6,7 @@ description: How to handle issues with conflicting dependencies
 
 This page documents a some of the common issues that arise when using ZenML with other libraries.
 
-**Last Updated**: February 17, 2023
+**Last Updated**: February 20, 2023
 
 When using ZenML with other libraries, you may encounter issues with conflicting
 dependencies. ZenML aims to be stack- and integration-agnostic, allowing you to
@@ -16,6 +16,10 @@ flexibility comes the possibility of dependency conflicts.
 ## Suggestions for Resolving Dependency Conflicts
 
 ### Use a tool like `pip-compile` for reproduciblity
+
+Consider using a tool like `pip-compile` (available through [the `pip-tools`
+package](https://pip-tools.readthedocs.io/)) to compile your dependencies into a
+static `requirements.txt` file that can be used across environments.
 
 ### Well-known dependency resolution issues
 
@@ -33,10 +37,6 @@ to make this work completely smoothly. Here are some of the known issues:
   documentation
   page](https://docs.zenml.io/component-gallery/annotators/label-studio#how-to-deploy-it)
   for the Label Studio integration which currently breaks ZenML's CLI.
-
-
-Document solutions for achieving reproducibility (e.g. using pip-compile). Write a blog post about it.
-
-Document well known dependency resolution issues (e.g., trouble makers).
-
-Create an integration compatibility matrix that shows at a glance which integrations are not compatible with each other.
+- `click`: ZenML currently requires `click~=8.0.3` for its CLI. This is on
+  account of another dependency of ZenML. Using versions of `click` in your own
+  project that are greater than 8.0.3 may cause unanticipated behaviors.
