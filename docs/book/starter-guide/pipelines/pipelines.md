@@ -121,6 +121,7 @@ simple_svc_trainer.entrypoint(train_set=..., test_set=...)
 {% endhint %}
 
 <details>
+
 <summary>Using the Class-based API</summary>
 
 In ZenML there are two different ways how you can define pipelines or steps. What you have seen in this section so far is the Functional API, where steps and pipelines are defined as Python functions with a @step or @pipeline decorator respectively. This is the API that is used primarily throughout the ZenML docs and examples.
@@ -152,6 +153,7 @@ class SVCTrainerStep(BaseStep):
 ```
 </details>
 
+
 ## 🔌 Connecting steps with Pipelines
 
 Let us now define our first ML pipeline. This is agnostic of the implementation and can be
@@ -178,7 +180,6 @@ first_pipeline_instance = first_pipeline(
     step_2=simple_svc_trainer(),
 )
 ```
-
 
 <details>
 <summary>Using the Class-based API</summary>
@@ -210,8 +211,10 @@ You can then execute your pipeline instance with the `.run()` method:
 first_pipeline_instance.run()
 ```
 
+### Try it yourself:
+
 If you're not in the mood of copy-pasting the above into another file, we got you covered! Just
-use the starter template and run:
+use the starter template
 
 ```
 python run.py --simple

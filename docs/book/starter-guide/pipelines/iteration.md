@@ -24,7 +24,11 @@ first_pipeline_instance = first_pipeline(
 first_pipeline_instance.run()
 ```
 
-Running this the first time will create a single `run` for `version 1` of the pipeline called `first_pipeline`. In case you did not run this in the first chapter, try it yourself:
+Running this the first time will create a single `run` for `version 1` of the pipeline called `first_pipeline`. 
+
+### Try it yourself:
+
+In case you did not run this in the first chapter, run:
 
 ```shell
 python run.py --simple
@@ -41,7 +45,7 @@ first_pipeline_instance = first_pipeline(
 first_pipeline_instance.run()
 ```
 
-Try it yourself:
+### Try it yourself:
 
 ```python
 python run.py --simple --gamma 0.02
@@ -78,7 +82,7 @@ first_pipeline_instance = first_pipeline(
 first_pipeline_instance.run()
 ```
 
-Try it yourself:
+### Try it yourself:
 
 ```python
 python run.py --simple --trainer decision_tree
@@ -119,7 +123,9 @@ system or on external APIs. Make sure to set caching to `False` on steps that
 depend on external inputs or if the step should run regardless of caching.
 {% endhint %}
 
-You can try to disable caching and see how the runtime of the pipeline changes:
+You can try to disable caching and see how the runtime of the pipeline changes.
+
+### Try it yourself:
 
 ```python
 python run.py --simple --no-cache
