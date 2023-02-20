@@ -336,8 +336,8 @@ class EvidentlyDataValidator(BaseDataValidator):
     def data_profiling(
         self,
         dataset: pd.DataFrame,
+        metric_list: List[Union[str, list, Dict[str, Any]]],
         comparison_dataset: Optional[pd.DataFrame] = None,
-        metric_list: List[Union[str, list, Dict[str, Any]]] = None,
         column_mapping: Optional[ColumnMapping] = None,
         report_options: Sequence[Tuple[str, Dict[str, Any]]] = [],
         **kwargs: Any,
@@ -393,8 +393,8 @@ class EvidentlyDataValidator(BaseDataValidator):
     def data_validation(
         self,
         dataset: Any,
+        check_list: List[Union[str, list, Dict[str, Any]]],
         comparison_dataset: Optional[Any] = None,
-        check_list: List[Union[str, list, Dict[str, Any]]] = None,
         test_options: Sequence[Tuple[str, Dict[str, Any]]] = [],
         column_mapping: Optional[ColumnMapping] = None,
         **kwargs: Any,
