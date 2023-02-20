@@ -47,7 +47,7 @@ class PluginBaseModel(BaseModel):
     repository_subdirectory: Optional[str]
     repository_branch: Optional[str]
     repository_commit: Optional[str]
-    tags: str  # TODO: make this a list?
+    tags: Optional[str]  # TODO: make this a list?
 
 
 class PluginRequestModel(PluginBaseModel):
@@ -59,10 +59,11 @@ class PluginRequestModel(PluginBaseModel):
 class PluginResponseModel(PluginBaseModel):
     """Response model for a plugin."""
 
+    status: Optional[str]  # TODO: make this a required enum
     version: str
-    index_url: str
-    wheel_name: str
-    repository_commit: str
+    index_url: Optional[str]
+    wheel_name: Optional[str]
+    logo: Optional[str]
 
 
 def server_url() -> str:
@@ -166,9 +167,13 @@ def install_plugin(plugin_name: str) -> None:
     if not plugin:
         error(f"Could not find plugin '{plugin_name}' on the hub.")
 
-    # pip install the wheel
+    # Check if plugin can be installed
     index_url = plugin.index_url
     wheel_name = plugin.wheel_name
+    if not index_url or not wheel_name:
+        error(f"Plugin '{plugin_name}' is not available for installation.")
+
+    # pip install the wheel
     logger.info(
         f"Installing plugin '{plugin_name}' from {index_url}:{wheel_name}..."
     )
@@ -195,8 +200,12 @@ def uninstall_plugin(plugin_name: str) -> None:
     if not plugin:
         error(f"Could not find plugin '{plugin_name}' on the hub.")
 
-    # pip uninstall the wheel
+    # Check if plugin can be uninstalled
     wheel_name = plugin.wheel_name
+    if not wheel_name:
+        error(f"Plugin '{plugin_name}' is not available for uninstallation.")
+
+    # pip uninstall the wheel
     logger.info(f"Uninstalling plugin '{plugin_name}'...")
     subprocess.check_call(
         [sys.executable, "-m", "pip", "uninstall", wheel_name, "-y"]
