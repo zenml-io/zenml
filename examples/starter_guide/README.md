@@ -58,7 +58,7 @@ python run.py
 
 When the pipeline is done running, you can check out the results in the ZenML
 UI by following the link printed in the terminal (or you can go straight to
-the [ZenML UI pipelines run page](http://127.0.0.1:8237/projects/default/all-runs?page=1).
+the [ZenML UI pipelines run page](http://127.0.0.1:8237/workspaces/default/all-runs?page=1).
 
 Next, you should:
 

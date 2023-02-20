@@ -5,7 +5,7 @@ description: Iteration is native to ZenML with fast caching.
 # Quickly iterating in ZenML
 
 ZenML tries its best to get out of the way as you run your ML experiments. For this, it has
-build in pipeline versioning and caching support to help your local work be as fast as
+built in pipeline versioning and caching support to help your local work be as fast as
 possible.
 
 ## Versioning Pipelines
@@ -30,7 +30,7 @@ Running this the first time will create a single `run` for `version 1` of the pi
 python run.py --simple
 ```
 
-If you do it again with different [run time parameters](parameters.md):
+If you do it again with different [runtime parameters](parameters.md):
 
 ```python
 first_pipeline_instance = first_pipeline(
@@ -50,9 +50,9 @@ python run.py --simple --gamma 0.02
 This will create *yet another* `run` for `version 1` of the pipeline called `first_pipeline`. So
 now the same pipeline has two runs.
 
-However, now lets change the pipelines configuration itself. You can do this by either modifying
+However, now let's change the pipeline configuration itself. You can do this by either modifying
 the step connections within the `@pipeline` function or replace a concrete step with another one.
-For example, lets replace the `parameterized_svc_trainer` with another function that has the same signature but different name and logic:
+For example, let's replace the `parameterized_svc_trainer` with another function that has the same signature but different name and logic:
 
 ```python
 @step
@@ -93,7 +93,7 @@ You might also notice that running the above pipelines in that order actually go
 ## Caching in ZenML
 
 While iterating through experiments as pipelines in ZenML,
-one need not process the data again and again that has already been computed in the pipeline. This is where caching kicks in and show enormous benefits!
+one need not process the data again and again that has already been computed in the pipeline. This is where caching kicks in and brings enormous benefits!
 
 When you tweaked the `gamma` variable in the [previous chapter](./parameters.md), you must have noticed that the 
 `simple_data_splitter` step does not re-execute for each subsequent run.  This is because ZenML 
@@ -197,7 +197,7 @@ The following example shows caching in action with the code example from the
 starter guide.
 
 For a more detailed example on how caching is used at ZenML and how it works
-under the hood, checkout 
+under the hood, check out 
 [ZenBytes lesson 1.2](https://github.com/zenml-io/zenbytes/blob/main/1-2_Artifact_Lineage.ipynb)!
 
 <details>
