@@ -672,6 +672,30 @@ class Stack:
                     )
                     logger.warning(message)
 
+            missing = []
+
+            client = Client()
+
+            # First, attempt to resolve secrets through the secrets store
+            for secret_ref in required_secrets.copy():
+                try:
+                    store_secret = client.get_secret(secret_ref.name)
+                    if (
+                        secret_validation_level
+                        == SecretValidationLevel.SECRET_AND_KEY_EXISTS
+                    ):
+                        _ = store_secret.values[secret_ref.key]
+                except (KeyError, NotImplementedError):
+                    pass
+                else:
+                    # Drop this secret from the list of required secrets
+                    required_secrets.remove(secret_ref)
+
+            # If there are still required secrets, continue with the secrets
+            # manager
+            if not required_secrets:
+                return
+
             if not self.secrets_manager:
                 _handle_error(
                     f"Some component in stack `{self.name}` reference secret "
@@ -679,7 +703,6 @@ class Stack:
                 )
                 return
 
-            missing = []
             existing_secrets = set(self.secrets_manager.get_all_secret_keys())
             for secret_ref in required_secrets:
                 if (
