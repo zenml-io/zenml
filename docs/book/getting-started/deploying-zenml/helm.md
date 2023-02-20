@@ -232,7 +232,7 @@ Once deployed, you have to use port-forwarding to access the ZenML server and
 to connect to it from your local machine:
 
 ```bash
-kubectl -n zenml-server port-forward svc/zenml-server 8080:80
+kubectl -n zenml-server port-forward svc/zenml-server 8080:8080
 zenml connect --url=http://localhost:8080 --username=default --password password
 ```
 

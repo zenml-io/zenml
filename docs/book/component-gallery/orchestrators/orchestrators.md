@@ -60,6 +60,19 @@ using the orchestrator is as simple as executing a python file which
 python file_that_runs_a_zenml_pipeline.py
 ```
 
+### Inspecting Runs in the Orchestrator UI
+
+If your orchestrator comes with a separate user interface (for example: 
+Kubeflow, Airflow, Vertex), you can get the URL to the orchestrator UI of a 
+specific pipeline run using the following code snippet:
+
+```python
+from zenml.post_execution import get_run
+
+pipeline_run = get_run("<PIPELINE_RUN_NAME>")
+orchestrator_url = deployer_step.metadata["orchestrator_url"].value
+```
+
 ### Specifying per-step resources
 
 If some of your steps require the orchestrator to execute them on specific 

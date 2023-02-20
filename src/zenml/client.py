@@ -33,6 +33,8 @@ from typing import (
 )
 from uuid import UUID
 
+from pydantic import SecretStr
+
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
     ENV_ZENML_ACTIVE_STACK_ID,
@@ -47,11 +49,11 @@ from zenml.enums import (
     ArtifactType,
     LogicalOperators,
     PermissionType,
+    SecretScope,
     StackComponentType,
     StoreType,
 )
 from zenml.exceptions import (
-    AlreadyExistsException,
     EntityExistsError,
     IllegalOperationError,
     InitializationException,
@@ -68,8 +70,11 @@ from zenml.models import (
     FlavorFilterModel,
     FlavorRequestModel,
     FlavorResponseModel,
+    PipelineBuildFilterModel,
+    PipelineBuildResponseModel,
+    PipelineDeploymentFilterModel,
+    PipelineDeploymentResponseModel,
     PipelineFilterModel,
-    PipelineRequestModel,
     PipelineResponseModel,
     PipelineRunFilterModel,
     PipelineRunResponseModel,
@@ -79,6 +84,10 @@ from zenml.models import (
     RoleUpdateModel,
     RunMetadataRequestModel,
     RunMetadataResponseModel,
+    SecretFilterModel,
+    SecretRequestModel,
+    SecretResponseModel,
+    SecretUpdateModel,
     StackFilterModel,
     StackRequestModel,
     StackResponseModel,
@@ -121,7 +130,6 @@ from zenml.utils.analytics_utils import AnalyticsEvent, event_handler, track
 from zenml.utils.filesync_model import FileSyncModel
 
 if TYPE_CHECKING:
-    from zenml.config.pipeline_configurations import PipelineSpec
     from zenml.metadata.metadata_types import MetadataType
     from zenml.stack import Stack, StackComponentConfig
     from zenml.zen_stores.base_zen_store import BaseZenStore
@@ -2370,77 +2378,6 @@ class Client(metaclass=ClientMetaClass):
     # - PIPELINES -
     # -------------
 
-    def create_pipeline(
-        self,
-        pipeline_name: str,
-        pipeline_spec: "PipelineSpec",
-        pipeline_docstring: Optional[str],
-    ) -> UUID:
-        """Registers a pipeline in the ZenStore within the active workspace.
-
-        This will do one of the following three things:
-        A) If there is no pipeline with this name, register a new pipeline.
-        B) If a pipeline exists that has the same config, use that pipeline.
-        C) If a pipeline with different config exists, raise an error.
-
-        Args:
-            pipeline_name: The name of the pipeline to register.
-            pipeline_spec: The spec of the pipeline.
-            pipeline_docstring: The docstring of the pipeline.
-
-        Returns:
-            The id of the existing or newly registered pipeline.
-
-        Raises:
-            AlreadyExistsException: If there is an existing pipeline in the
-                workspace with the same name but a different configuration.
-        """
-        existing_pipelines = self.list_pipelines(name=pipeline_name)
-
-        # A) If there is no pipeline with this name, register a new pipeline.
-        if len(existing_pipelines.items) == 0:
-            create_pipeline_request = PipelineRequestModel(
-                workspace=self.active_workspace.id,
-                user=self.active_user.id,
-                name=pipeline_name,
-                spec=pipeline_spec,
-                docstring=pipeline_docstring,
-            )
-            pipeline = self.zen_store.create_pipeline(
-                pipeline=create_pipeline_request
-            )
-            logger.info(f"Registered new pipeline with name {pipeline.name}.")
-            return pipeline.id
-
-        else:
-            if len(existing_pipelines.items) == 1:
-                existing_pipeline = existing_pipelines.items[0]
-                # B) If a pipeline exists that has the same config, use that
-                # pipeline.
-                if pipeline_spec == existing_pipeline.spec:
-                    logger.debug(
-                        "Did not register pipeline since it already exists."
-                    )
-                    return existing_pipeline.id
-
-        # C) If a pipeline with different config exists, raise an error.
-        error_msg = (
-            f"Cannot run pipeline '{pipeline_name}' since this name has "
-            "already been registered with a different pipeline "
-            "configuration. You have three options to resolve this issue:\n"
-            "1) You can register a new pipeline by changing the name "
-            "of your pipeline, e.g., via `@pipeline(name='new_pipeline_name')."
-            "\n2) You can execute the current run without linking it to any "
-            "pipeline by setting the 'unlisted' argument to `True`, e.g., "
-            "via `my_pipeline_instance.run(unlisted=True)`. "
-            "Unlisted runs are not linked to any pipeline, but are still "
-            "tracked by ZenML and can be accessed via the 'All Runs' tab. \n"
-            "3) You can delete the existing pipeline via "
-            f"`zenml pipeline delete {pipeline_name}`. This will then "
-            "change all existing runs of this pipeline to become unlisted."
-        )
-        raise AlreadyExistsException(error_msg)
-
     def list_pipelines(
         self,
         sort_by: str = "created",
@@ -2451,6 +2388,8 @@ class Client(metaclass=ClientMetaClass):
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
+        version: Optional[str] = None,
+        version_hash: Optional[str] = None,
         docstring: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
@@ -2462,13 +2401,15 @@ class Client(metaclass=ClientMetaClass):
             page: The page of items
             size: The maximum size of all pages
             logical_operator: Which logical operator to use [and, or]
-            id: Use the id of stacks to filter by.
+            id: Use the id of pipeline to filter by.
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
-            docstring: Use the stack description for filtering
+            name: The name of the pipeline to filter by.
+            version: The version of the pipeline to filter by.
+            version_hash: The version hash of the pipeline to filter by.
+            docstring: The docstring of the pipeline to filter by.
             workspace_id: The id of the workspace to filter by.
-            user_id: The  id of the user to filter by.
-            name: The name of the stack to filter by.
+            user_id: The id of the user to filter by.
 
         Returns:
             A page with Pipeline fitting the filter description
@@ -2482,6 +2423,8 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
             name=name,
+            version=version,
+            version_hash=version_hash,
             docstring=docstring,
             workspace_id=workspace_id,
             user_id=user_id,
@@ -2492,31 +2435,313 @@ class Client(metaclass=ClientMetaClass):
         )
 
     def get_pipeline(
-        self, name_id_or_prefix: Union[str, UUID]
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        version: Optional[str] = None,
     ) -> PipelineResponseModel:
         """Get a pipeline by name, id or prefix.
 
         Args:
-            name_id_or_prefix: The name, id or prefix of the pipeline.
+            name_id_or_prefix: The name, ID or ID prefix of the pipeline.
+            version: The pipeline version. If left empty, will return
+                the latest version.
 
         Returns:
             The pipeline.
+
+        Raises:
+            KeyError: If no pipelines were found for the given ID/name and
+                version.
+            ZenKeyError: If multiple pipelines match the ID prefix.
         """
-        return self._get_entity_by_id_or_name_or_prefix(
-            get_method=self.zen_store.get_pipeline,
-            list_method=self.list_pipelines,
-            name_id_or_prefix=name_id_or_prefix,
+        from zenml.utils.uuid_utils import is_valid_uuid
+
+        if is_valid_uuid(name_id_or_prefix):
+            if version:
+                logger.warning(
+                    "You specified both an ID as well as a version of the "
+                    "pipeline. Ignoring the version and fetching the "
+                    "pipeline by ID."
+                )
+            if not isinstance(name_id_or_prefix, UUID):
+                name_id_or_prefix = UUID(name_id_or_prefix, version=4)
+
+            return self.zen_store.get_pipeline(name_id_or_prefix)
+
+        assert not isinstance(name_id_or_prefix, UUID)
+        exact_name_matches = self.list_pipelines(
+            size=1,
+            sort_by="desc:created",
+            name=f"equals:{name_id_or_prefix}",
+            version=version,
         )
 
-    def delete_pipeline(self, name_id_or_prefix: Union[str, UUID]) -> None:
+        if len(exact_name_matches) == 1:
+            # If the name matches exactly, use the explicitly specified version
+            # or fallback to the latest if not given
+            return exact_name_matches.items[0]
+
+        partial_id_matches = self.list_pipelines(
+            id=f"startswith:{name_id_or_prefix}"
+        )
+        if partial_id_matches.total == 1:
+            if version:
+                logger.warning(
+                    "You specified both an ID as well as a version of the "
+                    "pipeline. Ignoring the version and fetching the "
+                    "pipeline by ID."
+                )
+            return partial_id_matches[0]
+        elif partial_id_matches.total == 0:
+            raise KeyError(
+                f"No pipelines found for name, ID or prefix "
+                f"{name_id_or_prefix}."
+            )
+        else:
+            raise ZenKeyError(
+                f"{partial_id_matches.total} pipelines have been found that "
+                "have an id prefix that matches the provided string "
+                f"'{name_id_or_prefix}':\n"
+                f"{partial_id_matches.items}.\n"
+                f"Please provide more characters to uniquely identify "
+                f"only one of the pipelines."
+            )
+
+    def delete_pipeline(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        version: Optional[str] = None,
+    ) -> None:
         """Delete a pipeline.
 
         Args:
-            name_id_or_prefix: The name, id or prefix id of the pipeline
-                to delete.
+            name_id_or_prefix: The name, ID or ID prefix of the pipeline.
+            version: The pipeline version. If left empty, will delete
+                the latest version.
         """
-        pipeline = self.get_pipeline(name_id_or_prefix=name_id_or_prefix)
+        pipeline = self.get_pipeline(
+            name_id_or_prefix=name_id_or_prefix, version=version
+        )
         self.zen_store.delete_pipeline(pipeline_id=pipeline.id)
+
+    # ----------
+    # - BUILDS -
+    # ----------
+
+    def list_builds(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        workspace_id: Optional[Union[str, UUID]] = None,
+        user_id: Optional[Union[str, UUID]] = None,
+        pipeline_id: Optional[Union[str, UUID]] = None,
+        stack_id: Optional[Union[str, UUID]] = None,
+    ) -> Page[PipelineBuildResponseModel]:
+        """List all builds.
+
+        Args:
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            id: Use the id of build to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            workspace_id: The id of the workspace to filter by.
+            user_id: The  id of the user to filter by.
+            pipeline_id: The id of the pipeline to filter by.
+            stack_id: The id of the stack to filter by.
+
+        Returns:
+            A page with builds fitting the filter description
+        """
+        build_filter_model = PipelineBuildFilterModel(
+            sort_by=sort_by,
+            page=page,
+            size=size,
+            logical_operator=logical_operator,
+            id=id,
+            created=created,
+            updated=updated,
+            workspace_id=workspace_id,
+            user_id=user_id,
+            pipeline_id=pipeline_id,
+            stack_id=stack_id,
+        )
+        build_filter_model.set_scope_workspace(self.active_workspace.id)
+        return self.zen_store.list_builds(
+            build_filter_model=build_filter_model
+        )
+
+    def get_build(self, id_or_prefix: str) -> PipelineBuildResponseModel:
+        """Get a build by id or prefix.
+
+        Args:
+            id_or_prefix: The id or id prefix of the build.
+
+        Returns:
+            The build.
+
+        Raises:
+            KeyError: If no build was found for the given id or prefix.
+            ZenKeyError: If multiple builds were found that match the given
+                id or prefix.
+        """
+        from zenml.utils.uuid_utils import is_valid_uuid
+
+        # First interpret as full UUID
+        if is_valid_uuid(id_or_prefix):
+            return self.zen_store.get_build(UUID(id_or_prefix))
+
+        entity = self.list_builds(
+            id=f"startswith:{id_or_prefix}",
+        )
+
+        # If only a single entity is found, return it.
+        if entity.total == 1:
+            return entity.items[0]
+
+        # If no entity is found, raise an error.
+        if entity.total == 0:
+            raise KeyError(
+                f"No builds have been found that have either an id or prefix "
+                f"that matches the provided string '{id_or_prefix}'."
+            )
+
+        raise ZenKeyError(
+            f"{entity.total} builds have been found that have "
+            f"an ID that matches the provided "
+            f"string '{id_or_prefix}':\n"
+            f"{[entity.items]}.\n"
+            f"Please use the id to uniquely identify "
+            f"only one of the builds."
+        )
+
+    def delete_build(self, id_or_prefix: str) -> None:
+        """Delete a build.
+
+        Args:
+            id_or_prefix: The id or id prefix of the build.
+        """
+        build = self.get_build(id_or_prefix=id_or_prefix)
+        self.zen_store.delete_build(build_id=build.id)
+
+    # ---------------
+    # - DEPLOYMENTS -
+    # ---------------
+
+    def list_deployments(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        workspace_id: Optional[Union[str, UUID]] = None,
+        user_id: Optional[Union[str, UUID]] = None,
+        pipeline_id: Optional[Union[str, UUID]] = None,
+        stack_id: Optional[Union[str, UUID]] = None,
+        build_id: Optional[Union[str, UUID]] = None,
+    ) -> Page[PipelineDeploymentResponseModel]:
+        """List all deployments.
+
+        Args:
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            id: Use the id of build to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            workspace_id: The id of the workspace to filter by.
+            user_id: The  id of the user to filter by.
+            pipeline_id: The id of the pipeline to filter by.
+            stack_id: The id of the stack to filter by.
+            build_id: The id of the build to filter by.
+
+        Returns:
+            A page with deployments fitting the filter description
+        """
+        deployment_filter_model = PipelineDeploymentFilterModel(
+            sort_by=sort_by,
+            page=page,
+            size=size,
+            logical_operator=logical_operator,
+            id=id,
+            created=created,
+            updated=updated,
+            workspace_id=workspace_id,
+            user_id=user_id,
+            pipeline_id=pipeline_id,
+            stack_id=stack_id,
+            build_id=build_id,
+        )
+        deployment_filter_model.set_scope_workspace(self.active_workspace.id)
+        return self.zen_store.list_deployments(
+            deployment_filter_model=deployment_filter_model
+        )
+
+    def get_deployment(
+        self, id_or_prefix: str
+    ) -> PipelineDeploymentResponseModel:
+        """Get a deployment by id or prefix.
+
+        Args:
+            id_or_prefix: The id or id prefix of the build.
+
+        Returns:
+            The deployment.
+
+        Raises:
+            KeyError: If no deployment was found for the given id or prefix.
+            ZenKeyError: If multiple deployments were found that match the given
+                id or prefix.
+        """
+        from zenml.utils.uuid_utils import is_valid_uuid
+
+        # First interpret as full UUID
+        if is_valid_uuid(id_or_prefix):
+            return self.zen_store.get_deployment(UUID(id_or_prefix))
+
+        entity = self.list_deployments(
+            id=f"startswith:{id_or_prefix}",
+        )
+
+        # If only a single entity is found, return it.
+        if entity.total == 1:
+            return entity.items[0]
+
+        # If no entity is found, raise an error.
+        if entity.total == 0:
+            raise KeyError(
+                f"No deployment have been found that have either an id or "
+                f"prefix that matches the provided string '{id_or_prefix}'."
+            )
+
+        raise ZenKeyError(
+            f"{entity.total} deployments have been found that have "
+            f"an ID that matches the provided "
+            f"string '{id_or_prefix}':\n"
+            f"{[entity.items]}.\n"
+            f"Please use the id to uniquely identify "
+            f"only one of the deployments."
+        )
+
+    def delete_deployment(self, id_or_prefix: str) -> None:
+        """Delete a deployment.
+
+        Args:
+            id_or_prefix: The id or id prefix of the deployment.
+        """
+        deployment = self.get_deployment(id_or_prefix=id_or_prefix)
+        self.zen_store.delete_deployment(deployment_id=deployment.id)
 
     # -------------
     # - SCHEDULES -
@@ -2644,6 +2869,8 @@ class Client(metaclass=ClientMetaClass):
         user_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[Union[str, UUID]] = None,
         schedule_id: Optional[Union[str, UUID]] = None,
+        build_id: Optional[Union[str, UUID]] = None,
+        deployment_id: Optional[Union[str, UUID]] = None,
         orchestrator_run_id: Optional[str] = None,
         status: Optional[str] = None,
         start_time: Optional[Union[datetime, str]] = None,
@@ -2666,6 +2893,8 @@ class Client(metaclass=ClientMetaClass):
             user_id: The id of the user to filter by.
             stack_id: The id of the stack to filter by.
             schedule_id: The id of the schedule to filter by.
+            build_id: The id of the build to filter by.
+            deployment_id: The id of the deployment to filter by.
             orchestrator_run_id: The run id of the orchestrator to filter by.
             name: The name of the run to filter by.
             status: The status of the pipeline run
@@ -2689,6 +2918,8 @@ class Client(metaclass=ClientMetaClass):
             workspace_id=workspace_id,
             pipeline_id=pipeline_id,
             schedule_id=schedule_id,
+            build_id=build_id,
+            deployment_id=deployment_id,
             orchestrator_run_id=orchestrator_run_id,
             user_id=user_id,
             stack_id=stack_id,
@@ -3139,6 +3370,380 @@ class Client(metaclass=ClientMetaClass):
         )
         metadata_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_run_metadata(metadata_filter_model)
+
+    # .---------.
+    # | SECRETS |
+    # '---------'
+
+    def create_secret(
+        self,
+        name: str,
+        values: Dict[str, str],
+        scope: SecretScope = SecretScope.WORKSPACE,
+    ) -> "SecretResponseModel":
+        """Creates a new secret.
+
+        Args:
+            name: The name of the secret.
+            values: The values of the secret.
+            scope: The scope of the secret.
+
+        Returns:
+            The created secret (in model form).
+
+        Raises:
+            NotImplementedError: If centralized secrets management is not
+                enabled.
+        """
+        create_secret_request = SecretRequestModel(
+            name=name,
+            values=values,
+            scope=scope,
+            user=self.active_user.id,
+            workspace=self.active_workspace.id,
+        )
+        try:
+            return self.zen_store.create_secret(secret=create_secret_request)
+        except NotImplementedError:
+            raise NotImplementedError(
+                "centralized secrets management is not supported or explicitly "
+                "disabled in the target ZenML deployment."
+            )
+
+    def get_secret(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        scope: Optional[SecretScope] = None,
+        allow_partial_name_match: bool = True,
+        allow_partial_id_match: bool = True,
+    ) -> "SecretResponseModel":
+        """Get a secret.
+
+        Get a secret identified by a name, ID or prefix of the name or ID and
+        optionally a scope.
+
+        If a scope is not provided, the secret will be searched for in all
+        scopes starting with the innermost scope (user) to the outermost scope
+        (workspace). When a name or prefix is used instead of a UUID value, each
+        scope is first searched for an exact match, then for a ID prefix or
+        name substring match before moving on to the next scope.
+
+        Args:
+            name_id_or_prefix: The name, ID or prefix to the id of the secret
+                to get.
+            scope: The scope of the secret. If not set, all scopes will be
+                searched starting with the innermost scope (user) to the
+                outermost scope (global) until a secret is found.
+            allow_partial_name_match: If True, allow partial name matches.
+            allow_partial_id_match: If True, allow partial ID matches.
+
+        Returns:
+            The secret.
+
+        Raises:
+            KeyError: If no secret is found.
+            ZenKeyError: If multiple secrets are found.
+            NotImplementedError: If centralized secrets management is not
+                enabled.
+        """
+        from zenml.utils.uuid_utils import is_valid_uuid
+
+        try:
+            # First interpret as full UUID
+            if is_valid_uuid(name_id_or_prefix):
+                # Fetch by ID; filter by scope if provided
+                secret = self.zen_store.get_secret(
+                    secret_id=UUID(name_id_or_prefix)
+                    if isinstance(name_id_or_prefix, str)
+                    else name_id_or_prefix
+                )
+                if scope is not None and secret.scope != scope:
+                    raise KeyError(
+                        f"No secret found with ID {str(name_id_or_prefix)}"
+                    )
+
+                return secret
+        except NotImplementedError:
+            raise NotImplementedError(
+                "centralized secrets management is not supported or explicitly "
+                "disabled in the target ZenML deployment."
+            )
+
+        # If not a UUID, try to find by name and then by prefix
+        assert not isinstance(name_id_or_prefix, UUID)
+
+        # Scopes to search in order of priority
+        search_scopes = (
+            [SecretScope.USER, SecretScope.WORKSPACE]
+            if scope is None
+            else [scope]
+        )
+
+        secrets = self.list_secrets(
+            logical_operator=LogicalOperators.OR,
+            name=f"contains:{name_id_or_prefix}"
+            if allow_partial_name_match
+            else f"equals:{name_id_or_prefix}",
+            id=f"startswith:{name_id_or_prefix}"
+            if allow_partial_id_match
+            else None,
+        )
+
+        for search_scope in search_scopes:
+
+            partial_matches: List[SecretResponseModel] = []
+            for secret in secrets.items:
+                if secret.scope != search_scope:
+                    continue
+                # Exact match
+                if secret.name == name_id_or_prefix:
+                    return secret
+                # Partial match
+                partial_matches.append(secret)
+
+            if len(partial_matches) > 1:
+                match_summary = "\n".join(
+                    [
+                        f"[{secret.id}]: name = {secret.name}"
+                        for secret in partial_matches
+                    ]
+                )
+                raise ZenKeyError(
+                    f"{len(partial_matches)} secrets have been found that have "
+                    f"a name or ID that matches the provided "
+                    f"string '{name_id_or_prefix}':\n"
+                    f"{match_summary}.\n"
+                    f"Please use the id to uniquely identify "
+                    f"only one of the secrets."
+                )
+
+            # If only a single secret is found, return it
+            if len(partial_matches) == 1:
+                return partial_matches[0]
+
+        msg = (
+            f"No secret found with name, ID or prefix "
+            f"'{name_id_or_prefix}'"
+        )
+        if scope is not None:
+            msg += f" in scope '{scope}'"
+
+        raise KeyError(msg)
+
+    def get_secret_by_name_and_scope(
+        self, name: str, scope: Optional[SecretScope] = None
+    ) -> "SecretResponseModel":
+        """Fetches a registered secret with a given name and optional scope.
+
+        This is a version of get_secret that restricts the search to a given
+        name and an optional scope, without doing any prefix or UUID matching.
+
+        If no scope is provided, the search will be done first in the user
+        scope, then in the workspace scope.
+
+        Args:
+            name: The name of the secret to get.
+            scope: The scope of the secret to get.
+
+        Returns:
+            The registered secret.
+
+        Raises:
+            KeyError: If no secret exists for the given name in the given scope.
+        """
+        logger.debug(
+            f"Fetching the secret with name '{name}' and scope '{scope}'."
+        )
+
+        # Scopes to search in order of priority
+        search_scopes = (
+            [SecretScope.USER, SecretScope.WORKSPACE]
+            if scope is None
+            else [scope]
+        )
+
+        for search_scope in search_scopes:
+            secrets = self.list_secrets(
+                logical_operator=LogicalOperators.AND,
+                name=f"equals:{name}",
+                scope=search_scope,
+            )
+
+            if len(secrets.items) >= 1:
+                return secrets.items[0]
+
+        msg = f"No secret with name '{name}' was found"
+        if scope is not None:
+            msg += f" in scope '{scope.value}'"
+
+        raise KeyError(msg)
+
+    def list_secrets(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[datetime] = None,
+        updated: Optional[datetime] = None,
+        name: Optional[str] = None,
+        scope: Optional[SecretScope] = None,
+        workspace_id: Optional[Union[str, UUID]] = None,
+        user_id: Optional[Union[str, UUID]] = None,
+    ) -> Page[SecretResponseModel]:
+        """Fetches all the secret models.
+
+        Args:
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            id: Use the id of secrets to filter by.
+            created: Use to secrets by time of creation
+            updated: Use the last updated date for filtering
+            name: The name of the secret to filter by.
+            scope: The scope of the secret to filter by.
+            workspace_id: The id of the workspace to filter by.
+            user_id: The  id of the user to filter by.
+
+        Returns:
+            A list of all the secret models.
+
+        Raises:
+            NotImplementedError: If centralized secrets management is not
+                enabled.
+        """
+        secret_filter_model = SecretFilterModel(
+            page=page,
+            size=size,
+            sort_by=sort_by,
+            logical_operator=logical_operator,
+            user_id=user_id,
+            workspace_id=workspace_id,
+            name=name,
+            scope=scope,
+            id=id,
+            created=created,
+            updated=updated,
+        )
+        secret_filter_model.set_scope_workspace(self.active_workspace.id)
+        try:
+            return self.zen_store.list_secrets(
+                secret_filter_model=secret_filter_model
+            )
+        except NotImplementedError:
+            raise NotImplementedError(
+                "centralized secrets management is not supported or explicitly "
+                "disabled in the target ZenML deployment."
+            )
+
+    def list_secrets_in_scope(
+        self,
+        scope: SecretScope,
+    ) -> Page[SecretResponseModel]:
+        """Fetches the list of secret in a given scope.
+
+        Args:
+            scope: The secrets scope to search for.
+
+        Returns:
+            The list of secrets.
+        """
+        logger.debug(f"Fetching the secrets in scope {scope.value}.")
+
+        return self.list_secrets(
+            scope=scope,
+        )
+
+    def update_secret(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        scope: Optional[SecretScope] = None,
+        new_name: Optional[str] = None,
+        new_scope: Optional[SecretScope] = None,
+        add_or_update_values: Optional[Dict[str, str]] = None,
+        remove_values: Optional[List[str]] = None,
+    ) -> SecretResponseModel:
+        """Updates a secret.
+
+        Args:
+            name_id_or_prefix: The name, id or prefix of the id for the
+                secret to update.
+            scope: The scope of the secret to update.
+            new_name: The new name of the secret.
+            new_scope: The new scope of the secret.
+            add_or_update_values: The values to add or update.
+            remove_values: The values to remove.
+
+        Returns:
+            The updated secret.
+
+        Raises:
+            KeyError: If trying to remove a value that doesn't exist.
+            ValueError: If a key is provided in both add_or_update_values and
+                remove_values.
+        """
+        secret = self.get_secret(
+            name_id_or_prefix=name_id_or_prefix,
+            scope=scope,
+            # Don't allow partial name matches, but allow partial ID matches
+            allow_partial_name_match=False,
+            allow_partial_id_match=True,
+        )
+
+        secret_update = SecretUpdateModel()
+
+        if new_name:
+            secret_update.name = new_name
+        if new_scope:
+            secret_update.scope = new_scope
+        values: Dict[str, Optional[SecretStr]] = {}
+        if add_or_update_values:
+            values.update(
+                {
+                    key: SecretStr(value)
+                    for key, value in add_or_update_values.items()
+                }
+            )
+        if remove_values:
+            for key in remove_values:
+                if key not in secret.values:
+                    raise KeyError(
+                        f"Cannot remove value '{key}' from secret "
+                        f"'{secret.name}' because it does not exist."
+                    )
+                if key in values:
+                    raise ValueError(
+                        f"Key '{key}' is supplied both in the values to add or "
+                        f"update and the values to be removed."
+                    )
+                values[key] = None
+        if values:
+            secret_update.values = values
+
+        return Client().zen_store.update_secret(
+            secret_id=secret.id, secret_update=secret_update
+        )
+
+    def delete_secret(
+        self, name_id_or_prefix: str, scope: Optional[SecretScope] = None
+    ) -> None:
+        """Deletes a secret.
+
+        Args:
+            name_id_or_prefix: The name or ID of the secret.
+            scope: The scope of the secret to delete.
+        """
+        secret = self.get_secret(
+            name_id_or_prefix=name_id_or_prefix,
+            scope=scope,
+            # Don't allow partial name matches, but allow partial ID matches
+            allow_partial_name_match=False,
+            allow_partial_id_match=True,
+        )
+
+        self.zen_store.delete_secret(secret_id=secret.id)
 
     # ---- utility prefix matching get functions -----
 

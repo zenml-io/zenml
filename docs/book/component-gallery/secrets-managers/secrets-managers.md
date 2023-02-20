@@ -9,6 +9,35 @@ those services. Instead of storing these credentials in code or files,
 ZenML secrets managers can be used to store and retrieve these values
 in a secure manner.
 
+{% hint style="warning" %}
+We are slowly deprecating secrets managers in favor of the
+[centralized ZenML secrets store](../../advanced-guide/practical/secrets-management.md#centralized-secrets-store).
+Going forward, we recommend using the secrets store instead of secrets managers
+to configure and store secrets.
+
+Managing secrets through a secrets manager stack component suffers from a
+number of limitations, some of which are:
+
+* you need to configure a Secrets Manager stack component
+and add it to your active stack before you can register and access secrets. With
+centralized secrets management, you don't need to configure anything; your ZenML
+local deployment or ZenML server replaces the secrets manager role.
+
+* even with a secrets manager configured in your active stack, if you are using
+a secrets manager flavor with a cloud back-end (e.g. AWS, GCP or Azure), you
+still need to configure all your ZenML clients with the authentication credentials
+required to access the back-end directly. This is not only an inconvenience, it
+is also a security risk, because it basically represents a large attack surface.
+With centralized secrets management, you only need to configure the ZenML server
+to access the cloud back-end.
+
+ZenML currently only supports a SQL database as a centralized secrets store, but
+we are working on re-purposing all existing secrets manager flavors (AWS, GCP,
+Azure and HashiCorp Vault) to act as back-ends for the centralized secrets
+store. As soon as this is available, we will deprecate the secrets manager stack
+component and provide an upgrade path for existing users.
+{% endhint %}
+
 ## When to use it
 
 You should include a secrets manager in your ZenML stack if any other component

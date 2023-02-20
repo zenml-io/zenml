@@ -33,7 +33,6 @@ logger = get_logger(__name__)
 if TYPE_CHECKING:
     from zenml.config import ResourceSettings
     from zenml.config.base_settings import BaseSettings
-    from zenml.config.step_configurations import StepConfiguration
     from zenml.config.step_run_info import StepRunInfo
 
 
@@ -111,14 +110,14 @@ class SparkStepOperator(BaseStepOperator):
     def _backend_configuration(
         self,
         spark_config: SparkConf,
-        step_config: "StepConfiguration",
+        info: "StepRunInfo",
     ) -> None:
         """Configures Spark to handle backends like YARN, Mesos or Kubernetes.
 
         Args:
             spark_config: a SparkConf object which collects all the
                 configuration parameters
-            step_config: Configuration of the step to run.
+            info: Information about the step run.
         """
 
     def _io_configuration(self, spark_config: SparkConf) -> None:
@@ -287,7 +286,7 @@ class SparkStepOperator(BaseStepOperator):
         )
 
         # Add the backend configuration such as namespace, docker images names.
-        self._backend_configuration(spark_config=conf, step_config=info.config)
+        self._backend_configuration(spark_config=conf, info=info)
 
         # Add the IO configuration for the inputs and the outputs
         self._io_configuration(

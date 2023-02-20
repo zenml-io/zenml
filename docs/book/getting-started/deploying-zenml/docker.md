@@ -86,6 +86,37 @@ The following environment variables can be passed to the container:
     This boolean variable controls whether the SSL certificate in use by the
     MySQL server is verified. Only valid when `ZENML_STORE_URL` points to a
     MySQL database that uses SSL secured connections. Defaults to `False`.
+- **ZENML_SECRETS_STORE_TYPE**:
+    Set this variable to one of the supported secrets store types:
+
+    - `none`: Use this value to disable the secrets store functionality.
+    - `sql`: Use the ZenML SQL database as the secrets store. This is the default value.
+    - (more types to come)
+- **ZENML_SECRETS_STORE_ENCRYPTION_KEY**:
+    This is a secret key used to encrypt all secrets stored in the SQL secrets
+    store. If not set, encryption will not be used and passwords will be stored
+    unencrypted in the database. This should be set to a random string with a
+    recommended length of at least 32 characters, e.g.:
+  
+     ```python
+     from secrets import token_hex
+     token_hex(32)
+     ```
+    
+    or:
+
+     ```shell
+     openssl rand -hex 32
+     ```
+
+> **Important**
+> If you configure encryption for your SQL database secrets store, you should
+keep the `ZENML_SECRETS_STORE_ENCRYPTION_KEY` value somewhere safe and secure,
+as it will be required to decrypt the secrets in the database. If you lose the
+encryption key, you will not be able to decrypt the secrets in the database and
+will have to reset them.
+
+
 - **ZENML_LOGGING_VERBOSITY**:
     Use this variable to control the verbosity of logs inside the container.
     It can be set to one of the following values: `NOTSET`, `ERROR`, `WARN`,
@@ -305,8 +336,8 @@ services:
       - "8080:8080"
     environment:
       - ZENML_STORE_URL=mysql://root:password@host.docker.internal/zenml
-      - ZENML_DEFAULT_USERNAME=admin
-      - ZENML_DEFAULT_PASSWORD=zenml
+      - ZENML_DEFAULT_USER_NAME=admin
+      - ZENML_DEFAULT_USER_PASSWORD=zenml
     links:
       - mysql
     depends_on:
@@ -322,7 +353,7 @@ Note the following:
 to instruct the server to connect to the database over the Docker network.
 - The `extra_hosts` section is needed on Linux to make the `host.docker.internal`
 hostname resolvable from the ZenML server container.
-- This example also uses the `ZENML_DEFAULT_USERNAME` and `ZENML_DEFAULT_PASSWORD`
+- This example also uses the `ZENML_DEFAULT_USER_NAME` and `ZENML_DEFAULT_USER_PASSWORD`
 environment variables to customize the default account credentials.
 
 To start the containers, run the following command from the directory where

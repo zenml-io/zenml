@@ -79,11 +79,30 @@ class StackComponentType(StrEnum):
         return f"{self.value}s"
 
 
+class SecretScope(StrEnum):
+    """Enum for the scope of a secret."""
+
+    WORKSPACE = "workspace"
+    USER = "user"
+
+
 class StoreType(StrEnum):
-    """Repository Store Backend Types."""
+    """Zen Store Backend Types."""
 
     SQL = "sql"
     REST = "rest"
+
+
+class SecretsStoreType(StrEnum):
+    """Secrets Store Backend Types.
+
+    NOTE: this is a superset of the StoreType values because the set of secrets
+    store backends includes all the backends supported for zen stores.
+    """
+
+    NONE = "none"  # indicates that the secrets store is disabled
+    SQL = StoreType.SQL.value
+    REST = StoreType.REST.value
 
 
 class ContainerRegistryFlavor(StrEnum):
@@ -141,6 +160,7 @@ class AnalyticsEventSource(StrEnum):
     """Enum to identify analytics events source."""
 
     ZENML_GO = "zenml go"
+    ZENML_INIT = "zenml init"
     ZENML_SERVER = "zenml server"
 
 

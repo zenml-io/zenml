@@ -23,7 +23,6 @@ from sagemaker.workflow.pipeline import Pipeline
 from sagemaker.workflow.steps import ProcessingStep
 
 from zenml.config.base_settings import BaseSettings
-from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.enums import StackComponentType
 from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
@@ -32,17 +31,15 @@ from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
 )
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
-from zenml.orchestrators.base_orchestrator import BaseOrchestrator
+from zenml.orchestrators import ContainerizedOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
-from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilder,
-)
 
 if TYPE_CHECKING:
-    from zenml.config.pipeline_deployment import PipelineDeployment
+    from zenml.models.pipeline_deployment_models import (
+        PipelineDeploymentResponseModel,
+    )
     from zenml.stack import Stack
-
 
 ENV_ZENML_SAGEMAKER_RUN_ID = "ZENML_SAGEMAKER_RUN_ID"
 MAX_POLLING_ATTEMPTS = 100
@@ -51,7 +48,7 @@ POLLING_DELAY = 30
 logger = get_logger(__name__)
 
 
-class SagemakerOrchestrator(BaseOrchestrator):
+class SagemakerOrchestrator(ContainerizedOrchestrator):
     """Orchestrator responsible for running pipelines on Sagemaker."""
 
     @property
@@ -120,21 +117,6 @@ class SagemakerOrchestrator(BaseOrchestrator):
                 f"{ENV_ZENML_SAGEMAKER_RUN_ID}."
             )
 
-    def prepare_pipeline_deployment(
-        self, deployment: "PipelineDeployment", stack: "Stack"
-    ) -> None:
-        """Build a Docker image and push it to the container registry.
-
-        Args:
-            deployment: The pipeline deployment configuration.
-            stack: The stack on which the pipeline will be deployed.
-        """
-        docker_image_builder = PipelineDockerImageBuilder()
-        repo_digest = docker_image_builder.build_docker_image(
-            deployment=deployment, stack=stack
-        )
-        deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
-
     @property
     def settings_class(self) -> Optional[Type["BaseSettings"]]:
         """Settings class for the Sagemaker orchestrator.
@@ -145,7 +127,9 @@ class SagemakerOrchestrator(BaseOrchestrator):
         return SagemakerOrchestratorSettings
 
     def prepare_or_run_pipeline(
-        self, deployment: "PipelineDeployment", stack: "Stack"
+        self,
+        deployment: "PipelineDeploymentResponseModel",
+        stack: "Stack",
     ) -> None:
         """Prepares or runs a pipeline on Sagemaker.
 
@@ -161,17 +145,17 @@ class SagemakerOrchestrator(BaseOrchestrator):
             )
 
         orchestrator_run_name = get_orchestrator_run_name(
-            pipeline_name=deployment.pipeline.name
+            pipeline_name=deployment.pipeline_configuration.name
         ).replace("_", "-")
 
         session = sagemaker.Session(default_bucket=self.config.bucket)
-        image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
 
         sagemaker_steps = []
-        for step_name, step in deployment.steps.items():
+        for step_name, step in deployment.step_configurations.items():
+            image = self.get_image(deployment=deployment, step_name=step_name)
             command = StepEntrypointConfiguration.get_entrypoint_command()
             arguments = StepEntrypointConfiguration.get_entrypoint_arguments(
-                step_name=step_name
+                step_name=step_name, deployment_id=deployment.id
             )
             entrypoint = command + arguments
 
@@ -190,7 +174,7 @@ class SagemakerOrchestrator(BaseOrchestrator):
 
             processor = sagemaker.processing.Processor(
                 role=processor_role,
-                image_uri=image_name,
+                image_uri=image,
                 instance_count=1,
                 sagemaker_session=session,
                 instance_type=step_settings.instance_type,
