@@ -9,7 +9,7 @@ description: How to create ML pipelines in ZenML
 Hey there! Welcome the world of MLOps, presented through the window of ZenML!
 In this guide, you will learn about how to use the ZenML open-source MLOps framework
 to guide your machine learning models to production. Let's begin with setting up.
-Make sure you have Python 3.6 or above installed, and in a fresh
+Make sure you have Python 3.7 or above installed, and in a fresh
 [virtualenv](https://virtualenv.pypa.io/en/latest/) do:
 
 ```shell
