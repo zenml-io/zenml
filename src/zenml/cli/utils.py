@@ -635,29 +635,29 @@ def uninstall_package(package: str) -> None:
 
 
 def pretty_print_secret(
-    secret: "BaseSecretSchema", hide_secret: bool = True
+    secret: "Union[BaseSecretSchema, Dict[str, str]]", hide_secret: bool = True
 ) -> None:
-    """Given a secret set, print all key-value pairs associated with the secret.
+    """Given a secret with values, print all key-value pairs associated with the secret.
 
     Args:
         secret: Secret of type BaseSecretSchema
         hide_secret: boolean that configures if the secret values are shown
             on the CLI
     """
+    if isinstance(secret, BaseSecretSchema):
+        secret = secret.content
 
     def get_secret_value(value: Any) -> str:
         if value is None:
             return ""
-        if hide_secret:
-            return "***"
-        return str(value)
+        return "***" if hide_secret else str(value)
 
     stack_dicts = [
         {
             "SECRET_KEY": key,
             "SECRET_VALUE": get_secret_value(value),
         }
-        for key, value in secret.content.items()
+        for key, value in secret.items()
     ]
     print_table(stack_dicts)
 
@@ -1298,3 +1298,14 @@ def print_user_info(info: Dict[str, Any]) -> None:
             continue
 
         declare(f"{key.upper()}: {value}")
+
+
+def warn_deprecated_secrets_manager() -> None:
+    """Warning for deprecating secrets managers."""
+    warning(
+        "Secrets managers are deprecated and will be removed in an upcoming "
+        "release in favor of centralized secrets management. Please see the "
+        "`zenml secret` CLI command and the "
+        "https://docs.zenml.io/advanced-guide/practical-mlops/secrets-management#centralized-secrets-store "
+        "documentation page for more information."
+    )

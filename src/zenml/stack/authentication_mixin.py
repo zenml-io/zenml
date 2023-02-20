@@ -71,6 +71,19 @@ class AuthenticationMixin(StackComponent):
         if not self.config.authentication_secret:
             return None
 
+        # Try to resolve the secret using the secret store first
+        try:
+            store_secret = Client().get_secret_by_name_and_scope(
+                name=self.config.authentication_secret,
+            )
+        except (KeyError, NotImplementedError):
+            pass
+        else:
+            return expected_schema_type(
+                name=self.config.authentication_secret,
+                **store_secret.secret_values,
+            )
+
         active_stack = Client().active_stack
         secrets_manager = active_stack.secrets_manager
         if not secrets_manager:

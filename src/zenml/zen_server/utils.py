@@ -198,6 +198,9 @@ def handle_exceptions(func: F) -> F:
         except ValueError as error:
             logger.exception("Validation error")
             raise unprocessable(error) from error
+        except NotImplementedError as error:
+            logger.exception("Not implemented")
+            raise unprocessable(error) from error
 
     return cast(F, decorated)
 
