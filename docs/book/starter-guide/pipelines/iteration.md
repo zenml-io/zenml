@@ -88,7 +88,7 @@ This will now create a single `run` for `version 2` of the pipeline called `firs
 way, you can continuously update a pipeline as you iterate, and not lose velocity, all the while
 ensuring that when you do get to production it should make things easier.
 
-You might also notice that running the above pipelines in that order actually got faster as you went. Which brings us to...
+You might also notice that running the above pipelines in that order actually got faster as you went through them. Which brings us to...
 
 ## Caching in ZenML
 
