@@ -814,8 +814,27 @@ Administering your Pipelines
 ZenML provides several CLI commands to help you administer your pipelines and
 pipeline runs.
 
-After you have run some pipelines by by executing the corresponding Python 
-scripts, you can list all pipelines via:
+To explicitly register a pipeline you need to point to a pipeline instance
+in your python code. Let's say you have a python file called `run.py` and
+it contains the following code:
+
+```python
+from zenml.pipelines import pipeline
+
+@pipeline
+def my_pipeline(...):
+   # Connect your pipeline steps here
+   pass
+
+pipeline_instance = my_pipeline(...)
+```
+
+You can register your pipeline like this:
+```bash
+zenml pipeline register run.pipeline_instance
+```
+
+To list all registered pipelines, use:
 
 ```bash
 zenml pipeline list
@@ -883,6 +902,65 @@ To delete a specific artifact, use:
 ```bash
 zenml artifact delete <ARTIFACT_NAME_OR_ID>
 ```
+
+Each pipeline run that requires Docker images also stores a build which
+contains the image names used for this run. To list all builds, use:
+
+```bash
+zenml pipeline builds list
+```
+
+To delete a specific build, use:
+
+```bash
+zenml pipeline builds delete <BUILD_ID>
+```
+
+Building an running your Pipelines
+----------------------------------
+
+To build Docker images for your pipeline without actually running the pipeline,
+use:
+
+```bash
+zenml pipeline build <PIPELINE_ID_OR_NAME>
+```
+
+To specify settings for the Docker builds, use the `--config/-c` option of the
+command. For more information about the structure of this configuration file,
+check out the `zenml.pipelines.base_pipeline.BasePipeline.build(...)` method.
+
+```bash
+zenml pipeline build <PIPELINE_ID_OR_NAME> --config=<PATH_TO_CONFIG_YAML>
+```
+
+If you want to build the pipeline for a stack different than your current active
+stack, use the `--stack` option.
+```bash
+zenml pipeline build <PIPELINE_ID_OR_NAME> --stack=<STACK_ID_OR_NAME>
+```
+
+
+To run a pipeline that was previously registered, use:
+
+```bash
+zenml pipeline run  <PIPELINE_ID_OR_NAME>
+```
+
+To specify settings for the pipeline, use the `--config/-c` option of the
+command. For more information about the structure of this configuration file,
+check out the `zenml.pipelines.base_pipeline.BasePipeline.run(...)` method.
+
+```bash
+zenml pipeline run <PIPELINE_ID_OR_NAME> --config=<PATH_TO_CONFIG_YAML>
+```
+
+If you want to run the pipeline on a stack different than your current active
+stack, use the `--stack` option.
+```bash
+zenml pipeline run <PIPELINE_ID_OR_NAME> --stack=<STACK_ID_OR_NAME>
+```
+
 
 Managing the local ZenML Dashboard
 ----------------------------------
