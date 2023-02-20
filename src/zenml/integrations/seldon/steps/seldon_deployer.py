@@ -348,11 +348,8 @@ def seldon_custom_model_deployer_step(
             "No active stack is available. "
             "Please make sure that you have registered and set a stack."
         )
-    context.stack
 
-    docker_image = step_env.step_run_info.pipeline.extra[
-        SELDON_DOCKER_IMAGE_KEY
-    ]
+    image_name = step_env.step_run_info.get_image(key=SELDON_DOCKER_IMAGE_KEY)
 
     # copy the model files to new specific directory for the deployment
     served_model_uri = os.path.join(
@@ -376,7 +373,7 @@ def seldon_custom_model_deployer_step(
     # create the specification for the custom deployment
     service_config.spec = create_seldon_core_custom_spec(
         model_uri=service_config.model_uri,
-        custom_docker_image=docker_image,
+        custom_docker_image=image_name,
         secret_name=model_deployer.kubernetes_secret_name,
         command=entrypoint_command,
     )

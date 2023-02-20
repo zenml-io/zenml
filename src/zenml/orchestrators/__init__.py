@@ -27,6 +27,9 @@ from zenml.orchestrators.base_orchestrator import (
     BaseOrchestratorConfig,
     BaseOrchestratorFlavor,
 )
+from zenml.orchestrators.containerized_orchestrator import (
+    ContainerizedOrchestrator,
+)
 from zenml.orchestrators.local.local_orchestrator import (
     LocalOrchestrator,
     LocalOrchestratorFlavor,
@@ -40,6 +43,7 @@ __all__ = [
     "BaseOrchestrator",
     "BaseOrchestratorConfig",
     "BaseOrchestratorFlavor",
+    "ContainerizedOrchestrator",
     "LocalOrchestrator",
     "LocalOrchestratorFlavor",
     "LocalDockerOrchestrator",

@@ -151,9 +151,12 @@ class GCPImageBuilder(BaseImageBuilder, GoogleCredentialsMixin):
         )
 
         cloud_builder_image = self.config.cloud_builder_image
+        cloud_builder_network_option = f"--network={self.config.network}"
         logger.info(
-            "Using Cloud Builder image `%s` to run the steps in the build",
+            "Using Cloud Builder image `%s` to run the steps in the build. "
+            "Container will be attached to network using option `%s`.",
             cloud_builder_image,
+            cloud_builder_network_option,
         )
 
         return cloudbuild_v1.Build(
@@ -165,7 +168,13 @@ class GCPImageBuilder(BaseImageBuilder, GoogleCredentialsMixin):
             steps=[
                 {
                     "name": cloud_builder_image,
-                    "args": ["build", "-t", image_name, "."],
+                    "args": [
+                        "build",
+                        cloud_builder_network_option,
+                        "-t",
+                        image_name,
+                        ".",
+                    ],
                 },
                 {
                     "name": cloud_builder_image,

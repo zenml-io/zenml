@@ -13,10 +13,13 @@
 #  permissions and limitations under the License.
 """Entrypoint configuration for the Kubernetes master/orchestrator pod."""
 
-from typing import List, Set
+from typing import TYPE_CHECKING, List, Set
+
+if TYPE_CHECKING:
+    from uuid import UUID
 
 RUN_NAME_OPTION = "run_name"
-IMAGE_NAME_OPTION = "image_name"
+DEPLOYMENT_ID_OPTION = "deployment_id"
 NAMESPACE_OPTION = "kubernetes_namespace"
 
 
@@ -32,7 +35,7 @@ class KubernetesOrchestratorEntrypointConfiguration:
         """
         options = {
             RUN_NAME_OPTION,
-            IMAGE_NAME_OPTION,
+            DEPLOYMENT_ID_OPTION,
             NAMESPACE_OPTION,
         }
         return options
@@ -55,14 +58,14 @@ class KubernetesOrchestratorEntrypointConfiguration:
     def get_entrypoint_arguments(
         cls,
         run_name: str,
-        image_name: str,
+        deployment_id: "UUID",
         kubernetes_namespace: str,
     ) -> List[str]:
         """Gets all arguments that the entrypoint command should be called with.
 
         Args:
             run_name: Name of the ZenML run.
-            image_name: Name of the Docker image.
+            deployment_id: ID of the deployment.
             kubernetes_namespace: Name of the Kubernetes namespace.
 
         Returns:
@@ -71,8 +74,8 @@ class KubernetesOrchestratorEntrypointConfiguration:
         args = [
             f"--{RUN_NAME_OPTION}",
             run_name,
-            f"--{IMAGE_NAME_OPTION}",
-            image_name,
+            f"--{DEPLOYMENT_ID_OPTION}",
+            str(deployment_id),
             f"--{NAMESPACE_OPTION}",
             kubernetes_namespace,
         ]
