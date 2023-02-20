@@ -23,9 +23,6 @@ from zenml.environment import Environment
 from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker import (
     MLFlowExperimentTracker,
 )
-from zenml.integrations.mlflow.mlflow_utils import (
-    get_missing_mlflow_experiment_tracker_error,
-)
 from zenml.integrations.mlflow.model_registries.mlflow_model_registry import (
     MLFlowModelRegistry,
 )
@@ -46,30 +43,26 @@ class MLFlowRegistryParameters(BaseParameters):
 
     Args:
         name: Name of the registered model.
-        description: Description of the registered model.
-        tags: Tags to be added to the registered model.
         trained_model_name: Name of the model to be deployed.
         experiment_name: Name of the experiment to be used for the run.
         run_name: Name of the run to be created.
         run_id: ID of the run to be used.
         model_source_uri: URI of the model source. If not provided, the model
             will be fetched from the MLflow tracking server.
-        version_description: Description of the model.
-        version_tags: Tags to be added to the model.
-        registry_metadata: Metadata to be added to the model registry.
+        description: Description of the model.
+        tags: Tags to be added to the model.
+        metadata: Metadata to be added to the model registry.
     """
 
     name: str
-    description: Optional[str] = None
-    tags: Optional[Dict[str, str]] = None
     trained_model_name: Optional[str] = "model"
     model_source_uri: Optional[str] = None
     experiment_name: Optional[str] = None
     run_name: Optional[str] = None
     run_id: Optional[str] = None
-    version_description: Optional[str] = None
-    version_tags: Optional[Dict[str, str]] = None
-    registry_metadata: Optional[Dict[str, str]] = None
+    description: Optional[str] = None
+    tags: Optional[Dict[str, str]] = None
+    metadata: Optional[Dict[str, str]] = None
 
 
 @step(enable_cache=True)
@@ -86,14 +79,17 @@ def mlflow_register_model_step(
 
     Raises:
         ValueError: If the model registry is not an MLflow model registry.
-        get_missing_mlflow_experiment_tracker_error: If the experiment tracker
-            is not an MLflow experiment tracker.
+        ValueError: If the experiment tracker is not an MLflow experiment tracker.
         ValueError: If no model source URI is provided and no model is found
     """
     # get the experiment tracker and check if it is an MLflow experiment tracker.
     experiment_tracker = Client().active_stack.experiment_tracker
     if not isinstance(experiment_tracker, MLFlowExperimentTracker):
-        raise get_missing_mlflow_experiment_tracker_error()
+        raise ValueError(
+            "The MLflow model registry step can only be used with an "
+            "MLflow experiment tracker. Please add an MLflow experiment "
+            "tracker to your stack."
+        )
 
     # fetch the MLflow model registry
     model_registry = Client().active_stack.model_registry
@@ -151,16 +147,14 @@ def mlflow_register_model_step(
     # Register model version
     model_version = model_registry.register_model_version(
         name=params.name,
+        model_source_uri=model_source_uri,
         description=params.description,
         tags=params.tags,
-        model_source_uri=model_source_uri,
-        version_description=params.version_description,
-        version_tags=params.version_tags,
         zenml_version=__version__,
         zenml_pipeline_run_id=pipeline_run_id,
         zenml_pipeline_name=pipeline_name,
         zenml_step_name=step_name,
-        registry_metadata=params.registry_metadata,
+        metadata=params.metadata,
     )
 
     logger.info(

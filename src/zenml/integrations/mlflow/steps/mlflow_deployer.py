@@ -23,9 +23,6 @@ from zenml.environment import Environment
 from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker import (
     MLFlowExperimentTracker,
 )
-from zenml.integrations.mlflow.mlflow_utils import (
-    get_missing_mlflow_experiment_tracker_error,
-)
 from zenml.integrations.mlflow.model_deployers.mlflow_model_deployer import (
     MLFlowModelDeployer,
 )
@@ -99,8 +96,7 @@ def mlflow_model_deployer_step(
         MLflow deployment service
 
     Raises:
-        get_missing_mlflow_experiment_tracker_error: if the MLflow experiment
-            tracker is not found
+        ValueError: if the MLflow experiment tracker is not found
     """
     model_deployer = cast(
         MLFlowModelDeployer, MLFlowModelDeployer.get_active_model_deployer()
@@ -109,7 +105,11 @@ def mlflow_model_deployer_step(
     experiment_tracker = Client().active_stack.experiment_tracker
 
     if not isinstance(experiment_tracker, MLFlowExperimentTracker):
-        raise get_missing_mlflow_experiment_tracker_error()
+        raise ValueError(
+            "MLflow model deployer step requires an MLflow experiment "
+            "tracker. Please add an MLflow experiment tracker to your "
+            "stack."
+        )
 
     # get pipeline name, step name and run id
     step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
@@ -235,8 +235,7 @@ def mlflow_model_registry_deployer_step(
     Raises:
         ValueError: if the registry_model_name is not provided
         ValueError: if the registry_model_version or registry_model_stage is not provided
-        get_missing_mlflow_experiment_tracker_error: if No MLflow experiment tracker is found
-            in the current active stack
+        ValueError: if No MLflow experiment tracker is found in the current active stack
 
     """
     if not params.registry_model_name:
@@ -259,7 +258,10 @@ def mlflow_model_registry_deployer_step(
 
     experiment_tracker = Client().active_stack.experiment_tracker
     if not isinstance(experiment_tracker, MLFlowExperimentTracker):
-        raise get_missing_mlflow_experiment_tracker_error()
+        raise ValueError(
+            "The MLflow model registry step can only be used with an "
+            "MLflow experiment tracker."
+        )
 
     # fetch the MLflow model registry
     model_registry = Client().active_stack.model_registry
@@ -278,7 +280,7 @@ def mlflow_model_registry_deployer_step(
     elif params.registry_model_stage:
         model_versions = model_registry.get_latest_model_versions(
             name=params.registry_model_name,
-            version_stages=[params.registry_model_stage],
+            stages=[params.registry_model_stage],
         )
         if not model_versions:
             raise ValueError(
@@ -290,12 +292,10 @@ def mlflow_model_registry_deployer_step(
         model_version = model_versions[0]
 
     # Set the pipeline information from the model version
-    if model_version.zenml_metadata:
-        pipeline_name = model_version.zenml_metadata.zenml_pipeline_name or ""
-        pipeline_run_id = (
-            model_version.zenml_metadata.zenml_pipeline_run_id or ""
-        )
-        step_name = model_version.zenml_metadata.zenml_step_name or ""
+    if model_version.metadata:
+        pipeline_name = model_version.metadata.zenml_pipeline_name or ""
+        pipeline_run_id = model_version.metadata.zenml_pipeline_run_id or ""
+        step_name = model_version.metadata.zenml_step_name or ""
 
     # fetch existing services with same pipeline name, step name and model name
     existing_services = model_deployer.find_model_server(

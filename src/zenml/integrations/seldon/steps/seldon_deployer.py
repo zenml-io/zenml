@@ -401,7 +401,7 @@ def seldon_mlflow_registry_deployer_step(
     """Seldon Core model deployer pipeline step.
 
     This step can be used in a pipeline to implement continuous
-    deployment for a ML model with Seldon Core.
+    deployment for a MLflow model with Seldon Core.
 
     Args:
         params: parameters for the deployer step
@@ -413,15 +413,12 @@ def seldon_mlflow_registry_deployer_step(
         ValueError: if registry_model_name is not provided
         ValueError: if neither registry_model_version nor
             registry_model_stage is provided
-        get_missing_mlflow_experiment_tracker_error: if the MLflow
-            experiment tracker is not available in the active stack
+        ValueError: if the MLflow experiment tracker is not available in the
+            active stack
     """
     # import here to avoid failing the pipeline if the step is not used
     from zenml.integrations.mlflow.experiment_trackers import (
         MLFlowExperimentTracker,
-    )
-    from zenml.integrations.mlflow.mlflow_utils import (
-        get_missing_mlflow_experiment_tracker_error,
     )
     from zenml.integrations.mlflow.model_registries import MLFlowModelRegistry
 
@@ -452,7 +449,11 @@ def seldon_mlflow_registry_deployer_step(
     # fetch the MLflow experiment tracker
     experiment_tracker = Client().active_stack.experiment_tracker
     if not isinstance(experiment_tracker, MLFlowExperimentTracker):
-        raise get_missing_mlflow_experiment_tracker_error()
+        raise ValueError(
+            "MLflow model deployer step requires an MLflow experiment "
+            "tracker. Please add an MLflow experiment tracker to your "
+            "stack."
+        )
 
     # fetch the MLflow model registry
     model_registry = Client().active_stack.model_registry
@@ -471,7 +472,7 @@ def seldon_mlflow_registry_deployer_step(
     elif params.registry_model_stage:
         model_version = model_registry.get_latest_model_versions(
             name=params.registry_model_name,
-            version_stages=[params.registry_model_stage],
+            stages=[params.registry_model_stage],
         )[0]
 
     if not model_version:
@@ -482,12 +483,10 @@ def seldon_mlflow_registry_deployer_step(
             f"{params.registry_model_stage}"
         )
     # Set the pipeline information from the model version
-    if model_version.zenml_metadata:
-        pipeline_name = model_version.zenml_metadata.zenml_pipeline_name or ""
-        pipeline_run_id = (
-            model_version.zenml_metadata.zenml_pipeline_run_id or ""
-        )
-        step_name = model_version.zenml_metadata.zenml_step_name or ""
+    if model_version.metadata:
+        pipeline_name = model_version.metadata.zenml_pipeline_name or ""
+        pipeline_run_id = model_version.metadata.zenml_pipeline_run_id or ""
+        step_name = model_version.metadata.zenml_step_name or ""
 
     # update the step configuration with the real pipeline runtime information
     params.service_config.pipeline_name = pipeline_name

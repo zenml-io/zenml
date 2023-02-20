@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Base class for all ZenML model registries."""
 
+import datetime
 from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Any, Dict, List, Optional, Type, cast
@@ -50,24 +51,42 @@ class RegisteredModel(BaseModel):
     tags: Optional[Dict[str, str]] = None
 
 
-class ZenMLModelMetadata(BaseModel):
-    """Base class for all ZenML model metadata.
+class ModelRegistryModelMetadata(BaseModel):
+    """Base class for all ZenML model registry model metadata.
 
-    The `ZenMLModelMetadata` class represents the metadata associated with a
-    model version. It includes information about the ZenML version, pipeline run
-    ID, pipeline run name, and pipeline step.
-
-    Attributes:
-        zenml_version: The ZenML version used to create this model version.
-        zenml_pipeline_run_id: The pipeline run ID used to create this model version.
-        zenml_pipeline_name: The pipeline name used to create this model version.
-        zenml_step_name: The pipeline step name used to create this model version.
+    The `ModelRegistryModelMetadata` class represents metadata associated with
+    a registered model version, including information such as the associated
+    pipeline name, pipeline run ID, step name, ZenML version, and custom
+    attributes. It serves as a blueprint for creating concrete model metadata
+    implementations in a registry, and provides a record of the history of a
+    model and its development process.
     """
 
     zenml_version: Optional[str] = None
     zenml_pipeline_run_id: Optional[str] = None
     zenml_pipeline_name: Optional[str] = None
     zenml_step_name: Optional[str] = None
+
+    @property
+    def custom_attributes(self) -> Dict[str, str]:
+        """Returns a dictionary of custom attributes.
+
+        Returns:
+            A dictionary of custom attributes.
+        """
+        # Return all attributes that are not explicitly defined as Pydantic
+        # fields in this class
+        return {
+            k: str(v)
+            for k, v in self.__dict__.items()
+            if k not in self.__fields__.keys()
+        }
+
+    class Config:
+        """Pydantic configuration class."""
+
+        # Allow extra attributes to be set in the metadata
+        extra = "allow"
 
 
 class ModelVersion(BaseModel):
@@ -85,25 +104,24 @@ class ModelVersion(BaseModel):
         model_registration: The registered model associated with this model
         model_source_uri: The URI of the model bundle associated with this model
         version: The version number of this model version
-        version_description: The description of this model version
+        description: The description of this model version
         created_at: The creation time of this model version
         last_updated_at: The last updated time of this model version
-        version_stage: The current stage of this model version
-        version_tags: Tags associated with this model version
-        registry_metadata: The metadata associated with this model version
+        stage: The current stage of this model version
+        tags: Tags associated with this model version
+        metadata: Metadata associated with this model version
     """
 
     model_registration: RegisteredModel
     model_source_uri: str
-    version_description: Optional[str] = None
+    description: Optional[str] = None
     version: Optional[str] = None
-    created_at: Optional[int] = None
-    last_updated_at: Optional[int] = None
-    version_stage: ModelVersionStage = ModelVersionStage.NONE
-    version_tags: Dict[str, str] = Field(default_factory=dict)
-    registry_metadata: Dict[str, str] = Field(default_factory=dict)
-    zenml_metadata: Optional[ZenMLModelMetadata] = Field(
-        default_factory=ZenMLModelMetadata
+    created_at: Optional[datetime.datetime] = None
+    last_updated_at: Optional[datetime.datetime] = None
+    stage: ModelVersionStage = ModelVersionStage.NONE
+    tags: Dict[str, str] = Field(default_factory=dict)
+    metadata: ModelRegistryModelMetadata = Field(
+        default_factory=ModelRegistryModelMetadata
     )
 
     @root_validator
@@ -118,30 +136,26 @@ class ModelVersion(BaseModel):
         Returns:
             The validated values.
         """
-        if values.get("zenml_metadata") is None:
-            values["zenml_metadata"] = ZenMLModelMetadata()
-        version_tags = values.get("version_tags")
-        if version_tags:
-            if "zenml_version" in version_tags.keys():
-                values["zenml_metadata"].zenml_version = version_tags[
-                    "zenml_version"
-                ]
-                values["version_tags"].pop("zenml_version")
-            if "zenml_pipeline_run_id" in version_tags.keys():
-                values["zenml_metadata"].zenml_pipeline_run_id = version_tags[
+        if values.get("metadata") is None:
+            values["metadata"] = ModelRegistryModelMetadata()
+        tags = values.get("tags")
+        if tags:
+            if "zenml_version" in tags.keys():
+                values["metadata"].zenml_version = tags["zenml_version"]
+                values["tags"].pop("zenml_version")
+            if "zenml_pipeline_run_id" in tags.keys():
+                values["metadata"].zenml_pipeline_run_id = tags[
                     "zenml_pipeline_run_id"
                 ]
-                values["version_tags"].pop("zenml_pipeline_run_id")
-            if "zenml_pipeline_name" in version_tags.keys():
-                values["zenml_metadata"].zenml_pipeline_name = version_tags[
+                values["tags"].pop("zenml_pipeline_run_id")
+            if "zenml_pipeline_name" in tags.keys():
+                values["metadata"].zenml_pipeline_name = tags[
                     "zenml_pipeline_name"
                 ]
-                values["version_tags"].pop("zenml_pipeline_name")
-            if "zenml_step_name" in version_tags.keys():
-                values["zenml_metadata"].zenml_step_name = version_tags[
-                    "zenml_step_name"
-                ]
-                values["version_tags"].pop("zenml_step_name")
+                values["tags"].pop("zenml_pipeline_name")
+            if "zenml_step_name" in tags.keys():
+                values["metadata"].zenml_step_name = tags["zenml_step_name"]
+                values["tags"].pop("zenml_step_name")
         return values
 
 
@@ -252,13 +266,11 @@ class BaseModelRegistry(StackComponent, ABC):
     def register_model_version(
         self,
         name: str,
-        description: Optional[str] = None,
-        tags: Optional[Dict[str, str]] = None,
         model_source_uri: Optional[str] = None,
         version: Optional[str] = None,
-        version_description: Optional[str] = None,
-        version_tags: Optional[Dict[str, str]] = None,
-        registry_metadata: Optional[Dict[str, str]] = None,
+        description: Optional[str] = None,
+        tags: Optional[Dict[str, str]] = None,
+        metadata: Optional[Dict[str, str]] = None,
         zenml_version: Optional[str] = None,
         zenml_pipeline_run_id: Optional[str] = None,
         zenml_pipeline_name: Optional[str] = None,
@@ -269,15 +281,11 @@ class BaseModelRegistry(StackComponent, ABC):
 
         Args:
             name: The name of the registered model.
-            description: The description of the registered
-                model.
-            tags: The tags associated with the registered
-                model.
             model_source_uri: The source URI of the model.
             version: The version of the model version.
-            version_description: The description of the model version.
-            version_tags: The tags associated with the model version.
-            registry_metadata: The metadata associated with the model
+            description: The description of the model version.
+            tags: The tags associated with the model version.
+            metadata: The metadata associated with the model
                 version.
             zenml_version: The ZenML version of the model version.
             zenml_pipeline_run_id: The ZenML pipeline run ID of the model
@@ -309,18 +317,18 @@ class BaseModelRegistry(StackComponent, ABC):
         self,
         name: str,
         version: str,
-        version_description: Optional[str] = None,
-        version_tags: Optional[Dict[str, str]] = None,
-        version_stage: Optional[ModelVersionStage] = None,
+        description: Optional[str] = None,
+        tags: Optional[Dict[str, str]] = None,
+        stage: Optional[ModelVersionStage] = None,
     ) -> ModelVersion:
         """Updates a model version in the model registry.
 
         Args:
             name: The name of the registered model.
             version: The version of the model version to update.
-            version_description: The description of the model version.
-            version_tags: The tags associated with the model version.
-            version_stage: The stage of the model version.
+            description: The description of the model version.
+            tags: The tags associated with the model version.
+            stage: The stage of the model version.
 
         Returns:
             The updated model version.
@@ -331,7 +339,7 @@ class BaseModelRegistry(StackComponent, ABC):
         self,
         name: Optional[str] = None,
         model_source_uri: Optional[str] = None,
-        version_tags: Optional[Dict[str, str]] = None,
+        tags: Optional[Dict[str, str]] = None,
         **kwargs: Any,
     ) -> List[ModelVersion]:
         """Lists all model versions for a registered model.
@@ -339,7 +347,7 @@ class BaseModelRegistry(StackComponent, ABC):
         Args:
             name: The name of the registered model.
             model_source_uri: The model source URI of the registered model.
-            version_tags: The tags associated with the registered model.
+            tags: The tags associated with the registered model.
             kwargs: Additional keyword arguments.
 
         Returns:

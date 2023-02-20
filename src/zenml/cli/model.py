@@ -422,9 +422,9 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
         updated_version = model_registry.update_model_version(
             name=name,
             version=version,
-            version_description=description,
-            version_tags=tags,
-            version_stage=ModelVersionStage(stage),
+            description=description,
+            tags=tags,
+            stage=ModelVersionStage(stage),
         )
         cli_utils.declare(
             f"Model {name} version {version} updated successfully."
@@ -474,7 +474,7 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
         model_versions = model_registry.list_model_versions(
             name=name,
             model_source_uri=model_uri,
-            version_tags=tags,
+            tags=tags,
         )
         cli_utils.pretty_print_model_version_table(model_versions)
 
@@ -557,7 +557,7 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
         model_uri: str,
         description: Optional[str],
         tags: Optional[Dict[str, str]],
-        registry_metadata: Optional[Dict[str, str]],
+        metadata: Optional[Dict[str, str]],
         zenml_version: Optional[str],
         zenml_pipeline_run_id: Optional[str],
         zenml_pipeline_name: Optional[str],
@@ -572,23 +572,21 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
             model_uri: Model URI of the model to register.
             description: Description of the model to register.
             tags: Tags to add to the model.
-            registry_metadata: Registry metadata to add to the model.
+            metadata: Registry metadata to add to the model.
             zenml_version: ZenML version of the model to register.
             zenml_pipeline_run_id: ZenML pipeline run ID of the model to register.
             zenml_pipeline_name: ZenML pipeline name of the model to register.
             zenml_step_name: ZenML step name of the model to register.
         """
         tags = dict(tags) if tags else None
-        registry_metadata = (
-            dict(registry_metadata) if registry_metadata else None
-        )
+        metadata = dict(metadata) if metadata else None
         model_version = model_registry.register_model_version(
             name=name,
             version=version,
             model_source_uri=model_uri,
-            version_description=description,
-            version_tags=tags,
-            registry_metadata=registry_metadata,
+            description=description,
+            tags=tags,
+            metadata=metadata,
             zenml_version=zenml_version,
             zenml_pipeline_run_id=zenml_pipeline_run_id,
             zenml_pipeline_name=zenml_pipeline_name,

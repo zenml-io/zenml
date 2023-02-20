@@ -97,8 +97,8 @@ mlflow_training_pipeline(
             name="tensorflow-mnist-model",
             description="A simple MNIST model trained with ZenML",
             tags={"framework": "tensorflow", "dataset": "mnist"},
-            version_tags={"lr": 0.003},
-            version_description=f"The 1st run of the mlflow_training_pipeline.",
+            tags={"lr": 0.003},
+            description=f"The 1st run of the mlflow_training_pipeline.",
         )
     ),
 ).run()
@@ -113,8 +113,8 @@ mlflow_training_pipeline(
     run_id: ID of the MLflow run to be used.
     model_source_uri: URI of the model source. If not provided, the model
         will be fetched from the MLflow tracking server.
-    version_description: Description of the model.
-    version_tags: Tags to be added to the model.
+    description: Description of the model.
+    tags: Tags to be added to the model.
 """
 ```
 

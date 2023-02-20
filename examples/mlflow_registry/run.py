@@ -50,10 +50,8 @@ if __name__ == "__main__":
             model_register=mlflow_register_model_step(
                 params=MLFlowRegistryParameters(
                     name="tensorflow-mnist-model",
-                    description="A simple MNIST model trained with ZenML",
-                    tags={"framework": "tensorflow", "dataset": "mnist"},
-                    version_tags={"lr": lr},
-                    version_description=f"Run #{i+1} of the mlflow_training_pipeline.",
+                    tags={"lr": lr},
+                    description=f"Run #{i+1} of the mlflow_training_pipeline.",
                 )
             ),
         ).run()

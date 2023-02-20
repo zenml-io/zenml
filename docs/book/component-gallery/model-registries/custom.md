@@ -104,9 +104,9 @@ class BaseModelRegistry(StackComponent, ABC):
         tags: Optional[Dict[str, str]] = None,
         model_source_uri: Optional[str] = None,
         version: Optional[str] = None,
-        version_description: Optional[str] = None,
-        version_tags: Optional[Dict[str, str]] = None,
-        registry_metadata: Optional[Dict[str, str]] = None,
+        description: Optional[str] = None,
+        tags: Optional[Dict[str, str]] = None,
+        metadata: Optional[Dict[str, str]] = None,
         zenml_version: Optional[str] = None,
         zenml_pipeline_run_id: Optional[str] = None,
         zenml_pipeline_name: Optional[str] = None,
@@ -128,9 +128,9 @@ class BaseModelRegistry(StackComponent, ABC):
         self,
         name: str,
         version: str,
-        version_description: Optional[str] = None,
-        version_tags: Optional[Dict[str, str]] = None,
-        version_stage: Optional[ModelVersionStage] = None,
+        description: Optional[str] = None,
+        tags: Optional[Dict[str, str]] = None,
+        stage: Optional[ModelVersionStage] = None,
     ) -> ModelVersion:
         """Updates a model version in the model registry."""
 
@@ -139,7 +139,7 @@ class BaseModelRegistry(StackComponent, ABC):
         self,
         name: Optional[str] = None,
         model_source_uri: Optional[str] = None,
-        version_tags: Optional[Dict[str, str]] = None,
+        tags: Optional[Dict[str, str]] = None,
         **kwargs: Any,
     ) -> List[ModelVersion]:
         """Lists all model versions for a registered model."""

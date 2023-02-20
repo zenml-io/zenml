@@ -16,7 +16,6 @@ import contextlib
 import os
 import subprocess
 import sys
-from datetime import datetime
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -769,8 +768,8 @@ def pretty_print_model_version_table(
         {
             "NAME": model_version.model_registration.name,
             "MODEL_VERSION": model_version.version,
-            "VERSION_DESCRIPTION": model_version.version_description,
-            "VERSION_TAGS": model_version.version_tags,
+            "VERSION_DESCRIPTION": model_version.description,
+            "TAGS": model_version.tags,
         }
         for model_version in model_versions
     ]
@@ -799,34 +798,18 @@ def pretty_print_model_version_details(
     model_version_info = {
         "REGISTERED_MODEL_NAME": model_version.model_registration.name,
         "VERSION": model_version.version,
-        "VERSION_DESCRIPTION": model_version.version_description,
-        "CREATED_AT": str(
-            datetime.fromtimestamp(model_version.created_at / 1000.0)
-        )
+        "VERSION_DESCRIPTION": model_version.description,
+        "CREATED_AT": str(model_version.created_at)
         if model_version.created_at
         else "N/A",
-        "UPDATED_AT": str(
-            datetime.fromtimestamp(model_version.last_updated_at / 1000.0)
-        )
+        "UPDATED_AT": str(model_version.last_updated_at)
         if model_version.last_updated_at
         else "N/A",
-        "ZENML_VERSION": getattr(
-            model_version.zenml_metadata, "zenml_version", "N/A"
-        ),
-        "ZENML_PIPELINE_RUN_ID": getattr(
-            model_version.zenml_metadata, "zenml_pipeline_name", "N/A"
-        ),
-        "ZENML_PIPELINE_NAME": getattr(
-            model_version.zenml_metadata, "zenml_pipeline_run_id", "N/A"
-        ),
-        "ZENML_PIPELINE_STEP_NAME": getattr(
-            model_version.zenml_metadata, "zenml_step_name", "N/A"
-        ),
-        "VERSION_TAGS": model_version.version_tags,
+        "TAGS": model_version.tags,
         "MODEL_SOURCE_URI": model_version.model_source_uri,
-        "VERSION_STAGE": model_version.version_stage.value,
+        "VERSION_STAGE": model_version.stage.value,
     }
-    for key, value in model_version.registry_metadata.items():
+    for key, value in dict(model_version.metadata).items():
         model_version_info[key.upper()] = value or "N/A"
 
     for item in model_version_info.items():

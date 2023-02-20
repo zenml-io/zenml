@@ -83,7 +83,7 @@ mlflow_training_pipeline(
             name="tensorflow-mnist-model",
             description="A simple MNIST model trained with ZenML",
             tags={"framework": "tensorflow", "dataset": "mnist"},
-            version_description=f"A run of the mlflow_training_pipeline with a learning rate of 0.0003",
+            description=f"A run of the mlflow_training_pipeline with a learning rate of 0.0003",
         )
     ),
 ).run()
@@ -116,13 +116,13 @@ want to. The following table shows the list of available parameters.
 * `description`: A description of the registered model.
 * `tags`: A list of tags to associate with the registered model.
 * `model_uri`: The path to the model. This is a required parameter.
-* `version_description`: A description of the model version.
-* `version_tags`: A list of tags to associate with the model version.
+* `description`: A description of the model version.
+* `tags`: A list of tags to associate with the model version.
 * `zenml_pipeline_name`: The name of the ZenML pipeline that produced the model.
 * `zenml_pipeline_run_id`: The run id of the ZenML pipeline that produced the
 model.
-* `zenml_pipeline_step_name`: The time when the ZenML pipeline that produced the
-model was run.
+* `zenml_pipeline_step_name`: The name of the ZenML pipeline step that produced
+the model.
 
 {% hint style="info" %}
 The `model_uri` parameter is the path to the model within the MLflow tracking

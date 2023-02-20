@@ -158,7 +158,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         local_mlflow_tracking_uri = os.path.join(artifact_store.path, "mlruns")
         if not os.path.exists(local_mlflow_tracking_uri):
             os.makedirs(local_mlflow_tracking_uri)
-        return "file://" + local_mlflow_tracking_uri
+        return "file:" + local_mlflow_tracking_uri
 
     def get_tracking_uri(self) -> str:
         """Returns the configured tracking URI or a local fallback.

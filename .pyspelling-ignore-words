@@ -464,7 +464,7 @@ ModelRun
 ModelServer
 ModelVersion
 ModelVersionStage
-ZenMLModelMetadata
+ModelRegistryModelMetadata
 ModuleNotFoundError
 MyAlerterConfig
 MyArtifacStoreFlavor
