@@ -20,7 +20,7 @@ from uuid import UUID, uuid4
 import pytest
 from click.testing import CliRunner
 
-from tests.integration.functional.cli.test_utils import (
+from tests.integration.functional.cli.utils import (
     create_sample_user_and_login,
 )
 from zenml.artifact_stores.local_artifact_store import (
@@ -37,7 +37,7 @@ from zenml.secrets_managers.local.local_secrets_manager import (
     LocalSecretsManagerConfig,
 )
 
-NOT_STACKS = ["abc", "my_other_cat_is_called_blupus", "stack123"]
+NOT_STACKS = ["abc_def", "my_other_cat_is_called_blupus", "stack123"]
 
 
 def _create_local_orchestrator(
