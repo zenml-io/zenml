@@ -102,6 +102,26 @@ class SecretReferenceMixin(BaseModel):
 
         from zenml.client import Client
 
+        secret_ref = secret_utils.parse_secret_reference(value)
+
+        # Try to resolve the secret using the secret store first
+        try:
+            store_secret = Client().get_secret_by_name_and_scope(
+                name=secret_ref.name,
+            )
+        except (KeyError, NotImplementedError):
+            pass
+        else:
+            if secret_ref.key in store_secret.values:
+                return store_secret.secret_values[secret_ref.key]
+            else:
+                raise KeyError(
+                    f"Failed to resolve secret reference for attribute {key}: "
+                    f"The secret {secret_ref.name} does not contain a value "
+                    f"for key {secret_ref.key}. Available keys: "
+                    f"{set(store_secret.values)}."
+                )
+
         secrets_manager = Client().active_stack.secrets_manager
         if not secrets_manager:
             raise RuntimeError(
@@ -109,7 +129,6 @@ class SecretReferenceMixin(BaseModel):
                 "The active stack does not have a secrets manager."
             )
 
-        secret_ref = secret_utils.parse_secret_reference(value)
         try:
             secret = secrets_manager.get_secret(secret_ref.name)
         except KeyError:

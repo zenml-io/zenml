@@ -34,6 +34,7 @@ if TYPE_CHECKING:
         PipelineSchema,
         RunMetadataSchema,
         ScheduleSchema,
+        SecretSchema,
         StackComponentSchema,
         StackSchema,
         StepRunSchema,
@@ -94,6 +95,10 @@ class WorkspaceSchema(NamedSchema, table=True):
         sa_relationship_kwargs={"cascade": "delete"},
     )
     run_metadata: List["RunMetadataSchema"] = Relationship(
+        back_populates="workspace",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
+    secrets: List["SecretSchema"] = Relationship(
         back_populates="workspace",
         sa_relationship_kwargs={"cascade": "delete"},
     )

@@ -64,7 +64,7 @@ from zenml.constants import (
     VERSION_1,
     WORKSPACES,
 )
-from zenml.enums import StoreType
+from zenml.enums import SecretsStoreType, StoreType
 from zenml.exceptions import (
     AuthorizationException,
     DoesNotExistException,
@@ -151,6 +151,9 @@ from zenml.utils.networking_utils import (
     replace_localhost_with_internal_hostname,
 )
 from zenml.zen_stores.base_zen_store import BaseZenStore
+from zenml.zen_stores.secrets_stores.rest_secrets_store import (
+    RestSecretsStoreConfiguration,
+)
 
 logger = get_logger(__name__)
 
@@ -171,20 +174,53 @@ class RestZenStoreConfiguration(StoreConfiguration):
     """REST ZenML store configuration.
 
     Attributes:
+        type: The type of the store.
+        secrets_store: The configuration of the secrets store to use.
+            This defaults to a REST secrets store that extends the REST ZenML
+            store.
         username: The username to use to connect to the Zen server.
         password: The password to use to connect to the Zen server.
         verify_ssl: Either a boolean, in which case it controls whether we
             verify the server's TLS certificate, or a string, in which case it
             must be a path to a CA bundle to use or the CA bundle value itself.
         http_timeout: The timeout to use for all requests.
+
     """
 
     type: StoreType = StoreType.REST
+
+    secrets_store: Optional[RestSecretsStoreConfiguration] = None
+
     username: Optional[str] = None
     password: Optional[str] = None
     api_token: Optional[str] = None
     verify_ssl: Union[bool, str] = True
     http_timeout: int = DEFAULT_HTTP_TIMEOUT
+
+    @validator("secrets_store")
+    def validate_secrets_store(
+        cls, secrets_store: Optional[RestSecretsStoreConfiguration]
+    ) -> RestSecretsStoreConfiguration:
+        """Ensures that the secrets store uses an associated REST secrets store.
+
+        Args:
+            secrets_store: The secrets store config to be validated.
+
+        Returns:
+            The validated secrets store config.
+
+        Raises:
+            ValueError: If the secrets store is not of type REST.
+        """
+        if secrets_store is None:
+            secrets_store = RestSecretsStoreConfiguration()
+        elif secrets_store.type != SecretsStoreType.REST:
+            raise ValueError(
+                "The secrets store associated with a REST zen store must be "
+                f"of type REST, but is of type {secrets_store.type}."
+            )
+
+        return secrets_store
 
     @root_validator
     def validate_credentials(cls, values: Dict[str, Any]) -> Dict[str, Any]:
@@ -1857,6 +1893,8 @@ class RestZenStore(BaseZenStore):
                 entity already exists.
             ValueError: If the response indicates that the requested entity
                 does not exist.
+            NotImplementedError: If the response indicates that the requested
+                operation is not implemented.
         """
         if 200 <= response.status_code < 300:
             try:
@@ -1916,6 +1954,10 @@ class RestZenStore(BaseZenStore):
                     ": ".join(response.json().get("detail", (response.text,)))
                 )
         elif response.status_code == 422:
+            if "NotImplementedError" in response.text:
+                raise NotImplementedError(
+                    ": ".join(response.json().get("detail", (response.text,)))
+                )
             response_details = response.json().get("detail", (response.text,))
             if isinstance(response_details[0], str):
                 response_msg = ": ".join(response_details)
