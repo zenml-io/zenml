@@ -39,7 +39,6 @@ def test_example(request: pytest.FixtureRequest) -> None:
     ) as (example, runs):
         pipeline = get_pipeline("mlflow_training_pipeline")
         assert pipeline
-
         first_run = runs[0]
 
         # activate the stack set up and used by the example
@@ -74,5 +73,16 @@ def test_example(request: pytest.FixtureRequest) -> None:
         # fetch the MLflow artifacts logged during the pipeline run
         artifacts = client.list_artifacts(first_mlflow_run.info.run_id)
         assert len(artifacts) == 3
-        breakpoint()
-        # fetch the MLflow model logged during the pipeline run
+        
+        # fetch the MLflow registered model 
+        registered_model = model_registry.get_model(
+            name="tensorflow-mnist-model",
+        )
+        assert registered_model is not None
+
+        # fetch the MLflow registered model version
+        registered_model_version = model_registry.get_model_version(
+            name="tensorflow-mnist-model",
+            version=1,
+        )
+        assert registered_model_version is not None

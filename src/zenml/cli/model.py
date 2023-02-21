@@ -20,7 +20,10 @@ import click
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.enums import StackComponentType
-from zenml.model_registries.base_model_registry import ModelVersionStage
+from zenml.model_registries.base_model_registry import (
+    ModelRegistryModelMetadata,
+    ModelVersionStage,
+)
 
 if TYPE_CHECKING:
     from zenml.model_registries import BaseModelRegistry
@@ -506,6 +509,7 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
         "--version",
         "-v",
         type=str,
+        required=True,
         default=None,
         help="Version of the model to register.",
     )
@@ -553,7 +557,7 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
     def register_model_version(
         model_registry: "BaseModelRegistry",
         name: str,
-        version: Optional[str],
+        version: str,
         model_uri: str,
         description: Optional[str],
         tags: Optional[Dict[str, str]],
@@ -579,18 +583,20 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
             zenml_step_name: ZenML step name of the model to register.
         """
         tags = dict(tags) if tags else None
-        metadata = dict(metadata) if metadata else None
+        # Parse metadata``
+        metadata = dict(metadata) if metadata else {}
+        registerted_metadata = ModelRegistryModelMetadata(**dict(metadata))
+        registerted_metadata.zenml_version = zenml_version
+        registerted_metadata.zenml_pipeline_run_id = zenml_pipeline_run_id
+        registerted_metadata.zenml_pipeline_name = zenml_pipeline_name
+        registerted_metadata.zenml_step_name = zenml_step_name
         model_version = model_registry.register_model_version(
             name=name,
             version=version,
             model_source_uri=model_uri,
             description=description,
             tags=tags,
-            metadata=metadata,
-            zenml_version=zenml_version,
-            zenml_pipeline_run_id=zenml_pipeline_run_id,
-            zenml_pipeline_name=zenml_pipeline_name,
-            zenml_step_name=zenml_step_name,
+            metadata=registerted_metadata,
         )
         cli_utils.declare(
             f"Model {name} version {version} registered successfully."

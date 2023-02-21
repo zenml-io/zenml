@@ -65,7 +65,10 @@ class ModelRegistryModelMetadata(BaseModel):
     zenml_version: Optional[str] = None
     zenml_pipeline_run_id: Optional[str] = None
     zenml_pipeline_name: Optional[str] = None
+    zenml_pipeline_uuid: Optional[str] = None
+    zenml_pipeline_run_uuid: Optional[str] = None
     zenml_step_name: Optional[str] = None
+    zenml_workspace: Optional[str] = None
 
     @property
     def custom_attributes(self) -> Dict[str, str]:
@@ -112,10 +115,10 @@ class ModelVersion(BaseModel):
         metadata: Metadata associated with this model version
     """
 
-    model_registration: RegisteredModel
+    version: str
     model_source_uri: str
+    model_registration: RegisteredModel
     description: Optional[str] = None
-    version: Optional[str] = None
     created_at: Optional[datetime.datetime] = None
     last_updated_at: Optional[datetime.datetime] = None
     stage: ModelVersionStage = ModelVersionStage.NONE
@@ -156,6 +159,19 @@ class ModelVersion(BaseModel):
             if "zenml_step_name" in tags.keys():
                 values["metadata"].zenml_step_name = tags["zenml_step_name"]
                 values["tags"].pop("zenml_step_name")
+            if "zenml_workspace" in tags.keys():
+                values["metadata"].zenml_workspace = tags["zenml_workspace"]
+                values["tags"].pop("zenml_workspace")
+            if "zenml_pipeline_uuid" in tags.keys():
+                values["metadata"].zenml_pipeline_uuid = tags[
+                    "zenml_pipeline_uuid"
+                ]
+                values["tags"].pop("zenml_pipeline_uuid")
+            if "zenml_pipeline_run_uuid" in tags.keys():
+                values["metadata"].zenml_pipeline_run_uuid = tags[
+                    "zenml_pipeline_run_uuid"
+                ]
+                values["tags"].pop("zenml_pipeline_run_uuid")
         return values
 
 
@@ -192,6 +208,13 @@ class BaseModelRegistry(StackComponent, ABC):
             name: The name of the registered model.
             description: The description of the registered model.
             tags: The tags associated with the registered model.
+
+        Returns:
+            The registered model.
+
+        Raises:
+            zenml.exceptions.EntityExistsError: If a model with the same name already exists.
+            RuntimeError: If registration fails.
         """
 
     @abstractmethod
@@ -203,6 +226,10 @@ class BaseModelRegistry(StackComponent, ABC):
 
         Args:
             name: The name of the registered model.
+
+        Raises:
+            zenml.exceptions.EntityExistsError: If the model does not exist.
+            RuntimeError: If deletion fails.
         """
 
     @abstractmethod
@@ -211,6 +238,7 @@ class BaseModelRegistry(StackComponent, ABC):
         name: str,
         description: Optional[str] = None,
         tags: Optional[Dict[str, str]] = None,
+        remove_tags: Optional[List[str]] = None,
     ) -> RegisteredModel:
         """Updates a registered model in the model registry.
 
@@ -218,6 +246,11 @@ class BaseModelRegistry(StackComponent, ABC):
             name: The name of the registered model.
             description: The description of the registered model.
             tags: The tags associated with the registered model.
+            remove_tags: The tags to remove from the registered model.
+
+        Raises:
+            zenml.exceptions.EntityExistsError: If the model does not exist.
+            RuntimeError: If update fails.
         """
 
     @abstractmethod
@@ -229,6 +262,10 @@ class BaseModelRegistry(StackComponent, ABC):
 
         Returns:
             The registered model.
+
+        Raises:
+            zenml.exceptions.EntityExistsError: If the model does not exist.
+            RuntimeError: If retrieval fails.
         """
 
     @abstractmethod
@@ -251,6 +288,9 @@ class BaseModelRegistry(StackComponent, ABC):
     def check_model_exists(self, name: str) -> bool:
         """Checks if a model exists in the model registry.
 
+        This method is used to check if a model exists before registering
+        a new model, deleting a model, or updating a model.
+
         Args:
             name: The name of the registered model.
 
@@ -266,15 +306,13 @@ class BaseModelRegistry(StackComponent, ABC):
     def register_model_version(
         self,
         name: str,
+        version: str,
         model_source_uri: Optional[str] = None,
-        version: Optional[str] = None,
         description: Optional[str] = None,
         tags: Optional[Dict[str, str]] = None,
-        metadata: Optional[Dict[str, str]] = None,
-        zenml_version: Optional[str] = None,
-        zenml_pipeline_run_id: Optional[str] = None,
-        zenml_pipeline_name: Optional[str] = None,
-        zenml_step_name: Optional[str] = None,
+        metadata: ModelRegistryModelMetadata = Field(
+            default_factory=ModelRegistryModelMetadata
+        ),
         **kwargs: Any,
     ) -> ModelVersion:
         """Registers a model version in the model registry.
@@ -287,16 +325,13 @@ class BaseModelRegistry(StackComponent, ABC):
             tags: The tags associated with the model version.
             metadata: The metadata associated with the model
                 version.
-            zenml_version: The ZenML version of the model version.
-            zenml_pipeline_run_id: The ZenML pipeline run ID of the model
-                version.
-            zenml_pipeline_name: The ZenML pipeline run name of the model
-                version.
-            zenml_step_name: The ZenML step name of the model version.
             **kwargs: Additional keyword arguments.
 
         Returns:
             The registered model version.
+
+        Raises:
+            RuntimeError: If registration fails.
         """
 
     @abstractmethod
@@ -310,6 +345,10 @@ class BaseModelRegistry(StackComponent, ABC):
         Args:
             name: The name of the registered model.
             version: The version of the model version to delete.
+
+        Raises:
+            zenml.exceptions.EntityExistsError: If the model version does not exist.
+            RuntimeError: If deletion fails.
         """
 
     @abstractmethod
@@ -319,6 +358,7 @@ class BaseModelRegistry(StackComponent, ABC):
         version: str,
         description: Optional[str] = None,
         tags: Optional[Dict[str, str]] = None,
+        remove_tags: Optional[List[str]] = None,
         stage: Optional[ModelVersionStage] = None,
     ) -> ModelVersion:
         """Updates a model version in the model registry.
@@ -328,10 +368,15 @@ class BaseModelRegistry(StackComponent, ABC):
             version: The version of the model version to update.
             description: The description of the model version.
             tags: The tags associated with the model version.
+            remove_tags: The tags to remove from the model version.
             stage: The stage of the model version.
 
         Returns:
             The updated model version.
+
+        Raises:
+            zenml.exceptions.EntityExistsError: If the model version does not exist.
+            RuntimeError: If update fails.
         """
 
     @abstractmethod
@@ -364,6 +409,10 @@ class BaseModelRegistry(StackComponent, ABC):
 
         Returns:
             The model version.
+
+        Raises:
+            zenml.exceptions.EntityExistsError: If the model version does not exist.
+            RuntimeError: If retrieval fails.
         """
 
     @abstractmethod
@@ -373,6 +422,9 @@ class BaseModelRegistry(StackComponent, ABC):
         version: str,
     ) -> bool:
         """Checks if a model version exists in the model registry.
+
+        This method is used to check if a model version exists in the model
+        registry before attempting to get it, load it, delete it, or update it.
 
         Args:
             name: The name of the registered model.
@@ -398,6 +450,10 @@ class BaseModelRegistry(StackComponent, ABC):
 
         Returns:
             The loaded model version.
+
+        Raises:
+            zenml.exceptions.EntityExistsError: If the model version does not exist.
+            RuntimeError: If loading fails.
         """
 
 

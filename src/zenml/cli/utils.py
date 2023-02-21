@@ -807,7 +807,7 @@ def pretty_print_model_version_details(
         else "N/A",
         "TAGS": model_version.tags,
         "MODEL_SOURCE_URI": model_version.model_source_uri,
-        "VERSION_STAGE": model_version.stage.value,
+        "STAGE": model_version.stage.value,
     }
     for key, value in dict(model_version.metadata).items():
         model_version_info[key.upper()] = value or "N/A"

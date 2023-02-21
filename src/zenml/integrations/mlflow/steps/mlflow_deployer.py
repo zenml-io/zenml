@@ -293,9 +293,9 @@ def mlflow_model_registry_deployer_step(
 
     # Set the pipeline information from the model version
     if model_version.metadata:
-        pipeline_name = model_version.metadata.zenml_pipeline_name or ""
-        pipeline_run_id = model_version.metadata.zenml_pipeline_run_id or ""
-        step_name = model_version.metadata.zenml_step_name or ""
+        pipeline_name = model_version.metadata.zenml_pipeline_name or None
+        pipeline_run_id = model_version.metadata.zenml_pipeline_run_id or None
+        step_name = model_version.metadata.zenml_step_name or None
 
     # fetch existing services with same pipeline name, step name and model name
     existing_services = model_deployer.find_model_server(
@@ -307,8 +307,8 @@ def mlflow_model_registry_deployer_step(
     predictor_cfg = MLFlowDeploymentConfig(
         model_name=params.model_name or "",
         model_uri=model_version.model_source_uri,
-        registry_model_name=model_version.model_registration.name or "",
-        registry_model_version=model_version.version or "",
+        registry_model_name=model_version.model_registration.name,
+        registry_model_version=model_version.version,
         workers=params.workers,
         mlserver=params.mlserver,
         pipeline_name=pipeline_name or "",

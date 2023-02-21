@@ -28,6 +28,9 @@ from zenml.integrations.mlflow.model_registries.mlflow_model_registry import (
 )
 from zenml.logger import get_logger
 from zenml.materializers.unmaterialized_artifact import UnmaterializedArtifact
+from zenml.model_registries.base_model_registry import (
+    ModelRegistryModelMetadata,
+)
 from zenml.steps import (
     STEP_ENVIRONMENT_NAME,
     BaseParameters,
@@ -43,6 +46,7 @@ class MLFlowRegistryParameters(BaseParameters):
 
     Args:
         name: Name of the registered model.
+        version: Version of the registered model.
         trained_model_name: Name of the model to be deployed.
         experiment_name: Name of the experiment to be used for the run.
         run_name: Name of the run to be created.
@@ -55,6 +59,7 @@ class MLFlowRegistryParameters(BaseParameters):
     """
 
     name: str
+    version: Optional[str] = None
     trained_model_name: Optional[str] = "model"
     model_source_uri: Optional[str] = None
     experiment_name: Optional[str] = None
@@ -63,6 +68,10 @@ class MLFlowRegistryParameters(BaseParameters):
     description: Optional[str] = None
     tags: Optional[Dict[str, str]] = None
     metadata: Optional[Dict[str, str]] = None
+    zenml_version: Optional[str] = None
+    zenml_pipeline_run_id: Optional[str] = None
+    zenml_pipeline_name: Optional[str] = None
+    zenml_step_name: Optional[str] = None
 
 
 @step(enable_cache=True)
@@ -144,17 +153,22 @@ def mlflow_register_model_step(
             "MLflow tracking server for the given inputs."
         )
 
+    # Parse Metadata
+    metadata = params.metadata or {}
+    registered_metadata = ModelRegistryModelMetadata(**dict(metadata))
+    registered_metadata.zenml_version = __version__
+    registered_metadata.zenml_pipeline_run_id = pipeline_run_id
+    registered_metadata.zenml_pipeline_name = pipeline_name
+    registered_metadata.zenml_step_name = step_name
+
     # Register model version
     model_version = model_registry.register_model_version(
         name=params.name,
+        version=params.version or "1",
         model_source_uri=model_source_uri,
         description=params.description,
         tags=params.tags,
-        zenml_version=__version__,
-        zenml_pipeline_run_id=pipeline_run_id,
-        zenml_pipeline_name=pipeline_name,
-        zenml_step_name=step_name,
-        metadata=params.metadata,
+        metadata=registered_metadata,
     )
 
     logger.info(
