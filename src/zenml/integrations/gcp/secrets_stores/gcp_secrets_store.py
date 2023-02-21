@@ -14,6 +14,7 @@
 """Implementation of the GCP Secrets Store."""
 
 import json
+import re
 from typing import Any, ClassVar, Dict, List, Optional, Tuple, cast, Union
 
 from google.api_core import exceptions as google_exceptions
@@ -164,6 +165,27 @@ class GCPSecretsStore(BaseSecretsStore):
         """
         return f"projects/{self.config.project_id}"
 
+    def _validate_user_and_workspace(
+        self, user_id: UUID, workspace_id: UUID
+    ) -> Tuple[UserResponseModel, WorkspaceResponseModel]:
+        """Validates that the given user and workspace IDs are valid.
+
+        This method calls the ZenML store to validate the user and workspace
+        IDs. It raises a KeyError exception if either the user or workspace
+        does not exist.
+
+        Args:
+            user_id: The ID of the user to validate.
+            workspace_id: The ID of the workspace to validate.
+
+        Returns:
+            The user and workspace.
+        """
+        user = self.zen_store.get_user(user_id)
+        workspace = self.zen_store.get_workspace(workspace_id)
+
+        return user, workspace
+
     def _get_secret_labels(
         self, secret: Union[SecretRequestModel, SecretResponseModel]
     ) -> List[Tuple[str, str]]:
@@ -185,40 +207,86 @@ class GCPSecretsStore(BaseSecretsStore):
         metadata = self._get_secret_metadata_for_secret(secret)
         return list(metadata.items())
 
+    def _validate_gcp_secret_name(self, name: str) -> None:
+        """Validate a secret name.
+
+        Given that we save secret names as labels, we are also limited by the
+        limitation that Google imposes on label values: max 63 characters and
+        must only contain lowercase letters, numerals and the hyphen (-) and
+        underscore (_) characters.
+
+        Args:
+            name: the secret name
+
+        Raises:
+            ValueError: if the secret name is invalid
+        """
+        if not re.fullmatch(r"[a-z0-9_\-]+", name):
+            raise ValueError(
+                f"Invalid secret name '{name}'. Must contain "
+                f"only lowercase alphanumeric characters and the hyphen (-) and "
+                f"underscore (_) characters."
+            )
+
+        if name and len(name) > 63:
+            raise ValueError(
+                f"Invalid secret name '{name}'. The length is "
+                f"limited to maximum 63 characters."
+            )
+
     @track(AnalyticsEvent.CREATED_SECRET)
     def create_secret(self, secret: SecretRequestModel) -> SecretResponseModel:
         """Creates a new secret."""
-        validate_gcp_secret_name_or_namespace(secret.name)
+        self._validate_gcp_secret_name(secret.name)
+
+        user, workspace = self._validate_user_and_workspace(
+            secret.user, secret.workspace
+        )
+        # TODO: check scope
 
         secret_id = uuid.uuid4()
-        secret_items = {
-            k: json.dumps(v) for k, v in secret.secret_values.items()
-        }
+        secret_value = json.dumps(secret.secret_values)
 
-        for k, v in secret_items.items():
-            gcp_secret = self.client.create_secret(
-                request={
-                    "parent": self.parent_name,
-                    "secret_id": k,
-                    "secret": {
-                        "replication": {"automatic": {}},
-                        "labels": self._get_secret_metadata_for_secret(
-                            secret=secret, secret_id=secret_id
-                        ),
-                    },
-                }
-            )
+        # TODO: catch doesn't exist / already exists / other exceptions (for all
+        # GCP calls )
+        gcp_secret = self.client.create_secret(
+            request={
+                "parent": self.parent_name,
+                "secret_id": f"{GCP_ZENML_SECRET_NAME_PREFIX}-{secret_id}",
+                "secret": {
+                    "replication": {"automatic": {}},
+                    "labels": self._get_secret_metadata_for_secret(
+                        secret=secret, secret_id=secret_id
+                    ),
+                },
+            }
+        )
 
-            logger.debug("Created empty parent secret: %s", gcp_secret.name)
+        logger.debug("Created empty parent secret: %s", gcp_secret.name)
 
-            self.client.add_secret_version(
-                request={
-                    "parent": gcp_secret.name,
-                    "payload": {"data": str(v).encode()},
-                }
-            )
+        gcp_secret_version = self.client.add_secret_version(
+            request={
+                "parent": gcp_secret.name,
+                "payload": {"data": secret_value.encode()},
+            }
+        )
 
-            logger.debug("Added value to secret.")
+        logger.debug("Added value to secret.")
+
+        secret_model = SecretResponseModel(
+            id=secret_id,
+            name=secret.name,
+            scope=secret.scope,
+            workspace=workspace,
+            user=user,
+            values=secret.secret_values,
+            created=gcp_secret.create_time,
+            updated=gcp_secret_version.create_time,
+        )
+
+        print(secret_model)
+
+        return secret_model
 
     def get_secret(self, secret_id: UUID) -> SecretResponseModel:
         """Get a secret by ID.
