@@ -754,8 +754,8 @@ class SqlZenStore(BaseZenStore):
             total=total,
             total_pages=total_pages,
             items=items,
-            page=filter_model.page,
-            size=filter_model.size,
+            index=filter_model.page,
+            max_size=filter_model.size,
         )
 
     # ====================================

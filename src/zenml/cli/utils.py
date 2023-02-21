@@ -1165,7 +1165,7 @@ def print_page_info(page: Page[T]) -> None:
         page: The page to print the information for.
     """
     declare(
-        f"Page `({page.page}/{page.total_pages})`, `{page.total}` items "
+        f"Page `({page.index}/{page.total_pages})`, `{page.total}` items "
         f"found for the applied filters."
     )
 
