@@ -815,7 +815,7 @@ ZenML provides several CLI commands to help you administer your pipelines and
 pipeline runs.
 
 To explicitly register a pipeline you need to point to a pipeline instance
-in your python code. Let's say you have a python file called `run.py` and
+in your Python code. Let's say you have a Python file called `run.py` and
 it contains the following code:
 
 ```python
@@ -916,7 +916,7 @@ To delete a specific build, use:
 zenml pipeline builds delete <BUILD_ID>
 ```
 
-Building an running your Pipelines
+Building an image without running your Pipelines
 ----------------------------------
 
 To build Docker images for your pipeline without actually running the pipeline,
