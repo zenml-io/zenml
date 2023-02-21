@@ -1087,7 +1087,7 @@ def test_basic_crud_for_entity(
             )
 
     with pytest.raises(KeyError):
-        # Deletomg doesn't work with name prefix
+        # Deleting doesn't work with name prefix
         delete_method(
             name_id_or_prefix=entity.name[:-1], **crud_test_config.delete_args
         )
