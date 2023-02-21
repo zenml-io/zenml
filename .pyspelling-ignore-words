@@ -144,6 +144,7 @@ ClusterIssuer
 ClusterRole
 ClusterRoleBinding
 ClusterServingRuntimes
+CodeRepositoryResponseModel
 Colab
 ColorOptions
 ColumnMapping
@@ -477,7 +478,6 @@ MyModel
 MyModelDeployerFlavor
 MyObj
 MyOrchestrator
-MyOrchestratorFlavor
 MyOrchestratorFlavor
 MySQLMetadataStore
 MySecretsManagerFlavor
