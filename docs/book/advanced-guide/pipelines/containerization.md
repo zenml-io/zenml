@@ -93,8 +93,9 @@ def my_pipeline(...):
 ```
 
 {% hint style="warning" %}
-This is an advanced feature and will most likely break your pipelines. If you use this,
-you're on your own and need to copy all the necessary files to the correct paths yourself.
+This is an advanced feature and will most likely cause unintended and unanticipated behavior
+when running your pipelines. If you use this, make sure to copy all the necessary files
+to the correct paths yourself.
 {% endhint %}
 
 #### Don't include the global configuration
@@ -111,8 +112,9 @@ def my_pipeline(...):
 ```
 
 {% hint style="warning" %}
-This is an advanced feature and will most likely break your pipelines. If you use this,
-you're on your own and need to copy a stack configuration to the correct path yourself.
+This is an advanced feature and will most likely cause unintended and unanticipated
+behavior when running your pipelines. If you use this, make sure to copy the global configuration
+to the correct path yourself.
 {% endhint %}
 
 ### How to install additional pip dependencies or apt packages
@@ -248,8 +250,8 @@ def my_pipeline(...):
 ```
 
 {% hint style="warning" %}
-This is an advanced feature and will most likely break your pipelines. If you use this,
-you're on your own and need to make sure your code files and global configuration
+This is an advanced feature and will most likely cause unintended and unanticipated behavior
+when running your pipelines. If you use this, make sure your code files and global configuration
 are correctly included in the image you specified.
 {% endhint %}
 
