@@ -3893,11 +3893,14 @@ class Client(metaclass=ClientMetaClass):
 
         entity_label = get_method.__name__.replace("get_", "") + "s"
 
+        prefix_description = (
+            "a name/ID prefix" if allow_name_prefix_match else "an ID prefix"
+        )
         # If no entity is found, raise an error.
         if entity.total == 0:
             raise KeyError(
-                f"No {entity_label} have been found that have either a name "
-                f"or an id prefix that matches the provided string "
+                f"No {entity_label} have been found that have "
+                f"{prefix_description} that matches the provided string "
                 f"'{partial_id_or_name}'."
             )
 
@@ -3911,7 +3914,7 @@ class Client(metaclass=ClientMetaClass):
                 ambiguous_entities.append(str(model.id))
         raise ZenKeyError(
             f"{entity.total} {entity_label} have been found that have "
-            f"either a name or an id prefix that matches the provided "
+            f"{prefix_description} that matches the provided "
             f"string '{partial_id_or_name}':\n"
             f"{ambiguous_entities}.\n"
             f"Please provide more characters to uniquely identify "
