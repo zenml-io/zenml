@@ -73,8 +73,8 @@ def test_example(request: pytest.FixtureRequest) -> None:
         # fetch the MLflow artifacts logged during the pipeline run
         artifacts = client.list_artifacts(first_mlflow_run.info.run_id)
         assert len(artifacts) == 3
-        
-        # fetch the MLflow registered model 
+
+        # fetch the MLflow registered model
         registered_model = model_registry.get_model(
             name="tensorflow-mnist-model",
         )

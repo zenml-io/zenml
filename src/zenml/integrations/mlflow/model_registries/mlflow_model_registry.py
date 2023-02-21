@@ -146,7 +146,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
             tags: The tags of the model.
 
         Raises:
-            MlflowException: If the model already exists.
+            RuntimeError: If the model already exists.
             EntityExistsError: If the model already exists.
 
         Returns:
@@ -188,7 +188,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
             name: The name of the model.
 
         Raises:
-            MlflowException: If the model does not exist.
+            RuntimeError: If the model does not exist.
             EntityExistsError: If the model does not exist.
         """
         # Check if model exists.
@@ -224,7 +224,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
             remove_tags: The tags to remove from the model.
 
         Raises:
-            MlflowException: If mlflow fails to update the model.
+            RuntimeError: If mlflow fails to update the model.
             EntityExistsError: If the model does not exist.
 
         Returns:
@@ -394,7 +394,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
             **kwargs: Additional keyword arguments.
 
         Raises:
-            MlflowException: If the registered model does not exist.
+            RuntimeError: If the registered model does not exist.
 
         Returns:
             The registered model version.
@@ -467,7 +467,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
             version: The version of the model.
 
         Raises:
-            MlflowException: If mlflow fails to delete the model version.
+            RuntimeError: If mlflow fails to delete the model version.
             EntityExistsError: If the model version does not exist.
         """
         if not self.check_model_version_exists(name, version):
@@ -506,7 +506,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
             stage: The stage of the model version.
 
         Raises:
-            MlflowException: If mlflow fails to update the model version.
+            RuntimeError: If mlflow fails to update the model version.
             EntityExistsError: If the model version does not exist.
 
         Returns:
@@ -586,7 +586,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
             version: The version of the model.
 
         Raises:
-            MlflowException: If mlflow fails to get the model version.
+            RuntimeError: If mlflow fails to get the model version.
 
         Returns:
             The model version.
@@ -669,7 +669,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
             The latest model versions.
 
         Raises:
-            KeyError: If the model does not exist.
+            EntityExistsError: If the model does not exist.
         """
         if self.check_model_exists(name):
             raise EntityExistsError(f"Model '{name}' does not exist.")
@@ -730,7 +730,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
             The model version.
 
         Raises:
-            KeyError: If the model version does not exist.
+            EntityExistsError: If the model version does not exist.
         """
         if not self.check_model_version_exists(name, version):
             raise EntityExistsError(
