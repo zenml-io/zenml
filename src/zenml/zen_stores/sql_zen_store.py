@@ -46,6 +46,7 @@ from sqlmodel import Session, create_engine, or_, select
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
 from zenml.config.global_config import GlobalConfiguration
+from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
@@ -257,7 +258,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
     type: StoreType = StoreType.SQL
 
-    secrets_store: Optional[SqlSecretsStoreConfiguration] = None
+    secrets_store: Optional[SecretsStoreConfiguration] = None
 
     driver: Optional[SQLDatabaseDriver] = None
     database: Optional[str] = None
@@ -272,8 +273,8 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
     @validator("secrets_store")
     def validate_secrets_store(
-        cls, secrets_store: Optional[SqlSecretsStoreConfiguration]
-    ) -> SqlSecretsStoreConfiguration:
+        cls, secrets_store: Optional[SecretsStoreConfiguration]
+    ) -> SecretsStoreConfiguration:
         """Ensures that the secrets store is initialized with a default SQL secrets store.
 
         Args:
