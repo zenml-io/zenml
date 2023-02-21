@@ -1,0 +1,60 @@
+---
+title: "System Environmental Variables"
+description: "How to control ZenML behavior with environmental variables"
+---
+
+There are a few pre-defined environmental variables that can be used to control the behavior of ZenML. See the list below with default values and options:
+
+Choose from `INFO`, `WARN`, `ERROR`, `CRITICAL`, `DEBUG`:
+
+```
+ZENML_LOGGING_VERBOSITY=INFO
+```
+
+Explicit path to the ZenML repository:
+
+```
+ZENML_REPOSITORY_PATH
+```
+
+Setting to `false` disables analytics:
+
+```
+ZENML_ANALYTICS_OPT_IN=true
+```
+
+Setting to `true` switches to developer mode:
+
+```
+ZENML_DEBUG=false
+```
+
+Setting the `ZENML_ACTIVE_STACK_ID` to a specific UUID will make the corresponding stack the active stack:
+
+```
+ZENML_ACTIVE_STACK_ID=
+```
+
+When `true`, this prevents a pipeline from executing:
+
+```
+ZENML_PREVENT_PIPELINE_EXECUTION=false
+```
+
+Set to `false` to disable the [rich](https://github.com/Textualize/rich) traceback:
+
+```
+ZENML_ENABLE_RICH_TRACEBACK=true
+```
+
+Path to global ZenML config:
+
+```
+ZENML_CONFIG_PATH
+```
+
+Setting to `false` disables integrations logs suppression:
+
+```
+ZENML_SUPPRESS_LOGS=false
+```

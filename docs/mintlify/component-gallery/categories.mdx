@@ -1,0 +1,26 @@
+---
+title: "Categories of MLOps Tools"
+description: "Overview of categories of MLOps tools"
+---
+
+If you are new to the world of MLOps, it is often daunting to be immediately faced with a sea of tools that seemingly all promise and do the same things. It is useful in this case to try to categorize tools in various groups in order to understand their value in your tool chain in a more precise manner.
+
+ZenML tackles this problem by introducing the concept of [Stacks and Stack Components](/advanced-guide/stacks). These stack component represent categories, each of which has a particular function in your MLOps pipeline. ZenML realizes these stack components as base abstractions that standardize the entire workflow for your team. In order to then realize benefit, one can write a concrete implementation of the [abstraction](/advanced-guide/stacks/custom-flavors), or use one of the many built-in [integrations](/component-gallery/integrations) that implement these abstractions for you.
+
+Here is a full list of all stack components currently supported in ZenML, with a description of that components role in the MLOps process:
+
+| **Type of Stack Component**                                     | **Description**                                                   |
+| --------------------------------------------------------------- | ----------------------------------------------------------------- |
+| [Orchestrator](/component-gallery/orchestrators)              | Orchestrating the runs of your pipeline                           |
+| [Artifact Store](/component-gallery/artifact-stores)          | Storage for the artifacts created by your pipelines               |
+| [Container Registry](/component-gallery/container-registries) | Store for your containers                                         |
+| [Secrets Manager](/component-gallery/secrets-managers)        | Centralized location for the storage of your secrets              |
+| [Step Operator](/component-gallery/step-operators)            | Execution of individual steps in specialized runtime environments |
+| [Model Deployer](/component-gallery/model-deployers)          | Services/platforms responsible for online model serving           |
+| [Feature Store](/component-gallery/feature-stores)            | Management of your data/features                                  |
+| [Experiment Tracker](/component-gallery/experiment-trackers)  | Tracking your ML experiments                                      |
+| [Alerter](/component-gallery/alerters)                        | Sending alerts through specified channels                         |
+| [Annotator](/component-gallery/annotators)                    | Labeling and annotating data                                      |
+| [Data Validator](/component-gallery/data-validators)          | Data and model validation                                         |
+
+Each pipeline run that you execute with ZenML will require a **stack** and each **stack** will be required to include at least an orchestrator and an artifact store. Apart from these two, the other components are optional and to be added as your pipeline evolves in MLOps maturity.
