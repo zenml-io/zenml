@@ -37,3 +37,7 @@ class AriaOrchestratorFlavor(BaseOrchestratorFlavor):
     @property
     def implementation_class(self) -> Type["LocalOrchestrator"]:
         return LocalOrchestrator
+
+    @property
+    def docs_url(self) -> str:
+        return self.generate_default_docs_url()
