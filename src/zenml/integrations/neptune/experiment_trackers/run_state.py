@@ -16,11 +16,13 @@
 from hashlib import md5
 from typing import Any, List, Optional
 
-try:
+from neptune import __version__
+
+if __version__.split(".")[0] == "0":
     # neptune-client=0.9.0+ package structure
     import neptune.new as neptune  # type: ignore
     from neptune.new.metadata_containers import Run  # type: ignore
-except ImportError:
+else:
     # neptune-client>=1.0.0 package structure
     import neptune  # type: ignore
     from neptune import Run  # type: ignore
