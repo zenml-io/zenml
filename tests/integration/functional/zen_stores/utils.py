@@ -30,6 +30,9 @@ from zenml.models import (
     ArtifactFilterModel,
     ArtifactRequestModel,
     BaseFilterModel,
+    CodeRepositoryFilterModel,
+    CodeRepositoryRequestModel,
+    CodeRepositoryUpdateModel,
     ComponentFilterModel,
     ComponentRequestModel,
     ComponentUpdateModel,
@@ -396,7 +399,11 @@ class CrudTestConfig(BaseModel):
         self,
     ) -> Callable[[BaseFilterModel], Page[AnyResponseModel]]:
         store = Client().zen_store
-        return getattr(store, f"list_{self.entity_name}s")
+        if self.entity_name.endswith("y"):
+            method_name = f"list_{self.entity_name[:-1]}ies"
+        else:
+            method_name = f"list_{self.entity_name}s"
+        return getattr(store, method_name)
 
     @property
     def get_method(self) -> Callable[[uuid.UUID], AnyResponseModel]:
@@ -548,6 +555,18 @@ deployment_crud_test_config = CrudTestConfig(
     filter_model=PipelineDeploymentFilterModel,
     entity_name="deployment",
 )
+code_repository_crud_test_config = CrudTestConfig(
+    create_model=CodeRepositoryRequestModel(
+        user=uuid.uuid4(),
+        workspace=uuid.uuid4(),
+        name=sample_name("sample_code_repository"),
+    ),
+    update_model=CodeRepositoryUpdateModel(
+        name=sample_name("updated_sample_code_repository")
+    ),
+    filter_model=CodeRepositoryFilterModel,
+    entity_name="code_repository",
+)
 
 # step_run_crud_test_config = CrudTestConfig(
 #     create_model=StepRunRequestModel(
@@ -581,4 +600,5 @@ list_of_entities = [
     secret_crud_test_config,
     build_crud_test_config,
     deployment_crud_test_config,
+    code_repository_crud_test_config,
 ]

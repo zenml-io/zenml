@@ -63,6 +63,10 @@ from zenml.exceptions import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import (
+    CodeRepositoryFilterModel,
+    CodeRepositoryRequestModel,
+    CodeRepositoryResponseModel,
+    CodeRepositoryUpdateModel,
     ComponentFilterModel,
     ComponentRequestModel,
     ComponentResponseModel,
@@ -3744,6 +3748,122 @@ class Client(metaclass=ClientMetaClass):
         )
 
         self.zen_store.delete_secret(secret_id=secret.id)
+
+    # -------------
+    # - PIPELINES -
+    # -------------
+
+    def create_code_repository(self, name: str) -> CodeRepositoryResponseModel:
+        """Create a new code repository.
+
+        Args:
+            name: Name of the code repository.
+
+        Returns:
+            The created code repository.
+        """
+        repo = CodeRepositoryRequestModel(
+            user=self.active_user.id,
+            workspace=self.active_workspace.id,
+            name=name,
+        )
+        return self.zen_store.create_code_repository(code_repository=repo)
+
+    def list_code_repositories(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        name: Optional[str] = None,
+        workspace_id: Optional[Union[str, UUID]] = None,
+        user_id: Optional[Union[str, UUID]] = None,
+    ) -> Page[CodeRepositoryResponseModel]:
+        """List all code repositories.
+
+        Args:
+            sort_by: The column to sort by.
+            page: The page of items.
+            size: The maximum size of all pages.
+            logical_operator: Which logical operator to use [and, or].
+            id: Use the id of the code repository to filter by.
+            created: Use to filter by time of creation.
+            updated: Use the last updated date for filtering.
+            name: The name of the code repository to filter by.
+            workspace_id: The id of the workspace to filter by.
+            user_id: The id of the user to filter by.
+
+        Returns:
+            A page of code repositories matching the filter description.
+        """
+        filter_model = CodeRepositoryFilterModel(
+            sort_by=sort_by,
+            page=page,
+            size=size,
+            logical_operator=logical_operator,
+            id=id,
+            created=created,
+            updated=updated,
+            name=name,
+            workspace_id=workspace_id,
+            user_id=user_id,
+        )
+        filter_model.set_scope_workspace(self.active_workspace.id)
+        return self.zen_store.list_code_repositories(filter_model=filter_model)
+
+    def get_code_repository(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+    ) -> CodeRepositoryResponseModel:
+        """Get a code repository by name, id or prefix.
+
+        Args:
+            name_id_or_prefix: The name, ID or ID prefix of the code repository.
+
+        Returns:
+            The code repository.
+        """
+        return self._get_entity_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_code_repository,
+            list_method=self.list_code_repositories,
+            name_id_or_prefix=name_id_or_prefix,
+        )
+
+    def update_code_repository(
+        self,
+        name_id_or_prefix: Union[UUID, str],
+        name: Optional[str] = None,
+    ) -> CodeRepositoryResponseModel:
+        """Update a code repository.
+
+        Args:
+            name_id_or_prefix: Name, ID or prefix of the code repository to
+                update.
+            name: New name of the code repository.
+
+        Returns:
+            The updated code repository.
+        """
+        repo = self.get_code_repository(name_id_or_prefix=name_id_or_prefix)
+        update = CodeRepositoryUpdateModel(name=name)
+        return self.zen_store.update_code_repository(
+            code_repository_id=repo.id, update=update
+        )
+
+    def delete_code_repository(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+    ) -> None:
+        """Delete a code repository.
+
+        Args:
+            name_id_or_prefix: The name, ID or prefix of the code repository.
+        """
+        repo = self.get_code_repository(name_id_or_prefix=name_id_or_prefix)
+        self.zen_store.delete_code_repository(code_repository_id=repo.id)
 
     # ---- utility prefix matching get functions -----
 

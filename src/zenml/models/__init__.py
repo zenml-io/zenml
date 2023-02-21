@@ -117,6 +117,12 @@ from zenml.models.user_role_assignment_models import (
     UserRoleAssignmentRequestModel,
     UserRoleAssignmentResponseModel,
 )
+from zenml.models.code_repository_models import (
+    CodeRepositoryFilterModel,
+    CodeRepositoryRequestModel,
+    CodeRepositoryResponseModel,
+    CodeRepositoryUpdateModel,
+)
 
 ComponentResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
@@ -207,6 +213,10 @@ SecretResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
     WorkspaceResponseModel=WorkspaceResponseModel,
 )
+CodeRepositoryResponseModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
+)
 
 __all__ = [
     "ArtifactRequestModel",
@@ -215,6 +225,10 @@ __all__ = [
     "PipelineBuildFilterModel",
     "PipelineBuildRequestModel",
     "PipelineBuildResponseModel",
+    "CodeRepositoryFilterModel",
+    "CodeRepositoryRequestModel",
+    "CodeRepositoryResponseModel",
+    "CodeRepositoryUpdateModel",
     "ComponentRequestModel",
     "ComponentResponseModel",
     "ComponentUpdateModel",

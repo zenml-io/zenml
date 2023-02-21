@@ -1,0 +1,114 @@
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+"""SQL Model Implementations for code repositories."""
+
+from datetime import datetime
+from typing import Optional
+from uuid import UUID
+
+from sqlmodel import Relationship
+
+from zenml.models.code_repository_models import (
+    CodeRepositoryRequestModel,
+    CodeRepositoryResponseModel,
+    CodeRepositoryUpdateModel,
+)
+from zenml.zen_stores.schemas.base_schemas import NamedSchema
+from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
+
+
+class CodeRepositorySchema(NamedSchema, table=True):
+    """SQL Model for code repositories."""
+
+    __tablename__ = "code_repository"
+
+    workspace_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=WorkspaceSchema.__tablename__,
+        source_column="workspace_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    workspace: "WorkspaceSchema" = Relationship(
+        back_populates="code_repositories"
+    )
+
+    user_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=UserSchema.__tablename__,
+        source_column="user_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+
+    user: Optional["UserSchema"] = Relationship(
+        back_populates="code_repositories"
+    )
+
+    @classmethod
+    def from_request(
+        cls,
+        request: "CodeRepositoryRequestModel",
+    ) -> "CodeRepositorySchema":
+        """Convert a `CodeRepositoryRequestModel` to a `CodeRepositorySchema`.
+
+        Args:
+            request: The request model to convert.
+
+        Returns:
+            The converted schema.
+        """
+        return cls(
+            name=request.name,
+            workspace_id=request.workspace,
+            user_id=request.user,
+        )
+
+    def to_model(
+        self,
+    ) -> "CodeRepositoryResponseModel":
+        """Convert a `CodeRepositorySchema` to a `CodeRepositoryResponseModel`.
+
+        Returns:
+            The created CodeRepositoryResponseModel.
+        """
+        return CodeRepositoryResponseModel(
+            id=self.id,
+            name=self.name,
+            workspace=self.workspace.to_model(),
+            user=self.user.to_model(True) if self.user else None,
+            created=self.created,
+            updated=self.updated,
+        )
+
+    def update(
+        self, update: "CodeRepositoryUpdateModel"
+    ) -> "CodeRepositorySchema":
+        """Update a `CodeRepositorySchema` with a `CodeRepositoryUpdateModel`.
+
+        Args:
+            update: The update model.
+
+        Returns:
+            The updated `CodeRepositorySchema`.
+        """
+        if update.name:
+            self.name = update.name
+
+        self.updated = datetime.utcnow()
+        return self

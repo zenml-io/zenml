@@ -200,6 +200,7 @@ VERSION_1 = "/v1"
 STATUS = "/status"
 GET_OR_CREATE = "/get-or-create"
 SECRETS = "/secrets"
+CODE_REPOSITORIES = "/code_repositories"
 
 # mandatory stack component attributes
 MANDATORY_COMPONENT_ATTRIBUTES = ["name", "uuid"]
