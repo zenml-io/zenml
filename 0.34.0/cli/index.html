@@ -405,6 +405,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#zenml.cli--building-an-image-without-running-your-pipelines" class="md-nav__link">
+    Building an image without running your Pipelines
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#zenml.cli--managing-the-local-zenml-dashboard" class="md-nav__link">
     Managing the local ZenML Dashboard
   </a>
@@ -1829,6 +1836,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#zenml.cli--building-an-image-without-running-your-pipelines" class="md-nav__link">
+    Building an image without running your Pipelines
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#zenml.cli--managing-the-local-zenml-dashboard" class="md-nav__link">
     Managing the local ZenML Dashboard
   </a>
@@ -2382,8 +2396,22 @@ following command:</p>
 <h4 id="zenml.cli--administering-your-pipelines">Administering your Pipelines</h4>
 <p>ZenML provides several CLI commands to help you administer your pipelines and
 pipeline runs.</p>
-<p>After you have run some pipelines by by executing the corresponding Python 
-scripts, you can list all pipelines via:</p>
+<p>To explicitly register a pipeline you need to point to a pipeline instance
+in your Python code. Let's say you have a Python file called <code>run.py</code> and
+it contains the following code:</p>
+<pre><code class="language-python">from zenml.pipelines import pipeline
+
+@pipeline
+def my_pipeline(...):
+   # Connect your pipeline steps here
+   pass
+
+pipeline_instance = my_pipeline(...)
+</code></pre>
+<p>You can register your pipeline like this:</p>
+<pre><code class="language-bash">zenml pipeline register run.pipeline_instance
+</code></pre>
+<p>To list all registered pipelines, use:</p>
 <pre><code class="language-bash">zenml pipeline list
 </code></pre>
 <p>Since every pipeline run creates a new pipeline by default, you might
@@ -2421,6 +2449,39 @@ cached any of its steps have been deleted.</p>
 </code></pre>
 <p>To delete a specific artifact, use:</p>
 <pre><code class="language-bash">zenml artifact delete &lt;ARTIFACT_NAME_OR_ID&gt;
+</code></pre>
+<p>Each pipeline run that requires Docker images also stores a build which
+contains the image names used for this run. To list all builds, use:</p>
+<pre><code class="language-bash">zenml pipeline builds list
+</code></pre>
+<p>To delete a specific build, use:</p>
+<pre><code class="language-bash">zenml pipeline builds delete &lt;BUILD_ID&gt;
+</code></pre>
+<h4 id="zenml.cli--building-an-image-without-running-your-pipelines">Building an image without running your Pipelines</h4>
+<p>To build Docker images for your pipeline without actually running the pipeline,
+use:</p>
+<pre><code class="language-bash">zenml pipeline build &lt;PIPELINE_ID_OR_NAME&gt;
+</code></pre>
+<p>To specify settings for the Docker builds, use the <code>--config/-c</code> option of the
+command. For more information about the structure of this configuration file,
+check out the <code>zenml.pipelines.base_pipeline.BasePipeline.build(...)</code> method.</p>
+<pre><code class="language-bash">zenml pipeline build &lt;PIPELINE_ID_OR_NAME&gt; --config=&lt;PATH_TO_CONFIG_YAML&gt;
+</code></pre>
+<p>If you want to build the pipeline for a stack different than your current active
+stack, use the <code>--stack</code> option.</p>
+<pre><code class="language-bash">zenml pipeline build &lt;PIPELINE_ID_OR_NAME&gt; --stack=&lt;STACK_ID_OR_NAME&gt;
+</code></pre>
+<p>To run a pipeline that was previously registered, use:</p>
+<pre><code class="language-bash">zenml pipeline run  &lt;PIPELINE_ID_OR_NAME&gt;
+</code></pre>
+<p>To specify settings for the pipeline, use the <code>--config/-c</code> option of the
+command. For more information about the structure of this configuration file,
+check out the <code>zenml.pipelines.base_pipeline.BasePipeline.run(...)</code> method.</p>
+<pre><code class="language-bash">zenml pipeline run &lt;PIPELINE_ID_OR_NAME&gt; --config=&lt;PATH_TO_CONFIG_YAML&gt;
+</code></pre>
+<p>If you want to run the pipeline on a stack different than your current active
+stack, use the <code>--stack</code> option.</p>
+<pre><code class="language-bash">zenml pipeline run &lt;PIPELINE_ID_OR_NAME&gt; --stack=&lt;STACK_ID_OR_NAME&gt;
 </code></pre>
 <h4 id="zenml.cli--managing-the-local-zenml-dashboard">Managing the local ZenML Dashboard</h4>
 <p>The ZenML dashboard is a web-based UI that allows you to visualize and navigate
