@@ -156,7 +156,11 @@ class LocalArtifactStoreFlavor(BaseArtifactStoreFlavor):
         Returns:
             A flavor docs url.
         """
-        return self.generate_default_docs_url()
+        from zenml import __version__
+
+        base = f"https://apidocs.zenml.io/{__version__}"
+        component_type = self.type.plural
+        return f"{base}/core_code_docs/core-{component_type}/#zenml.{component_type}.{self.name}_{self.type}"
 
     @property
     def logo_url(self) -> str:

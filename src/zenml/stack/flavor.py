@@ -150,9 +150,5 @@ class Flavor:
         """
         from zenml import __version__
 
-        component_type = self.type.plural.replace("_", "-")
-        name = self.name.replace("_", "-")
-        base = f"https://docs.zenml.io/v/{__version__}"
-        url = f"{base}/component-gallery/{component_type}/{name}"
-
-        return url
+        base = f"https://apidocs.zenml.io/{__version__}"
+        return f"{base}/integration_code_docs/integrations-{self.name}"
