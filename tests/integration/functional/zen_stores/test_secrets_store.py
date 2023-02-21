@@ -189,7 +189,6 @@ def test_update_secret_name():
     with SecretContext() as secret:
         saved_secret = store.get_secret(secret_id=secret.id)
         assert saved_secret.name == secret.name
-
         all_secrets = store.list_secrets(
             SecretFilterModel(name=secret.name)
         ).items
@@ -506,6 +505,12 @@ def test_update_scope_succeeds():
                 ),
             )
 
+        if store.secrets_store.config.integration == "aws":
+            # The AWS secrets store returns before the secret is actually
+            # updated in the backend, so we need to wait a bit before
+            # running `list_secrets`.
+            time.sleep(5)
+
         assert updated_secret.name == secret.name
         assert updated_secret.scope == SecretScope.USER
 
@@ -548,6 +553,12 @@ def test_update_scope_succeeds():
                     scope=SecretScope.WORKSPACE,
                 ),
             )
+
+        if store.secrets_store.config.integration == "aws":
+            # The AWS secrets store returns before the secret is actually
+            # updated in the backend, so we need to wait a bit before
+            # running `list_secrets`.
+            time.sleep(5)
 
         assert updated_secret.name == secret.name
         assert updated_secret.scope == SecretScope.WORKSPACE
@@ -1308,9 +1319,9 @@ def test_list_secrets_pagination_and_sorting():
         assert secrets.total == 4
 
         # NOTE: it's impossible to tell for sure which order these will be in,
-        # because they are created in less than one second and the granularity
-        # of the sorting algorithm is one second, but we can at least assert
-        # that they're all there
+        # because they could be created in less than one second and the
+        # granularity of the sorting algorithm is one second, but we can at
+        # least assert that they're all there
         page_one = [s.id for s in secrets.items]
 
         secrets = store.list_secrets(
@@ -1340,7 +1351,9 @@ def test_list_secrets_pagination_and_sorting():
         secret_one = store.update_secret(
             secret_one.id,
             SecretUpdateModel(
-                name=f"arias_dreams_{suffix}",
+                values={
+                    "food": "birds",
+                }
             ),
         )
 
@@ -1355,6 +1368,12 @@ def test_list_secrets_pagination_and_sorting():
                 }
             ),
         )
+
+        if store.secrets_store.config.integration == "aws":
+            # The AWS secrets store returns before the secret is actually
+            # updated in the backend, so we need to wait a bit before
+            # running `list_secrets`.
+            time.sleep(5)
 
         secrets = store.list_secrets(
             SecretFilterModel(
@@ -1411,8 +1430,8 @@ def test_list_secrets_pagination_and_sorting():
         assert secrets.total == 2
 
         assert [
-            secret_two.id,
             secret_one.id,
+            secret_two.id,
         ] == [s.id for s in secrets.items]
 
         secrets = store.list_secrets(
@@ -1550,6 +1569,12 @@ def test_secrets_cannot_be_created_or_updated_by_readonly_user():
                     secret.id, SecretUpdateModel(name=f"{secret.name}_new")
                 )
 
+            if store.secrets_store.config.integration == "aws":
+                # The AWS secrets store returns before the secret is actually
+                # updated in the backend, so we need to wait a bit before
+                # running `list_secrets`.
+                time.sleep(5)
+                
             old_secrets = store.list_secrets(
                 SecretFilterModel(name=secret.name)
             ).items
@@ -1567,6 +1592,12 @@ def test_secrets_cannot_be_created_or_updated_by_readonly_user():
                     SecretUpdateModel(name=f"{user_secret.name}_new"),
                 )
 
+            if store.secrets_store.config.integration == "aws":
+                # The AWS secrets store returns before the secret is actually
+                # updated in the backend, so we need to wait a bit before
+                # running `list_secrets`.
+                time.sleep(5)
+                
             old_secrets = store.list_secrets(
                 SecretFilterModel(name=user_secret.name)
             ).items

@@ -719,7 +719,7 @@ def get_secret(name_id_or_prefix: str, scope: str) -> None:
     type=click.STRING,
 )
 @click.option(
-    "--new_scope",
+    "--new-scope",
     "-s",
     type=click.Choice([scope.value for scope in list(SecretScope)]),
 )
@@ -731,7 +731,7 @@ def get_secret(name_id_or_prefix: str, scope: str) -> None:
     help="Use interactive mode to update the secret values.",
     type=click.BOOL,
 )
-@click.option("--remove_keys", "-r", type=click.STRING, multiple=True)
+@click.option("--remove-keys", "-r", type=click.STRING, multiple=True)
 @click.argument("extra_args", nargs=-1, type=click.UNPROCESSED)
 def update_secret(
     name_or_id: str,
@@ -843,7 +843,7 @@ def update_secret(
     type=click.STRING,
 )
 @click.option(
-    "--new_name",
+    "--new-name",
     "-n",
     type=click.STRING,
 )

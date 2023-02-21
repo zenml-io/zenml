@@ -150,6 +150,7 @@ from zenml.zen_stores.base_zen_store import (
     DEFAULT_STACK_COMPONENT_NAME,
     DEFAULT_STACK_NAME,
     BaseZenStore,
+    StoreEvent,
 )
 from zenml.zen_stores.migrations.alembic import (
     ZENML_ALEMBIC_START_REVISION,
@@ -1874,6 +1875,8 @@ class SqlZenStore(BaseZenStore):
             session.delete(user)
             session.commit()
 
+        self._trigger_event(StoreEvent.USER_DELETED, user_id=user.id)
+
     # -----
     # Teams
     # -----
@@ -2620,6 +2623,10 @@ class SqlZenStore(BaseZenStore):
 
             session.delete(workspace)
             session.commit()
+
+        self._trigger_event(
+            StoreEvent.WORKSPACE_DELETED, workspace_id=workspace.id
+        )
 
     # ---------
     # Pipelines

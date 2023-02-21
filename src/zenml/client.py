@@ -128,6 +128,7 @@ from zenml.models.schedule_model import (
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler, track
 from zenml.utils.filesync_model import FileSyncModel
+from zenml.utils.pagination_utils import depaginate
 
 if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType
@@ -3206,7 +3207,7 @@ class Client(metaclass=ClientMetaClass):
         Raises:
             ValueError: If the artifact is still used in any runs.
         """
-        if artifact not in self.depaginate(
+        if artifact not in depaginate(
             partial(self.list_artifacts, only_unused=True)
         ):
             raise ValueError(
@@ -3869,23 +3870,3 @@ class Client(metaclass=ClientMetaClass):
             f"Please provide more characters to uniquely identify "
             f"only one of the {entity_label}s."
         )
-
-    def depaginate(
-        self,
-        list_method: Callable[..., Page[AnyResponseModel]],
-    ) -> List[AnyResponseModel]:
-        """Depaginate the results from a client method that returns pages.
-
-        Args:
-            list_method: The list method to wrap around.
-
-        Returns:
-            A list of the corresponding Response Model.
-        """
-        page = list_method()
-        items = list(page.items)
-        while page.page < page.total_pages:
-            page = list_method(page=page.page + 1)
-            items += list(page.items)
-
-        return items
