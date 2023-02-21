@@ -241,16 +241,16 @@ class AWSSecretsStore(BaseSecretsStore):
     def _convert_aws_secret(
         self,
         tags: List[Dict[str, str]],
-        created_at: datetime,
-        updated_at: datetime,
+        created: datetime,
+        updated: datetime,
         values: Optional[str] = None,
     ) -> SecretResponseModel:
         """Create a ZenML secret model from data stored in an AWS secret.
 
         Args:
             tags: The AWS secret tags.
-            created_at: The AWS secret creation time.
-            updated_at: The AWS secret last updated time.
+            created: The AWS secret creation time.
+            updated: The AWS secret last updated time.
             values: The AWS secret values encoded as a JSON string (optional).
 
         Returns:
@@ -299,8 +299,8 @@ class AWSSecretsStore(BaseSecretsStore):
             workspace=workspace,
             user=user,
             values=json.loads(values) if values else {},
-            created_at=created_at,
-            updated_at=updated_at,
+            created=created,
+            updated=updated,
         )
 
         return secret_model
@@ -451,8 +451,8 @@ class AWSSecretsStore(BaseSecretsStore):
             workspace=workspace,
             user=user,
             values=secret.secret_values,
-            created_at=describe_secret_response["CreatedDate"],
-            updated_at=describe_secret_response["LastChangedDate"],
+            created=describe_secret_response["CreatedDate"],
+            updated=describe_secret_response["LastChangedDate"],
         )
 
         return secret_model
@@ -498,8 +498,8 @@ class AWSSecretsStore(BaseSecretsStore):
         # first place.
         return self._convert_aws_secret(
             tags=describe_secret_response["Tags"],
-            created_at=describe_secret_response["CreatedDate"],
-            updated_at=describe_secret_response["LastChangedDate"],
+            created=describe_secret_response["CreatedDate"],
+            updated=describe_secret_response["LastChangedDate"],
             values=get_secret_value_response["SecretString"],
         )
 
@@ -556,13 +556,13 @@ class AWSSecretsStore(BaseSecretsStore):
                 elif filter.column == "name":
                     metadata_args["secret_name"] = filter.value
                 elif filter.column == "scope":
-                    metadata_args["secret_scope"] = SecretScope(filter.value)
+                    metadata_args["scope"] = SecretScope(filter.value)
                 elif filter.column == "workspace_id":
-                    metadata_args["workspace_id"] = UUID(filter.value)
+                    metadata_args["workspace"] = UUID(filter.value)
                 elif filter.column == "user_id":
-                    metadata_args["user_id"] = UUID(filter.value)
+                    metadata_args["user"] = UUID(filter.value)
                 else:
-                    # AWS doesn't support filtering on the created_at/updated_at
+                    # AWS doesn't support filtering on the created/updated
                     # timestamps, so we'll have to do that on the client side.
                     continue
 
@@ -614,8 +614,8 @@ class AWSSecretsStore(BaseSecretsStore):
                         # anyway.
                         secret_model = self._convert_aws_secret(
                             tags=secret["Tags"],
-                            created_at=secret["CreatedDate"],
-                            updated_at=secret["LastChangedDate"],
+                            created=secret["CreatedDate"],
+                            updated=secret["LastChangedDate"],
                         )
                     except KeyError:
                         # The _convert_aws_secret method raises a KeyError
@@ -745,7 +745,7 @@ class AWSSecretsStore(BaseSecretsStore):
                 Tags=tags,
             )
             # And another call to get the updated secret metadata which
-            # includes the created_at and updated_at timestamps.
+            # includes the created and updated timestamps.
             describe_secret_response = self.client.describe_secret(
                 SecretId=aws_secret_id
             )
@@ -761,8 +761,8 @@ class AWSSecretsStore(BaseSecretsStore):
             workspace=secret.workspace,
             user=secret.user,
             values=secret.secret_values,
-            created_at=describe_secret_response["CreatedDate"],
-            updated_at=describe_secret_response["LastChangedDate"],
+            created=describe_secret_response["CreatedDate"],
+            updated=describe_secret_response["LastChangedDate"],
         )
 
         return secret_model
