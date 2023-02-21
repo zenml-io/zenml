@@ -34,6 +34,38 @@ from zenml.utils.string_utils import random_str
 # '---------'
 
 
+def test_get_secret_returns_values():
+    """Tests that `get_secret` returns secret values."""
+    client = Client()
+    store = client.zen_store
+
+    values = dict(
+        aria="space cat",
+        axl="space dog",
+    )
+    with SecretContext(values=values) as secret:
+        assert secret.secret_values == values
+        saved_secret = store.get_secret(secret_id=secret.id)
+        assert saved_secret.secret_values == values
+
+
+def test_list_secret_excludes_values():
+    """Tests that `list_secret` does not return secret values."""
+    client = Client()
+    store = client.zen_store
+
+    values = dict(
+        aria="space cat",
+        axl="space dog",
+    )
+    with SecretContext(values=values) as secret:
+        assert secret.secret_values == values
+        all_secrets = store.list_secrets(SecretFilterModel(id=secret.id)).items
+        assert len(all_secrets) == 1
+        assert secret.id == all_secrets[0].id
+        assert len(all_secrets[0].values) == 0
+
+
 def test_update_secret_existing_values():
     """Tests that existing values a secret can be updated."""
     client = Client()
@@ -1424,8 +1456,10 @@ def test_secret_values_cannot_be_accessed_by_readonly_user():
             ).items
             assert len(workspace_secrets) == 1
             assert secret.id == workspace_secrets[0].id
-            assert workspace_secrets[0].secret_values == secret.secret_values
-            assert set(workspace_secrets[0].values.values()) != {None}
+
+            saved_secret = store.get_secret(workspace_secrets[0].id)
+            assert saved_secret.secret_values == secret.secret_values
+            assert set(saved_secret.values.values()) != {None}
 
             user_secrets = store.list_secrets(
                 SecretFilterModel(
@@ -1436,8 +1470,10 @@ def test_secret_values_cannot_be_accessed_by_readonly_user():
             ).items
             assert len(user_secrets) == 1
             assert user_secret.id == user_secrets[0].id
-            assert user_secrets[0].secret_values == user_secret.secret_values
-            assert set(user_secrets[0].values.values()) != {None}
+
+            saved_secret = store.get_secret(user_secrets[0].id)
+            assert saved_secret.secret_values == user_secret.secret_values
+            assert set(saved_secret.values.values()) != {None}
 
             # Remove the user's write access
             client.create_user_role_assignment(
@@ -1468,10 +1504,13 @@ def test_secret_values_cannot_be_accessed_by_readonly_user():
                 ).items
                 assert len(workspace_secrets) == 1
                 assert secret.id == workspace_secrets[0].id
-                assert set(workspace_secrets[0].values.keys()) == set(
+
+                saved_secret = store.get_secret(workspace_secrets[0].id)
+                assert set(saved_secret.values.keys()) == set(
                     secret.values.keys()
                 )
-                assert set(workspace_secrets[0].values.values()) == {None}
+                assert set(saved_secret.values.values()) == {None}
+
                 user_secrets = store.list_secrets(
                     SecretFilterModel(
                         scope=SecretScope.USER,
@@ -1479,11 +1518,12 @@ def test_secret_values_cannot_be_accessed_by_readonly_user():
                         workspace_id=client.active_workspace.id,
                     )
                 ).items
-
                 assert len(user_secrets) == 1
                 assert user_secret.id == user_secrets[0].id
-                assert set(user_secrets[0].values.values()) == {None}
-                assert set(user_secrets[0].values.keys()) == set(
+
+                saved_secret = store.get_secret(user_secrets[0].id)
+                assert set(saved_secret.values.values()) == {None}
+                assert set(saved_secret.values.keys()) == set(
                     user_secret.values.keys()
                 )
 
@@ -1590,3 +1630,165 @@ def test_secrets_cannot_be_created_or_updated_by_readonly_user():
                 ).items
                 assert len(new_secrets) == 1
                 assert new_secrets[0].id == user_secret.id
+
+
+def test_secret_is_deleted_with_workspace():
+    """Tests that deleting a workspace automatically deletes all its secrets."""
+    client = Client()
+    store = client.zen_store
+
+    with SecretContext() as secret:
+        all_secrets = store.list_secrets(
+            SecretFilterModel(name=secret.name)
+        ).items
+        assert len(all_secrets) == 1
+        assert secret.id == all_secrets[0].id
+        workspace_secrets = store.list_secrets(
+            SecretFilterModel(
+                name=secret.name,
+                scope=SecretScope.WORKSPACE,
+                workspace_id=client.active_workspace.id,
+            )
+        ).items
+        assert len(workspace_secrets) == 1
+        assert secret.id == workspace_secrets[0].id
+
+        with WorkspaceContext(activate=True) as workspace:
+
+            all_secrets = store.list_secrets(
+                SecretFilterModel(name=secret.name)
+            ).items
+            assert len(all_secrets) == 1
+            assert secret.id == all_secrets[0].id
+            workspace_secrets = store.list_secrets(
+                SecretFilterModel(
+                    name=secret.name,
+                    scope=SecretScope.WORKSPACE,
+                    workspace_id=workspace.id,
+                )
+            ).items
+            assert len(workspace_secrets) == 0
+
+            with SecretContext(secret_name=secret.name) as other_secret:
+
+                with does_not_raise():
+                    store.get_secret(other_secret.id)
+
+                all_secrets = store.list_secrets(
+                    SecretFilterModel(name=secret.name)
+                ).items
+                assert len(all_secrets) == 2
+                assert secret.id in [s.id for s in all_secrets]
+                assert other_secret.id in [s.id for s in all_secrets]
+                workspace_secrets = store.list_secrets(
+                    SecretFilterModel(
+                        name=secret.name,
+                        scope=SecretScope.WORKSPACE,
+                        workspace_id=workspace.id,
+                    )
+                ).items
+                assert len(workspace_secrets) == 1
+                assert other_secret.id == workspace_secrets[0].id
+
+                store.delete_workspace(workspace.id)
+
+                with pytest.raises(KeyError):
+                    store.get_secret(other_secret.id)
+
+                all_secrets = store.list_secrets(
+                    SecretFilterModel(name=secret.name)
+                ).items
+                assert len(all_secrets) == 1
+                assert secret.id == all_secrets[0].id
+                all_workspace_secrets = store.list_secrets(
+                    SecretFilterModel(
+                        workspace_id=workspace.id,
+                    )
+                ).items
+                assert len(all_workspace_secrets) == 0
+
+
+def test_secret_is_deleted_with_user():
+    """Tests that deleting a user automatically deletes all its secrets."""
+    if Client().zen_store.type == StoreType.SQL:
+        pytest.skip("SQL Zen Stores do not support user switching.")
+
+    client = Client()
+    store = client.zen_store
+
+    with SecretContext() as secret:
+        all_secrets = store.list_secrets(
+            SecretFilterModel(name=secret.name)
+        ).items
+        assert len(all_secrets) == 1
+        assert secret.id == all_secrets[0].id
+        workspace_secrets = store.list_secrets(
+            SecretFilterModel(
+                name=secret.name,
+                scope=SecretScope.WORKSPACE,
+                workspace_id=client.active_workspace.id,
+            )
+        ).items
+        assert len(workspace_secrets) == 1
+        assert secret.id == workspace_secrets[0].id
+        user_secrets = store.list_secrets(
+            SecretFilterModel(
+                name=secret.name,
+                scope=SecretScope.USER,
+                user_id=client.active_user.id,
+                workspace_id=client.active_workspace.id,
+            )
+        ).items
+        assert len(user_secrets) == 0
+
+        with UserContext(login=True) as user:
+            #  Client() needs to be instantiated here with the new
+            #  logged-in user
+            other_client = Client()
+            other_store = other_client.zen_store
+
+            with SecretContext(
+                secret_name=secret.name, scope=SecretScope.USER, delete=False
+            ) as other_secret:
+
+                with does_not_raise():
+                    other_store.get_secret(other_secret.id)
+
+                all_secrets = other_store.list_secrets(
+                    SecretFilterModel(name=secret.name),
+                ).items
+                assert len(all_secrets) == 2
+                assert secret.id in [s.id for s in all_secrets]
+                assert other_secret.id in [s.id for s in all_secrets]
+
+                user_secrets = other_store.list_secrets(
+                    SecretFilterModel(
+                        name=secret.name,
+                        scope=SecretScope.USER,
+                        user_id=user.id,
+                        workspace_id=client.active_workspace.id,
+                    ),
+                ).items
+                assert len(user_secrets) == 1
+                assert other_secret.id == user_secrets[0].id
+
+        # New user has been deleted at this point
+
+        with pytest.raises(KeyError):
+            store.get_secret(other_secret.id)
+
+        all_secrets = store.list_secrets(
+            SecretFilterModel(name=secret.name),
+        ).items
+        assert len(all_secrets) == 1
+        assert secret.id == all_secrets[0].id
+
+        user_secrets = store.list_secrets(
+            SecretFilterModel(
+                name=secret.name,
+                scope=SecretScope.USER,
+                user_id=user.id,
+                workspace_id=client.active_workspace.id,
+            ),
+        ).items
+        assert len(user_secrets) == 0

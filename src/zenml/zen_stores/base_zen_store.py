@@ -247,7 +247,7 @@ class BaseZenStore(
             and secrets_store_config.type != SecretsStoreType.NONE
         ):
             secrets_store_class = BaseSecretsStore.get_store_class(
-                secrets_store_config.type
+                secrets_store_config
             )
             store._secrets_store = secrets_store_class(
                 zen_store=store,

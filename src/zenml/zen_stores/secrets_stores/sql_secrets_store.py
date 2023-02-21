@@ -325,12 +325,19 @@ class SqlSecretsStore(BaseSecretsStore):
     ) -> Page[SecretResponseModel]:
         """List all secrets matching the given filter criteria.
 
+        Note that returned secrets do not include any secret values. To fetch
+        the secret values, use `get_secret`.
+
         Args:
             secret_filter_model: All filter parameters including pagination
-                params
+                params.
 
         Returns:
-            List of all the secrets matching the given criteria.
+            A list of all secrets matching the filter criteria, with pagination
+            information and sorted according to the filter criteria. The
+            returned secrets do not include any secret values, only metadata. To
+            fetch the secret values, use `get_secret` individually with each
+            secret.
         """
         with Session(self.engine) as session:
             query = select(SecretSchema)
@@ -340,7 +347,7 @@ class SqlSecretsStore(BaseSecretsStore):
                 table=SecretSchema,
                 filter_model=secret_filter_model,
                 custom_schema_to_model_conversion=lambda secret: secret.to_model(
-                    encryption_engine=self._encryption_engine
+                    include_values=False
                 ),
             )
 

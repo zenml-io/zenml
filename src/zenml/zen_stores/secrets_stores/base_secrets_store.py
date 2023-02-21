@@ -13,18 +13,29 @@
 #  permissions and limitations under the License.
 """Base Secrets Store implementation."""
 from abc import ABC
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Type, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    Optional,
+    Type,
+    Union,
+)
+from uuid import UUID
 
 from pydantic import BaseModel
 
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
-from zenml.enums import SecretsStoreType
+from zenml.enums import SecretScope, SecretsStoreType
 from zenml.logger import get_logger
+from zenml.models.secret_models import SecretRequestModel, SecretResponseModel
 from zenml.utils.analytics_utils import (
     AnalyticsEvent,
     AnalyticsTrackerMixin,
     track_event,
 )
+from zenml.utils.source_utils import import_class_by_path
 from zenml.zen_stores.secrets_stores.secrets_store_interface import (
     SecretsStoreInterface,
 )
@@ -33,6 +44,13 @@ logger = get_logger(__name__)
 
 if TYPE_CHECKING:
     from zenml.zen_stores.base_zen_store import BaseZenStore
+
+ZENML_SECRET_LABEL = "zenml"
+ZENML_SECRET_ID_LABEL = "zenml_secret_id"
+ZENML_SECRET_NAME_LABEL = "zenml_secret_name"
+ZENML_SECRET_SCOPE_LABEL = "zenml_secret_scope"
+ZENML_SECRET_USER_LABEL = "zenml_secret_user"
+ZENML_SECRET_WORKSPACE_LABEL = "zenml_secret_workspace"
 
 
 class BaseSecretsStore(
@@ -83,52 +101,103 @@ class BaseSecretsStore(
             ) from e
 
     @staticmethod
+    def _load_external_store_class(
+        store_config: SecretsStoreConfiguration,
+    ) -> Type["BaseSecretsStore"]:
+        """Loads the external secrets store class from the given config.
+
+        Args:
+            store_config: The configuration of the secrets store.
+
+        Returns:
+            The secrets store class corresponding to the configured external
+            secrets store.
+
+        Raises:
+            ValueError: If the secrets store integration is not found, if
+                the integration is not installed, or if the configured class
+                path cannot be imported or is not a subclass of
+                `BaseSecretsStore`.
+        """
+        if store_config.integration:
+            from zenml.integrations.registry import integration_registry
+
+            integration = integration_registry.integrations.get(
+                store_config.integration
+            )
+
+            if not integration:
+                raise ValueError(
+                    f"Integration {store_config.integration} was not found "
+                    f"in registry."
+                )
+
+            if not integration.check_installation():
+                raise ValueError(
+                    f"Integration {store_config.integration} is not "
+                    f"installed. Check that all the requirements are "
+                    f"present in your environment."
+                )
+
+            integration.activate()
+
+        # Ensured through Pydantic root validation
+        assert store_config.class_path is not None
+
+        # Import the class dynamically
+        try:
+            store_class = import_class_by_path(store_config.class_path)
+        except (ImportError, AttributeError) as e:
+            raise ValueError(
+                f"Could not import class `{store_config.class_path}`: {str(e)}"
+            ) from e
+
+        if not issubclass(store_class, BaseSecretsStore):
+            raise ValueError(
+                f"Class `{store_config.class_path}` is not a subclass of "
+                f"`BaseSecretsStore`."
+            )
+
+        return store_class
+
+    @staticmethod
     def get_store_class(
-        store_type: SecretsStoreType,
+        store_config: SecretsStoreConfiguration,
     ) -> Type["BaseSecretsStore"]:
         """Returns the class of the given secrets store type.
 
         Args:
-            store_type: The type of the secrets store to get the class for.
+            store_config: The configuration of the secrets store.
 
         Returns:
-            The class of the given store type or None if the type is unknown.
+            The class corresponding to the configured secrets store or None if
+            the type is unknown.
 
         Raises:
             TypeError: If the secrets store type is unsupported.
+            ValueError: If the secrets store integration is not found.
         """
-        if store_type == SecretsStoreType.SQL:
+        if store_config.type == SecretsStoreType.SQL:
             from zenml.zen_stores.secrets_stores.sql_secrets_store import (
                 SqlSecretsStore,
             )
 
             return SqlSecretsStore
-        elif store_type == SecretsStoreType.REST:
+
+        if store_config.type == SecretsStoreType.REST:
             from zenml.zen_stores.secrets_stores.rest_secrets_store import (
                 RestSecretsStore,
             )
 
             return RestSecretsStore
-        else:
-            raise TypeError(
-                f"No store implementation found for secrets store type "
-                f"`{store_type.value}`."
-            )
 
-    @staticmethod
-    def get_store_config_class(
-        store_type: SecretsStoreType,
-    ) -> Type["SecretsStoreConfiguration"]:
-        """Returns the secrets store config class of the given secrets store type.
+        if store_config.type == SecretsStoreType.EXTERNAL:
+            return BaseSecretsStore._load_external_store_class(store_config)
 
-        Args:
-            store_type: The type of the secrets store to get the class for.
-
-        Returns:
-            The config class of the given secrets store type.
-        """
-        store_class = BaseSecretsStore.get_store_class(store_type)
-        return store_class.CONFIG_TYPE
+        raise TypeError(
+            f"No store implementation found for secrets store type "
+            f"`{store_config.type.value}`."
+        )
 
     @staticmethod
     def create_store(
@@ -147,7 +216,7 @@ class BaseSecretsStore(
         logger.debug(
             f"Creating secrets store with type '{config.type.value}'..."
         )
-        store_class = BaseSecretsStore.get_store_class(config.type)
+        store_class = BaseSecretsStore.get_store_class(config)
         store = store_class(
             config=config,
             **kwargs,
@@ -162,6 +231,115 @@ class BaseSecretsStore(
             The type of the secrets store.
         """
         return self.TYPE
+
+    @property
+    def zen_store(self) -> "BaseZenStore":
+        """The ZenML store that owns this secrets store.
+
+        Returns:
+            The ZenML store that owns this secrets store.
+
+        Raises:
+            ValueError: If the store is not initialized.
+        """
+        if not self._zen_store:
+            raise ValueError("Store not initialized")
+        return self._zen_store
+
+    # --------------------------------------------------------
+    # Helpers for Secrets Store back-ends that use tags/labels
+    # --------------------------------------------------------
+
+    def _get_secret_metadata(
+        self,
+        secret_id: Optional[UUID] = None,
+        secret_name: Optional[str] = None,
+        scope: Optional[SecretScope] = None,
+        workspace: Optional[UUID] = None,
+        user: Optional[UUID] = None,
+    ) -> Dict[str, str]:
+        """Get a dictionary with metadata that can be used as tags/labels.
+
+        This utility method can be used with Secrets Managers that can
+        associate metadata (e.g. tags, labels) with a secret. The metadata can
+        be configured alongside each secret and then used as a filter criteria
+        when running queries against the backend e.g. to retrieve all the
+        secrets within a given scope or to retrieve all secrets with a given
+        name within a given scope.
+
+        NOTE: the ZENML_SECRET_LABEL is always included in the metadata to
+        distinguish ZenML secrets from other secrets that might be stored in
+        the same backend, as well as to distinguish between different ZenML
+        deployments using the same backend. Its value is set to the ZenML
+        deployment ID and it should be included in all queries to the backend.
+
+        Args:
+            secret_id: Optional secret ID to include in the metadata.
+            secret_name: Optional secret name to include in the metadata.
+            scope: Optional scope to include in the metadata.
+            workspace: Optional workspace ID to include in the metadata.
+            user: Optional user ID to include in the scope metadata.
+
+        Returns:
+            Dictionary with secret metadata information.
+        """
+        # Always include the main ZenML label to distinguish ZenML secrets
+        # from other secrets that might be stored in the same backend and
+        # to distinguish between different ZenML deployments using the same
+        # backend.
+        metadata: Dict[str, str] = {
+            ZENML_SECRET_LABEL: str(self.zen_store.get_store_info().id)
+        }
+
+        if secret_id:
+            metadata[ZENML_SECRET_ID_LABEL] = str(secret_id)
+        if secret_name:
+            metadata[ZENML_SECRET_NAME_LABEL] = secret_name
+        if scope:
+            metadata[ZENML_SECRET_SCOPE_LABEL] = scope.value
+        if workspace:
+            metadata[ZENML_SECRET_WORKSPACE_LABEL] = str(workspace)
+        if user:
+            metadata[ZENML_SECRET_USER_LABEL] = str(user)
+
+        return metadata
+
+    def _get_secret_metadata_for_secret(
+        self,
+        secret: Union[SecretRequestModel, SecretResponseModel],
+        secret_id: Optional[UUID] = None,
+    ) -> Dict[str, str]:
+        """Get a dictionary with the secrets metadata describing a secret.
+
+        This utility method can be used with Secrets Managers that can
+        associate metadata (e.g. tags, labels) with a secret. The metadata can
+        be configured alongside each secret and then used as a filter criteria
+        when running queries against the backend.
+
+        Args:
+            secret: The secret to get the metadata for.
+            secret_id: Optional secret ID to include in the metadata (if not
+                already included in the secret).
+
+        Returns:
+            Dictionary with secret metadata information.
+        """
+        if isinstance(secret, SecretRequestModel):
+            return self._get_secret_metadata(
+                secret_id=secret_id,
+                secret_name=secret.name,
+                scope=secret.scope,
+                workspace=secret.workspace,
+                user=secret.user,
+            )
+
+        return self._get_secret_metadata(
+            secret_id=secret.id,
+            secret_name=secret.name,
+            scope=secret.scope,
+            workspace=secret.workspace.id,
+            user=secret.user.id if secret.user else None,
+        )
 
     # ---------
     # Analytics

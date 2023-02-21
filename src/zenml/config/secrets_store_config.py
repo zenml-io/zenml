@@ -14,7 +14,9 @@
 """Functionality to support ZenML secrets store configurations."""
 
 
-from pydantic import BaseModel
+from typing import Any, Dict, Optional
+
+from pydantic import BaseModel, root_validator
 
 from zenml.enums import SecretsStoreType
 from zenml.logger import get_logger
@@ -31,9 +33,48 @@ class SecretsStoreConfiguration(BaseModel):
 
     Attributes:
         type: The type of store backend.
+        integration: The name of the integration that provides the store
+            backend. This is optional and only required if the store backend
+            is provided by an integration.
+        class_path: The Python class path of the store backend. Should point to
+            a subclass of `BaseSecretsStore`. This is optional and only
+            required if the store backend is not one of the built-in
+            implementations.
     """
 
     type: SecretsStoreType
+    integration: Optional[str] = None
+    class_path: Optional[str] = None
+
+    @root_validator
+    def validate_external(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate that class_path is set for external secrets stores.
+
+        Args:
+            values: Dict representing user-specified runtime settings.
+
+        Returns:
+            Validated settings.
+
+        Raises:
+            ValueError: If class_path is not set when using an external secrets
+                store.
+        """
+        if values["type"] == SecretsStoreType.EXTERNAL:
+            if values["class_path"] is None:
+                raise ValueError(
+                    "A class_path must be set when using an external secrets "
+                    "store."
+                )
+        elif (
+            values["integration"] is not None
+            or values["class_path"] is not None
+        ):
+            raise ValueError(
+                "The integration and class_path attributes can only be set "
+                "when using an external secrets store."
+            )
+        return values
 
     class Config:
         """Pydantic configuration class."""

@@ -3497,7 +3497,8 @@ class Client(metaclass=ClientMetaClass):
                     continue
                 # Exact match
                 if secret.name == name_id_or_prefix:
-                    return secret
+                    # Need to fetch the secret again to get the secret values
+                    return self.zen_store.get_secret(secret_id=secret.id)
                 # Partial match
                 partial_matches.append(secret)
 
@@ -3519,7 +3520,10 @@ class Client(metaclass=ClientMetaClass):
 
             # If only a single secret is found, return it
             if len(partial_matches) == 1:
-                return partial_matches[0]
+                # Need to fetch the secret again to get the secret values
+                return self.zen_store.get_secret(
+                    secret_id=partial_matches[0].id
+                )
 
         msg = (
             f"No secret found with name, ID or prefix "
@@ -3570,7 +3574,8 @@ class Client(metaclass=ClientMetaClass):
             )
 
             if len(secrets.items) >= 1:
-                return secrets.items[0]
+                # Need to fetch the secret again to get the secret values
+                return self.zen_store.get_secret(secret_id=secrets.items[0].id)
 
         msg = f"No secret with name '{name}' was found"
         if scope is not None:
@@ -3594,6 +3599,9 @@ class Client(metaclass=ClientMetaClass):
     ) -> Page[SecretResponseModel]:
         """Fetches all the secret models.
 
+        The returned secrets do not contain the secret values. To get the
+        secret values, use `get_secret` individually for each secret.
+
         Args:
             sort_by: The column to sort by
             page: The page of items
@@ -3608,7 +3616,7 @@ class Client(metaclass=ClientMetaClass):
             user_id: The  id of the user to filter by.
 
         Returns:
-            A list of all the secret models.
+            A list of all the secret models without the secret values.
 
         Raises:
             NotImplementedError: If centralized secrets management is not
@@ -3644,11 +3652,14 @@ class Client(metaclass=ClientMetaClass):
     ) -> Page[SecretResponseModel]:
         """Fetches the list of secret in a given scope.
 
+        The returned secrets do not contain the secret values. To get the
+        secret values, use `get_secret` individually for each secret.
+
         Args:
             scope: The secrets scope to search for.
 
         Returns:
-            The list of secrets.
+            The list of secrets in the given scope without the secret values.
         """
         logger.debug(f"Fetching the secrets in scope {scope.value}.")
 

@@ -579,13 +579,6 @@ def create_secret(
     try:
         client = Client()
         if interactive:
-            # check and exit early if secret already exists
-            current_secrets = [
-                item.name for item in client.list_secrets().items
-            ]
-            if name in current_secrets:
-                error(f"Secret with name `{name}` already exists.")
-
             if parsed_args:
                 error(
                     "Cannot pass secret fields as arguments when using "

@@ -103,6 +103,7 @@ class SecretsStoreType(StrEnum):
     NONE = "none"  # indicates that the secrets store is disabled
     SQL = StoreType.SQL.value
     REST = StoreType.REST.value
+    EXTERNAL = "external"  # indicates that the secrets store is external
 
 
 class ContainerRegistryFlavor(StrEnum):
