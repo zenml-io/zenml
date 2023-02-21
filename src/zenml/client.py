@@ -717,18 +717,18 @@ class Client(metaclass=ClientMetaClass):
             )
         )
 
-    def delete_user(self, user_name_or_id: str) -> None:
+    def delete_user(self, name_id_or_prefix: str) -> None:
         """Delete a user.
 
         Args:
-            user_name_or_id: The name or ID of the user to delete.
+            name_id_or_prefix: The name or ID of the user to delete.
         """
-        user = self.get_user(user_name_or_id, allow_name_prefix_match=False)
+        user = self.get_user(name_id_or_prefix, allow_name_prefix_match=False)
         self.zen_store.delete_user(user_name_or_id=user.name)
 
     def update_user(
         self,
-        user_name_or_id: Union[str, UUID],
+        name_id_or_prefix: Union[str, UUID],
         updated_name: Optional[str] = None,
         updated_full_name: Optional[str] = None,
         updated_email: Optional[str] = None,
@@ -737,7 +737,7 @@ class Client(metaclass=ClientMetaClass):
         """Update a user.
 
         Args:
-            user_name_or_id: The name or ID of the user to update.
+            name_id_or_prefix: The name or ID of the user to update.
             updated_name: The new name of the user.
             updated_full_name: The new full name of the user.
             updated_email: The new email of the user.
@@ -747,7 +747,7 @@ class Client(metaclass=ClientMetaClass):
             The updated user.
         """
         user = self.get_user(
-            name_id_or_prefix=user_name_or_id, allow_name_prefix_match=False
+            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
         )
         user_update = UserUpdateModel()
         if updated_name:
@@ -853,18 +853,18 @@ class Client(metaclass=ClientMetaClass):
 
         return self.zen_store.create_team(team=team)
 
-    def delete_team(self, team_name_or_id: str) -> None:
+    def delete_team(self, name_id_or_prefix: str) -> None:
         """Delete a team.
 
         Args:
-            team_name_or_id: The name or ID of the team to delete.
+            name_id_or_prefix: The name or ID of the team to delete.
         """
-        team = self.get_team(team_name_or_id, allow_name_prefix_match=False)
+        team = self.get_team(name_id_or_prefix, allow_name_prefix_match=False)
         self.zen_store.delete_team(team_name_or_id=team.id)
 
     def update_team(
         self,
-        team_name_or_id: str,
+        name_id_or_prefix: str,
         new_name: Optional[str] = None,
         remove_users: Optional[List[str]] = None,
         add_users: Optional[List[str]] = None,
@@ -872,7 +872,7 @@ class Client(metaclass=ClientMetaClass):
         """Update a team.
 
         Args:
-            team_name_or_id: The name or ID of the team to update.
+            name_id_or_prefix: The name or ID of the team to update.
             new_name: The new name of the team.
             remove_users: The users to remove from the team.
             add_users: The users to add to the team.
@@ -884,7 +884,7 @@ class Client(metaclass=ClientMetaClass):
             RuntimeError: If the same user is in both `remove_users` and
                 `add_users`.
         """
-        team = self.get_team(team_name_or_id, allow_name_prefix_match=False)
+        team = self.get_team(name_id_or_prefix, allow_name_prefix_match=False)
 
         team_update = TeamUpdateModel()
 
@@ -1457,28 +1457,26 @@ class Client(metaclass=ClientMetaClass):
             workspace_update=workspace_update,
         )
 
-    def delete_workspace(self, workspace_name_or_id: str) -> None:
+    def delete_workspace(self, name_id_or_prefix: str) -> None:
         """Delete a workspace.
 
         Args:
-            workspace_name_or_id: The name or ID of the workspace to delete.
+            name_id_or_prefix: The name or ID of the workspace to delete.
 
         Raises:
             IllegalOperationError: If the workspace to delete is the active
                 workspace.
         """
         workspace = self.get_workspace(
-            workspace_name_or_id, allow_name_prefix_match=False
+            name_id_or_prefix, allow_name_prefix_match=False
         )
         if self.active_workspace.id == workspace.id:
             raise IllegalOperationError(
-                f"Workspace '{workspace_name_or_id}' cannot be deleted since "
+                f"Workspace '{name_id_or_prefix}' cannot be deleted since "
                 "it is currently active. Please set another workspace as "
                 "active first."
             )
-        self.zen_store.delete_workspace(
-            workspace_name_or_id=workspace_name_or_id
-        )
+        self.zen_store.delete_workspace(workspace_name_or_id=workspace.id)
 
     # ------ #
     # STACKS #
@@ -2237,13 +2235,11 @@ class Client(metaclass=ClientMetaClass):
     def create_flavor(
         self,
         source: str,
-        component_type: StackComponentType,
     ) -> "FlavorResponseModel":
         """Creates a new flavor.
 
         Args:
             source: The flavor to create.
-            component_type: The type of the flavor.
 
         Returns:
             The created flavor (in model form).
@@ -2255,7 +2251,6 @@ class Client(metaclass=ClientMetaClass):
 
         flavor = validate_flavor_source(
             source=source,
-            component_type=component_type,
         )()
 
         if len(flavor.config_schema) > TEXT_FIELD_MAX_LENGTH:
