@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """GCP Secrets Store back-end."""
 
-from zenml.integrations.gcp.gcp_secrets_store import (
+from zenml.integrations.gcp.secrets_stores.gcp_secrets_store import (
     GCPSecretsStore,
 )
 
