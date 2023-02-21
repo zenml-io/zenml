@@ -26,7 +26,7 @@ from git.repo import Repo
 from pydantic import BaseModel, ValidationError
 
 from zenml.cli.cli import TagGroup, cli
-from zenml.cli.utils import error, print_table
+from zenml.cli.utils import declare, error, print_table
 from zenml.constants import ENV_ZENML_HUB_URL
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
@@ -73,7 +73,7 @@ def server_url() -> str:
     return "https://staginghub.zenml.io/"
 
 
-def _hub_get(url: str) -> Json:
+def _hub_get(url: str) -> Optional[Json]:
     """Helper function to make a GET request to the hub."""
     session = requests.Session()
     response = session.request(
@@ -83,11 +83,11 @@ def _hub_get(url: str) -> Json:
         verify=False,
         timeout=30,
     )
-    payload: Json = response.json()
+    payload: Json = response.json() if response else None
     return payload
 
 
-def _hub_post(url: str, model: PluginRequestModel) -> Json:
+def _hub_post(url: str, model: PluginRequestModel) -> Optional[Json]:
     """Helper function to make a POST request to the hub."""
     session = requests.Session()
     response = session.request(
@@ -98,7 +98,7 @@ def _hub_post(url: str, model: PluginRequestModel) -> Json:
         verify=False,
         timeout=30,
     )
-    payload: Json = response.json()
+    payload: Json = response.json() if response else None
     return payload
 
 
@@ -154,6 +154,8 @@ def hub() -> None:
 def list_plugins() -> None:
     """List all plugins available on the hub."""
     plugins = _list_plugins()
+    if not plugins:
+        declare("No plugins found.")
     plugins_table = _format_plugins_table(plugins)
     print_table(plugins_table)
 
