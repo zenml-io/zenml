@@ -398,7 +398,7 @@ def test_deregistering_a_stack_component_in_stack_fails(clean_client):
     ).components[StackComponentType.ORCHESTRATOR][0]
 
     with pytest.raises(IllegalOperationError):
-        clean_client.deregister_stack_component(
+        clean_client.delete_stack_component(
             component_type=StackComponentType.ORCHESTRATOR,
             name_id_or_prefix=str(component.id),
         )
@@ -413,7 +413,7 @@ def test_deregistering_a_stack_component_that_is_part_of_a_registered_stack(
     ][0]
 
     with pytest.raises(IllegalOperationError):
-        clean_client.deregister_stack_component(
+        clean_client.delete_stack_component(
             name_id_or_prefix=component.id,
             component_type=StackComponentType.ORCHESTRATOR,
         )

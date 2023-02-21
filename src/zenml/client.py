@@ -2175,7 +2175,7 @@ class Client(metaclass=ClientMetaClass):
             component_update=update_model,
         )
 
-    def deregister_stack_component(
+    def delete_stack_component(
         self,
         name_id_or_prefix: Union[str, UUID],
         component_type: StackComponentType,
