@@ -29,6 +29,7 @@ from zenml.models.component_models import (
     ComponentResponseModel,
     ComponentUpdateModel,
 )
+from zenml.models.base_models import BaseRequestModel, BaseResponseModel
 from zenml.models.filter_models import Filter, BaseFilterModel
 from zenml.models.flavor_models import (
     FlavorFilterModel,
@@ -214,6 +215,8 @@ __all__ = [
     "ArtifactRequestModel",
     "ArtifactResponseModel",
     "ArtifactFilterModel",
+    "BaseRequestModel",
+    "BaseResponseModel",
     "PipelineBuildFilterModel",
     "PipelineBuildRequestModel",
     "PipelineBuildResponseModel",

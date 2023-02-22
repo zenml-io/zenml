@@ -137,7 +137,7 @@ class SecretFilterModel(WorkspaceScopedFilterModel):
     )
 
     @staticmethod
-    def _get_filtering_value(value: Any) -> str:
+    def _get_filtering_value(value: Optional[Any]) -> str:
         """Convert the value to a string that can be used for lexicographical filtering and sorting.
 
         Args:
@@ -147,6 +147,8 @@ class SecretFilterModel(WorkspaceScopedFilterModel):
             The value converted to string format that can be used for
             lexicographical sorting and filtering.
         """
+        if value is None:
+            return ""
         str_value = str(value)
         if isinstance(value, datetime):
             str_value = value.strftime("%Y-%m-%d %H:%M:%S")
@@ -162,7 +164,13 @@ class SecretFilterModel(WorkspaceScopedFilterModel):
             True if the secret matches the filter criteria, False otherwise.
         """
         for filter in self.list_of_filters:
-            column_value = getattr(secret, filter.column)
+            column_value: Optional[Any] = None
+            if filter.column == "workspace_id":
+                column_value = secret.workspace.id
+            elif filter.column == "user_id":
+                column_value = secret.user.id if secret.user else None
+            else:
+                column_value = getattr(secret, filter.column)
 
             # Convert the values to strings for lexicographical comparison.
             str_column_value = self._get_filtering_value(column_value)
@@ -172,7 +180,7 @@ class SecretFilterModel(WorkspaceScopedFilterModel):
             if filter.operation == GenericFilterOps.EQUALS:
                 result = str_column_value == str_filter_value
             elif filter.operation == GenericFilterOps.CONTAINS:
-                result = str_column_value in str_filter_value
+                result = str_filter_value in str_column_value
             elif filter.operation == GenericFilterOps.STARTSWITH:
                 result = str_column_value.startswith(str_filter_value)
             elif filter.operation == GenericFilterOps.ENDSWITH:

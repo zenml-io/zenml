@@ -16,8 +16,10 @@
 import json
 import math
 import re
+import time
 import uuid
 from datetime import datetime
+from functools import partial
 from typing import (
     Any,
     ClassVar,
@@ -53,7 +55,8 @@ from zenml.models import (
 )
 from zenml.secrets_managers.base_secrets_manager import ZENML_SECRET_NAME_LABEL
 from zenml.utils.analytics_utils import AnalyticsEvent, track
-from zenml.zen_stores.base_zen_store import BaseZenStore
+from zenml.utils.pagination_utils import depaginate
+from zenml.zen_stores.base_zen_store import BaseZenStore, StoreEvent
 from zenml.zen_stores.secrets_stores.base_secrets_store import (
     ZENML_SECRET_ID_LABEL,
     ZENML_SECRET_SCOPE_LABEL,
@@ -80,6 +83,14 @@ class AWSSecretsStoreConfiguration(SecretsStoreConfiguration):
         aws_session_token: The AWS session token to use to authenticate.
         list_page_size: The number of secrets to fetch per page when
             listing secrets.
+        secret_list_refresh_timeout: The number of seconds to wait after
+            creating or updating an AWS secret until the changes are reflected
+            in the secrets returned by `list_secrets`. Set this to zero to
+            disable the wait. This is necessary because it can take some time
+            for these changes to be reflected. This value should not be set to a
+            large value, because it blocks ZenML server threads while waiting.
+            Disable this if you don't need changes to be reflected immediately
+            on the client side.
     """
 
     type: SecretsStoreType = SecretsStoreType.EXTERNAL
@@ -88,6 +99,7 @@ class AWSSecretsStoreConfiguration(SecretsStoreConfiguration):
     aws_secret_access_key: Optional[SecretStr] = None
     aws_session_token: Optional[SecretStr] = None
     list_page_size: int = 100
+    secret_list_refresh_timeout: int = 10
 
     class Config:
         """Pydantic configuration class."""
@@ -102,6 +114,49 @@ class AWSSecretsStoreConfiguration(SecretsStoreConfiguration):
 
 class AWSSecretsStore(BaseSecretsStore):
     """Secrets store implementation that uses the AWS Secrets Manager API.
+
+    This secrets store implementation uses the AWS Secrets Manager API to
+    store secrets. It allows a single AWS Secrets Manager region "instance" to
+    be shared with other ZenML deployments as well as other third party users
+    and applications.
+
+    Here are some implementation highlights:
+
+    * the name/ID of an AWS secret is derived from the ZenML secret UUID and a
+    `zenml` prefix in the form `zenml/{zenml_secret_uuid}`. This clearly
+    identifies a secret as being managed by ZenML in the AWS console.
+
+    * the Secrets Store also makes heavy use of AWS secret tags to store all the
+    metadata associated with a ZenML secret (e.g. the secret name, scope, user
+    and workspace) and to filter secrets by these metadata. The `zenml` tag in
+    particular is used to identify and group all secrets that belong to the same
+    ZenML deployment.
+
+    * all secret key-values configured in a ZenML secret are stored as a single
+    JSON string value in the AWS secret value.
+
+    * when a user or workspace is deleted, the secrets associated with it are
+    deleted automatically via registered event handlers.
+
+
+    Known challenges and limitations:
+
+    * there is a known problem with the AWS Secrets Manager API that can cause
+    the `list_secrets` method to return stale data for a long time (seconds)
+    after a secret is created or updated. The AWS secrets store tries to
+    mitigate this problem by waiting for a maximum configurable number of
+    seconds after creating or updating a secret until the changes are reflected
+    in the `list_secrets` AWS content. However, this is not a perfect solution,
+    because it blocks ZenML server API threads while waiting. This can be
+    disabled by setting the `secret_list_refresh_timeout` configuration
+    parameter to zero.
+
+    * only updating the secret values is reflected in the secret's `updated`
+    timestamp. Updating the secret metadata (e.g. name, scope, user or
+    workspace) does not update the secret's `updated` timestamp. This is a
+    limitation of the AWS Secrets Manager API (updating AWS tags does not update
+    the secret's `updated` timestamp).
+
 
     Attributes:
         config: The configuration of the AWS secrets store.
@@ -163,8 +218,75 @@ class AWSSecretsStore(BaseSecretsStore):
         """Initialize the AWS secrets store."""
         logger.debug("Initializing AWSSecretsStore")
 
-        # Initialize the AWS client.
+        # Initialize the AWS client early, just to catch any configuration or
+        # authentication errors early, before the Secrets Store is used.
         _ = self.client
+
+        self.zen_store.register_event_handler(
+            StoreEvent.WORKSPACE_DELETED, self._on_workspace_deleted
+        )
+
+        self.zen_store.register_event_handler(
+            StoreEvent.USER_DELETED, self._on_user_deleted
+        )
+
+    # --------------------
+    # Store Event Handlers
+    # --------------------
+
+    def _on_workspace_deleted(
+        self, event: StoreEvent, workspace_id: UUID
+    ) -> None:
+        """Handle the deletion of a workspace.
+
+        This method deletes all secrets associated with the given workspace.
+
+        Args:
+            event: The store event.
+            workspace_id: The ID of the workspace that was deleted.
+        """
+        logger.debug(
+            "Handling workspace deletion event for workspace %s", workspace_id
+        )
+
+        # Delete all secrets associated with the workspace.
+        secrets = depaginate(
+            partial(
+                self.list_secrets,
+                secret_filter_model=SecretFilterModel(
+                    workspace_id=workspace_id
+                ),
+            )
+        )
+        for secret in secrets:
+            try:
+                self.delete_secret(secret.id)
+            except Exception as e:
+                logger.warning("Failed to delete secret %s: %s", secret.id, e)
+
+    def _on_user_deleted(self, event: StoreEvent, user_id: UUID) -> None:
+        """Handle the deletion of a user.
+
+        This method deletes all secrets associated with the given user.
+
+        Args:
+            event: The store event.
+            user_id: The ID of the user that was deleted.
+        """
+        logger.debug("Handling user deletion event for user %s", user_id)
+
+        # Delete all secrets associated with the user.
+        secrets = depaginate(
+            partial(
+                self.list_secrets,
+                secret_filter_model=SecretFilterModel(user_id=user_id),
+            )
+        )
+        for secret in secrets:
+            try:
+                self.delete_secret(secret.id)
+            except Exception as e:
+                logger.warning("Failed to delete secret %s: %s", secret.id, e)
 
     # ------
     # Secrets
@@ -280,16 +402,15 @@ class AWSSecretsStore(BaseSecretsStore):
             )
         except KeyError as e:
             # The user or workspace associated with the secret no longer
-            # exists. This can happen if the user or workspace is deleted
-            # after the secret is created. In this case, we do a lazy
-            # cleanup of the secret by deleting it from the secrets store
-            # and pretending it never existed.
+            # exists. This can happen if the user or workspace is being
+            # deleted nearly at the same time as this call. In this case, we
+            # raise a KeyError exception. The caller should handle this
+            # exception by assuming that the secret no longer exists.
             logger.warning(
                 f"Secret with ID {secret_id} is associated with a "
-                f"non-existent user or workspace. Silently deleting the "
+                f"non-existent user or workspace. Silently ignoring the "
                 f"secret: {e}"
             )
-            self.delete_secret(secret_id)
             raise KeyError(f"Secret with ID {secret_id} not found")
 
         secret_model = SecretResponseModel(
@@ -304,6 +425,62 @@ class AWSSecretsStore(BaseSecretsStore):
         )
 
         return secret_model
+
+    @staticmethod
+    def _get_aws_secret_tags(
+        metadata: Dict[str, str],
+    ) -> List[Dict[str, str]]:
+        """Convert ZenML secret metadata to AWS secret tags.
+
+        Args:
+            metadata: The ZenML secret metadata.
+
+        Returns:
+            The AWS secret tags.
+        """
+        aws_tags: List[Dict[str, str]] = []
+        for k, v in metadata.items():
+            aws_tags.append(
+                {
+                    "Key": k,
+                    "Value": str(v),
+                }
+            )
+
+        return aws_tags
+
+    @staticmethod
+    def _get_aws_secret_filters(
+        metadata: Dict[str, str],
+    ) -> List[Dict[str, str]]:
+        """Convert ZenML secret metadata to AWS secret filters.
+
+        Args:
+            metadata: The ZenML secret metadata.
+
+        Returns:
+            The AWS secret filters.
+        """
+        aws_filters: List[Dict[str, Any]] = []
+        for k, v in metadata.items():
+            aws_filters.append(
+                {
+                    "Key": "tag-key",
+                    "Values": [
+                        k,
+                    ],
+                }
+            )
+            aws_filters.append(
+                {
+                    "Key": "tag-value",
+                    "Values": [
+                        str(v),
+                    ],
+                }
+            )
+
+        return aws_filters
 
     def _check_secret_scope(
         self,
@@ -342,9 +519,9 @@ class AWSSecretsStore(BaseSecretsStore):
         )
 
         if scope in [SecretScope.WORKSPACE, SecretScope.USER]:
-            filter.workspace_id == workspace
+            filter.workspace_id = workspace
         if scope == SecretScope.USER:
-            filter.user_id == user
+            filter.user_id = user
 
         existing_secrets = self.list_secrets(secret_filter_model=filter).items
         if exclude_secret_id is not None:
@@ -421,12 +598,10 @@ class AWSSecretsStore(BaseSecretsStore):
         secret_value = json.dumps(secret.secret_values)
 
         # Convert the ZenML secret metadata to AWS tags
-        tags = [
-            {"Key": k, "Value": v}
-            for k, v in self._get_secret_metadata_for_secret(
-                secret, secret_id=secret_id
-            ).items()
-        ]
+        metadata = self._get_secret_metadata_for_secret(
+            secret, secret_id=secret_id
+        )
+        tags = self._get_aws_secret_tags(metadata)
 
         try:
             self.client.create_secret(
@@ -443,6 +618,45 @@ class AWSSecretsStore(BaseSecretsStore):
             raise RuntimeError(f"Error creating secret: {e}")
 
         logger.debug("Created AWS secret: %s", aws_secret_id)
+
+        # The AWS Secrets Manager does not immediately reflect the newly
+        # created secret in the `list_secrets` API. It is important that we
+        # wait for the secret to be available in the `list_secrets` API
+        # before returning the newly created secret, otherwise the secret
+        # will not be visible to the user. We also rely on `list_secrets`
+        # to enforce the scope rules, but given that the ZenML server runs
+        # requests in separate threads, it is not entirely possible to
+        # guarantee them.
+
+        # We wait for the secret to be available in the `list_secrets` API.
+        for _ in range(self.config.secret_list_refresh_timeout):
+            logger.debug(f"Waiting for secret {aws_secret_id} to be listed...")
+            secret_exists = False
+            try:
+                secrets = self.client.list_secrets(
+                    Filters=[{"Key": "name", "Values": [aws_secret_id]}]
+                )
+                secret_exists = len(secrets["SecretList"]) > 0
+            except ClientError as e:
+                logger.warning(
+                    f"Error checking newly created secret {aws_secret_id}: "
+                    f"{e}. Retrying..."
+                )
+
+            if not secret_exists:
+                logger.debug(
+                    f"Secret {aws_secret_id} not yet listed. Retrying..."
+                )
+                time.sleep(1)
+            else:
+                logger.debug(f"Secret {aws_secret_id} listed.")
+                break
+        else:
+            if self.config.secret_list_refresh_timeout:
+                logger.warning(
+                    f"Newly created secret {aws_secret_id} not listed after "
+                    f"{self.config.secret_list_refresh_timeout} seconds. "
+                )
 
         secret_model = SecretResponseModel(
             id=secret_id,
@@ -492,10 +706,9 @@ class AWSSecretsStore(BaseSecretsStore):
             )
 
         # The _convert_aws_secret method raises a KeyError if the
-        # secret is tied to a workspace or user that no longer exists. It
-        # also silently deletes such orphaned secrets. Here we simply pass
-        # the exception up the stack, as if the secret was not found in the
-        # first place.
+        # secret is tied to a workspace or user that no longer exists. Here we
+        # simply pass the exception up the stack, as if the secret was not found
+        # in the first place, knowing that it will be cascade-deleted soon.
         return self._convert_aws_secret(
             tags=describe_secret_response["Tags"],
             created=describe_secret_response["CreatedDate"],
@@ -570,24 +783,7 @@ class AWSSecretsStore(BaseSecretsStore):
         # required to exclude everything but AWS secrets that belong to the
         # current ZenML deployment.
         metadata = self._get_secret_metadata(**metadata_args)
-        aws_filters: List[Dict[str, Any]] = []
-        for k, v in metadata.items():
-            aws_filters.append(
-                {
-                    "Key": "tag-key",
-                    "Values": [
-                        k,
-                    ],
-                }
-            )
-            aws_filters.append(
-                {
-                    "Key": "tag-value",
-                    "Values": [
-                        str(v),
-                    ],
-                }
-            )
+        aws_filters = self._get_aws_secret_filters(metadata)
 
         results: List[SecretResponseModel] = []
 
@@ -620,9 +816,8 @@ class AWSSecretsStore(BaseSecretsStore):
                     except KeyError:
                         # The _convert_aws_secret method raises a KeyError
                         # if the secret is tied to a workspace or user that no
-                        # longer exists. It also silently deletes such orphaned
-                        # secrets. Here we pretend that the secret does not
-                        # exist.
+                        # longer exists. Here we pretend that the secret does
+                        # not exist.
                         continue
 
                     # Filter again on the client side to cover all filter
@@ -725,17 +920,13 @@ class AWSSecretsStore(BaseSecretsStore):
         aws_secret_id = self._get_aws_secret_name(secret_id)
         secret_value = json.dumps(secret.secret_values)
 
-        # Convert the secret metadata to AWS tags.
-        tags = [
-            {"Key": k, "Value": v}
-            for k, v in self._get_secret_metadata_for_secret(
-                secret, secret_id=secret_id
-            ).items()
-        ]
+        # Convert the ZenML secret metadata to AWS tags
+        metadata = self._get_secret_metadata_for_secret(secret)
+        tags = self._get_aws_secret_tags(metadata)
 
         try:
             # One call to update the secret values
-            self.client.put_secret_values(
+            self.client.put_secret_value(
                 SecretId=aws_secret_id,
                 SecretString=secret_value,
             )
@@ -753,6 +944,45 @@ class AWSSecretsStore(BaseSecretsStore):
             raise RuntimeError(f"Error updating secret: {e}")
 
         logger.debug("Updated AWS secret: %s", aws_secret_id)
+
+        # We wait for the secret update to be reflected in the `list_secrets`
+        # API.
+        for _ in range(self.config.secret_list_refresh_timeout):
+            logger.debug(
+                f"Waiting for secret {aws_secret_id} to be updated..."
+            )
+            secret_exists = False
+            try:
+                secrets = self.client.list_secrets(
+                    Filters=[{"Key": "name", "Values": [aws_secret_id]}]
+                )
+                if len(secrets["SecretList"]) > 0:
+                    listed_secret = secrets["SecretList"][0]
+                    # The new tags must exactly match those reported in the
+                    # `list_secrets` response.
+                    secret_exists = all(
+                        tag in listed_secret["Tags"] for tag in tags
+                    )
+            except ClientError as e:
+                logger.warning(
+                    f"Error checking updated created secret {aws_secret_id}: "
+                    f"{e}. Retrying..."
+                )
+
+            if not secret_exists:
+                logger.debug(
+                    f"Secret {aws_secret_id} not yet updated. Retrying..."
+                )
+                time.sleep(1)
+            else:
+                logger.debug(f"Secret {aws_secret_id} updated.")
+                break
+        else:
+            if self.config.secret_list_refresh_timeout:
+                logger.warning(
+                    f"Updated secret {aws_secret_id} not listed after "
+                    f"{self.config.secret_list_refresh_timeout} seconds."
+                )
 
         secret_model = SecretResponseModel(
             id=secret_id,

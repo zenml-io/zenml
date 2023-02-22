@@ -16,8 +16,10 @@ import os
 from abc import ABC
 from typing import (
     Any,
+    Callable,
     ClassVar,
     Dict,
+    List,
     Optional,
     Tuple,
     Type,
@@ -69,6 +71,7 @@ from zenml.utils.analytics_utils import (
     track,
     track_event,
 )
+from zenml.utils.enum_utils import StrEnum
 from zenml.utils.proxy_utils import make_proxy_class
 from zenml.zen_stores.secrets_stores.base_secrets_store import BaseSecretsStore
 from zenml.zen_stores.secrets_stores.secrets_store_interface import (
@@ -90,6 +93,13 @@ DEFAULT_ADMIN_ROLE = "admin"
 DEFAULT_GUEST_ROLE = "guest"
 
 
+class StoreEvent(StrEnum):
+    """Events that can be triggered by the store."""
+
+    WORKSPACE_DELETED = "workspace_deleted"
+    USER_DELETED = "user_deleted"
+
+
 @make_proxy_class(SecretsStoreInterface, "_secrets_store")
 class BaseZenStore(
     BaseModel,
@@ -109,6 +119,7 @@ class BaseZenStore(
     config: StoreConfiguration
     track_analytics: bool = True
     _secrets_store: Optional[BaseSecretsStore] = None
+    _event_handlers: Dict[StoreEvent, List[Callable[..., Any]]] = {}
 
     TYPE: ClassVar[StoreType]
     CONFIG_TYPE: ClassVar[Type[StoreConfiguration]]
@@ -476,6 +487,35 @@ class BaseZenStore(
             return self._default_workspace
         except KeyError:
             return self._create_default_workspace()  # type: ignore[no-any-return]
+
+    # --------------
+    # Event Handlers
+    # --------------
+
+    def register_event_handler(
+        self,
+        event: StoreEvent,
+        handler: Callable[..., Any],
+    ) -> None:
+        """Register an external event handler.
+
+        The handler will be called when the store event is triggered.
+
+        Args:
+            event: The event to register the handler for.
+            handler: The handler function to register.
+        """
+        self._event_handlers.setdefault(event, []).append(handler)
+
+    def _trigger_event(self, event: StoreEvent, **kwargs: Any) -> None:
+        """Trigger an event and call all registered handlers.
+
+        Args:
+            event: The event to trigger.
+            **kwargs: The event arguments.
+        """
+        for handler in self._event_handlers.get(event, []):
+            handler(event, **kwargs)
 
     # ------
     # Stacks
