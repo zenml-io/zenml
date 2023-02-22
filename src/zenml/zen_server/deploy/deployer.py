@@ -31,6 +31,9 @@ from zenml.zen_server.deploy.exceptions import (
     ServerProviderNotFoundError,
 )
 from zenml.zen_stores.rest_zen_store import RestZenStoreConfiguration
+from zenml.zen_stores.secrets_stores.rest_secrets_store import (
+    RestSecretsStoreConfiguration,
+)
 
 logger = get_logger(__name__)
 
@@ -105,8 +108,8 @@ class ServerDeployer(metaclass=SingletonMetaClass):
         # before the server is deployed. This is necessary because the server
         # may require access to the local store configuration or database.
         gc = GlobalConfiguration()
-        if gc.store is None:
-            _ = gc.zen_store
+
+        _ = gc.zen_store
 
         try:
             self.get_server(config.name)
@@ -250,6 +253,7 @@ class ServerDeployer(metaclass=SingletonMetaClass):
             username=username,
             password=password,
             verify_ssl=verify_ssl,
+            secrets_store=RestSecretsStoreConfiguration(),
         )
 
         if gc.store == store_config:

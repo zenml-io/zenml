@@ -14,7 +14,7 @@
 
 import pytest
 
-from tests.integration.functional.conftest import (
+from tests.integration.functional.zen_stores.utils import (
     constant_int_output_test_step,
     int_plus_one_test_step,
 )
@@ -22,23 +22,23 @@ from zenml.config.schedule import Schedule
 
 
 @pytest.fixture
-def clean_project_with_run(clean_project, connected_two_step_pipeline):
-    """Fixture to get a clean project with an existing pipeline run in it."""
+def clean_workspace_with_run(clean_workspace, connected_two_step_pipeline):
+    """Fixture to get a clean workspace with an existing pipeline run in it."""
     connected_two_step_pipeline(
         step_1=constant_int_output_test_step(),
         step_2=int_plus_one_test_step(),
     ).run()
-    return clean_project
+    return clean_workspace
 
 
 @pytest.fixture
-def clean_project_with_scheduled_run(
-    clean_project, connected_two_step_pipeline
+def clean_workspace_with_scheduled_run(
+    clean_workspace, connected_two_step_pipeline
 ):
-    """Fixture to get a clean project with an existing scheduled run in it."""
+    """Fixture to get a clean workspace with an existing scheduled run in it."""
     schedule = Schedule(cron_expression="*/5 * * * *")
     connected_two_step_pipeline(
         step_1=constant_int_output_test_step(),
         step_2=int_plus_one_test_step(),
     ).run(schedule=schedule)
-    return clean_project
+    return clean_workspace

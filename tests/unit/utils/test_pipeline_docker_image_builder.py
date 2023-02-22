@@ -14,6 +14,7 @@
 
 from pathlib import Path
 
+from zenml.client import Client
 from zenml.config import DockerSettings
 from zenml.integrations.sklearn import SKLEARN, SklearnIntegration
 from zenml.utils.pipeline_docker_image_builder import (
@@ -109,3 +110,12 @@ def test_requirements_file_generation(mocker, local_stack, tmp_path: Path):
         sorted(SklearnIntegration.REQUIREMENTS + ["stack_requirements"])
     )
     assert files[2][1] == expected_integration_requirements
+
+
+def test_build_skipping():
+    """Tests that the parent image is returned directly if `skip_build` is set
+    to `True`."""
+    settings = DockerSettings(skip_build=True, parent_image="my_parent_image")
+    assert PipelineDockerImageBuilder().build_docker_image(
+        docker_settings=settings, tag="tag", stack=Client().active_stack
+    )

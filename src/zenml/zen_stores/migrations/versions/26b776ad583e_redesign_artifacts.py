@@ -1,7 +1,7 @@
 """Redesign Artifacts [26b776ad583e].
 
 Revision ID: 26b776ad583e
-Revises: 0.22.0
+Revises: 0.23.0
 Create Date: 2022-11-17 08:00:24.936750
 
 """

@@ -279,6 +279,17 @@ class AzureArtifactStore(BaseArtifactStore, AuthenticationMixin):
         """
         return self.filesystem.stat(path=path)  # type: ignore[no-any-return]
 
+    def size(self, path: PathType) -> int:
+        """Get the size of a file in bytes.
+
+        Args:
+            path: The path to the file.
+
+        Returns:
+            The size of the file in bytes.
+        """
+        return self.filesystem.size(path=path)  # type: ignore[no-any-return]
+
     def walk(
         self,
         top: PathType,

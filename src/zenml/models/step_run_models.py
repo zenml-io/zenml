@@ -22,14 +22,14 @@ from pydantic import BaseModel, Field
 from zenml.config.step_configurations import Step
 from zenml.enums import ExecutionStatus
 from zenml.models.base_models import (
-    ProjectScopedRequestModel,
-    ProjectScopedResponseModel,
+    WorkspaceScopedRequestModel,
+    WorkspaceScopedResponseModel,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
-from zenml.models.filter_models import ProjectScopedFilterModel
+from zenml.models.filter_models import WorkspaceScopedFilterModel
 
 if TYPE_CHECKING:
-    from zenml.models import ArtifactResponseModel
+    from zenml.models import ArtifactResponseModel, RunMetadataResponseModel
 
 
 # ---- #
@@ -73,11 +73,15 @@ class StepRunBaseModel(BaseModel):
 # -------- #
 
 
-class StepRunResponseModel(StepRunBaseModel, ProjectScopedResponseModel):
+class StepRunResponseModel(StepRunBaseModel, WorkspaceScopedResponseModel):
     """Response model for step runs."""
 
     input_artifacts: Dict[str, "ArtifactResponseModel"] = {}
     output_artifacts: Dict[str, "ArtifactResponseModel"] = {}
+    metadata: Dict[str, "RunMetadataResponseModel"] = Field(
+        default={},
+        title="Metadata associated with this step run.",
+    )
 
 
 # ------ #
@@ -85,7 +89,7 @@ class StepRunResponseModel(StepRunBaseModel, ProjectScopedResponseModel):
 # ------ #
 
 
-class StepRunFilterModel(ProjectScopedFilterModel):
+class StepRunFilterModel(WorkspaceScopedFilterModel):
     """Model to enable advanced filtering of all Artifacts."""
 
     name: str = Field(
@@ -123,8 +127,8 @@ class StepRunFilterModel(ProjectScopedFilterModel):
     user_id: Union[UUID, str] = Field(
         default=None, description="User that produced this step run"
     )
-    project_id: Union[UUID, str] = Field(
-        default=None, description="Project of this step run"
+    workspace_id: Union[UUID, str] = Field(
+        default=None, description="Workspace of this step run"
     )
     num_outputs: int = Field(
         default=None,
@@ -137,7 +141,7 @@ class StepRunFilterModel(ProjectScopedFilterModel):
 # ------- #
 
 
-class StepRunRequestModel(StepRunBaseModel, ProjectScopedRequestModel):
+class StepRunRequestModel(StepRunBaseModel, WorkspaceScopedRequestModel):
     """Request model for step runs."""
 
     input_artifacts: Dict[str, UUID] = {}

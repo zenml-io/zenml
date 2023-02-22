@@ -12,15 +12,18 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from contextlib import ExitStack as does_not_raise
+from datetime import datetime
 from uuid import uuid4
 
 import pytest
 
+from zenml.config import DockerSettings
+from zenml.config.build_configuration import BuildConfiguration
 from zenml.config.compiler import Compiler
 from zenml.config.pipeline_configurations import PipelineRunConfiguration
-from zenml.config.pipeline_deployment import PipelineDeployment
 from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError, StackValidationError
+from zenml.models import PipelineBuildResponseModel
 from zenml.stack import Stack
 
 
@@ -138,18 +141,13 @@ def test_stack_validation_succeeds_if_no_component_validator_fails(
         stack_with_mock_components.validate()
 
 
-def test_stack_prepare_pipeline_run(
-    stack_with_mock_components, one_step_pipeline, empty_step
+def test_stack_prepare_pipeline_deployment(
+    stack_with_mock_components, sample_deployment_response_model
 ):
     """Tests that the stack prepares a pipeline run by calling the prepare methods of all its components."""
-    pipeline = one_step_pipeline(empty_step())
-    run_name = "some_unique_pipeline_run_name"
-    deployment = PipelineDeployment(
-        run_name=run_name,
-        stack_id=uuid4(),
-        pipeline=pipeline.configuration,
+    stack_with_mock_components.prepare_pipeline_deployment(
+        sample_deployment_response_model
     )
-    stack_with_mock_components.prepare_pipeline_deployment(deployment)
     for component in stack_with_mock_components.components.values():
         component.prepare_pipeline_deployment.assert_called_once()
 
@@ -406,13 +404,10 @@ def test_requires_remote_server(stack_with_mock_components, mocker):
     assert stack_with_mock_components.requires_remote_server is True
 
 
-def test_deployment_server_validation(mocker, stack_with_mock_components):
+def test_deployment_server_validation(
+    mocker, stack_with_mock_components, sample_deployment_response_model
+):
     """Tests that the deployment validation fails when the stack requires a remote server but the store is local."""
-    deployment = PipelineDeployment(
-        run_name="",
-        stack_id=uuid4(),
-        pipeline={"name": "", "enable_cache": True},
-    )
 
     ######### Remote server #########
     mocker.patch(
@@ -425,7 +420,9 @@ def test_deployment_server_validation(mocker, stack_with_mock_components):
         new_callable=mocker.PropertyMock,
     )
     with does_not_raise():
-        stack_with_mock_components.prepare_pipeline_deployment(deployment)
+        stack_with_mock_components.prepare_pipeline_deployment(
+            sample_deployment_response_model
+        )
 
     mocker.patch(
         "zenml.stack.Stack.requires_remote_server",
@@ -433,7 +430,9 @@ def test_deployment_server_validation(mocker, stack_with_mock_components):
         new_callable=mocker.PropertyMock,
     )
     with does_not_raise():
-        stack_with_mock_components.prepare_pipeline_deployment(deployment)
+        stack_with_mock_components.prepare_pipeline_deployment(
+            sample_deployment_response_model
+        )
 
     ######### Local server #########
     mocker.patch(
@@ -447,7 +446,9 @@ def test_deployment_server_validation(mocker, stack_with_mock_components):
         new_callable=mocker.PropertyMock,
     )
     with does_not_raise():
-        stack_with_mock_components.prepare_pipeline_deployment(deployment)
+        stack_with_mock_components.prepare_pipeline_deployment(
+            sample_deployment_response_model
+        )
 
     mocker.patch(
         "zenml.stack.Stack.requires_remote_server",
@@ -455,4 +456,246 @@ def test_deployment_server_validation(mocker, stack_with_mock_components):
         new_callable=mocker.PropertyMock,
     )
     with pytest.raises(RuntimeError):
-        stack_with_mock_components.prepare_pipeline_deployment(deployment)
+        stack_with_mock_components.prepare_pipeline_deployment(
+            sample_deployment_response_model
+        )
+
+
+def test_get_pipeline_run_metadata(
+    mocker, local_orchestrator, local_artifact_store
+):
+    """Unit test for `Stack.get_pipeline_run_metadata()`."""
+    stack = Stack(
+        id=uuid4(),
+        name="",
+        orchestrator=local_orchestrator,
+        artifact_store=local_artifact_store,
+    )
+    orchestrator_metadata = {
+        "orchstrator_key": "orchestrator_value",
+        "pi": 3.14,
+    }
+    orchestrator_get_pipeline_run_mock = mocker.patch.object(
+        local_orchestrator,
+        "get_pipeline_run_metadata",
+        return_value=orchestrator_metadata,
+    )
+    artifact_store_metadata = {"artifact_store_key": 42}
+    artifact_store_get_pipeline_run_mock = mocker.patch.object(
+        local_artifact_store,
+        "get_pipeline_run_metadata",
+        return_value=artifact_store_metadata,
+    )
+    run_metadata = stack.get_pipeline_run_metadata(run_id=uuid4())
+    assert len(run_metadata) == 2
+    assert run_metadata[local_orchestrator.id] == orchestrator_metadata
+    assert run_metadata[local_artifact_store.id] == artifact_store_metadata
+    assert orchestrator_get_pipeline_run_mock.call_count == 1
+    assert artifact_store_get_pipeline_run_mock.call_count == 1
+
+
+def test_get_pipeline_run_metadata_never_raises_errors(
+    mocker, local_orchestrator, local_artifact_store
+):
+    """Test that `get_pipeline_run_metadata()` never raises errors."""
+    stack = Stack(
+        id=uuid4(),
+        name="",
+        orchestrator=local_orchestrator,
+        artifact_store=local_artifact_store,
+    )
+    orchestrator_get_pipeline_run_mock = mocker.patch.object(
+        local_orchestrator,
+        "get_pipeline_run_metadata",
+        side_effect=Exception("Orchestrator error"),
+    )
+    artifact_store_get_pipeline_run_mock = mocker.patch.object(
+        local_artifact_store,
+        "get_pipeline_run_metadata",
+        side_effect=Exception("Artifact store error"),
+    )
+    run_metadata = stack.get_pipeline_run_metadata(run_id=uuid4())
+    assert len(run_metadata) == 0
+    assert orchestrator_get_pipeline_run_mock.call_count == 1
+    assert artifact_store_get_pipeline_run_mock.call_count == 1
+
+
+def test_get_step_run_metadata(
+    mocker, local_orchestrator, local_artifact_store
+):
+    """Unit test for `Stack.get_step_run_metadata()`."""
+    stack = Stack(
+        id=uuid4(),
+        name="",
+        orchestrator=local_orchestrator,
+        artifact_store=local_artifact_store,
+    )
+    orchestrator_metadata = {
+        "orchstrator_key": "orchestrator_value",
+        "pi": 3.14,
+    }
+    orchestrator_get_step_run_mock = mocker.patch.object(
+        local_orchestrator,
+        "get_step_run_metadata",
+        return_value=orchestrator_metadata,
+    )
+    artifact_store_metadata = {"artifact_store_key": 42}
+    artifact_store_get_step_run_mock = mocker.patch.object(
+        local_artifact_store,
+        "get_step_run_metadata",
+        return_value=artifact_store_metadata,
+    )
+
+    class MockStepInfo:
+        config = {}
+
+    mocker.patch.object(
+        stack,
+        "_get_active_components_for_step",
+        return_value={
+            StackComponentType.ORCHESTRATOR: local_orchestrator,
+            StackComponentType.ARTIFACT_STORE: local_artifact_store,
+        },
+    )
+    run_metadata = stack.get_step_run_metadata(info=MockStepInfo())
+    assert len(run_metadata) == 2
+    assert run_metadata[local_orchestrator.id] == orchestrator_metadata
+    assert run_metadata[local_artifact_store.id] == artifact_store_metadata
+    assert orchestrator_get_step_run_mock.call_count == 1
+    assert artifact_store_get_step_run_mock.call_count == 1
+
+
+def test_get_step_run_metadata_never_raises_errors(
+    mocker, local_orchestrator, local_artifact_store
+):
+    """Test that `get_step_run_metadata()` never raises errors."""
+    stack = Stack(
+        id=uuid4(),
+        name="",
+        orchestrator=local_orchestrator,
+        artifact_store=local_artifact_store,
+    )
+    orchestrator_get_step_run_mock = mocker.patch.object(
+        local_orchestrator,
+        "get_step_run_metadata",
+        side_effect=Exception("Orchestrator error"),
+    )
+    artifact_store_get_step_run_mock = mocker.patch.object(
+        local_artifact_store,
+        "get_step_run_metadata",
+        side_effect=Exception("Artifact store error"),
+    )
+
+    class MockStepInfo:
+        config = {}
+
+    mocker.patch.object(
+        stack,
+        "_get_active_components_for_step",
+        return_value={
+            StackComponentType.ORCHESTRATOR: local_orchestrator,
+            StackComponentType.ARTIFACT_STORE: local_artifact_store,
+        },
+    )
+    run_metadata = stack.get_step_run_metadata(info=MockStepInfo())
+    assert len(run_metadata) == 0
+    assert orchestrator_get_step_run_mock.call_count == 1
+    assert artifact_store_get_step_run_mock.call_count == 1
+
+
+def test_docker_builds_collection(
+    stack_with_mock_components, sample_deployment_response_model
+):
+    """Tests that the stack collects the required Docker builds from all its
+    components."""
+    first_orchestrator_build = BuildConfiguration(
+        key="orchestrator", settings=DockerSettings()
+    )
+    second_orchestrator_build = BuildConfiguration(
+        key="orchestrator",
+        step_name="step_1",
+        settings=DockerSettings(target_repository="custom_repo"),
+    )
+    artifact_store_build = BuildConfiguration(
+        key="artifact_store",
+        settings=DockerSettings(
+            requirements="artifact_store_requirements.txt"
+        ),
+    )
+    stack_with_mock_components.orchestrator.get_docker_builds.return_value = [
+        first_orchestrator_build,
+        second_orchestrator_build,
+    ]
+    stack_with_mock_components.artifact_store.get_docker_builds.return_value = [
+        artifact_store_build
+    ]
+
+    stack_builds = stack_with_mock_components.get_docker_builds(
+        deployment=sample_deployment_response_model
+    )
+
+    assert len(stack_builds) == 3
+    assert first_orchestrator_build in stack_builds
+    assert second_orchestrator_build in stack_builds
+    assert artifact_store_build in stack_builds
+
+
+def test_build_validation(
+    mocker,
+    local_orchestrator,
+    local_artifact_store,
+    sample_deployment_response_model,
+):
+    """Tests the build validation performed by the stack."""
+    stack = Stack(
+        id=uuid4(),
+        name="",
+        orchestrator=local_orchestrator,
+        artifact_store=local_artifact_store,
+    )
+
+    mocker.patch.object(stack, "get_docker_builds", return_value=[])
+
+    assert sample_deployment_response_model.build is None
+
+    with does_not_raise():
+        # No build, no required builds
+        stack._validate_build(deployment=sample_deployment_response_model)
+
+    mocker.patch.object(
+        stack,
+        "get_docker_builds",
+        return_value=[
+            BuildConfiguration(key="key", settings=DockerSettings())
+        ],
+    )
+
+    with pytest.raises(RuntimeError):
+        # No build, one required build
+        stack._validate_build(deployment=sample_deployment_response_model)
+
+    incorrect_build = PipelineBuildResponseModel(
+        id=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+        user=sample_deployment_response_model.user,
+        workspace=sample_deployment_response_model.workspace,
+        images={"wrong_key": {"image": "docker_image_name"}},
+        is_local=False,
+    )
+    sample_deployment_response_model.build = incorrect_build
+
+    with pytest.raises(RuntimeError):
+        # Image key missing
+        stack._validate_build(deployment=sample_deployment_response_model)
+
+    correct_build = PipelineBuildResponseModel.parse_obj(
+        {
+            **incorrect_build.dict(),
+            "images": {"key": {"image": "docker_image_name"}},
+        }
+    )
+    sample_deployment_response_model.build = correct_build
+    with does_not_raise():
+        # All keys present
+        stack._validate_build(deployment=sample_deployment_response_model)

@@ -37,7 +37,7 @@ def test_s3_artifact_store_attributes():
         flavor="s3",
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -55,7 +55,7 @@ def test_must_be_s3_path():
             flavor="s3",
             type=StackComponentType.ARTIFACT_STORE,
             user=uuid4(),
-            project=uuid4(),
+            workspace=uuid4(),
             created=datetime.now(),
             updated=datetime.now(),
         )
@@ -68,7 +68,7 @@ def test_must_be_s3_path():
             flavor="s3",
             type=StackComponentType.ARTIFACT_STORE,
             user=uuid4(),
-            project=uuid4(),
+            workspace=uuid4(),
             created=datetime.now(),
             updated=datetime.now(),
         )
@@ -80,7 +80,7 @@ def test_must_be_s3_path():
         flavor="s3",
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )

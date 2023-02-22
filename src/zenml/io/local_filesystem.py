@@ -207,6 +207,18 @@ class LocalFilesystem(BaseFilesystem):
         return os.stat(path)
 
     @staticmethod
+    def size(path: PathType) -> int:
+        """Get the size of a file in bytes.
+
+        Args:
+            path: The path to the file.
+
+        Returns:
+            The size of the file in bytes.
+        """
+        return os.path.getsize(path)
+
+    @staticmethod
     def walk(
         top: PathType,
         topdown: bool = True,

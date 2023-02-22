@@ -15,7 +15,7 @@
 
 import os
 import tempfile
-from typing import Type
+from typing import TYPE_CHECKING, Dict, Type
 
 from PIL import Image
 
@@ -24,6 +24,9 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import io_utils
+
+if TYPE_CHECKING:
+    from zenml.metadata.metadata_types import MetadataType
 
 logger = get_logger(__name__)
 
@@ -85,3 +88,21 @@ class PillowImageMaterializer(BaseMaterializer):
         artifact_store_path = os.path.join(self.uri, full_filename)
         io_utils.copy(temp_image_path, artifact_store_path, overwrite=True)  # type: ignore[attr-defined]
         temp_dir.cleanup()
+
+    def extract_metadata(
+        self, image: Image.Image
+    ) -> Dict[str, "MetadataType"]:
+        """Extract metadata from the given `Image` object.
+
+        Args:
+            image: The `Image` object to extract metadata from.
+
+        Returns:
+            The extracted metadata as a dictionary.
+        """
+        super().extract_metadata(image)
+        return {
+            "width": image.width,
+            "height": image.height,
+            "mode": str(image.mode),
+        }

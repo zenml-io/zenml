@@ -38,7 +38,7 @@ def _get_kaniko_image_builder(
         flavor="kaniko",
         type=StackComponentType.IMAGE_BUILDER,
         user=uuid4(),
-        project=uuid4(),
+        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )

@@ -72,6 +72,9 @@ You don't need to set up any infrastructure to run your pipelines with Seldon, l
   * Docker must be installed on your local machine.
   * Install k3d by running `curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash`.
 
+You also need to be running Linux or Windows. MacOS is currently not supported
+for these local deployments.
+
 ## Create a local Seldon Stack
 
 To get a stack with Seldon Core and potential other components, you can make use of ZenML's Stack Recipes that are a set of terraform based modules that take care of setting up a cluster with Seldon among other things.

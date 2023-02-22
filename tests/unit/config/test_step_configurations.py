@@ -61,7 +61,7 @@ def test_step_spec_upstream_steps_equality():
 
 
 def test_step_spec_inputs_equality():
-    """Tests the inputs don't affect the step spec equality."""
+    """Tests the step spec equality operator regarding the inputs."""
     assert StepSpec(
         source="src",
         upstream_steps=[],
@@ -69,5 +69,27 @@ def test_step_spec_inputs_equality():
     ) == StepSpec(
         source="src",
         upstream_steps=[],
+        inputs={"key": InputSpec(step_name="s", output_name="o")},
+    )
+
+    assert StepSpec(
+        source="src",
+        upstream_steps=[],
+        inputs={"key": InputSpec(step_name="s", output_name="o")},
+    ) != StepSpec(
+        source="src",
+        upstream_steps=[],
         inputs={},
+    )
+
+
+def test_step_spec_pipeline_parameter_name_equality():
+    """Tests the step spec equality operator regarding the pipeline parameter
+    name."""
+    assert StepSpec(
+        source="src", upstream_steps=[], pipeline_parameter_name="name"
+    ) != StepSpec(
+        source="src",
+        upstream_steps=[],
+        pipeline_parameter_name="different_name",
     )

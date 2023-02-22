@@ -15,11 +15,12 @@
 import json
 from typing import Any, Dict, Optional, Type, TypeVar, Union, cast
 
+import yaml
 from pydantic import BaseModel
 from pydantic.json import pydantic_encoder
 from pydantic.utils import sequence_like
 
-from zenml.utils import dict_utils
+from zenml.utils import dict_utils, yaml_utils
 
 M = TypeVar("M", bound="BaseModel")
 
@@ -174,3 +175,33 @@ class TemplateGenerator:
             If the value is a pydantic model class.
         """
         return isinstance(value, type) and issubclass(value, BaseModel)
+
+
+class YAMLSerializationMixin(BaseModel):
+    """Class to serialize/deserialize pydantic models to/from YAML."""
+
+    def yaml(self, sort_keys: bool = False, **kwargs: Any) -> str:
+        """YAML string representation..
+
+        Args:
+            sort_keys: Whether to sort the keys in the YAML representation.
+            **kwargs: Kwargs to pass to the pydantic json(...) method.
+
+        Returns:
+            YAML string representation.
+        """
+        dict_ = json.loads(self.json(**kwargs, sort_keys=sort_keys))
+        return cast(str, yaml.dump(dict_, sort_keys=sort_keys))
+
+    @classmethod
+    def from_yaml(cls: Type[M], path: str) -> M:
+        """Creates an instance from a YAML file.
+
+        Args:
+            path: Path to a YAML file.
+
+        Returns:
+            The model instance.
+        """
+        dict_ = yaml_utils.read_yaml(path)
+        return cls.parse_obj(dict_)

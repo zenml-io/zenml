@@ -47,6 +47,9 @@ class AnalyticsEvent(str, Enum):
     UPDATE_REPOSITORY = "Repository updated"
     DELETE_REPOSITORY = "Repository deleted"
 
+    # Template
+    GENERATE_TEMPLATE = "Template generated"
+
     # Zen store
     INITIALIZED_STORE = "Store initialized"
 
@@ -93,12 +96,12 @@ class AnalyticsEvent(str, Enum):
     UPDATED_TEAM = "Team updated"
     DELETED_TEAM = "Team deleted"
 
-    # Projects
-    CREATED_PROJECT = "Project created"
-    CREATED_DEFAULT_PROJECT = "Default project created"
-    UPDATED_PROJECT = "Project updated"
-    DELETED_PROJECT = "Project deleted"
-    SET_PROJECT = "Project set"
+    # Workspaces
+    CREATED_WORKSPACE = "Workspace created"
+    CREATED_DEFAULT_WORKSPACE = "Default workspace created"
+    UPDATED_WORKSPACE = "Workspace updated"
+    DELETED_WORKSPACE = "Workspace deleted"
+    SET_WORKSPACE = "Workspace set"
 
     # Role
     CREATED_ROLE = "Role created"
@@ -110,6 +113,11 @@ class AnalyticsEvent(str, Enum):
     CREATED_FLAVOR = "Flavor created"
     UPDATED_FLAVOR = "Flavor updated"
     DELETED_FLAVOR = "Flavor deleted"
+
+    # Secret
+    CREATED_SECRET = "Secret created"
+    UPDATED_SECRET = "Secret updated"
+    DELETED_SECRET = "Secret deleted"
 
     # Test event
     EVENT_TEST = "Test event"
@@ -333,11 +341,17 @@ class AnalyticsContext:
         # infinite loop
         if gc._zen_store is not None:
             zen_store = gc.zen_store
+            user = zen_store.get_user()
+
+            if "client_id" not in properties:
+                properties["client_id"] = self.user_id
+            if "user_id" not in properties:
+                properties["user_id"] = str(user.id)
+
             if (
                 zen_store.type == StoreType.REST
                 and "server_id" not in properties
             ):
-                user = zen_store.get_user()
                 server_info = zen_store.get_store_info()
                 properties.update(
                     {
@@ -551,7 +565,6 @@ def track(
             Result of the function.
         """
         with event_handler(event) as handler:
-
             try:
                 if len(args) and isinstance(args[0], AnalyticsTrackerMixin):
                     handler.tracker = args[0]

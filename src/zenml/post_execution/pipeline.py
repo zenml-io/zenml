@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,17 +12,17 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the post-execution pipeline."""
-from typing import TYPE_CHECKING, Any, List, Optional, Type, Union
-from uuid import UUID
+
+from typing import TYPE_CHECKING, Any, List, Optional, Type, Union, cast
 
 from zenml.client import Client
 from zenml.logger import get_apidocs_link, get_logger
 from zenml.models import PipelineResponseModel, PipelineRunFilterModel
+from zenml.post_execution.base_view import BaseView
 from zenml.post_execution.pipeline_run import PipelineRunView
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 
 if TYPE_CHECKING:
-    from zenml.config.pipeline_configurations import PipelineSpec
     from zenml.pipelines.base_pipeline import BasePipeline
 
 logger = get_logger(__name__)
@@ -30,14 +30,14 @@ logger = get_logger(__name__)
 
 @track(event=AnalyticsEvent.GET_PIPELINES)
 def get_pipelines() -> List["PipelineView"]:
-    """Fetches all post-execution pipeline views in the active project.
+    """Fetches all post-execution pipeline views in the active workspace.
 
     Returns:
         A list of post-execution pipeline views.
     """
     # TODO: [server] handle the active stack correctly
     client = Client()
-    pipelines = client.list_pipelines(project_id=client.active_project.id)
+    pipelines = client.list_pipelines(workspace_id=client.active_workspace.id)
     return [PipelineView(model) for model in pipelines.items]
 
 
@@ -114,78 +114,37 @@ def get_pipeline(
         )
 
     client = Client()
-    active_project_id = client.active_project.id
+    active_workspace_id = client.active_workspace.id
 
     pipeline_models = client.list_pipelines(
         name=pipeline_name,
-        project_id=active_project_id,
+        workspace_id=active_workspace_id,
     )
     if pipeline_models.total == 1:
         return PipelineView(pipeline_models.items[0])
     elif pipeline_models.total > 1:
         raise RuntimeError(
-            f"Pipeline_name `{pipeline_name}` not unique within Project "
-            f"`{active_project_id}`."
+            f"Pipeline_name `{pipeline_name}` not unique within workspace "
+            f"`{active_workspace_id}`."
         )
     else:
         return None
 
 
-class PipelineView:
+class PipelineView(BaseView):
     """Post-execution pipeline class."""
 
-    def __init__(self, model: PipelineResponseModel):
-        """Initializes a post-execution pipeline object.
-
-        In most cases `PipelineView` objects should not be created manually
-        but retrieved using the `get_pipelines()` utility from
-        `zenml.post_execution` instead.
-
-        Args:
-            model: The model to initialize this pipeline view from.
-        """
-        self._model = model
+    MODEL_CLASS = PipelineResponseModel
+    REPR_KEYS = ["id", "name"]
 
     @property
-    def id(self) -> UUID:
-        """Returns the ID of this pipeline.
+    def model(self) -> PipelineResponseModel:
+        """Returns the underlying `PipelineResponseModel`.
 
         Returns:
-            The ID of this pipeline.
+            The underlying `PipelineResponseModel`.
         """
-        assert self._model.id is not None
-        return self._model.id
-
-    @property
-    def name(self) -> str:
-        """Returns the name of the pipeline.
-
-        Returns:
-            The name of the pipeline.
-        """
-        return self._model.name
-
-    @property
-    def docstring(self) -> Optional[str]:
-        """Returns the docstring of the pipeline.
-
-        Returns:
-            The docstring of the pipeline.
-        """
-        return self._model.docstring
-
-    @property
-    def spec(self) -> "PipelineSpec":
-        """Returns the spec of the pipeline.
-
-        The pipeline spec contains the source paths of all steps, as well as
-        each of their upstream step names. This is primarily used to compare
-        whether two pipelines are the same.
-
-        Returns:
-            The spec of the pipeline.
-        """
-        return self._model.spec
+        return cast(PipelineResponseModel, self._model)
 
     @property
     def num_runs(self) -> int:
@@ -194,12 +153,13 @@ class PipelineView:
         Returns:
             The number of runs of this pipeline.
         """
-        active_project_id = Client().active_project.id
+        active_workspace_id = Client().active_workspace.id
         return (
             Client()
             .zen_store.list_runs(
                 PipelineRunFilterModel(
-                    project_id=active_project_id, pipeline_id=self._model.id
+                    workspace_id=active_workspace_id,
+                    pipeline_id=self._model.id,
                 )
             )
             .total
@@ -209,18 +169,20 @@ class PipelineView:
     def runs(self) -> List["PipelineRunView"]:
         """Returns the last 50 stored runs of this pipeline.
 
-        The runs are returned in chronological order, so the latest
-        run will be the last element in this list.
+        The runs are returned in reverse chronological order, so the latest
+        run will be the first element in this list.
 
         Returns:
             A list of all stored runs of this pipeline.
         """
         # Do not cache runs as new runs might appear during this objects
         # lifecycle
-        active_project_id = Client().active_project.id
-
+        active_workspace_id = Client().active_workspace.id
         runs = Client().list_runs(
-            project_id=active_project_id, pipeline_id=self._model.id, size=50
+            workspace_id=active_workspace_id,
+            pipeline_id=self.model.id,
+            size=50,
+            sort_by="desc:created",
         )
 
         return [PipelineRunView(run) for run in runs.items]
@@ -255,28 +217,3 @@ class PipelineView:
             )
 
         return orig_pipeline_run
-
-    def __repr__(self) -> str:
-        """Returns a string representation of this pipeline.
-
-        Returns:
-            A string representation of this pipeline.
-        """
-        return (
-            f"{self.__class__.__qualname__}(id={self.id}, "
-            f"name='{self.name}')"
-        )
-
-    def __eq__(self, other: Any) -> bool:
-        """Returns whether the other object is referring to the same pipeline.
-
-        Args:
-            other: The other object to compare to.
-
-        Returns:
-            True if the other object is referring to the same pipeline,
-            False otherwise.
-        """
-        if isinstance(other, PipelineView):
-            return self.id == other.id
-        return NotImplemented
