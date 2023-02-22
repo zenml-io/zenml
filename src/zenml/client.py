@@ -2235,11 +2235,13 @@ class Client(metaclass=ClientMetaClass):
     def create_flavor(
         self,
         source: str,
+        component_type: StackComponentType,
     ) -> "FlavorResponseModel":
         """Creates a new flavor.
 
         Args:
             source: The flavor to create.
+            component_type: The type of the flavor.
 
         Returns:
             The created flavor (in model form).
@@ -2250,7 +2252,7 @@ class Client(metaclass=ClientMetaClass):
         from zenml.utils.source_utils import validate_flavor_source
 
         flavor = validate_flavor_source(
-            source=source,
+            source=source, component_type=component_type
         )()
 
         if len(flavor.config_schema) > TEXT_FIELD_MAX_LENGTH:

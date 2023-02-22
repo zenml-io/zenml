@@ -1025,7 +1025,8 @@ crud_test_configs = [
     ClientCrudTestConfig(
         entity_name="flavor",
         create_args={
-            "source": "tests.unit.test_flavor.AriaOrchestratorFlavor"
+            "source": "tests.unit.test_flavor.AriaOrchestratorFlavor",
+            "component_type": StackComponentType.ORCHESTRATOR,
         },
     ),
 ]

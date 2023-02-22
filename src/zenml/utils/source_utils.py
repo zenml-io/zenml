@@ -587,11 +587,14 @@ def import_python_file(file_path: str, zen_root: str) -> types.ModuleType:
         return module
 
 
-def validate_flavor_source(source: str) -> Type["Flavor"]:
+def validate_flavor_source(
+    source: str, component_type: StackComponentType
+) -> Type["Flavor"]:
     """Import a StackComponent class from a given source and validate its type.
 
     Args:
         source: source path of the implementation
+        component_type: the type of the stack component
 
     Returns:
         the imported class
@@ -635,6 +638,12 @@ def validate_flavor_source(source: str) -> Type["Flavor"]:
         raise TypeError(
             f"The implementation class '{impl_class.__name__}' of a flavor "
             f"needs to be a subclass of the ZenML StackComponent."
+        )
+
+    if flavor.type != component_type:  # noqa
+        raise TypeError(
+            f"The source points to a {impl_class.type}, not a "  # noqa
+            f"{component_type}."
         )
 
     try:
