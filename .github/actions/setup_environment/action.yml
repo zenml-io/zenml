@@ -71,4 +71,4 @@ runs:
         python -m venv .venv
         source $VENV
         python -m pip install --upgrade pip
-        pip install ".[server,dev]"
+        pip install -e ".[server,dev]"

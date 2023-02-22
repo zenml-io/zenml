@@ -69,7 +69,7 @@ jobs:
           zenml integration install -y airflow
           zenml integration install -y kserve
           zenml integration install -y --ignore-integration feast --ignore-integration label_studio --ignore-integration seldon --ignore-integration kserve --ignore-integration airflow --ignore-integration bentoml
-          pip install ".[server]"
+          pip install -e ".[server,dev]"
           pip install jinja2==3.0.3 protobuf==3.20.0 numpy~=1.21.5
 
       - name: Setup git user
