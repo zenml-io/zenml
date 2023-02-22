@@ -76,8 +76,5 @@ runs:
       run: |
         python -m venv .venv
         source $VENV
-        echo "Sourced VENV"
-        which python
-        which pip
         python -m pip install --upgrade pip
         pip install ".[server,dev]"
