@@ -504,6 +504,25 @@ class GCPSecretsStore(BaseSecretsStore):
         # )
         # return zenml_secret
 
+    @track(AnalyticsEvent.DELETED_SECRET)
+    def delete_secret(self, secret_id: UUID) -> None:
+        """Delete a secret.
+
+        Args:
+            secret_id: The ID of the secret to delete.
+        """
+        gcp_secret_name = self.client.secret_path(
+            self.config.project_id,
+            self._get_gcp_secret_name(secret_id=secret_id),
+        )
+
+        # TODO: first check if the secret exists with the list method...
+
+        try:
+            self.client.delete_secret(request={"name": gcp_secret_name})
+        except Exception as e:
+            raise RuntimeError(f"Failed to delete secret: {str(e)}") from e
+
     def list_secrets(
         self, secret_filter_model: SecretFilterModel
     ) -> Page[SecretResponseModel]:
@@ -515,9 +534,4 @@ class GCPSecretsStore(BaseSecretsStore):
         self, secret_id: UUID, secret_update: SecretUpdateModel
     ) -> SecretResponseModel:
         """Updates a secret."""
-        pass
-
-    @track(AnalyticsEvent.DELETED_SECRET)
-    def delete_secret(self, secret_id: UUID) -> None:
-        """Delete a secret."""
         pass
