@@ -1574,7 +1574,7 @@ def test_secrets_cannot_be_created_or_updated_by_readonly_user():
                 # updated in the backend, so we need to wait a bit before
                 # running `list_secrets`.
                 time.sleep(5)
-                
+
             old_secrets = store.list_secrets(
                 SecretFilterModel(name=secret.name)
             ).items
@@ -1597,7 +1597,7 @@ def test_secrets_cannot_be_created_or_updated_by_readonly_user():
                 # updated in the backend, so we need to wait a bit before
                 # running `list_secrets`.
                 time.sleep(5)
-                
+
             old_secrets = store.list_secrets(
                 SecretFilterModel(name=user_secret.name)
             ).items

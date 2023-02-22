@@ -165,7 +165,10 @@ def cleanup_secrets(
     client = Client()
     secrets = client.list_secrets(name=f"startswith:{name_prefix}")
     for secret in secrets.items:
-        client.delete_secret(secret.id)
+        try:
+            client.delete_secret(secret.id)
+        except KeyError:
+            pass
 
 
 def test_temporarily_setting_the_active_stack():
