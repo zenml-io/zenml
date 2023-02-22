@@ -136,24 +136,6 @@ build-backend = "poetry.core.masonry.api"
 [tool.poetry-version-plugin]
 source = "init"
 
-[tool.tox]
-name = "ZenML"
-authors = ["Hamza Tahir <hamza@zenml.io>"]
-legacy_tox_ini = """
-[tox]
-isolated_build = True
-skipsdist = true
-envlist = py36,py37,py38,py39
-
-
-[testenv]
-whitelist_externals = poetry
-commands =
-    poetry install -v --extras all
-    poetry run pytest tests
-    poetry run bash scripts/mypy.sh --install-types
-"""
-
 [tool.pytest.ini_options]
 filterwarnings = [
     "ignore::DeprecationWarning",
