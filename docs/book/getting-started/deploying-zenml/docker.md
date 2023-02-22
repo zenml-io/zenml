@@ -90,8 +90,34 @@ The following environment variables can be passed to the container:
     Set this variable to one of the supported secrets store types:
 
     - `none`: Use this value to disable the secrets store functionality.
-    - `sql`: Use the ZenML SQL database as the secrets store. This is the default value.
-    - (more types to come)
+    - `sql`: Use the ZenML SQL database as the secrets store. This is the
+    default value. See the [SQL Secrets Store Configuration Options](#sql-secrets-store-configuration-options)
+    section below for more configuration options.
+    - `aws`: Use AWS Secrets Manager as the secrets store backend. See the
+    [AWS Secrets Store Configuration Options](#aws-secrets-store-configuration-options)
+    section below for more configuration options.
+    - `gcp`: Use GCP Secrets Manager as the secrets store backend. See the
+    [GCP Secrets Store Configuration Options](#gcp-secrets-store-configuration-options)
+    section below for more configuration options.
+
+- **ZENML_LOGGING_VERBOSITY**:
+    Use this variable to control the verbosity of logs inside the container.
+    It can be set to one of the following values: `NOTSET`, `ERROR`, `WARN`,
+    `INFO` (default), `DEBUG` or `CRITICAL`.
+
+If none of the `ZENML_STORE_*` variables are set, the container will default to
+creating and using a SQLite database file stored at `/zenml/.zenconfig/local_stores/default_zen_store/zenml.db`
+inside the container. The `/zenml/.zenconfig/local_stores` base path where the
+default SQLite database is located can optionally be overridden by setting the
+`ZENML_LOCAL_STORES_PATH` environment variable to point to a different path
+(e.g. a persistent volume or directory that is mounted from the host).
+
+### SQL Secrets Store Configuration Options
+
+These configuration options are only relevant if you're using the SQL database
+as the secrets store backend. The SQL database is used by default, so you only
+need to configure these options if you want to change the default behavior.
+
 - **ZENML_SECRETS_STORE_ENCRYPTION_KEY**:
     This is a secret key used to encrypt all secrets stored in the SQL secrets
     store. If not set, encryption will not be used and passwords will be stored
@@ -116,18 +142,44 @@ as it will be required to decrypt the secrets in the database. If you lose the
 encryption key, you will not be able to decrypt the secrets in the database and
 will have to reset them.
 
+### AWS Secrets Store Configuration Options
 
-- **ZENML_LOGGING_VERBOSITY**:
-    Use this variable to control the verbosity of logs inside the container.
-    It can be set to one of the following values: `NOTSET`, `ERROR`, `WARN`,
-    `INFO` (default), `DEBUG` or `CRITICAL`.
+These configuration options are only relevant if you're using the AWS Secrets
+Manager as the secrets store backend.
 
-If none of the `ZENML_STORE_*` variables are set, the container will default to
-creating and using a SQLite database file stored at `/zenml/.zenconfig/local_stores/default_zen_store/zenml.db`
-inside the container. The `/zenml/.zenconfig/local_stores` base path where the
-default SQLite database is located can optionally be overridden by setting the
-`ZENML_LOCAL_STORES_PATH` environment variable to point to a different path
-(e.g. a persistent volume or directory that is mounted from the host).
+- **ZENML_SECRETS_STORE_REGION_NAME**:
+    The AWS region to use. This must be set to the region where the AWS
+    Secrets Manager service that you want to use is located.
+
+- **ZENML_SECRETS_STORE_AWS_ACCESS_KEY_ID**:
+    The AWS access key ID to use for authentication. This must be set to a valid
+    AWS access key ID that has access to the AWS Secrets Manager service that
+    you want to use. If you are using an IAM role attached to an EKS cluster to
+    authenticate, you can omit this variable.
+
+- **ZENML_SECRETS_STORE_AWS_SECRET_ACCESS_KEY**:
+    The AWS secret access key to use for authentication. This must be set to a
+    valid AWS secret access key that has access to the AWS Secrets Manager
+    service that you want to use. If you are using an IAM role attached to an
+    EKS cluster to authenticate, you can omit this variable.
+
+- **ZENML_SECRETS_STORE_AWS_SESSION_TOKEN**:
+    Optional AWS session token to use for authentication.
+
+- **ZENML_SECRETS_STORE_SECRET_LIST_REFRESH_TIMEOUT**:
+    The AWS Secrets Manager has a known issue where it does not immediately
+    reflect new and updated secrets in the `list_secrets` results. To work
+    around this issue, you can set this value to a non-zero value to
+    get the ZenML server to wait after creating or updating an AWS secret
+    until the changes are reflected in the secrets returned by
+    `list_secrets` or the number of seconds specified by this value has
+    elapsed. Defaults to `0` (disabled). Should not be set to a high value
+    as it may cause thread starvation in the ZenML server on high load.
+
+### GCP Secrets Store Configuration Options
+
+These configuration options are only relevant if you're using the GCP Secrets
+Manager as the secrets store backend.
 
 ### Advanced Server Configuration Options
 

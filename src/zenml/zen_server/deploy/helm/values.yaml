@@ -91,9 +91,13 @@ zenml:
     #
     # sql - Use the same SQL database as the ZenML server
     # aws - Use the AWS Secrets Manager as a secrets store
+    # gcp - Use the GCP Secrets Manager as a secrets store
+    # custom - Use a custom secrets store implementation (needs a custom
+    #          ZenML server image with the custom secrets store implementation
+    #          installed)
     #
     # Depending on the type, additional configuration options may be required
-    # under the `sql` or `aws` sections.
+    # under the respective sections.
     #
     type: sql
 
@@ -131,8 +135,8 @@ zenml:
     # type is used.
     aws:
 
-      # The AWS region to use. This should be set to the region where the AWS
-      # Secrets Manager instance that you want to use is located.
+      # The AWS region to use. This must be set to the region where the AWS
+      # Secrets Manager service that you want to use is located.
       region_name: us-east-1
 
       # The AWS credentials to use to authenticate with the AWS Secrets
@@ -149,8 +153,21 @@ zenml:
       # get the ZenML server to wait after creating or updating an AWS secret
       # until the changes are reflected in the secrets returned by
       # `list_secrets` or the number of seconds specified by this value has
-      # elapsed.
+      # elapsed. Should not be set to a high value as it may cause thread
+      # starvation in the ZenML server on high load.
       secret_list_refresh_timeout: 0
+
+    # Custom secrets store configuration. Only relevant if the custom secrets
+    # store type is used.
+    custom:
+
+      # The class path of the custom secrets store implementation. This should
+      # point to a full Python class that extends the
+      # `zenml.zen_stores.secrets_stores.base_secrets_store.BaseSecretsStore`
+      # base class. The class should be importable from the container image
+      # that you are using for the ZenML server.
+      class_path: my.custom.secrets.store.MyCustomSecretsStore
+
 
   service:
     type: ClusterIP

@@ -14,7 +14,6 @@
 
 import time
 from contextlib import ExitStack as does_not_raise
-from typing import Optional, Tuple
 
 import pytest
 
@@ -35,41 +34,39 @@ from zenml.utils.string_utils import random_str
 # the `list_secrets` API. This is the number of seconds to wait before making
 # `list_secrets` calls after creating/updating a secret to ensure that the
 # latest secret information is returned.
-AWS_SECRET_REFRESH_SLEEP = 5
+AWS_SECRET_REFRESH_SLEEP = 10
 
 
-def _get_secrets_store_type() -> Tuple[SecretsStoreType, Optional[str]]:
-    """Returns the secrets store back-end type and that is used by the test
+def _get_secrets_store_type() -> SecretsStoreType:
+    """Returns the secrets store back-end type that is used by the test
     ZenML deployment.
 
     Returns:
-        The secrets store type that is used by the test ZenML deployment and
-        the name of the integration that provides the secrets store type, if
-        applicable.
+        The secrets store type that is used by the test ZenML deployment.
     """
     store = Client().zen_store
     if not store.config.secrets_store:
-        return SecretsStoreType.NONE, None
+        return SecretsStoreType.NONE
 
     if store.type != StoreType.REST:
-        return (
-            store.config.secrets_store.type,
-            store.secrets_store.config.integration,
-        )
+        return store.config.secrets_store.type
 
     # If we're connected to a remote ZenML deployment, we can't assume anything
     # about the secrets store type. We can check the deployment capabilities.
     environment = TestHarness().active_environment
     if environment.config.has_capability("aws-secrets-store"):
-        return SecretsStoreType.EXTERNAL, "aws"
+        return SecretsStoreType.AWS
 
     if environment.config.has_capability("gcp-secrets-store"):
-        return SecretsStoreType.EXTERNAL, "gcp"
+        return SecretsStoreType.GCP
 
     if environment.config.has_capability("azure-secrets-store"):
-        return SecretsStoreType.EXTERNAL, "azure"
+        return SecretsStoreType.AZURE
 
-    return SecretsStoreType.REST, None
+    if environment.config.has_capability("vault-secrets-store"):
+        return SecretsStoreType.VAULT
+
+    return SecretsStoreType.REST
 
 
 # .---------.
@@ -548,7 +545,7 @@ def test_update_scope_succeeds():
                 ),
             )
 
-        if _get_secrets_store_type() == (SecretsStoreType.EXTERNAL, "aws"):
+        if _get_secrets_store_type() == SecretsStoreType.AWS:
             # The AWS secrets store returns before the secret is actually
             # updated in the backend, so we need to wait a bit before
             # running `list_secrets`.
@@ -597,7 +594,7 @@ def test_update_scope_succeeds():
                 ),
             )
 
-        if _get_secrets_store_type() == (SecretsStoreType.EXTERNAL, "aws"):
+        if _get_secrets_store_type() == SecretsStoreType.AWS:
             # The AWS secrets store returns before the secret is actually
             # updated in the backend, so we need to wait a bit before
             # running `list_secrets`.
@@ -1412,7 +1409,7 @@ def test_list_secrets_pagination_and_sorting():
             ),
         )
 
-        if _get_secrets_store_type() == (SecretsStoreType.EXTERNAL, "aws"):
+        if _get_secrets_store_type() == SecretsStoreType.AWS:
             # The AWS secrets store returns before the secret is actually
             # updated in the backend, so we need to wait a bit before
             # running `list_secrets`.
@@ -1612,7 +1609,7 @@ def test_secrets_cannot_be_created_or_updated_by_readonly_user():
                     secret.id, SecretUpdateModel(name=f"{secret.name}_new")
                 )
 
-            if _get_secrets_store_type() == (SecretsStoreType.EXTERNAL, "aws"):
+            if _get_secrets_store_type() == SecretsStoreType.AWS:
                 # The AWS secrets store returns before the secret is actually
                 # updated in the backend, so we need to wait a bit before
                 # running `list_secrets`.
@@ -1635,7 +1632,7 @@ def test_secrets_cannot_be_created_or_updated_by_readonly_user():
                     SecretUpdateModel(name=f"{user_secret.name}_new"),
                 )
 
-            if _get_secrets_store_type() == (SecretsStoreType.EXTERNAL, "aws"):
+            if _get_secrets_store_type() == SecretsStoreType.AWS:
                 # The AWS secrets store returns before the secret is actually
                 # updated in the backend, so we need to wait a bit before
                 # running `list_secrets`.

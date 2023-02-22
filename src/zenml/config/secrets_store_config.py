@@ -62,20 +62,24 @@ class SecretsStoreConfiguration(BaseModel):
         """
         if not values.get("type"):
             return values
-        if values["type"] == SecretsStoreType.EXTERNAL:
+        if values["type"] == SecretsStoreType.CUSTOM:
             if values["class_path"] is None:
                 raise ValueError(
-                    "A class_path must be set when using an external secrets "
-                    "store."
+                    "A class_path must be set when using a custom secrets "
+                    "store implementation."
                 )
-        elif (
+        elif values["type"] in [
+            SecretsStoreType.SQL,
+            SecretsStoreType.REST,
+        ] and (
             values["integration"] is not None
             or values["class_path"] is not None
         ):
             raise ValueError(
-                "The integration and class_path attributes can only be set "
-                "when using an external secrets store."
+                f"The integration and class_path attributes are not "
+                f"supported for the {values['type']} secrets store type."
             )
+
         return values
 
     class Config:

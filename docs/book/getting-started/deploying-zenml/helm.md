@@ -20,6 +20,12 @@ AWS or Azure). A MySQL server version of 8.0 or higher is required.
 - the [Kubernetes client](https://kubernetes.io/docs/tasks/tools/#kubectl)
 already installed on your machine and configured to access your cluster.
 - [Helm](https://helm.sh/docs/intro/install/) installed on your machine.
+- Optional: an external Secrets Manager service (e.g. one of
+the managed secrets management services offered by Google Cloud,
+AWS, Azure or HashiCorp Vault). By default, ZenML stores secrets inside the
+SQL database that it's connected to, but you also have the option of using an
+external cloud Secrets Manager service if you already happen to use one of those
+cloud or service providers.
 
 To gain access to the ZenML Helm chart, you'll need to clone the ZenML
 repository and checkout the `main` branch, or one of the release tags:
@@ -38,6 +44,7 @@ ZenML deployment.
 
 In addition to tools and infrastructure, you will also need to collect and
 [prepare information related to your database](#collect-information-from-your-sql-database-service)
+and [information related to your external secrets management service](#collect-information-from-your-secrets-management-service)
 to be used for the Helm chart configuration and you may
 also want to install additional [optional services in your cluster](#optional-cluster-services).
 
@@ -80,6 +87,31 @@ also need to prepare additional SSL certificates and keys:
   - the TLS client certificate and key. This is only needed if you decide to use
     client certificates for your DB connection (some managed DB services support
     this, CloudSQL is an example).
+
+### Collect information from your secrets management service
+
+Using an external managed secrets management service like those offered by
+Google Cloud, AWS, Azure or HashiCorp Vault is optional, but is recommended if
+you are already using those cloud service providers. If omitted, ZenML will
+default to using the SQL database to store secrets.
+
+If you decide to use an external secrets management service, you will
+need to collect and prepare the following information for the Helm chart
+configuration (for supported back-ends only):
+
+For the AWS secrets manager:
+
+- the AWS region that you want to use to store your secrets
+- an AWS access key ID and secret access key that have provide full access to
+the AWS secrets manager service. You can create a dedicated IAM user for
+this purpose, or use an existing user with the necessary permissions.
+
+For the Google Cloud secrets manager:
+
+- the Google Cloud project ID that you want to use to store your secrets
+- a Google Cloud service account key that has access to the secrets manager
+service. You can create a dedicated service account for this purpose, or use
+an existing service account with the necessary permissions.
 
 ### Optional cluster services
 

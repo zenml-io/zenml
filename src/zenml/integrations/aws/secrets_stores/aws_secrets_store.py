@@ -93,7 +93,7 @@ class AWSSecretsStoreConfiguration(SecretsStoreConfiguration):
             on the client side.
     """
 
-    type: SecretsStoreType = SecretsStoreType.EXTERNAL
+    type: SecretsStoreType = SecretsStoreType.AWS
     region_name: str
     aws_access_key_id: Optional[SecretStr] = None
     aws_secret_access_key: Optional[SecretStr] = None
@@ -165,7 +165,7 @@ class AWSSecretsStore(BaseSecretsStore):
     """
 
     config: AWSSecretsStoreConfiguration
-    TYPE: ClassVar[SecretsStoreType] = SecretsStoreType.EXTERNAL
+    TYPE: ClassVar[SecretsStoreType] = SecretsStoreType.AWS
     CONFIG_TYPE: ClassVar[
         Type[SecretsStoreConfiguration]
     ] = AWSSecretsStoreConfiguration
