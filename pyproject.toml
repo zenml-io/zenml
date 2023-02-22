@@ -230,7 +230,8 @@ follow_imports = "skip"
 [[tool.mypy.overrides]]
 module = [
     "google.*" ,
-    "transformers.*"  # https://github.com/huggingface/transformers/issues/13390
+    "transformers.*",  # https://github.com/huggingface/transformers/issues/13390
+    "datasets.*"
 ]
 follow_imports = "skip"
 
@@ -239,7 +240,6 @@ module = [
     "tensorflow.*",
     "apache_beam.*",
     "pandas.*",
-    "ml_metadata.*",
     "distro.*",
     "analytics.*",
     "absl.*",
