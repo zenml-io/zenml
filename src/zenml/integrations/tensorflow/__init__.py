@@ -14,7 +14,7 @@
 """Initialization for TensorFlow integration."""
 
 import platform
-from typing import List
+from typing import List, Optional
 from zenml.integrations.constants import TENSORFLOW
 from zenml.integrations.integration import Integration
 
@@ -23,35 +23,32 @@ class TensorflowIntegration(Integration):
     """Definition of Tensorflow integration for ZenML."""
 
     NAME = TENSORFLOW
-    REQUIREMENTS = []
 
     @classmethod
     def activate(cls) -> None:
         """Activates the integration."""
         # need to import this explicitly to load the Tensorflow file IO support
         # for S3 and other file systems
-        os = platform.system()
-        if os == "Linux" or os == "Windows":
+        target_os = platform.system()
+        if target_os == "Linux" or target_os == "Windows":
             import tensorflow_io  # type: ignore [import]
 
         from zenml.integrations.tensorflow import materializers  # noqa
 
     @classmethod
-    def define_platform_specific_requirements(cls, platfrom: str) -> List[str]:
+    def get_requirements(cls, target_os: Optional[str] = None) -> List[str]:
         """Defines platform specific requirements for the integration."""
-
-        if platfrom == "Linux" or platfrom == "Windows":
+        target_os = target_os or platform.system()
+        if target_os == "Darwin":
+            requirements = [
+                "tensorflow-macos>=2.8.0",
+            ]
+        else:
             requirements = [
                 "tensorflow==2.8.0",
                 "tensorflow_io==0.24.0",
                 "protobuf>=3.6.0,<4.0.0",
             ]
-        elif platfrom == "Darwin":
-            requirements = [
-                "tensorflow-macos>=2.8.0",
-            ]
-        else:
-            requirements = []
         return requirements
 
 

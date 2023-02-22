@@ -13,8 +13,7 @@
 #  permissions and limitations under the License.
 """Base and meta classes for ZenML integrations."""
 
-import platform
-from typing import Any, Dict, List, Tuple, Type, cast
+from typing import Any, Dict, List, Optional, Tuple, Type, cast
 
 import pkg_resources
 
@@ -44,10 +43,17 @@ class IntegrationMeta(type):
         cls = cast(Type["Integration"], super().__new__(mcs, name, bases, dct))
         if name != "Integration":
             integration_registry.register_integration(cls.NAME, cls)
-        platform_specific_requirements = (
-            cls.define_platform_specific_requirements(platform.system())
-        )
-        cls.REQUIREMENTS = cls.REQUIREMENTS + platform_specific_requirements
+
+        if getattr(cls, "REQUIREMENTS"):
+            logger.warning(
+                f"Integration {cls.NAME} has a REQUIREMENTS attribute. "
+                f"Please use the get_requirements() method instead."
+                f"REQUIREMENTS will be deprecated in the future."
+            )
+
+        get_requirements = getattr(cls, "get_requirements", None)
+        if get_requirements and callable(get_requirements):
+            cls.REQUIREMENTS = cls.get_requirements()
         return cls
 
 
@@ -88,20 +94,16 @@ class Integration(metaclass=IntegrationMeta):
             return False
 
     @classmethod
-    def define_platform_specific_requirements(cls, platform: str) -> List[str]:
-        """Abstract method to define platform specific requirements.
-
-        If the integfration has platform specific requirements, this method
-        should be overridden to return a list of requirements for the given
-        platform.
+    def get_requirements(cls, target_os: Optional[str] = None) -> List[str]:
+        """Method to get the requirements for the integration.
 
         Args:
-            platform: The platform to define requirements for.
+            target_os: The target operating system to get the requirements for.
 
         Returns:
-            A list of requirements for the given platform.
+            A list of requirements.
         """
-        return []
+        return cls.REQUIREMENTS
 
     @classmethod
     def activate(cls) -> None:
