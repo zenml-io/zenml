@@ -15,30 +15,6 @@
 
 import json
 import re
-from typing import Any, ClassVar, Dict, List, Optional, Tuple, cast, Union
-
-from google.api_core import exceptions as google_exceptions
-from google.cloud import secretmanager
-
-from zenml.exceptions import SecretExistsError
-from zenml.integrations.gcp.flavors.gcp_secrets_manager_flavor import (
-    GCPSecretsManagerConfig,
-    validate_gcp_secret_name_or_namespace,
-)
-from zenml.logger import get_logger
-from zenml.secret.base_secret import BaseSecretSchema
-from zenml.secret.secret_schema_class_registry import SecretSchemaClassRegistry
-from zenml.secrets_managers.base_secrets_manager import (
-    ZENML_SECRET_NAME_LABEL,
-    BaseSecretsManager,
-    SecretsManagerScope,
-)
-from zenml.secrets_managers.utils import secret_from_dict, secret_to_dict
-
-
-import json
-import math
-import re
 import uuid
 from datetime import datetime
 from typing import (
@@ -49,21 +25,18 @@ from typing import (
     Optional,
     Tuple,
     Type,
+    Union,
 )
 from uuid import UUID
 
-import boto3
-from botocore.exceptions import ClientError
-from pydantic import SecretStr
+from google.api_core import exceptions as google_exceptions
+from google.cloud import secretmanager
 
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.enums import (
-    GenericFilterOps,
-    LogicalOperators,
     SecretScope,
     SecretsStoreType,
 )
-from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
 from zenml.models import (
     Page,
@@ -74,7 +47,9 @@ from zenml.models import (
     UserResponseModel,
     WorkspaceResponseModel,
 )
-from zenml.secrets_managers.base_secrets_manager import ZENML_SECRET_NAME_LABEL
+from zenml.secrets_managers.base_secrets_manager import (
+    ZENML_SECRET_NAME_LABEL,
+)
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.zen_stores.base_zen_store import BaseZenStore
 from zenml.zen_stores.secrets_stores.base_secrets_store import (
@@ -234,42 +209,212 @@ class GCPSecretsStore(BaseSecretsStore):
                 f"limited to maximum 63 characters."
             )
 
+    def _check_secret_scope(
+        self,
+        secret_name: str,
+        scope: SecretScope,
+        workspace: UUID,
+        user: UUID,
+        exclude_secret_id: Optional[UUID] = None,
+    ) -> Tuple[bool, str]:
+        """Checks if a secret with the given name already exists in the given scope.
+
+        This method enforces the following scope rules:
+
+          - only one workspace-scoped secret with the given name can exist
+            in the target workspace.
+          - only one user-scoped secret with the given name can exist in the
+            target workspace for the target user.
+
+        Args:
+            secret_name: The name of the secret.
+            scope: The scope of the secret.
+            workspace: The ID of the workspace to which the secret belongs.
+            user: The ID of the user to which the secret belongs.
+            exclude_secret_id: The ID of a secret to exclude from the check
+                (used e.g. during an update to exclude the existing secret).
+
+        Returns:
+            True if a secret with the given name already exists in the given
+            scope, False otherwise, and an error message.
+        """
+        filter = SecretFilterModel(
+            name=secret_name,
+            scope=scope,
+            page=1,
+            size=2,  # We only need to know if there is more than one secret
+        )
+
+        if scope in [SecretScope.WORKSPACE, SecretScope.USER]:
+            filter.workspace_id = workspace
+        if scope == SecretScope.USER:
+            filter.user_id = user
+
+        existing_secrets = self.list_secrets(secret_filter_model=filter).items
+        if exclude_secret_id is not None:
+            existing_secrets = [
+                s for s in existing_secrets if s.id != exclude_secret_id
+            ]
+
+        if existing_secrets:
+
+            existing_secret_model = existing_secrets[0]
+
+            msg = (
+                f"Found an existing {scope.value} scoped secret with the "
+                f"same '{secret_name}' name"
+            )
+            if scope in [SecretScope.WORKSPACE, SecretScope.USER]:
+                msg += (
+                    f" in the same '{existing_secret_model.workspace.name}' "
+                    f"workspace"
+                )
+            if scope == SecretScope.USER:
+                assert existing_secret_model.user
+                msg += (
+                    f" for the same '{existing_secret_model.user.name}' user"
+                )
+
+            return True, msg
+
+        return False, ""
+
+    def _get_gcp_secret_name(
+        self,
+        secret_id: UUID,
+    ) -> str:
+        """Get the GCP secret name for the given secret.
+
+        The convention used for GCP secret names is to use the ZenML
+        secret UUID prefixed with `zenml` as the AWS secret name,
+        i.e. `zenml/<secret_uuid>`.
+
+        Args:
+            secret_id: The ZenML secret ID.
+
+        Returns:
+            The GCP secret name.
+        """
+        return f"{GCP_ZENML_SECRET_NAME_PREFIX}-{str(secret_id)}"
+
+    def _convert_gcp_secret(
+        self,
+        labels: Dict[str, str],
+        created: datetime,
+        updated: datetime,
+        values: Optional[Dict[str, str]] = None,
+    ) -> SecretResponseModel:
+        """Create a ZenML secret model from data stored in an GCP secret.
+
+        Args:
+            labels: The GCP secret labels.
+            created: The GCP secret creation time.
+            updated: The GCP secret last update time.
+            values: The GCP secret values.
+
+        Returns:
+            The ZenML secret model.
+
+        Raises:
+            ValueError: if the GCP secret missing required tags.
+            keyError: if the GCP secret was not found.
+        """
+        # Recover the ZenML secret metadata from the AWS secret tags.
+        try:
+            secret_id = UUID(labels[ZENML_SECRET_ID_LABEL])
+            name = labels[ZENML_SECRET_NAME_LABEL]
+            scope = SecretScope(labels[ZENML_SECRET_SCOPE_LABEL])
+            workspace_id = UUID(labels[ZENML_SECRET_WORKSPACE_LABEL])
+            user_id = UUID(labels[ZENML_SECRET_USER_LABEL])
+        except KeyError as e:
+            raise ValueError(
+                f"Invalid GCP secret: missing required tag '{e}'"
+            ) from e
+
+        try:
+            user, workspace = self._validate_user_and_workspace(
+                user_id, workspace_id
+            )
+        except KeyError as e:
+            # The user or workspace associated with the secret no longer
+            # exists. This can happen if the user or workspace is being
+            # deleted nearly at the same time as this call. In this case, we
+            # raise a KeyError exception. The caller should handle this
+            # exception by assuming that the secret no longer exists.
+            logger.warning(
+                f"Secret with ID '{secret_id}' is associated with a "
+                f"non-existent user or workspace. Silently ignoring the "
+                f"secret: {e}"
+            )
+            raise KeyError(f"Secret with ID {secret_id} not found") from e
+
+        return SecretResponseModel(
+            id=secret_id,
+            name=name,
+            scope=scope,
+            workspace=workspace,
+            user=user,
+            values=values or {},
+            created=created,
+            updated=updated,
+        )
+
     @track(AnalyticsEvent.CREATED_SECRET)
     def create_secret(self, secret: SecretRequestModel) -> SecretResponseModel:
-        """Creates a new secret."""
+        """Create a new secret.
+
+        Args:
+            secret: The secret to create.
+
+        Returns:
+            The created secret.
+        """
         self._validate_gcp_secret_name(secret.name)
 
         user, workspace = self._validate_user_and_workspace(
             secret.user, secret.workspace
         )
-        # TODO: check scope
+
+        # TODO: implement scope checks after list_secrets is implemented
+
+        # Check if a secret with the same name already exists in the same
+        # scope.
+        # secret_exists, msg = self._check_secret_scope(
+        #     secret_name=secret.name,
+        #     scope=secret.scope,
+        #     workspace=secret.workspace,
+        #     user=secret.user,
+        # )
+        # if secret_exists:
+        #     raise EntityExistsError(msg)
 
         secret_id = uuid.uuid4()
         secret_value = json.dumps(secret.secret_values)
 
-        # TODO: catch doesn't exist / already exists / other exceptions (for all
-        # GCP calls )
-        gcp_secret = self.client.create_secret(
-            request={
-                "parent": self.parent_name,
-                "secret_id": f"{GCP_ZENML_SECRET_NAME_PREFIX}-{secret_id}",
-                "secret": {
-                    "replication": {"automatic": {}},
-                    "labels": self._get_secret_metadata_for_secret(
-                        secret=secret, secret_id=secret_id
-                    ),
-                },
-            }
-        )
+        try:
+            gcp_secret = self.client.create_secret(
+                request={
+                    "parent": self.parent_name,
+                    "secret_id": f"{GCP_ZENML_SECRET_NAME_PREFIX}-{secret_id}",
+                    "secret": {
+                        "replication": {"automatic": {}},
+                        "labels": self._get_secret_metadata_for_secret(
+                            secret=secret, secret_id=secret_id
+                        ),
+                    },
+                }
+            )
 
-        logger.debug("Created empty parent secret: %s", gcp_secret.name)
+            logger.debug("Created empty parent secret: %s", gcp_secret.name)
 
-        gcp_secret_version = self.client.add_secret_version(
-            request={
-                "parent": gcp_secret.name,
-                "payload": {"data": secret_value.encode()},
-            }
-        )
+            gcp_secret_version = self.client.add_secret_version(
+                request={
+                    "parent": gcp_secret.name,
+                    "payload": {"data": secret_value.encode()},
+                }
+            )
+        except Exception as e:
+            raise RuntimeError(f"Failed to create secret.: {str(e)}") from e
 
         logger.debug("Added value to secret.")
 
@@ -297,38 +442,67 @@ class GCPSecretsStore(BaseSecretsStore):
         Returns:
             The secret.
         """
-        google_secret_name = self.client.secret_path(
+        gcp_secret_name = self.client.secret_path(
             self.config.project_id,
-            f"{GCP_ZENML_SECRET_NAME_PREFIX}/{secret_id}",
+            self._get_gcp_secret_name(secret_id=secret_id),
         )
 
         try:
-            # fetch the latest secret version
-            google_secret = self.client.get_secret(name=google_secret_name)
-        except google_exceptions.NotFound:
-            raise KeyError(f"Can't find the specified secret '{secret_name}'")
-
-        # make sure the secret has the correct scope labels to filter out
-        # unscoped secrets with similar names
-        scope_labels = self._get_secret_scope_metadata(secret_name)
-        # all scope labels need to be included in the google secret labels,
-        # otherwise the secret does not belong to the current scope
-        if not scope_labels.items() <= google_secret.labels.items():
-            raise KeyError(f"Can't find the specified secret '{secret_name}'")
-
-        try:
-            # fetch the latest secret version
-            response = self.client.access_secret_version(
-                name=f"{google_secret_name}/versions/latest"
+            secret = self.client.get_secret(name=gcp_secret_name)
+            secret_version = self.client.get_secret_version(
+                name=f"{gcp_secret_name}/versions/latest"
             )
-        except google_exceptions.NotFound:
-            raise KeyError(f"Can't find the specified secret '{secret_name}'")
+            secret_version_values = self.client.access_secret_version(
+                name=f"{gcp_secret_name}/versions/latest"
+            )
+        except google_exceptions.NotFound as e:
+            raise KeyError(
+                f"Can't find the specified secret for secret_id '{secret_id}': {str(e)}"
+            ) from e
 
-        secret_value = response.payload.data.decode("UTF-8")
-        zenml_secret = secret_from_dict(
-            json.loads(secret_value), secret_name=secret_name
+        secret_values = json.loads(
+            secret_version_values.payload.data.decode("UTF-8")
         )
-        return zenml_secret
+
+        return self._convert_gcp_secret(
+            labels=secret.labels,
+            created=secret.create_time,
+            updated=secret_version.create_time,
+            values=secret_values,
+        )
+
+        # google_secret_name = self.client.secret_path(
+        #     self.config.project_id,
+        #     f"{GCP_ZENML_SECRET_NAME_PREFIX}/{secret_id}",
+        # )
+
+        # try:
+        #     # fetch the latest secret version
+        #     google_secret = self.client.get_secret(name=google_secret_name)
+        # except google_exceptions.NotFound:
+        #     raise KeyError(f"Can't find the specified secret '{secret_name}'")
+
+        # # make sure the secret has the correct scope labels to filter out
+        # # unscoped secrets with similar names
+        # scope_labels = self._get_secret_scope_metadata(secret_name)
+        # # all scope labels need to be included in the google secret labels,
+        # # otherwise the secret does not belong to the current scope
+        # if not scope_labels.items() <= google_secret.labels.items():
+        #     raise KeyError(f"Can't find the specified secret '{secret_name}'")
+
+        # try:
+        #     # fetch the latest secret version
+        #     response = self.client.access_secret_version(
+        #         name=f"{google_secret_name}/versions/latest"
+        #     )
+        # except google_exceptions.NotFound:
+        #     raise KeyError(f"Can't find the specified secret '{secret_name}'")
+
+        # secret_value = response.payload.data.decode("UTF-8")
+        # zenml_secret = secret_from_dict(
+        #     json.loads(secret_value), secret_name=secret_name
+        # )
+        # return zenml_secret
 
     def list_secrets(
         self, secret_filter_model: SecretFilterModel
