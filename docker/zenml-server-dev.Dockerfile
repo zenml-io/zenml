@@ -34,6 +34,9 @@ COPY src/zenml/__init__.py ./src/zenml/
 RUN pip install -e .[server]
 COPY src src
 
+# Required for the AWS secrets store
+RUN zenml integration install -y aws && rm -rf /root/.config/zenml
+
 RUN mkdir -p /zenml/.zenconfig/local_stores/default_zen_store && chown -R $USER_UID:$USER_GID /zenml
 ENV PATH="$PATH:/home/$USERNAME/.local/bin"
 

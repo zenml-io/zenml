@@ -200,9 +200,15 @@ class AWSSecretsStore(BaseSecretsStore):
             self._client = boto3.client(
                 "secretsmanager",
                 region_name=self.config.region_name,
-                aws_access_key_id=self.config.aws_access_key_id,
-                aws_secret_access_key=self.config.aws_secret_access_key,
-                aws_session_token=self.config.aws_session_token,
+                aws_access_key_id=self.config.aws_access_key_id.get_secret_value()
+                if self.config.aws_access_key_id
+                else None,
+                aws_secret_access_key=self.config.aws_secret_access_key.get_secret_value()
+                if self.config.aws_secret_access_key
+                else None,
+                aws_session_token=self.config.aws_session_token.get_secret_value()
+                if self.config.aws_session_token
+                else None,
             )
         return self._client
 
@@ -261,6 +267,8 @@ class AWSSecretsStore(BaseSecretsStore):
         for secret in secrets:
             try:
                 self.delete_secret(secret.id)
+            except KeyError:
+                pass
             except Exception as e:
                 logger.warning("Failed to delete secret %s: %s", secret.id, e)
 
@@ -285,6 +293,8 @@ class AWSSecretsStore(BaseSecretsStore):
         for secret in secrets:
             try:
                 self.delete_secret(secret.id)
+            except KeyError:
+                pass
             except Exception as e:
                 logger.warning("Failed to delete secret %s: %s", secret.id, e)
 

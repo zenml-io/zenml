@@ -60,6 +60,8 @@ class SecretsStoreConfiguration(BaseModel):
             ValueError: If class_path is not set when using an external secrets
                 store.
         """
+        if not values.get("type"):
+            return values
         if values["type"] == SecretsStoreType.EXTERNAL:
             if values["class_path"] is None:
                 raise ValueError(

@@ -96,7 +96,11 @@ DEFAULT_GUEST_ROLE = "guest"
 class StoreEvent(StrEnum):
     """Events that can be triggered by the store."""
 
+    # Triggered just before deleting a workspace. The workspace ID is passed as
+    # a `workspace_id` UUID argument.
     WORKSPACE_DELETED = "workspace_deleted"
+    # Triggered just before deleting a user. The user ID is passed as
+    # a `user_id` UUID argument.
     USER_DELETED = "user_deleted"
 
 
@@ -515,7 +519,14 @@ class BaseZenStore(
             **kwargs: The event arguments.
         """
         for handler in self._event_handlers.get(event, []):
-            handler(event, **kwargs)
+            try:
+                handler(event, **kwargs)
+            except Exception as e:
+                logger.error(
+                    f"Silently ignoring error caught while triggering event "
+                    f"store handler for event {event.value}: {e}",
+                    exc_info=True,
+                )
 
     # ------
     # Stacks

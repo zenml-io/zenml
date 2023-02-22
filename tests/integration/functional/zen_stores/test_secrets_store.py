@@ -14,9 +14,11 @@
 
 import time
 from contextlib import ExitStack as does_not_raise
+from typing import Optional, Tuple
 
 import pytest
 
+from tests.harness.harness import TestHarness
 from tests.integration.functional.utils import sample_name
 from tests.integration.functional.zen_stores.utils import (
     SecretContext,
@@ -24,10 +26,51 @@ from tests.integration.functional.zen_stores.utils import (
     WorkspaceContext,
 )
 from zenml.client import Client
-from zenml.enums import SecretScope, StoreType
+from zenml.enums import SecretScope, SecretsStoreType, StoreType
 from zenml.exceptions import EntityExistsError, IllegalOperationError
 from zenml.models.secret_models import SecretFilterModel, SecretUpdateModel
 from zenml.utils.string_utils import random_str
+
+# The AWS secrets store takes some time to reflect new and updated secrets in
+# the `list_secrets` API. This is the number of seconds to wait before making
+# `list_secrets` calls after creating/updating a secret to ensure that the
+# latest secret information is returned.
+AWS_SECRET_REFRESH_SLEEP = 5
+
+
+def _get_secrets_store_type() -> Tuple[SecretsStoreType, Optional[str]]:
+    """Returns the secrets store back-end type and that is used by the test
+    ZenML deployment.
+
+    Returns:
+        The secrets store type that is used by the test ZenML deployment and
+        the name of the integration that provides the secrets store type, if
+        applicable.
+    """
+    store = Client().zen_store
+    if not store.config.secrets_store:
+        return SecretsStoreType.NONE, None
+
+    if store.type != StoreType.REST:
+        return (
+            store.config.secrets_store.type,
+            store.secrets_store.config.integration,
+        )
+
+    # If we're connected to a remote ZenML deployment, we can't assume anything
+    # about the secrets store type. We can check the deployment capabilities.
+    environment = TestHarness().active_environment
+    if environment.config.has_capability("aws-secrets-store"):
+        return SecretsStoreType.EXTERNAL, "aws"
+
+    if environment.config.has_capability("gcp-secrets-store"):
+        return SecretsStoreType.EXTERNAL, "gcp"
+
+    if environment.config.has_capability("azure-secrets-store"):
+        return SecretsStoreType.EXTERNAL, "azure"
+
+    return SecretsStoreType.REST, None
+
 
 # .---------.
 # | SECRETS |
@@ -505,11 +548,11 @@ def test_update_scope_succeeds():
                 ),
             )
 
-        if store.secrets_store.config.integration == "aws":
+        if _get_secrets_store_type() == (SecretsStoreType.EXTERNAL, "aws"):
             # The AWS secrets store returns before the secret is actually
             # updated in the backend, so we need to wait a bit before
             # running `list_secrets`.
-            time.sleep(5)
+            time.sleep(AWS_SECRET_REFRESH_SLEEP)
 
         assert updated_secret.name == secret.name
         assert updated_secret.scope == SecretScope.USER
@@ -554,11 +597,11 @@ def test_update_scope_succeeds():
                 ),
             )
 
-        if store.secrets_store.config.integration == "aws":
+        if _get_secrets_store_type() == (SecretsStoreType.EXTERNAL, "aws"):
             # The AWS secrets store returns before the secret is actually
             # updated in the backend, so we need to wait a bit before
             # running `list_secrets`.
-            time.sleep(5)
+            time.sleep(AWS_SECRET_REFRESH_SLEEP)
 
         assert updated_secret.name == secret.name
         assert updated_secret.scope == SecretScope.WORKSPACE
@@ -1369,11 +1412,11 @@ def test_list_secrets_pagination_and_sorting():
             ),
         )
 
-        if store.secrets_store.config.integration == "aws":
+        if _get_secrets_store_type() == (SecretsStoreType.EXTERNAL, "aws"):
             # The AWS secrets store returns before the secret is actually
             # updated in the backend, so we need to wait a bit before
             # running `list_secrets`.
-            time.sleep(5)
+            time.sleep(AWS_SECRET_REFRESH_SLEEP)
 
         secrets = store.list_secrets(
             SecretFilterModel(
@@ -1569,11 +1612,11 @@ def test_secrets_cannot_be_created_or_updated_by_readonly_user():
                     secret.id, SecretUpdateModel(name=f"{secret.name}_new")
                 )
 
-            if store.secrets_store.config.integration == "aws":
+            if _get_secrets_store_type() == (SecretsStoreType.EXTERNAL, "aws"):
                 # The AWS secrets store returns before the secret is actually
                 # updated in the backend, so we need to wait a bit before
                 # running `list_secrets`.
-                time.sleep(5)
+                time.sleep(AWS_SECRET_REFRESH_SLEEP)
 
             old_secrets = store.list_secrets(
                 SecretFilterModel(name=secret.name)
@@ -1592,11 +1635,11 @@ def test_secrets_cannot_be_created_or_updated_by_readonly_user():
                     SecretUpdateModel(name=f"{user_secret.name}_new"),
                 )
 
-            if store.secrets_store.config.integration == "aws":
+            if _get_secrets_store_type() == (SecretsStoreType.EXTERNAL, "aws"):
                 # The AWS secrets store returns before the secret is actually
                 # updated in the backend, so we need to wait a bit before
                 # running `list_secrets`.
-                time.sleep(5)
+                time.sleep(AWS_SECRET_REFRESH_SLEEP)
 
             old_secrets = store.list_secrets(
                 SecretFilterModel(name=user_secret.name)

@@ -1872,10 +1872,11 @@ class SqlZenStore(BaseZenStore):
                 raise IllegalOperationError(
                     "The default user account cannot be deleted."
                 )
+
+            self._trigger_event(StoreEvent.USER_DELETED, user_id=user.id)
+
             session.delete(user)
             session.commit()
-
-        self._trigger_event(StoreEvent.USER_DELETED, user_id=user.id)
 
     # -----
     # Teams
@@ -2621,12 +2622,12 @@ class SqlZenStore(BaseZenStore):
                     "The default workspace cannot be deleted."
                 )
 
+            self._trigger_event(
+                StoreEvent.WORKSPACE_DELETED, workspace_id=workspace.id
+            )
+
             session.delete(workspace)
             session.commit()
-
-        self._trigger_event(
-            StoreEvent.WORKSPACE_DELETED, workspace_id=workspace.id
-        )
 
     # ---------
     # Pipelines
