@@ -62,9 +62,11 @@ runs:
         key: venv-${{ runner.os }}-python-${{ inputs.python-version }}-${{ hashFiles('pyproject.toml') }}-${{ steps.date.outputs.date }}-${{ hashFiles('cache_version') }}
 
     - name: Set windows venv activation env variable
+      shell: bash
       run: echo "VENV=.venv/scripts/activate" >> "$GITHUB_ENV"
       if: runner.os == 'Windows'
     - name: Set unix venv activation env variable
+      shell: bash
       run: echo "VENV=.venv/bin/activate" >> "$GITHUB_ENV"
       if: runner.os != 'Windows'
 
