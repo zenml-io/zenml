@@ -426,7 +426,8 @@ class PipelineDockerImageBuilder:
         integration_requirements = set(
             itertools.chain.from_iterable(
                 integration_registry.select_integration_requirements(
-                    integration
+                    integration_name=integration,
+                    target_os=docker_settings.target_os,
                 )
                 for integration in docker_settings.required_integrations
             )

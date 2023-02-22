@@ -30,6 +30,7 @@ class AirflowIntegration(Integration):
     """Definition of Airflow Integration for ZenML."""
 
     NAME = AIRFLOW
+    REQUIREMENTS = ["apache-airflow~=2.4.0"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
@@ -43,18 +44,6 @@ class AirflowIntegration(Integration):
         )
 
         return [AirflowOrchestratorFlavor]
-
-    @classmethod
-    def get_requirements(cls, target_os: Optional[str] = None) -> List[str]:
-        """Defines platform specific requirements for the integration.
-
-        Args:
-            target_os: The target operating system.
-
-        Returns:
-            A list of requirements.
-        """
-        return ["apache-airflow~=2.4.0"]
 
 
 AirflowIntegration.check_installation()

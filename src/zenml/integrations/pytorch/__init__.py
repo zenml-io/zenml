@@ -24,23 +24,12 @@ class PytorchIntegration(Integration):
     """Definition of PyTorch integration for ZenML."""
 
     NAME = PYTORCH
+    REQUIREMENTS = ["torch"]
 
     @classmethod
     def activate(cls) -> None:
         """Activates the integration."""
         from zenml.integrations.pytorch import materializers  # noqa
-
-    @classmethod
-    def get_requirements(cls, target_os: Optional[str] = None) -> List[str]:
-        """Defines platform specific requirements for the integration.
-
-        Args:
-            target_os: The target operating system.
-
-        Returns:
-            A list of requirements.
-        """
-        return ["torch"]
 
 
 PytorchIntegration.check_installation()

@@ -43,17 +43,6 @@ class IntegrationMeta(type):
         cls = cast(Type["Integration"], super().__new__(mcs, name, bases, dct))
         if name != "Integration":
             integration_registry.register_integration(cls.NAME, cls)
-
-        if getattr(cls, "REQUIREMENTS"):
-            logger.warning(
-                f"Integration {cls.NAME} has a REQUIREMENTS attribute. "
-                f"Please use the get_requirements() method instead."
-                f"REQUIREMENTS will be deprecated in the future."
-            )
-
-        get_requirements = getattr(cls, "get_requirements", None)
-        if get_requirements and callable(get_requirements):
-            cls.REQUIREMENTS = cls.get_requirements()
         return cls
 
 
@@ -73,11 +62,11 @@ class Integration(metaclass=IntegrationMeta):
             True if all required packages are installed, False otherwise.
         """
         try:
-            for r in cls.REQUIREMENTS:
+            for r in cls.get_requirements():
                 pkg_resources.get_distribution(r)
             logger.debug(
                 f"Integration {cls.NAME} is installed correctly with "
-                f"requirements {cls.REQUIREMENTS}."
+                f"requirements {cls.get_requirements()}."
             )
             return True
         except pkg_resources.DistributionNotFound as e:
