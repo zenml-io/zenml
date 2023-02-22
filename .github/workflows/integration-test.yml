@@ -242,7 +242,7 @@ jobs:
         run: |
           source $VENV
           # re-install zenml to be sure
-          poetry install --extras server
+          pip install ".[server,dev]"
           # install airflow requirements
           pip install "numpy>=1.21.0,<1.24.0"
           pip install apache-airflow-providers-docker

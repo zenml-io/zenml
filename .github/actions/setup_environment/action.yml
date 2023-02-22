@@ -32,11 +32,11 @@ runs:
       run: |
         echo "SHELL_EXECUTABLE=C:\Program Files\Git\bin\bash.exe" >> $GITHUB_ENV
 
-    - name: Install Poetry
-      uses: snok/install-poetry@v1.3.1
-      with:
-        virtualenvs-create: true
-        virtualenvs-in-project: true
+    # - name: Install Poetry
+    #   uses: snok/install-poetry@v1.3.1
+    #   with:
+    #     virtualenvs-create: true
+    #     virtualenvs-in-project: true
 
     - name: Get current date
       shell: bash
@@ -55,7 +55,6 @@ runs:
       with:
         path: |
           .venv
-          poetry.lock
         # Cache the complete venv dir for a given os, python version,
         # pyproject.toml, the current calendar week and the cache version.
         # Providing a different value for the cache version enables manual
@@ -65,4 +64,12 @@ runs:
     - name: Install Project
       shell: bash
       if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-      run: poetry install --extras server
+      run: |
+        python -m venv .venv
+        source .venv/bin/activate
+        pip install --upgrade pip
+        pip install ".[server,dev]"
+
+    - name: Export virtualenv environment variable
+      shell: bash
+      run: export VENV=.venv/bin/activate
