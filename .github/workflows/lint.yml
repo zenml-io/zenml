@@ -45,5 +45,8 @@ jobs:
         
       - name: Lint
         run: |
-          source $VENV 
+          source $VENV
+          pwd
+          ls -la 
+          mypy src/zenml/ --config-file=pyproject.toml
           bash scripts/lint.sh
