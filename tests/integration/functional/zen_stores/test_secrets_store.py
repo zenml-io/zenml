@@ -1241,7 +1241,7 @@ def test_list_secrets_pagination_and_sorting():
             )
         )
         assert len(secrets.items) == 4
-        assert secrets.page == 1
+        assert secrets.index == 1
         assert secrets.total_pages == 1
         assert secrets.total == 4
 
@@ -1258,7 +1258,7 @@ def test_list_secrets_pagination_and_sorting():
             )
         )
         assert len(secrets.items) == 2
-        assert secrets.page == 1
+        assert secrets.index == 1
         assert secrets.total_pages == 2
         assert secrets.total == 4
 
@@ -1273,7 +1273,7 @@ def test_list_secrets_pagination_and_sorting():
             )
         )
         assert len(secrets.items) == 2
-        assert secrets.page == 2
+        assert secrets.index == 2
         assert secrets.total_pages == 2
         assert secrets.total == 4
 
@@ -1290,7 +1290,7 @@ def test_list_secrets_pagination_and_sorting():
             )
         )
         assert len(secrets.items) == 2
-        assert secrets.page == 1
+        assert secrets.index == 1
         assert secrets.total_pages == 2
         assert secrets.total == 4
 
@@ -1307,7 +1307,7 @@ def test_list_secrets_pagination_and_sorting():
             )
         )
         assert len(secrets.items) == 2
-        assert secrets.page == 2
+        assert secrets.index == 2
         assert secrets.total_pages == 2
         assert secrets.total == 4
 
@@ -1322,7 +1322,7 @@ def test_list_secrets_pagination_and_sorting():
             )
         )
         assert len(secrets.items) == 2
-        assert secrets.page == 1
+        assert secrets.index == 1
         assert secrets.total_pages == 2
         assert secrets.total == 4
 
@@ -1337,7 +1337,7 @@ def test_list_secrets_pagination_and_sorting():
             )
         )
         assert len(secrets.items) == 2
-        assert secrets.page == 2
+        assert secrets.index == 2
         assert secrets.total_pages == 2
         assert secrets.total == 4
 
@@ -1354,7 +1354,7 @@ def test_list_secrets_pagination_and_sorting():
             )
         )
         assert len(secrets.items) == 3
-        assert secrets.page == 1
+        assert secrets.index == 1
         assert secrets.total_pages == 2
         assert secrets.total == 4
 
@@ -1373,7 +1373,7 @@ def test_list_secrets_pagination_and_sorting():
             )
         )
         assert len(secrets.items) == 1
-        assert secrets.page == 2
+        assert secrets.index == 2
         assert secrets.total_pages == 2
         assert secrets.total == 4
 
@@ -1424,7 +1424,7 @@ def test_list_secrets_pagination_and_sorting():
             )
         )
         assert len(secrets.items) == 2
-        assert secrets.page == 1
+        assert secrets.index == 1
         assert secrets.total_pages == 2
         assert secrets.total == 4
 
@@ -1442,7 +1442,7 @@ def test_list_secrets_pagination_and_sorting():
             )
         )
         assert len(secrets.items) == 2
-        assert secrets.page == 2
+        assert secrets.index == 2
         assert secrets.total_pages == 2
         assert secrets.total == 4
 
@@ -1465,7 +1465,7 @@ def test_list_secrets_pagination_and_sorting():
         )
 
         assert len(secrets.items) == 2
-        assert secrets.page == 1
+        assert secrets.index == 1
         assert secrets.total_pages == 1
         assert secrets.total == 2
 

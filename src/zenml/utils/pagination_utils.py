@@ -36,8 +36,8 @@ def depaginate(
     """
     page = list_method()
     items = list(page.items)
-    while page.page < page.total_pages:
-        page = list_method(page=page.page + 1)
+    while page.index < page.total_pages:
+        page = list_method(page=page.index + 1)
         items += list(page.items)
 
     return items

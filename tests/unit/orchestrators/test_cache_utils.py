@@ -158,8 +158,8 @@ def test_fetching_cached_step_run_queries_cache_candidates(
     mock_list_run_steps = mocker.patch(
         "zenml.client.Client.list_run_steps",
         return_value=Page(
-            page=1,
-            size=1,
+            index=1,
+            max_size=1,
             total_pages=1,
             total=0,
             items=[],
@@ -173,8 +173,8 @@ def test_fetching_cached_step_run_queries_cache_candidates(
     mock_list_run_steps = mocker.patch(
         "zenml.client.Client.list_run_steps",
         return_value=Page(
-            page=1,
-            size=1,
+            index=1,
+            max_size=1,
             total_pages=1,
             total=1,
             items=[cache_candidate],
