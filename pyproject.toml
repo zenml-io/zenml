@@ -85,6 +85,7 @@ jinja2-time = { version = "^0.2.0", optional = true }
 black = { version = "^22.3.0", optional = true }
 ruff = { version = "^0.0.247", optional = true }
 
+# Optional development dependencies
 coverage = { extras = ["toml"], version = "^5.5", optional = true }
 mypy = { version = "^1.0.0", optional = true }
 pre-commit = { version = "^2.14.0", optional = true }
