@@ -226,7 +226,7 @@ follow_imports = "skip"
 
 # end of fix
 
-# import all google and transformers files as `Any`
+# import all google, transformers and datasets files as `Any`
 [[tool.mypy.overrides]]
 module = [
     "google.*" ,
@@ -287,7 +287,8 @@ module = [
     "jose.*",
     "fastapi_utils.*",
     "sqlalchemy_utils.*",
-    "copier.*"
+    "copier.*",
+    "datasets.*"
 ]
 ignore_missing_imports = true
 
