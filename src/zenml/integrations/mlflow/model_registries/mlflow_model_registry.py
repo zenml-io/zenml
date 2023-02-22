@@ -289,7 +289,6 @@ class MLFlowModelRegistry(BaseModelRegistry):
 
         Raises:
             RuntimeError: If mlflow fails to get the model.
-            EntityExistsError: If the model does not exist.
         """
         # Get the registered model.
         try:

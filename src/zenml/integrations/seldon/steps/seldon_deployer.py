@@ -415,6 +415,7 @@ def seldon_mlflow_registry_deployer_step(
             registry_model_stage is provided
         ValueError: if the MLflow experiment tracker is not available in the
             active stack
+        RuntimeError: if no model version is found in the MLflow model registry.
     """
     # import here to avoid failing the pipeline if the step is not used
     from zenml.integrations.mlflow.experiment_trackers import (

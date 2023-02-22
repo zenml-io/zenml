@@ -89,7 +89,8 @@ def mlflow_register_model_step(
     Raises:
         ValueError: If the model registry is not an MLflow model registry.
         ValueError: If the experiment tracker is not an MLflow experiment tracker.
-        ValueError: If no model source URI is provided and no model is found
+        RuntimeError: If no model source URI is provided and no model is found.
+        RuntimeError: If no run ID is provided and no run is found.
     """
     # get the experiment tracker and check if it is an MLflow experiment tracker.
     experiment_tracker = Client().active_stack.experiment_tracker
@@ -103,7 +104,7 @@ def mlflow_register_model_step(
     # fetch the MLflow model registry
     model_registry = Client().active_stack.model_registry
     if not isinstance(model_registry, MLFlowModelRegistry):
-        raise RuntimeError(
+        raise ValueError(
             "The MLflow model registry step can only be used with an "
             "MLflow model registry."
         )
@@ -148,7 +149,7 @@ def mlflow_register_model_step(
             run_id=mlflow_run_id, artifact_path=params.trained_model_name
         )
     if not model_source_uri:
-        raise ValueError(
+        raise RuntimeError(
             "No model source URI provided or no model found in the "
             "MLflow tracking server for the given inputs."
         )
