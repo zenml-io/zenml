@@ -61,15 +61,18 @@ runs:
         # invalidation of the cache in case it is in some erroneous state.
         key: venv-${{ runner.os }}-python-${{ inputs.python-version }}-${{ hashFiles('pyproject.toml') }}-${{ steps.date.outputs.date }}-${{ hashFiles('cache_version') }}
 
+    - name: Set windows venv activation env variable
+      run: echo "VENV=.venv/scripts/activate" >> "$GITHUB_ENV"
+      if: runner.os == 'Windows'
+    - name: Set unix venv activation env variable
+      run: echo "VENV=.venv/bin/activate" >> "$GITHUB_ENV"
+      if: runner.os != 'Windows'
+
     - name: Install Project
       shell: bash
       if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
       run: |
         python -m venv .venv
-        source .venv/bin/activate
+        source $VENV
         pip install --upgrade pip
         pip install ".[server,dev]"
-
-    - name: Export virtualenv environment variable
-      shell: bash
-      run: export VENV=.venv/bin/activate
