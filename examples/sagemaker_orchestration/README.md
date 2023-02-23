@@ -91,7 +91,7 @@ zenml secrets-manager secret register s3_secret --aws_access_key_id=<YOUR_ACCESS
 zenml artifact-store register aws_artifact_store --flavor=s3 --path=<PATH_TO_YOUR_S3_BUCKET> --authentication_secret=s3_secret
 
 # register the orchestrator
-zenml orchestrator register sagemaker_orchestrator --flavor=sagemaker --execution_role=<NAME_OF_AWS_ROLE_CREATED_EARLIER>
+zenml orchestrator register sagemaker_orchestrator --flavor=sagemaker --execution_role=<AWS_ROLE_ARN_CREATED_EARLIER>
 
 # Now we're ready to assemble our stack
 zenml stack register sagemaker_stack -a aws_artifact_store -o sagemaker_orchestrator -c aws_registry -x aws_secrets_manager --set
