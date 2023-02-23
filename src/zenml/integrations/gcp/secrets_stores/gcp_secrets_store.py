@@ -526,8 +526,30 @@ class GCPSecretsStore(BaseSecretsStore):
     def list_secrets(
         self, secret_filter_model: SecretFilterModel
     ) -> Page[SecretResponseModel]:
-        """List all secrets matching the given filter criteria."""
-        pass
+        """List all secrets matching the given filter criteria.
+
+        Args:
+            secret_filter_model: The filter criteria.
+
+        Returns:
+            A list of all secrets matching the filter criteria, with pagination
+                information and sorted according to the filter criteria.
+        """
+        breakpoint()
+        set_of_secrets = set()
+
+        # List all secrets.
+        for secret in self.client.list_secrets(
+            request={
+                "parent": self.parent_name,
+                "filter": "name:"
+            }
+        ):
+            name = secret.labels[ZENML_SECRET_NAME_LABEL]
+            set_of_secrets.add(name)
+
+        secrets = list(set_of_secrets)
+        return secrets
 
     @track(AnalyticsEvent.UPDATED_SECRET)
     def update_secret(
