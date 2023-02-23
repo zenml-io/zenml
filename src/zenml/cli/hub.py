@@ -202,7 +202,7 @@ def install_plugin(plugin_name: str, version: str) -> None:
             "-m",
             "pip",
             "install",
-            "--index-url",
+            "--extra-index-url",
             index_url,
             wheel_name,
         ]
