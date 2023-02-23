@@ -82,10 +82,7 @@ zenml init
 zenml container-registry register aws_registry --flavor=aws --uri=<CONTAINER_REGISTRY_URI>
 
 # For the secrets manager, all we'll need it the gcp PROJECT_ID
-zenml secrets-manager register aws_secrets_manager --flavor=aws --region=<YOUR_AWS_REGION>
-
-# You'll need to register a secret to use for your artifact-store authentication
-zenml secrets-manager secret register s3_secret --aws_access_key_id=<YOUR_ACCESS_KEY_ID> --aws_secret_access_key=<YOUR_SECRET_ACCESS_KEY> --schema=aws
+zenml secrets-manager register aws_secrets_manager --flavor=aws --region_name=<YOUR_AWS_REGION>
 
 # The PATH_TO_YOUR_S3_BUCKET is the path to your S3 bucket: s3://xxx
 zenml artifact-store register aws_artifact_store --flavor=s3 --path=<PATH_TO_YOUR_S3_BUCKET> --authentication_secret=s3_secret
@@ -95,6 +92,9 @@ zenml orchestrator register sagemaker_orchestrator --flavor=sagemaker --executio
 
 # Now we're ready to assemble our stack
 zenml stack register sagemaker_stack -a aws_artifact_store -o sagemaker_orchestrator -c aws_registry -x aws_secrets_manager --set
+
+# You'll need to register a secret to use for your artifact-store authentication
+zenml secrets-manager secret register s3_secret --aws_access_key_id=<YOUR_ACCESS_KEY_ID> --aws_secret_access_key=<YOUR_SECRET_ACCESS_KEY> --schema=aws
 ```
 
 ### ▶️ Run the pipeline
