@@ -44,6 +44,15 @@ class Flavor:
         return None
 
     @property
+    def sdk_docs_url(self) -> Optional[str]:
+        """A url to point at SDK docs explaining this flavor.
+
+        Returns:
+            A flavor SDK docs url.
+        """
+        return None
+
+    @property
     def logo_url(self) -> Optional[str]:
         """A url to represent the flavor in the dashboard.
 

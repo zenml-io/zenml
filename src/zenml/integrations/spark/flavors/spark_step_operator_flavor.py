@@ -134,6 +134,15 @@ class SparkStepOperatorFlavor(BaseStepOperatorFlavor):
         return self.generate_default_docs_url(component_name=old_docs_name)
 
     @property
+    def sdk_docs_url(self) -> Optional[str]:
+        """A url to point at SDK docs explaining this flavor.
+
+        Returns:
+            A flavor SDK docs url.
+        """
+        return self.generate_default_sdk_docs_url()
+
+    @property
     def implementation_class(self) -> Type["SparkStepOperator"]:
         """Implementation class for this flavor.
 

@@ -159,7 +159,7 @@ class LocalArtifactStoreFlavor(BaseArtifactStoreFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> str:
+    def sdk_docs_url(self) -> Optional[str]:
         """A url to point at docs explaining this flavor.
 
         Returns:
