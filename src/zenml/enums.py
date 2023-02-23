@@ -103,7 +103,11 @@ class SecretsStoreType(StrEnum):
     NONE = "none"  # indicates that the secrets store is disabled
     SQL = StoreType.SQL.value
     REST = StoreType.REST.value
-    EXTERNAL = "external"  # indicates that the secrets store is external
+    AWS = "aws"
+    GCP = "gcp"
+    AZURE = "azure"
+    VAULT = "vault"
+    CUSTOM = "custom"  # indicates that the secrets store uses a custom backend
 
 
 class ContainerRegistryFlavor(StrEnum):

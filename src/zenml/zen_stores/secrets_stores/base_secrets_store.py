@@ -191,13 +191,23 @@ class BaseSecretsStore(
 
             return RestSecretsStore
 
-        if store_config.type == SecretsStoreType.EXTERNAL:
-            return BaseSecretsStore._load_external_store_class(store_config)
+        if store_config.type == SecretsStoreType.AWS:
+            store_config.integration = "aws"
+            store_config.class_path = (
+                "zenml.integrations.aws.secrets_stores.AWSSecretsStore"
+            )
+        elif store_config.type == SecretsStoreType.GCP:
+            store_config.integration = "gcp"
+            store_config.class_path = (
+                "zenml.integrations.gcp.secrets_stores.GCPSecretsStore"
+            )
+        elif store_config.type != SecretsStoreType.CUSTOM:
+            raise TypeError(
+                f"No store implementation found for secrets store type "
+                f"`{store_config.type.value}`."
+            )
 
-        raise TypeError(
-            f"No store implementation found for secrets store type "
-            f"`{store_config.type.value}`."
-        )
+        return BaseSecretsStore._load_external_store_class(store_config)
 
     @staticmethod
     def create_store(

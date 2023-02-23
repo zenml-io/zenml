@@ -93,7 +93,7 @@ class AWSSecretsStoreConfiguration(SecretsStoreConfiguration):
             on the client side.
     """
 
-    type: SecretsStoreType = SecretsStoreType.EXTERNAL
+    type: SecretsStoreType = SecretsStoreType.AWS
     region_name: str
     aws_access_key_id: Optional[SecretStr] = None
     aws_secret_access_key: Optional[SecretStr] = None
@@ -165,7 +165,7 @@ class AWSSecretsStore(BaseSecretsStore):
     """
 
     config: AWSSecretsStoreConfiguration
-    TYPE: ClassVar[SecretsStoreType] = SecretsStoreType.EXTERNAL
+    TYPE: ClassVar[SecretsStoreType] = SecretsStoreType.AWS
     CONFIG_TYPE: ClassVar[
         Type[SecretsStoreConfiguration]
     ] = AWSSecretsStoreConfiguration
@@ -200,9 +200,15 @@ class AWSSecretsStore(BaseSecretsStore):
             self._client = boto3.client(
                 "secretsmanager",
                 region_name=self.config.region_name,
-                aws_access_key_id=self.config.aws_access_key_id,
-                aws_secret_access_key=self.config.aws_secret_access_key,
-                aws_session_token=self.config.aws_session_token,
+                aws_access_key_id=self.config.aws_access_key_id.get_secret_value()
+                if self.config.aws_access_key_id
+                else None,
+                aws_secret_access_key=self.config.aws_secret_access_key.get_secret_value()
+                if self.config.aws_secret_access_key
+                else None,
+                aws_session_token=self.config.aws_session_token.get_secret_value()
+                if self.config.aws_session_token
+                else None,
             )
         return self._client
 
@@ -261,6 +267,8 @@ class AWSSecretsStore(BaseSecretsStore):
         for secret in secrets:
             try:
                 self.delete_secret(secret.id)
+            except KeyError:
+                pass
             except Exception as e:
                 logger.warning("Failed to delete secret %s: %s", secret.id, e)
 
@@ -285,6 +293,8 @@ class AWSSecretsStore(BaseSecretsStore):
         for secret in secrets:
             try:
                 self.delete_secret(secret.id)
+            except KeyError:
+                pass
             except Exception as e:
                 logger.warning("Failed to delete secret %s: %s", secret.id, e)
 
@@ -343,10 +353,10 @@ class AWSSecretsStore(BaseSecretsStore):
             )
 
     @staticmethod
-    def _get_aws_secret_name(
+    def _get_aws_secret_id(
         secret_id: UUID,
     ) -> str:
-        """Get the AWS secret name for the given secret.
+        """Get the AWS secret ID corresponding to a ZenML secret ID.
 
         The convention used for AWS secret names is to use the ZenML
         secret UUID prefixed with `zenml` as the AWS secret name,
@@ -594,7 +604,7 @@ class AWSSecretsStore(BaseSecretsStore):
 
         # Generate a new UUID for the secret
         secret_id = uuid.uuid4()
-        aws_secret_id = self._get_aws_secret_name(secret_id)
+        aws_secret_id = self._get_aws_secret_id(secret_id)
         secret_value = json.dumps(secret.secret_values)
 
         # Convert the ZenML secret metadata to AWS tags
@@ -685,7 +695,7 @@ class AWSSecretsStore(BaseSecretsStore):
             RuntimeError: If the AWS Secrets Manager API returns an unexpected
                 error.
         """
-        aws_secret_id = self._get_aws_secret_name(secret_id)
+        aws_secret_id = self._get_aws_secret_id(secret_id)
 
         try:
             get_secret_value_response = self.client.get_secret_value(
@@ -699,6 +709,12 @@ class AWSSecretsStore(BaseSecretsStore):
             )
         except ClientError as e:
             if e.response["Error"]["Code"] == "ResourceNotFoundException":
+                raise KeyError(f"Secret with ID {secret_id} not found")
+
+            if (
+                e.response["Error"]["Code"] == "InvalidRequestException"
+                and "marked for deletion" in e.response["Error"]["Message"]
+            ):
                 raise KeyError(f"Secret with ID {secret_id} not found")
 
             raise RuntimeError(
@@ -917,7 +933,7 @@ class AWSSecretsStore(BaseSecretsStore):
             if secret_exists:
                 raise EntityExistsError(msg)
 
-        aws_secret_id = self._get_aws_secret_name(secret_id)
+        aws_secret_id = self._get_aws_secret_id(secret_id)
         secret_value = json.dumps(secret.secret_values)
 
         # Convert the ZenML secret metadata to AWS tags
@@ -1011,13 +1027,19 @@ class AWSSecretsStore(BaseSecretsStore):
         """
         try:
             self.client.delete_secret(
-                SecretId=self._get_aws_secret_name(secret_id),
+                SecretId=self._get_aws_secret_id(secret_id),
                 # We set this to force immediate deletion of the AWS secret
                 # instead of waiting for the recovery window to expire.
                 ForceDeleteWithoutRecovery=True,
             )
         except ClientError as e:
             if e.response["Error"]["Code"] == "ResourceNotFoundException":
+                raise KeyError(f"Secret with ID {secret_id} not found")
+
+            if (
+                e.response["Error"]["Code"] == "InvalidRequestException"
+                and "marked for deletion" in e.response["Error"]["Message"]
+            ):
                 raise KeyError(f"Secret with ID {secret_id} not found")
 
             raise RuntimeError(
