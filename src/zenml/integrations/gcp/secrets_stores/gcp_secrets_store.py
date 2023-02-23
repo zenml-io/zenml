@@ -74,7 +74,7 @@ ZENML_GCP_SECRET_SCOPE_PATH_SEPARATOR = "-"
 class GCPSecretsStoreConfiguration(SecretsStoreConfiguration):
     """GCP secrets store configuration."""
 
-    type: SecretsStoreType = SecretsStoreType.EXTERNAL
+    type: SecretsStoreType = SecretsStoreType.GCP
     project_id: str
 
     class Config:
@@ -92,7 +92,7 @@ class GCPSecretsStore(BaseSecretsStore):
     """Secrets store implementation that uses the GCP Secrets Manager API."""
 
     config: GCPSecretsStoreConfiguration
-    TYPE: ClassVar[SecretsStoreType] = SecretsStoreType.EXTERNAL
+    TYPE: ClassVar[SecretsStoreType] = SecretsStoreType.GCP
     CONFIG_TYPE: ClassVar[
         Type[SecretsStoreConfiguration]
     ] = GCPSecretsStoreConfiguration
@@ -540,10 +540,7 @@ class GCPSecretsStore(BaseSecretsStore):
 
         # List all secrets.
         for secret in self.client.list_secrets(
-            request={
-                "parent": self.parent_name,
-                "filter": "name:"
-            }
+            request={"parent": self.parent_name, "filter": "name:"}
         ):
             name = secret.labels[ZENML_SECRET_NAME_LABEL]
             set_of_secrets.add(name)
