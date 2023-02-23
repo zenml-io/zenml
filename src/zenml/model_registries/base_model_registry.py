@@ -228,7 +228,7 @@ class BaseModelRegistry(StackComponent, ABC):
             name: The name of the registered model.
 
         Raises:
-            zenml.exceptions.EntityExistsError: If the model does not exist.
+            KeyError: If the model does not exist.
             RuntimeError: If deletion fails.
         """
 
@@ -249,7 +249,7 @@ class BaseModelRegistry(StackComponent, ABC):
             remove_tags: The tags to remove from the registered model.
 
         Raises:
-            zenml.exceptions.EntityExistsError: If the model does not exist.
+            KeyError: If the model does not exist.
             RuntimeError: If update fails.
         """
 
@@ -347,7 +347,7 @@ class BaseModelRegistry(StackComponent, ABC):
             version: The version of the model version to delete.
 
         Raises:
-            zenml.exceptions.EntityExistsError: If the model version does not exist.
+            KeyError: If the model version does not exist.
             RuntimeError: If deletion fails.
         """
 
@@ -375,7 +375,7 @@ class BaseModelRegistry(StackComponent, ABC):
             The updated model version.
 
         Raises:
-            zenml.exceptions.EntityExistsError: If the model version does not exist.
+            KeyError: If the model version does not exist.
             RuntimeError: If update fails.
         """
 
@@ -411,7 +411,7 @@ class BaseModelRegistry(StackComponent, ABC):
             The model version.
 
         Raises:
-            zenml.exceptions.EntityExistsError: If the model version does not exist.
+            KeyError: If the model version does not exist.
             RuntimeError: If retrieval fails.
         """
 
@@ -452,7 +452,7 @@ class BaseModelRegistry(StackComponent, ABC):
             The loaded model version.
 
         Raises:
-            zenml.exceptions.EntityExistsError: If the model version does not exist.
+            KeyError: If the model version does not exist.
             RuntimeError: If loading fails.
         """
 
