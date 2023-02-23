@@ -37,7 +37,6 @@ from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 
 from zenml.config.base_settings import BaseSettings
-from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
 from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import (
@@ -53,15 +52,14 @@ from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
     build_pod_manifest,
 )
 from zenml.logger import get_logger
-from zenml.orchestrators import BaseOrchestrator
+from zenml.orchestrators import ContainerizedOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
-from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilder,
-)
 
 if TYPE_CHECKING:
-    from zenml.config.pipeline_deployment import PipelineDeployment
+    from zenml.models.pipeline_deployment_models import (
+        PipelineDeploymentResponseModel,
+    )
     from zenml.stack import Stack
 
 logger = get_logger(__name__)
@@ -69,7 +67,7 @@ logger = get_logger(__name__)
 ENV_ZENML_KUBERNETES_RUN_ID = "ZENML_KUBERNETES_RUN_ID"
 
 
-class KubernetesOrchestrator(BaseOrchestrator):
+class KubernetesOrchestrator(ContainerizedOrchestrator):
     """Orchestrator for running ZenML pipelines using native Kubernetes."""
 
     _k8s_core_api: k8s_client.CoreV1Api = None
@@ -258,26 +256,9 @@ class KubernetesOrchestrator(BaseOrchestrator):
             custom_validation_function=_validate_local_requirements,
         )
 
-    def prepare_pipeline_deployment(
-        self,
-        deployment: "PipelineDeployment",
-        stack: "Stack",
-    ) -> None:
-        """Build a Docker image and push it to the container registry.
-
-        Args:
-            deployment: The pipeline deployment configuration.
-            stack: The stack on which the pipeline will be deployed.
-        """
-        docker_image_builder = PipelineDockerImageBuilder()
-        repo_digest = docker_image_builder.build_docker_image(
-            deployment=deployment, stack=stack
-        )
-        deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
-
     def prepare_or_run_pipeline(
         self,
-        deployment: "PipelineDeployment",
+        deployment: "PipelineDeploymentResponseModel",
         stack: "Stack",
     ) -> Any:
         """Runs the pipeline in Kubernetes.
@@ -300,7 +281,7 @@ class KubernetesOrchestrator(BaseOrchestrator):
                 "orchestrator."
             )
 
-        for step in deployment.steps.values():
+        for step in deployment.step_configurations.values():
             if self.requires_resources_in_orchestration_environment(step):
                 logger.warning(
                     "Specifying step resources is not yet supported for "
@@ -309,13 +290,23 @@ class KubernetesOrchestrator(BaseOrchestrator):
                     step.config.name,
                 )
 
-        pipeline_name = deployment.pipeline.name
+        pipeline_name = deployment.pipeline_configuration.name
         orchestrator_run_name = get_orchestrator_run_name(pipeline_name)
         pod_name = kube_utils.sanitize_pod_name(orchestrator_run_name)
 
-        # Get Docker image name (for all pods).
         assert stack.container_registry
-        image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
+
+        # Get Docker image for the orchestrator pod
+        try:
+            image = self.get_image(deployment=deployment)
+        except KeyError:
+            # If no generic pipeline image exists (which means all steps have
+            # custom builds) we use a random step image as all of them include
+            # dependencies for the active stack
+            pipeline_step_name = next(iter(deployment.step_configurations))
+            image = self.get_image(
+                deployment=deployment, step_name=pipeline_step_name
+            )
 
         # Build entrypoint command and args for the orchestrator pod.
         # This will internally also build the command/args for all step pods.
@@ -324,7 +315,7 @@ class KubernetesOrchestrator(BaseOrchestrator):
         )
         args = KubernetesOrchestratorEntrypointConfiguration.get_entrypoint_arguments(
             run_name=orchestrator_run_name,
-            image_name=image_name,
+            deployment_id=deployment.id,
             kubernetes_namespace=self.config.kubernetes_namespace,
         )
 
@@ -355,7 +346,7 @@ class KubernetesOrchestrator(BaseOrchestrator):
                 run_name=orchestrator_run_name,
                 pod_name=pod_name,
                 pipeline_name=pipeline_name,
-                image_name=image_name,
+                image_name=image,
                 command=command,
                 args=args,
                 service_account_name=service_account_name,
@@ -378,7 +369,7 @@ class KubernetesOrchestrator(BaseOrchestrator):
             run_name=orchestrator_run_name,
             pod_name=pod_name,
             pipeline_name=pipeline_name,
-            image_name=image_name,
+            image_name=image,
             command=command,
             args=args,
             service_account_name=service_account_name,

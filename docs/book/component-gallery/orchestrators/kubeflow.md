@@ -210,6 +210,20 @@ You can now run any ZenML pipeline using the Kubeflow orchestrator:
 python file_that_runs_a_zenml_pipeline.py
 ```
 
+### Kubeflow UI
+
+Kubeflow comes with its own UI that you can use to find further details about
+your pipeline runs, such as the logs of your steps. For any runs executed on
+Kubeflow, you can get the URL to the Kubeflow UI in Python using the following 
+code snippet:
+
+```python
+from zenml.post_execution import get_run
+
+pipeline_run = get_run("<PIPELINE_RUN_NAME>")
+orchestrator_url = deployer_step.metadata["orchestrator_url"].value
+```
+
 ### Additional configuration
 
 For additional configuration of the Kubeflow orchestrator, you can pass

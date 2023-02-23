@@ -261,7 +261,6 @@ class BaseStep(metaclass=BaseStepMeta):
             *args: Positional arguments passed to the step.
             **kwargs: Keyword arguments passed to the step.
         """
-        self.pipeline_parameter_name: Optional[str] = None
         self._has_been_called = False
         self._upstream_steps: Set[str] = set()
         self._inputs: Dict[str, InputSpec] = {}
@@ -456,7 +455,7 @@ class BaseStep(metaclass=BaseStepMeta):
         for name, output in self.configuration.outputs.items():
             if output.materializer_source:
                 key = f"{name}_materializer_source"
-                materializer_class = source_utils.load_source_path_class(
+                materializer_class = source_utils.load_source_path(
                     output.materializer_source
                 )
                 parameters[key] = source_utils.get_hashed_source(
@@ -677,32 +676,6 @@ class BaseStep(metaclass=BaseStepMeta):
         else:
             return returns
 
-    def with_return_materializers(
-        self: T,
-        materializers: Union[
-            Type[BaseMaterializer], Dict[str, Type[BaseMaterializer]]
-        ],
-    ) -> T:
-        """DEPRECATED: Register materializers for step outputs.
-
-        If a single materializer is passed, it will be used for all step
-        outputs. Otherwise, the dictionary keys specify the output names
-        for which the materializers will be used.
-
-        Args:
-            materializers: The materializers for the outputs of this step.
-
-        Returns:
-            The step that this method was called on.
-        """
-        logger.warning(
-            "The `with_return_materializers(...)` method is deprecated. "
-            "Use `step.configure(output_materializers=...)` instead."
-        )
-
-        self.configure(output_materializers=materializers)
-        return self
-
     @property
     def name(self) -> str:
         """The name of the step.
@@ -875,11 +848,10 @@ class BaseStep(metaclass=BaseStepMeta):
             parameters: The parameters to validate.
 
         Raises:
-            StepInterfaceError: If the step requires no function parameters or
-                invalid function parameters were given.
+            StepInterfaceError: If the step requires no function parameters but
+                parameters were configured.
         """
         if not parameters:
-            # No parameters set (yet), defer validation to a later point
             return
 
         if not self.PARAMETERS_CLASS:
@@ -887,11 +859,6 @@ class BaseStep(metaclass=BaseStepMeta):
                 f"Function parameters configured for step {self.name} which "
                 "does not accept any function parameters."
             )
-
-        try:
-            self.PARAMETERS_CLASS(**parameters)
-        except ValidationError:
-            raise StepInterfaceError("Failed to validate function parameters.")
 
     def _validate_inputs(
         self, inputs: Mapping[str, ArtifactConfiguration]
@@ -989,7 +956,7 @@ class BaseStep(metaclass=BaseStepMeta):
                         f"'{output_name}' of type `{output_class}` in step "
                         f"'{self.name}'. Please make sure to either "
                         f"explicitly set a materializer for step outputs "
-                        f"using `step.with_return_materializers(...)` or "
+                        f"using `step.configure(output_materializers=...)` or "
                         f"registering a default materializer for specific "
                         f"types by subclassing `BaseMaterializer` and setting "
                         f"its `ASSOCIATED_TYPES` class variable.",
@@ -1042,6 +1009,7 @@ class BaseStep(metaclass=BaseStepMeta):
         Raises:
             MissingStepParameterError: If no value could be found for one or
                 more config parameters.
+            StepInterfaceError: If the parameter class validation failed.
         """
         if not self.PARAMETERS_CLASS:
             return {}
@@ -1053,6 +1021,7 @@ class BaseStep(metaclass=BaseStepMeta):
         for name, field in self.PARAMETERS_CLASS.__fields__.items():
             if name in self.configuration.parameters:
                 # a value for this parameter has been set already
+                values[name] = self.configuration.parameters[name]
                 continue
 
             if field.required:
@@ -1067,5 +1036,10 @@ class BaseStep(metaclass=BaseStepMeta):
             raise MissingStepParameterError(
                 self.name, missing_keys, self.PARAMETERS_CLASS
             )
+
+        try:
+            self.PARAMETERS_CLASS(**values)
+        except ValidationError:
+            raise StepInterfaceError("Failed to validate function parameters.")
 
         return values

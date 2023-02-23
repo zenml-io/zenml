@@ -218,7 +218,7 @@ def wait_and_validate_pipeline_run(
                 f"Waiting for {run_no} pipeline runs to be recorded..."
             )
 
-            runs = pipeline.runs[-run_no:]
+            runs = pipeline.runs[:run_no]
 
             if older_than is not None:
                 runs = [r for r in runs if r.created >= older_than]
@@ -240,7 +240,7 @@ def wait_and_validate_pipeline_run(
         while True:
             logging.debug(f"Waiting for {run_no} pipeline runs to complete...")
 
-            runs = pipeline.runs[-run_no:]
+            runs = pipeline.runs[:run_no]
 
             if older_than is not None:
                 runs = [r for r in runs if r.created >= older_than]
@@ -260,9 +260,9 @@ def wait_and_validate_pipeline_run(
 
     assert len(runs) >= run_count
 
-    for run in runs[-run_count:]:
+    for run in runs[:run_count]:
         assert run.status == ExecutionStatus.COMPLETED
         if step_count:
             assert len(run.steps) == step_count
 
-    return runs[-run_count:]
+    return runs[:run_count]

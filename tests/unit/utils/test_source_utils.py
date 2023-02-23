@@ -28,9 +28,9 @@ from zenml.client import Client
 from zenml.utils import source_utils
 
 
-def test_is_third_party_module(module_mocker: MockerFixture):
+def test_is_third_party_module(mocker: MockerFixture):
     """Tests that third party modules get detected correctly."""
-    module_mocker.patch(
+    mocker.patch(
         "zenml.utils.source_utils.get_source_root_path",
         return_value=str(pathlib.Path(__file__).absolute().parents[3]),
     )
@@ -48,13 +48,13 @@ class EmptyClass:
     pass
 
 
-def test_resolve_class(module_mocker: MockerFixture):
+def test_resolve_class(mocker: MockerFixture):
     """Tests that class resolving works as expected."""
     os.getcwd()
     parent_directory = os.path.dirname(os.path.dirname(__file__))
     os.chdir(parent_directory)
 
-    module_mocker.patch(
+    mocker.patch(
         "zenml.utils.source_utils.get_source_root_path",
         return_value=str(pathlib.Path(__file__).absolute().parents[1]),
     )
@@ -107,12 +107,12 @@ def test_loading_class_by_path_prepends_repo_path(
     with does_not_raise():
         # the repo root should be in the python path right now, so this file
         # can be imported
-        source_utils.load_source_path_class("some_directory.python_file.test")
+        source_utils.load_source_path("some_directory.python_file.test")
 
     with pytest.raises(ModuleNotFoundError):
         # the subdirectory will not be in the python path and therefore this
         # import should not work
-        source_utils.load_source_path_class("python_file.test")
+        source_utils.load_source_path("python_file.test")
 
 
 def test_import_python_file_for_first_time(
@@ -251,3 +251,12 @@ def test_internal_pin_removal():
         source_utils.remove_internal_version_pin("zenml.client.Client")
         == "zenml.client.Client"
     )
+
+
+def test_setting_a_custom_source_root():
+    """Tests setting and resetting a custom source root."""
+    initial_source_root = source_utils.get_source_root_path()
+    source_utils.set_custom_source_root(source_root="custom_source_root")
+    assert source_utils.get_source_root_path() == "custom_source_root"
+    source_utils.set_custom_source_root(source_root=None)
+    assert source_utils.get_source_root_path() == initial_source_root
