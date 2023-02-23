@@ -22,6 +22,7 @@ from uuid import uuid4
 import pytest
 from pydantic import BaseModel
 
+from tests.integration.functional.utils import sample_name
 from zenml.client import Client
 from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.enums import SecretScope, StackComponentType
@@ -978,46 +979,46 @@ class ClientCrudTestConfig(BaseModel):
 crud_test_configs = [
     ClientCrudTestConfig(
         entity_name="user",
-        create_args={"name": "user_name"},
-        update_args={"updated_name": "updated_user_name"},
+        create_args={"name": sample_name("user_name")},
+        update_args={"updated_name": sample_name("updated_user_name")},
     ),
     ClientCrudTestConfig(
         entity_name="team",
-        create_args={"name": "team_name"},
-        update_args={"new_name": "updated_team_name"},
+        create_args={"name": sample_name("team_name")},
+        update_args={"new_name": sample_name("updated_team_name")},
     ),
     ClientCrudTestConfig(
         entity_name="role",
-        create_args={"name": "role_name", "permissions_list": []},
-        update_args={"new_name": "updated_role_name"},
+        create_args={"name": sample_name("role_name"), "permissions_list": []},
+        update_args={"new_name": sample_name("updated_role_name")},
     ),
     ClientCrudTestConfig(
         entity_name="workspace",
-        create_args={"name": "workspace_name", "description": ""},
-        update_args={"new_name": "updated_workspace_name"},
+        create_args={"name": sample_name("workspace_name"), "description": ""},
+        update_args={"new_name": sample_name("updated_workspace_name")},
     ),
     ClientCrudTestConfig(
         entity_name="stack",
         create_args={
-            "name": "stack_name",
+            "name": sample_name("stack_name"),
             "components": {
                 StackComponentType.ORCHESTRATOR: "default",
                 StackComponentType.ARTIFACT_STORE: "default",
             },
         },
-        update_args={"name": "updated_stack_name"},
+        update_args={"name": sample_name("updated_stack_name")},
     ),
     ClientCrudTestConfig(
         entity_name="stack_component",
         create_args={
-            "name": "stack_component_name",
+            "name": sample_name("stack_component_name"),
             "flavor": "local",
             "component_type": StackComponentType.ORCHESTRATOR,
             "configuration": {},
         },
         get_args={"component_type": StackComponentType.ORCHESTRATOR},
         update_args={
-            "name": "updated_stack_component_name",
+            "name": sample_name("updated_stack_component_name"),
             "component_type": StackComponentType.ORCHESTRATOR,
         },
         delete_args={"component_type": StackComponentType.ORCHESTRATOR},
@@ -1050,49 +1051,66 @@ def test_basic_crud_for_entity(
     )
 
     entity = create_method(**crud_test_config.create_args)
-    assert hasattr(entity, "name")
-    assert len(getattr(entity, "name")) > 1
+    try:
+        assert hasattr(entity, "name")
+        assert len(getattr(entity, "name")) > 1
 
-    with does_not_raise():
-        get_method(name_id_or_prefix=entity.name, **crud_test_config.get_args)
-        get_method(name_id_or_prefix=entity.id, **crud_test_config.get_args)
-        get_method(
-            name_id_or_prefix=entity.name[:-1],
-            allow_name_prefix_match=True,
-            **crud_test_config.get_args,
-        )
-
-    with pytest.raises(KeyError):
-        get_method(
-            name_id_or_prefix=entity.name[:-1],
-            allow_name_prefix_match=False,
-            **crud_test_config.get_args,
-        )
-
-    if hasattr(clean_client, f"update_{crud_test_config.entity_name}"):
-        update_method = getattr(
-            clean_client, f"update_{crud_test_config.entity_name}"
-        )
-
-        # Updating works with id prefix
-        id_prefix = str(entity.id)[:5]
-        entity = update_method(
-            name_id_or_prefix=id_prefix, **crud_test_config.update_args
-        )
-
-        with pytest.raises(KeyError):
-            # Updating doesn't work with name prefix
-            update_method(
+        with does_not_raise():
+            get_method(
+                name_id_or_prefix=entity.name, **crud_test_config.get_args
+            )
+            get_method(
+                name_id_or_prefix=entity.id, **crud_test_config.get_args
+            )
+            get_method(
                 name_id_or_prefix=entity.name[:-1],
-                **crud_test_config.update_args,
+                allow_name_prefix_match=True,
+                **crud_test_config.get_args,
             )
 
-    with pytest.raises(KeyError):
-        # Deleting doesn't work with name prefix
-        delete_method(
-            name_id_or_prefix=entity.name[:-1], **crud_test_config.delete_args
-        )
+        with pytest.raises(KeyError):
+            get_method(
+                name_id_or_prefix=entity.name[:-1],
+                allow_name_prefix_match=False,
+                **crud_test_config.get_args,
+            )
 
-    # Deleting works with id prefix
-    id_prefix = str(entity.id)[:5]
-    delete_method(name_id_or_prefix=id_prefix, **crud_test_config.delete_args)
+        if hasattr(clean_client, f"update_{crud_test_config.entity_name}"):
+            update_method = getattr(
+                clean_client, f"update_{crud_test_config.entity_name}"
+            )
+
+            # Updating works with id prefix
+            id_prefix = str(entity.id)[:5]
+            entity = update_method(
+                name_id_or_prefix=id_prefix, **crud_test_config.update_args
+            )
+
+            with pytest.raises(KeyError):
+                # Updating doesn't work with name prefix
+                update_method(
+                    name_id_or_prefix=entity.name[:-1],
+                    **crud_test_config.update_args,
+                )
+
+        with pytest.raises(KeyError):
+            # Deleting doesn't work with name prefix
+            delete_method(
+                name_id_or_prefix=entity.name[:-1],
+                **crud_test_config.delete_args,
+            )
+
+        # Deleting works with id prefix
+        id_prefix = str(entity.id)[:5]
+        delete_method(
+            name_id_or_prefix=id_prefix, **crud_test_config.delete_args
+        )
+    finally:
+        # Make sure to delete the created entity to not leave anything in the
+        # workspace.
+        try:
+            delete_method(entity.id, **crud_test_config.delete_args)
+        except KeyError:
+            # This means the test already succeeded and deleted the entity,
+            # nothing to do here
+            pass
