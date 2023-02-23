@@ -53,7 +53,15 @@ class AzureArtifactStoreFlavor(BaseArtifactStoreFlavor):
         Returns:
             A flavor docs url.
         """
-        return self.generate_default_docs_url()
+        from packaging.version import parse
+
+        from zenml import __version__
+
+        if parse(__version__) >= parse("0.34.0"):
+            return self.generate_default_docs_url()
+
+        old_docs_name = "azure-blob-storage"
+        return self.generate_default_docs_url(component_name=old_docs_name)
 
     @property
     def logo_url(self) -> str:
