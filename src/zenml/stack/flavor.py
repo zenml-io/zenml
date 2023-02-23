@@ -150,7 +150,7 @@ class Flavor:
                 for legacy documentation before ZenML v0.34.0.
 
         Returns:
-            The complete url to the zenml docs
+            The complete url to the zenml documentation
         """
         from zenml import __version__
 
@@ -163,7 +163,11 @@ class Flavor:
         )
 
     def generate_default_sdk_docs_url(self) -> str:
-        """Generate SDK docs url for a flavor."""
+        """Generate SDK docs url for a flavor.
+
+        Returns:
+            The complete url to the zenml SDK docs
+        """
         from zenml import __version__
 
         base = f"https://apidocs.zenml.io/{__version__}"
