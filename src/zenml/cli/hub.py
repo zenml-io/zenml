@@ -71,8 +71,8 @@ def server_url() -> str:
     """Helper function to get the hub url."""
     if HUB_URL:
         return HUB_URL
-    # return "https://staginghub.zenml.io/"
-    return "http://localhost:8080"
+    return "https://staginghub.zenml.io/"
+    # return "http://localhost:8080"
 
 
 def _hub_get(url: str) -> Optional[Json]:
@@ -112,9 +112,13 @@ def _list_plugins() -> List[PluginResponseModel]:
     return [PluginResponseModel.parse_obj(plugin) for plugin in payload]
 
 
-def _get_plugin(plugin_name: str) -> Optional[PluginResponseModel]:
+def _get_plugin(
+    plugin_name: str, plugin_version: str
+) -> Optional[PluginResponseModel]:
     """Helper function to get a specfic plugin from the hub."""
-    payload = _hub_get(f"{server_url()}/plugins/{plugin_name}")
+    payload = _hub_get(
+        f"{server_url()}/plugins/{plugin_name}:{plugin_version}"
+    )
     try:
         return PluginResponseModel.parse_obj(payload)
     except ValidationError:
@@ -164,22 +168,33 @@ def list_plugins() -> None:
 
 @hub.command("install")
 @click.argument("plugin_name", type=str, required=True)
-def install_plugin(plugin_name: str) -> None:
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    default="latest",
+    help="Version of the plugin to install.",
+)
+def install_plugin(plugin_name: str, version: str) -> None:
     """Install a plugin from the hub."""
     # Get plugin from hub
-    plugin = _get_plugin(plugin_name)
+    plugin = _get_plugin(plugin_name, version)
     if not plugin:
-        error(f"Could not find plugin '{plugin_name}' on the hub.")
+        error(f"Could not find plugin '{plugin_name}:{version}' on the hub.")
 
     # Check if plugin can be installed
     index_url = plugin.index_url
     wheel_name = plugin.wheel_name
     if not index_url or not wheel_name:
-        error(f"Plugin '{plugin_name}' is not available for installation.")
+        error(
+            f"Plugin '{plugin_name}:{version}' is not available for "
+            "installation."
+        )
 
     # pip install the wheel
     logger.info(
-        f"Installing plugin '{plugin_name}' from {index_url}:{wheel_name}..."
+        f"Installing plugin '{plugin_name}:{version}' from "
+        f"{index_url}{wheel_name}..."
     )
     subprocess.check_call(
         [
@@ -192,44 +207,63 @@ def install_plugin(plugin_name: str) -> None:
             wheel_name,
         ]
     )
-    logger.info(f"Successfully installed plugin '{plugin_name}'.")
+    logger.info(f"Successfully installed plugin '{plugin_name}:{version}'.")
 
 
 @hub.command("uninstall")
 @click.argument("plugin_name", type=str, required=True)
-def uninstall_plugin(plugin_name: str) -> None:
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    default="latest",
+    help="Version of the plugin to uninstall.",
+)
+def uninstall_plugin(plugin_name: str, version: str) -> None:
     """Uninstall a plugin from the hub."""
     # Get plugin from hub
-    plugin = _get_plugin(plugin_name)
+    plugin = _get_plugin(plugin_name, version)
     if not plugin:
-        error(f"Could not find plugin '{plugin_name}' on the hub.")
+        error(f"Could not find plugin '{plugin_name}:{version}' on the hub.")
 
     # Check if plugin can be uninstalled
     wheel_name = plugin.wheel_name
     if not wheel_name:
-        error(f"Plugin '{plugin_name}' is not available for uninstallation.")
+        error(
+            f"Plugin '{plugin_name}:{version}' is not available for "
+            "uninstallation."
+        )
 
     # pip uninstall the wheel
-    logger.info(f"Uninstalling plugin '{plugin_name}'...")
+    logger.info(f"Uninstalling plugin '{plugin_name}:{version}'...")
     subprocess.check_call(
         [sys.executable, "-m", "pip", "uninstall", wheel_name, "-y"]
     )
-    logger.info(f"Successfully uninstalled plugin '{plugin_name}'.")
+    logger.info(f"Successfully uninstalled plugin '{plugin_name}:{version}'.")
 
 
 @hub.command("pull")
 @click.argument("plugin_name", type=str, required=True)
 @click.option(
+    "--version",
+    "-v",
+    type=str,
+    default="latest",
+    help="Version of the plugin to pull.",
+)
+@click.option(
     "--output_dir",
     type=str,
     help="Output directory to pull the plugin to.",
 )
-def pull_plugin(plugin_name: str, output_dir: Optional[str]) -> None:
+def pull_plugin(
+    plugin_name: str, version: str, output_dir: Optional[str]
+) -> None:
     """Pull a plugin from the hub."""
     # Get plugin from hub
-    plugin = _get_plugin(plugin_name)
+    plugin = _get_plugin(plugin_name, version)
     if not plugin:
-        error(f"Could not find plugin '{plugin_name}' on the hub.")
+        error(f"Could not find plugin '{plugin_name}:{version}' on the hub.")
 
     repo_url = plugin.repository_url
     subdir = plugin.repository_subdirectory
@@ -237,8 +271,7 @@ def pull_plugin(plugin_name: str, output_dir: Optional[str]) -> None:
     # Clone the source repo
     if output_dir is None:
         output_dir = os.path.join(os.getcwd(), plugin_name)
-    logger.info(f"Pulling plugin '{plugin_name}' into {output_dir}...")
-
+    logger.info(f"Pulling plugin '{plugin_name}:{version}' to {output_dir}...")
     # If no subdir, we can clone directly into output_dir
     if not subdir:
         repo_path = plugin_dir = output_dir
@@ -263,7 +296,7 @@ def pull_plugin(plugin_name: str, output_dir: Optional[str]) -> None:
     if subdir:
         shutil.move(plugin_dir, output_dir)
         shutil.rmtree(repo_path)
-    logger.info(f"Successfully pulled plugin '{plugin_name}'.")
+    logger.info(f"Successfully pulled plugin '{plugin_name}:{version}'.")
 
 
 @hub.command("push")
@@ -406,7 +439,10 @@ def _validate_plugin_name(
 
     # Make sure the plugin name is available.
     while True:
-        if plugin_name and _get_plugin(plugin_name) is None:
+        if plugin_name:
+            # TODO: if plugin exists, check if it's the same user
+            # existing_plugin = _get_plugin(plugin_name)
+            # if not existing_plugin or existing_plugin.user == user:
             return plugin_name
         if not interactive:
             error("Plugin name not provided or not available.")
