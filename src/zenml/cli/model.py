@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """Functionality for model-deployer CLI subcommands."""
 
-from typing import TYPE_CHECKING, Dict, Optional, cast
+from datetime import datetime
+from typing import TYPE_CHECKING, Dict, List, Optional, cast
 
 import click
 
@@ -66,29 +67,29 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
         help="Get a list of all registered models within the model registry.",
     )
     @click.option(
-        "--tags",
-        "-t",
+        "--metadata",
+        "-m",
         type=(str, str),
         default=None,
-        help="Filter models by tags. can be used like: --tags key1 value1 key2 value",
+        help="Filter models by metadata. can be used like: -m key1 value1 -m key2 value",
         multiple=True,
     )
     @click.pass_obj
     def list_registered_models(
         model_registry: "BaseModelRegistry",
-        tags: Optional[Dict[str, str]],
+        metadata: Optional[Dict[str, str]],
     ) -> None:
         """List of all registered models within the model registry.
 
-        The list can be filtered by tags using the --tags flag.
-        Example: zenml model-registry models list-versions --tags key1 value1 key2 value2
+        The list can be filtered by metadata (tags) using the --metadata flag.
+        Example: zenml model-registry models list-versions -m key1 value1 -m key2 value2
 
         Args:
             model_registry: The model registry stack component.
-            tags: Filter models by tags.
+            metadata: Filter models by Metadata (Tags).
         """
-        tags = dict(tags) if tags else None
-        registered_models = model_registry.list_models(tags=tags)
+        metadata = dict(metadata) if metadata else None
+        registered_models = model_registry.list_models(metadata=metadata)
         # Print registered models if any
         if registered_models:
             cli_utils.pretty_print_registered_model_table(registered_models)
@@ -112,11 +113,11 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
         help="Description of the model to register.",
     )
     @click.option(
-        "--tags",
+        "--metadata",
         "-t",
         type=(str, str),
         default=None,
-        help="Tags to add to the model. can be used like: --tags key1 value1 key2 value",
+        help="Metadata or Tags to add to the model. can be used like: -m key1 value1 -m key2 value",
         multiple=True,
     )
     @click.pass_obj
@@ -124,7 +125,7 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
         model_registry: "BaseModelRegistry",
         name: str,
         description: Optional[str],
-        tags: Optional[Dict[str, str]],
+        metadata: Optional[Dict[str, str]],
     ) -> None:
         """Register a model with the active model registry.
 
@@ -132,16 +133,16 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
             model_registry: The model registry stack component.
             name: Name of the model to register.
             description: Description of the model to register.
-            tags: Tags to add to the model.
+            metadata: Metadata or Tags to add to the registered model.
         """
-        tags = dict(tags) if tags else None
+        metadata = dict(metadata) if metadata else None
         if model_registry.check_model_exists(name):
             cli_utils.error(f"Model with name {name} already exists.")
             return
         model_registry.register_model(
             name=name,
             description=description,
-            tags=tags,
+            metadata=metadata,
         )
         cli_utils.declare(f"Model {name} registered successfully.")
 
@@ -205,11 +206,11 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
         help="Description of the model to update.",
     )
     @click.option(
-        "--tags",
+        "--metadata",
         "-t",
         type=(str, str),
         default=None,
-        help="Tags to add to the model. can be used like: --tags key1 value1 key2 value",
+        help="Metadata or Tags to add to the model. can be used like: -m key1 value1 -m key2 value",
         multiple=True,
     )
     @click.pass_obj
@@ -217,7 +218,7 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
         model_registry: "BaseModelRegistry",
         name: str,
         description: Optional[str],
-        tags: Optional[Dict[str, str]],
+        metadata: Optional[Dict[str, str]],
     ) -> None:
         """Update a model in the active model registry.
 
@@ -225,16 +226,16 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
             model_registry: The model registry stack component.
             name: Name of the model to update.
             description: Description of the model to update.
-            tags: Tags to add to the model.
+            metadata: Metadata or Tags to add to the model.
         """
-        tags = dict(tags) if tags else None
+        metadata = dict(metadata) if metadata else None
         if not model_registry.check_model_exists(name):
             cli_utils.error(f"Model with name {name} does not exist.")
             return
         model_registry.update_model(
             name=name,
             description=description,
-            tags=tags,
+            metadata=metadata,
         )
         cli_utils.declare(f"Model {name} updated successfully.")
 
@@ -383,11 +384,11 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
         help="Description of the model to update.",
     )
     @click.option(
-        "--tags",
-        "-t",
+        "--metadata",
+        "-m",
         type=(str, str),
         default=None,
-        help="Tags to add to the model. can be used like: --tags key1 value1 key2 value",
+        help="Metadata or Tags to add to the model. can be used like: --m key1 value1 -m key2 value",
         multiple=True,
     )
     @click.option(
@@ -397,14 +398,22 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
         default=None,
         help="Stage of the model to update.",
     )
+    @click.option(
+        "--remove_metadata",
+        "-rm",
+        default=None,
+        help="Metadata or Tags to remove from the model. can be used like: -rm key1 -rm key2",
+        multiple=True,
+    )
     @click.pass_obj
     def update_model_version(
         model_registry: "BaseModelRegistry",
         name: str,
         version: str,
         description: Optional[str],
-        tags: Optional[Dict[str, str]],
+        metadata: Optional[Dict[str, str]],
         stage: Optional[str],
+        remove_metadata: Optional[List[str]],
     ) -> None:
         """Update a model version in the active model registry.
 
@@ -413,10 +422,12 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
             name: Name of the model to update.
             version: Version of the model to update.
             description: Description of the model to update.
-            tags: Tags to add to the model.
+            metadata: Metadata to add to the model version.
             stage: Stage of the model to update.
+            remove_metadata: Metadata to remove from the model version.
         """
-        tags = dict(tags) if tags else None
+        metadata = dict(metadata) if metadata else {}
+        remove_metadata = list(remove_metadata) if remove_metadata else []
         if not model_registry.check_model_version_exists(name, version):
             cli_utils.error(
                 f"Model with name {name} and version {version} does not exist."
@@ -426,8 +437,9 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
             name=name,
             version=version,
             description=description,
-            tags=tags,
+            metadata=ModelRegistryModelMetadata(**metadata),
             stage=ModelVersionStage(stage),
+            remove_metadata=remove_metadata,
         )
         cli_utils.declare(
             f"Model {name} version {version} updated successfully."
@@ -451,19 +463,47 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
         help="Model URI of the model to list versions for.",
     )
     @click.option(
-        "--tags",
-        "-t",
+        "--metadata",
+        "-m",
         type=(str, str),
         default=None,
-        help="Tags to filter the model versions by. can be used like: --tags key1 value1 key2 value",
+        help="Metadata or Tags to filter the model versions by. can be used like: -m key1 value1 -m key2 value",
         multiple=True,
+    )
+    @click.option(
+        "--count",
+        "-c",
+        type=int,
+        help="Number of model versions to list.",
+    )
+    @click.option(
+        "--order-by-date",
+        type=click.Choice(["asc", "desc"]),
+        default="desc",
+        help="Order by date.",
+    )
+    @click.option(
+        "--created-after",
+        type=click.DateTime(formats=["%Y-%m-%d"]),
+        default=None,
+        help="List model versions created after this date.",
+    )
+    @click.option(
+        "--created-before",
+        type=click.DateTime(formats=["%Y-%m-%d"]),
+        default=None,
+        help="List model versions created before this date.",
     )
     @click.pass_obj
     def list_model_versions(
         model_registry: "BaseModelRegistry",
         name: str,
         model_uri: Optional[str],
-        tags: Optional[Dict[str, str]],
+        count: Optional[int],
+        metadata: Optional[Dict[str, str]],
+        order_by_date: str,
+        created_after: Optional[datetime],
+        created_before: Optional[datetime],
     ) -> None:
         """List all model versions in the active model registry.
 
@@ -471,14 +511,25 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
             model_registry: The model registry stack component.
             name: Name of the model to list versions for.
             model_uri: Model URI of the model to list versions for.
-            tags: Tags to filter the model versions by.
+            metadata: Metadata or Tags to filter the model versions by.
+            count: Number of model versions to list.
+            order_by_date: Order by date.
+            created_after: List model versions created after this date.
+            created_before: List model versions created before this date.
         """
-        tags = dict(tags) if tags else None
+        metadata = dict(metadata) if metadata else {}
         model_versions = model_registry.list_model_versions(
             name=name,
             model_source_uri=model_uri,
-            tags=tags,
+            metadata=ModelRegistryModelMetadata(**metadata),
+            count=count,
+            order_by_date=order_by_date,
+            created_after=created_after,
+            created_before=created_before,
         )
+        if not model_versions:
+            cli_utils.declare("No model versions found.")
+            return
         cli_utils.pretty_print_model_version_table(model_versions)
 
     @models.command(
@@ -495,14 +546,14 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
         "-d",
         type=str,
         default=None,
-        help="Description of the registered model to register.",
+        help="Description of the model version.",
     )
     @click.option(
-        "--tags",
-        "-t",
+        "--metadata",
+        "-m",
         type=(str, str),
         default=None,
-        help="Tags to add to the registered model. can be used like: --tags key1 value1 key2 value",
+        help="Metadata or Tags to add to the model version. can be used like: -m key1 value1 -m key2 value",
         multiple=True,
     )
     @click.option(
@@ -520,14 +571,6 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
         default=None,
         help="Model URI of the model to register.",
         required=True,
-    )
-    @click.option(
-        "--registry-metadata",
-        "-r",
-        type=(str, str),
-        default=None,
-        help="Registry metadata to add to the model. can be used like: --registry-metadata key1 value1 key2 value",
-        multiple=True,
     )
     @click.option(
         "--zenml-version",
@@ -560,7 +603,6 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
         version: str,
         model_uri: str,
         description: Optional[str],
-        tags: Optional[Dict[str, str]],
         metadata: Optional[Dict[str, str]],
         zenml_version: Optional[str],
         zenml_pipeline_run_id: Optional[str],
@@ -575,14 +617,12 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
             version: Version of the model to register.
             model_uri: Model URI of the model to register.
             description: Description of the model to register.
-            tags: Tags to add to the model.
-            metadata: Registry metadata to add to the model.
+            metadata: Model version metadata.
             zenml_version: ZenML version of the model to register.
             zenml_pipeline_run_id: ZenML pipeline run ID of the model to register.
             zenml_pipeline_name: ZenML pipeline name of the model to register.
             zenml_step_name: ZenML step name of the model to register.
         """
-        tags = dict(tags) if tags else None
         # Parse metadata``
         metadata = dict(metadata) if metadata else {}
         registerted_metadata = ModelRegistryModelMetadata(**dict(metadata))
@@ -595,7 +635,6 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
             version=version,
             model_source_uri=model_uri,
             description=description,
-            tags=tags,
             metadata=registerted_metadata,
         )
         cli_utils.declare(

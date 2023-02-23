@@ -13,11 +13,11 @@
 #  permissions and limitations under the License.
 """Implementation of the MLflow model registration pipeline step."""
 
-from typing import Dict, Optional, cast
+from typing import Optional, cast
 
 from mlflow.tracking import artifact_utils
+from pydantic import Field
 
-from zenml import __version__
 from zenml.client import Client
 from zenml.environment import Environment
 from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker import (
@@ -54,8 +54,7 @@ class MLFlowRegistryParameters(BaseParameters):
         model_source_uri: URI of the model source. If not provided, the model
             will be fetched from the MLflow tracking server.
         description: Description of the model.
-        tags: Tags to be added to the model.
-        metadata: Metadata to be added to the model registry.
+        metadata: Metadata of the model version to be added to the model registry.
     """
 
     name: str
@@ -66,8 +65,9 @@ class MLFlowRegistryParameters(BaseParameters):
     run_name: Optional[str] = None
     run_id: Optional[str] = None
     description: Optional[str] = None
-    tags: Optional[Dict[str, str]] = None
-    metadata: Optional[Dict[str, str]] = None
+    metadata: ModelRegistryModelMetadata = Field(
+        default_factory=ModelRegistryModelMetadata
+    )
     zenml_version: Optional[str] = None
     zenml_pipeline_run_id: Optional[str] = None
     zenml_pipeline_name: Optional[str] = None
@@ -112,7 +112,6 @@ def mlflow_register_model_step(
     # get pipeline name, step name and run id
     step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
     pipeline_name = step_env.pipeline_name
-    step_name = step_env.step_name
     pipeline_run_id = step_env.run_name
 
     # Get MLflow run ID either from params or from experiment tracker using
@@ -153,23 +152,13 @@ def mlflow_register_model_step(
             "No model source URI provided or no model found in the "
             "MLflow tracking server for the given inputs."
         )
-
-    # Parse Metadata
-    metadata = params.metadata or {}
-    registered_metadata = ModelRegistryModelMetadata(**dict(metadata))
-    registered_metadata.zenml_version = __version__
-    registered_metadata.zenml_pipeline_run_id = pipeline_run_id
-    registered_metadata.zenml_pipeline_name = pipeline_name
-    registered_metadata.zenml_step_name = step_name
-
     # Register model version
     model_version = model_registry.register_model_version(
         name=params.name,
         version=params.version or "1",
         model_source_uri=model_source_uri,
         description=params.description,
-        tags=params.tags,
-        metadata=registered_metadata,
+        metadata=params.metadata,
     )
 
     logger.info(

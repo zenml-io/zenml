@@ -415,12 +415,9 @@ def seldon_mlflow_registry_deployer_step(
             registry_model_stage is provided
         ValueError: if the MLflow experiment tracker is not available in the
             active stack
-        RuntimeError: if no model version is found in the MLflow model registry.
+        LookupError: if no model version is found in the MLflow model registry.
     """
     # import here to avoid failing the pipeline if the step is not used
-    from zenml.integrations.mlflow.experiment_trackers import (
-        MLFlowExperimentTracker,
-    )
     from zenml.integrations.mlflow.model_registries import MLFlowModelRegistry
 
     # check if the MLflow experiment tracker, MLflow model registry and
@@ -447,15 +444,6 @@ def seldon_mlflow_registry_deployer_step(
         SeldonModelDeployer, SeldonModelDeployer.get_active_model_deployer()
     )
 
-    # fetch the MLflow experiment tracker
-    experiment_tracker = Client().active_stack.experiment_tracker
-    if not isinstance(experiment_tracker, MLFlowExperimentTracker):
-        raise ValueError(
-            "MLflow model deployer step requires an MLflow experiment "
-            "tracker. Please add an MLflow experiment tracker to your "
-            "stack."
-        )
-
     # fetch the MLflow model registry
     model_registry = Client().active_stack.model_registry
     if not isinstance(model_registry, MLFlowModelRegistry):
@@ -465,19 +453,19 @@ def seldon_mlflow_registry_deployer_step(
         )
 
     # fetch the model version
+    model_version = None
     if params.registry_model_version:
         model_version = model_registry.get_model_version(
             name=params.registry_model_name,
             version=params.registry_model_version,
         )
     elif params.registry_model_stage:
-        model_version = model_registry.get_latest_model_versions(
+        model_version = model_registry.get_latest_model_version(
             name=params.registry_model_name,
-            stages=[params.registry_model_stage],
-        )[0]
-
+            stage=params.registry_model_stage,
+        )
     if not model_version:
-        raise RuntimeError(
+        raise LookupError(
             f"No Model Version found for model name "
             f"{params.registry_model_name} and version "
             f"{params.registry_model_version} or stage "

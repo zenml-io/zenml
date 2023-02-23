@@ -13,12 +13,12 @@
 #  permissions and limitations under the License.
 """Base class for all ZenML model registries."""
 
-import datetime
 from abc import ABC, abstractmethod
+from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional, Type, cast
 
-from pydantic import BaseModel, Field, root_validator
+from pydantic import BaseModel, Field
 
 from zenml.enums import StackComponentType
 from zenml.stack import Flavor, StackComponent
@@ -43,12 +43,12 @@ class RegisteredModel(BaseModel):
     Attributes:
         name: Name of the registered model.
         description: Description of the registered model.
-        tags: Tags associated with the registered model.
+        metadata: metadata associated with the registered model.
     """
 
     name: str
     description: Optional[str]
-    tags: Optional[Dict[str, str]] = None
+    metadata: Optional[Dict[str, str]] = None
 
 
 class ModelRegistryModelMetadata(BaseModel):
@@ -105,13 +105,14 @@ class ModelVersion(BaseModel):
 
     Attributes:
         model_registration: The registered model associated with this model
-        model_source_uri: The URI of the model bundle associated with this model
+        model_source_uri: The URI of the model bundle associated with this model,
+            The model source can not be changed after the model version is created.
+            If the model source is changed, a new model version must be created.
         version: The version number of this model version
         description: The description of this model version
         created_at: The creation time of this model version
         last_updated_at: The last updated time of this model version
         stage: The current stage of this model version
-        tags: Tags associated with this model version
         metadata: Metadata associated with this model version
     """
 
@@ -119,60 +120,12 @@ class ModelVersion(BaseModel):
     model_source_uri: str
     model_registration: RegisteredModel
     description: Optional[str] = None
-    created_at: Optional[datetime.datetime] = None
-    last_updated_at: Optional[datetime.datetime] = None
+    created_at: Optional[datetime] = None
+    last_updated_at: Optional[datetime] = None
     stage: ModelVersionStage = ModelVersionStage.NONE
-    tags: Dict[str, str] = Field(default_factory=dict)
     metadata: ModelRegistryModelMetadata = Field(
         default_factory=ModelRegistryModelMetadata
     )
-
-    @root_validator
-    def fill_in_out_zenml_metadata(
-        cls, values: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """Fills in ZenML metadata if not provided.
-
-        Args:
-            values: The values to validate.
-
-        Returns:
-            The validated values.
-        """
-        if values.get("metadata") is None:
-            values["metadata"] = ModelRegistryModelMetadata()
-        tags = values.get("tags")
-        if tags:
-            if "zenml_version" in tags.keys():
-                values["metadata"].zenml_version = tags["zenml_version"]
-                values["tags"].pop("zenml_version")
-            if "zenml_pipeline_run_id" in tags.keys():
-                values["metadata"].zenml_pipeline_run_id = tags[
-                    "zenml_pipeline_run_id"
-                ]
-                values["tags"].pop("zenml_pipeline_run_id")
-            if "zenml_pipeline_name" in tags.keys():
-                values["metadata"].zenml_pipeline_name = tags[
-                    "zenml_pipeline_name"
-                ]
-                values["tags"].pop("zenml_pipeline_name")
-            if "zenml_step_name" in tags.keys():
-                values["metadata"].zenml_step_name = tags["zenml_step_name"]
-                values["tags"].pop("zenml_step_name")
-            if "zenml_workspace" in tags.keys():
-                values["metadata"].zenml_workspace = tags["zenml_workspace"]
-                values["tags"].pop("zenml_workspace")
-            if "zenml_pipeline_uuid" in tags.keys():
-                values["metadata"].zenml_pipeline_uuid = tags[
-                    "zenml_pipeline_uuid"
-                ]
-                values["tags"].pop("zenml_pipeline_uuid")
-            if "zenml_pipeline_run_uuid" in tags.keys():
-                values["metadata"].zenml_pipeline_run_uuid = tags[
-                    "zenml_pipeline_run_uuid"
-                ]
-                values["tags"].pop("zenml_pipeline_run_uuid")
-        return values
 
 
 class BaseModelRegistryConfig(StackComponentConfig):
@@ -200,14 +153,14 @@ class BaseModelRegistry(StackComponent, ABC):
         self,
         name: str,
         description: Optional[str] = None,
-        tags: Optional[Dict[str, str]] = None,
+        metadata: Optional[Dict[str, str]] = None,
     ) -> RegisteredModel:
         """Registers a model in the model registry.
 
         Args:
             name: The name of the registered model.
             description: The description of the registered model.
-            tags: The tags associated with the registered model.
+            metadata: The metadata associated with the registered model.
 
         Returns:
             The registered model.
@@ -237,16 +190,16 @@ class BaseModelRegistry(StackComponent, ABC):
         self,
         name: str,
         description: Optional[str] = None,
-        tags: Optional[Dict[str, str]] = None,
-        remove_tags: Optional[List[str]] = None,
+        metadata: Optional[Dict[str, str]] = None,
+        remove_metadata: Optional[List[str]] = None,
     ) -> RegisteredModel:
         """Updates a registered model in the model registry.
 
         Args:
             name: The name of the registered model.
             description: The description of the registered model.
-            tags: The tags associated with the registered model.
-            remove_tags: The tags to remove from the registered model.
+            metadata: The metadata associated with the registered model.
+            remove_metadata: The metadata to remove from the registered model.
 
         Raises:
             KeyError: If the model does not exist.
@@ -272,13 +225,13 @@ class BaseModelRegistry(StackComponent, ABC):
     def list_models(
         self,
         name: Optional[str] = None,
-        tags: Optional[Dict[str, str]] = None,
+        metadata: Optional[Dict[str, str]] = None,
     ) -> List[RegisteredModel]:
         """Lists all registered models in the model registry.
 
         Args:
             name: The name of the registered model.
-            tags: The tags associated with the registered model.
+            metadata: The metadata associated with the registered model.
 
         Returns:
             A list of registered models.
@@ -306,10 +259,9 @@ class BaseModelRegistry(StackComponent, ABC):
     def register_model_version(
         self,
         name: str,
-        version: str,
+        version: Optional[str] = None,
         model_source_uri: Optional[str] = None,
         description: Optional[str] = None,
-        tags: Optional[Dict[str, str]] = None,
         metadata: ModelRegistryModelMetadata = Field(
             default_factory=ModelRegistryModelMetadata
         ),
@@ -322,7 +274,6 @@ class BaseModelRegistry(StackComponent, ABC):
             model_source_uri: The source URI of the model.
             version: The version of the model version.
             description: The description of the model version.
-            tags: The tags associated with the model version.
             metadata: The metadata associated with the model
                 version.
             **kwargs: Additional keyword arguments.
@@ -357,8 +308,10 @@ class BaseModelRegistry(StackComponent, ABC):
         name: str,
         version: str,
         description: Optional[str] = None,
-        tags: Optional[Dict[str, str]] = None,
-        remove_tags: Optional[List[str]] = None,
+        metadata: ModelRegistryModelMetadata = Field(
+            default_factory=ModelRegistryModelMetadata
+        ),
+        remove_metadata: Optional[List[str]] = None,
         stage: Optional[ModelVersionStage] = None,
     ) -> ModelVersion:
         """Updates a model version in the model registry.
@@ -367,8 +320,8 @@ class BaseModelRegistry(StackComponent, ABC):
             name: The name of the registered model.
             version: The version of the model version to update.
             description: The description of the model version.
-            tags: The tags associated with the model version.
-            remove_tags: The tags to remove from the model version.
+            metadata: Metadata associated with this model version.
+            remove_metadata: The metadata to remove from the model version.
             stage: The stage of the model version.
 
         Returns:
@@ -384,20 +337,59 @@ class BaseModelRegistry(StackComponent, ABC):
         self,
         name: Optional[str] = None,
         model_source_uri: Optional[str] = None,
-        tags: Optional[Dict[str, str]] = None,
+        metadata: ModelRegistryModelMetadata = Field(
+            default_factory=ModelRegistryModelMetadata
+        ),
+        stage: Optional[ModelVersionStage] = None,
+        count: Optional[int] = None,
+        created_after: Optional[datetime] = None,
+        created_before: Optional[datetime] = None,
+        order_by_date: Optional[str] = None,
         **kwargs: Any,
-    ) -> List[ModelVersion]:
+    ) -> Optional[List[ModelVersion]]:
         """Lists all model versions for a registered model.
 
         Args:
             name: The name of the registered model.
             model_source_uri: The model source URI of the registered model.
-            tags: The tags associated with the registered model.
+            metadata: Metadata associated with this model version.
+            stage: The stage of the model version.
+            count: The number of model versions to return.
+            created_after: The timestamp after which to list model versions.
+            created_before: The timestamp before which to list model versions.
+            order_by_date: Whether to sort by creation time, this can
+                be "asc" or "desc".
             kwargs: Additional keyword arguments.
 
         Returns:
             A list of model versions.
         """
+
+    def get_latest_model_version(
+        self,
+        name: str,
+        stage: Optional[ModelVersionStage] = None,
+    ) -> Optional[ModelVersion]:
+        """Gets the latest model version for a registered model.
+
+        This method is used to get the latest model version for a registered
+        model. If no stage is provided, the latest model version across all
+        stages is returned. If a stage is provided, the latest model version
+        for that stage is returned.
+
+        Args:
+            name: The name of the registered model.
+            stage: The stage of the model version.
+
+        Returns:
+            The latest model version.
+        """
+        model_versions = self.list_model_versions(
+            name=name, stage=stage, order_by_date="desc", count=1
+        )
+        if model_versions:
+            return model_versions[0]
+        return None
 
     @abstractmethod
     def get_model_version(self, name: str, version: str) -> ModelVersion:

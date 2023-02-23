@@ -85,7 +85,10 @@ def mlflow_model_deployer_step(
 ) -> MLFlowDeploymentService:
     """Model deployer pipeline step for MLflow.
 
-    # noqa: DAR401
+    This step deploys a model logged in the MLflow artifact store to a
+    deployment service. The user would typically use this step in a pipeline
+    that deploys a model that was already registered in the MLflow model
+    registr either manually or by using the `mlflow_model_registry_step`.
 
     Args:
         deploy_decision: whether to deploy the model or not
@@ -236,7 +239,7 @@ def mlflow_model_registry_deployer_step(
         ValueError: if the registry_model_name is not provided
         ValueError: if the registry_model_version or registry_model_stage is not provided
         ValueError: if No MLflow experiment tracker is found in the current active stack
-
+        LookupError: if no model version is found in the MLflow model registry.
     """
     if not params.registry_model_name:
         raise ValueError(
@@ -272,24 +275,24 @@ def mlflow_model_registry_deployer_step(
         )
 
     # fetch the model version
+    model_version = None
     if params.registry_model_version:
         model_version = model_registry.get_model_version(
             name=params.registry_model_name,
             version=params.registry_model_version,
         )
     elif params.registry_model_stage:
-        model_versions = model_registry.get_latest_model_versions(
+        model_version = model_registry.get_latest_model_version(
             name=params.registry_model_name,
-            stages=[params.registry_model_stage],
+            stage=params.registry_model_stage,
         )
-        if not model_versions:
-            raise ValueError(
-                f"No Model Version found for model name "
-                f"{params.registry_model_name} and version "
-                f"{params.registry_model_version} or stage "
-                f"{params.registry_model_stage}"
-            )
-        model_version = model_versions[0]
+    if not model_version:
+        raise LookupError(
+            f"No Model Version found for model name "
+            f"{params.registry_model_name} and version "
+            f"{params.registry_model_version} or stage "
+            f"{params.registry_model_stage}"
+        )
 
     # Set the pipeline information from the model version
     if model_version.metadata:

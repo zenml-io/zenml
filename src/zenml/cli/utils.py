@@ -747,7 +747,7 @@ def pretty_print_registered_model_table(
         {
             "NAME": registered_model.name,
             "DESCRIPTION": registered_model.description,
-            "TAGS": registered_model.tags,
+            "TAGS": registered_model.metadata,
         }
         for registered_model in registered_models
     ]
@@ -769,7 +769,7 @@ def pretty_print_model_version_table(
             "NAME": model_version.model_registration.name,
             "MODEL_VERSION": model_version.version,
             "VERSION_DESCRIPTION": model_version.description,
-            "TAGS": model_version.tags,
+            "TAGS": model_version.metadata.dict(),
         }
         for model_version in model_versions
     ]
@@ -805,12 +805,10 @@ def pretty_print_model_version_details(
         "UPDATED_AT": str(model_version.last_updated_at)
         if model_version.last_updated_at
         else "N/A",
-        "TAGS": model_version.tags,
+        "METADATA": model_version.metadata.dict(),
         "MODEL_SOURCE_URI": model_version.model_source_uri,
         "STAGE": model_version.stage.value,
     }
-    for key, value in dict(model_version.metadata).items():
-        model_version_info[key.upper()] = value or "N/A"
 
     for item in model_version_info.items():
         rich_table.add_row(*[str(elem) for elem in item])
