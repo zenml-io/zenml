@@ -158,8 +158,14 @@ class Flavor:
         name = self.name.replace("_", "-")
         docs_component_name = component_name or name
         base = f"https://docs.zenml.io/v/{__version__}"
-        url = (
+        return (
             f"{base}/component-gallery/{component_type}/{docs_component_name}"
         )
 
-        return url
+    def generate_default_sdk_docs_url(self) -> str:
+        """Generate SDK docs url for a flavor."""
+        from zenml import __version__
+
+        base = f"https://apidocs.zenml.io/{__version__}"
+        component_type = self.type.plural
+        return f"{base}/core_code_docs/core-{component_type}/#zenml.{component_type}.{self.name}_{self.type}"
