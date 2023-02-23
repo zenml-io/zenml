@@ -32,6 +32,7 @@ from typing import (
     cast,
 )
 from uuid import UUID
+import click
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
@@ -2153,6 +2154,115 @@ class Client(metaclass=ClientMetaClass):
             component.type,
             component.name,
         )
+
+    def deploy_stack_component(
+        self,
+        ctx: click.Context,
+        name: str,
+        flavor: str,
+        cloud: str,
+        component_type: StackComponentType,
+        configuration: Optional[Dict[str, Any]] = None,
+    ) -> "ComponentResponseModel":
+        """Deploys a stack component.
+
+        Args:
+            name: The name of the deployed stack component.
+            flavor: The flavor of the deployed stack component.
+            cloud: The cloud of the deployed stack component.
+            component_type: The type of the stack component to deploy.
+            configuration: The configuration of the deployed stack component.
+
+        Returns:
+            The deployed stack component.
+        """
+        from zenml.cli.stack_recipes import (
+            deploy,
+            get_outputs,
+        )
+
+        STACK_COMPONENT_RECIPE_DIR = "deployed_stack_components"
+        if configuration:
+            # convert configuration dict to a json object
+            configuration = json.dumps(configuration)
+
+        if cloud == "s3":
+            cloud = "aws"
+
+        # set the stack component and flavor
+        component = {component_type.value: flavor}
+        
+        # path should be fixed at a constant in the 
+        # global config directory
+        path = Path(
+            os.path.join(
+                io_utils.get_global_config_directory(), STACK_COMPONENT_RECIPE_DIR
+                )
+            )
+        # Create the new component model
+        ctx.invoke(
+            deploy,
+            path=path,
+            stack_recipe_name=f"{cloud}-modular",
+            config=configuration,
+            no_server=True,
+            **component,
+        )
+
+        # get the outputs from the deployed recipe
+        outputs = ctx.invoke(
+            get_outputs,
+            path=path,
+            stack_recipe_name=f"{cloud}-modular",
+        )
+
+        # get all outputs that start with the component type into a map
+        comp_outputs = {
+            k: v
+            for k, v in outputs.items()
+            if k.startswith(component_type.value)
+        }
+
+        # call the register stack component function using the values of the outputs
+        # truncate the component type from the output
+        self.create_stack_component(
+            name=name or comp_outputs[f"{component_type.value}_name"],
+            flavor=comp_outputs[f"{component_type.value}_flavor"],
+            component_type=component_type,
+            configuration=eval(comp_outputs[f"{component_type.value}_configuration"]),
+        )
+
+        # if the component is an experiment tracker of flavor mlflow, then
+        # output the name of the mlflow bucket if it exists
+        if component_type == StackComponentType.EXPERIMENT_TRACKER and flavor == "mlflow":
+            # TODO check if key in outputs  
+            mlflow_bucket = outputs.get("mlflow-bucket")
+            if mlflow_bucket:
+                logger.info(
+                    f"The bucket used for MLflow is: %s {mlflow_bucket}"
+                    "You can use this bucket as an artifact store to "
+                    "avoid having to create a new one."
+                )
+
+        # if the cloud is k3d, then check the container registry 
+        # outputs. If they are set and TODO a container registry by the name doesn't
+        # exist, then create one.
+        if cloud == "k3d":
+            container_registry_outputs = {
+                k: v
+                for k, v in outputs.items()
+                if k.startswith("container_registry")
+            }
+            if container_registry_outputs:
+                self.create_stack_component(
+                    name=container_registry_outputs["container_registry_name"],
+                    flavor=container_registry_outputs["container_registry_flavor"],
+                    component_type=StackComponentType.CONTAINER_REGISTRY,
+                    configuration=eval(
+                        container_registry_outputs["container_registry_configuration"]
+                    ),
+                )
+
 
     def _validate_stack_component_configuration(
         self,

@@ -24,7 +24,6 @@ import click
 from rich.text import Text
 
 import zenml
-from zenml.cli import server
 from zenml.cli import utils as cli_utils
 from zenml.cli.stack import import_stack, stack
 from zenml.config.global_config import GlobalConfiguration
@@ -1068,6 +1067,7 @@ def deploy(
                                 )
                                 return
                             else:
+                                from zenml.cli import server
                                 ctx.invoke(
                                     server.deploy,
                                     config=stack_recipe_service.get_deployment_info(),

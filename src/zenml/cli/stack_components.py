@@ -950,6 +950,89 @@ def generate_stack_component_flavor_delete_command(
     return delete_stack_component_flavor_command
 
 
+def generate_stack_component_deploy_command(
+    component_type: StackComponentType,
+) -> Callable[[str], None]:
+    """Generates a `deploy` command for the stack component type.
+
+    Args:
+        component_type: Type of the component to generate the command for.
+
+    Returns:
+        A function that can be used as a `click` command.
+    """
+    display_name = _component_display_name(component_type)
+
+    @click.argument(
+        "name",
+        type=str,
+    )
+    @click.option(
+        "--flavor",
+        "-f",
+        "flavor",
+        help=f"The flavor of the {display_name} to deploy.",
+        required=True,
+        type=str,
+    )
+    @click.option(
+        "--cloud",
+        "-c",
+        "cloud",
+        help="The cloud provider to use to deploy the stack component.",
+        type=str,
+    )
+    @click.argument("args", nargs=-1, type=click.UNPROCESSED)
+    @click.pass_context
+    def deploy_stack_component_command(
+        ctx: click.Context,
+        name: str,
+        flavor: str,
+        cloud: str,
+        args: List[str],
+    ) -> None:
+        """Deploy a stack component.
+
+        Args:
+            name: Name of the component to register.
+            flavor: Flavor of the component to register.
+            share: Share the stack with other users.
+            args: Additional arguments to pass to the component.
+        """
+        client = Client()
+
+        # Parse the given args
+        # name is guaranteed to be set by parse_name_and_extra_arguments
+        name, parsed_args = cli_utils.parse_name_and_extra_arguments(  # type: ignore[assignment]
+            list(args) + [name], expand_args=True
+        )
+
+        # make sure that flavor is set
+        if flavor is None:
+            raise cli_utils.error("Flavor must be specified while deploying a stack component.")
+
+        # for cases like artifact store, secrets manager and container registry
+        # the flavor is the same as the cloud
+        if cloud is None:
+            cloud = flavor
+
+        
+        client.deploy_stack_component(
+            ctx=ctx,
+            name=name,
+            flavor=flavor,
+            cloud=cloud,
+            configuration=parsed_args,
+            component_type=component_type,
+        )
+
+        cli_utils.declare(
+            f"Successfully deployed {display_name} '{name}'."
+        )
+
+    return deploy_stack_component_command
+
+
 def register_single_stack_component_cli_commands(
     component_type: StackComponentType, parent_group: click.Group
 ) -> None:
@@ -1123,6 +1206,15 @@ def register_single_stack_component_cli_commands(
         "delete",
         help=f"Delete a {plural_display_name} flavor.",
     )(delete_flavor_command)
+
+    # zenml stack-component deploy
+    deploy_command = generate_stack_component_deploy_command(
+        component_type
+    )
+    command_group.command(
+        "deploy",
+        help=f"Deploy a new {singular_display_name}.",
+    )(deploy_command)
 
 
 def register_all_stack_component_cli_commands() -> None:

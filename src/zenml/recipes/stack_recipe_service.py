@@ -27,7 +27,7 @@ from zenml.services import ServiceType
 from zenml.services.terraform.terraform_service import (
     SERVICE_CONFIG_FILE_NAME,
     TerraformService,
-    TerraformServiceConfig
+    TerraformServiceConfig,
 )
 from zenml.utils import io_utils, yaml_utils
 
@@ -39,14 +39,17 @@ INGRESS_CONTROLLER_HOST_OUTPUT = "ingress-controller-host"
 PROJECT_ID_OUTPUT = "project-id"
 ZENML_VERSION_VARIABLE = "zenml-version"
 
+
 class StackRecipeServiceConfig(TerraformServiceConfig):
     """Class to represent the configuration of a stack recipe service."""
+
     # list of all enabled stack components
     enabled_services: List[str] = []
     # list of services to be disabled
     disabled_services: List[str] = []
     # input variables from the CLI
     input_variables: Dict[str, Any] = {}
+
 
 class StackRecipeService(TerraformService):
     """Class to represent terraform applications."""
@@ -216,21 +219,7 @@ class StackRecipeService(TerraformService):
         # update zenml version to current version
         vars[ZENML_VERSION_VARIABLE] = zenml.__version__
 
-        self._write_vars_to_file(vars)
         return vars
-
-    def _write_vars_to_file(self, vars: Dict[str, Any]) -> None:
-        """Write variables to the variables file.
-
-        Args:
-            vars: The variables to write to the file.
-        """
-        path = self.terraform_client.working_dir
-        variables_file_path = os.path.join(
-            path, self.config.variables_file_path
-        )
-        with open(variables_file_path, "w") as f:
-            json.dump(vars, f)
 
     def get_deployment_info(self) -> str:
         """Return deployment details as a YAML document.
@@ -267,7 +256,6 @@ class StackRecipeService(TerraformService):
         self.config.enabled_services = []
         self._update_service_config()
 
-    
     def deprovision(self, force: bool = False) -> None:
         """Deprovision the service.
 
@@ -289,7 +277,7 @@ class StackRecipeService(TerraformService):
             # if no services are specified, destroy the whole stack
             # using the values of the existing tfvars.json file
             self._destroy()
-            
+
             # in case of singleton services, this will remove the config
             # path as a whole and otherwise, this removes the specific UUID
             # directory

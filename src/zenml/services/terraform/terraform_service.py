@@ -179,7 +179,22 @@ class TerraformService(BaseService):
 
         with open(self.status.config_file, "w") as f:
             f.write(self.json(indent=4))
-    
+
+    def _write_vars_to_file(self, vars: Dict[str, Any]) -> None:
+        """Write variables to the variables file.
+
+        Args:
+            vars: The variables to write to the file.
+        """ 
+        import json
+
+        path = self.terraform_client.working_dir
+        variables_file_path = os.path.join(
+            path, self.config.variables_file_path
+        )
+        with open(variables_file_path, "w") as f:
+            json.dump(vars, f)
+
     def _init_and_apply(self) -> None:
         """Function to call terraform init and terraform apply.
 
@@ -217,6 +232,9 @@ class TerraformService(BaseService):
             raise_on_error=True,
             refresh=False,
         )
+
+        # write variables to the variable file after execution is successful
+        self._write_vars_to_file(vars)
 
     def get_vars(self) -> Dict[str, Any]:
         """Get variables as a dictionary from values.tfvars.json.
@@ -265,6 +283,8 @@ class TerraformService(BaseService):
             force=python_terraform.IsNotFlagged,
             refresh=False,
         )
+
+        # set empty vars to the file
 
     def _setup_runtime_path(self) -> None:
         """Set up the runtime path for the service.
@@ -374,15 +394,15 @@ class TerraformService(BaseService):
         """
         if output:
             # if output is specified, then full_outputs is just a string
-            full_outputs = self.terraform_client.output(output, full_value=True)
+            full_outputs = self.terraform_client.output(
+                output, full_value=True
+            )
             return {output: full_outputs}
         else:
             # get value of the "value" key in the value of full_outputs
             # and assign it to the key in the output dict
             full_outputs = self.terraform_client.output(full_value=True)
-            outputs = {
-                k: v["value"] for k, v in full_outputs.items()
-            }
+            outputs = {k: v["value"] for k, v in full_outputs.items()}
             return outputs
 
     def check_installation(self) -> None:
