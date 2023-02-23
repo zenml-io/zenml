@@ -139,11 +139,15 @@ class Flavor:
         )
         return model
 
-    def generate_default_docs_url(self) -> str:
+    def generate_default_docs_url(self, component_name: str = None) -> str:
         """Generate the doc urls for all inbuilt and integration flavors.
 
         Note that this method is not going to be useful for custom flavors,
         which do not have any docs in the main zenml docs.
+
+        Args:
+            component_name: The name of the component for docs generation. Used
+                for legacy documentation before ZenML v0.34.0.
 
         Returns:
             The complete url to the zenml docs
@@ -152,7 +156,10 @@ class Flavor:
 
         component_type = self.type.plural.replace("_", "-")
         name = self.name.replace("_", "-")
+        docs_component_name = component_name or name
         base = f"https://docs.zenml.io/v/{__version__}"
-        url = f"{base}/component-gallery/{component_type}/{name}"
+        url = (
+            f"{base}/component-gallery/{component_type}/{docs_component_name}"
+        )
 
         return url
