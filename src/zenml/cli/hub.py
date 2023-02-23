@@ -64,13 +64,15 @@ class PluginResponseModel(PluginBaseModel):
     index_url: Optional[str]
     wheel_name: Optional[str]
     logo: Optional[str]
+    build_error_logs: Optional[str]
 
 
 def server_url() -> str:
     """Helper function to get the hub url."""
     if HUB_URL:
         return HUB_URL
-    return "https://staginghub.zenml.io/"
+    # return "https://staginghub.zenml.io/"
+    return "http://localhost:8080"
 
 
 def _hub_get(url: str) -> Optional[Json]:
@@ -378,7 +380,9 @@ def push_plugin(
         repository_commit=repository_commit,
         tags=",".join(tags),
     )
-    _create_plugin(request)
+    response = _create_plugin(request)
+    if response.build_error_logs:
+        error(response.build_error_logs)
 
 
 def _validate_plugin_name(
