@@ -145,7 +145,7 @@ class ModelVersion(BaseModel):
         model_library: The library used to create the model bundle associated with
             this model, The model library refers to the library used to create the
             model source, e.g. TensorFlow, PyTorch, etc. For some model registries,
-            the model library is set retrived automatically by the model registry.
+            the model library is set retrieved automatically by the model registry.
         version: The version number of this model version
         description: The description of this model version
         created_at: The creation time of this model version
