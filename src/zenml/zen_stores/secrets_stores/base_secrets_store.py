@@ -189,6 +189,8 @@ class BaseSecretsStore(
             store_config.class_path = "zenml.zen_stores.secrets_stores.aws_secrets_store.AWSSecretsStore"
         elif store_config.type == SecretsStoreType.GCP:
             store_config.class_path = "zenml.zen_stores.secrets_stores.gcp_secrets_store.GCPSecretsStore"
+        elif store_config.type == SecretsStoreType.AZURE:
+            store_config.class_path = "zenml.zen_stores.secrets_stores.azure_secrets_store.AzureSecretsStore"
         elif store_config.type != SecretsStoreType.CUSTOM:
             raise TypeError(
                 f"No store implementation found for secrets store type "
