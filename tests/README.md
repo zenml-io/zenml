@@ -147,6 +147,18 @@ volumes and images that might be created during the test run. The `--no-provisio
 flag is used to skip provisioning the environment, which is already done in
 step 2.
 
+With an environment provisioned separately, you could even run the tests in
+parallel, if you have enough resources, but be aware that there may still be a
+few integration tests that were not written with parallelism in mind that may
+occasionally fail due to interference between tests:
+
+```bash
+pytest tests/integration --environment docker-server --no-provision --cleanup-docker -n 4
+```
+
+Note that you need to `pip install pytest-xdist` to run the tests in parallel as
+Pytest requires this plugin for parallelized testing.
+
 4. Optionally, cleanup the test environment after tests are done:
 
 ```bash
