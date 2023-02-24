@@ -71,8 +71,8 @@ from zenml.utils.analytics_utils import (
     track,
     track_event,
 )
-from zenml.utils.enum_utils import StrEnum
 from zenml.utils.proxy_utils import make_proxy_class
+from zenml.zen_stores.enums import StoreEvent
 from zenml.zen_stores.secrets_stores.base_secrets_store import BaseSecretsStore
 from zenml.zen_stores.secrets_stores.secrets_store_interface import (
     SecretsStoreInterface,
@@ -91,17 +91,6 @@ DEFAULT_STACK_NAME = "default"
 DEFAULT_STACK_COMPONENT_NAME = "default"
 DEFAULT_ADMIN_ROLE = "admin"
 DEFAULT_GUEST_ROLE = "guest"
-
-
-class StoreEvent(StrEnum):
-    """Events that can be triggered by the store."""
-
-    # Triggered just before deleting a workspace. The workspace ID is passed as
-    # a `workspace_id` UUID argument.
-    WORKSPACE_DELETED = "workspace_deleted"
-    # Triggered just before deleting a user. The user ID is passed as
-    # a `user_id` UUID argument.
-    USER_DELETED = "user_deleted"
 
 
 @make_proxy_class(SecretsStoreInterface, "_secrets_store")
@@ -462,6 +451,9 @@ class BaseZenStore(
                 ENV_ZENML_SERVER_DEPLOYMENT_TYPE, ServerDeploymentType.OTHER
             ),
             database_type=ServerDatabaseType.OTHER,
+            secrets_store_type=self.secrets_store.type
+            if self.secrets_store
+            else SecretsStoreType.NONE,
         )
 
     def is_local_store(self) -> bool:

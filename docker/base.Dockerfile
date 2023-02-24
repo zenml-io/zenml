@@ -15,10 +15,7 @@ RUN pip install zenml${ZENML_VERSION:+==$ZENML_VERSION}
 
 FROM base AS server
 
-RUN pip install zenml${ZENML_VERSION:+==$ZENML_VERSION}[server]
-
-# Required for the AWS secrets store
-RUN zenml integration install -y aws && rm -rf /root/.config/zenml
+RUN pip install zenml${ZENML_VERSION:+==$ZENML_VERSION}[server,secrets-aws]
 
 WORKDIR /zenml
 

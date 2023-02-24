@@ -19,14 +19,12 @@ import re
 import time
 import uuid
 from datetime import datetime
-from functools import partial
 from typing import (
     Any,
     ClassVar,
     Dict,
     List,
     Optional,
-    Tuple,
     Type,
 )
 from uuid import UUID
@@ -50,18 +48,10 @@ from zenml.models import (
     SecretRequestModel,
     SecretResponseModel,
     SecretUpdateModel,
-    UserResponseModel,
-    WorkspaceResponseModel,
 )
-from zenml.secrets_managers.base_secrets_manager import ZENML_SECRET_NAME_LABEL
 from zenml.utils.analytics_utils import AnalyticsEvent, track
-from zenml.utils.pagination_utils import depaginate
-from zenml.zen_stores.base_zen_store import BaseZenStore, StoreEvent
+from zenml.zen_stores.base_zen_store import BaseZenStore
 from zenml.zen_stores.secrets_stores.base_secrets_store import (
-    ZENML_SECRET_ID_LABEL,
-    ZENML_SECRET_SCOPE_LABEL,
-    ZENML_SECRET_USER_LABEL,
-    ZENML_SECRET_WORKSPACE_LABEL,
     BaseSecretsStore,
 )
 
@@ -104,10 +94,6 @@ class AWSSecretsStoreConfiguration(SecretsStoreConfiguration):
     class Config:
         """Pydantic configuration class."""
 
-        # Don't validate attributes when assigning them. This is necessary
-        # because the certificate attributes can be expanded to the contents
-        # of the certificate files.
-        validate_assignment = False
         # Forbid extra attributes set in the class.
         extra = "forbid"
 
@@ -228,100 +214,9 @@ class AWSSecretsStore(BaseSecretsStore):
         # authentication errors early, before the Secrets Store is used.
         _ = self.client
 
-        self.zen_store.register_event_handler(
-            StoreEvent.WORKSPACE_DELETED, self._on_workspace_deleted
-        )
-
-        self.zen_store.register_event_handler(
-            StoreEvent.USER_DELETED, self._on_user_deleted
-        )
-
-    # --------------------
-    # Store Event Handlers
-    # --------------------
-
-    def _on_workspace_deleted(
-        self, event: StoreEvent, workspace_id: UUID
-    ) -> None:
-        """Handle the deletion of a workspace.
-
-        This method deletes all secrets associated with the given workspace.
-
-        Args:
-            event: The store event.
-            workspace_id: The ID of the workspace that was deleted.
-        """
-        logger.debug(
-            "Handling workspace deletion event for workspace %s", workspace_id
-        )
-
-        # Delete all secrets associated with the workspace.
-        secrets = depaginate(
-            partial(
-                self.list_secrets,
-                secret_filter_model=SecretFilterModel(
-                    workspace_id=workspace_id
-                ),
-            )
-        )
-        for secret in secrets:
-            try:
-                self.delete_secret(secret.id)
-            except KeyError:
-                pass
-            except Exception as e:
-                logger.warning("Failed to delete secret %s: %s", secret.id, e)
-
-    def _on_user_deleted(self, event: StoreEvent, user_id: UUID) -> None:
-        """Handle the deletion of a user.
-
-        This method deletes all secrets associated with the given user.
-
-        Args:
-            event: The store event.
-            user_id: The ID of the user that was deleted.
-        """
-        logger.debug("Handling user deletion event for user %s", user_id)
-
-        # Delete all secrets associated with the user.
-        secrets = depaginate(
-            partial(
-                self.list_secrets,
-                secret_filter_model=SecretFilterModel(user_id=user_id),
-            )
-        )
-        for secret in secrets:
-            try:
-                self.delete_secret(secret.id)
-            except KeyError:
-                pass
-            except Exception as e:
-                logger.warning("Failed to delete secret %s: %s", secret.id, e)
-
     # ------
     # Secrets
     # ------
-
-    def _validate_user_and_workspace(
-        self, user_id: UUID, workspace_id: UUID
-    ) -> Tuple[UserResponseModel, WorkspaceResponseModel]:
-        """Validates that the given user and workspace IDs are valid.
-
-        This method calls the ZenML store to validate the user and workspace
-        IDs. It raises a KeyError exception if either the user or workspace
-        does not exist.
-
-        Args:
-            user_id: The ID of the user to validate.
-            workspace_id: The ID of the workspace to validate.
-
-        Returns:
-            The user and workspace.
-        """
-        user = self.zen_store.get_user(user_id)
-        workspace = self.zen_store.get_workspace(workspace_id)
-
-        return user, workspace
 
     @staticmethod
     def _validate_aws_secret_name(name: str) -> None:
@@ -379,6 +274,9 @@ class AWSSecretsStore(BaseSecretsStore):
     ) -> SecretResponseModel:
         """Create a ZenML secret model from data stored in an AWS secret.
 
+        If the AWS secret cannot be converted, the method acts as if the
+        secret does not exist and raises a KeyError.
+
         Args:
             tags: The AWS secret tags.
             created: The AWS secret creation time.
@@ -387,54 +285,16 @@ class AWSSecretsStore(BaseSecretsStore):
 
         Returns:
             The ZenML secret.
-
-        Raises:
-            KeyError: If the AWS secret is a leftover from a deleted user
-                or workspace.
-            ValueError: If the AWS secret is missing required tags.
         """
-        # Convert the AWS secret tags to a dictionary.
-        tags_dict: Dict[str, str] = {tag["Key"]: tag["Value"] for tag in tags}
+        # Convert the AWS secret tags to a metadata dictionary.
+        metadata: Dict[str, str] = {tag["Key"]: tag["Value"] for tag in tags}
 
-        # Recover the ZenML secret metadata from the AWS secret tags.
-        try:
-            secret_id = UUID(tags_dict[ZENML_SECRET_ID_LABEL])
-            name = tags_dict[ZENML_SECRET_NAME_LABEL]
-            scope = SecretScope(tags_dict[ZENML_SECRET_SCOPE_LABEL])
-            workspace_id = UUID(tags_dict[ZENML_SECRET_WORKSPACE_LABEL])
-            user_id = UUID(tags_dict[ZENML_SECRET_USER_LABEL])
-        except KeyError as e:
-            raise ValueError(f"Invalid AWS secret: missing required tag {e}")
-
-        try:
-            user, workspace = self._validate_user_and_workspace(
-                user_id, workspace_id
-            )
-        except KeyError as e:
-            # The user or workspace associated with the secret no longer
-            # exists. This can happen if the user or workspace is being
-            # deleted nearly at the same time as this call. In this case, we
-            # raise a KeyError exception. The caller should handle this
-            # exception by assuming that the secret no longer exists.
-            logger.warning(
-                f"Secret with ID {secret_id} is associated with a "
-                f"non-existent user or workspace. Silently ignoring the "
-                f"secret: {e}"
-            )
-            raise KeyError(f"Secret with ID {secret_id} not found")
-
-        secret_model = SecretResponseModel(
-            id=secret_id,
-            name=name,
-            scope=scope,
-            workspace=workspace,
-            user=user,
-            values=json.loads(values) if values else {},
+        return self._create_secret_from_metadata(
+            metadata=metadata,
             created=created,
             updated=updated,
+            values=json.loads(values) if values else None,
         )
-
-        return secret_model
 
     @staticmethod
     def _get_aws_secret_tags(
@@ -491,76 +351,6 @@ class AWSSecretsStore(BaseSecretsStore):
             )
 
         return aws_filters
-
-    def _check_secret_scope(
-        self,
-        secret_name: str,
-        scope: SecretScope,
-        workspace: UUID,
-        user: UUID,
-        exclude_secret_id: Optional[UUID] = None,
-    ) -> Tuple[bool, str]:
-        """Checks if a secret with the given name already exists in the given scope.
-
-        This method enforces the following scope rules:
-
-          - only one workspace-scoped secret with the given name can exist
-            in the target workspace.
-          - only one user-scoped secret with the given name can exist in the
-            target workspace for the target user.
-
-        Args:
-            secret_name: The name of the secret.
-            scope: The scope of the secret.
-            workspace: The ID of the workspace to which the secret belongs.
-            user: The ID of the user to which the secret belongs.
-            exclude_secret_id: The ID of a secret to exclude from the check
-                (used e.g. during an update to exclude the existing secret).
-
-        Returns:
-            True if a secret with the given name already exists in the given
-            scope, False otherwise, and an error message.
-        """
-        filter = SecretFilterModel(
-            name=secret_name,
-            scope=scope,
-            page=1,
-            size=2,  # We only need to know if there is more than one secret
-        )
-
-        if scope in [SecretScope.WORKSPACE, SecretScope.USER]:
-            filter.workspace_id = workspace
-        if scope == SecretScope.USER:
-            filter.user_id = user
-
-        existing_secrets = self.list_secrets(secret_filter_model=filter).items
-        if exclude_secret_id is not None:
-            existing_secrets = [
-                s for s in existing_secrets if s.id != exclude_secret_id
-            ]
-
-        if existing_secrets:
-
-            existing_secret_model = existing_secrets[0]
-
-            msg = (
-                f"Found an existing {scope.value} scoped secret with the "
-                f"same '{secret_name}' name"
-            )
-            if scope in [SecretScope.WORKSPACE, SecretScope.USER]:
-                msg += (
-                    f" in the same '{existing_secret_model.workspace.name}' "
-                    f"workspace"
-                )
-            if scope == SecretScope.USER:
-                assert existing_secret_model.user
-                msg += (
-                    f" for the same '{existing_secret_model.user.name}' user"
-                )
-
-            return True, msg
-
-        return False, ""
 
     @track(AnalyticsEvent.CREATED_SECRET)
     def create_secret(self, secret: SecretRequestModel) -> SecretResponseModel:
@@ -870,8 +660,8 @@ class AWSSecretsStore(BaseSecretsStore):
                 * secret_filter_model.size : secret_filter_model.page
                 * secret_filter_model.size
             ],
-            page=secret_filter_model.page,
-            size=secret_filter_model.size,
+            index=secret_filter_model.page,
+            max_size=secret_filter_model.size,
         )
 
     @track(AnalyticsEvent.UPDATED_SECRET)

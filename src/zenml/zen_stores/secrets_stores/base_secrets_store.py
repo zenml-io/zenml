@@ -13,12 +13,15 @@
 #  permissions and limitations under the License.
 """Base Secrets Store implementation."""
 from abc import ABC
+from datetime import datetime
+from functools import partial
 from typing import (
     TYPE_CHECKING,
     Any,
     ClassVar,
     Dict,
     Optional,
+    Tuple,
     Type,
     Union,
 )
@@ -29,13 +32,21 @@ from pydantic import BaseModel
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.enums import SecretScope, SecretsStoreType
 from zenml.logger import get_logger
-from zenml.models.secret_models import SecretRequestModel, SecretResponseModel
+from zenml.models.secret_models import (
+    SecretFilterModel,
+    SecretRequestModel,
+    SecretResponseModel,
+)
+from zenml.models.user_models import UserResponseModel
+from zenml.models.workspace_models import WorkspaceResponseModel
 from zenml.utils.analytics_utils import (
     AnalyticsEvent,
     AnalyticsTrackerMixin,
     track_event,
 )
+from zenml.utils.pagination_utils import depaginate
 from zenml.utils.source_utils import import_class_by_path
+from zenml.zen_stores.enums import StoreEvent
 from zenml.zen_stores.secrets_stores.secrets_store_interface import (
     SecretsStoreInterface,
 )
@@ -93,6 +104,14 @@ class BaseSecretsStore(
         super().__init__(**kwargs)
         self._zen_store = zen_store
 
+        self.zen_store.register_event_handler(
+            StoreEvent.WORKSPACE_DELETED, self._on_workspace_deleted
+        )
+
+        self.zen_store.register_event_handler(
+            StoreEvent.USER_DELETED, self._on_user_deleted
+        )
+
         try:
             self._initialize()
         except Exception as e:
@@ -114,33 +133,9 @@ class BaseSecretsStore(
             secrets store.
 
         Raises:
-            ValueError: If the secrets store integration is not found, if
-                the integration is not installed, or if the configured class
-                path cannot be imported or is not a subclass of
-                `BaseSecretsStore`.
+            ValueError: If the configured class path cannot be imported or is
+                not a subclass of `BaseSecretsStore`.
         """
-        if store_config.integration:
-            from zenml.integrations.registry import integration_registry
-
-            integration = integration_registry.integrations.get(
-                store_config.integration
-            )
-
-            if not integration:
-                raise ValueError(
-                    f"Integration {store_config.integration} was not found "
-                    f"in registry."
-                )
-
-            if not integration.check_installation():
-                raise ValueError(
-                    f"Integration {store_config.integration} is not "
-                    f"installed. Check that all the requirements are "
-                    f"present in your environment."
-                )
-
-            integration.activate()
-
         # Ensured through Pydantic root validation
         assert store_config.class_path is not None
 
@@ -175,7 +170,6 @@ class BaseSecretsStore(
 
         Raises:
             TypeError: If the secrets store type is unsupported.
-            ValueError: If the secrets store integration is not found.
         """
         if store_config.type == SecretsStoreType.SQL:
             from zenml.zen_stores.secrets_stores.sql_secrets_store import (
@@ -192,15 +186,9 @@ class BaseSecretsStore(
             return RestSecretsStore
 
         if store_config.type == SecretsStoreType.AWS:
-            store_config.integration = "aws"
-            store_config.class_path = (
-                "zenml.integrations.aws.secrets_stores.AWSSecretsStore"
-            )
+            store_config.class_path = "zenml.zen_stores.secrets_stores.aws_secrets_store.AWSSecretsStore"
         elif store_config.type == SecretsStoreType.GCP:
-            store_config.integration = "gcp"
-            store_config.class_path = (
-                "zenml.integrations.gcp.secrets_stores.GCPSecretsStore"
-            )
+            store_config.class_path = "zenml.zen_stores.secrets_stores.gcp_secrets_store.GCPSecretsStore"
         elif store_config.type != SecretsStoreType.CUSTOM:
             raise TypeError(
                 f"No store implementation found for secrets store type "
@@ -255,6 +243,163 @@ class BaseSecretsStore(
         if not self._zen_store:
             raise ValueError("Store not initialized")
         return self._zen_store
+
+    # --------------------
+    # Store Event Handlers
+    # --------------------
+
+    def _on_workspace_deleted(
+        self, event: StoreEvent, workspace_id: UUID
+    ) -> None:
+        """Handle the deletion of a workspace.
+
+        This method deletes all secrets associated with the given workspace.
+
+        Args:
+            event: The store event.
+            workspace_id: The ID of the workspace that was deleted.
+        """
+        logger.debug(
+            "Handling workspace deletion event for workspace %s", workspace_id
+        )
+
+        # Delete all secrets associated with the workspace.
+        secrets = depaginate(
+            partial(
+                self.list_secrets,
+                secret_filter_model=SecretFilterModel(
+                    workspace_id=workspace_id
+                ),
+            )
+        )
+        for secret in secrets:
+            try:
+                self.delete_secret(secret.id)
+            except KeyError:
+                pass
+            except Exception as e:
+                logger.warning("Failed to delete secret %s: %s", secret.id, e)
+
+    def _on_user_deleted(self, event: StoreEvent, user_id: UUID) -> None:
+        """Handle the deletion of a user.
+
+        This method deletes all secrets associated with the given user.
+
+        Args:
+            event: The store event.
+            user_id: The ID of the user that was deleted.
+        """
+        logger.debug("Handling user deletion event for user %s", user_id)
+
+        # Delete all secrets associated with the user.
+        secrets = depaginate(
+            partial(
+                self.list_secrets,
+                secret_filter_model=SecretFilterModel(user_id=user_id),
+            )
+        )
+        for secret in secrets:
+            try:
+                self.delete_secret(secret.id)
+            except KeyError:
+                pass
+            except Exception as e:
+                logger.warning("Failed to delete secret %s: %s", secret.id, e)
+
+    # ------------------------------------------
+    # Common helpers for Secrets Store back-ends
+    # ------------------------------------------
+
+    def _validate_user_and_workspace(
+        self, user_id: UUID, workspace_id: UUID
+    ) -> Tuple[UserResponseModel, WorkspaceResponseModel]:
+        """Validates that the given user and workspace IDs are valid.
+
+        This method calls the ZenML store to validate the user and workspace
+        IDs. It raises a KeyError exception if either the user or workspace
+        does not exist.
+
+        Args:
+            user_id: The ID of the user to validate.
+            workspace_id: The ID of the workspace to validate.
+
+        Returns:
+            The user and workspace.
+        """
+        user = self.zen_store.get_user(user_id)
+        workspace = self.zen_store.get_workspace(workspace_id)
+
+        return user, workspace
+
+    def _check_secret_scope(
+        self,
+        secret_name: str,
+        scope: SecretScope,
+        workspace: UUID,
+        user: UUID,
+        exclude_secret_id: Optional[UUID] = None,
+    ) -> Tuple[bool, str]:
+        """Checks if a secret with the given name already exists in the given scope.
+
+        This method enforces the following scope rules:
+
+          - only one workspace-scoped secret with the given name can exist
+            in the target workspace.
+          - only one user-scoped secret with the given name can exist in the
+            target workspace for the target user.
+
+        Args:
+            secret_name: The name of the secret.
+            scope: The scope of the secret.
+            workspace: The ID of the workspace to which the secret belongs.
+            user: The ID of the user to which the secret belongs.
+            exclude_secret_id: The ID of a secret to exclude from the check
+                (used e.g. during an update to exclude the existing secret).
+
+        Returns:
+            True if a secret with the given name already exists in the given
+            scope, False otherwise, and an error message.
+        """
+        filter = SecretFilterModel(
+            name=secret_name,
+            scope=scope,
+            page=1,
+            size=2,  # We only need to know if there is more than one secret
+        )
+
+        if scope in [SecretScope.WORKSPACE, SecretScope.USER]:
+            filter.workspace_id = workspace
+        if scope == SecretScope.USER:
+            filter.user_id = user
+
+        existing_secrets = self.list_secrets(secret_filter_model=filter).items
+        if exclude_secret_id is not None:
+            existing_secrets = [
+                s for s in existing_secrets if s.id != exclude_secret_id
+            ]
+
+        if existing_secrets:
+
+            existing_secret_model = existing_secrets[0]
+
+            msg = (
+                f"Found an existing {scope.value} scoped secret with the "
+                f"same '{secret_name}' name"
+            )
+            if scope in [SecretScope.WORKSPACE, SecretScope.USER]:
+                msg += (
+                    f" in the same '{existing_secret_model.workspace.name}' "
+                    f"workspace"
+                )
+            if scope == SecretScope.USER:
+                assert existing_secret_model.user
+                msg += (
+                    f" for the same '{existing_secret_model.user.name}' user"
+                )
+
+            return True, msg
+
+        return False, ""
 
     # --------------------------------------------------------
     # Helpers for Secrets Store back-ends that use tags/labels
@@ -350,6 +495,83 @@ class BaseSecretsStore(
             workspace=secret.workspace.id,
             user=secret.user.id if secret.user else None,
         )
+
+    def _create_secret_from_metadata(
+        self,
+        metadata: Dict[str, str],
+        created: datetime,
+        updated: datetime,
+        values: Optional[Dict[str, str]] = None,
+    ) -> SecretResponseModel:
+        """Create a ZenML secret model from metadata stored in the secrets store backend.
+
+        Args:
+            metadata: ZenML secret metadata collected from the backend secret
+                (e.g. from secret tags/labels).
+            created: The secret creation time.
+            updated: The secret last updated time.
+            values: The secret values (optional).
+
+        Returns:
+            The ZenML secret.
+
+        Raises:
+            KeyError: If the secret does not have the required metadata, if it
+                is not managed by this ZenML instance or if it is linked to a
+                user or workspace that no longer exists.
+        """
+        # Double-check that the secret is managed by this ZenML instance.
+        if metadata.get(ZENML_SECRET_LABEL) != str(
+            self.zen_store.get_store_info().id
+        ):
+            raise KeyError("Secret is not managed by this ZenML instance")
+
+        # Recover the ZenML secret fields from the input secret metadata.
+        try:
+            secret_id = UUID(metadata[ZENML_SECRET_ID_LABEL])
+            name = metadata[ZENML_SECRET_NAME_LABEL]
+            scope = SecretScope(metadata[ZENML_SECRET_SCOPE_LABEL])
+            workspace_id = UUID(metadata[ZENML_SECRET_WORKSPACE_LABEL])
+            user_id = UUID(metadata[ZENML_SECRET_USER_LABEL])
+        except KeyError as e:
+            raise KeyError(
+                f"Secret with ID {secret_id} could not be retrieved: "
+                f"missing required metadata: {e}"
+            )
+
+        try:
+            user, workspace = self._validate_user_and_workspace(
+                user_id, workspace_id
+            )
+        except KeyError as e:
+            # The user or workspace associated with the secret no longer
+            # exists. This can happen if the user or workspace is being
+            # deleted nearly at the same time as this call. In this case, we
+            # raise a KeyError exception. The caller should handle this
+            # exception by assuming that the secret no longer exists.
+            logger.warning(
+                f"Secret with ID {secret_id} is associated with a "
+                f"non-existent user or workspace. Silently ignoring the "
+                f"secret: {e}"
+            )
+            raise KeyError(
+                f"Secret with ID {secret_id} could not be retrieved: "
+                f"the secret is associated with a non-existent user or "
+                f"workspace: {e}"
+            )
+
+        secret_model = SecretResponseModel(
+            id=secret_id,
+            name=name,
+            scope=scope,
+            workspace=workspace,
+            user=user,
+            values=values if values else {},
+            created=created,
+            updated=updated,
+        )
+
+        return secret_model
 
     # ---------
     # Analytics

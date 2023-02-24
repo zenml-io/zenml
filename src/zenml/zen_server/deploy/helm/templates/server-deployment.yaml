@@ -71,6 +71,12 @@ spec:
             - name: ZENML_SECRETS_STORE_TYPE
               value: none
             {{- end }}
+            {{- if .Values.zenml.environment }}
+            {{- range $key, $value := .Values.zenml.environment }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- end }}
           envFrom:
           - secretRef:
               name: {{ include "zenml.fullname" . }}

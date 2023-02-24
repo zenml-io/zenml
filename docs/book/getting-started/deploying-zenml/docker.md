@@ -156,15 +156,21 @@ Manager as the secrets store backend.
     AWS access key ID that has access to the AWS Secrets Manager service that
     you want to use. If you are using an IAM role attached to an EKS cluster to
     authenticate, you can omit this variable.
+    NOTE: this is the same as setting the `AWS_ACCESS_KEY_ID` environment
+    variable.
 
 - **ZENML_SECRETS_STORE_AWS_SECRET_ACCESS_KEY**:
     The AWS secret access key to use for authentication. This must be set to a
     valid AWS secret access key that has access to the AWS Secrets Manager
     service that you want to use. If you are using an IAM role attached to an
     EKS cluster to authenticate, you can omit this variable.
+    NOTE: this is the same as setting the `AWS_SECRET_ACCESS_KEY` environment
+    variable.
 
 - **ZENML_SECRETS_STORE_AWS_SESSION_TOKEN**:
     Optional AWS session token to use for authentication.
+    NOTE: this is the same as setting the `AWS_SESSION_TOKEN` environment
+    variable.
 
 - **ZENML_SECRETS_STORE_SECRET_LIST_REFRESH_TIMEOUT**:
     The AWS Secrets Manager has a known issue where it does not immediately

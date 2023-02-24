@@ -178,7 +178,7 @@ class SqlSecretsStore(BaseSecretsStore):
     # Secrets
     # ------
 
-    def _check_secret_scope(
+    def _check_sql_secret_scope(
         self,
         session: Session,
         secret_name: str,
@@ -278,7 +278,7 @@ class SqlSecretsStore(BaseSecretsStore):
         with Session(self.engine) as session:
             # Check if a secret with the same name already exists in the same
             # scope.
-            secret_exists, msg = self._check_secret_scope(
+            secret_exists, msg = self._check_sql_secret_scope(
                 session=session,
                 secret_name=secret.name,
                 scope=secret.scope,
@@ -401,7 +401,7 @@ class SqlSecretsStore(BaseSecretsStore):
                 or secret_update.user is not None
                 and existing_secret.user.id != secret_update.user
             ):
-                secret_exists, msg = self._check_secret_scope(
+                secret_exists, msg = self._check_sql_secret_scope(
                     session=session,
                     secret_name=secret_update.name or existing_secret.name,
                     scope=secret_update.scope

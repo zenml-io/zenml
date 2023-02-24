@@ -14,10 +14,10 @@
 
 import time
 from contextlib import ExitStack as does_not_raise
+from datetime import timedelta
 
 import pytest
 
-from tests.harness.harness import TestHarness
 from tests.integration.functional.utils import sample_name
 from tests.integration.functional.zen_stores.utils import (
     SecretContext,
@@ -45,28 +45,7 @@ def _get_secrets_store_type() -> SecretsStoreType:
         The secrets store type that is used by the test ZenML deployment.
     """
     store = Client().zen_store
-    if not store.config.secrets_store:
-        return SecretsStoreType.NONE
-
-    if store.type != StoreType.REST:
-        return store.config.secrets_store.type
-
-    # If we're connected to a remote ZenML deployment, we can't assume anything
-    # about the secrets store type. We can check the deployment capabilities.
-    environment = TestHarness().active_environment
-    if environment.config.has_capability("aws-secrets-store"):
-        return SecretsStoreType.AWS
-
-    if environment.config.has_capability("gcp-secrets-store"):
-        return SecretsStoreType.GCP
-
-    if environment.config.has_capability("azure-secrets-store"):
-        return SecretsStoreType.AZURE
-
-    if environment.config.has_capability("vault-secrets-store"):
-        return SecretsStoreType.VAULT
-
-    return SecretsStoreType.REST
+    return store.get_store_info().secrets_store_type
 
 
 # .---------.
@@ -221,6 +200,93 @@ def test_update_secret_remove_nonexisting_values():
         assert saved_secret.secret_values == values
 
 
+def test_update_secret_values_sets_updated_date():
+    """Tests that updating secret values sets the updated timestamp."""
+    client = Client()
+    store = client.zen_store
+
+    values = dict(
+        aria="space cat",
+        axl="also space cat",
+    )
+    with SecretContext(values=values) as secret:
+        assert secret.updated - secret.created < timedelta(seconds=1)
+
+        saved_secret = store.get_secret(secret_id=secret.id)
+        assert saved_secret.secret_values == values
+        assert saved_secret.updated == secret.updated
+        assert saved_secret.created == secret.created
+
+        # Wait a second to ensure the updated timestamp is different.
+        time.sleep(1)
+
+        values["blupus"] = "another space cat"
+        updated_secret = store.update_secret(
+            secret_id=secret.id,
+            secret_update=SecretUpdateModel(
+                values=dict(
+                    blupus=values["blupus"],
+                ),
+            ),
+        )
+
+        if _get_secrets_store_type() != SecretsStoreType.AWS:
+            # The AWS secrets store returns before the secret is actually
+            # updated in the backend.
+            assert updated_secret.secret_values == values
+            assert updated_secret.created == saved_secret.created
+            assert updated_secret.updated - updated_secret.created >= timedelta(
+                seconds=1
+            )
+
+        saved_secret = store.get_secret(secret_id=secret.id)
+        assert saved_secret.secret_values == values
+        assert saved_secret.updated == updated_secret.updated
+        assert saved_secret.created == updated_secret.created
+
+
+def test_update_secret_name_sets_updated_date():
+    """Tests that updating the secret's name sets the updated timestamp."""
+    client = Client()
+    store = client.zen_store
+
+    with SecretContext() as secret:
+        assert secret.updated - secret.created < timedelta(seconds=1)
+
+        saved_secret = store.get_secret(secret_id=secret.id)
+        assert saved_secret.name == secret.name
+        assert saved_secret.secret_values == secret.secret_values
+        assert saved_secret.updated == secret.updated
+        assert saved_secret.created == secret.created
+
+        # Wait a second to ensure the updated timestamp is different.
+        time.sleep(1)
+
+        new_name = sample_name("arias-secrets")
+        updated_secret = store.update_secret(
+            secret_id=secret.id,
+            secret_update=SecretUpdateModel(
+                name=new_name,
+            ),
+        )
+
+        if _get_secrets_store_type() != SecretsStoreType.AWS:
+            # The AWS secrets store returns before the secret is actually
+            # updated in the backend.
+            assert updated_secret.name == new_name
+            assert updated_secret.secret_values == secret.secret_values
+            assert updated_secret.created == saved_secret.created
+            assert updated_secret.updated - updated_secret.created >= timedelta(
+                seconds=1
+            )
+
+        saved_secret = store.get_secret(secret_id=secret.id)
+        assert saved_secret.name == new_name
+        assert saved_secret.secret_values == secret.secret_values
+        assert saved_secret.updated == updated_secret.updated
+        assert saved_secret.created == updated_secret.created
+
+
 def test_update_secret_name():
     """Tests that a secret name can be updated."""
     client = Client()
@@ -235,7 +301,7 @@ def test_update_secret_name():
         assert len(all_secrets) == 1
         assert secret.id == all_secrets[0].id
 
-        new_name = sample_name("arias_secrets")
+        new_name = sample_name("arias-secrets")
 
         updated_secret = store.update_secret(
             secret_id=secret.id,
@@ -1070,8 +1136,8 @@ def test_list_secrets_filter():
     client = Client()
     store = client.zen_store
 
-    aria_secret_name = sample_name("arias_whiskers")
-    axl_secret_name = sample_name("axls_whiskers")
+    aria_secret_name = sample_name("arias-whiskers")
+    axl_secret_name = sample_name("axls-whiskers")
 
     with SecretContext(
         secret_name=aria_secret_name
@@ -1224,14 +1290,14 @@ def test_list_secrets_pagination_and_sorting():
     suffix = sample_name("")
 
     with SecretContext(
-        secret_name=f"arias_whiskers_{suffix}"
+        secret_name=f"arias-whiskers-{suffix}"
     ) as secret_one, SecretContext(
-        secret_name=f"arias_spots_{suffix}",
+        secret_name=f"arias-spots-{suffix}",
         scope=SecretScope.USER,
     ) as secret_two, SecretContext(
-        secret_name=f"axls_whiskers_{suffix}",
+        secret_name=f"axls-whiskers-{suffix}",
     ) as secret_three, SecretContext(
-        secret_name=f"axls_spots_{suffix}",
+        secret_name=f"axls-spots-{suffix}",
         scope=SecretScope.USER,
     ) as secret_four:
 
@@ -1414,6 +1480,9 @@ def test_list_secrets_pagination_and_sorting():
             # updated in the backend, so we need to wait a bit before
             # running `list_secrets`.
             time.sleep(AWS_SECRET_REFRESH_SLEEP)
+        else:
+            assert secret_one.updated > secret_one.created
+            assert secret_two.updated > secret_two.created
 
         secrets = store.list_secrets(
             SecretFilterModel(
@@ -1606,7 +1675,7 @@ def test_secrets_cannot_be_created_or_updated_by_readonly_user():
 
             with does_not_raise():
                 store.update_secret(
-                    secret.id, SecretUpdateModel(name=f"{secret.name}_new")
+                    secret.id, SecretUpdateModel(name=f"{secret.name}-new")
                 )
 
             if _get_secrets_store_type() == SecretsStoreType.AWS:
@@ -1621,7 +1690,7 @@ def test_secrets_cannot_be_created_or_updated_by_readonly_user():
             assert len(old_secrets) == 0
 
             new_secrets = store.list_secrets(
-                SecretFilterModel(name=f"{secret.name}_new")
+                SecretFilterModel(name=f"{secret.name}-new")
             ).items
             assert len(new_secrets) == 1
             assert new_secrets[0].id == secret.id
@@ -1629,7 +1698,7 @@ def test_secrets_cannot_be_created_or_updated_by_readonly_user():
             with does_not_raise():
                 store.update_secret(
                     user_secret.id,
-                    SecretUpdateModel(name=f"{user_secret.name}_new"),
+                    SecretUpdateModel(name=f"{user_secret.name}-new"),
                 )
 
             if _get_secrets_store_type() == SecretsStoreType.AWS:
@@ -1644,7 +1713,7 @@ def test_secrets_cannot_be_created_or_updated_by_readonly_user():
             assert len(old_secrets) == 0
 
             new_secrets = store.list_secrets(
-                SecretFilterModel(name=f"{user_secret.name}_new")
+                SecretFilterModel(name=f"{user_secret.name}-new")
             ).items
             assert len(new_secrets) == 1
             assert new_secrets[0].id == user_secret.id
@@ -1680,7 +1749,7 @@ def test_secrets_cannot_be_created_or_updated_by_readonly_user():
                 assert len(old_secrets) == 0
 
                 new_secrets = new_store.list_secrets(
-                    SecretFilterModel(name=f"{secret.name}_new")
+                    SecretFilterModel(name=f"{secret.name}-new")
                 ).items
                 assert len(new_secrets) == 1
                 assert new_secrets[0].id == secret.id
@@ -1688,7 +1757,7 @@ def test_secrets_cannot_be_created_or_updated_by_readonly_user():
                 with pytest.raises(IllegalOperationError):
                     new_store.update_secret(
                         user_secret.id,
-                        SecretUpdateModel(name=f"{user_secret.name}_new"),
+                        SecretUpdateModel(name=f"{user_secret.name}-new"),
                     )
 
                 old_secrets = new_store.list_secrets(
@@ -1697,7 +1766,7 @@ def test_secrets_cannot_be_created_or_updated_by_readonly_user():
                 assert len(old_secrets) == 0
 
                 new_secrets = new_store.list_secrets(
-                    SecretFilterModel(name=f"{user_secret.name}_new")
+                    SecretFilterModel(name=f"{user_secret.name}-new")
                 ).items
                 assert len(new_secrets) == 1
                 assert new_secrets[0].id == user_secret.id

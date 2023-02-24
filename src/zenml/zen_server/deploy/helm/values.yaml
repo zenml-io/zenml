@@ -143,6 +143,9 @@ zenml:
       # Manager instance. You can omit these if you are running the ZenML server
       # in an AWS EKS cluster that has an IAM role attached to it that has
       # permissions to access the AWS Secrets Manager instance.
+      # NOTE: setting this is the same as setting the AWS_ACCESS_KEY_ID,
+      # AWS_SECRET_ACCESS_KEY, and AWS_SESSION_TOKEN environment variables
+      # in the zenml.secretEnvironment variable.
       aws_access_key_id:
       aws_secret_access_key:
       aws_session_token:
@@ -168,6 +171,13 @@ zenml:
       # that you are using for the ZenML server.
       class_path: my.custom.secrets.store.MyCustomSecretsStore
 
+  # Extra environment variables to set in the ZenML server container.
+  environment: {}
+
+  # Extra environment variables to set in the ZenML server container that
+  # should be kept secret. These will be set as Kubernetes secrets and
+  # mounted as environment variables in the ZenML server container.
+  secretEnvironment: {}
 
   service:
     type: ClusterIP
