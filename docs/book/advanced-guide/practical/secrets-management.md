@@ -37,9 +37,9 @@ stack components:
 * Azure Key Vault
 * HashiCorp Vault
 
-### How to register a secret with the CLI
+### How to create a secret with the CLI
 
-To register a secret with name `<SECRET_NAME>` and a key-value pair, you
+To create a secret with name `<SECRET_NAME>` and a key-value pair, you
 can run the following CLI command:
 ```shell
 zenml secret create <SECRET_NAME> \
@@ -47,7 +47,7 @@ zenml secret create <SECRET_NAME> \
     --<KEY_2>=<VALUE_2>
 ```
 
-Alternatively, you can start an interactive registration (in which ZenML will query you for
+Alternatively, you can start an interactive creation (in which ZenML will query you for
 the secret keys and values) by passing the
 `--interactive/-i` parameter:
 
@@ -66,12 +66,12 @@ zenml secret create <SECRET_NAME> \
 ```
 
 The CLI also includes commands that can be used to list, update and delete
-secrets. A full guide on using the CLI to register, access, update and delete
+secrets. A full guide on using the CLI to create, access, update and delete
 secrets is available [here](https://apidocs.zenml.io/latest/cli/#zenml.cli--using-secrets).
 
-### How to register a secret with the ZenML Client API
+### How to create a secret with the ZenML Client API
 
-The ZenML client API offers a programmatic interface to register, e.g.:
+The ZenML client API offers a programmatic interface to create, e.g.:
 
 ```python
 from zenml.client import Client
@@ -95,10 +95,10 @@ reference is available [here](https://apidocs.zenml.io/latest/core_code_docs/cor
 ### Secrets scoping
 
 ZenML secrets can be scoped to a workspace or a user. This allows you to
-register secrets that are only accessible to a specific workspace or user.
+create secrets that are only accessible to a specific workspace or user.
 
-By default, all registered secrets are scoped to the active workspace. To
-register a secret and scope it to your active user instead, you can pass the
+By default, all created secrets are scoped to the active workspace. To
+create a secret and scope it to your active user instead, you can pass the
 `--scope` argument to the CLI command:
 
 ```shell

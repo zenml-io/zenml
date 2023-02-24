@@ -412,15 +412,15 @@ secrets store is using the same database as the ZenML server
 of the supported cloud services as a backend for the secrets store
 
 
-To register a secret, use the `register` command and pass the key-value pairs
-as command line arguments:
+To create a secret, use the `create` command and pass the key-value pairs
+as command-line arguments:
 
 ```bash
 zenml secret create SECRET_NAME --key1=value1 --key2=value2 --key3=value3 ...
 ```
 
 Note that the keys and values will be preserved in your `bash_history` file, so
-you may prefer to use the interactive `register` command instead:
+you may prefer to use the interactive `create` command instead:
 
 ```shell
 zenml secret create SECRET_NAME -i
