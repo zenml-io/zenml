@@ -1,0 +1,29 @@
+---
+title: "Local Secrets Manager"
+description: "How to store secrets locally"
+---
+
+The local secrets manager is a [secrets manager](/component-gallery/secrets-managers) flavor which comes built-in with ZenML and uses the local filesystem to store secrets.
+
+### When to use it
+
+The local secrets manager is built for early local development and should not be used it a production setting. It stores your secrets without encryption and only works in combination with the [local orchestrator](/component-gallery/orchestrators/local).
+
+### How to deploy it
+
+The local secrets manager comes with ZenML and works without any additional setup.
+
+### How to use it
+
+To use the local secrets manager, we can register it and use it in our active stack:
+
+```
+zenml secrets-manager register  --flavor=local 
+
+# Add the secrets manager to the active stack
+zenml stack update -x 
+```
+
+You can now [register, update or delete secrets](/component-gallery/secrets-managers#in-the-cli) using the CLI or [fetch secret values inside your steps](/component-gallery/secrets-managers#in-a-zenml-step).
+
+For more information and a full list of configurable attributes of the local secrets manager, check out the [API Docs](https://apidocs.zenml.io/latest/core%5Fcode%5Fdocs/core-secrets%5Fmanagers/#zenml.secrets%5Fmanagers.local.local%5Fsecrets%5Fmanager.LocalSecretsManager).

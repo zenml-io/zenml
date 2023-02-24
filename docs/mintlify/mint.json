@@ -1,0 +1,304 @@
+{
+  "$schema": "https://mintlify.com/schema.json",
+  "name": "ZenML",
+  "logo": {
+    "dark": "/logo/dark.svg",
+    "light": "/logo/light.svg"
+  },
+  "favicon": "/favicon.svg",
+  "colors": {
+    "primary": "#3E1F8D",
+    "light": "#7848F6",
+    "dark": "#7848F6"
+  },
+  "topbarLinks": [
+    {
+      "name": "Home",
+      "url": "https://zenml.io/home"
+    },
+    {
+      "name": "Blog",
+      "url": "https://blog.zenml.io"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "Get Started",
+    "url": "https://github.com/zenml-io/zenml/tree/main/examples/quickstart"
+  },
+  "anchors": [
+    {
+      "name": "Component Gallery",
+      "icon": "grid-2",
+      "url": "component-gallery"
+    },
+    {
+      "name": "CLI Reference",
+      "icon": "rectangle-terminal",
+      "url": "https://apidocs.zenml.io/latest/cli/"
+    },
+    {
+      "name": "API Reference",
+      "icon": "code",
+      "url": "https://apidocs.zenml.io"
+    },
+    {
+      "name": "Github",
+      "icon": "github",
+      "url": "https://github.com/zenml-io/zenml"
+    }
+  ],
+  "versions": ["0.31.1"],
+  "navigation": [
+    {
+      "group": "Getting Started",
+      "pages": [
+        "getting-started/introduction",
+        "getting-started/core-concepts",
+        "getting-started/installation",
+        {
+          "group": "Deploying ZenML",
+          "pages": [
+            "getting-started/deploying-zenml",
+            "getting-started/deploying-zenml/cli",
+            "getting-started/deploying-zenml/docker",
+            "getting-started/deploying-zenml/helm"
+          ]
+        },
+        "getting-started/architecture-diagrams",
+        "getting-started/examples"
+      ]
+    },
+    {
+      "group": "Starter Guide",
+      "pages": [
+        {
+          "group": "Pipelines",
+          "pages": [
+            "starter-guide/pipelines",
+            "starter-guide/pipelines/dashboard",
+            "starter-guide/pipelines/fetching-pipelines",
+            "starter-guide/pipelines/parameters-and-caching"
+          ]
+        },
+        {
+          "group": "Stacks",
+          "pages": [
+            "starter-guide/stacks",
+            "starter-guide/stacks/registering-stacks",
+            "starter-guide/stacks/managing-stacks"
+          ]
+        },
+        {
+          "group": "Collaboration",
+          "pages": [
+            "starter-guide/collaborate",
+            "starter-guide/collaborate/zenml-deployment",
+            "starter-guide/collaborate/users",
+            "starter-guide/collaborate/roles-and-permissions"
+          ]
+        }
+      ]
+    },
+    {
+      "group": "Advanced Guide",
+      "pages": [
+        {
+          "group": "In-depth Configuration",
+          "pages": [
+            "advanced-guide/pipelines",
+            "advanced-guide/pipelines/settings",
+            "advanced-guide/pipelines/containerization",
+            "advanced-guide/pipelines/materializers",
+            "advanced-guide/pipelines/step-resources",
+            "advanced-guide/pipelines/gpu-hardware",
+            "advanced-guide/pipelines/scheduling-runs",
+            "advanced-guide/pipelines/step-metadata",
+            "advanced-guide/pipelines/step-order"
+          ]
+        },
+        {
+          "group": "Extending Stacks",
+          "pages": [
+            "advanced-guide/stacks",
+            "advanced-guide/stacks/custom-flavors",
+            "advanced-guide/stacks/stack-state-management",
+            "advanced-guide/stacks/manage-external-services"
+          ]
+        },
+        {
+          "group": "Practical MLOps",
+          "pages": [
+            "advanced-guide/practical-mlops",
+            "advanced-guide/practical-mlops/stack-recipes",
+            "advanced-guide/practical-mlops/switching-orchestration",
+            "advanced-guide/practical-mlops/secrets-management",
+            "advanced-guide/practical-mlops/tracking-experiments",
+            "advanced-guide/practical-mlops/validating-data",
+            "advanced-guide/practical-mlops/deploying-models"
+          ]
+        }
+      ]
+    },
+    {
+      "group": "Component Gallery",
+      "pages": [
+        "component-gallery/categories",
+        "component-gallery/integrations",
+        {
+          "group": "Orchestrators",
+          "pages": [
+            "component-gallery/orchestrators",
+            "component-gallery/orchestrators/local",
+            "component-gallery/orchestrators/local-docker",
+            "component-gallery/orchestrators/kubeflow",
+            "component-gallery/orchestrators/kubernetes",
+            "component-gallery/orchestrators/gcloud-vertexai",
+            "component-gallery/orchestrators/sagemaker",
+            "component-gallery/orchestrators/tekton",
+            "component-gallery/orchestrators/airflow",
+            "component-gallery/orchestrators/github-actions",
+            "component-gallery/orchestrators/custom"
+          ]
+        },
+        {
+          "group": "Artifact Stores",
+          "pages": [
+            "component-gallery/artifact-stores",
+            "component-gallery/artifact-stores/local",
+            "component-gallery/artifact-stores/amazon-s3",
+            "component-gallery/artifact-stores/gcloud-gcs",
+            "component-gallery/artifact-stores/azure-blob-storage",
+            "component-gallery/artifact-stores/custom"
+          ]
+        },
+        {
+          "group": "Container Registries",
+          "pages": [
+            "component-gallery/container-registries",
+            "component-gallery/container-registries/default",
+            "component-gallery/container-registries/dockerhub",
+            "component-gallery/container-registries/amazon-ecr",
+            "component-gallery/container-registries/gcloud",
+            "component-gallery/container-registries/azure",
+            "component-gallery/container-registries/github",
+            "component-gallery/container-registries/custom"
+          ]
+        },
+        {
+          "group": "Secrets Managers",
+          "pages": [
+            "component-gallery/secrets-managers",
+            "component-gallery/secrets-managers/local",
+            "component-gallery/secrets-managers/aws",
+            "component-gallery/secrets-managers/gcp",
+            "component-gallery/secrets-managers/azure",
+            "component-gallery/secrets-managers/github",
+            "component-gallery/secrets-managers/hashicorp-vault",
+            "component-gallery/secrets-managers/custom"
+          ]
+        },
+        {
+          "group": "Data Validators",
+          "pages": [
+            "component-gallery/data-validators",
+            "component-gallery/data-validators/great-expectations",
+            "component-gallery/data-validators/deepchecks",
+            "component-gallery/data-validators/evidently",
+            "component-gallery/data-validators/whylogs",
+            "component-gallery/data-validators/custom"
+          ]
+        },
+        {
+          "group": "Experiment Trackers",
+          "pages": [
+            "component-gallery/experiment-trackers",
+            "component-gallery/experiment-trackers/mlflow",
+            "component-gallery/experiment-trackers/wandb",
+            "component-gallery/experiment-trackers/neptune",
+            "component-gallery/experiment-trackers/custom"
+          ]
+        },
+        {
+          "group": "Model Deployers",
+          "pages": [
+            "component-gallery/model-deployers",
+            "component-gallery/model-deployers/mlflow",
+            "component-gallery/model-deployers/seldon",
+            "component-gallery/model-deployers/kserve",
+            "component-gallery/model-deployers/bentoml",
+            "component-gallery/model-deployers/custom"
+          ]
+        },
+        {
+          "group": "Step Operators",
+          "pages": [
+            "component-gallery/step-operators",
+            "component-gallery/step-operators/amazon-sagemaker",
+            "component-gallery/step-operators/gcloud-vertexai",
+            "component-gallery/step-operators/azureml",
+            "component-gallery/step-operators/spark",
+            "component-gallery/step-operators/custom"
+          ]
+        },
+        {
+          "group": "Alerters",
+          "pages": [
+            "component-gallery/alerters",
+            "component-gallery/alerters/slack",
+            "component-gallery/alerters/custom"
+          ]
+        },
+        {
+          "group": "Feature Stores",
+          "pages": [
+            "component-gallery/feature-stores",
+            "component-gallery/feature-stores/feast",
+            "component-gallery/feature-stores/custom"
+          ]
+        },
+        {
+          "group": "Annotators",
+          "pages": [
+            "component-gallery/annotators",
+            "component-gallery/annotators/label-studio",
+            "component-gallery/annotators/custom"
+          ]
+        }
+      ]
+    },
+    {
+      "group": "Guidelines",
+      "pages": [
+        "guidelines/best-practices",
+        "guidelines/global-config",
+        "guidelines/system-environmental-variables",
+        "guidelines/migration-zero-twenty"
+      ]
+    },
+    {
+      "group": "Misc",
+      "pages": [
+        "misc/contributing",
+        "misc/debugging",
+        "misc/integrating",
+        "misc/usage-analytics"
+      ]
+    },
+    {
+      "group": "Reference",
+      "pages": [
+        "reference/community-and-content",
+        "reference/glossary",
+        "reference/faq",
+        "reference/cheat-sheet"
+      ]
+    }
+  ],
+  "footerSocials": {
+    "linkedin": "https://www.linkedin.com/company/zenml/",
+    "slack": "https://zenml.io/slack-invite",
+    "github": "https://github.com/zenml-io/zenml",
+    "twitter": "https://twitter.com/zenml_io",
+    "youtube": "https://www.youtube.com/@ZenML"
+  }
+}
