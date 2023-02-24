@@ -253,7 +253,8 @@ follow_imports = "skip"
 [[tool.mypy.overrides]]
 module = [
     "google.*" ,
-    "transformers.*"  # https://github.com/huggingface/transformers/issues/13390
+    "transformers.*",  # https://github.com/huggingface/transformers/issues/13390
+    "datasets.*"
 ]
 follow_imports = "skip"
 
@@ -310,7 +311,8 @@ module = [
     "jose.*",
     "fastapi_utils.*",
     "sqlalchemy_utils.*",
-    "copier.*"
+    "copier.*",
+    "datasets.*"
 ]
 ignore_missing_imports = true
 
