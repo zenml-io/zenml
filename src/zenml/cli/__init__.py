@@ -416,14 +416,14 @@ To register a secret, use the `register` command and pass the key-value pairs
 as command line arguments:
 
 ```bash
-zenml secret register SECRET_NAME --key1=value1 --key2=value2 --key3=value3 ...
+zenml secret create SECRET_NAME --key1=value1 --key2=value2 --key3=value3 ...
 ```
 
 Note that the keys and values will be preserved in your `bash_history` file, so
 you may prefer to use the interactive `register` command instead:
 
 ```shell
-zenml secret register SECRET_NAME -i
+zenml secret create SECRET_NAME -i
 ```
 
 As an alternative to the interactive mode, also useful for values that
@@ -431,7 +431,7 @@ are long or contain newline or special characters, you can also use the special
 `@` syntax to indicate to ZenML that the value needs to be read from a file:
 
 ```bash
-zenml secret register SECRET_NAME \
+zenml secret create SECRET_NAME \
    --aws_access_key_id=1234567890 \
    --aws_secret_access_key=abcdefghij \
    --aws_session_token=@/path/to/token.txt

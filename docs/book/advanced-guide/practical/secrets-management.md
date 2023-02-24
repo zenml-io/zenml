@@ -42,7 +42,7 @@ stack components:
 To register a secret with name `<SECRET_NAME>` and a key-value pair, you
 can run the following CLI command:
 ```shell
-zenml secret register <SECRET_NAME> \
+zenml secret create <SECRET_NAME> \
     --<KEY_1>=<VALUE_1> \
     --<KEY_2>=<VALUE_2>
 ```
@@ -52,7 +52,7 @@ the secret keys and values) by passing the
 `--interactive/-i` parameter:
 
 ```shell
-zenml secret register <SECRET_NAME> -i
+zenml secret create <SECRET_NAME> -i
 ```
 
 For secret values that are too big to pass as a command line argument, or have
@@ -60,7 +60,7 @@ special characters, you can also use the special `@` syntax to indicate to ZenML
 that the value needs to be read from a file:
 
 ```bash
-zenml secret register <SECRET_NAME> \
+zenml secret create <SECRET_NAME> \
    --key=@path/to/file.txt \
    ...
 ```
@@ -102,7 +102,7 @@ register a secret and scope it to your active user instead, you can pass the
 `--scope` argument to the CLI command:
 
 ```shell
-zenml secret register <SECRET_NAME> \
+zenml secret create <SECRET_NAME> \
     --scope user \
     --<KEY_1>=<VALUE_1> \
     --<KEY_2>=<VALUE_2>
@@ -209,7 +209,7 @@ For example:
 # username and password to authenticate with the MLflow tracking server
 
 # Using central secrets management
-zenml secret register mlflow_secret \
+zenml secret create mlflow_secret \
     --username=admin \
     --password=abc123
 
