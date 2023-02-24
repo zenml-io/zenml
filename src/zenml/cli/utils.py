@@ -766,7 +766,7 @@ def pretty_print_model_version_table(
     """
     model_version_dicts = [
         {
-            "NAME": model_version.model_registration.name,
+            "NAME": model_version.registered_model.name,
             "MODEL_VERSION": model_version.version,
             "VERSION_DESCRIPTION": model_version.description,
             "METADATA": model_version.metadata.dict(),
@@ -786,7 +786,7 @@ def pretty_print_model_version_details(
     Args:
         model_version: model version
     """
-    title_ = f"Properties of model `{model_version.model_registration.name}` version `{model_version.version}`"
+    title_ = f"Properties of model `{model_version.registered_model.name}` version `{model_version.version}`"
 
     rich_table = table.Table(
         box=box.HEAVY_EDGE,
@@ -796,7 +796,7 @@ def pretty_print_model_version_details(
     rich_table.add_column("MODEL VERSION PROPERTY", overflow="fold")
     rich_table.add_column("VALUE", overflow="fold")
     model_version_info = {
-        "REGISTERED_MODEL_NAME": model_version.model_registration.name,
+        "REGISTERED_MODEL_NAME": model_version.registered_model.name,
         "VERSION": model_version.version,
         "VERSION_DESCRIPTION": model_version.description,
         "CREATED_AT": str(model_version.created_at)

@@ -90,7 +90,7 @@ class ModelRegistryModelMetadata(BaseModel):
         *,
         exclude_unset: bool = False,
         exclude_none: bool = True,
-        **kwargs,
+        **kwargs: Any,
     ) -> Dict[str, str]:
         """Returns a dictionary representation of the metadata.
 
@@ -135,10 +135,17 @@ class ModelVersion(BaseModel):
     All model registries must extend this class with their own specific fields.
 
     Attributes:
-        model_registration: The registered model associated with this model
+        registered_model: The registered model associated with this model
         model_source_uri: The URI of the model bundle associated with this model,
             The model source can not be changed after the model version is created.
             If the model source is changed, a new model version must be created.
+        model_format: The format of the model bundle associated with this model,
+            The model format is set automatically by the model registry integration
+            and can not be changed after the model version is created.
+        model_library: The library used to create the model bundle associated with
+            this model, The model library refers to the library used to create the
+            model source, e.g. TensorFlow, PyTorch, etc. For some model registries,
+            the model library is set retrived automatically by the model registry.
         version: The version number of this model version
         description: The description of this model version
         created_at: The creation time of this model version
@@ -149,7 +156,9 @@ class ModelVersion(BaseModel):
 
     version: str
     model_source_uri: str
-    model_registration: RegisteredModel
+    model_format: str
+    model_library: Optional[str] = None
+    registered_model: RegisteredModel
     description: Optional[str] = None
     created_at: Optional[datetime] = None
     last_updated_at: Optional[datetime] = None
@@ -444,6 +453,34 @@ class BaseModelRegistry(StackComponent, ABC):
         Raises:
             KeyError: If the model version does not exist.
             RuntimeError: If loading fails.
+        """
+
+    @abstractmethod
+    def get_model_uri_artifact_store(
+        self,
+        model_version: ModelVersion,
+    ) -> str:
+        """Gets the URI artifact store for a model version.
+
+        This method retrieves the URI of the artifact store for a specific model
+        version. Its purpose is to ensure that the URI is in the correct format
+        for the specific artifact store being used. This is essential for the
+        model serving component, which relies on the URI to serve the model
+        version. In some cases, the URI may be stored in a different format by
+        certain model registry integrations. This method allows us to obtain the
+        URI in the correct format, regardless of the integration being used.
+
+        Note: In some cases the URI artifact store may not be available to the
+        user, the method should save the target model in one of the other
+        artifact stores supported by ZenML and return the URI of that artifact
+        store.
+
+        Args:
+            model_version: The model version for which to get the URI artifact
+                store.
+
+        Returns:
+            The URI artifact store for the model version.
         """
 
 

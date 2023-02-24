@@ -21,10 +21,12 @@ import mlflow
 from mlflow import MlflowClient
 from mlflow.entities.model_registry import ModelVersion as MLflowModelVersion
 from mlflow.exceptions import MlflowException
+from mlflow.models import get_model_info
 from mlflow.pyfunc import load_model
 from pydantic import Field
 
 from zenml.client import Client
+from zenml.constants import MLFLOW_MODEL_FORMAT
 from zenml.enums import StackComponentType
 from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker import (
     MLFlowExperimentTracker,
@@ -145,7 +147,6 @@ class MLFlowModelRegistry(BaseModelRegistry):
 
         Raises:
             RuntimeError: If the model already exists.
-            KeyError: If the model already exists.
 
         Returns:
             The registered model.
@@ -190,7 +191,6 @@ class MLFlowModelRegistry(BaseModelRegistry):
 
         Raises:
             RuntimeError: If the model does not exist.
-            KeyError: If the model does not exist.
         """
         # Check if model exists.
         self.get_model(name=name)
@@ -222,7 +222,6 @@ class MLFlowModelRegistry(BaseModelRegistry):
 
         Raises:
             RuntimeError: If mlflow fails to update the model.
-            KeyError: If the model does not exist.
 
         Returns:
             The updated model.
@@ -431,7 +430,6 @@ class MLFlowModelRegistry(BaseModelRegistry):
 
         Raises:
             RuntimeError: If mlflow fails to delete the model version.
-            KeyError: If the model version does not exist.
         """
         self.get_model_version(name=name, version=version)
         try:
@@ -468,7 +466,6 @@ class MLFlowModelRegistry(BaseModelRegistry):
 
         Raises:
             RuntimeError: If mlflow fails to update the model version.
-            KeyError: If the model version does not exist.
 
         Returns:
             The updated model version.
@@ -708,6 +705,24 @@ class MLFlowModelRegistry(BaseModelRegistry):
             **kwargs,
         )
 
+    def get_model_uri_artifact_store(
+        self,
+        model_version: ModelVersion,
+    ) -> str:
+        """Get the model URI artifact store.
+
+        Args:
+            model_version: The model version.
+
+        Returns:
+            The model URI artifact store.
+        """
+        artifact_store_path = (
+            f"{Client().active_stack.artifact_store.path}/mlflow"
+        )
+        model_source_uri = model_version.model_source_uri.rsplit(":")[-1]
+        return artifact_store_path + model_source_uri
+
     def _cast_mlflow_version_to_model_version(
         self,
         mlflow_model_version: MLflowModelVersion,
@@ -725,8 +740,15 @@ class MLFlowModelRegistry(BaseModelRegistry):
             metadata["mlflow_run_id"] = mlflow_model_version.run_id
         if mlflow_model_version.run_link:
             metadata["mlflow_run_link"] = mlflow_model_version.run_link
+        model_library = (
+            get_model_info(model_uri=mlflow_model_version.source)
+            .flavors.get("python_function", {})
+            .get("loader_module")
+        )
         return ModelVersion(
-            model_registration=RegisteredModel(name=mlflow_model_version.name),
+            registered_model=RegisteredModel(name=mlflow_model_version.name),
+            model_format=MLFLOW_MODEL_FORMAT,
+            model_library=model_library,
             version=mlflow_model_version.version,
             created_at=datetime.fromtimestamp(
                 int(mlflow_model_version.creation_timestamp) / 1e3

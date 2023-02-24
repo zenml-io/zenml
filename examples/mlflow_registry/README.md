@@ -106,15 +106,13 @@ mlflow_training_pipeline(
 # The list of parameters that can be passed to the mlflow_model_register_step:
 """
     name: Name of the registered model.
-    description: Description of the registered model.
-    tags: Tags to be added to the registered model.
     experiment_name: Name of the MLflow experiment to be used for the run.
     run_name: Name of the MLflow run to be created.
     run_id: ID of the MLflow run to be used.
     model_source_uri: URI of the model source. If not provided, the model
         will be fetched from the MLflow tracking server.
     description: Description of the model.
-    tags: Tags to be added to the model.
+    matadata: Tags to be added to the model.
 """
 ```
 

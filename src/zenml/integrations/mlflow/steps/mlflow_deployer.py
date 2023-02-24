@@ -18,7 +18,10 @@ from typing import Optional, Type, cast
 from mlflow.tracking import MlflowClient, artifact_utils
 
 from zenml.client import Client
-from zenml.constants import DEFAULT_SERVICE_START_STOP_TIMEOUT
+from zenml.constants import (
+    DEFAULT_SERVICE_START_STOP_TIMEOUT,
+    MLFLOW_MODEL_FORMAT,
+)
 from zenml.environment import Environment
 from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker import (
     MLFlowExperimentTracker,
@@ -63,6 +66,9 @@ class MLFlowDeployerParameters(BaseParameters):
         registry_model_name: the name of the model in the model registry
         registry_model_version: the version of the model in the model registry
         registry_model_stage: the stage of the model in the model registry
+        replace_existing: whether to create a new deployment service or not,
+            this parameter is only used when trying to deploy a model that
+            is registered in the MLflow model registry. Default is True.
         timeout: the number of seconds to wait for the service to start/stop.
     """
 
@@ -72,6 +78,7 @@ class MLFlowDeployerParameters(BaseParameters):
     registry_model_stage: Optional[ModelVersionStage] = None
     experiment_name: Optional[str] = None
     run_name: Optional[str] = None
+    replace_existing: bool = True
     workers: int = 1
     mlserver: bool = False
     timeout: int = DEFAULT_SERVICE_START_STOP_TIMEOUT
@@ -259,13 +266,6 @@ def mlflow_model_registry_deployer_step(
         MLFlowModelDeployer, MLFlowModelDeployer.get_active_model_deployer()
     )
 
-    experiment_tracker = Client().active_stack.experiment_tracker
-    if not isinstance(experiment_tracker, MLFlowExperimentTracker):
-        raise ValueError(
-            "The MLflow model registry step can only be used with an "
-            "MLflow experiment tracker."
-        )
-
     # fetch the MLflow model registry
     model_registry = Client().active_stack.model_registry
     if not isinstance(model_registry, MLFlowModelRegistry):
@@ -275,12 +275,14 @@ def mlflow_model_registry_deployer_step(
         )
 
     # fetch the model version
-    model_version = None
     if params.registry_model_version:
-        model_version = model_registry.get_model_version(
-            name=params.registry_model_name,
-            version=params.registry_model_version,
-        )
+        try:
+            model_version = model_registry.get_model_version(
+                name=params.registry_model_name,
+                version=params.registry_model_version,
+            )
+        except KeyError:
+            model_version = None
     elif params.registry_model_stage:
         model_version = model_registry.get_latest_model_version(
             name=params.registry_model_name,
@@ -293,30 +295,34 @@ def mlflow_model_registry_deployer_step(
             f"{params.registry_model_version} or stage "
             f"{params.registry_model_stage}"
         )
-
-    # Set the pipeline information from the model version
-    if model_version.metadata:
-        pipeline_name = model_version.metadata.zenml_pipeline_name or None
-        pipeline_run_id = model_version.metadata.zenml_pipeline_run_id or None
-        step_name = model_version.metadata.zenml_step_name or None
-
+    if model_version.model_format != MLFLOW_MODEL_FORMAT:
+        raise ValueError(
+            f"Model version {model_version.version} of model "
+            f"{model_version.registered_model.name} is not an MLflow model."
+            f"Only MLflow models can be deployed with the MLflow deployer"
+            f"Using this step."
+        )
     # fetch existing services with same pipeline name, step name and model name
-    existing_services = model_deployer.find_model_server(
-        registry_model_name=params.registry_model_name,
-        registry_model_version=params.registry_model_version,
+    existing_services = (
+        model_deployer.find_model_server(
+            registry_model_name=model_version.registered_model.name,
+        )
+        if params.replace_existing
+        else None
     )
 
     # create a config for the new model service
     predictor_cfg = MLFlowDeploymentConfig(
         model_name=params.model_name or "",
         model_uri=model_version.model_source_uri,
-        registry_model_name=model_version.model_registration.name,
+        registry_model_name=model_version.registered_model.name,
         registry_model_version=model_version.version,
+        registry_model_stage=model_version.stage.value,
         workers=params.workers,
         mlserver=params.mlserver,
-        pipeline_name=pipeline_name or "",
-        pipeline_run_id=pipeline_run_id or "",
-        pipeline_step_name=step_name or "",
+        pipeline_name=model_version.metadata.zenml_pipeline_name or "",
+        pipeline_run_id=model_version.metadata.zenml_pipeline_run_id or "",
+        pipeline_step_name=model_version.metadata.zenml_step_name or "",
         timeout=params.timeout,
     )
 

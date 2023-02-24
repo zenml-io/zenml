@@ -152,6 +152,13 @@ class BaseModelRegistry(StackComponent, ABC):
         **kwargs: Any,
     ) -> Any:
         """Loads a model version from the model registry."""
+
+    @abstractmethod
+    def get_model_uri_artifact_store(
+        self,
+        model_version: ModelVersion,
+    ) -> str:
+        """Gets the URI artifact store for a model version."""
 ```
 
 {% hint style="info" %}

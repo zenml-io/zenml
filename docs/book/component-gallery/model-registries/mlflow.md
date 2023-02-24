@@ -81,9 +81,10 @@ mlflow_training_pipeline(
     model_register=mlflow_register_model_step(
         params=MLFlowRegistryParameters(
             name="tensorflow-mnist-model",
-            description="A simple MNIST model trained with ZenML",
-            tags={"framework": "tensorflow", "dataset": "mnist"},
-            description=f"A run of the mlflow_training_pipeline with a learning rate of 0.0003",
+            metadata=ModelRegistryModelMetadata(
+                lr=lr, epochs=5, optimizer="adam"
+            ),
+            description=f"Run #{i+1} of the mlflow_training_pipeline.",
         )
     ),
 ).run()
@@ -99,10 +100,12 @@ that you can use to register your model in the MLflow Model Registry.
 
 ```shell
 zenml model-registry models register-version Tensorflow-model \
-    --model-uri="file:///.../mlruns/667102566783201219/3973eabc151c41e6ab98baeb20c5323b/artifacts/model" \
-    --tags key1 value1 --tags key2 value2 \
     --description="A new version of the tensorflow model with accuracy 98.88%" \
-    --zenml-pipeline-name="mlflow_training_pipeline"
+    -v 1 \
+    --model-uri="file:///.../mlruns/667102566783201219/3973eabc151c41e6ab98baeb20c5323b/artifacts/model" \
+    -m key1 value1 -m key2 value2 \
+    --zenml-pipeline-name="mlflow_training_pipeline" \
+    --zenml-step-name="trainer"
 ```
 
 ### List of available parameters
@@ -113,16 +116,11 @@ automatically filled in for you. However, you can still override them if you
 want to. The following table shows the list of available parameters.
 
 * `name`: The name of the model. This is a required parameter.
-* `description`: A description of the registered model.
-* `tags`: A list of tags to associate with the registered model.
-* `model_uri`: The path to the model. This is a required parameter.
+* `model_source_uri`: The path to the model. This is a required parameter.
 * `description`: A description of the model version.
-* `tags`: A list of tags to associate with the model version.
-* `zenml_pipeline_name`: The name of the ZenML pipeline that produced the model.
-* `zenml_pipeline_run_id`: The run id of the ZenML pipeline that produced the
-model.
-* `zenml_pipeline_step_name`: The name of the ZenML pipeline step that produced
-the model.
+* `metadata`: A list of metadata to associate with the model version of type
+`ModelRegistryModelMetadata`. 
+
 
 {% hint style="info" %}
 The `model_uri` parameter is the path to the model within the MLflow tracking

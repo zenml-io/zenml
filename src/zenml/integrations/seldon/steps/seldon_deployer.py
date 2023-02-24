@@ -19,7 +19,7 @@ from typing import Optional, cast
 from pydantic import BaseModel, validator
 
 from zenml.client import Client
-from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
+from zenml.constants import MLFLOW_MODEL_FORMAT, MODEL_METADATA_YAML_FILE_NAME
 from zenml.environment import Environment
 from zenml.exceptions import DoesNotExistException
 from zenml.integrations.seldon.constants import (
@@ -108,6 +108,9 @@ class SeldonDeployerStepParameters(BaseParameters):
         registry_model_name: name of the model in the model registry
         registry_model_version: version of the model in the model registry
         registry_model_stage: stage of the model in the model registry
+        replace_existing: whether to replace an existing deployment of the
+            model with the same name, this is used only when the model is
+            deployed from a model registry stored model.
     """
 
     service_config: SeldonDeploymentConfig
@@ -115,6 +118,7 @@ class SeldonDeployerStepParameters(BaseParameters):
     registry_model_name: Optional[str] = None
     registry_model_version: Optional[str] = None
     registry_model_stage: Optional[ModelVersionStage] = None
+    replace_existing: bool = True
     timeout: int = DEFAULT_SELDON_DEPLOYMENT_START_STOP_TIMEOUT
 
 
@@ -418,7 +422,6 @@ def seldon_mlflow_registry_deployer_step(
         LookupError: if no model version is found in the MLflow model registry.
     """
     # import here to avoid failing the pipeline if the step is not used
-    from zenml.integrations.mlflow.model_registries import MLFlowModelRegistry
 
     # check if the MLflow experiment tracker, MLflow model registry and
     # Seldon Core model deployer are available
@@ -446,19 +449,17 @@ def seldon_mlflow_registry_deployer_step(
 
     # fetch the MLflow model registry
     model_registry = Client().active_stack.model_registry
-    if not isinstance(model_registry, MLFlowModelRegistry):
-        raise ValueError(
-            "The MLflow model registry step can only be used with an "
-            "MLflow model registry."
-        )
+    assert model_registry is not None
 
     # fetch the model version
-    model_version = None
     if params.registry_model_version:
-        model_version = model_registry.get_model_version(
-            name=params.registry_model_name,
-            version=params.registry_model_version,
-        )
+        try:
+            model_version = model_registry.get_model_version(
+                name=params.registry_model_name,
+                version=params.registry_model_version,
+            )
+        except KeyError:
+            model_version = None
     elif params.registry_model_stage:
         model_version = model_registry.get_latest_model_version(
             name=params.registry_model_name,
@@ -471,25 +472,36 @@ def seldon_mlflow_registry_deployer_step(
             f"{params.registry_model_version} or stage "
             f"{params.registry_model_stage}"
         )
-    # Set the pipeline information from the model version
-    if model_version.metadata:
-        pipeline_name = model_version.metadata.zenml_pipeline_name or ""
-        pipeline_run_id = model_version.metadata.zenml_pipeline_run_id or ""
-        step_name = model_version.metadata.zenml_step_name or ""
-
-    # update the step configuration with the real pipeline runtime information
-    params.service_config.pipeline_name = pipeline_name
-    params.service_config.pipeline_run_id = pipeline_run_id
-    params.service_config.pipeline_step_name = step_name
-
+    if model_version.model_format != MLFLOW_MODEL_FORMAT:
+        raise ValueError(
+            f"Model version {model_version.version} of model "
+            f"{model_version.registered_model.name} is not an MLflow model."
+            f"Only MLflow models can be deployed with Seldon Core using "
+            f"this step."
+        )
+    # Prepare the service configuration
+    service_config = params.service_config
+    service_config.extra_args["registry_model_name"] = (
+        model_version.registered_model.name,
+    )
+    service_config.extra_args["registry_model_version"] = (
+        model_version.version,
+    )
+    service_config.extra_args["registry_model_stage"] = (
+        model_version.stage.value,
+    )
+    service_config.model_uri = model_registry.get_model_uri_artifact_store(
+        model_version=model_version,
+    )
     # fetch existing services with same pipeline name, step name and
     # model name
-    existing_services = model_deployer.find_model_server(
-        pipeline_name=pipeline_name,
-        pipeline_step_name=step_name,
-        model_name=params.service_config.model_name,
+    existing_services = (
+        model_deployer.find_model_server(
+            model_name=model_version.registered_model.name,
+        )
+        if params.replace_existing
+        else []
     )
-
     # even when the deploy decision is negative, if an existing model server
     # is not running for this pipeline/step, we still have to serve the
     # current model, to ensure that a model server is available at all times
@@ -498,19 +510,17 @@ def seldon_mlflow_registry_deployer_step(
         # We need to start
         # the previous model server if it is no longer running, to ensure that
         # a model server is available at all times
-        if not service.is_running:
-            service.start(timeout=params.timeout)
-        return service
+        if service.config.model_uri == service_config.model_uri:
+            if not service.is_running:
+                service.start()
+            return service
+        else:
+            # stop the existing service
+            service.stop()
 
     # invoke the Seldon Core model deployer to create a new service
     # or update an existing one that was previously deployed for the same
     # model
-    service_config = params.service_config
-    artifact_store_path = f"{Client().active_stack.artifact_store.path}/mlflow"
-    model_uri = (
-        artifact_store_path + model_version.model_source_uri.rsplit(":")[1]
-    )
-    service_config.model_uri = model_uri
     service = cast(
         SeldonDeploymentService,
         model_deployer.deploy_model(
