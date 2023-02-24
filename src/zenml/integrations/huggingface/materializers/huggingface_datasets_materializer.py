@@ -18,8 +18,8 @@ from collections import defaultdict
 from tempfile import TemporaryDirectory, mkdtemp
 from typing import TYPE_CHECKING, Dict, Type, Union
 
-from datasets import Dataset, load_from_disk  # type: ignore[attr-defined]
-from datasets.dataset_dict import DatasetDict
+from datasets import Dataset, load_from_disk  # type: ignore[import]
+from datasets.dataset_dict import DatasetDict  # type: ignore[import]
 
 from zenml.enums import ArtifactType
 from zenml.io import fileio
