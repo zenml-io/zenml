@@ -17,8 +17,9 @@ import os
 import subprocess
 import sys
 import tempfile
+from collections import defaultdict
 from pathlib import PurePosixPath
-from typing import TYPE_CHECKING, Dict, List, Optional, Sequence, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Sequence, Tuple, Union
 
 import zenml
 from zenml.config import DockerSettings
@@ -117,6 +118,7 @@ class PipelineDockerImageBuilder:
             [
                 docker_settings.requirements,
                 docker_settings.required_integrations,
+                docker_settings.required_hub_plugins,
                 docker_settings.replicate_local_python_environment,
                 docker_settings.install_stack_requirements,
                 docker_settings.apt_packages,
@@ -210,7 +212,7 @@ class PipelineDockerImageBuilder:
                 dockerignore_file=docker_settings.dockerignore,
             )
 
-            requirements_file_names = self._add_requirements_files(
+            requirements_file_names, extra_index_reqs = self._get_requirements(
                 docker_settings=docker_settings,
                 build_context=build_context,
                 stack=stack,
@@ -248,6 +250,7 @@ class PipelineDockerImageBuilder:
                 parent_image=parent_image,
                 docker_settings=docker_settings,
                 requirements_files=requirements_file_names,
+                extra_index_requirements=extra_index_reqs,
                 apt_packages=apt_packages,
                 entrypoint=entrypoint,
             )
@@ -310,12 +313,12 @@ class PipelineDockerImageBuilder:
         return target_image_name
 
     @classmethod
-    def _add_requirements_files(
+    def _get_requirements(
         cls,
         docker_settings: DockerSettings,
         build_context: "BuildContext",
         stack: "Stack",
-    ) -> List[str]:
+    ) -> Tuple[List[str], Dict[str, List[str]]]:
         """Adds requirements files to the build context.
 
         Args:
@@ -325,25 +328,41 @@ class PipelineDockerImageBuilder:
             stack: The stack on which the pipeline will run.
 
         Returns:
-            Name of the requirements files in the build context.
-            The files will be in the following order:
-            - Packages installed in the local Python environment
-            - User-defined requirements
-            - Requirements defined by user-defined and/or stack integrations
+            - Name of the requirements files in the build context.
+                The files will be in the following order:
+                - Packages installed in the local Python environment
+                - User-defined requirements
+                - Requirements defined by user-defined and/or stack integrations
+            - Extra index requirements, mapping index URLs to lists of packages
         """
-        requirements_file_names = []
+        requirements_file_names: List[str] = []
+        extra_index_reqs: Dict[str, List[str]] = {}
+        hub_requirements: List[str] = []
+
+        if docker_settings.required_hub_plugins:
+            hub_packages, hub_requirements = cls._get_hub_requirements(
+                docker_settings.required_hub_plugins
+            )
+            extra_index_reqs = {**extra_index_reqs, **hub_packages}
+
         requirements_files = cls._gather_requirements_files(
-            docker_settings=docker_settings, stack=stack
+            docker_settings=docker_settings,
+            stack=stack,
+            hub_requirements=hub_requirements,
         )
+
         for filename, file_content in requirements_files:
             build_context.add_file(source=file_content, destination=filename)
             requirements_file_names.append(filename)
 
-        return requirements_file_names
+        return requirements_file_names, extra_index_reqs
 
     @staticmethod
     def _gather_requirements_files(
-        docker_settings: DockerSettings, stack: "Stack", log: bool = True
+        docker_settings: DockerSettings,
+        stack: "Stack",
+        hub_requirements: Optional[List[str]] = None,
+        log: bool = True,
     ) -> List[Tuple[str, str]]:
         """Gathers and/or generates pip requirements files.
 
@@ -351,6 +370,7 @@ class PipelineDockerImageBuilder:
             docker_settings: Docker settings that specifies which
                 requirements to install.
             stack: The stack on which the pipeline will run.
+            hub_requirements: Dependencies of all required hub plugins.
             log: If `True`, will log the requirements.
 
         Raises:
@@ -452,13 +472,68 @@ class PipelineDockerImageBuilder:
                     ", ".join(f"`{r}`" for r in integration_requirements_list),
                 )
 
+        if hub_requirements:
+            hub_requirements_file = "\n".join(hub_requirements)
+            requirements_files.append(
+                (
+                    ".zenml_hub_requirements",
+                    hub_requirements_file,
+                )
+            )
+            if log:
+                logger.info(
+                    "- Including hub requirements: %s",
+                    ", ".join(f"`{r}`" for r in hub_requirements),
+                )
+
         return requirements_files
+
+    @staticmethod
+    def _get_hub_requirements(
+        required_hub_plugins: List[Union[str, Tuple[str, str]]]
+    ) -> Tuple[Dict[str, List[str]], List[str]]:
+        """Gets the requirements for the hub plugins.
+
+        Args:
+            required_hub_plugins: List of hub plugin names.
+
+        Returns:
+            - Extra index requirements (the hub plugins themselves), mapping
+                index URLs to lists of package names
+            - List of dependencies of all required hub plugins
+        """
+        from zenml.cli.hub import _get_plugin  # TODO: move this to utils?
+
+        hub_packages: defaultdict[str, List[str]] = defaultdict(list)
+        hub_requirements: List[str] = []
+
+        for required_plugin in required_hub_plugins:
+            if isinstance(required_plugin, str):
+                plugin_name = required_plugin
+                plugin_version = "latest"
+            else:
+                plugin_name, plugin_version = required_plugin
+            plugin = _get_plugin(plugin_name, plugin_version)
+            if plugin and plugin.index_url and plugin.wheel_name:
+                hub_packages[plugin.index_url].append(plugin.wheel_name)
+                if plugin.requirements:
+                    hub_requirements.extend(plugin.requirements)
+            else:
+                logger.warning(
+                    "Hub plugin `%s:%s` does not exist or cannot be installed."
+                    "Skipping installation of this plugin.",
+                    plugin_name,
+                    plugin_version,
+                )
+
+        return dict(hub_packages), sorted(set(hub_requirements))
 
     @staticmethod
     def _generate_zenml_pipeline_dockerfile(
         parent_image: str,
         docker_settings: DockerSettings,
         requirements_files: Sequence[str] = (),
+        extra_index_requirements: Dict[str, List[str]] = {},
         apt_packages: Sequence[str] = (),
         entrypoint: Optional[str] = None,
     ) -> str:
@@ -468,6 +543,9 @@ class PipelineDockerImageBuilder:
             parent_image: The image to use as parent for the Dockerfile.
             docker_settings: Docker settings for this image build.
             requirements_files: Paths of requirements files to install.
+            extra_index_requirements: Requirements that need to be installed
+                from extra indexes. The keys are the extra index URLs and the
+                values are the packages to install from that index.
             apt_packages: APT packages to install.
             entrypoint: The default entrypoint command that gets executed when
                 running a container of an image created by this Dockerfile.
@@ -490,6 +568,10 @@ class PipelineDockerImageBuilder:
             lines.append(
                 f"RUN pip install --default-timeout=60 --no-cache-dir -r {file}"
             )
+
+        for index, packages in extra_index_requirements.items():
+            package_str = " ".join(f"'{p}'" for p in packages)
+            lines.append(f"RUN pip install --index-url {index} {package_str}")
 
         lines.append(f"ENV {ENV_ZENML_ENABLE_REPO_INIT_WARNINGS}=False")
         if docker_settings.copy_global_config:
