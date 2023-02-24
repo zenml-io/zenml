@@ -531,6 +531,14 @@ class Client(metaclass=ClientMetaClass):
             logger.warning(warning_message)
         return None
 
+    def find_active_code_repository(
+        self, path: Optional[str] = None
+    ) -> Optional[str]:
+        path = path or os.getcwd()
+        path = os.path.abspath(path)
+
+        self.list_code_repositories()
+
     @property
     def zen_store(self) -> "BaseZenStore":
         """Shortcut to return the global zen store.

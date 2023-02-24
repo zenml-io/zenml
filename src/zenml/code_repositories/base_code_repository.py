@@ -11,18 +11,25 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import importlib
 import inspect
 import os
+import re
+import site
 import sys
 from abc import ABC, abstractmethod
+from distutils.sysconfig import get_python_lib
 from enum import Enum
 from pathlib import Path
 from types import ModuleType
-from typing import Any, Dict, Optional, Type, Union
+from typing import Any, Dict, Optional, Type, Union, cast
 from uuid import UUID
 
+from git.exc import InvalidGitRepositoryError
+from git.repo.base import Repo
 from pydantic import BaseModel, validator
 
+from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.logger import get_logger
 from zenml.utils import source_utils
@@ -30,14 +37,11 @@ from zenml.utils import source_utils
 logger = get_logger(__name__)
 
 
-def find_active_code_repo(path: str) -> Optional["BaseCodeRepository"]:
-    # find if we have a registered (authenticated?) code repo that exists
-    # at that path
-    return None
-
-
 class BaseCodeRepository(BaseModel, ABC):
-    id: UUID
+    @classmethod
+    @abstractmethod
+    def exists_at_path(cls, path: str, config: Dict[str, Any]) -> bool:
+        pass
 
     @abstractmethod
     def login(self) -> None:
@@ -48,14 +52,9 @@ class BaseCodeRepository(BaseModel, ABC):
         # whether path is inside the locally checked out repo
         pass
 
+    @property
     @abstractmethod
-    def get_root(self, path: str) -> str:
-        # get repo root
-        pass
-
-    @abstractmethod
-    def get_relative_file_path(self, path: str) -> str:
-        # get path of file relative to repo root
+    def root(self) -> str:
         pass
 
     @property
@@ -80,28 +79,87 @@ class BaseCodeRepository(BaseModel, ABC):
         # download files of commit to local directory
         pass
 
+
+class _GitCodeRepository(BaseCodeRepository, ABC):
+    @property
+    def git_repo(self) -> Repo:
+        return Repo(search_parent_directories=True)
+
+    @property
+    def root(self) -> str:
+        assert self.git_repo.working_dir
+        return str(self.git_repo.working_dir)
+
+    @property
+    def is_dirty(self) -> bool:
+        return self.git_repo.is_dirty(untracked_files=True)
+
+    @property
+    def has_local_changes(self) -> bool:
+        if self.is_dirty:
+            return True
+
+        remote = self.git_repo.remote(name="origin")  # make this configurable?
+        remote.fetch()
+
+        local_commit = self.git_repo.head.commit
+        remote_commit = remote.refs[self.git_repo.active_branch].commit
+
+        return remote_commit != local_commit
+
+    @property
+    def current_commit(self) -> str:
+        return cast(str, self.git_repo.head.object.hexsha)
+
+    @classmethod
+    def exists_at_path(cls, path: str, config: Dict[str, Any]) -> bool:
+        try:
+            repo = Repo(path=path, search_parent_directories=True)
+        except InvalidGitRepositoryError:
+            return False
+
+        for remote in repo.remotes:
+            if cls.url_matches_config(url=remote.url, config=config):
+                return True
+
+        return False
+
     @classmethod
     @abstractmethod
-    def is_valid_repo(cls, path: str) -> bool:
-        # check if the path is a repo of this type (e.g. git repo), maybe
-        # return some information that we can use to fetch a potentially
-        # registered code repo from the client
+    def url_matches_config(cls, url: str, config: Dict[str, Any]) -> bool:
         pass
 
 
-class _GitCodeRepository(BaseCodeRepository, ABC):
-    ...
-
-
 class GitHubCodeRepository(_GitCodeRepository):
-    ...
+    def login(self) -> None:
+        ...
+
+    def download_files(self, commit: str, directory: str) -> None:
+        ...
+
+    @classmethod
+    def url_matches_config(cls, url: str, config: Dict[str, Any]) -> bool:
+        owner = config["owner"]
+        repository = config["repository"]
+
+        https_url = f"https://github.com/{owner}/{repository}.git"
+        if url == https_url:
+            return True
+
+        ssh_regex = re.compile(f".*@github.com:{owner}/{repository}.git")
+
+        if ssh_regex.fullmatch(url):
+            return True
+
+        return False
 
 
 class SourceType(Enum):
     USER = "user"
-    BUILTIN = "builtin"
-    SITE_PACKAGE = "site_package"  # maybe rename and add python stdlib?
+    BUILTIN = "builtin"  # TODO: maybe store python version?
+    DISTRIBUTION_PACKAGE = "distribution_package"
     CODE_REPOSITORY = "code_repository"
+    HUB = "hub"
     UNKNOWN = "unknown"
 
 
@@ -113,7 +171,36 @@ class Source(BaseModel):
     def __new__(cls, **kwargs):
         if kwargs.get("type") == SourceType.CODE_REPOSITORY:
             return object.__new__(CodeRepositorySource)
+        elif kwargs.get("type") == SourceType.DISTRIBUTION_PACKAGE:
+            return object.__new__(DistributionPackageSource)
+
         return super().__new__(cls)
+
+    @classmethod
+    def from_import_path(cls, import_path: str):
+        module, variable = import_path.rsplit(".", maxsplit=1)
+        return cls(module=module, variable=variable, type=SourceType.UNKNOWN)
+
+    @property
+    def import_path(self) -> str:
+        return f"{self.module}.{self.variable}"
+
+
+class DistributionPackageSource(Source):
+    version: Optional[str] = None
+    type: SourceType = SourceType.DISTRIBUTION_PACKAGE
+
+    @validator("type")
+    def _validate_type(cls, value: SourceType) -> SourceType:
+        if value != SourceType.DISTRIBUTION_PACKAGE:
+            raise ValueError("Invalid source type.")
+
+        return value
+
+    @property
+    def package_name(self) -> str:
+        # TODO: are dots allowed in package names? If yes we need to handle that
+        return self.module.split(".", maxsplit=1)[0]
 
 
 class CodeRepositorySource(Source):
@@ -130,7 +217,91 @@ class CodeRepositorySource(Source):
 
 
 class SourceResolver:
-    SOURCE_MAPPING: Dict[int, Source] = {}
+    _SOURCE_MAPPING: Dict[int, Source] = {}
+
+    def load_source(self, source: Union[Source, str]) -> Any:
+        if isinstance(source, str):
+            source = Source.from_import_path(source)
+
+        import_root = None
+        if isinstance(source, CodeRepositorySource):
+            import_root = self._load_repository_files(source=source)
+        elif isinstance(source, DistributionPackageSource):
+            if source.version:
+                current_package_version = self._get_package_version(
+                    package_name=source.package_name
+                )
+                if current_package_version != source.version:
+                    logger.warning("Package version doesn't match source.")
+        elif source.type in {SourceType.USER, SourceType.UNKNOWN}:
+            # Unknown source might also refer to a user file, include source
+            # root in python path just to be sure
+            import_root = self.get_source_root()
+
+        python_path_prefix = [import_root] if import_root else []
+        with source_utils.prepend_python_path(python_path_prefix):
+            module = importlib.import_module(source.module)
+            object_ = getattr(module, source.variable)
+
+        self._SOURCE_MAPPING[id(object_)] = source
+        return object_
+
+    def resolve_class(self, class_: Type[Any]) -> Source:
+        if id(class_) in self._SOURCE_MAPPING:
+            return self._SOURCE_MAPPING[id(class_)]
+
+        module = sys.modules[class_.__module__]
+
+        if not getattr(module, class_.__name__, None) is class_:
+            raise RuntimeError(
+                "Unable to resolve class, must be top level in module"
+            )
+
+        module_name = class_.__module__
+        if module_name == "__main__":
+            module_name = self._resolve_module(module)
+
+        source_type = self.get_source_type(module=module)
+
+        if source_type == SourceType.USER:
+            # TODO: maybe we want to check for a repo at the location of
+            # the actual module file here? Different steps could be in
+            # different code repos
+            source_root = self.get_source_root()
+            active_repo = Client().find_active_code_repository(
+                path=source_root
+            )
+
+            if active_repo and not active_repo.has_local_changes:
+                # Inside a clean code repo with all changes pushed, resolve to
+                # a code repository source
+                module_name = self._resolve_module(
+                    module, root=active_repo.root
+                )
+
+                return CodeRepositorySource(
+                    repository_id=active_repo.id,
+                    commit=active_repo.current_commit,
+                    module=module_name,
+                    variable=class_.__name__,
+                )
+            else:
+                module_name = self._resolve_module(module)
+        elif source_type == SourceType.DISTRIBUTION_PACKAGE:
+            package_name = module_name.split(".", maxsplit=1)[0]
+            package_version = self._get_package_version(
+                package_name=package_name
+            )
+            return DistributionPackageSource(
+                module=module_name,
+                variable=class_.__name__,
+                version=package_version,
+                type=source_type,
+            )
+
+        return Source(
+            module=module_name, variable=class_.__name__, type=source_type
+        )
 
     @staticmethod
     def get_source_root() -> str:
@@ -142,43 +313,47 @@ class SourceResolver:
         return Path(source_root) in Path(file_path).resolve().parents
 
     @classmethod
+    def is_standard_lib_file(cls, file_path: str) -> bool:
+        stdlib_root = get_python_lib(standard_lib=True)
+        return Path(stdlib_root).resolve() in Path(file_path).resolve().parents
+
+    @classmethod
+    def is_distribution_package_file(cls, file_path: str) -> bool:
+        absolute_file_path = Path(file_path).resolve()
+
+        for path in site.getsitepackages() + [site.getusersitepackages()]:
+            if Path(path).resolve() in absolute_file_path.parents:
+                return True
+
+        # TODO: This currently returns False for editable installs because
+        # the site packages dir only contains a reference to the source files,
+        # not the actual files. This means editable installs will get source
+        # type unknown, which seems reasonable but we need to check if this
+        # leads to some issues
+        return False
+
+    @classmethod
     def get_source_type(cls, module: ModuleType) -> SourceType:
         try:
             file_path = inspect.getfile(module)
         except (TypeError, OSError):
+            # builtin file
+            return SourceType.BUILTIN
+
+        if cls.is_standard_lib_file(file_path=file_path):
             return SourceType.BUILTIN
 
         if cls.is_user_file(file_path=file_path):
             return SourceType.USER
 
-        if source_utils.is_third_party_module(file_path=file_path):
-            return SourceType.SITE_PACKAGE
+        if cls.is_distribution_package_file(file_path=file_path):
+            return SourceType.DISTRIBUTION_PACKAGE
 
         return SourceType.UNKNOWN
 
-    def load_source(self, source: Union[Source, str]) -> Any:
-        if isinstance(source, str):
-            # str source for backwards compatability
-            module, variable = source.rsplit(".", maxsplit=1)
-            source = Source(
-                module=module, variable=variable, type=SourceType.UNKNOWN
-            )
-
-        repo_root = None
-        if isinstance(source, CodeRepositorySource):
-            repo_root = self._load_code_repository(source=source)
-
-        source_path = f"{source.module}.{source.variable}"
-        object_ = source_utils.load_source_path(
-            source_path, import_path=repo_root
-        )
-
-        self.SOURCE_MAPPING[id(object_)] = source
-        return object_
-
-    def _load_code_repository(self, source: CodeRepositorySource) -> str:
+    def _load_repository_files(self, source: CodeRepositorySource) -> str:
         source_root = self.get_source_root()
-        active_repo = find_active_code_repo(path=source_root)
+        active_repo = Client().find_active_code_repository(path=source_root)
 
         if (
             active_repo
@@ -188,7 +363,7 @@ class SourceResolver:
         ):
             # The repo is clean and at the correct commit, we can use the file
             # directly without downloading anything
-            repo_root = active_repo.get_root(path=source_root)
+            repo_root = active_repo.root
         else:
             repo_root = os.path.join(
                 GlobalConfiguration().config_directory,
@@ -197,51 +372,60 @@ class SourceResolver:
                 source.commit,
             )
             if not os.path.exists(repo_root):
+                # TODO: download repo files
+                # Client().get_code_repository(source.repository_id)
                 ...
 
         return repo_root
 
-    def resolve_class(self, class_: Type[Any]) -> Source:
-        if id(class_) in self.SOURCE_MAPPING:
-            return self.SOURCE_MAPPING[id(class_)]
+    @classmethod
+    def _resolve_module(
+        cls, module: ModuleType, custom_source_root: Optional[str] = None
+    ) -> str:
+        if not hasattr(module, "__file__") or not module.__file__:
+            if module.__name__ == "__main__":
+                raise RuntimeError(
+                    f"{module} module was not loaded from a file. Cannot "
+                    "determine the module root path."
+                )
+            return module.__name__
 
-        module = sys.modules[class_.__module__]
+        module_path = os.path.abspath(module.__file__)
 
-        if not getattr(module, class_.__name__, None) is class_:
+        root = custom_source_root or cls.get_source_root()
+        root = os.path.abspath(root)
+
+        # Remove root_path from module_path to get relative path left over
+        module_path = os.path.relpath(module_path, root)
+
+        if module_path.startswith(os.pardir):
             raise RuntimeError(
-                "Unable to resolve class, must be top level in module"
+                f"Unable to resolve source for module {module}. The module file "
+                f"'{module_path}' does not seem to be inside the source root "
+                f"'{root}'."
             )
 
-        module_name = class_.__module__
-        if module_name == "__main__":
-            module_name = source_utils.get_main_module_source()
+        # Remove the file extension and replace the os specific path separators
+        # with `.` to get the module source
+        module_path, file_extension = os.path.splitext(module_path)
+        if file_extension != ".py":
+            raise RuntimeError(
+                f"Unable to resolve source for module {module}. The module file "
+                f"'{module_path}' does not seem to be a python file."
+            )
 
-        source_type = self.get_source_type(module=module)
+        module_source = module_path.replace(os.path.sep, ".")
 
-        if source_type == SourceType.USER:
-            source_root = self.get_source_root()
-            active_repo = find_active_code_repo(path=source_root)
-
-            if active_repo and not active_repo.has_local_changes:
-                # Inside a clean code repo with all changes pushed, resolve to
-                # a code repository source
-                module_path = active_repo.get_relative_file_path(
-                    module.__file__
-                )
-                module_name = module_path.replace(os.path.sep, ".")
-
-                return CodeRepositorySource(
-                    repository_id=active_repo.id,
-                    commit=active_repo.current_commit,
-                    module=module_name,
-                    variable=class_.__name__,
-                )
-            else:
-                # Resolve the module relative to the source root
-                module_name = source_utils.get_module_source_from_module(
-                    module
-                )
-
-        return Source(
-            module=module_name, variable=class_.__name__, type=source_type
+        logger.debug(
+            f"Resolved module source for module {module} to: `{module_source}`"
         )
+
+        return module_source
+
+    @staticmethod
+    def _get_package_version(package_name: str) -> Optional[str]:
+        # TODO: this only works on python 3.8+
+        # TODO: catch errors
+        from importlib.metadata import version
+
+        return version(distribution_name=package_name)
