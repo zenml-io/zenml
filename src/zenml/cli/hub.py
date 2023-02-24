@@ -65,6 +65,7 @@ class PluginResponseModel(PluginBaseModel):
     wheel_name: Optional[str]
     logo: Optional[str]
     build_error_logs: Optional[str]
+    requirements: Optional[List[str]]
 
 
 def server_url() -> str:
@@ -133,6 +134,9 @@ def _create_plugin(plugin: PluginRequestModel) -> PluginResponseModel:
 
 def _is_plugin_installed(plugin_name: str) -> bool:
     """Helper function to check if a plugin is installed."""
+    # TODO: we need to determine this based on the package name, not based on
+    # the import path (which is not always the same and can be defined by
+    # multiple plugins)
     spec = find_spec(f"zenml.hub.{plugin_name}")
     return spec is not None
 
@@ -191,6 +195,33 @@ def install_plugin(plugin_name: str, version: str) -> None:
             "installation."
         )
 
+    # Install plugin requirements
+    requirements = plugin.requirements
+    if requirements:
+        requirements_str = " ".join(f"'{r}'" for r in requirements)
+        confirmation = click.confirm(
+            f"Plugin '{plugin_name}:{version}' requires the following "
+            f"packages to be installed: {requirements_str}. Do you want to "
+            f"install them now?"
+        )
+        if not confirmation:
+            error(
+                f"Plugin '{plugin_name}:{version}' cannot be installed "
+                "without the required packages."
+            )
+
+        logger.info(
+            f"Installing requirements for plugin '{plugin_name}:{version}': "
+            f"{requirements_str}..."
+        )
+        subprocess.check_call(
+            [sys.executable, "-m", "pip", "install", *requirements]
+        )
+        logger.info(
+            f"Successfully installed requirements for plugin "
+            f"'{plugin_name}:{version}'."
+        )
+
     # pip install the wheel
     logger.info(
         f"Installing plugin '{plugin_name}:{version}' from "
@@ -202,7 +233,7 @@ def install_plugin(plugin_name: str, version: str) -> None:
             "-m",
             "pip",
             "install",
-            "--extra-index-url",
+            "--index-url",
             index_url,
             wheel_name,
         ]
