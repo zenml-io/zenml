@@ -82,7 +82,7 @@ mlflow_training_pipeline(
         params=MLFlowRegistryParameters(
             name="tensorflow-mnist-model",
             metadata=ModelRegistryModelMetadata(
-                lr=lr, epochs=5, optimizer="adam"
+                lr=lr, epochs=5, optimizer="Adam"
             ),
             description=f"Run #{i+1} of the mlflow_training_pipeline.",
         )
