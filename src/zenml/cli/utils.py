@@ -747,7 +747,7 @@ def pretty_print_registered_model_table(
         {
             "NAME": registered_model.name,
             "DESCRIPTION": registered_model.description,
-            "TAGS": registered_model.metadata,
+            "METADATA": registered_model.metadata,
         }
         for registered_model in registered_models
     ]
@@ -769,7 +769,7 @@ def pretty_print_model_version_table(
             "NAME": model_version.model_registration.name,
             "MODEL_VERSION": model_version.version,
             "VERSION_DESCRIPTION": model_version.description,
-            "TAGS": model_version.metadata.dict(),
+            "METADATA": model_version.metadata.dict(),
         }
         for model_version in model_versions
     ]

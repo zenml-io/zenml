@@ -38,6 +38,9 @@ from zenml.integrations.mlflow.steps.mlflow_registry import (
     MLFlowRegistryParameters,
     mlflow_register_model_step,
 )
+from zenml.model_registries.base_model_registry import (
+    ModelRegistryModelMetadata,
+)
 
 if __name__ == "__main__":
     # Initialize a training pipeline that will be logged to MLflow
@@ -50,7 +53,9 @@ if __name__ == "__main__":
             model_register=mlflow_register_model_step(
                 params=MLFlowRegistryParameters(
                     name="tensorflow-mnist-model",
-                    tags={"lr": lr},
+                    metadata=ModelRegistryModelMetadata(
+                        lr=lr, epochs=5, optimizer="adam"
+                    ),
                     description=f"Run #{i+1} of the mlflow_training_pipeline.",
                 )
             ),

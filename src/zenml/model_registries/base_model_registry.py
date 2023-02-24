@@ -85,6 +85,37 @@ class ModelRegistryModelMetadata(BaseModel):
             if k not in self.__fields__.keys()
         }
 
+    def dict(
+        self,
+        *,
+        exclude_unset: bool = False,
+        exclude_none: bool = True,
+        **kwargs,
+    ) -> Dict[str, str]:
+        """Returns a dictionary representation of the metadata.
+
+        This method overrides the default Pydantic `dict` method to allow
+        for the exclusion of fields with a value of None.
+
+        Args:
+            exclude_unset: Whether to exclude unset attributes.
+            exclude_none: Whether to exclude None attributes.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            A dictionary representation of the metadata.
+        """
+        if exclude_none:
+            return {
+                k: v
+                for k, v in super()
+                .dict(exclude_unset=exclude_unset, **kwargs)
+                .items()
+                if v is not None
+            }
+        else:
+            return super().dict(exclude_unset=exclude_unset, **kwargs)
+
     class Config:
         """Pydantic configuration class."""
 
@@ -235,20 +266,6 @@ class BaseModelRegistry(StackComponent, ABC):
 
         Returns:
             A list of registered models.
-        """
-
-    @abstractmethod
-    def check_model_exists(self, name: str) -> bool:
-        """Checks if a model exists in the model registry.
-
-        This method is used to check if a model exists before registering
-        a new model, deleting a model, or updating a model.
-
-        Args:
-            name: The name of the registered model.
-
-        Returns:
-            True if the model exists, False otherwise.
         """
 
     # ---------
@@ -405,25 +422,6 @@ class BaseModelRegistry(StackComponent, ABC):
         Raises:
             KeyError: If the model version does not exist.
             RuntimeError: If retrieval fails.
-        """
-
-    @abstractmethod
-    def check_model_version_exists(
-        self,
-        name: str,
-        version: str,
-    ) -> bool:
-        """Checks if a model version exists in the model registry.
-
-        This method is used to check if a model version exists in the model
-        registry before attempting to get it, load it, delete it, or update it.
-
-        Args:
-            name: The name of the registered model.
-            version: The version of the model version to check.
-
-        Returns:
-            True if the model version exists, False otherwise.
         """
 
     @abstractmethod

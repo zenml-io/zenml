@@ -88,10 +88,6 @@ class BaseModelRegistry(StackComponent, ABC):
     ) -> List[RegisteredModel]:
         """Lists all registered models in the model registry."""
 
-    @abstractmethod
-    def check_model_exists(self, name: str) -> bool:
-        """Checks if a model exists in the model registry."""
-
     # ---------
     # Model Version Methods
     # ---------
@@ -147,14 +143,6 @@ class BaseModelRegistry(StackComponent, ABC):
     @abstractmethod
     def get_model_version(self, name: str, version: str) -> ModelVersion:
         """Gets a model version for a registered model."""
-
-    @abstractmethod
-    def check_model_version_exists(
-        self,
-        name: str,
-        version: str,
-    ) -> bool:
-        """Checks if a model version exists in the model registry."""
 
     @abstractmethod
     def load_model_version(

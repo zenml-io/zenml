@@ -151,11 +151,14 @@ class MLFlowModelRegistry(BaseModelRegistry):
             The registered model.
         """
         # Check if model already exists.
-        if self.check_model_exists(name):
+        try:
+            self.get_model(name)
             raise KeyError(
                 f"Model with name {name} already exists in the MLflow model "
-                f"registry.",
+                f"registry. Please use a different name.",
             )
+        except KeyError:
+            pass
         # Register model.
         try:
             registered_model = self.mlflow_client.create_registered_model(
@@ -190,11 +193,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
             KeyError: If the model does not exist.
         """
         # Check if model exists.
-        if not self.check_model_exists(name):
-            raise KeyError(
-                f"Model with name {name} does not exist in the MLflow model "
-                f"registry.",
-            )
+        self.get_model(name=name)
         # Delete the registered model.
         try:
             self.mlflow_client.delete_registered_model(
@@ -229,11 +228,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
             The updated model.
         """
         # Check if model exists.
-        if not self.check_model_exists(name):
-            raise KeyError(
-                f"Model with name {name} does not exist in the MLflow model "
-                f"registry.",
-            )
+        self.get_model(name=name)
         # Update the registered model description.
         if description:
             try:
@@ -350,33 +345,6 @@ class MLFlowModelRegistry(BaseModelRegistry):
             for registered_model in registered_models
         ]
 
-    def check_model_exists(
-        self,
-        name: str,
-    ) -> bool:
-        """Check if a model exists in the MLflow model registry.
-
-        Args:
-            name: The name of the model.
-
-        Returns:
-            True if the model exists, False otherwise.
-
-        Raises:
-            RuntimeError: If mlflow fails to get the model.
-        """
-        # Check if the model exists.
-        try:
-            self.mlflow_client.get_registered_model(name=name)
-        except MlflowException as e:
-            if "Could not find registered model" in e.message:
-                return False
-            raise RuntimeError(
-                f"Failed to get model with name {name} from the MLflow model "
-                f"registry: {str(e)}",
-            )
-        return True
-
     # ---------
     # Model Version Methods
     # ---------
@@ -409,7 +377,9 @@ class MLFlowModelRegistry(BaseModelRegistry):
             The registered model version.
         """
         # Check if the model exists, if not create it.
-        if not self.check_model_exists(name):
+        try:
+            self.get_model(name=name)
+        except KeyError:
             logger.info(
                 f"No registered model with name {name} found. Creating a new"
                 "registered model."
@@ -463,11 +433,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
             RuntimeError: If mlflow fails to delete the model version.
             KeyError: If the model version does not exist.
         """
-        if not self.check_model_version_exists(name, version):
-            raise KeyError(
-                f"The model version with name '{name}' and version '{version}' "
-                "does not exist."
-            )
+        self.get_model_version(name=name, version=version)
         try:
             self.mlflow_client.delete_model_version(
                 name=name,
@@ -507,11 +473,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
         Returns:
             The updated model version.
         """
-        if not self.check_model_version_exists(name, version):
-            raise KeyError(
-                f"The model version with name '{name}' and version '{version}' "
-                "does not exist."
-            )
+        self.get_model_version(name=name, version=version)
         # Update the model description.
         if description:
             try:
@@ -647,9 +609,10 @@ class MLFlowModelRegistry(BaseModelRegistry):
             filter_string += f"run_id='{kwargs['mlflow_run_id']}'"
         if metadata:
             for tag, value in metadata.dict().items():
-                if filter_string:
-                    filter_string += " AND "
-                filter_string += f"tags.{tag}='{value}'"
+                if value:
+                    if filter_string:
+                        filter_string += " AND "
+                    filter_string += f"tags.{tag}='{value}'"
         # Get the model versions.
         mlflow_model_versions = self.mlflow_client.search_model_versions(
             filter_string=filter_string,
@@ -704,30 +667,6 @@ class MLFlowModelRegistry(BaseModelRegistry):
             return model_versions[:count]
         return model_versions
 
-    def check_model_version_exists(
-        self,
-        name: str,
-        version: str,
-    ) -> bool:
-        """Check if a model version exists in the MLflow model registry.
-
-        Args:
-            name: The name of the model.
-            version: The version of the model.
-
-        Returns:
-            True if the model version exists, False otherwise.
-        """
-        # Check if the model version exists.
-        try:
-            self.mlflow_client.get_model_version(
-                name=name,
-                version=version,
-            )
-        except MlflowException:
-            return False
-        return True
-
     def load_model_version(
         self,
         name: str,
@@ -752,8 +691,13 @@ class MLFlowModelRegistry(BaseModelRegistry):
         Raises:
             KeyError: If the model version does not exist.
         """
-        if not self.check_model_version_exists(name, version):
-            raise KeyError(f"Model version '{name}:{version}' does not exist.")
+        try:
+            self.get_model_version(name=name, version=version)
+        except KeyError:
+            raise KeyError(
+                f"Failed to load model version '{name}:{version}' from the "
+                f"MLflow model registry: Model version does not exist."
+            )
         # Load the model version.
         mlflow_model_version = self.mlflow_client.get_model_version(
             name=name,

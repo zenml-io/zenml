@@ -18,6 +18,7 @@ from typing import Optional, cast
 from mlflow.tracking import artifact_utils
 from pydantic import Field
 
+from zenml import __version__
 from zenml.client import Client
 from zenml.environment import Environment
 from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker import (
@@ -68,10 +69,6 @@ class MLFlowRegistryParameters(BaseParameters):
     metadata: ModelRegistryModelMetadata = Field(
         default_factory=ModelRegistryModelMetadata
     )
-    zenml_version: Optional[str] = None
-    zenml_pipeline_run_id: Optional[str] = None
-    zenml_pipeline_name: Optional[str] = None
-    zenml_step_name: Optional[str] = None
 
 
 @step(enable_cache=True)
@@ -113,6 +110,8 @@ def mlflow_register_model_step(
     step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
     pipeline_name = step_env.pipeline_name
     pipeline_run_id = step_env.run_name
+    pipeline_run_uuid = str(step_env.step_run_info.run_id)
+    zenml_workspace = str(model_registry.workspace)
 
     # Get MLflow run ID either from params or from experiment tracker using
     # pipeline name and run name
@@ -152,6 +151,19 @@ def mlflow_register_model_step(
             "No model source URI provided or no model found in the "
             "MLflow tracking server for the given inputs."
         )
+
+    # Check metadata
+    if params.metadata.zenml_version is None:
+        params.metadata.zenml_version = __version__
+    if params.metadata.zenml_pipeline_name is None:
+        params.metadata.zenml_pipeline_name = pipeline_name
+    if params.metadata.zenml_pipeline_run_id is None:
+        params.metadata.zenml_pipeline_run_id = pipeline_run_id
+    if params.metadata.zenml_pipeline_run_uuid is None:
+        params.metadata.zenml_pipeline_run_uuid = pipeline_run_uuid
+    if params.metadata.zenml_workspace is None:
+        params.metadata.zenml_workspace = zenml_workspace
+
     # Register model version
     model_version = model_registry.register_model_version(
         name=params.name,

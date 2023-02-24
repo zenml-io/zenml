@@ -135,10 +135,12 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
             description: Description of the model to register.
             metadata: Metadata or Tags to add to the registered model.
         """
-        metadata = dict(metadata) if metadata else None
-        if model_registry.check_model_exists(name):
+        try:
+            model_registry.get_model(name)
             cli_utils.error(f"Model with name {name} already exists.")
-            return
+        except KeyError:
+            pass
+        metadata = dict(metadata) if metadata else None
         model_registry.register_model(
             name=name,
             description=description,
@@ -174,10 +176,11 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
             name: Name of the model to delete.
             yes: If set, don't ask for confirmation.
         """
-        if not model_registry.check_model_exists(name):
+        try:
+            model_registry.get_model(name)
+        except KeyError:
             cli_utils.error(f"Model with name {name} does not exist.")
             return
-
         if not yes:
             confirmation = cli_utils.confirmation(
                 f"Found Model with name {name}. Do you want to "
@@ -228,10 +231,12 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
             description: Description of the model to update.
             metadata: Metadata or Tags to add to the model.
         """
-        metadata = dict(metadata) if metadata else None
-        if not model_registry.check_model_exists(name):
+        try:
+            model_registry.get_model(name)
+        except KeyError:
             cli_utils.error(f"Model with name {name} does not exist.")
             return
+        metadata = dict(metadata) if metadata else None
         model_registry.update_model(
             name=name,
             description=description,
@@ -259,10 +264,11 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
             model_registry: The model registry stack component.
             name: Name of the model to get.
         """
-        if not model_registry.check_model_exists(name):
+        try:
+            model = model_registry.get_model(name)
+        except KeyError:
             cli_utils.error(f"Model with name {name} does not exist.")
             return
-        model = model_registry.get_model(name)
         cli_utils.pretty_print_registered_model_table([model])
 
     @models.command(
@@ -295,12 +301,13 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
             name: Name of the model to get.
             version: Version of the model to get.
         """
-        if not model_registry.check_model_version_exists(name, version):
+        try:
+            model_version = model_registry.get_model_version(name, version)
+        except KeyError:
             cli_utils.error(
                 f"Model with name {name} and version {version} does not exist."
             )
             return
-        model_version = model_registry.get_model_version(name, version)
         cli_utils.pretty_print_model_version_details(model_version)
 
     @models.command(
@@ -341,7 +348,9 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
             version: Version of the model to delete.
             yes: If set, don't ask for confirmation.
         """
-        if not model_registry.check_model_version_exists(name, version):
+        try:
+            model_registry.get_model_version(name, version)
+        except KeyError:
             cli_utils.error(
                 f"Model with name {name} and version {version} does not exist."
             )
@@ -426,19 +435,21 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
             stage: Stage of the model to update.
             remove_metadata: Metadata to remove from the model version.
         """
-        metadata = dict(metadata) if metadata else {}
-        remove_metadata = list(remove_metadata) if remove_metadata else []
-        if not model_registry.check_model_version_exists(name, version):
+        try:
+            model_registry.get_model_version(name, version)
+        except KeyError:
             cli_utils.error(
                 f"Model with name {name} and version {version} does not exist."
             )
             return
+        metadata = dict(metadata) if metadata else {}
+        remove_metadata = list(remove_metadata) if remove_metadata else []
         updated_version = model_registry.update_model_version(
             name=name,
             version=version,
             description=description,
             metadata=ModelRegistryModelMetadata(**metadata),
-            stage=ModelVersionStage(stage),
+            stage=ModelVersionStage(stage) if stage else None,
             remove_metadata=remove_metadata,
         )
         cli_utils.declare(
