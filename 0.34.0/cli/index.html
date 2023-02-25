@@ -2165,18 +2165,18 @@ secrets store is using the same database as the ZenML server</li>
 <li>if your ZenML server is deployed in a managed cloud, the server may use one
 of the supported cloud services as a backend for the secrets store</li>
 </ul>
-<p>To register a secret, use the <code>register</code> command and pass the key-value pairs
-as command line arguments:</p>
-<pre><code class="language-bash">zenml secret register SECRET_NAME --key1=value1 --key2=value2 --key3=value3 ...
+<p>To create a secret, use the <code>create</code> command and pass the key-value pairs
+as command-line arguments:</p>
+<pre><code class="language-bash">zenml secret create SECRET_NAME --key1=value1 --key2=value2 --key3=value3 ...
 </code></pre>
 <p>Note that the keys and values will be preserved in your <code>bash_history</code> file, so
-you may prefer to use the interactive <code>register</code> command instead:</p>
-<pre><code class="language-shell">zenml secret register SECRET_NAME -i
+you may prefer to use the interactive <code>create</code> command instead:</p>
+<pre><code class="language-shell">zenml secret create SECRET_NAME -i
 </code></pre>
 <p>As an alternative to the interactive mode, also useful for values that
 are long or contain newline or special characters, you can also use the special
 <code>@</code> syntax to indicate to ZenML that the value needs to be read from a file:</p>
-<pre><code class="language-bash">zenml secret register SECRET_NAME    --aws_access_key_id=1234567890    --aws_secret_access_key=abcdefghij    --aws_session_token=@/path/to/token.txt
+<pre><code class="language-bash">zenml secret create SECRET_NAME    --aws_access_key_id=1234567890    --aws_secret_access_key=abcdefghij    --aws_session_token=@/path/to/token.txt
 </code></pre>
 <p>To list all the secrets available, use the <code>list</code> command:</p>
 <pre><code class="language-bash">zenml secret list
