@@ -173,9 +173,9 @@ Manager as the secrets store backend.
     variable.
 
 - **ZENML_SECRETS_STORE_SECRET_LIST_REFRESH_TIMEOUT**:
-    The AWS Secrets Manager has a known issue where it does not immediately
+    AWS' [Secrets Manager](https://aws.amazon.com/secrets-manager) has a known issue where it does not immediately
     reflect new and updated secrets in the `list_secrets` results. To work
-    around this issue, you can set this value to a non-zero value to
+    around this issue, you can set this refresh timeout value to a non-zero value to
     get the ZenML server to wait after creating or updating an AWS secret
     until the changes are reflected in the secrets returned by
     `list_secrets` or the number of seconds specified by this value has

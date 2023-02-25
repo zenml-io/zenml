@@ -492,7 +492,7 @@ class AWSSecretsStore(BaseSecretsStore):
                 SecretId=aws_secret_id
             )
             # We need a separate AWS API call to get the AWS secret tags which
-            # contain the ZenML secret metadata, since the create_secret API
+            # contain the ZenML secret metadata, since the get_secret_ value API
             # does not return them.
             describe_secret_response = self.client.describe_secret(
                 SecretId=aws_secret_id
