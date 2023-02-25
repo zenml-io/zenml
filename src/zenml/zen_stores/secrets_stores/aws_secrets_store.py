@@ -76,9 +76,11 @@ class AWSSecretsStoreConfiguration(SecretsStoreConfiguration):
         secret_list_refresh_timeout: The number of seconds to wait after
             creating or updating an AWS secret until the changes are reflected
             in the secrets returned by `list_secrets`. Set this to zero to
-            disable the wait. This is necessary because it can take some time
-            for these changes to be reflected. This value should not be set to a
-            large value, because it blocks ZenML server threads while waiting.
+            disable the wait. This may be necessary because it can take some
+            time for new secrets and updated secrets to be reflected in the
+            result returned by `list_secrets` on the client side. This value
+            should not be set to a large value, because it blocks ZenML server
+            threads while waiting and can cause performance issues.
             Disable this if you don't need changes to be reflected immediately
             on the client side.
     """
@@ -89,7 +91,7 @@ class AWSSecretsStoreConfiguration(SecretsStoreConfiguration):
     aws_secret_access_key: Optional[SecretStr] = None
     aws_session_token: Optional[SecretStr] = None
     list_page_size: int = 100
-    secret_list_refresh_timeout: int = 10
+    secret_list_refresh_timeout: int = 0
 
     class Config:
         """Pydantic configuration class."""
@@ -352,6 +354,63 @@ class AWSSecretsStore(BaseSecretsStore):
 
         return aws_filters
 
+    def _wait_for_secret_to_propagate(
+        self, aws_secret_id: str, tags: List[Dict[str, str]]
+    ) -> None:
+        """Wait for an AWS secret to be refreshed in the list of secrets.
+
+        The AWS Secrets Manager does not immediately reflect newly created
+        and updated secrets in the `list_secrets` API. It is important that we
+        wait for the secret to be refreshed in the `list_secrets` API
+        before returning from create_secret/update_secret, otherwise the secret
+        will not be available to the user. We also rely on `list_secrets`
+        to enforce the scope rules, but given that the ZenML server runs
+        requests in separate threads, it is not entirely possible to
+        guarantee them.
+
+        Args:
+            aws_secret_id: The AWS secret ID.
+            tags: The AWS secret tags that are expected to be present in the
+                `list_secrets` response.
+        """
+        if self.config.secret_list_refresh_timeout <= 0:
+            return
+
+        # We wait for the secret to be available in the `list_secrets` API.
+        for _ in range(self.config.secret_list_refresh_timeout):
+            logger.debug(f"Waiting for secret {aws_secret_id} to be listed...")
+            secret_exists = False
+            try:
+                secrets = self.client.list_secrets(
+                    Filters=[{"Key": "name", "Values": [aws_secret_id]}]
+                )
+                if len(secrets["SecretList"]) > 0:
+                    listed_secret = secrets["SecretList"][0]
+                    # The supplied tags must exactly match those reported in the
+                    # `list_secrets` response.
+                    secret_exists = all(
+                        tag in listed_secret["Tags"] for tag in tags
+                    )
+            except ClientError as e:
+                logger.warning(
+                    f"Error checking if secret {aws_secret_id} is listed: "
+                    f"{e}. Retrying..."
+                )
+
+            if not secret_exists:
+                logger.debug(
+                    f"Secret {aws_secret_id} not yet listed. Retrying..."
+                )
+                time.sleep(1)
+            else:
+                logger.debug(f"Secret {aws_secret_id} listed.")
+                break
+        else:
+            logger.warning(
+                f"Secret {aws_secret_id} not updated in `list_secrets` "
+                f"after {self.config.secret_list_refresh_timeout} seconds. "
+            )
+
     @track(AnalyticsEvent.CREATED_SECRET)
     def create_secret(self, secret: SecretRequestModel) -> SecretResponseModel:
         """Creates a new secret.
@@ -419,44 +478,7 @@ class AWSSecretsStore(BaseSecretsStore):
 
         logger.debug("Created AWS secret: %s", aws_secret_id)
 
-        # The AWS Secrets Manager does not immediately reflect the newly
-        # created secret in the `list_secrets` API. It is important that we
-        # wait for the secret to be available in the `list_secrets` API
-        # before returning the newly created secret, otherwise the secret
-        # will not be visible to the user. We also rely on `list_secrets`
-        # to enforce the scope rules, but given that the ZenML server runs
-        # requests in separate threads, it is not entirely possible to
-        # guarantee them.
-
-        # We wait for the secret to be available in the `list_secrets` API.
-        for _ in range(self.config.secret_list_refresh_timeout):
-            logger.debug(f"Waiting for secret {aws_secret_id} to be listed...")
-            secret_exists = False
-            try:
-                secrets = self.client.list_secrets(
-                    Filters=[{"Key": "name", "Values": [aws_secret_id]}]
-                )
-                secret_exists = len(secrets["SecretList"]) > 0
-            except ClientError as e:
-                logger.warning(
-                    f"Error checking newly created secret {aws_secret_id}: "
-                    f"{e}. Retrying..."
-                )
-
-            if not secret_exists:
-                logger.debug(
-                    f"Secret {aws_secret_id} not yet listed. Retrying..."
-                )
-                time.sleep(1)
-            else:
-                logger.debug(f"Secret {aws_secret_id} listed.")
-                break
-        else:
-            if self.config.secret_list_refresh_timeout:
-                logger.warning(
-                    f"Newly created secret {aws_secret_id} not listed after "
-                    f"{self.config.secret_list_refresh_timeout} seconds. "
-                )
+        self._wait_for_secret_to_propagate(aws_secret_id, tags=tags)
 
         secret_model = SecretResponseModel(
             id=secret_id,
@@ -751,44 +773,7 @@ class AWSSecretsStore(BaseSecretsStore):
 
         logger.debug("Updated AWS secret: %s", aws_secret_id)
 
-        # We wait for the secret update to be reflected in the `list_secrets`
-        # API.
-        for _ in range(self.config.secret_list_refresh_timeout):
-            logger.debug(
-                f"Waiting for secret {aws_secret_id} to be updated..."
-            )
-            secret_exists = False
-            try:
-                secrets = self.client.list_secrets(
-                    Filters=[{"Key": "name", "Values": [aws_secret_id]}]
-                )
-                if len(secrets["SecretList"]) > 0:
-                    listed_secret = secrets["SecretList"][0]
-                    # The new tags must exactly match those reported in the
-                    # `list_secrets` response.
-                    secret_exists = all(
-                        tag in listed_secret["Tags"] for tag in tags
-                    )
-            except ClientError as e:
-                logger.warning(
-                    f"Error checking updated created secret {aws_secret_id}: "
-                    f"{e}. Retrying..."
-                )
-
-            if not secret_exists:
-                logger.debug(
-                    f"Secret {aws_secret_id} not yet updated. Retrying..."
-                )
-                time.sleep(1)
-            else:
-                logger.debug(f"Secret {aws_secret_id} updated.")
-                break
-        else:
-            if self.config.secret_list_refresh_timeout:
-                logger.warning(
-                    f"Updated secret {aws_secret_id} not listed after "
-                    f"{self.config.secret_list_refresh_timeout} seconds."
-                )
+        self._wait_for_secret_to_propagate(aws_secret_id, tags=tags)
 
         secret_model = SecretResponseModel(
             id=secret_id,

@@ -235,8 +235,9 @@ def test_update_secret_values_sets_updated_date():
             # updated in the backend.
             assert updated_secret.secret_values == values
             assert updated_secret.created == saved_secret.created
-            assert updated_secret.updated - updated_secret.created >= timedelta(
-                seconds=1
+            assert (
+                updated_secret.updated - updated_secret.created
+                >= timedelta(seconds=1)
             )
 
         saved_secret = store.get_secret(secret_id=secret.id)
@@ -276,8 +277,9 @@ def test_update_secret_name_sets_updated_date():
             assert updated_secret.name == new_name
             assert updated_secret.secret_values == secret.secret_values
             assert updated_secret.created == saved_secret.created
-            assert updated_secret.updated - updated_secret.created >= timedelta(
-                seconds=1
+            assert (
+                updated_secret.updated - updated_secret.created
+                >= timedelta(seconds=1)
             )
 
         saved_secret = store.get_secret(secret_id=secret.id)
