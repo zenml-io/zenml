@@ -123,16 +123,22 @@ class StepRunner:
                 on_fail_source = self.configuration.on_failure
                 if on_fail_source:
                     try:
-                        from zenml.steps import StepContext
-
-                        step_name = self.configuration.name
-                        context = StepContext(
-                            step_name=step_name,
-                            output_materializers=output_materializers,
-                            output_artifact_uris=output_artifact_uris,
+                        # For now, abusing _parse_inputs to get function_params
+                        on_failure = source_utils.load_source_path(
+                            on_fail_source
                         )
-                        source_utils.load_source_path(on_fail_source)(context)
-                    except (ValueError, AttributeError, ImportError) as e:
+                        hook_spec = inspect.getfullargspec(
+                            inspect.unwrap(on_failure)
+                        )
+                        function_params = self._parse_inputs(
+                            args=hook_spec.args,
+                            annotations=hook_spec.annotations,
+                            input_artifacts=input_artifacts,
+                            output_artifact_uris=output_artifact_uris,
+                            output_materializers=output_materializers,
+                        )
+                        on_failure(**function_params)
+                    except ImportError as e:
                         raise ValueError(
                             f"ZenML can not import the config class '{on_fail_source}': {e}"
                         )
