@@ -120,6 +120,22 @@ class StepRunner:
                 return_values = step_entrypoint(**function_params)
             except:  # noqa: E722
                 step_failed = True
+                on_fail_source = self.configuration.on_failure
+                if on_fail_source:
+                    try:
+                        from zenml.steps import StepContext
+
+                        step_name = self.configuration.name
+                        context = StepContext(
+                            step_name=step_name,
+                            output_materializers=output_materializers,
+                            output_artifact_uris=output_artifact_uris,
+                        )
+                        source_utils.load_source_path(on_fail_source)(context)
+                    except (ValueError, AttributeError, ImportError) as e:
+                        raise ValueError(
+                            f"ZenML can not import the config class '{on_fail_source}': {e}"
+                        )
                 raise
             finally:
                 step_run_metadata = self._stack.get_step_run_metadata(

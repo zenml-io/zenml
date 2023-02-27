@@ -41,7 +41,7 @@ from zenml.orchestrators import utils as orchestrator_utils
 from zenml.orchestrators.step_runner import StepRunner
 from zenml.orchestrators.utils import is_setting_enabled
 from zenml.stack import Stack
-from zenml.utils import source_utils, string_utils
+from zenml.utils import string_utils
 
 if TYPE_CHECKING:
     from zenml.models.artifact_models import ArtifactResponseModel
@@ -202,12 +202,6 @@ class StepLauncher:
                 except:  # noqa: E722
                     logger.error(f"Failed to run step `{self._step_name}`.")
                     publish_utils.publish_failed_step_run(step_run_response.id)
-
-                    if step_run_response.step.config.on_failure:
-                        source_utils.load_source_path(
-                            step_run_response.step.config.on_failure
-                        )()
-
                     raise
 
             publish_utils.update_pipeline_run_status(pipeline_run=pipeline_run)

@@ -43,7 +43,7 @@ class BaseAlerter(StackComponent, ABC):
         return cast(BaseAlerterConfig, self._config)
 
     def post(
-        self, message: str, params: Optional[BaseAlerterStepParameters]
+        self, message: str, params: Optional[BaseAlerterStepParameters] = None
     ) -> bool:
         """Post a message to a chat service.
 
