@@ -93,6 +93,7 @@ zenml:
     # aws - Use the AWS Secrets Manager as a secrets store
     # gcp - Use the GCP Secrets Manager as a secrets store
     # azure - Use the Azure Key Vault as a secrets store
+    # hvac - Use the HashiCorp Vault as a secrets store
     # custom - Use a custom secrets store implementation (needs a custom
     #          ZenML server image with the custom secrets store implementation
     #          installed)
@@ -181,6 +182,19 @@ zenml:
       azure_client_secret:
       azure_tenant_id:
 
+    # HashiCorp Vault secrets store configuration. Only relevant if the `hvac`
+    # secrets store type is used.
+    hvac:
+
+      # The url of the HashiCorp Vault server
+      vault_addr: https://vault.example.com
+      # The token used to authenticate with the Vault server
+      vault_token:
+      # The Vault Enterprise namespace. Not required for Vault OSS.
+      namespace:
+      # The maximum number of secret versions to keep. If not set, the default
+      # value of 1 will be used (only the latest version will be kept).
+      max_versions:
 
     # Custom secrets store configuration. Only relevant if the custom secrets
     # store type is used.
