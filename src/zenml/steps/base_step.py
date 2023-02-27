@@ -36,6 +36,7 @@ from typing import (
 from pydantic import ValidationError
 
 from zenml.artifacts.base_artifact import BaseArtifact
+from zenml.config.source import Source
 from zenml.config.step_configurations import (
     ArtifactConfiguration,
     InputSpec,
@@ -73,6 +74,7 @@ from zenml.utils import (
     pydantic_utils,
     settings_utils,
     source_utils,
+    source_utils_v2,
 )
 
 logger = get_logger(__name__)
@@ -252,7 +254,7 @@ class BaseStep(metaclass=BaseStepMeta):
 
         name: str
         step_name: str
-        materializer_source: str
+        materializer_source: Source
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initializes a step.
@@ -334,7 +336,7 @@ class BaseStep(metaclass=BaseStepMeta):
         )
 
     @classmethod
-    def load_from_source(cls, source: str) -> "BaseStep":
+    def load_from_source(cls, source: Union[Source, str]) -> "BaseStep":
         """Loads a step from source.
 
         Args:
@@ -343,7 +345,7 @@ class BaseStep(metaclass=BaseStepMeta):
         Returns:
             The loaded step.
         """
-        step_class: Type[BaseStep] = source_utils.load_and_validate_class(
+        step_class: Type[BaseStep] = source_utils_v2.load_and_validate_class(
             source, expected_class=BaseStep
         )
         return step_class()
@@ -455,7 +457,7 @@ class BaseStep(metaclass=BaseStepMeta):
         for name, output in self.configuration.outputs.items():
             if output.materializer_source:
                 key = f"{name}_materializer_source"
-                materializer_class = source_utils.load_source_path(
+                materializer_class = source_utils_v2.load_source(
                     output.materializer_source
                 )
                 parameters[key] = source_utils.get_hashed_source(
@@ -759,11 +761,11 @@ class BaseStep(metaclass=BaseStepMeta):
             The step instance that this method was called on.
         """
 
-        def _resolve_if_necessary(value: Union[str, Type[Any]]) -> str:
+        def _resolve_if_necessary(value: Union[str, Type[Any]]) -> Source:
             return (
-                value
+                Source.from_import_path(value)
                 if isinstance(value, str)
-                else source_utils.resolve_class(value)
+                else source_utils_v2.resolve_class(value)
             )
 
         outputs: Dict[str, Dict[str, str]] = defaultdict(dict)
@@ -908,7 +910,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 )
 
             if output.materializer_source:
-                if not source_utils.validate_source_class(
+                if not source_utils_v2.validate_source_class(
                     output.materializer_source, expected_class=BaseMaterializer
                 ):
                     raise StepInterfaceError(
@@ -964,7 +966,7 @@ class BaseStep(metaclass=BaseStepMeta):
                     )
                 outputs[output_name][
                     "materializer_source"
-                ] = source_utils.resolve_class(materializer_class)
+                ] = source_utils_v2.resolve_class(materializer_class)
 
         function_parameters = self._finalize_function_parameters()
         values = dict_utils.remove_none_values(

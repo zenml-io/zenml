@@ -30,7 +30,7 @@ from zenml.config.step_configurations import (
 from zenml.environment import get_run_environment_dict
 from zenml.exceptions import PipelineInterfaceError, StackValidationError
 from zenml.models.pipeline_deployment_models import PipelineDeploymentBaseModel
-from zenml.utils import pydantic_utils, settings_utils, source_utils
+from zenml.utils import pydantic_utils, settings_utils, source_utils_v2
 
 if TYPE_CHECKING:
     from zenml.pipelines import BasePipeline
@@ -348,7 +348,7 @@ class Compiler:
             The step spec.
         """
         return StepSpec(
-            source=source_utils.resolve_class(step.__class__),
+            source=source_utils_v2.resolve_class(step.__class__),
             upstream_steps=sorted(step.upstream_steps),
             inputs=step.inputs,
             pipeline_parameter_name=pipeline_parameter_name,

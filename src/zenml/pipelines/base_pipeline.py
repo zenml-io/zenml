@@ -789,7 +789,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         custom_materializer = False
         for step in deployment.step_configurations.values():
             for output in step.config.outputs.values():
-                if not output.materializer_source.startswith("zenml."):
+                if not output.materializer_source.is_internal:
                     custom_materializer = True
 
         stack_creator = Client().get_stack(stack.id).user
