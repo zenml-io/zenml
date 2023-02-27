@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 from enum import Enum
-from typing import Optional
+from typing import Any, Optional, Type, TypeVar
 from uuid import UUID
 
 from pydantic import BaseModel, validator
@@ -21,6 +21,8 @@ from pydantic import BaseModel, validator
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
+
+S = TypeVar("S", bound="Source")
 
 
 class SourceType(Enum):
@@ -36,7 +38,7 @@ class Source(BaseModel):
     variable: str
     type: SourceType
 
-    def __new__(cls, **kwargs):
+    def __new__(cls, **kwargs: Any) -> Type["Source"]:
         if kwargs.get("type") == SourceType.CODE_REPOSITORY:
             return object.__new__(CodeRepositorySource)
         elif kwargs.get("type") == SourceType.DISTRIBUTION_PACKAGE:
@@ -45,7 +47,7 @@ class Source(BaseModel):
         return super().__new__(cls)
 
     @classmethod
-    def from_import_path(cls, import_path: str):
+    def from_import_path(cls: Type[S], import_path: str) -> S:
         # Remove an internal version pin for backwards compatability
         if "@" in import_path:
             import_path = import_path.split("@", 1)[0]

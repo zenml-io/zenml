@@ -91,19 +91,25 @@ def resolve_class(class_: Type[Any]) -> Source:
         source_root = get_source_root()
         active_repo = Client().find_active_code_repository(path=source_root)
 
-        if active_repo and not active_repo.has_local_changes:
-            # Inside a clean code repo with all changes pushed, resolve to
-            # a code repository source
-            module_name = _resolve_module(module, root=active_repo.root)
+        if active_repo:
+            local_repo = active_repo.get_local_repo(path=source_root)
+            assert local_repo
 
-            return CodeRepositorySource(
-                repository_id=active_repo.id,
-                commit=active_repo.current_commit,
-                module=module_name,
-                variable=class_.__name__,
-            )
-        else:
-            module_name = _resolve_module(module)
+            if not local_repo.has_local_changes:
+                # Inside a clean code repo with all changes pushed, resolve to
+                # a code repository source
+                module_name = _resolve_module(
+                    module, custom_source_root=local_repo.root
+                )
+
+                return CodeRepositorySource(
+                    repository_id=active_repo.id,
+                    commit=local_repo.current_commit,
+                    module=module_name,
+                    variable=class_.__name__,
+                )
+
+        module_name = _resolve_module(module)
     elif source_type == SourceType.DISTRIBUTION_PACKAGE:
         package_name = module_name.split(".", maxsplit=1)[0]
         package_version = _get_package_version(package_name=package_name)
@@ -170,32 +176,32 @@ def get_source_type(module: ModuleType) -> SourceType:
 def _load_repository_files(source: CodeRepositorySource) -> str:
     source_root = get_source_root()
     active_repo = Client().find_active_code_repository(path=source_root)
-    local_repo = active_repo.get_local_repo(path=source_root)
-    assert local_repo
 
-    if (
-        active_repo
-        and active_repo.id == source.repository_id
-        and not local_repo.is_dirty
-        and local_repo.current_commit == source.commit
-    ):
-        # The repo is clean and at the correct commit, we can use the file
-        # directly without downloading anything
-        repo_root = local_repo.root
-    else:
-        repo_root = os.path.join(
-            GlobalConfiguration().config_directory,
-            "code_repositories",
-            str(source.repository_id),
-            source.commit,
-        )
-        if not os.path.exists(repo_root):
-            from zenml.code_repositories import BaseCodeRepository
+    if active_repo and active_repo.id == source.repository_id:
+        local_repo = active_repo.get_local_repo(path=source_root)
+        assert local_repo
 
-            model = Client().get_code_repository(source.repository_id)
-            repo = BaseCodeRepository.from_model(model)
+        if (
+            not local_repo.is_dirty
+            and local_repo.current_commit == source.commit
+        ):
+            # The repo is clean and at the correct commit, we can use the file
+            # directly without downloading anything
+            return local_repo.root
 
-            repo.download_files(commit=source.commit, directory=repo_root)
+    repo_root = os.path.join(
+        GlobalConfiguration().config_directory,
+        "code_repositories",
+        str(source.repository_id),
+        source.commit,
+    )
+    if not os.path.exists(repo_root):
+        from zenml.code_repositories import BaseCodeRepository
+
+        model = Client().get_code_repository(source.repository_id)
+        repo = BaseCodeRepository.from_model(model)
+
+        repo.download_files(commit=source.commit, directory=repo_root)
 
     return repo_root
 
