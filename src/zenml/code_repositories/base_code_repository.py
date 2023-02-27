@@ -57,7 +57,9 @@ class BaseCodeRepository(ABC):
         self._id = id
 
     @classmethod
-    def from_model(cls: Type[C], model: CodeRepositoryResponseModel) -> C:
+    def from_model(
+        cls: Type[C], model: CodeRepositoryResponseModel
+    ) -> "BaseCodeRepository":
         class_: Type[
             BaseCodeRepository
         ] = source_utils_v2.load_and_validate_class(
