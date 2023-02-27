@@ -99,6 +99,9 @@ The following environment variables can be passed to the container:
     - `gcp`: Use GCP Secrets Manager as the secrets store backend. See the
     [GCP Secrets Store Configuration Options](#gcp-secrets-store-configuration-options)
     section below for more configuration options.
+    - `azure`: Use Azure Key Vault as the secrets store backend. See the
+    [Azure Secrets Store Configuration Options](#azure-secrets-store-configuration-options)
+    section below for more configuration options.
 
 - **ZENML_LOGGING_VERBOSITY**:
     Use this variable to control the verbosity of logs inside the container.
@@ -173,7 +176,8 @@ Manager as the secrets store backend.
     variable.
 
 - **ZENML_SECRETS_STORE_SECRET_LIST_REFRESH_TIMEOUT**:
-    AWS' [Secrets Manager](https://aws.amazon.com/secrets-manager) has a known issue where it does not immediately
+    AWS' [Secrets Manager](https://aws.amazon.com/secrets-manager) has a known
+    issue where it does not immediately
     reflect new and updated secrets in the `list_secrets` results. To work
     around this issue, you can set this refresh timeout value to a non-zero value to
     get the ZenML server to wait after creating or updating an AWS secret
@@ -186,6 +190,41 @@ Manager as the secrets store backend.
 
 These configuration options are only relevant if you're using the GCP Secrets
 Manager as the secrets store backend.
+
+
+### Azure Secrets Store Configuration Options
+
+These configuration options are only relevant if you're using Azure Key Vault as
+the secrets store backend.
+
+- **ZENML_SECRETS_STORE_KEY_VAULT_NAME**:
+    The name of the Azure Key Vault. This must be set to point to the Azure
+    Key Vault instance that you want to use.
+
+- **ZENML_SECRETS_STORE_AZURE_CLIENT_ID**:
+    The Azure application service principal client ID to use to
+    authenticate with the Azure Key Vault API. If you are running the ZenML
+    server hosted in Azure and are using a managed identity to access the Azure
+    Key Vault service, you can omit this variable.
+    NOTE: this is the same as setting the `AZURE_CLIENT_ID` environment
+    variable.
+
+- **ZENML_SECRETS_STORE_AZURE_CLIENT_SECRET**:
+    The Azure application service principal client secret to use to
+    authenticate with the Azure Key Vault API. If you are running the ZenML
+    server hosted in Azure and are using a managed identity to access the Azure
+    Key Vault service, you can omit this variable.
+    NOTE: this is the same as setting the `AZURE_CLIENT_SECRET` environment
+    variable.
+
+- **ZENML_SECRETS_STORE_AZURE_TENANT_ID**:
+    The Azure application service principal tenant ID to use to
+    authenticate with the Azure Key Vault API. If you are running the ZenML
+    server hosted in Azure and are using a managed identity to access the Azure
+    Key Vault service, you can omit this variable.
+    NOTE: this is the same as setting the `AZURE_TENANT_ID` environment
+    variable.
+
 
 ### Advanced Server Configuration Options
 
