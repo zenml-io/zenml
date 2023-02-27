@@ -41,16 +41,16 @@ resource "google_sql_ssl_cert" "client_cert" {
 # create the certificate files
 resource "local_file" "server-ca" {
   count    = var.deploy_db? 1 : 0
-  content  = google_sql_ssl_cert.client_cert.server_ca_cert
+  content  = google_sql_ssl_cert.client_cert[0].server_ca_cert
   filename = "./server-ca.pem"
 }
 resource "local_file" "client-cert" {
   count    = var.deploy_db? 1 : 0
-  content  = google_sql_ssl_cert.client_cert.cert
+  content  = google_sql_ssl_cert.client_cert[0].cert
   filename = "./client-cert.pem"
 }
 resource "local_file" "client-key" {
   count    = var.deploy_db? 1 : 0
-  content  = google_sql_ssl_cert.client_cert.private_key
+  content  = google_sql_ssl_cert.client_cert[0].private_key
   filename = "./client-key.pem"
 }
