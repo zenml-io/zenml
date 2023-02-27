@@ -13,11 +13,12 @@
 #  permissions and limitations under the License.
 """Models representing code repositories."""
 
-from typing import Optional, Union
+from typing import Any, Dict, Optional, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+from zenml.config.source import Source
 from zenml.models.base_models import (
     WorkspaceScopedRequestModel,
     WorkspaceScopedResponseModel,
@@ -38,6 +39,8 @@ class CodeRepositoryBaseModel(BaseModel):
         title="The name of the code repository.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
+    config: Dict[str, Any]
+    source: Source
 
 
 # -------- #
