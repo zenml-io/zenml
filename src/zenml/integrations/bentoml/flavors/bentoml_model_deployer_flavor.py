@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """BentoML model deployer flavor."""
 
-from typing import TYPE_CHECKING, Type
+from typing import TYPE_CHECKING, Optional, Type
 
 from zenml.integrations.bentoml import BENTOML_MODEL_DEPLOYER_FLAVOR
 from zenml.model_deployers.base_model_deployer import (
@@ -42,6 +42,24 @@ class BentoMLModelDeployerFlavor(BaseModelDeployerFlavor):
             Name of the flavor.
         """
         return BENTOML_MODEL_DEPLOYER_FLAVOR
+
+    @property
+    def docs_url(self) -> Optional[str]:
+        """A url to point at docs explaining this flavor.
+
+        Returns:
+            A flavor docs url.
+        """
+        return self.generate_default_docs_url()
+
+    @property
+    def logo_url(self) -> str:
+        """A url to represent the flavor in the dashboard.
+
+        Returns:
+            The flavor logo.
+        """
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/model_deployer/bentoml.png"
 
     @property
     def config_class(self) -> Type[BentoMLModelDeployerConfig]:

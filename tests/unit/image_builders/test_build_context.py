@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import os
+
 from zenml.image_builders import BuildContext
 
 
@@ -39,8 +41,8 @@ def test_adding_extra_directory(tmp_path):
     build_context.add_directory(str(tmp_path), destination="dir")
 
     extra_files = build_context._get_extra_files()
-    assert extra_files[0] == ("dir/1", "file 1")
-    assert extra_files[1] == ("dir/2", "file 2")
+    assert ("dir/1", "file 1") in extra_files
+    assert ("dir/2", "file 2") in extra_files
 
 
 def test_build_context_includes_and_excludes(tmp_path):
@@ -61,12 +63,19 @@ def test_build_context_includes_and_excludes(tmp_path):
         root=str(root), dockerignore_file=str(custom_dockerignore)
     )
     build_context.dockerignore_file == str(custom_dockerignore)
-    assert build_context._get_exclude_patterns() == ["/1"]
+    assert build_context._get_exclude_patterns() == ["/1", "!/.zen"]
     assert build_context._get_files() == {"2"}
 
+    zen_repo = root / ".zen" / "config.yaml"
+    zen_repo.parent.mkdir()
+    zen_repo.touch()
     default_dockerignore = root / ".dockerignore"
-    default_dockerignore.write_text("/1\n/2")
+    default_dockerignore.write_text("*")
     build_context = BuildContext(root=str(root))
     build_context.dockerignore_file == str(default_dockerignore)
-    assert build_context._get_exclude_patterns() == ["/1", "/2"]
-    assert build_context._get_files() == {".dockerignore"}
+    assert build_context._get_exclude_patterns() == ["*", "!/.zen"]
+    assert build_context._get_files() == {
+        ".dockerignore",
+        ".zen",
+        os.path.join(".zen", "config.yaml"),
+    }

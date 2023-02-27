@@ -60,13 +60,10 @@ class VertexStepOperatorConfig(  # type: ignore[misc] # https://github.com/pydan
 
     Attributes:
         region: Region name, e.g., `europe-west1`.
-        project: GCP project name. If left None, inferred from the
-            environment.
         encryption_spec_key_name: Encryption spec key name.
     """
 
     region: str
-    project: Optional[str] = None
 
     # customer managed encryption key resource name
     # will be applied to all Vertex AI resources if set
@@ -97,6 +94,24 @@ class VertexStepOperatorFlavor(BaseStepOperatorFlavor):
             Name of the flavor.
         """
         return GCP_VERTEX_STEP_OPERATOR_FLAVOR
+
+    @property
+    def docs_url(self) -> Optional[str]:
+        """A url to point at docs explaining this flavor.
+
+        Returns:
+            A flavor docs url.
+        """
+        return self.generate_default_docs_url()
+
+    @property
+    def logo_url(self) -> str:
+        """A url to represent the flavor in the dashboard.
+
+        Returns:
+            The flavor logo.
+        """
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/step_operator/vertexai.png"
 
     @property
     def config_class(self) -> Type[VertexStepOperatorConfig]:

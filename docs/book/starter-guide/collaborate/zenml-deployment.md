@@ -148,7 +148,7 @@ Example output:
 Running without an active repository root.
 Connected to a ZenML server: 'https://ac8ef63af203226194a7725ee71d85a-7635928635.us-east-1.elb.amazonaws.com'
 The current user is: 'default'
-The active project is: 'default' (global)
+The active workspace is: 'default' (global)
 The active stack is: 'default' (global)
 The status of the local dashboard:
               ZenML server 'local'              

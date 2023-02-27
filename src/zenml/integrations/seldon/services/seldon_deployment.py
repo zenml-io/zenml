@@ -15,7 +15,7 @@
 
 import json
 import os
-from typing import Any, Dict, Generator, Optional, Tuple, cast
+from typing import Any, Dict, Generator, List, Optional, Tuple, cast
 from uuid import UUID
 
 import requests
@@ -26,9 +26,11 @@ from zenml.integrations.seldon.seldon_client import (
     SeldonClient,
     SeldonDeployment,
     SeldonDeploymentNotFoundError,
+    SeldonDeploymentPredictorParameter,
+    SeldonResourceRequirements,
 )
 from zenml.logger import get_logger
-from zenml.services.service import BaseService, ServiceConfig
+from zenml.services.service import BaseDeploymentService, ServiceConfig
 from zenml.services.service_status import ServiceState, ServiceStatus
 from zenml.services.service_type import ServiceType
 
@@ -61,6 +63,8 @@ class SeldonDeploymentConfig(ServiceConfig):
     model_name: str = "default"
     # TODO [ENG-775]: have an enum of all supported Seldon Core implementations
     implementation: str
+    parameters: Optional[List[SeldonDeploymentPredictorParameter]]
+    resources: Optional[SeldonResourceRequirements]
     replicas: int = 1
     secret_name: Optional[str]
     model_metadata: Dict[str, Any] = Field(default_factory=dict)
@@ -152,7 +156,7 @@ class SeldonDeploymentServiceStatus(ServiceStatus):
     """Seldon Core deployment service status."""
 
 
-class SeldonDeploymentService(BaseService):
+class SeldonDeploymentService(BaseDeploymentService):
     """A service that represents a Seldon Core deployment server.
 
     Attributes:
@@ -290,6 +294,8 @@ class SeldonDeploymentService(BaseService):
             model_uri=self.config.model_uri,
             model_name=self.config.model_name,
             implementation=self.config.implementation,
+            parameters=self.config.parameters,
+            engineResources=self.config.resources,
             secret_name=self.config.secret_name,
             labels=self._get_seldon_deployment_labels(),
             annotations=self.config.get_seldon_deployment_annotations(),

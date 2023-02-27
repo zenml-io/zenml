@@ -70,8 +70,8 @@ def event_check(
         assert "user_id" in metadata
         assert metadata["user_id"] == str(client.active_user.id)
 
-        assert "project_id" in metadata
-        assert metadata["project_id"] == str(client.active_project.id)
+        assert "workspace_id" in metadata
+        assert metadata["workspace_id"] == str(client.active_workspace.id)
 
         assert "entity_id" in metadata
 

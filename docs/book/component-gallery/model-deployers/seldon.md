@@ -84,7 +84,15 @@ the namespace set in the current configuration is used.
 * base_url: the base URL of the Kubernetes ingress used to expose the Seldon 
 Core deployment servers.
 * secret: the name of a ZenML secret containing the credentials used by 
-Seldon Core storage initializers to authenticate to the Artifact Store
+Seldon Core storage initializers to authenticate to the Artifact Store in the
+ZenML stack. The secret must be registered using the `zenml secrets-manager
+secret register` command. The secret schema must be one of the built-in
+schemas provided by the Seldon Core integration: `seldon_s3` for AWS S3,
+`seldon_gs` for GCS, and `seldon_az` for Azure. 
+* kubernetes_secret_name: the name of the Kubernetes secret that will be
+created to store the Seldon Core credentials. If not specified, the secret name
+will be derived from the ZenML secret name.
+
 
 
 {% hint style="info" %}
@@ -96,64 +104,112 @@ these recipes can be found in the [Open Source MLOps Stack Recipes](https://gith
 
 ### Managing Seldon Core Credentials
 
-The Seldon Core model servers need to access the Artifact Store in the ZenML
-stack to retrieve the model artifacts. This usually involve passing some
-credentials to the Seldon Core model servers required to authenticate with
-the Artifact Store. In ZenML, this is done by creating a ZenML secret with the
-proper credentials and configuring the Seldon Core Model Deployer stack 
-component to use it, by passing the `--secret` argument to the CLI command used
-to register the model deployer. We've already done the latter, now all that is
-left to do is to configure the `s3-store` ZenML secret specified before as a
-Seldon Model Deployer configuration attribute with the credentials needed by
-Seldon Core to access the artifact store.
+#### Seldon Core Secret using ZenML Secrets Manager
 
-There are built-in secret schemas that the Seldon Core integration provides which
-can be used to configure credentials for the 3 main types of Artifact Stores
-supported by ZenML: S3, GCS and Azure.
+The Seldon Core model servers need to retrieve model artifacts from the Artifact
+Store in the ZenML stack. This requires passing authentication credentials to 
+the Seldon Core servers. To facilitate this, a ZenML secret must be created with
+the proper credentials and specified when registering the Seldon Core Model 
+Deployer component using the --secret argument in the CLI command. To complete
+the configuration, the s3-store ZenML secret must be set as a Seldon Model
+Deployer configuration attribute.
 
-you can use `seldon_s3` for AWS S3 or `seldon_gs` for GCS and `seldon_az` for 
-Azure. To read more about secrets, secret schemas and how they are used in 
-ZenML, please refer to the [Secrets Manager](../secrets-managers/secrets-managers.md).
+Built-in secret schemas are provided by the Seldon Core integration for 
+the 3 main supported Artifact Stores: S3, GCS, and Azure. The secret schemas 
+are `seldon_s3` for AWS S3, `seldon_gs` for GCS, and `seldon_az` for Azure. For
+more information on secrets, secret schemas, and their usage in ZenML, refer to 
+the [Secrets Manager](../secrets-managers/secrets-managers.md) documentation.
 
-The following is an example of registering an S3 secret with the Seldon Core 
-model deployer:
+<details>
+    <summary>ZenML Seldon Deployer Storage Secrets </summary>
 
 ```shell
-$ zenml secrets-manager secret register -s seldon_s3 s3-store \
-    --rclone_config_s3_env_auth=False \
-    --rclone_config_s3_access_key_id='ASAK2NSJVO4HDQC7Z25F' \ --rclone_config_s3_secret_access_key='AhkFSfhjj23fSDFfjklsdfj34hkls32SDfscsaf+' \
-    --rclone_config_s3_session_token=@./aws_session_token.txt \
-    --rclone_config_s3_region=us-east-1
-Expanding argument value rclone_config_s3_session_token to contents of file ./aws_session_token.txt.
-The following secret will be registered.
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
-┃             SECRET_KEY             │ SECRET_VALUE ┃
-┠────────────────────────────────────┼──────────────┨
-┃       rclone_config_s3_type        │ ***          ┃
-┃     rclone_config_s3_provider      │ ***          ┃
-┃     rclone_config_s3_env_auth      │ ***          ┃
-┃   rclone_config_s3_access_key_id   │ ***          ┃
-┃ rclone_config_s3_secret_access_key │ ***          ┃
-┃   rclone_config_s3_session_token   │ ***          ┃
-┃      rclone_config_s3_region       │ ***          ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
-INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/credentials
+# Example of a Seldon Core secret for GCS
+zenml secrets-manager secret register -s seldon_gs gs-seldon-secret \
+--rclone_config_gs_client_secret="" \  #OAuth client secret. 
+--rclone_config_gs_token="" \ # OAuth Access Token as a JSON blob.
+--rclone_config_gs_project_number="" \ # project number.
+--rclone_config_gs_service_account_credentials="" \ #service account credentials JSON blob.
+--rclone_config_gs_anonymous="" \ # Access public buckets and objects without credentials. 
+# Set to True if you just want to download files and don't configure credentials.
+--rclone_config_gs_auth_url="" \ # auth server URL.
 
-$ zenml secrets-manager secret get s3-store
-INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/credentials
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃             SECRET_KEY             │ SECRET_VALUE                           ┃
-┠────────────────────────────────────┼────────────────────────────────────────┨
-┃       rclone_config_s3_type        │ s3                                     ┃
-┃     rclone_config_s3_provider      │ aws                                    ┃
-┃     rclone_config_s3_env_auth      │ False                                  ┃
-┃   rclone_config_s3_access_key_id   │ ASAK2NSJVO4HDQC7Z25F                   ┃
-┃ rclone_config_s3_secret_access_key │ AhkFSfhjj23fSDFfjklsdfj34hkls32SDfscs… ┃
-┃   rclone_config_s3_session_token   │ FwoGZXIvYXdzEG4aDHogqi7YRrJyVJUVfSKpA… ┃
-┃                                    │                                        ┃
-┃      rclone_config_s3_region       │ us-east-1                              ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+# Example of a Seldon Core secret for AWS S3 
+zenml secrets-manager secret register -s seldon_s3 s3-seldon-secret \
+--rclone_config_s3_provider="" \ # the S3 provider (e.g. aws, ceph, minio).
+--rclone_config_s3_env_auth="" \ # get AWS credentials from EC2/ECS meta data
+# (i.e. with IAM roles configuration). Only applies if access_key_id and secret_access_key are blank.
+--rclone_config_s3_access_key_id="" \ # AWS Access Key ID.
+--rclone_config_s3_secret_access_key="" \ # AWS Secret Access Key.
+--rclone_config_s3_session_token="" \ # AWS Session Token.
+--rclone_config_s3_region="" \ # region to connect to.
+--rclone_config_s3_endpoint="" \ # S3 API endpoint.
+
+# Example of a Seldon Core secret for Azure Blob Storage
+zenml secrets-manager secret register -s seldon_az az-seldon-secret \
+--rclone_config_azureblob_account="" \ # storage Account Name. Leave blank to
+# use SAS URL or MSI.
+--rclone_config_azureblob_key="" \ # storage Account Key. Leave blank to
+# use SAS URL or MSI.
+--rclone_config_azureblob_sas_url="" \ # SAS URL for container level access
+# only. Leave blank if using account/key or MSI.
+--rclone_config_azureblob_use_msi="" \ # use a managed service identity to
+# authenticate (only works in Azure).
 ```
+</details>
+
+#### Seldon Core Secret using Kubernetes Secrets
+
+Alternatively, you can create a Kubernetes secret containing the credentials
+required by Seldon Core to access the Artifact Store. The secret must be
+created in the same namespace where the Seldon Core model servers are deployed.
+
+Each of the supported Artifact Stores has a different set of required
+credentials. For more information on the required credentials, refer to the
+Rclone documentation for the [S3](https://rclone.org/s3/), 
+[GCS](https://rclone.org/googlecloudstorage/), 
+and [Azure](https://rclone.org/azureblob/) backends.
+
+The following example shows how to create a Kubernetes secret for Minio which
+is an S3-compatible object storage server.
+
+<details>
+    <summary>Kubernetes Secret for Seldon to Access Minio </summary>
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: minio-seldon-secret
+  namespace: zenml-workloads
+  labels:
+    app: "zenml"
+data:
+  RCLONE_CONFIG_S3_ACCESS_KEY_ID: "S3_ACCESS_KEY_ID"
+  RCLONE_CONFIG_S3_ENDPOINT: "http://mini-service:9000"
+  RCLONE_CONFIG_S3_PROVIDER: "Minio"
+  RCLONE_CONFIG_S3_ENV_PATH: "false"
+  RCLONE_CONFIG_S3_SECRET_ACCESS_KEY: "S3_SECRET_ACCESS_KEY"
+  RCLONE_CONFIG_S3_TYPE: "s3"
+type: Opaque
+```
+
+Once the secret is created, it can be referenced in the Seldon Core Model
+Deployer configuration using the `kubernetes_secret_name` attribute when 
+registering the deployer component.
+
+```bash
+# Create the secret
+kubectl apply -f minio-seldon-secret.yaml
+
+# Register the Seldon Core Model Deployer
+zenml model-deployer register seldon_deployer --flavor=seldon \
+  --kubernetes_context=zenml-eks \
+  --kubernetes_namespace=zenml-workloads \
+  --base_url=http://$INGRESS_HOST \
+  --kubernetes_secret_name=minio-seldon-secret 
+```
+</details>
 
 ## How do you use it?
 
@@ -169,11 +225,19 @@ export INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway -
 Now register the model deployer:
 
 ```bash
+# Register the Seldon Core Model Deployer with secret registred in ZenML
 zenml model-deployer register seldon_deployer --flavor=seldon \
   --kubernetes_context=zenml-eks \
   --kubernetes_namespace=zenml-workloads \
   --base_url=http://$INGRESS_HOST \
-  --secret=s3-store-credentials
+  --secret=s3-store-credentials 
+
+# Register the Seldon Core Model Deployer with secret created in Kubernetes
+zenml model-deployer register seldon_deployer --flavor=seldon \
+    --kubernetes_context=zenml-eks \
+    --kubernetes_namespace=zenml-workloads \
+    --base_url=http://$INGRESS_HOST \
+    --kubernetes_secret_name=s3-seldon-secret
 ```
 
 We can now use the model deployer in our stack.
@@ -238,9 +302,14 @@ Within the `SeldonDeploymentConfig` you can configure:
    * `implementation`: the type of Seldon inference server to use for the model. The
     implementation type can be one of the following: `TENSORFLOW_SERVER`, 
     `SKLEARN_SERVER`, `XGBOOST_SERVER`, `custom`.
+   * `parameters`: an optional list of parameters (`SeldonDeploymentPredictorParameter`) 
+    to pass to the deployment predictor in a form of:
+     * `name`
+     * `type`
+     * `value`
    * `resources`: the resources to be allocated to the model. This can be 
-    configured by passing a dictionary with the `requests` and `limits` keys. 
-    The values for these keys can be a dictionary with the `cpu` and `memory` 
+    configured by passing a `SeldonResourceRequirements` object with the `requests` and `limits` properties. 
+    The values for these properties can be a dictionary with the `cpu` and `memory` 
     keys. The values for these keys can be a string with the amount of CPU and 
     memory to be allocated to the model.
 

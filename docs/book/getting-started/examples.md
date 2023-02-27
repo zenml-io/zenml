@@ -41,6 +41,14 @@ repository of ZenML.
 
 [Click here to go to ZenML Projects](https://github.com/zenml-io/zenml-projects)
 
+## ZenML Project Templates: Generate your own ZenML projects
+
+Use one of our ZenML Project Templates to generate ready-to-use scaffolding for
+your own projects, with everything you need to get started: ZenML steps,
+pipelines, stack configurations and other useful resources.
+
+[Click here to go to ZenML Project Templates](https://github.com/zenml-io/zenml-project-templates)
+
 ## YouTube Tutorials
 
 If you're a visual learner, then the [official ZenML YouTube channel](https://www.youtube.com/c/ZenML) 

@@ -35,6 +35,40 @@ SELDON_DEPLOYMENT_KIND = "SeldonDeployment"
 SELDON_DEPLOYMENT_API_VERSION = "machinelearning.seldon.io/v1"
 
 
+class SeldonDeploymentPredictorParameter(BaseModel):
+    """Parameter for Seldon Deployment predictor.
+
+    Attributes:
+        name: parameter name
+        type: parameter, can be INT, FLOAT, DOUBLE, STRING, BOOL
+        value: parameter value
+    """
+
+    name: str = ""
+    type: str = ""
+    value: str = ""
+
+    class Config:
+        """Pydantic configuration class."""
+
+        # validate attribute assignments
+        validate_assignment = True
+        # Ignore extra attributes from the CRD that are not reflected here
+        extra = "ignore"
+
+
+class SeldonResourceRequirements(BaseModel):
+    """Resource requirements for a Seldon deployed model.
+
+    Attributes:
+        limits: an upper limit of resources to be used by the model
+        requests: resources requested by the model
+    """
+
+    limits: Dict[str, str] = Field(default_factory=dict)
+    requests: Dict[str, str] = Field(default_factory=dict)
+
+
 class SeldonDeploymentMetadata(BaseModel):
     """Metadata for a Seldon Deployment.
 
@@ -93,6 +127,7 @@ class SeldonDeploymentPredictiveUnit(BaseModel):
     ] = SeldonDeploymentPredictiveUnitType.MODEL
     implementation: Optional[str]
     modelUri: Optional[str]
+    parameters: Optional[List[SeldonDeploymentPredictorParameter]]
     serviceAccountName: Optional[str]
     envSecretRefName: Optional[str]
     children: List["SeldonDeploymentPredictiveUnit"] = Field(
@@ -140,6 +175,9 @@ class SeldonDeploymentPredictor(BaseModel):
     replicas: int = 1
     graph: Optional[SeldonDeploymentPredictiveUnit] = Field(
         default_factory=SeldonDeploymentPredictiveUnit
+    )
+    engineResources: Optional[SeldonResourceRequirements] = Field(
+        default_factory=SeldonResourceRequirements
     )
     componentSpecs: Optional[List[SeldonDeploymentComponentSpecs]]
 
@@ -282,6 +320,8 @@ class SeldonDeployment(BaseModel):
         model_uri: Optional[str] = None,
         model_name: Optional[str] = None,
         implementation: Optional[str] = None,
+        parameters: Optional[List[SeldonDeploymentPredictorParameter]] = None,
+        engineResources: Optional[SeldonResourceRequirements] = None,
         secret_name: Optional[str] = None,
         labels: Optional[Dict[str, str]] = None,
         annotations: Optional[Dict[str, str]] = None,
@@ -296,6 +336,8 @@ class SeldonDeployment(BaseModel):
             model_uri: The URI of the model.
             model_name: The name of the model.
             implementation: The implementation of the model.
+            parameters: The predictor graph parameters.
+            engineResources: The resources to be allocated to the model.
             secret_name: The name of the Kubernetes secret containing
                 environment variable values (e.g. with credentials for the
                 artifact store) to use with the deployment service.
@@ -324,7 +366,9 @@ class SeldonDeployment(BaseModel):
                     graph=SeldonDeploymentPredictiveUnit(
                         name="classifier",
                         type=SeldonDeploymentPredictiveUnitType.MODEL,
+                        parameters=parameters,
                     ),
+                    engineResources=engineResources,
                     componentSpecs=[
                         SeldonDeploymentComponentSpecs(
                             spec=spec
@@ -343,7 +387,9 @@ class SeldonDeployment(BaseModel):
                         modelUri=model_uri or "",
                         implementation=implementation or "",
                         envSecretRefName=secret_name,
+                        parameters=parameters,
                     ),
+                    engineResources=engineResources,
                 )
             ]
 

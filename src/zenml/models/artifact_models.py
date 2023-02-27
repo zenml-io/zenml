@@ -13,19 +13,21 @@
 #  permissions and limitations under the License.
 """Models representing artifacts."""
 
-from typing import ClassVar, List, Optional, Union
+from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field
 
 from zenml.enums import ArtifactType
 from zenml.models.base_models import (
-    ProjectScopedRequestModel,
-    ProjectScopedResponseModel,
-    update_model,
+    WorkspaceScopedRequestModel,
+    WorkspaceScopedResponseModel,
 )
 from zenml.models.constants import STR_FIELD_MAX_LENGTH
-from zenml.models.filter_models import ProjectScopedFilterModel
+from zenml.models.filter_models import WorkspaceScopedFilterModel
+
+if TYPE_CHECKING:
+    from zenml.models.run_metadata_models import RunMetadataResponseModel
 
 # ---- #
 # BASE #
@@ -39,7 +41,6 @@ class ArtifactBaseModel(BaseModel):
         title="Name of the output in the parent step.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-
     artifact_store_id: Optional[UUID]
     type: ArtifactType
     uri: str = Field(
@@ -60,10 +61,13 @@ class ArtifactBaseModel(BaseModel):
 # -------- #
 
 
-class ArtifactResponseModel(ArtifactBaseModel, ProjectScopedResponseModel):
+class ArtifactResponseModel(ArtifactBaseModel, WorkspaceScopedResponseModel):
     """Response model for artifacts."""
 
     producer_step_run_id: Optional[UUID]
+    metadata: Dict[str, "RunMetadataResponseModel"] = Field(
+        default={}, title="Metadata of the artifact."
+    )
 
 
 # ------ #
@@ -71,11 +75,14 @@ class ArtifactResponseModel(ArtifactBaseModel, ProjectScopedResponseModel):
 # ------ #
 
 
-class ArtifactFilterModel(ProjectScopedFilterModel):
+class ArtifactFilterModel(WorkspaceScopedFilterModel):
     """Model to enable advanced filtering of all Artifacts."""
 
+    # `only_unused` refers to a property of the artifacts relationship
+    #  rather than a field in the db, hence it needs to be handled
+    #  explicitly
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *ProjectScopedFilterModel.FILTER_EXCLUDE_FIELDS,
+        *WorkspaceScopedFilterModel.FILTER_EXCLUDE_FIELDS,
         "only_unused",
     ]
 
@@ -102,8 +109,8 @@ class ArtifactFilterModel(ProjectScopedFilterModel):
     artifact_store_id: Union[UUID, str] = Field(
         default=None, description="Artifact store for this artifact"
     )
-    project_id: Union[UUID, str] = Field(
-        default=None, description="Project for this artifact"
+    workspace_id: Union[UUID, str] = Field(
+        default=None, description="Workspace for this artifact"
     )
     user_id: Union[UUID, str] = Field(
         default=None, description="User that produced this artifact"
@@ -118,15 +125,5 @@ class ArtifactFilterModel(ProjectScopedFilterModel):
 # ------- #
 
 
-class ArtifactRequestModel(ArtifactBaseModel, ProjectScopedRequestModel):
+class ArtifactRequestModel(ArtifactBaseModel, WorkspaceScopedRequestModel):
     """Request model for artifacts."""
-
-
-# ------ #
-# UPDATE #
-# ------ #
-
-
-@update_model
-class ArtifactUpdateModel(ArtifactRequestModel):
-    """Update model for artifacts."""

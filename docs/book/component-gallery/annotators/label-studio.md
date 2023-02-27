@@ -48,6 +48,14 @@ and add it to your stack:
 zenml integration install label_studio
 ```
 
+{% hint style="warning" %}
+There is a known issue with Label Studio installations via `zenml integration
+install...`. You might find that the Label Studio installation breaks the ZenML
+CLI. In this case, please run `pip install 'pydantic<1.11,>=1.9.0'` to fix the issue
+or [message us on Slack](https://zenml.io/slack-invite) if you need more help with
+this. We are working on a more definitive fix.
+{% endhint %}
+
 The following instructions below offer a general guide to the parts that need
 attention when deploying / using the Label Studio stack component and
 integration. The [`label_studio_annotation`
@@ -64,7 +72,7 @@ secrets manager](../secrets-managers/secrets-managers.md).)
 Be sure to register an secret schema for whichever artifact store you choose,
 and then you should make sure to pass the name of that secret into the artifact
 store as the `--authentication_secret` as [described in this
-guide](../artifact-stores/amazon-s3.md#advanced-configuration), for example in
+guide](../artifact-stores/s3.md#advanced-configuration), for example in
 the case of AWS.
 
 You will next need to obtain your Label Studio API key. This will give you

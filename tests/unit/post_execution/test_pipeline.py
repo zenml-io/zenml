@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 from contextlib import ExitStack as does_not_raise
+from unittest.mock import ANY
 
 import pytest
 
@@ -57,3 +58,19 @@ def test_get_pipeline_raises_exception():
     for input_arg in input_args:
         with pytest.raises(RuntimeError):
             get_pipeline(**input_arg)
+
+
+def test_getting_the_latest_runs(
+    clean_client, mocker, one_step_pipeline, empty_step
+):
+    """Tests that the latest 50 runs are fetched."""
+    pipeline_instance = one_step_pipeline(empty_step())
+    pipeline_instance.run()
+    mock_list_runs = mocker.patch("zenml.client.Client.list_runs")
+
+    post_execution_pipeline = get_pipeline(pipeline_instance)
+    _ = post_execution_pipeline.runs
+
+    mock_list_runs.assert_called_with(
+        workspace_id=ANY, pipeline_id=ANY, size=50, sort_by="desc:created"
+    )

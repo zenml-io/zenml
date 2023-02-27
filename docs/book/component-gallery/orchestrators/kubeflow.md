@@ -130,23 +130,42 @@ To use the Kubeflow orchestrator, we need:
 When using the Kubeflow orchestrator locally, you'll additionally need:
 * [K3D](https://k3d.io/v5.2.1/#installation) installed to spin up a local 
 Kubernetes cluster.
-* A [local container registry](../container-registries/default.md) as part of 
-your stack.
+* [Terraform](https://www.terraform.io/downloads.html) installed to set up the
+Kubernetes cluster with various deployments.
+
+To run the pipeline on a local Kubeflow Pipelines deployment, you can use the
+ZenML Stack recipes to spin up a local Kubernetes cluster and install Kubeflow
+Pipelines on it. The stack recipe is called `k3d-modular` and is available in the ZenML
+[stack recipe repository](https://github.com/zenml-io/mlops-stacks/tree/main/k3d-modular).
+The recipe is modular, meaning that you can configured it to use different
+orchestrators, Model Deployers, and other tools.
+
+To deploy the stack, run the following commands:
+```shell
+# Pull the `k3d-modular` recipe to your local system
+zenml stack recipe pull k3d-modular
+# Deploy the stack using the ZenML CLI:
+zenml stack recipe deploy k3d-modular
+# run the following command to import the resources as a ZenML stack, manually
+zenml stack import <STACK_NAME> -f <PATH_TO_THE_CREATED_STACK_CONFIG_YAML>
+# set the imported stack as the active stack
+zenml stack set <STACK_NAME>
+```
+
+```shell
+# Get the Kubeflow Pipelines UI endpoint
+kubectl get ingress -n kubeflow  -o jsonpath='{.items[0].spec.rules[0].host}'
+```
+
+You can read more about the recipes in [Stack Recipes](https://docs.zenml.io/advanced-guide/practical-mlops/stack-recipes#deleting-resources).
+or check the recipe code in the
+[ZenML Stack Recipe Repository](https://github.com/zenml-io/mlops-stacks/tree/main/k3d-modular).
 
 {% hint style="warning" %}
-The local Kubeflow Pipelines deployment requires more than 2 GB of RAM,
-so if you're using Docker Desktop make sure to update the resource
-limits in the preferences.
+The local Kubeflow Pipelines deployment requires more than 4 GB of RAM,
+and 30 GB of disk space, so if you are using Docker Desktop make sure to 
+update the resource limits in the preferences.
 {% endhint %}
-
-We can then register the orchestrator and use it in our active stack:
-```shell
-zenml orchestrator register <ORCHESTRATOR_NAME> \
-    --flavor=kubeflow
-
-# Register and activate a stack with the new orchestrator
-zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
-```
 
 {% endtab %}
 
@@ -186,15 +205,23 @@ if you want to learn more about how ZenML builds these images and how you can
 customize them.
 {% endhint %}
 
-Once the orchestrator is part of the active stack, we need to run
-`zenml stack up` before running any pipelines. This command
-* forwards a port, so you can view the Kubeflow UI in your browser.
-* (in the local case) uses K3D to provision a Kubernetes cluster
-on your machine and deploys Kubeflow Pipelines on it.
-
 You can now run any ZenML pipeline using the Kubeflow orchestrator:
 ```shell
 python file_that_runs_a_zenml_pipeline.py
+```
+
+### Kubeflow UI
+
+Kubeflow comes with its own UI that you can use to find further details about
+your pipeline runs, such as the logs of your steps. For any runs executed on
+Kubeflow, you can get the URL to the Kubeflow UI in Python using the following 
+code snippet:
+
+```python
+from zenml.post_execution import get_run
+
+pipeline_run = get_run("<PIPELINE_RUN_NAME>")
+orchestrator_url = deployer_step.metadata["orchestrator_url"].value
 ```
 
 ### Additional configuration
