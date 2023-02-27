@@ -101,32 +101,12 @@ Examples:
   python run.py --no-cache
 
   \b
-  # Run the pipeline with a different dataset
-  python run.py --dataset=breast_cancer
-
-  \b
-  # Run the pipeline with a different model
-  python run.py --model=SVM
-
-  \b
   # Run the pipeline with custom hyperparameters for the model training step
   python run.py --hyperparameters="C=0.1,max_iter=1000"
 
   \b
-  # Run the pipeline with custom data splitter step parameters
-  python run.py --test-size=0.1 --no-stratify
-
-  \b
-  # Run the pipeline with custom data processor step parameters
-  python run.py --drop-columns="alcohol,ash" --no-normalize
-
-  \b
   # Run the pipeline with a different random seed
   python run.py --random-state=40
-
-  \b
-  # Change the model evaluation thresholds
-  python run.py --min-train-accuracy=0.98 --min-test-accuracy=0.98 --max-train-test-diff=0.05 --fail-on-eval-warnings
 """
 )
 @click.option(
@@ -134,36 +114,6 @@ Examples:
     is_flag=True,
     default=False,
     help="Disable caching for the pipeline run.",
-)
-@click.option(
-    "--dataset",
-    default="wine",
-    type=click.Choice(SklearnDataset.values()),
-    help="The scikit-learn dataset to load.",
-)
-@click.option(
-    "--model",
-    default="LogisticRegression",
-    type=click.Choice(SklearnClassifierModel.values()),
-    help="The scikit-learn model to train.",
-)
-@click.option(
-    "--no-drop-na",
-    is_flag=True,
-    default=False,
-    help="Whether to skip dropping rows with missing values in the dataset.",
-)
-@click.option(
-    "--drop-columns",
-    default=None,
-    type=click.STRING,
-    help="Comma-separated list of columns to drop from the dataset.",
-)
-@click.option(
-    "--no-normalize",
-    is_flag=True,
-    default=False,
-    help="Whether to skip normalizing the dataset.",
 )
 @click.option(
     "--test-size",

@@ -64,6 +64,12 @@ first_pipeline_instance = first_pipeline(
 first_pipeline_instance.run()
 ```
 
+### Try it yourself:
+
+```python
+python run.py --simple --gamma 0.01
+```
+
 By passing the `SVCTrainerParams` object to the instance of the pipeline, you
 can amend and override the default values of the parameters. This is a very
 powerful tool to quickly iterate over your pipeline.
