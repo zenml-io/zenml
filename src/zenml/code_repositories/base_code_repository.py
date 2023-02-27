@@ -17,7 +17,9 @@ from typing import Any, Dict, cast
 
 from git.exc import InvalidGitRepositoryError
 from git.repo.base import Repo
+from github import Github
 from pydantic import BaseModel
+from zenml.exceptions import CodeRepoDownloadError
 
 from zenml.logger import get_logger
 
@@ -118,11 +120,31 @@ class _GitCodeRepository(BaseCodeRepository, ABC):
 
 
 class GitHubCodeRepository(_GitCodeRepository):
-    def login(self) -> None:
-        ...
+
+    def login(self, config: Dict[str, Any]) -> None:
+        owner = config["owner"]
+        repository = config["repository"]
+        token = config["token"]
+        try:
+            user = self.g.get_user().login
+            print(f'Logged in as {user}')
+        except Exception as e:
+            print(f'Error: {str(e)}')
+        self.g = Github(token)
+        self.repo = self.g.get_repo(f"{owner}/{repository}")
 
     def download_files(self, commit: str, directory: str) -> None:
-        ...
+        try:
+            contents = self.repo.get_contents("", ref=commit)
+            for content_file in contents:
+                if content_file.type == "file":
+                    file_contents = content_file.decoded_content
+                    file_path = f'{directory}/{content_file.path}'
+                    with open(file_path, "wb") as f:
+                        f.write(file_contents)
+            logger.info(f'Successfully downloaded files for commit {commit} to directory {directory}')
+        except Exception as e:
+            raise CodeRepoDownloadError(f'f"An error occurred while downloading files: {str(e)}')
 
     @classmethod
     def url_matches_config(cls, url: str, config: Dict[str, Any]) -> bool:
