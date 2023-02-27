@@ -720,6 +720,15 @@ class AWSSecretsStore(BaseSecretsStore):
                 error.
         """
         secret = self.get_secret(secret_id)
+
+        # Prevent changes to the secret's user or workspace
+        assert secret.user is not None
+        self._validate_user_and_workspace_update(
+            secret_update=secret_update,
+            current_user=secret.user.id,
+            current_workspace=secret.workspace.id,
+        )
+
         if secret_update.name is not None:
             self._validate_aws_secret_name(secret_update.name)
             secret.name = secret_update.name

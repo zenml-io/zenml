@@ -31,11 +31,13 @@ from pydantic import BaseModel
 
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.enums import SecretScope, SecretsStoreType
+from zenml.exceptions import IllegalOperationError
 from zenml.logger import get_logger
 from zenml.models.secret_models import (
     SecretFilterModel,
     SecretRequestModel,
     SecretResponseModel,
+    SecretUpdateModel,
 )
 from zenml.models.user_models import UserResponseModel
 from zenml.models.workspace_models import WorkspaceResponseModel
@@ -334,6 +336,32 @@ class BaseSecretsStore(
         workspace = self.zen_store.get_workspace(workspace_id)
 
         return user, workspace
+
+    def _validate_user_and_workspace_update(
+        self,
+        secret_update: SecretUpdateModel,
+        current_user: UUID,
+        current_workspace: UUID,
+    ) -> None:
+        """Validates that a secret update does not change the user or workspace.
+
+        Args:
+            secret_update: Secret update.
+            current_user: The current user ID.
+            current_workspace: The current workspace ID.
+
+        Raises:
+            IllegalOperationError: If the user or workspace is changed.
+        """
+        if secret_update.user and current_user != secret_update.user:
+            raise IllegalOperationError("Cannot change the user of a secret.")
+        if (
+            secret_update.workspace
+            and current_workspace != secret_update.workspace
+        ):
+            raise IllegalOperationError(
+                "Cannot change the workspace of a secret."
+            )
 
     def _check_secret_scope(
         self,

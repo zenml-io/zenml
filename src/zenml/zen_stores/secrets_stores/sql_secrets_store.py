@@ -390,16 +390,19 @@ class SqlSecretsStore(BaseSecretsStore):
             if not existing_secret:
                 raise KeyError(f"Secret with ID {secret_id} not found.")
 
+            # Prevent changes to the secret's user or workspace
+            self._validate_user_and_workspace_update(
+                secret_update=secret_update,
+                current_user=existing_secret.user.id,
+                current_workspace=existing_secret.workspace.id,
+            )
+
             # A change in name or scope requires a check of the scoping rules.
             if (
                 secret_update.name is not None
                 and existing_secret.name != secret_update.name
                 or secret_update.scope is not None
                 and existing_secret.scope != secret_update.scope
-                or secret_update.workspace is not None
-                and existing_secret.workspace.id != secret_update.workspace
-                or secret_update.user is not None
-                and existing_secret.user.id != secret_update.user
             ):
                 secret_exists, msg = self._check_sql_secret_scope(
                     session=session,
