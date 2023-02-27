@@ -157,7 +157,7 @@ class SlackAlerter(BaseAlerter):
             return False
 
     def ask(
-        self, message: str, params: Optional[BaseAlerterStepParameters]
+        self, message: str, params: Optional[BaseAlerterStepParameters] = None
     ) -> bool:
         """Post a message to a Slack channel and wait for approval.
 
