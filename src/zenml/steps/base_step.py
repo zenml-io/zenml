@@ -31,6 +31,7 @@ from typing import (
     TypeVar,
     Union,
     cast,
+    Callable
 )
 
 from pydantic import ValidationError
@@ -65,6 +66,7 @@ from zenml.steps.utils import (
     PARAM_SETTINGS,
     PARAM_STEP_NAME,
     PARAM_STEP_OPERATOR,
+    PARAM_ON_FAILURE,
     parse_return_type_annotations,
     resolve_type_annotation,
 )
@@ -473,6 +475,7 @@ class BaseStep(metaclass=BaseStepMeta):
         step_operator = options.pop(PARAM_STEP_OPERATOR, None)
         settings = options.pop(PARAM_SETTINGS, None) or {}
         output_materializers = options.pop(PARAM_OUTPUT_MATERIALIZERS, None)
+        on_failure = options.pop(PARAM_ON_FAILURE, None)
         output_artifacts = options.pop(PARAM_OUTPUT_ARTIFACTS, None)
         extra = options.pop(PARAM_EXTRA_OPTIONS, None)
         experiment_tracker = options.pop(PARAM_EXPERIMENT_TRACKER, None)
@@ -482,6 +485,7 @@ class BaseStep(metaclass=BaseStepMeta):
             step_operator=step_operator,
             output_artifacts=output_artifacts,
             output_materializers=output_materializers,
+            on_failure=on_failure,
             settings=settings,
             extra=extra,
         )
@@ -717,6 +721,7 @@ class BaseStep(metaclass=BaseStepMeta):
         output_artifacts: Optional["OutputArtifactsSpecification"] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         extra: Optional[Dict[str, Any]] = None,
+        on_failure: Optional[Callable] = None,
         merge: bool = True,
     ) -> T:
         """Configures the step.
@@ -781,6 +786,12 @@ class BaseStep(metaclass=BaseStepMeta):
                 source = _resolve_if_necessary(materializer)
                 outputs[output_name]["materializer_source"] = source
 
+        on_failure_source = None
+        if on_failure:
+            # string of on_failure hook function to be used for this step
+            on_failure_source = _resolve_if_necessary(on_failure)
+
+                
         if output_artifacts:
             logger.warning(
                 "The `output_artifacts` argument has no effect and will be "
@@ -801,6 +812,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 "settings": settings,
                 "outputs": outputs or None,
                 "extra": extra,
+                "on_failure": on_failure_source,
             }
         )
         config = StepConfigurationUpdate(**values)

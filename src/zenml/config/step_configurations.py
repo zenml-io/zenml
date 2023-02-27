@@ -69,6 +69,7 @@ class StepConfigurationUpdate(StrictBaseModel):
     parameters: Dict[str, Any] = {}
     settings: Dict[str, BaseSettings] = {}
     extra: Dict[str, Any] = {}
+    on_failure: Optional[str] = None
 
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
 

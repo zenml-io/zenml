@@ -202,6 +202,14 @@ class StepLauncher:
                 except:  # noqa: E722
                     logger.error(f"Failed to run step `{self._step_name}`.")
                     publish_utils.publish_failed_step_run(step_run_response.id)
+                    from zenml.utils import source_utils
+                    from typing import Callable
+                    
+                    if step_run_response.step.config.on_failure:
+                        source_utils.load_source_path(
+                            step_run_response.step.config.on_failure
+                        )()
+
                     raise
 
             publish_utils.update_pipeline_run_status(pipeline_run=pipeline_run)

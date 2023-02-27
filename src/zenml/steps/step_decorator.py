@@ -40,6 +40,7 @@ from zenml.steps.utils import (
     PARAM_STEP_NAME,
     PARAM_STEP_OPERATOR,
     STEP_INNER_FUNC_NAME,
+    PARAM_ON_FAILURE,
 )
 
 if TYPE_CHECKING:
@@ -76,6 +77,7 @@ def step(
     output_materializers: Optional["OutputMaterializersSpecification"] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
+    on_failure: Optional[Callable] = None,
 ) -> Callable[[F], Type[BaseStep]]:
     ...
 
@@ -92,6 +94,7 @@ def step(
     output_materializers: Optional["OutputMaterializersSpecification"] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
+    on_failure: Optional[Callable] = None,
 ) -> Union[Type[BaseStep], Callable[[F], Type[BaseStep]]]:
     """Outer decorator function for the creation of a ZenML step.
 
@@ -152,6 +155,7 @@ def step(
                     PARAM_OUTPUT_MATERIALIZERS: output_materializers,
                     PARAM_SETTINGS: settings,
                     PARAM_EXTRA_OPTIONS: extra,
+                    PARAM_ON_FAILURE: on_failure,
                 },
                 "__module__": func.__module__,
                 "__doc__": func.__doc__,
