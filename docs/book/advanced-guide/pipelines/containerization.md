@@ -22,6 +22,26 @@ If your pipeline needs any additional requirements, check out our [guide on incl
 * **Copies your source files**. These files need to be included in the Docker image so ZenML can execute your step code. Check out [this section](#which-files-get-included) for more information on which files get included by default and how to exclude files.
 * **Sets user-defined environment variables.**
 
+## Separate Docker images for different steps in your pipeline
+
+In some cases the steps of your pipeline will have conflicting requirements or some
+steps of your pipeline will require large dependencies that don't need to be installed
+to run the remaining steps of your pipeline. For this case, ZenML allows you to specify
+custom Docker settings for all steps of your pipeline and will build separate images if needed.
+
+The following code examples on this page will display how to specify Docker settings for your pipeline,
+but you can also specify specialized settings for some/all steps of your pipeline. Values specified
+for a step will override the values defined on the pipeline that this step is contained in and can
+be used to build specialized images for steps.
+
+```python
+docker_settings = DockerSettings(requirements=["tensorflow"])
+
+@step(settings={"docker": docker_settings})
+def my_training_step(...):
+    ...
+```
+
 ## Customizing the build process
 
 The process explained above is all done automatically by ZenML and covers most basic use cases.
@@ -73,8 +93,9 @@ def my_pipeline(...):
 ```
 
 {% hint style="warning" %}
-This is an advanced feature and will most likely break your pipelines. If you use this,
-you're on your own and need to copy all the necessary files to the correct paths yourself.
+This is an advanced feature and will most likely cause unintended and unanticipated behavior
+when running your pipelines. If you use this, make sure to copy all the necessary files
+to the correct paths yourself.
 {% endhint %}
 
 #### Don't include the global configuration
@@ -91,8 +112,9 @@ def my_pipeline(...):
 ```
 
 {% hint style="warning" %}
-This is an advanced feature and will most likely break your pipelines. If you use this,
-you're on your own and need to copy a stack configuration to the correct path yourself.
+This is an advanced feature and will most likely cause unintended and unanticipated
+behavior when running your pipelines. If you use this, make sure to copy the global configuration
+to the correct path yourself.
 {% endhint %}
 
 ### How to install additional pip dependencies or apt packages
@@ -211,6 +233,28 @@ def my_pipeline(...):
     ...
 ```
 
+If you want to use this image directly to run your steps without
+including any code or installing any requirements on top of it,
+you can skip the Docker builds by specifying it in the Docker
+settings:
+
+```python
+docker_settings = DockerSettings(
+    parent_image="my_registry.io/image_name:tag",
+    skip_build=True
+)
+
+@pipeline(settings={"docker": docker_settings})
+def my_pipeline(...):
+    ...
+```
+
+{% hint style="warning" %}
+This is an advanced feature and will most likely cause unintended and unanticipated behavior
+when running your pipelines. If you use this, make sure your code files and global configuration
+are correctly included in the image you specified.
+{% endhint %}
+
 ### Specifying a Dockerfile to dynamically build a parent image
 
 In some cases you might want full control over the resulting Docker image but want
@@ -243,3 +287,27 @@ of your stack defines the environment in which the Docker build with the previou
 described Dockerfile gets executed. This could be either on your local machine
 (when using the [local image builder](../../component-gallery/image-builders/local.md))
 or in some remote environment. Check our the image builder documentation for more information.
+
+## Building Docker images without running the pipeline
+
+Whenever you run a pipeline on a stack that requires Docker images, ZenML will automatically build these
+images for you to make sure your pipeline can be executed. If you want to run this build step separately
+without actually running the pipeline, you can do so by calling `pipeline_instance.build(...)` in Python
+or using the CLI command `zenml pipeline build`. This will register the build output in the ZenML
+database and allow you to use the built images when running a pipeline later.
+To use a registered build when running a pipeline, pass it as an argument in Python
+```python
+pipeline_instance.run(build=<BUILD_ID>)
+```
+
+or when running a pipeline from the CLI
+
+```bash
+zenml pipeline run <PIPELINE_NAME> --build=<BUILD_ID>
+```
+
+{% hint style="warning" %}
+Building Docker images currently includes your step code, which means specifying a custom build when
+running a pipeline will not run the code that you have on your client machine, but will instead use
+the code that is included in the Docker images of the build.
+{% endhint %}
