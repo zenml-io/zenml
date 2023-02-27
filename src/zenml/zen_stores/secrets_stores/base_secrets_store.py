@@ -191,6 +191,8 @@ class BaseSecretsStore(
             store_config.class_path = "zenml.zen_stores.secrets_stores.gcp_secrets_store.GCPSecretsStore"
         elif store_config.type == SecretsStoreType.AZURE:
             store_config.class_path = "zenml.zen_stores.secrets_stores.azure_secrets_store.AzureSecretsStore"
+        elif store_config.type == SecretsStoreType.HVAC:
+            store_config.class_path = "zenml.zen_stores.secrets_stores.hvac_secrets_store.HashiCorpVaultSecretsStore"
         elif store_config.type != SecretsStoreType.CUSTOM:
             raise TypeError(
                 f"No store implementation found for secrets store type "
@@ -537,8 +539,7 @@ class BaseSecretsStore(
             user_id = UUID(metadata[ZENML_SECRET_USER_LABEL])
         except KeyError as e:
             raise KeyError(
-                f"Secret with ID {secret_id} could not be retrieved: "
-                f"missing required metadata: {e}"
+                f"Secret could not be retrieved: missing required metadata: {e}"
             )
 
         try:
