@@ -191,7 +191,7 @@ zenml:
       # The token used to authenticate with the Vault server
       vault_token:
       # The Vault Enterprise namespace. Not required for Vault OSS.
-      namespace:
+      vault_namespace:
       # The maximum number of secret versions to keep. If not set, the default
       # value of 1 will be used (only the latest version will be kept).
       max_versions:

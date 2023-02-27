@@ -654,7 +654,7 @@ class AWSSecretsStore(BaseSecretsStore):
                         continue
                     results.append(secret_model)
         except ClientError as e:
-            logger.error(f"Error listing secrets: {e}")
+            raise RuntimeError(f"Error listing AWS secrets: {e}")
 
         # Sort the results
         sorted_results = secret_filter_model.sort_secrets(results)

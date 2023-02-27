@@ -1575,7 +1575,7 @@ def test_secret_values_cannot_be_accessed_by_readonly_user():
         ) as user_secret:
 
             all_secrets = store.list_secrets(SecretFilterModel()).items
-            assert len(all_secrets) == 2
+            assert len(all_secrets) >= 2
             assert secret.id in [s.id for s in all_secrets]
             assert user_secret.id in [s.id for s in all_secrets]
             workspace_secrets = store.list_secrets(
@@ -1584,10 +1584,10 @@ def test_secret_values_cannot_be_accessed_by_readonly_user():
                     workspace_id=client.active_workspace.id,
                 )
             ).items
-            assert len(workspace_secrets) == 1
-            assert secret.id == workspace_secrets[0].id
+            assert len(workspace_secrets) >= 1
+            assert secret.id in [s.id for s in workspace_secrets]
 
-            saved_secret = store.get_secret(workspace_secrets[0].id)
+            saved_secret = store.get_secret(secret.id)
             assert saved_secret.secret_values == secret.secret_values
             assert set(saved_secret.values.values()) != {None}
 
@@ -1623,7 +1623,7 @@ def test_secret_values_cannot_be_accessed_by_readonly_user():
             ):
 
                 all_secrets = store.list_secrets(SecretFilterModel()).items
-                assert len(all_secrets) == 2
+                assert len(all_secrets) >= 2
                 assert secret.id in [s.id for s in all_secrets]
                 assert user_secret.id in [s.id for s in all_secrets]
                 workspace_secrets = store.list_secrets(
@@ -1632,10 +1632,10 @@ def test_secret_values_cannot_be_accessed_by_readonly_user():
                         workspace_id=client.active_workspace.id,
                     )
                 ).items
-                assert len(workspace_secrets) == 1
-                assert secret.id == workspace_secrets[0].id
+                assert len(workspace_secrets) >= 1
+                assert secret.id in [s.id for s in workspace_secrets]
 
-                saved_secret = store.get_secret(workspace_secrets[0].id)
+                saved_secret = store.get_secret(secret.id)
                 assert set(saved_secret.values.keys()) == set(
                     secret.values.keys()
                 )

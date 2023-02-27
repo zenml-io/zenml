@@ -545,7 +545,9 @@ Vault service instead, you need to configure it in the Helm values:
       # The url of the HashiCorp Vault server to use
       vault_addr: https://vault.example.com
       # The token used to authenticate with the Vault server
-      vault_token:
+      vault_token: <your Vault token>
+      # The Vault Enterprise namespace. Not required for Vault OSS.
+      vault_namespace: <your Vault namespace>
 ```
 
 ## Upgrading your ZenML server

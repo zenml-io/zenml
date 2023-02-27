@@ -242,8 +242,10 @@ the secrets store backend.
     NOTE: this is the same as setting the `VAULT_TOKEN` environment
     variable.
 
-- **ZENML_SECRETS_STORE_NAMESPACE**:
+- **ZENML_SECRETS_STORE_VAULT_NAMESPACE**:
     The Vault Enterprise namespace. Not required for Vault OSS.
+    NOTE: this is the same as setting the `VAULT_NAMESPACE` environment
+    variable.
 
 - **ZENML_SECRETS_STORE_MAX_VERSIONS**:
     The maximum number of secret versions to keep for each Vault secret. If not

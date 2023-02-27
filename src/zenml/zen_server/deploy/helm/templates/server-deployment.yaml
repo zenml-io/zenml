@@ -72,9 +72,9 @@ spec:
             {{- else if eq .Values.zenml.secretsStore.type "hashicorp" }}
             - name: ZENML_SECRETS_STORE_VAULT_ADDR
               value: {{ .Values.zenml.secretsStore.hashicorp.vault_addr | quote }}
-            {{- if .Values.zenml.secretsStore.hashicorp.namespace }}
-            - name: ZENML_SECRETS_STORE_NAMESPACE
-              value: {{ .Values.zenml.secretsStore.hashicorp.namespace | quote }}
+            {{- if .Values.zenml.secretsStore.hashicorp.vault_namespace }}
+            - name: ZENML_SECRETS_STORE_VAULT_NAMESPACE
+              value: {{ .Values.zenml.secretsStore.hashicorp.vault_namespace | quote }}
             {{- end }}
             {{- if .Values.zenml.secretsStore.hashicorp.max_versions }}
             - name: ZENML_SECRETS_STORE_MAX_VERSIONS
@@ -140,9 +140,9 @@ spec:
             {{- else if eq .Values.zenml.secretsStore.type "hashicorp" }}
             - name: ZENML_SECRETS_STORE_VAULT_ADDR
               value: {{ .Values.zenml.secretsStore.hashicorp.vault_addr | quote }}
-            {{- if .Values.zenml.secretsStore.hashicorp.namespace }}
-            - name: ZENML_SECRETS_STORE_NAMESPACE
-              value: {{ .Values.zenml.secretsStore.hashicorp.namespace | quote }}
+            {{- if .Values.zenml.secretsStore.hashicorp.vault_namespace }}
+            - name: ZENML_SECRETS_STORE_VAULT_NAMESPACE
+              value: {{ .Values.zenml.secretsStore.hashicorp.vault_namespace | quote }}
             {{- end }}
             {{- if .Values.zenml.secretsStore.hashicorp.max_versions }}
             - name: ZENML_SECRETS_STORE_MAX_VERSIONS
