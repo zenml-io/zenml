@@ -474,7 +474,7 @@ def push_plugin(
     _stream_plugin_build_logs(
         plugin_name=plugin_response.name,
         plugin_version=plugin_response.version,
-    )
+    )  # TODO: why doesn't this wait till all the logs are streamed?
 
 
 def _validate_plugin_name(
