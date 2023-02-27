@@ -19,6 +19,7 @@ from collections import defaultdict
 from typing import (
     TYPE_CHECKING,
     Any,
+    Callable,
     ClassVar,
     Dict,
     List,
@@ -31,7 +32,6 @@ from typing import (
     TypeVar,
     Union,
     cast,
-    Callable
 )
 
 from pydantic import ValidationError
@@ -61,12 +61,12 @@ from zenml.steps.utils import (
     PARAM_ENABLE_CACHE,
     PARAM_EXPERIMENT_TRACKER,
     PARAM_EXTRA_OPTIONS,
+    PARAM_ON_FAILURE,
     PARAM_OUTPUT_ARTIFACTS,
     PARAM_OUTPUT_MATERIALIZERS,
     PARAM_SETTINGS,
     PARAM_STEP_NAME,
     PARAM_STEP_OPERATOR,
-    PARAM_ON_FAILURE,
     parse_return_type_annotations,
     resolve_type_annotation,
 )
@@ -791,7 +791,6 @@ class BaseStep(metaclass=BaseStepMeta):
             # string of on_failure hook function to be used for this step
             on_failure_source = _resolve_if_necessary(on_failure)
 
-                
         if output_artifacts:
             logger.warning(
                 "The `output_artifacts` argument has no effect and will be "
