@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 import re
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, Type, TypeVar, cast
+from typing import Any, Optional, Type, TypeVar, cast
 
 from git.repo.base import Remote, Repo
 
@@ -52,7 +52,7 @@ C = TypeVar("C", bound="BaseCodeRepository")
 
 
 class BaseCodeRepository(ABC):
-    def __init__(self, config: Dict[str, Any]) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         pass
 
     @classmethod
@@ -62,7 +62,7 @@ class BaseCodeRepository(ABC):
         ] = source_utils_v2.load_and_validate_class(
             source=model.source, expected_class=BaseCodeRepository
         )
-        return class_(config=model.config)
+        return class_(**model.config)
 
     @abstractmethod
     def login(self) -> None:
@@ -78,13 +78,13 @@ class BaseCodeRepository(ABC):
         pass
 
 
-class LocalGitRepsitory(LocalRepository):
+class LocalGitRepository(LocalRepository):
     # TODO: this maybe needs to accept a callback which checks if the remote
     # URL matches? E.g. the ssh remote url of github needs to be checked with
     # a regex and can't simply be passed as a string here
-    def __init__(self, path: str, url: str):
+    def __init__(self, path: str):
         self._git_repo = Repo(path=path, search_parent_directories=True)
-        # TODO: write function that get's the correct remote base on url
+        # TODO: write function that get's the correct remote based on url
         self._remote = self._git_repo.remote()
 
     @property
@@ -141,7 +141,7 @@ class GitHubCodeRepository(BaseCodeRepository):
     def get_local_repo(path: str) -> LocalRepository:
         # TODO: correctly initialize the local git repo, catch potential errors
         try:
-            return LocalRepository(path=path, url=...)
+            return LocalGitRepository(path=path)
         except ...:
             return None
 
