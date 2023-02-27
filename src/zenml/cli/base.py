@@ -420,7 +420,7 @@ def _prompt_email(event_source: AnalyticsEventSource) -> bool:
 
             # Add consent and email to user model
             client.update_user(
-                user_name_or_id=client.active_user.id,
+                name_id_or_prefix=client.active_user.id,
                 updated_email=email,
                 updated_email_opt_in=True,
             )
