@@ -460,6 +460,17 @@ def push_plugin(
         tags=",".join(tags),
     )
     plugin_response = _create_plugin(plugin_request)
+
+    # Stream the build logs
+    plugin_name = plugin_response.name
+    plugin_version = plugin_response.version
+    logger.info(
+        "Thanks for submitting your plugin to the ZenML Hub. The plugin is now "
+        "being built into an installable package and build logs will be "
+        "streamed below. This may take a few minutes. If you want to cancel "
+        "this process, you can also retrieve the build logs later by running "
+        f"`zenml hub logs {plugin_name} --version {plugin_version}`."
+    )
     _stream_plugin_build_logs(
         plugin_name=plugin_response.name,
         plugin_version=plugin_response.version,
