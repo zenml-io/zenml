@@ -62,9 +62,8 @@ class PluginResponseModel(PluginBaseModel):
     status: Optional[str]  # TODO: make this a required enum
     version: str
     index_url: Optional[str]
-    wheel_name: Optional[str]
+    wheel_name: Optional[str]  # TODO: rename to package_name?
     logo: Optional[str]
-    build_error_logs: Optional[str]
     requirements: Optional[List[str]]
 
 
@@ -130,6 +129,18 @@ def _create_plugin(plugin: PluginRequestModel) -> PluginResponseModel:
     """Helper function to create a plugin in the hub."""
     payload = _hub_post(f"{server_url()}/plugins", plugin)
     return PluginResponseModel.parse_obj(payload)
+
+
+def _stream_plugin_build_logs(plugin_name: str, plugin_version: str) -> None:
+    """Helper function to stream the build logs of a plugin."""
+    logs_url = f"{server_url()}/plugins/{plugin_name}:{plugin_version}/logs"
+    with requests.get(logs_url, stream=True) as response:
+        for line in response.iter_content(
+            chunk_size=None, decode_unicode=True
+        ):
+            if line.startswith("Build failed"):
+                error(line)
+            logger.info(line)
 
 
 def _is_plugin_installed(plugin_name: str) -> bool:
@@ -435,7 +446,7 @@ def push_plugin(
         tags = _ask_for_tags()
 
     # Make a create request to the hub
-    request = PluginRequestModel(
+    plugin_request = PluginRequestModel(
         name=plugin_name,
         major_version=major_version,
         repository_url=repository_url,
@@ -444,9 +455,11 @@ def push_plugin(
         repository_commit=repository_commit,
         tags=",".join(tags),
     )
-    response = _create_plugin(request)
-    if response.build_error_logs:
-        error(response.build_error_logs)
+    plugin_response = _create_plugin(plugin_request)
+    _stream_plugin_build_logs(
+        plugin_name=plugin_response.name,
+        plugin_version=plugin_response.version,
+    )
 
 
 def _validate_plugin_name(
@@ -718,3 +731,21 @@ def _ask_for_tags() -> List[str]:
         if not tag:
             return tags
         tags.append(tag)
+
+
+@hub.command("logs")
+@click.argument("plugin_name", type=str, required=True)
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    default="latest",
+    help="Version of the plugin to pull.",
+)
+def get_logs(plugin_name: str, version: str) -> None:
+    plugin = _get_plugin(plugin_name=plugin_name, plugin_version=version)
+    if not plugin:
+        error(f"Could not find plugin '{plugin_name}:{version}' on the hub.")
+    _stream_plugin_build_logs(
+        plugin_name=plugin_name, plugin_version=plugin.version
+    )
