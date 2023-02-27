@@ -170,16 +170,18 @@ def get_source_type(module: ModuleType) -> SourceType:
 def _load_repository_files(source: CodeRepositorySource) -> str:
     source_root = get_source_root()
     active_repo = Client().find_active_code_repository(path=source_root)
+    local_repo = active_repo.get_local_repo(path=source_root)
+    assert local_repo
 
     if (
         active_repo
         and active_repo.id == source.repository_id
-        and not active_repo.is_dirty
-        and active_repo.current_commit == source.commit
+        and not local_repo.is_dirty
+        and local_repo.current_commit == source.commit
     ):
         # The repo is clean and at the correct commit, we can use the file
         # directly without downloading anything
-        repo_root = active_repo.root
+        repo_root = local_repo.root
     else:
         repo_root = os.path.join(
             GlobalConfiguration().config_directory,
@@ -188,9 +190,12 @@ def _load_repository_files(source: CodeRepositorySource) -> str:
             source.commit,
         )
         if not os.path.exists(repo_root):
-            # TODO: download repo files
-            # Client().get_code_repository(source.repository_id)
-            ...
+            from zenml.code_repositories import BaseCodeRepository
+
+            model = Client().get_code_repository(source.repository_id)
+            repo = BaseCodeRepository.from_model(model)
+
+            repo.download_files(commit=source.commit, directory=repo_root)
 
     return repo_root
 

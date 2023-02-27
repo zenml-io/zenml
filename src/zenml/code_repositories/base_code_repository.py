@@ -14,6 +14,7 @@
 import re
 from abc import ABC, abstractmethod
 from typing import Any, Optional, Type, TypeVar, cast
+from uuid import UUID
 
 from git.repo.base import Remote, Repo
 
@@ -52,8 +53,8 @@ C = TypeVar("C", bound="BaseCodeRepository")
 
 
 class BaseCodeRepository(ABC):
-    def __init__(self, **kwargs: Any) -> None:
-        pass
+    def __init__(self, id: UUID, **kwargs: Any) -> None:
+        self._id = id
 
     @classmethod
     def from_model(cls: Type[C], model: CodeRepositoryResponseModel) -> C:
@@ -63,6 +64,10 @@ class BaseCodeRepository(ABC):
             source=model.source, expected_class=BaseCodeRepository
         )
         return class_(**model.config)
+
+    @property
+    def id(self) -> UUID:
+        return self._id
 
     @abstractmethod
     def login(self) -> None:
@@ -74,8 +79,11 @@ class BaseCodeRepository(ABC):
         pass
 
     @abstractmethod
-    def get_local_repo(path: str) -> Optional[LocalRepository]:
+    def get_local_repo(self, path: str) -> Optional[LocalRepository]:
         pass
+
+    def exists_at_path(self, path: str) -> bool:
+        return self.get_local_repo(path=path) is not None
 
 
 class LocalGitRepository(LocalRepository):
