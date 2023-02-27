@@ -1030,6 +1030,15 @@ crud_test_configs = [
             "component_type": StackComponentType.ORCHESTRATOR,
         },
     ),
+    ClientCrudTestConfig(
+        entity_name="code_repository",
+        create_args={
+            "name": sample_name("code_repository_name"),
+        },
+        update_args={
+            "name": sample_name("updated_code_repository_name"),
+        },
+    ),
 ]
 
 

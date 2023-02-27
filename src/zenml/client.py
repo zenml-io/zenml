@@ -3878,11 +3878,13 @@ class Client(metaclass=ClientMetaClass):
     def get_code_repository(
         self,
         name_id_or_prefix: Union[str, UUID],
+        allow_name_prefix_match: bool = True,
     ) -> CodeRepositoryResponseModel:
         """Get a code repository by name, id or prefix.
 
         Args:
             name_id_or_prefix: The name, ID or ID prefix of the code repository.
+            allow_name_prefix_match: If True, allow matching by name prefix.
 
         Returns:
             The code repository.
@@ -3891,6 +3893,7 @@ class Client(metaclass=ClientMetaClass):
             get_method=self.zen_store.get_code_repository,
             list_method=self.list_code_repositories,
             name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=allow_name_prefix_match,
         )
 
     def update_code_repository(
@@ -3908,7 +3911,9 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The updated code repository.
         """
-        repo = self.get_code_repository(name_id_or_prefix=name_id_or_prefix)
+        repo = self.get_code_repository(
+            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
+        )
         update = CodeRepositoryUpdateModel(name=name)
         return self.zen_store.update_code_repository(
             code_repository_id=repo.id, update=update
@@ -3923,7 +3928,9 @@ class Client(metaclass=ClientMetaClass):
         Args:
             name_id_or_prefix: The name, ID or prefix of the code repository.
         """
-        repo = self.get_code_repository(name_id_or_prefix=name_id_or_prefix)
+        repo = self.get_code_repository(
+            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
+        )
         self.zen_store.delete_code_repository(code_repository_id=repo.id)
 
     # ---- utility prefix matching get functions -----
