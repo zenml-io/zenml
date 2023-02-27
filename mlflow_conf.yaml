@@ -1,0 +1,19 @@
+name: mlflow
+content:
+  flavors:
+    - src: zenml.integrations.mlflow.flavors.mlflow_experiment_tracker_flavor.MLflowExperimentTrackerFlavor
+      readme: docs/book/component-gallery/experiment-trackers/mlflow.md
+      example: examples/mlflow_tracking
+    - src: zenml.integrations.mlflow.flavors.mlflow_model_deployer_flavor.MLflowModelDeployerFlavor
+      readme: docs/book/component-gallery/model-deployers/mlflow.md
+      example: examples/mlflow_deployment
+  steps:
+    - src: zenml.integrations.mlflow.steps.mlflow_deployer.mlflow_model_deployer_step
+  services:
+    - src: zenml.integrations.mlflow.services.mlflow_deployment.MLFlowDeploymentService
+# materializers
+# tests automatically detected from src root
+# required-integrations
+# logo: assets/mlflow.png
+# requirements: requirements.txt
+# readme: README.md
