@@ -136,13 +136,12 @@ def _stream_plugin_build_logs(plugin_name: str, plugin_version: str) -> None:
     logs_url = f"{server_url()}/plugins/{plugin_name}:{plugin_version}/logs"
     found_logs = False
     with requests.get(logs_url, stream=True) as response:
-        for line in response.iter_content(
-            chunk_size=None, decode_unicode=True
-        ):
+        for line in response.iter_lines(chunk_size=None, decode_unicode=True):
             found_logs = True
             if line.startswith("Build failed"):
                 error(line)
-            logger.info(line)
+            else:
+                logger.info(line)
 
     if not found_logs:
         logger.info(f"No logs found for plugin {plugin_name}:{plugin_version}")
