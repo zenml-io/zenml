@@ -83,12 +83,12 @@ if TYPE_CHECKING:
 
     ParametersOrDict = Union["BaseParameters", Dict[str, Any]]
     ArtifactClassOrStr = Union[str, Type["BaseArtifact"]]
-    MaterializerClassOrStr = Union[str, Type["BaseMaterializer"]]
+    MaterializerClassOrSource = Union[str, Source, Type["BaseMaterializer"]]
     OutputArtifactsSpecification = Union[
         "ArtifactClassOrStr", Mapping[str, "ArtifactClassOrStr"]
     ]
     OutputMaterializersSpecification = Union[
-        "MaterializerClassOrStr", Mapping[str, "MaterializerClassOrStr"]
+        "MaterializerClassOrSource", Mapping[str, "MaterializerClassOrSource"]
     ]
 
 
@@ -761,14 +761,17 @@ class BaseStep(metaclass=BaseStepMeta):
             The step instance that this method was called on.
         """
 
-        def _resolve_if_necessary(value: Union[str, Type[Any]]) -> Source:
-            return (
-                Source.from_import_path(value)
-                if isinstance(value, str)
-                else source_utils_v2.resolve_class(value)
-            )
+        def _resolve_if_necessary(
+            value: Union[str, Source, Type[Any]]
+        ) -> Source:
+            if isinstance(value, str):
+                return Source.from_import_path(value)
+            elif isinstance(value, Source):
+                return value
+            else:
+                return source_utils_v2.resolve_class(value)
 
-        outputs: Dict[str, Dict[str, str]] = defaultdict(dict)
+        outputs: Dict[str, Dict[str, Source]] = defaultdict(dict)
         allowed_output_names = set(self.OUTPUT_SIGNATURE)
 
         if output_materializers:
@@ -940,7 +943,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 materializer assigned to it and there is no default
                 materializer registered for the output type.
         """
-        outputs: Dict[str, Dict[str, str]] = defaultdict(dict)
+        outputs: Dict[str, Dict[str, Source]] = defaultdict(dict)
 
         for output_name, output_class in self.OUTPUT_SIGNATURE.items():
             output = self._configuration.outputs.get(

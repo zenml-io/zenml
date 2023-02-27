@@ -38,7 +38,7 @@ class Source(BaseModel):
     variable: str
     type: SourceType
 
-    def __new__(cls, **kwargs: Any) -> Type["Source"]:
+    def __new__(cls, **kwargs: Any) -> "Source":
         if kwargs.get("type") == SourceType.CODE_REPOSITORY:
             return object.__new__(CodeRepositorySource)
         elif kwargs.get("type") == SourceType.DISTRIBUTION_PACKAGE:
