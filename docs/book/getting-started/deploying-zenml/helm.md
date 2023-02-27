@@ -537,10 +537,10 @@ Vault service instead, you need to configure it in the Helm values:
     enabled: true
 
     # The type of the secrets store
-    type: hvac
+    type: hashicorp
 
     # Configuration for the HashiCorp Vault secrets store
-    hvac:
+    hashicorp:
 
       # The url of the HashiCorp Vault server to use
       vault_addr: https://vault.example.com

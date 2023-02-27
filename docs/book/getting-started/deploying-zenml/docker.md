@@ -102,7 +102,7 @@ The following environment variables can be passed to the container:
     - `azure`: Use Azure Key Vault as the secrets store backend. See the
     [Azure Secrets Store Configuration Options](#azure-secrets-store-configuration-options)
     section below for more configuration options.
-    - `hvac`: Use HashiCorp Vault as the secrets store backend. See the
+    - `hashicorp`: Use HashiCorp Vault as the secrets store backend. See the
     [HashiCorp Vault Secrets Store Configuration Options](#hashicorp-vault-secrets-store-configuration-options)
 
 - **ZENML_LOGGING_VERBOSITY**:

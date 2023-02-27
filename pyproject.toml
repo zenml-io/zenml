@@ -100,7 +100,7 @@ server = ["fastapi", "uvicorn", "python-multipart", "python-jose", "fastapi-util
 templates = ["copier", "jinja2-time", "black", "ruff"]
 secrets-aws = ["boto3"]
 secrets-azure = ["azure-identity", "azure-keyvault-secrets"]
-secrets-hvac = ["hvac"]
+secrets-hashicorp = ["hashicorp"]
 
 [tool.poetry.dev-dependencies]
 black = "^22.3.0"

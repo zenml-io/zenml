@@ -106,7 +106,7 @@ class SecretsStoreType(StrEnum):
     AWS = "aws"
     GCP = "gcp"
     AZURE = "azure"
-    HVAC = "hvac"  # HashiCorp Vault
+    HASHICORP = "hashicorp"
     CUSTOM = "custom"  # indicates that the secrets store uses a custom backend
 
 

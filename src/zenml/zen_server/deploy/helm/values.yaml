@@ -93,7 +93,7 @@ zenml:
     # aws - Use the AWS Secrets Manager as a secrets store
     # gcp - Use the GCP Secrets Manager as a secrets store
     # azure - Use the Azure Key Vault as a secrets store
-    # hvac - Use the HashiCorp Vault as a secrets store
+    # hashicorp - Use the HashiCorp Vault as a secrets store
     # custom - Use a custom secrets store implementation (needs a custom
     #          ZenML server image with the custom secrets store implementation
     #          installed)
@@ -103,8 +103,8 @@ zenml:
     #
     type: sql
 
-    # SQL secrets store configuration. Only relevant if the SQL secrets store
-    # type is used.
+    # SQL secrets store configuration. Only relevant if the `sql` secrets store
+    # type is configured.
     sql:
 
       # The secret key used to encrypt secrets in the SQL database. Only relevant
@@ -133,8 +133,8 @@ zenml:
       # secrets store.
       encryptionKey:
 
-    # AWS secrets store configuration. Only relevant if the AWS secrets store
-    # type is used.
+    # AWS secrets store configuration. Only relevant if the `aws` secrets store
+    # type is configured.
     aws:
 
       # The AWS region to use. This must be set to the region where the AWS
@@ -163,8 +163,8 @@ zenml:
       secret_list_refresh_timeout: 0
 
 
-    # AWS Key Vault secrets store configuration. Only relevant if the Azure
-    # secrets store type is used.
+    # AWS Key Vault secrets store configuration. Only relevant if the `azure`
+    # secrets store type is configured.
     azure:
 
       # The name of the Azure Key Vault. This must be set to point to the Azure
@@ -182,9 +182,9 @@ zenml:
       azure_client_secret:
       azure_tenant_id:
 
-    # HashiCorp Vault secrets store configuration. Only relevant if the `hvac`
-    # secrets store type is used.
-    hvac:
+    # HashiCorp Vault secrets store configuration. Only relevant if the `hashicorp`
+    # secrets store type is configured
+    hashicorp:
 
       # The url of the HashiCorp Vault server
       vault_addr: https://vault.example.com
@@ -196,8 +196,8 @@ zenml:
       # value of 1 will be used (only the latest version will be kept).
       max_versions:
 
-    # Custom secrets store configuration. Only relevant if the custom secrets
-    # store type is used.
+    # Custom secrets store configuration. Only relevant if the `custom` secrets
+    # store type is configured.
     custom:
 
       # The class path of the custom secrets store implementation. This should
