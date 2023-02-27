@@ -143,14 +143,6 @@ class DockerSettings(BaseSettings):
         user: If not `None`, will set the user, make it owner of the `/app`
             directory which contains all the user code and run the container
             entrypoint as this user.
-        target_os: To specify the target OS where the image will be run. This
-            is used to differentiate between integration requirements that
-            should be installed in the image. For example, if you specify
-            `target_os="linux"`, ZenML will install the `tensorflow` package
-            in the image, but if you specify `target_os="darwin"`, ZenML will
-            install the `tensorflow-macos` package instead. If this is left
-            empty, ZenML will try to detect the OS automatically. By default,
-            this is set to `linux`.
     """
 
     parent_image: Optional[str] = None
@@ -176,8 +168,6 @@ class DockerSettings(BaseSettings):
     copy_files: bool = True
     copy_global_config: bool = True
     user: Optional[str] = None
-
-    target_os: Optional[str] = "Linux"
 
     @root_validator
     def _validate_skip_build(cls, values: Dict[str, Any]) -> Dict[str, Any]:
