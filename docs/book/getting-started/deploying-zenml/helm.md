@@ -127,6 +127,11 @@ the ZenML server in an AKS Kubernetes cluster that is already configured to use
 implicit authorization through the Azure managed identity service, you can omit
 this step.
 
+For the HashiCorp Vault:
+
+- the URL of the HashiCorp Vault server
+- the token that will be used to access the HashiCorp Vault server.
+
 ### Optional cluster services
 
 It is common practice to install additional infrastructure-related services in
@@ -512,6 +517,35 @@ Azure Key Vault API:
       azure_client_id: <your Azure client ID>
       azure_client_secret: <your Azure client secret>
       azure_tenant_id: <your Azure tenant ID>
+```
+
+### Using the HashiCorp Vault as a secrets store backend
+
+Unless explicitly disabled or configured otherwise, the ZenML server will use
+the SQL database as a secrets store backend. If you want to use the HashiCorp
+Vault service instead, you need to configure it in the Helm values:
+
+```yaml
+ zenml:
+
+  # ...
+
+  # Secrets store settings. This is used to store centralized secrets.
+  secretsStore:
+
+    # Set to false to disable the secrets store.
+    enabled: true
+
+    # The type of the secrets store
+    type: hvac
+
+    # Configuration for the HashiCorp Vault secrets store
+    hvac:
+
+      # The url of the HashiCorp Vault server to use
+      vault_addr: https://vault.example.com
+      # The token used to authenticate with the Vault server
+      vault_token:
 ```
 
 ## Upgrading your ZenML server

@@ -15,7 +15,7 @@ RUN pip install zenml${ZENML_VERSION:+==$ZENML_VERSION}
 
 FROM base AS server
 
-RUN pip install zenml${ZENML_VERSION:+==$ZENML_VERSION}[server,secrets-aws,secrets-azure]
+RUN pip install zenml${ZENML_VERSION:+==$ZENML_VERSION}[server,secrets-aws,secrets-azure,secrets-hvac]
 
 WORKDIR /zenml
 
