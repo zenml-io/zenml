@@ -13,11 +13,13 @@
 #  permissions and limitations under the License.
 """SQL Model Implementations for code repositories."""
 
+import json
 from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
-from sqlmodel import Relationship
+from sqlalchemy import TEXT, Column
+from sqlmodel import Field, Relationship
 
 from zenml.models.code_repository_models import (
     CodeRepositoryRequestModel,
@@ -60,6 +62,9 @@ class CodeRepositorySchema(NamedSchema, table=True):
         back_populates="code_repositories"
     )
 
+    config: str = Field(sa_column=Column(TEXT, nullable=False))
+    source: str = Field(sa_column=Column(TEXT, nullable=False))
+
     @classmethod
     def from_request(
         cls,
@@ -77,6 +82,8 @@ class CodeRepositorySchema(NamedSchema, table=True):
             name=request.name,
             workspace_id=request.workspace,
             user_id=request.user,
+            config=json.dumps(request.config),
+            source=request.source.json(),
         )
 
     def to_model(
@@ -94,6 +101,8 @@ class CodeRepositorySchema(NamedSchema, table=True):
             user=self.user.to_model(True) if self.user else None,
             created=self.created,
             updated=self.updated,
+            config=json.loads(self.config),
+            source=self.source,
         )
 
     def update(

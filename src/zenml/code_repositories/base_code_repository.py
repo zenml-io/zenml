@@ -13,34 +13,18 @@
 #  permissions and limitations under the License.
 import re
 from abc import ABC, abstractmethod
-from typing import Any, Dict, cast
+from typing import Any, Optional, Type, TypeVar, cast
 
-from git.exc import InvalidGitRepositoryError
-from git.repo.base import Repo
-from github import Github
-from pydantic import BaseModel
-from zenml.exceptions import CodeRepoDownloadError
+from git.repo.base import Remote, Repo
 
 from zenml.logger import get_logger
+from zenml.models.code_repository_models import CodeRepositoryResponseModel
+from zenml.utils import source_utils_v2
 
 logger = get_logger(__name__)
 
 
-class BaseCodeRepository(BaseModel, ABC):
-    @classmethod
-    @abstractmethod
-    def exists_at_path(cls, path: str, config: Dict[str, Any]) -> bool:
-        pass
-
-    @abstractmethod
-    def login(self) -> None:
-        pass
-
-    @abstractmethod
-    def is_active(self, path: str) -> bool:
-        # whether path is inside the locally checked out repo
-        pass
-
+class LocalRepository(ABC):
     @property
     @abstractmethod
     def root(self) -> str:
@@ -63,16 +47,53 @@ class BaseCodeRepository(BaseModel, ABC):
     def current_commit(self) -> str:
         pass
 
+
+C = TypeVar("C", bound="BaseCodeRepository")
+
+
+class BaseCodeRepository(ABC):
+    def __init__(self, **kwargs: Any) -> None:
+        pass
+
+    @classmethod
+    def from_model(cls: Type[C], model: CodeRepositoryResponseModel) -> C:
+        class_: Type[
+            BaseCodeRepository
+        ] = source_utils_v2.load_and_validate_class(
+            source=model.source, expected_class=BaseCodeRepository
+        )
+        return class_(**model.config)
+
+    @abstractmethod
+    def login(self) -> None:
+        pass
+
     @abstractmethod
     def download_files(self, commit: str, directory: str) -> None:
         # download files of commit to local directory
         pass
 
+    @abstractmethod
+    def get_local_repo(path: str) -> Optional[LocalRepository]:
+        pass
 
-class _GitCodeRepository(BaseCodeRepository, ABC):
+
+class LocalGitRepository(LocalRepository):
+    # TODO: this maybe needs to accept a callback which checks if the remote
+    # URL matches? E.g. the ssh remote url of github needs to be checked with
+    # a regex and can't simply be passed as a string here
+    def __init__(self, path: str):
+        self._git_repo = Repo(path=path, search_parent_directories=True)
+        # TODO: write function that get's the correct remote based on url
+        self._remote = self._git_repo.remote()
+
     @property
     def git_repo(self) -> Repo:
-        return Repo(search_parent_directories=True)
+        return self._git_repo
+
+    @property
+    def remote(self) -> Remote:
+        return self._remote
 
     @property
     def root(self) -> str:
@@ -88,11 +109,21 @@ class _GitCodeRepository(BaseCodeRepository, ABC):
         if self.is_dirty:
             return True
 
-        remote = self.git_repo.remote(name="origin")  # make this configurable?
-        remote.fetch()
+        self.remote.fetch()
 
         local_commit = self.git_repo.head.commit
-        remote_commit = remote.refs[self.git_repo.active_branch].commit
+        try:
+            active_branch = self.git_repo.active_branch
+        except TypeError:
+            raise RuntimeError(
+                "Git repo in detached head state is not allowed."
+            )
+
+        try:
+            remote_commit = self.remote.refs[active_branch.name].commit
+        except IndexError:
+            # Branch doesn't exist on remote
+            return True
 
         return remote_commit != local_commit
 
@@ -100,63 +131,28 @@ class _GitCodeRepository(BaseCodeRepository, ABC):
     def current_commit(self) -> str:
         return cast(str, self.git_repo.head.object.hexsha)
 
-    @classmethod
-    def exists_at_path(cls, path: str, config: Dict[str, Any]) -> bool:
+
+class GitHubCodeRepository(BaseCodeRepository):
+    def __init__(self, owner: str, repository: str, token: str):
+        self._owner = owner
+        self._repository = repository
+        self._token = token
+
+    def get_local_repo(path: str) -> LocalRepository:
+        # TODO: correctly initialize the local git repo, catch potential errors
         try:
-            repo = Repo(path=path, search_parent_directories=True)
-        except InvalidGitRepositoryError:
-            return False
+            return LocalGitRepository(path=path)
+        except ...:
+            return None
 
-        for remote in repo.remotes:
-            if cls.url_matches_config(url=remote.url, config=config):
-                return True
-
-        return False
-
-    @classmethod
-    @abstractmethod
-    def url_matches_config(cls, url: str, config: Dict[str, Any]) -> bool:
-        pass
-
-
-class GitHubCodeRepository(_GitCodeRepository):
-
-    def login(self, config: Dict[str, Any]) -> None:
-        owner = config["owner"]
-        repository = config["repository"]
-        token = config["token"]
-        try:
-            user = self.g.get_user().login
-            print(f'Logged in as {user}')
-        except Exception as e:
-            print(f'Error: {str(e)}')
-        self.g = Github(token)
-        self.repo = self.g.get_repo(f"{owner}/{repository}")
-
-    def download_files(self, commit: str, directory: str) -> None:
-        try:
-            contents = self.repo.get_contents("", ref=commit)
-            for content_file in contents:
-                if content_file.type == "file":
-                    file_contents = content_file.decoded_content
-                    file_path = f'{directory}/{content_file.path}'
-                    with open(file_path, "wb") as f:
-                        f.write(file_contents)
-            logger.info(f'Successfully downloaded files for commit {commit} to directory {directory}')
-        except Exception as e:
-            raise CodeRepoDownloadError(f'f"An error occurred while downloading files: {str(e)}')
-
-    @classmethod
-    def url_matches_config(cls, url: str, config: Dict[str, Any]) -> bool:
-        owner = config["owner"]
-        repository = config["repository"]
-
-        https_url = f"https://github.com/{owner}/{repository}.git"
+    def check_remote_url(self, url: str) -> bool:
+        https_url = f"https://github.com/{self._owner}/{self._repository}.git"
         if url == https_url:
             return True
 
-        ssh_regex = re.compile(f".*@github.com:{owner}/{repository}.git")
-
+        ssh_regex = re.compile(
+            f".*@github.com:{self._owner}/{self._repository}.git"
+        )
         if ssh_regex.fullmatch(url):
             return True
 

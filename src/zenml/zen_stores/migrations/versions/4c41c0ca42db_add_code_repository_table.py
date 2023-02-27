@@ -29,6 +29,8 @@ def upgrade() -> None:
         sa.Column("created", sa.DateTime(), nullable=False),
         sa.Column("updated", sa.DateTime(), nullable=False),
         sa.Column("name", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+        sa.Column("config", sa.TEXT(), nullable=False),
+        sa.Column("source", sa.TEXT(), nullable=False),
         sa.ForeignKeyConstraint(
             ["user_id"],
             ["user.id"],
