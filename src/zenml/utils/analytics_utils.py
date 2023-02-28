@@ -215,7 +215,7 @@ class AnalyticsContext:
             True if exception was handled, False otherwise.
         """
         if exc_val is not None:
-            logger.debug("Sending telemetry data failed: {exc_val}")
+            logger.debug(f"Sending telemetry data failed: {exc_val}")
 
         # We should never fail main thread
         return True
