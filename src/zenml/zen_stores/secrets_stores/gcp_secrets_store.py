@@ -13,11 +13,12 @@
 #  permissions and limitations under the License.
 """Implementation of the GCP Secrets Store."""
 
+
 import json
 import math
 import re
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import (
     Any,
     ClassVar,
@@ -68,6 +69,9 @@ GCP_ZENML_SECRET_NAME_PREFIX = "zenml"
 ZENML_SCHEMA_NAME = "zenml-schema-name"
 ZENML_GROUP_KEY = "zenml-group-key"
 ZENML_GCP_SECRET_SCOPE_PATH_SEPARATOR = "-"
+ZENML_GCP_DATE_FORMAT_STRING = "%Y-%m-%d-%H-%M-%S"
+ZENML_GCP_SECRET_CREATED_KEY = "zenml-secret-created"
+ZENML_GCP_SECRET_UPDATED_KEY = "zenml-secret-updated"
 
 
 class GCPSecretsStoreConfiguration(SecretsStoreConfiguration):
@@ -316,6 +320,17 @@ class GCPSecretsStore(BaseSecretsStore):
         secret_id = uuid.uuid4()
         secret_value = json.dumps(secret.secret_values)
 
+        created = datetime.now(timezone.utc)
+        labels = self._get_secret_metadata_for_secret(
+            secret=secret, secret_id=secret_id
+        )
+        labels[ZENML_GCP_SECRET_CREATED_KEY] = created.strftime(
+            ZENML_GCP_DATE_FORMAT_STRING
+        )
+        labels[ZENML_GCP_SECRET_UPDATED_KEY] = created.strftime(
+            ZENML_GCP_DATE_FORMAT_STRING
+        )
+
         try:
             gcp_secret = self.client.create_secret(
                 request={
@@ -323,16 +338,14 @@ class GCPSecretsStore(BaseSecretsStore):
                     "secret_id": f"{GCP_ZENML_SECRET_NAME_PREFIX}-{secret_id}",
                     "secret": {
                         "replication": {"automatic": {}},
-                        "labels": self._get_secret_metadata_for_secret(
-                            secret=secret, secret_id=secret_id
-                        ),
+                        "labels": labels,
                     },
                 }
             )
 
             logger.debug("Created empty parent secret: %s", gcp_secret.name)
 
-            gcp_secret_version = self.client.add_secret_version(
+            self.client.add_secret_version(
                 request={
                     "parent": gcp_secret.name,
                     "payload": {"data": secret_value.encode()},
@@ -350,8 +363,8 @@ class GCPSecretsStore(BaseSecretsStore):
             workspace=workspace,
             user=user,
             values=secret.secret_values,
-            created=gcp_secret.create_time,
-            updated=gcp_secret_version.create_time,
+            created=created,
+            updated=created,
         )
 
     def get_secret(self, secret_id: UUID) -> SecretResponseModel:
@@ -465,7 +478,6 @@ class GCPSecretsStore(BaseSecretsStore):
         # get all the secrets and their labels (for their names) from GCP
         # (use the filter string to limit what doesn't match the filter)
         secrets = []
-
         for secret in self.client.list_secrets(
             request={
                 "parent": self.parent_name,
