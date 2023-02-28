@@ -44,8 +44,6 @@ from zenml.models import (
     SecretRequestModel,
     SecretResponseModel,
     SecretUpdateModel,
-    UserResponseModel,
-    WorkspaceResponseModel,
 )
 from zenml.secrets_managers.base_secrets_manager import (
     ZENML_SECRET_NAME_LABEL,
@@ -140,26 +138,26 @@ class GCPSecretsStore(BaseSecretsStore):
         """
         return f"projects/{self.config.project_id}"
 
-    def _validate_user_and_workspace(
-        self, user_id: UUID, workspace_id: UUID
-    ) -> Tuple[UserResponseModel, WorkspaceResponseModel]:
-        """Validates that the given user and workspace IDs are valid.
+    # def _validate_user_and_workspace(
+    #     self, user_id: UUID, workspace_id: UUID
+    # ) -> Tuple[UserResponseModel, WorkspaceResponseModel]:
+    #     """Validates that the given user and workspace IDs are valid.
 
-        This method calls the ZenML store to validate the user and workspace
-        IDs. It raises a KeyError exception if either the user or workspace
-        does not exist.
+    #     This method calls the ZenML store to validate the user and workspace
+    #     IDs. It raises a KeyError exception if either the user or workspace
+    #     does not exist.
 
-        Args:
-            user_id: The ID of the user to validate.
-            workspace_id: The ID of the workspace to validate.
+    #     Args:
+    #         user_id: The ID of the user to validate.
+    #         workspace_id: The ID of the workspace to validate.
 
-        Returns:
-            The user and workspace.
-        """
-        user = self.zen_store.get_user(user_id)
-        workspace = self.zen_store.get_workspace(workspace_id)
+    #     Returns:
+    #         The user and workspace.
+    #     """
+    #     user = self.zen_store.get_user(user_id)
+    #     workspace = self.zen_store.get_workspace(workspace_id)
 
-        return user, workspace
+    #     return user, workspace
 
     def _get_secret_labels(
         self, secret: Union[SecretRequestModel, SecretResponseModel]
@@ -209,75 +207,75 @@ class GCPSecretsStore(BaseSecretsStore):
                 f"limited to maximum 63 characters."
             )
 
-    def _check_secret_scope(
-        self,
-        secret_name: str,
-        scope: SecretScope,
-        workspace: UUID,
-        user: UUID,
-        exclude_secret_id: Optional[UUID] = None,
-    ) -> Tuple[bool, str]:
-        """Checks if a secret with the given name already exists in the given scope.
+    # def _check_secret_scope(
+    #     self,
+    #     secret_name: str,
+    #     scope: SecretScope,
+    #     workspace: UUID,
+    #     user: UUID,
+    #     exclude_secret_id: Optional[UUID] = None,
+    # ) -> Tuple[bool, str]:
+    #     """Checks if a secret with the given name already exists in the given scope.
 
-        This method enforces the following scope rules:
+    #     This method enforces the following scope rules:
 
-          - only one workspace-scoped secret with the given name can exist
-            in the target workspace.
-          - only one user-scoped secret with the given name can exist in the
-            target workspace for the target user.
+    #       - only one workspace-scoped secret with the given name can exist
+    #         in the target workspace.
+    #       - only one user-scoped secret with the given name can exist in the
+    #         target workspace for the target user.
 
-        Args:
-            secret_name: The name of the secret.
-            scope: The scope of the secret.
-            workspace: The ID of the workspace to which the secret belongs.
-            user: The ID of the user to which the secret belongs.
-            exclude_secret_id: The ID of a secret to exclude from the check
-                (used e.g. during an update to exclude the existing secret).
+    #     Args:
+    #         secret_name: The name of the secret.
+    #         scope: The scope of the secret.
+    #         workspace: The ID of the workspace to which the secret belongs.
+    #         user: The ID of the user to which the secret belongs.
+    #         exclude_secret_id: The ID of a secret to exclude from the check
+    #             (used e.g. during an update to exclude the existing secret).
 
-        Returns:
-            True if a secret with the given name already exists in the given
-            scope, False otherwise, and an error message.
-        """
-        filter = SecretFilterModel(
-            name=secret_name,
-            scope=scope,
-            page=1,
-            size=2,  # We only need to know if there is more than one secret
-        )
+    #     Returns:
+    #         True if a secret with the given name already exists in the given
+    #         scope, False otherwise, and an error message.
+    #     """
+    #     filter = SecretFilterModel(
+    #         name=secret_name,
+    #         scope=scope,
+    #         page=1,
+    #         size=2,  # We only need to know if there is more than one secret
+    #     )
 
-        if scope in [SecretScope.WORKSPACE, SecretScope.USER]:
-            filter.workspace_id = workspace
-        if scope == SecretScope.USER:
-            filter.user_id = user
+    #     if scope in [SecretScope.WORKSPACE, SecretScope.USER]:
+    #         filter.workspace_id = workspace
+    #     if scope == SecretScope.USER:
+    #         filter.user_id = user
 
-        existing_secrets = self.list_secrets(secret_filter_model=filter).items
-        if exclude_secret_id is not None:
-            existing_secrets = [
-                s for s in existing_secrets if s.id != exclude_secret_id
-            ]
+    #     existing_secrets = self.list_secrets(secret_filter_model=filter).items
+    #     if exclude_secret_id is not None:
+    #         existing_secrets = [
+    #             s for s in existing_secrets if s.id != exclude_secret_id
+    #         ]
 
-        if existing_secrets:
+    #     if existing_secrets:
 
-            existing_secret_model = existing_secrets[0]
+    #         existing_secret_model = existing_secrets[0]
 
-            msg = (
-                f"Found an existing {scope.value} scoped secret with the "
-                f"same '{secret_name}' name"
-            )
-            if scope in [SecretScope.WORKSPACE, SecretScope.USER]:
-                msg += (
-                    f" in the same '{existing_secret_model.workspace.name}' "
-                    f"workspace"
-                )
-            if scope == SecretScope.USER:
-                assert existing_secret_model.user
-                msg += (
-                    f" for the same '{existing_secret_model.user.name}' user"
-                )
+    #         msg = (
+    #             f"Found an existing {scope.value} scoped secret with the "
+    #             f"same '{secret_name}' name"
+    #         )
+    #         if scope in [SecretScope.WORKSPACE, SecretScope.USER]:
+    #             msg += (
+    #                 f" in the same '{existing_secret_model.workspace.name}' "
+    #                 f"workspace"
+    #             )
+    #         if scope == SecretScope.USER:
+    #             assert existing_secret_model.user
+    #             msg += (
+    #                 f" for the same '{existing_secret_model.user.name}' user"
+    #             )
 
-            return True, msg
+    #         return True, msg
 
-        return False, ""
+    #     return False, ""
 
     def _get_gcp_secret_name(
         self,
@@ -357,6 +355,30 @@ class GCPSecretsStore(BaseSecretsStore):
             values=values or {},
             created=created,
             updated=updated,
+        )
+
+    def _get_gcp_filter_string(
+        self, secret_filter_model: SecretFilterModel
+    ) -> str:
+        """Convert a SecretFilterModel to a GCP filter string.
+
+        Args:
+            secret_filter_model: The secret filter model.
+
+        Returns:
+            The GCP filter string.
+        """
+        operator_map = {
+            "equals": ":",
+        }
+        filter_terms = []
+        for filter in secret_filter_model.list_of_filters:
+            filter_terms.append(
+                f"{filter.column}{operator_map[filter.operation.value]}{filter.value}"
+            )
+
+        return f" {secret_filter_model.logical_operator.name} ".join(
+            filter_terms
         )
 
     @track(AnalyticsEvent.CREATED_SECRET)
@@ -535,17 +557,32 @@ class GCPSecretsStore(BaseSecretsStore):
             A list of all secrets matching the filter criteria, with pagination
                 information and sorted according to the filter criteria.
         """
-        breakpoint()
+        # convert the secret_filter_model to a GCP filter string
+        gcp_filters = self._get_gcp_filter_string(
+            secret_filter_model=secret_filter_model
+        )
+
+        # get all the secrets and their labels (for their names) from GCP
+        # (use the filter string to limit what doesn't match the filter)
+
+        # sort the results
+
+        # paginate the results
+
         set_of_secrets = set()
 
         # List all secrets.
         for secret in self.client.list_secrets(
-            request={"parent": self.parent_name, "filter": "name:"}
+            request={
+                "parent": self.parent_name,
+                "filter": gcp_filters,
+            }
         ):
             name = secret.labels[ZENML_SECRET_NAME_LABEL]
             set_of_secrets.add(name)
 
         secrets = list(set_of_secrets)
+        breakpoint()
         return secrets
 
     @track(AnalyticsEvent.UPDATED_SECRET)
