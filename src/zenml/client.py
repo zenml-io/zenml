@@ -135,6 +135,7 @@ from zenml.utils.analytics_utils import AnalyticsEvent, event_handler, track
 from zenml.utils.filesync_model import FileSyncModel
 
 if TYPE_CHECKING:
+    from zenml.code_repositories import BaseCodeRepository
     from zenml.metadata.metadata_types import MetadataType
     from zenml.stack import Stack, StackComponentConfig
     from zenml.zen_stores.base_zen_store import BaseZenStore
@@ -534,11 +535,19 @@ class Client(metaclass=ClientMetaClass):
 
     def find_active_code_repository(
         self, path: Optional[str] = None
-    ) -> Optional[str]:
+    ) -> Optional["BaseCodeRepository"]:
+        from zenml.code_repositories import BaseCodeRepository
+
         path = path or os.getcwd()
         path = os.path.abspath(path)
 
-        self.list_code_repositories()
+        for model in self.depaginate(list_method=self.list_code_repositories):
+            repo = BaseCodeRepository.from_model(model)
+
+            if repo.exists_at_path(path):
+                return repo
+
+        return None
 
     @property
     def zen_store(self) -> "BaseZenStore":
