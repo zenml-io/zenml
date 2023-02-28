@@ -11,10 +11,17 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""AWS Secrets Store back-end."""
+"""Zen Store enums."""
 
-from zenml.integrations.aws.secrets_stores.aws_secrets_store import (
-    AWSSecretsStore,
-)
+from zenml.utils.enum_utils import StrEnum
 
-__all__ = ["AWSSecretsStore"]
+
+class StoreEvent(StrEnum):
+    """Events that can be triggered by the store."""
+
+    # Triggered just before deleting a workspace. The workspace ID is passed as
+    # a `workspace_id` UUID argument.
+    WORKSPACE_DELETED = "workspace_deleted"
+    # Triggered just before deleting a user. The user ID is passed as
+    # a `user_id` UUID argument.
+    USER_DELETED = "user_deleted"

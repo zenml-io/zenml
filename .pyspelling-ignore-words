@@ -1475,6 +1475,7 @@ scikit
 scipy
 sdk
 secretmanager
+secretsStore
 seldon
 seldonio
 selectable

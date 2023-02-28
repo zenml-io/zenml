@@ -355,7 +355,7 @@ class SecretContext:
         delete: bool = True,
     ):
         self.secret_name = (
-            sample_name("axls_secrets") if not secret_name else secret_name
+            sample_name("axls-secrets") if not secret_name else secret_name
         )
         self.scope = scope
         self.values = values

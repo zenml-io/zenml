@@ -66,10 +66,30 @@ spec:
               value: {{ .Values.zenml.secretsStore.aws.region_name | quote }}
             - name: ZENML_SECRETS_STORE_SECRET_LIST_REFRESH_TIMEOUT
               value: {{ .Values.zenml.secretsStore.aws.secret_list_refresh_timeout | quote }}
+            {{- else if eq .Values.zenml.secretsStore.type "azure" }}
+            - name: ZENML_SECRETS_STORE_KEY_VAULT_NAME
+              value: {{ .Values.zenml.secretsStore.azure.key_vault_name | quote }}
+            {{- else if eq .Values.zenml.secretsStore.type "hashicorp" }}
+            - name: ZENML_SECRETS_STORE_VAULT_ADDR
+              value: {{ .Values.zenml.secretsStore.hashicorp.vault_addr | quote }}
+            {{- if .Values.zenml.secretsStore.hashicorp.vault_namespace }}
+            - name: ZENML_SECRETS_STORE_VAULT_NAMESPACE
+              value: {{ .Values.zenml.secretsStore.hashicorp.vault_namespace | quote }}
+            {{- end }}
+            {{- if .Values.zenml.secretsStore.hashicorp.max_versions }}
+            - name: ZENML_SECRETS_STORE_MAX_VERSIONS
+              value: {{ .Values.zenml.secretsStore.hashicorp.max_versions | quote }}
+            {{- end }}
             {{- end }}
             {{- else }}
             - name: ZENML_SECRETS_STORE_TYPE
               value: none
+            {{- end }}
+            {{- if .Values.zenml.environment }}
+            {{- range $key, $value := .Values.zenml.environment }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
             {{- end }}
           envFrom:
           - secretRef:
@@ -114,6 +134,20 @@ spec:
               value: {{ .Values.zenml.secretsStore.aws.region_name | quote }}
             - name: ZENML_SECRETS_STORE_SECRET_LIST_REFRESH_TIMEOUT
               value: {{ .Values.zenml.secretsStore.aws.secret_list_refresh_timeout | quote }}
+            {{- else if eq .Values.zenml.secretsStore.type "azure" }}
+            - name: ZENML_SECRETS_STORE_KEY_VAULT_NAME
+              value: {{ .Values.zenml.secretsStore.azure.key_vault_name | quote }}
+            {{- else if eq .Values.zenml.secretsStore.type "hashicorp" }}
+            - name: ZENML_SECRETS_STORE_VAULT_ADDR
+              value: {{ .Values.zenml.secretsStore.hashicorp.vault_addr | quote }}
+            {{- if .Values.zenml.secretsStore.hashicorp.vault_namespace }}
+            - name: ZENML_SECRETS_STORE_VAULT_NAMESPACE
+              value: {{ .Values.zenml.secretsStore.hashicorp.vault_namespace | quote }}
+            {{- end }}
+            {{- if .Values.zenml.secretsStore.hashicorp.max_versions }}
+            - name: ZENML_SECRETS_STORE_MAX_VERSIONS
+              value: {{ .Values.zenml.secretsStore.hashicorp.max_versions | quote }}
+            {{- end }}
             {{- end }}
             {{- else }}
             - name: ZENML_SECRETS_STORE_TYPE

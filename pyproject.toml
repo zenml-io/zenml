@@ -85,9 +85,22 @@ jinja2-time = { version = "^0.2.0", optional = true }
 black = { version = "^22.3.0", optional = true }
 ruff = { version = "^0.0.247", optional = true }
 
+# Optional dependencies for the AWS secrets store
+boto3 = { version=">=1.16.0", optional = true }
+
+# Optional dependencies for the Azure Key Vault secrets store
+azure-identity = { version=">=1.4.0", optional = true }
+azure-keyvault-secrets = { version=">=4.0.0", optional = true }
+
+# Optional dependencies for the HashiCorp Vault secrets store
+hvac = { version=">=0.11.2", optional = true }
+
 [tool.poetry.extras]
 server = ["fastapi", "uvicorn", "python-multipart", "python-jose", "fastapi-utils"]
 templates = ["copier", "jinja2-time", "black", "ruff"]
+secrets-aws = ["boto3"]
+secrets-azure = ["azure-identity", "azure-keyvault-secrets"]
+secrets-hashicorp = ["hashicorp"]
 
 [tool.poetry.dev-dependencies]
 black = "^22.3.0"

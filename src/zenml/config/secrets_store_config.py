@@ -33,9 +33,6 @@ class SecretsStoreConfiguration(BaseModel):
 
     Attributes:
         type: The type of store backend.
-        integration: The name of the integration that provides the store
-            backend. This is optional and only required if the store backend
-            is provided by an integration.
         class_path: The Python class path of the store backend. Should point to
             a subclass of `BaseSecretsStore`. This is optional and only
             required if the store backend is not one of the built-in
@@ -43,7 +40,6 @@ class SecretsStoreConfiguration(BaseModel):
     """
 
     type: SecretsStoreType
-    integration: Optional[str] = None
     class_path: Optional[str] = None
 
     @root_validator
@@ -68,16 +64,17 @@ class SecretsStoreConfiguration(BaseModel):
                     "A class_path must be set when using a custom secrets "
                     "store implementation."
                 )
-        elif values["type"] in [
-            SecretsStoreType.SQL,
-            SecretsStoreType.REST,
-        ] and (
-            values["integration"] is not None
-            or values["class_path"] is not None
+        elif (
+            values["type"]
+            in [
+                SecretsStoreType.SQL,
+                SecretsStoreType.REST,
+            ]
+            and values["class_path"] is not None
         ):
             raise ValueError(
-                f"The integration and class_path attributes are not "
-                f"supported for the {values['type']} secrets store type."
+                f"The class_path attribute is not supported for the "
+                f"{values['type']} secrets store type."
             )
 
         return values

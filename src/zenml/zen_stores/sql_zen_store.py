@@ -150,8 +150,8 @@ from zenml.zen_stores.base_zen_store import (
     DEFAULT_STACK_COMPONENT_NAME,
     DEFAULT_STACK_NAME,
     BaseZenStore,
-    StoreEvent,
 )
+from zenml.zen_stores.enums import StoreEvent
 from zenml.zen_stores.migrations.alembic import (
     ZENML_ALEMBIC_START_REVISION,
     Alembic,

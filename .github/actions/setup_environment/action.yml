@@ -65,4 +65,4 @@ runs:
     - name: Install Project
       shell: bash
       if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-      run: poetry install --extras server
+      run: poetry install --extras server --extras secrets-aws --extras secrets-azure --extras secrets-hashicorp

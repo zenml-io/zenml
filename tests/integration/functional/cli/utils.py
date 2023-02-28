@@ -48,7 +48,7 @@ user_delete_command = cli.commands["user"].commands["delete"]
 
 def sample_name(prefix: str = "aria") -> str:
     """Function to get random username."""
-    return f"{prefix}_{random_str(4)}"
+    return f"{prefix}-{random_str(4)}"
 
 
 def create_sample_user(
@@ -158,7 +158,7 @@ def cleanup_secrets(
     Yields:
         A name prefix to be used for secret names.
     """
-    name_prefix = sample_name(name_prefix or "axl_secret_service")
+    name_prefix = sample_name(name_prefix or "axl-secret-service")
     yield name_prefix
 
     # Clean up

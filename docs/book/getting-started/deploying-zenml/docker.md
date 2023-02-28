@@ -99,6 +99,11 @@ The following environment variables can be passed to the container:
     - `gcp`: Use GCP Secrets Manager as the secrets store backend. See the
     [GCP Secrets Store Configuration Options](#gcp-secrets-store-configuration-options)
     section below for more configuration options.
+    - `azure`: Use Azure Key Vault as the secrets store backend. See the
+    [Azure Secrets Store Configuration Options](#azure-secrets-store-configuration-options)
+    section below for more configuration options.
+    - `hashicorp`: Use HashiCorp Vault as the secrets store backend. See the
+    [HashiCorp Vault Secrets Store Configuration Options](#hashicorp-vault-secrets-store-configuration-options)
 
 - **ZENML_LOGGING_VERBOSITY**:
     Use this variable to control the verbosity of logs inside the container.
@@ -156,20 +161,27 @@ Manager as the secrets store backend.
     AWS access key ID that has access to the AWS Secrets Manager service that
     you want to use. If you are using an IAM role attached to an EKS cluster to
     authenticate, you can omit this variable.
+    NOTE: this is the same as setting the `AWS_ACCESS_KEY_ID` environment
+    variable.
 
 - **ZENML_SECRETS_STORE_AWS_SECRET_ACCESS_KEY**:
     The AWS secret access key to use for authentication. This must be set to a
     valid AWS secret access key that has access to the AWS Secrets Manager
     service that you want to use. If you are using an IAM role attached to an
     EKS cluster to authenticate, you can omit this variable.
+    NOTE: this is the same as setting the `AWS_SECRET_ACCESS_KEY` environment
+    variable.
 
 - **ZENML_SECRETS_STORE_AWS_SESSION_TOKEN**:
     Optional AWS session token to use for authentication.
+    NOTE: this is the same as setting the `AWS_SESSION_TOKEN` environment
+    variable.
 
 - **ZENML_SECRETS_STORE_SECRET_LIST_REFRESH_TIMEOUT**:
-    The AWS Secrets Manager has a known issue where it does not immediately
+    AWS' [Secrets Manager](https://aws.amazon.com/secrets-manager) has a known
+    issue where it does not immediately
     reflect new and updated secrets in the `list_secrets` results. To work
-    around this issue, you can set this value to a non-zero value to
+    around this issue, you can set this refresh timeout value to a non-zero value to
     get the ZenML server to wait after creating or updating an AWS secret
     until the changes are reflected in the secrets returned by
     `list_secrets` or the number of seconds specified by this value has
@@ -180,6 +192,65 @@ Manager as the secrets store backend.
 
 These configuration options are only relevant if you're using the GCP Secrets
 Manager as the secrets store backend.
+
+
+### Azure Secrets Store Configuration Options
+
+These configuration options are only relevant if you're using Azure Key Vault as
+the secrets store backend.
+
+- **ZENML_SECRETS_STORE_KEY_VAULT_NAME**:
+    The name of the Azure Key Vault. This must be set to point to the Azure
+    Key Vault instance that you want to use.
+
+- **ZENML_SECRETS_STORE_AZURE_CLIENT_ID**:
+    The Azure application service principal client ID to use to
+    authenticate with the Azure Key Vault API. If you are running the ZenML
+    server hosted in Azure and are using a managed identity to access the Azure
+    Key Vault service, you can omit this variable.
+    NOTE: this is the same as setting the `AZURE_CLIENT_ID` environment
+    variable.
+
+- **ZENML_SECRETS_STORE_AZURE_CLIENT_SECRET**:
+    The Azure application service principal client secret to use to
+    authenticate with the Azure Key Vault API. If you are running the ZenML
+    server hosted in Azure and are using a managed identity to access the Azure
+    Key Vault service, you can omit this variable.
+    NOTE: this is the same as setting the `AZURE_CLIENT_SECRET` environment
+    variable.
+
+- **ZENML_SECRETS_STORE_AZURE_TENANT_ID**:
+    The Azure application service principal tenant ID to use to
+    authenticate with the Azure Key Vault API. If you are running the ZenML
+    server hosted in Azure and are using a managed identity to access the Azure
+    Key Vault service, you can omit this variable.
+    NOTE: this is the same as setting the `AZURE_TENANT_ID` environment
+    variable.
+
+### Hashicorp Vault Secrets Store Configuration Options
+
+These configuration options are only relevant if you're using Hashicorp Vault as
+the secrets store backend.
+
+- **ZENML_SECRETS_STORE_VAULT_ADDR**:
+    The url of the HashiCorp Vault server to connect to.
+    NOTE: this is the same as setting the `VAULT_ADDR` environment
+    variable.
+
+- **ZENML_SECRETS_STORE_VAULT_TOKEN**:
+    The token to use to authenticate with the HashiCorp Vault server.
+    NOTE: this is the same as setting the `VAULT_TOKEN` environment
+    variable.
+
+- **ZENML_SECRETS_STORE_VAULT_NAMESPACE**:
+    The Vault Enterprise namespace. Not required for Vault OSS.
+    NOTE: this is the same as setting the `VAULT_NAMESPACE` environment
+    variable.
+
+- **ZENML_SECRETS_STORE_MAX_VERSIONS**:
+    The maximum number of secret versions to keep for each Vault secret. If not
+    set, the default value of 1 will be used (only the latest version will be
+    kept).
 
 ### Advanced Server Configuration Options
 
