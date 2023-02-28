@@ -38,6 +38,11 @@ which you will need later when defining the slack alerter stack component.
 Also, under `Scopes` in the `OAuth & Permissions` tab, give your
 bot `chat:write` and `chat:write.public` permissions.
 
+**IMPORTANT**: Please make sure that the token is the `Bot User OAuth Token` not the 
+`User OAuth Token`. See reference image attached:
+
+![Slack Token Image](assets/slack_token.jpg)
+
 Now you can get started with this example. 
 Run the following code to install and initialize ZenML and create the stack.
 Make sure to replace `<SLACK_TOKEN>` and `<SLACK_CHANNEL_ID>` first.
