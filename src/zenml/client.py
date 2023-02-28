@@ -36,6 +36,7 @@ from uuid import UUID
 from pydantic import SecretStr
 
 from zenml.config.global_config import GlobalConfiguration
+from zenml.config.source import Source
 from zenml.constants import (
     ENV_ZENML_ACTIVE_STACK_ID,
     ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
@@ -3814,7 +3815,9 @@ class Client(metaclass=ClientMetaClass):
     # - PIPELINES -
     # -------------
 
-    def create_code_repository(self, name: str) -> CodeRepositoryResponseModel:
+    def create_code_repository(
+        self, name: str, config: Dict[str, Any], source: Source
+    ) -> CodeRepositoryResponseModel:
         """Create a new code repository.
 
         Args:
@@ -3827,6 +3830,8 @@ class Client(metaclass=ClientMetaClass):
             user=self.active_user.id,
             workspace=self.active_workspace.id,
             name=name,
+            config=config,
+            source=source,
         )
         return self.zen_store.create_code_repository(code_repository=repo)
 

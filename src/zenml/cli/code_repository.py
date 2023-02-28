@@ -12,7 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """CLI functionality to interact with code repositories."""
+import os
 from typing import Any
+from uuid import uuid4
 
 import click
 
@@ -20,6 +22,7 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import list_options
 from zenml.client import Client
+from zenml.config.source import CodeRepositorySource
 from zenml.console import console
 from zenml.enums import CliCategories
 from zenml.exceptions import EntityExistsError
@@ -38,16 +41,80 @@ def code_repository() -> None:
     "connect",
     help="Connect a code repository.",
 )
+@click.option(
+    "--owner",
+    "-o",
+    type=str,
+    required=True,
+    help="Owner of the code repository.",
+)
+@click.option(
+    "--repo",
+    "-r",
+    type=str,
+    required=True,
+    help="Name of the code repository.",
+)
+@click.option(
+    "--token",
+    "-t",
+    type=str,
+    required=True,
+    help="Personal access token for the code repository.",
+)
+@click.option(
+    "--source",
+    "-s",
+    type=click.Choice(["github", "gitlab", "custom"]),
+    required=True,
+    help="Source of the code repository.",
+)
+@click.option(
+    "--source-module-path",
+    "-m",
+    type=str,
+    required=False,
+    help="Path to the custom source module.",
+)
 @click.argument("name")
-def connect_code_repository(name: str) -> None:
+def connect_code_repository(
+    name: str,
+    owner: str,
+    repo: str,
+    token: str,
+    source: str,
+    source_module_path: str,
+) -> None:
     """Connect a code repository
 
     Args:
         name: Name of the code repository
     """
     cli_utils.print_active_config()
+    if source == "custom":
+        if not source_module_path:
+            cli_utils.error(
+                "Please provide a path to the custom source module."
+            )
+        if not os.path.exists(source_module_path):
+            cli_utils.error(
+                "Please provide a valid path to the custom source module."
+            )
     try:
-        Client().create_code_repository(name=name)
+        config = {
+            "owner": owner,
+            "repo": repo,
+            "token": token,
+        }
+        source = CodeRepositorySource(
+            repository_id=uuid4(),
+            commit="2d4c86f",
+            module="zenml.code_repositories.base_code_repository",
+            variable="GitHubCodeRepository",
+        )
+        Client().create_code_repository(
+            name=name, config=config, source=source
+        )
     except EntityExistsError as e:
         cli_utils.error(str(e))
     else:

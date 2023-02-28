@@ -102,7 +102,7 @@ class CodeRepositorySchema(NamedSchema, table=True):
             created=self.created,
             updated=self.updated,
             config=json.loads(self.config),
-            source=self.source,
+            source=json.loads(self.source),
         )
 
     def update(

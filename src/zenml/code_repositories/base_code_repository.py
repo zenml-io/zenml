@@ -16,7 +16,9 @@ from abc import ABC, abstractmethod
 from typing import Any, Optional, Type, TypeVar, cast
 
 from git.repo.base import Remote, Repo
+from github import Github
 
+from zenml.exceptions import CodeRepoDownloadError
 from zenml.logger import get_logger
 from zenml.models.code_repository_models import CodeRepositoryResponseModel
 from zenml.utils import source_utils_v2
@@ -137,6 +139,36 @@ class GitHubCodeRepository(BaseCodeRepository):
         self._owner = owner
         self._repository = repository
         self._token = token
+
+    def login(
+        self,
+    ) -> None:
+        try:
+            user = self.g.get_user().login
+            logger.info(f"Logged in as {user}")
+        except Exception as e:
+            raise RuntimeError(
+                f'f"An error occurred while logging in: {str(e)}'
+            )
+        self.g = Github(self._token)
+        self.repo = self.g.get_repo(f"{self._owner}/{self._repository}")
+
+    def download_files(self, commit: str, directory: str) -> None:
+        try:
+            contents = self.repo.get_contents("", ref=commit)
+            for content_file in contents:
+                if content_file.type == "file":
+                    file_contents = content_file.decoded_content
+                    file_path = f"{directory}/{content_file.path}"
+                    with open(file_path, "wb") as f:
+                        f.write(file_contents)
+            logger.info(
+                f"Successfully downloaded files for commit {commit} to directory {directory}"
+            )
+        except Exception as e:
+            raise CodeRepoDownloadError(
+                f'f"An error occurred while downloading files: {str(e)}'
+            )
 
     def get_local_repo(path: str) -> LocalRepository:
         # TODO: correctly initialize the local git repo, catch potential errors
