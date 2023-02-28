@@ -257,6 +257,9 @@ class HashiCorpVaultSecretsStore(BaseSecretsStore):
 
         Returns:
             The ZenML secret.
+
+        Raises:
+            KeyError: if the HashiCorp Vault secret cannot be converted.
         """
         try:
             metadata = vault_secret[ZENML_VAULT_SECRET_METADATA_KEY]
@@ -267,7 +270,7 @@ class HashiCorpVaultSecretsStore(BaseSecretsStore):
             updated = datetime.fromisoformat(
                 vault_secret[ZENML_VAULT_SECRET_UPDATED_KEY],
             )
-        except KeyError as e:
+        except (KeyError, ValueError) as e:
             raise KeyError(
                 f"Secret could not be retrieved: missing required metadata: {e}"
             )
@@ -543,6 +546,7 @@ class HashiCorpVaultSecretsStore(BaseSecretsStore):
             The updated secret.
 
         Raises:
+            KeyError: If the secret does not exist.
             EntityExistsError: If the update includes a change of name or
                 scope and a secret with the same name already exists in the
                 same scope.

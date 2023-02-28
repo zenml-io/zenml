@@ -60,6 +60,8 @@ logger = get_logger(__name__)
 
 
 AZURE_ZENML_SECRET_NAME_PREFIX = "zenml"
+ZENML_AZURE_SECRET_CREATED_KEY = "zenml_secret_created"
+ZENML_AZURE_SECRET_UPDATED_KEY = "zenml_secret_updated"
 
 
 class AzureSecretsStoreConfiguration(SecretsStoreConfiguration):
@@ -126,8 +128,10 @@ class AzureSecretsStore(BaseSecretsStore):
     secret creates a new version. The created_on and updated_on timestamps
     returned by the Secrets Store API are the timestamps of the latest version
     of the secret. This means that we need to fetch the first version of the
-    secret to get the created_on timestamp. This is not ideal, but it is the
-    best we can do with the current Azure Key Vault API.
+    secret to get the created_on timestamp. This is not ideal, as we'd need to
+    fetch all versions for every secret to get the created_on timestamp during
+    a list operation. So instead we manage the `created` and `updated`
+    timestamps ourselves and save them as tags in the Azure Key Vault secret.
 
     Attributes:
         config: The configuration of the Azure secrets store.
@@ -269,8 +273,6 @@ class AzureSecretsStore(BaseSecretsStore):
     def _convert_azure_secret(
         self,
         tags: Dict[str, str],
-        created: datetime,
-        updated: datetime,
         values: Optional[str] = None,
     ) -> SecretResponseModel:
         """Create a ZenML secret model from data stored in an Azure secret.
@@ -287,6 +289,18 @@ class AzureSecretsStore(BaseSecretsStore):
         Returns:
             The ZenML secret.
         """
+        try:
+            created = datetime.fromisoformat(
+                tags[ZENML_AZURE_SECRET_CREATED_KEY],
+            )
+            updated = datetime.fromisoformat(
+                tags[ZENML_AZURE_SECRET_UPDATED_KEY],
+            )
+        except KeyError as e:
+            raise KeyError(
+                f"Secret could not be retrieved: missing required metadata: {e}"
+            )
+
         return self._create_secret_from_metadata(
             metadata=tags,
             created=created,
@@ -344,8 +358,14 @@ class AzureSecretsStore(BaseSecretsStore):
             secret, secret_id=secret_id
         )
 
+        # We manage the created and updated times ourselves, so we need to
+        # rely on the Azure Key Vault API to set them.
+        created = datetime.utcnow()
+        metadata[ZENML_AZURE_SECRET_CREATED_KEY] = created.isoformat()
+        metadata[ZENML_AZURE_SECRET_UPDATED_KEY] = created.isoformat()
+
         try:
-            azure_secret = self.client.set_secret(
+            self.client.set_secret(
                 azure_secret_id,
                 secret_value,
                 tags=metadata,
@@ -363,8 +383,8 @@ class AzureSecretsStore(BaseSecretsStore):
             workspace=workspace,
             user=user,
             values=secret.secret_values,
-            created=azure_secret.properties.created_on,
-            updated=azure_secret.properties.updated_on,
+            created=created,
+            updated=created,
         )
 
         return secret_model
@@ -389,17 +409,6 @@ class AzureSecretsStore(BaseSecretsStore):
             azure_secret = self.client.get_secret(
                 azure_secret_id,
             )
-            # Each secret version has its own creation date, so we need to
-            # fetch the first version of the secret to get the correct
-            # creation date.
-            created_on = min(
-                s.created_on or datetime.utcnow()
-                for s in list(
-                    self.client.list_properties_of_secret_versions(
-                        azure_secret_id, max_page_size=1
-                    )
-                )
-            )
         except ResourceNotFoundError:
             raise KeyError(f"Secret with ID {secret_id} not found")
         except HttpResponseError as e:
@@ -412,12 +421,8 @@ class AzureSecretsStore(BaseSecretsStore):
         # simply pass the exception up the stack, as if the secret was not found
         # in the first place, knowing that it will be cascade-deleted soon.
         assert azure_secret.properties.tags is not None
-        assert azure_secret.properties.created_on is not None
-        assert azure_secret.properties.updated_on is not None
         return self._convert_azure_secret(
             tags=azure_secret.properties.tags,
-            created=created_on,
-            updated=azure_secret.properties.updated_on,
             values=azure_secret.value,
         )
 
@@ -459,29 +464,14 @@ class AzureSecretsStore(BaseSecretsStore):
         try:
             all_secrets = self.client.list_properties_of_secrets()
             for secret_property in all_secrets:
-                # Each secret version has its own creation date, so we need to
-                # fetch the first version of the secret to get the correct
-                # creation date.
-                assert secret_property.name is not None
-                created_on = min(
-                    s.created_on or datetime.utcnow()
-                    for s in list(
-                        self.client.list_properties_of_secret_versions(
-                            secret_property.name, max_page_size=1
-                        )
-                    )
-                )
                 try:
                     # NOTE: we do not include the secret values in the
                     # response. We would need a separate API call to fetch
                     # them for each secret, which would be very inefficient
                     # anyway.
                     assert secret_property.tags is not None
-                    assert secret_property.updated_on is not None
                     secret_model = self._convert_azure_secret(
                         tags=secret_property.tags,
-                        created=created_on,
-                        updated=secret_property.updated_on,
                     )
                 except KeyError:
                     # The _convert_azure_secret method raises a KeyError
@@ -601,23 +591,18 @@ class AzureSecretsStore(BaseSecretsStore):
         # Convert the ZenML secret metadata to Azure tags
         metadata = self._get_secret_metadata_for_secret(secret)
 
+        # We manage the created and updated times ourselves, so we need to
+        # rely on the Azure Key Vault API to set them.
+        updated = datetime.utcnow()
+        metadata[ZENML_AZURE_SECRET_CREATED_KEY] = secret.created.isoformat()
+        metadata[ZENML_AZURE_SECRET_UPDATED_KEY] = updated.isoformat()
+
         try:
-            azure_secret = self.client.set_secret(
+            self.client.set_secret(
                 azure_secret_id,
                 secret_value,
                 tags=metadata,
                 content_type="application/json",
-            )
-            # Each secret version has its own creation date, so we need to
-            # fetch the first version of the secret to get the correct
-            # creation date.
-            created_on = min(
-                s.created_on or datetime.utcnow()
-                for s in list(
-                    self.client.list_properties_of_secret_versions(
-                        azure_secret_id, max_page_size=1
-                    )
-                )
             )
         except HttpResponseError as e:
             raise RuntimeError(f"Error updating secret {secret_id}: {e}")
@@ -631,8 +616,8 @@ class AzureSecretsStore(BaseSecretsStore):
             workspace=secret.workspace,
             user=secret.user,
             values=secret.secret_values,
-            created=created_on,
-            updated=azure_secret.properties.updated_on,
+            created=secret.created,
+            updated=updated,
         )
 
         return secret_model
