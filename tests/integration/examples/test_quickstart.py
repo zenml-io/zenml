@@ -15,6 +15,7 @@
 import pytest
 
 from tests.integration.examples.utils import run_example
+from zenml.post_execution.pipeline import get_pipeline
 
 
 def test_example(request: pytest.FixtureRequest) -> None:
@@ -27,4 +28,12 @@ def test_example(request: pytest.FixtureRequest) -> None:
         run_count=1,
         step_count=5,
     ):
-        pass
+        from zenml.integrations.mlflow.services import MLFlowDeploymentService
+
+        training_run = get_pipeline("training_pipeline").runs[-1]
+
+        service = training_run.get_step("model_deployer").output.read()
+        assert isinstance(service, MLFlowDeploymentService)
+
+        if service.is_running:
+            service.stop(timeout=60)
