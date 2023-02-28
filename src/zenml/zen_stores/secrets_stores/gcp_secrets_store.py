@@ -448,8 +448,6 @@ class GCPSecretsStore(BaseSecretsStore):
             self._get_gcp_secret_name(secret_id=secret_id),
         )
 
-        # TODO: first check if the secret exists with the list method...
-
         try:
             self.client.delete_secret(request={"name": gcp_secret_name})
         except Exception as e:
