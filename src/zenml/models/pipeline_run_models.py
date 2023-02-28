@@ -129,9 +129,7 @@ class PipelineRunBaseModel(BaseModel):
             "(OS, Python version, etc.)."
         ),
     )
-    git_sha: Optional[str] = Field(
-        default_factory=get_git_sha, max_length=STR_FIELD_MAX_LENGTH
-    )
+    git_sha: Optional[str] = None
 
 
 # -------- #

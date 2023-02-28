@@ -14,10 +14,10 @@
 import re
 from abc import ABC, abstractmethod
 from typing import Any, Optional, Type, TypeVar, cast
-
-from github import Github
 from uuid import UUID
+
 from git.repo.base import Remote, Repo
+from github import Github
 
 from zenml.exceptions import CodeRepoDownloadError
 from zenml.logger import get_logger
@@ -180,12 +180,25 @@ class GitHubCodeRepository(BaseCodeRepository):
                 f'f"An error occurred while downloading files: {str(e)}'
             )
 
-    def get_local_repo(path: str) -> LocalRepository:
+    def get_local_repo(self, path: str) -> LocalRepository:
         # TODO: correctly initialize the local git repo, catch potential errors
         try:
-            return LocalGitRepository(path=path)
-        except ...:
+            local_git_repo = LocalGitRepository(path=path)
+        except Exception as e:
+            logger.info(f"Could not initialize local git repository: {str(e)}")
             return None
+        # Check if remote url matches
+        if not self.check_remote_url(local_git_repo.remote.url):
+            logger.info(
+                f"Local git repository has a different remote url than the connected code repository"
+            )
+            return None
+        # if local_git_repo.is_dirty or local_git_repo.has_local_changes:
+        #    logger.info(
+        #        f"Local git repository has uncommitted or unpushed changes"
+        #    )
+        #    return None
+        return local_git_repo
 
     def check_remote_url(self, url: str) -> bool:
         https_url = f"https://github.com/{self._owner}/{self._repository}.git"

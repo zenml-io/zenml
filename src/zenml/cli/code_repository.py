@@ -14,7 +14,6 @@
 """CLI functionality to interact with code repositories."""
 import os
 from typing import Any
-from uuid import uuid4
 
 import click
 
@@ -22,7 +21,7 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import list_options
 from zenml.client import Client
-from zenml.config.source import CodeRepositorySource
+from zenml.config.source import Source, SourceType
 from zenml.console import console
 from zenml.enums import CliCategories
 from zenml.exceptions import EntityExistsError
@@ -49,7 +48,7 @@ def code_repository() -> None:
     help="Owner of the code repository.",
 )
 @click.option(
-    "--repo",
+    "--repository",
     "-r",
     type=str,
     required=True,
@@ -80,7 +79,7 @@ def code_repository() -> None:
 def connect_code_repository(
     name: str,
     owner: str,
-    repo: str,
+    repository: str,
     token: str,
     source: str,
     source_module_path: str,
@@ -103,14 +102,13 @@ def connect_code_repository(
     try:
         config = {
             "owner": owner,
-            "repo": repo,
+            "repository": repository,
             "token": token,
         }
-        source = CodeRepositorySource(
-            repository_id=uuid4(),
-            commit="2d4c86f",
+        source = Source(
             module="zenml.code_repositories.base_code_repository",
             variable="GitHubCodeRepository",
+            type=SourceType.UNKNOWN,
         )
         Client().create_code_repository(
             name=name, config=config, source=source
