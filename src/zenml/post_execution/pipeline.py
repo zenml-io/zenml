@@ -69,7 +69,9 @@ def get_pipeline(
     `None` will be returned.
 
     Args:
-        pipeline: Class or class instance of the pipeline
+        pipeline: Name, class or instance of the pipeline.
+        version: Optional version of the pipeline. If not given, the latest
+            version will be returned.
         **kwargs: The deprecated `pipeline_name` is caught as a kwarg to
             specify the pipeline instead of using the `pipeline` argument.
 
