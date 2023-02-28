@@ -408,7 +408,7 @@ class StepRunner:
                 type=materializer_class.ASSOCIATED_ARTIFACT_TYPE,
                 uri=uri,
                 materializer=materializer_source,
-                data_type=source_utils_v2.resolve_class(type(return_value)),
+                data_type=source_utils_v2.resolve(type(return_value)),
                 user=active_user_id,
                 workspace=active_workspace_id,
                 artifact_store_id=artifact_store_id,

@@ -348,7 +348,7 @@ class Compiler:
             The step spec.
         """
         return StepSpec(
-            source=source_utils_v2.resolve_class(step.__class__),
+            source=source_utils_v2.resolve(step.__class__),
             upstream_steps=sorted(step.upstream_steps),
             inputs=step.inputs,
             pipeline_parameter_name=pipeline_parameter_name,

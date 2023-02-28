@@ -19,7 +19,7 @@ import site
 import sys
 from distutils.sysconfig import get_python_lib
 from pathlib import Path
-from types import ModuleType
+from types import FunctionType, ModuleType
 from typing import Any, Dict, Optional, Type, Union
 
 from zenml.client import Client
@@ -39,7 +39,7 @@ logger = get_logger(__name__)
 _SOURCE_MAPPING: Dict[int, Source] = {}
 
 
-def load_source(source: Union[Source, str]) -> Any:
+def load(source: Union[Source, str]) -> Any:
     if isinstance(source, str):
         source = Source.from_import_path(source)
 
@@ -61,24 +61,27 @@ def load_source(source: Union[Source, str]) -> Any:
     python_path_prefix = [import_root] if import_root else []
     with source_utils.prepend_python_path(python_path_prefix):
         module = importlib.import_module(source.module)
-        object_ = getattr(module, source.variable)
 
-    _SOURCE_MAPPING[id(object_)] = source
-    return object_
+    if source.variable:
+        obj = getattr(module, source.variable)
+    else:
+        obj = module
+
+    _SOURCE_MAPPING[id(obj)] = source
+    return obj
 
 
-def resolve_class(class_: Type[Any]) -> Source:
-    if id(class_) in _SOURCE_MAPPING:
-        return _SOURCE_MAPPING[id(class_)]
+def resolve(obj: Union[Type[Any], FunctionType, ModuleType]) -> Source:
+    if id(obj) in _SOURCE_MAPPING:
+        return _SOURCE_MAPPING[id(obj)]
 
-    module = sys.modules[class_.__module__]
+    module = sys.modules[obj.__module__]
+    variable_name = None if isinstance(obj, ModuleType) else obj.__name__
 
-    if not getattr(module, class_.__name__, None) is class_:
-        raise RuntimeError(
-            "Unable to resolve class, must be top level in module"
-        )
+    if variable_name and not getattr(module, variable_name, None) is obj:
+        raise RuntimeError("Unable to resolve, must be top level in module")
 
-    module_name = class_.__module__
+    module_name = obj.__module__
     if module_name == "__main__":
         module_name = _resolve_module(module)
 
@@ -106,7 +109,7 @@ def resolve_class(class_: Type[Any]) -> Source:
                     repository_id=active_repo.id,
                     commit=local_repo.current_commit,
                     module=module_name,
-                    variable=class_.__name__,
+                    variable=variable_name,
                 )
 
         module_name = _resolve_module(module)
@@ -115,14 +118,12 @@ def resolve_class(class_: Type[Any]) -> Source:
         package_version = _get_package_version(package_name=package_name)
         return DistributionPackageSource(
             module=module_name,
-            variable=class_.__name__,
+            variable=variable_name,
             version=package_version,
             type=source_type,
         )
 
-    return Source(
-        module=module_name, variable=class_.__name__, type=source_type
-    )
+    return Source(module=module_name, variable=variable_name, type=source_type)
 
 
 def get_source_root() -> str:
@@ -277,7 +278,7 @@ def load_and_validate_class(
     Returns:
         The resolved source class.
     """
-    obj = load_source(source)
+    obj = load(source)
 
     if isinstance(obj, type) and issubclass(obj, expected_class):
         return obj
@@ -301,7 +302,7 @@ def validate_source_class(
         If the source resolves to the expected class.
     """
     try:
-        obj = load_source(source)
+        obj = load(source)
     except Exception:
         return False
 

@@ -457,7 +457,7 @@ class BaseStep(metaclass=BaseStepMeta):
         for name, output in self.configuration.outputs.items():
             if output.materializer_source:
                 key = f"{name}_materializer_source"
-                materializer_class = source_utils_v2.load_source(
+                materializer_class = source_utils_v2.load(
                     output.materializer_source
                 )
                 parameters[key] = source_utils.get_hashed_source(
@@ -769,7 +769,7 @@ class BaseStep(metaclass=BaseStepMeta):
             elif isinstance(value, Source):
                 return value
             else:
-                return source_utils_v2.resolve_class(value)
+                return source_utils_v2.resolve(value)
 
         outputs: Dict[str, Dict[str, Source]] = defaultdict(dict)
         allowed_output_names = set(self.OUTPUT_SIGNATURE)
@@ -969,7 +969,7 @@ class BaseStep(metaclass=BaseStepMeta):
                     )
                 outputs[output_name][
                     "materializer_source"
-                ] = source_utils_v2.resolve_class(materializer_class)
+                ] = source_utils_v2.resolve(materializer_class)
 
         function_parameters = self._finalize_function_parameters()
         values = dict_utils.remove_none_values(

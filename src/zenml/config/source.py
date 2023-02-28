@@ -35,7 +35,7 @@ class SourceType(Enum):
 
 class Source(BaseModel):
     module: str
-    variable: str
+    variable: Optional[str] = None
     type: SourceType
 
     def __new__(cls, **kwargs: Any) -> "Source":
@@ -57,7 +57,10 @@ class Source(BaseModel):
 
     @property
     def import_path(self) -> str:
-        return f"{self.module}.{self.variable}"
+        if self.variable:
+            return f"{self.module}.{self.variable}"
+        else:
+            return self.module
 
     @property
     def is_internal(self) -> bool:
@@ -65,6 +68,10 @@ class Source(BaseModel):
             SourceType.UNKNOWN,
             SourceType.DISTRIBUTION_PACKAGE,
         }
+
+    @property
+    def is_module_source(self) -> bool:
+        return self.variable is None
 
 
 class DistributionPackageSource(Source):
