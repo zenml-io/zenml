@@ -130,7 +130,7 @@ from zenml.models.schedule_model import (
     ScheduleFilterModel,
     ScheduleResponseModel,
 )
-from zenml.utils import io_utils
+from zenml.utils import io_utils, source_utils_v2
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler, track
 from zenml.utils.filesync_model import FileSyncModel
 
@@ -538,7 +538,7 @@ class Client(metaclass=ClientMetaClass):
     ) -> Optional["BaseCodeRepository"]:
         from zenml.code_repositories import BaseCodeRepository
 
-        path = path or os.getcwd()
+        path = path or source_utils_v2.get_source_root()
         path = os.path.abspath(path)
 
         for model in self.depaginate(list_method=self.list_code_repositories):
