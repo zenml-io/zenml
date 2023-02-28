@@ -23,8 +23,6 @@ from pathlib import Path, PurePath
 from types import FunctionType, ModuleType
 from typing import Any, Dict, Iterator, Optional, Type, Union
 
-from zenml.client import Client
-from zenml.config.global_config import GlobalConfiguration
 from zenml.config.source import (
     CodeRepositorySource,
     DistributionPackageSource,
@@ -101,6 +99,8 @@ def resolve(obj: Union[Type[Any], FunctionType, ModuleType]) -> Source:
     source_type = get_source_type(module=module)
 
     if source_type == SourceType.USER:
+        from zenml.client import Client
+
         active_repo = Client().find_active_code_repository()
 
         if active_repo:
@@ -203,6 +203,9 @@ def prepend_python_path(path: str) -> Iterator[None]:
 
 
 def _load_repository_files(source: CodeRepositorySource) -> str:
+    from zenml.client import Client
+    from zenml.config.global_config import GlobalConfiguration
+
     source_root = get_source_root()
     active_repo = Client().find_active_code_repository(path=source_root)
 
