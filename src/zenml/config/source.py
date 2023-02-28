@@ -35,7 +35,7 @@ class SourceType(Enum):
 
 class Source(BaseModel):
     module: str
-    variable: Optional[str] = None
+    attribute: Optional[str] = None
     type: SourceType
 
     def __new__(cls, **kwargs: Any) -> "Source":
@@ -52,13 +52,13 @@ class Source(BaseModel):
         if "@" in import_path:
             import_path = import_path.split("@", 1)[0]
 
-        module, variable = import_path.rsplit(".", maxsplit=1)
-        return cls(module=module, variable=variable, type=SourceType.UNKNOWN)
+        module, attribute = import_path.rsplit(".", maxsplit=1)
+        return cls(module=module, variable=attribute, type=SourceType.UNKNOWN)
 
     @property
     def import_path(self) -> str:
-        if self.variable:
-            return f"{self.module}.{self.variable}"
+        if self.attribute:
+            return f"{self.module}.{self.attribute}"
         else:
             return self.module
 
@@ -71,7 +71,7 @@ class Source(BaseModel):
 
     @property
     def is_module_source(self) -> bool:
-        return self.variable is None
+        return self.attribute is None
 
 
 class DistributionPackageSource(Source):
@@ -94,6 +94,7 @@ class DistributionPackageSource(Source):
 class CodeRepositorySource(Source):
     repository_id: UUID
     commit: str
+    subdirectory: str
     type: SourceType = SourceType.CODE_REPOSITORY
 
     @validator("type")

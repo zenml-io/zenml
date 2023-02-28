@@ -12,15 +12,16 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import contextlib
 import importlib
 import inspect
 import os
 import site
 import sys
 from distutils.sysconfig import get_python_lib
-from pathlib import Path
+from pathlib import Path, PurePath
 from types import FunctionType, ModuleType
-from typing import Any, Dict, Optional, Type, Union
+from typing import Any, Dict, Iterator, Optional, Type, Union
 
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
@@ -45,25 +46,30 @@ def load(source: Union[Source, str]) -> Any:
 
     import_root = None
     if isinstance(source, CodeRepositorySource):
-        import_root = _load_repository_files(source=source)
+        repo_root = _load_repository_files(source=source)
+        import_root = str(PurePath(repo_root) / PurePath(source.subdirectory))
     elif isinstance(source, DistributionPackageSource):
         if source.version:
             current_package_version = _get_package_version(
                 package_name=source.package_name
             )
             if current_package_version != source.version:
-                logger.warning("Package version doesn't match source.")
+                logger.warning(
+                    "Installed version `%s` of package `%s` does not match "
+                    "source version `%s`.",
+                    current_package_version,
+                    source.package_name,
+                    source.version,
+                )
     elif source.type in {SourceType.USER, SourceType.UNKNOWN}:
         # Unknown source might also refer to a user file, include source
         # root in python path just to be sure
         import_root = get_source_root()
 
-    python_path_prefix = [import_root] if import_root else []
-    with source_utils.prepend_python_path(python_path_prefix):
-        module = importlib.import_module(source.module)
+    module = _load_module(module_name=source.module, import_root=import_root)
 
-    if source.variable:
-        obj = getattr(module, source.variable)
+    if source.attribute:
+        obj = getattr(module, source.attribute)
     else:
         obj = module
 
@@ -76,40 +82,42 @@ def resolve(obj: Union[Type[Any], FunctionType, ModuleType]) -> Source:
         return _SOURCE_MAPPING[id(obj)]
 
     module = sys.modules[obj.__module__]
-    variable_name = None if isinstance(obj, ModuleType) else obj.__name__
+    attribute_name = None if isinstance(obj, ModuleType) else obj.__name__
 
-    if variable_name and not getattr(module, variable_name, None) is obj:
-        raise RuntimeError("Unable to resolve, must be top level in module")
+    if attribute_name and not getattr(module, attribute_name, None) is obj:
+        raise RuntimeError(
+            f"Unable to resolve object `{obj}`. For the resolving to work, the "
+            "class or function must be defined as top-level code (= it must "
+            "get defined when importing the module) and not inside a function/"
+            f"if-condition. Please make sure that your `{module.__name__}` "
+            f"module has a top-level attribute `{attribute_name}` that "
+            "holds the object you want to resolve."
+        )
 
-    module_name = obj.__module__
+    module_name = module.__name__
     if module_name == "__main__":
         module_name = _resolve_module(module)
 
     source_type = get_source_type(module=module)
 
     if source_type == SourceType.USER:
-        # TODO: maybe we want to check for a repo at the location of
-        # the actual module file here? Different steps could be in
-        # different code repos
-        source_root = get_source_root()
-        active_repo = Client().find_active_code_repository(path=source_root)
+        active_repo = Client().find_active_code_repository()
 
         if active_repo:
+            source_root = get_source_root()
             local_repo = active_repo.get_local_repo(path=source_root)
             assert local_repo
 
             if not local_repo.has_local_changes:
-                # Inside a clean code repo with all changes pushed, resolve to
-                # a code repository source
-                module_name = _resolve_module(
-                    module, custom_source_root=local_repo.root
-                )
+                module_name = _resolve_module(module)
+                subdir = PurePath(source_root).relative_to(local_repo.root)
 
                 return CodeRepositorySource(
                     repository_id=active_repo.id,
                     commit=local_repo.current_commit,
+                    subdirectory=subdir.as_posix(),
                     module=module_name,
-                    variable=variable_name,
+                    attribute=attribute_name,
                 )
 
         module_name = _resolve_module(module)
@@ -118,12 +126,14 @@ def resolve(obj: Union[Type[Any], FunctionType, ModuleType]) -> Source:
         package_version = _get_package_version(package_name=package_name)
         return DistributionPackageSource(
             module=module_name,
-            variable=variable_name,
+            attribute=attribute_name,
             version=package_version,
             type=source_type,
         )
 
-    return Source(module=module_name, variable=variable_name, type=source_type)
+    return Source(
+        module=module_name, attribute=attribute_name, type=source_type
+    )
 
 
 def get_source_root() -> str:
@@ -172,6 +182,24 @@ def get_source_type(module: ModuleType) -> SourceType:
         return SourceType.DISTRIBUTION_PACKAGE
 
     return SourceType.UNKNOWN
+
+
+@contextlib.contextmanager
+def prepend_python_path(path: str) -> Iterator[None]:
+    """Context manager to temporarily prepend a path to the python path.
+
+    Args:
+        path: Path that will be prepended to sys.path for the duration of
+            the context manager.
+
+    Yields:
+        None
+    """
+    try:
+        sys.path.insert(0, path)
+        yield
+    finally:
+        sys.path.remove(path)
 
 
 def _load_repository_files(source: CodeRepositorySource) -> str:
@@ -249,6 +277,16 @@ def _resolve_module(
     )
 
     return module_source
+
+
+def _load_module(
+    module_name: str, import_root: Optional[str] = None
+) -> ModuleType:
+    if import_root:
+        with prepend_python_path(import_root):
+            return importlib.import_module(module_name)
+    else:
+        return importlib.import_module(module_name)
 
 
 def _get_package_version(package_name: str) -> Optional[str]:
