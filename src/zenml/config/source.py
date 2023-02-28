@@ -48,7 +48,7 @@ class Source(BaseModel):
 
     @classmethod
     def from_import_path(cls: Type[S], import_path: str) -> S:
-        # Remove an internal version pin for backwards compatability
+        # Remove internal version pins for backwards compatability
         if "@" in import_path:
             import_path = import_path.split("@", 1)[0]
 
@@ -64,10 +64,16 @@ class Source(BaseModel):
 
     @property
     def is_internal(self) -> bool:
-        return self.import_path.startswith("zenml.") and self.type in {
+        if self.type not in {
             SourceType.UNKNOWN,
             SourceType.DISTRIBUTION_PACKAGE,
-        }
+        }:
+            return False
+
+        # Covers both the root `zenml` module and any submodules
+        return self.import_path == "zenml" or self.import_path.startswith(
+            "zenml."
+        )
 
     @property
     def is_module_source(self) -> bool:
