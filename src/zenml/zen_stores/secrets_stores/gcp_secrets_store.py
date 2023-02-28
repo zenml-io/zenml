@@ -570,16 +570,29 @@ class GCPSecretsStore(BaseSecretsStore):
             }
         ):
             try:
-                # TODO: need to get secret_version to get the update time.
-                # current implementation is not correct
-                secrets.append(
-                    self._create_secret_from_metadata(
-                        metadata=secret.labels,
-                        created=secret.create_time,
-                        updated=secret.create_time,
-                    )
+                gcp_secret_name = self.client.secret_path(
+                    self.config.project_id,
+                    self._get_gcp_secret_name(
+                        secret_id=secret.labels[ZENML_SECRET_ID_LABEL]
+                    ),
                 )
+                try:
+                    secret_version = self.client.get_secret_version(
+                        name=f"{gcp_secret_name}/versions/latest"
+                    )
+                    secrets.append(
+                        self._create_secret_from_metadata(
+                            metadata=secret.labels,
+                            created=secret.create_time,
+                            updated=secret_version.create_time,
+                        )
+                    )
+                except google_exceptions.NotFound:
+                    # keep going / ignore if this secret version doesn't exist
+                    continue
             except KeyError:
+                # keep going / ignore if this secret version doesn't exist or
+                # isn't a ZenML secret
                 continue
 
         # do client filtering for anything not covered by the filter string
