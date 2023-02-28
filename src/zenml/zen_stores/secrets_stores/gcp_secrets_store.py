@@ -555,9 +555,10 @@ class GCPSecretsStore(BaseSecretsStore):
                 information and sorted according to the filter criteria.
         """
         # convert the secret_filter_model to a GCP filter string
-        gcp_filters = self._get_gcp_filter_string(
-            secret_filter_model=secret_filter_model
-        )
+        gcp_filters = ""
+        # gcp_filters = self._get_gcp_filter_string(
+        #     secret_filter_model=secret_filter_model
+        # )
 
         # get all the secrets and their labels (for their names) from GCP
         # (use the filter string to limit what doesn't match the filter)
@@ -596,19 +597,24 @@ class GCPSecretsStore(BaseSecretsStore):
                 continue
 
         # do client filtering for anything not covered by the filter string
+        filtered_secrets = [
+            secret
+            for secret in secrets
+            if secret_filter_model.secret_matches(secret)
+        ]
 
         # sort the results
-        sorted_results = secrets
-        total_secrets = len(sorted_results)
+        sorted_results = secret_filter_model.sort_secrets(filtered_secrets)
 
         # paginate the results
-        if total_secrets == 0:
+        secret_count = len(sorted_results)
+        if secret_count == 0:
             total_pages = 1
         else:
-            total_pages = math.ceil(total_secrets / secret_filter_model.size)
+            total_pages = math.ceil(secret_count / secret_filter_model.size)
 
         return Page(
-            total=total_secrets,
+            total=secret_count,
             total_pages=total_pages,
             items=sorted_results,
             index=secret_filter_model.page,
