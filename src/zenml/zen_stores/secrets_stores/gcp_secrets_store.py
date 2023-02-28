@@ -39,6 +39,7 @@ from zenml.enums import (
     SecretScope,
     SecretsStoreType,
 )
+from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
 from zenml.models import (
     Page,
@@ -308,18 +309,16 @@ class GCPSecretsStore(BaseSecretsStore):
             secret.user, secret.workspace
         )
 
-        # TODO: implement scope checks after list_secrets is implemented
-
         # Check if a secret with the same name already exists in the same
         # scope.
-        # secret_exists, msg = self._check_secret_scope(
-        #     secret_name=secret.name,
-        #     scope=secret.scope,
-        #     workspace=secret.workspace,
-        #     user=secret.user,
-        # )
-        # if secret_exists:
-        #     raise EntityExistsError(msg)
+        secret_exists, msg = self._check_secret_scope(
+            secret_name=secret.name,
+            scope=secret.scope,
+            workspace=secret.workspace,
+            user=secret.user,
+        )
+        if secret_exists:
+            raise EntityExistsError(msg)
 
         secret_id = uuid.uuid4()
         secret_value = json.dumps(secret.secret_values)
