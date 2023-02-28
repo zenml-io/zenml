@@ -64,8 +64,6 @@ from zenml.zen_stores.secrets_stores.base_secrets_store import (
 logger = get_logger(__name__)
 
 
-logger = get_logger(__name__)
-
 GCP_ZENML_SECRET_NAME_PREFIX = "zenml"
 ZENML_SCHEMA_NAME = "zenml-schema-name"
 ZENML_GROUP_KEY = "zenml-group-key"
@@ -126,10 +124,10 @@ class GCPSecretsStore(BaseSecretsStore):
 
     @property
     def client(self) -> Any:
-        """Initialize and return the AWS Secrets Manager client.
+        """Initialize and return the GCP Secrets Manager client.
 
         Returns:
-            The AWS Secrets Manager client.
+            The GCP Secrets Manager client.
         """
         if self._client is None:
             self._client = secretmanager.SecretManagerServiceClient()
@@ -338,7 +336,7 @@ class GCPSecretsStore(BaseSecretsStore):
             gcp_secret = self.client.create_secret(
                 request={
                     "parent": self.parent_name,
-                    "secret_id": f"{GCP_ZENML_SECRET_NAME_PREFIX}-{secret_id}",
+                    "secret_id": self._get_gcp_secret_name(secret_id),
                     "secret": {
                         "replication": {"automatic": {}},
                         "labels": labels,
@@ -402,39 +400,6 @@ class GCPSecretsStore(BaseSecretsStore):
             labels=secret.labels,
             values=secret_values,
         )
-
-        # google_secret_name = self.client.secret_path(
-        #     self.config.project_id,
-        #     f"{GCP_ZENML_SECRET_NAME_PREFIX}/{secret_id}",
-        # )
-
-        # try:
-        #     # fetch the latest secret version
-        #     google_secret = self.client.get_secret(name=google_secret_name)
-        # except google_exceptions.NotFound:
-        #     raise KeyError(f"Can't find the specified secret '{secret_name}'")
-
-        # # make sure the secret has the correct scope labels to filter out
-        # # unscoped secrets with similar names
-        # scope_labels = self._get_secret_scope_metadata(secret_name)
-        # # all scope labels need to be included in the google secret labels,
-        # # otherwise the secret does not belong to the current scope
-        # if not scope_labels.items() <= google_secret.labels.items():
-        #     raise KeyError(f"Can't find the specified secret '{secret_name}'")
-
-        # try:
-        #     # fetch the latest secret version
-        #     response = self.client.access_secret_version(
-        #         name=f"{google_secret_name}/versions/latest"
-        #     )
-        # except google_exceptions.NotFound:
-        #     raise KeyError(f"Can't find the specified secret '{secret_name}'")
-
-        # secret_value = response.payload.data.decode("UTF-8")
-        # zenml_secret = secret_from_dict(
-        #     json.loads(secret_value), secret_name=secret_name
-        # )
-        # return zenml_secret
 
     @track(AnalyticsEvent.DELETED_SECRET)
     def delete_secret(self, secret_id: UUID) -> None:
@@ -525,4 +490,89 @@ class GCPSecretsStore(BaseSecretsStore):
         Returns:
             The updated secret.
         """
-        pass
+        secret = self.get_secret(secret_id=secret_id)
+        gcp_secret_name = self.client.secret_path(
+            self.config.project_id,
+            self._get_gcp_secret_name(secret_id=secret_id),
+        )
+
+        assert secret.user is not None
+        self._validate_user_and_workspace_update(
+            secret_update=secret_update,
+            current_user=secret.user.id,
+            current_workspace=secret.workspace.id,
+        )
+
+        if secret_update.name is not None:
+            self._validate_gcp_secret_name(secret_update.name)
+            secret.name = secret_update.name
+        if secret_update.scope is not None:
+            secret.scope = secret_update.scope
+        if secret_update.values is not None:
+            # Merge the existing values with the update values.
+            # The values that are set to `None` in the update are removed from
+            # the existing secret when we call `.secret_values` later.
+            secret.values.update(secret_update.values)
+
+        if secret_update.name is not None or secret_update.scope is not None:
+            # Check if a secret with the same name already exists in the same
+            # scope.
+            assert secret.user is not None
+            secret_exists, msg = self._check_secret_scope(
+                secret_name=secret.name,
+                scope=secret.scope,
+                workspace=secret.workspace.id,
+                user=secret.user.id,
+                exclude_secret_id=secret.id,
+            )
+            if secret_exists:
+                raise EntityExistsError(msg)
+
+        # Convert the ZenML secret metadata to GCP labels
+        updated = datetime.now(timezone.utc)
+        metadata = self._get_secret_metadata_for_secret(secret)
+        metadata[ZENML_GCP_SECRET_UPDATED_KEY] = updated.strftime(
+            ZENML_GCP_DATE_FORMAT_STRING
+        )
+        metadata[ZENML_GCP_SECRET_CREATED_KEY] = secret.created.strftime(
+            ZENML_GCP_DATE_FORMAT_STRING
+        )
+
+        try:
+            # UPDATE THE SECRET METADATA
+            update_secret = {
+                "name": gcp_secret_name,
+                "labels": metadata,
+            }
+            update_mask = {"paths": ["labels"]}
+            gcp_updated_secret = (
+                secretmanager.SecretManagerServiceClient().update_secret(
+                    request={
+                        "secret": update_secret,
+                        "update_mask": update_mask,
+                    }
+                )
+            )
+            # ADD A NEW SECRET VERSION
+            secret_value = json.dumps(secret.secret_values)
+            self.client.add_secret_version(
+                request={
+                    "parent": gcp_updated_secret.name,
+                    "payload": {"data": secret_value.encode()},
+                }
+            )
+        except Exception as e:
+            raise RuntimeError(f"Error updating secret: {e}") from e
+
+        logger.debug("Updated GCP secret: %s", gcp_secret_name)
+
+        return SecretResponseModel(
+            id=secret_id,
+            name=secret.name,
+            scope=secret.scope,
+            workspace=secret.workspace,
+            user=secret.user,
+            values=secret.secret_values,
+            created=secret.created,
+            updated=updated,
+        )
