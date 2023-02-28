@@ -16,23 +16,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  poetry-install:
+  install:
     if: github.event.pull_request.draft == false
-    uses: ./.github/workflows/poetry-install.yml
+    uses: ./.github/workflows/install.yml
     secrets: inherit
 
   lint-code:
-    needs: poetry-install
+    needs: install
     uses: ./.github/workflows/lint.yml
     secrets: inherit
 
   unit-test:
-    needs: poetry-install
+    needs: install
     uses: ./.github/workflows/unit-test.yml
     secrets: inherit
 
   integration-test:
-    needs: poetry-install
+    needs: install
     # Exit if its a commit from Gitbook
     if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
     strategy:

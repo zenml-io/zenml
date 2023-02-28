@@ -1,5 +1,5 @@
-name: "Setup Matrix and Poetry"
-description: "Install Poetry, loads cached venv if applicable, and performs miscellaneous other operations"
+name: "Install ZenML"
+description: "Install ZenML, loads cached venv if applicable, and performs miscellaneous other operations"
 inputs:
   cache_version:
     description: 'Value gets appended to the cache key and will therefore invalidate the cache if it changes'
@@ -44,7 +44,7 @@ runs:
         CACHE_VERSION : ${{inputs.cache_version}}
 
     - name: Load cached venv
-      id: cached-poetry-dependencies
+      id: cached-virtualenv
       uses: actions/cache@v2.1.6
       with:
         path: .venv
@@ -66,7 +66,7 @@ runs:
 
     - name: Install Project
       shell: bash
-      if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+      if: steps.cached-virtualenv.outputs.cache-hit != 'true'
       run: |
         python -m venv .venv
         source $VENV

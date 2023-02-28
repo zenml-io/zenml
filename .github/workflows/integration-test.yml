@@ -169,7 +169,7 @@ jobs:
           install_components: 'gke-gcloud-auth-plugin'
         if: contains(inputs.test_environment, 'gcp')
 
-      - name: Setup environment with Poetry
+      - name: Setup environment
         uses: ./.github/actions/setup_environment
         with:
           cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}

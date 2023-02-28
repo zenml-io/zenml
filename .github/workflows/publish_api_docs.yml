@@ -40,7 +40,7 @@ jobs:
       - run: npm install
       - run: npm install html-minifier -g
 
-      - name: Setup environment with Poetry
+      - name: Setup environment
         uses: ./.github/actions/setup_environment
         with:
           cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
@@ -50,7 +50,7 @@ jobs:
       # IMPORTANT: there's a strategy to installing integrations here in a way
       # that avoids conflicts while at the same time making it possible for all
       # ZenML Python modules to be imported, especially the integration modules:
-      # 1. install zenml with all extras with poetry
+      # 1. install zenml with all extras
       # 2. install more restrictive integrations first: feast, seldon and
       # label_studio are currently the ones known to be very restrictive in
       # terms of what versions of dependencies they require
