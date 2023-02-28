@@ -14,6 +14,7 @@
 """Implementation of the GCP Secrets Store."""
 
 import json
+import math
 import re
 import uuid
 from datetime import datetime
@@ -440,7 +441,7 @@ class GCPSecretsStore(BaseSecretsStore):
 
         logger.debug("Added value to secret.")
 
-        secret_model = SecretResponseModel(
+        return SecretResponseModel(
             id=secret_id,
             name=secret.name,
             scope=secret.scope,
@@ -450,10 +451,6 @@ class GCPSecretsStore(BaseSecretsStore):
             created=gcp_secret.create_time,
             updated=gcp_secret_version.create_time,
         )
-
-        print(secret_model)
-
-        return secret_model
 
     def get_secret(self, secret_id: UUID) -> SecretResponseModel:
         """Get a secret by ID.
@@ -564,26 +561,46 @@ class GCPSecretsStore(BaseSecretsStore):
 
         # get all the secrets and their labels (for their names) from GCP
         # (use the filter string to limit what doesn't match the filter)
+        secrets = []
 
-        # sort the results
-
-        # paginate the results
-
-        set_of_secrets = set()
-
-        # List all secrets.
         for secret in self.client.list_secrets(
             request={
                 "parent": self.parent_name,
                 "filter": gcp_filters,
             }
         ):
-            name = secret.labels[ZENML_SECRET_NAME_LABEL]
-            set_of_secrets.add(name)
+            try:
+                # TODO: need to get secret_version to get the update time.
+                # current implementation is not correct
+                secrets.append(
+                    self._create_secret_from_metadata(
+                        metadata=secret.labels,
+                        created=secret.create_time,
+                        updated=secret.create_time,
+                    )
+                )
+            except KeyError:
+                continue
 
-        secrets = list(set_of_secrets)
-        breakpoint()
-        return secrets
+        # do client filtering for anything not covered by the filter string
+
+        # sort the results
+        sorted_results = secrets
+        total_secrets = len(sorted_results)
+
+        # paginate the results
+        if total_secrets == 0:
+            total_pages = 1
+        else:
+            total_pages = math.ceil(total_secrets / secret_filter_model.size)
+
+        return Page(
+            total=total_secrets,
+            total_pages=total_pages,
+            items=sorted_results,
+            index=secret_filter_model.page,
+            max_size=secret_filter_model.size,
+        )
 
     @track(AnalyticsEvent.UPDATED_SECRET)
     def update_secret(
