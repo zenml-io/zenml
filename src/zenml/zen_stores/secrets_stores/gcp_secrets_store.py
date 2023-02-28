@@ -205,34 +205,38 @@ class GCPSecretsStore(BaseSecretsStore):
     def _convert_gcp_secret(
         self,
         labels: Dict[str, str],
-        created: datetime,
-        updated: datetime,
         values: Optional[Dict[str, str]] = None,
     ) -> SecretResponseModel:
         """Create a ZenML secret model from data stored in an GCP secret.
 
         Args:
             labels: The GCP secret labels.
-            created: The GCP secret creation time.
-            updated: The GCP secret last update time.
             values: The GCP secret values.
 
         Returns:
             The ZenML secret model.
 
         Raises:
-            ValueError: if the GCP secret missing required tags.
-            keyError: if the GCP secret was not found.
+            ValueError: if the GCP secret was not found.
         """
         # Recover the ZenML secret metadata from the AWS secret tags.
+        label_dict = dict(labels)
         try:
-            secret_id = UUID(labels[ZENML_SECRET_ID_LABEL])
-            name = labels[ZENML_SECRET_NAME_LABEL]
-            scope = SecretScope(labels[ZENML_SECRET_SCOPE_LABEL])
-            workspace_id = UUID(labels[ZENML_SECRET_WORKSPACE_LABEL])
-            user_id = UUID(labels[ZENML_SECRET_USER_LABEL])
+            secret_id = UUID(label_dict[ZENML_SECRET_ID_LABEL])
+            name = label_dict[ZENML_SECRET_NAME_LABEL]
+            scope = SecretScope(label_dict[ZENML_SECRET_SCOPE_LABEL])
+            workspace_id = UUID(label_dict[ZENML_SECRET_WORKSPACE_LABEL])
+            user_id = UUID(label_dict[ZENML_SECRET_USER_LABEL])
+            created_date = datetime.strptime(
+                label_dict[ZENML_GCP_SECRET_CREATED_KEY],
+                ZENML_GCP_DATE_FORMAT_STRING,
+            )
+            updated_date = datetime.strptime(
+                label_dict[ZENML_GCP_SECRET_UPDATED_KEY],
+                ZENML_GCP_DATE_FORMAT_STRING,
+            )
         except KeyError as e:
-            raise ValueError(
+            raise KeyError(
                 f"Invalid GCP secret: missing required tag '{e}'"
             ) from e
 
@@ -260,8 +264,8 @@ class GCPSecretsStore(BaseSecretsStore):
             workspace=workspace,
             user=user,
             values=values or {},
-            created=created,
-            updated=updated,
+            created=created_date,
+            updated=updated_date,
         )
 
     def _get_gcp_filter_string(
@@ -383,9 +387,6 @@ class GCPSecretsStore(BaseSecretsStore):
 
         try:
             secret = self.client.get_secret(name=gcp_secret_name)
-            secret_version = self.client.get_secret_version(
-                name=f"{gcp_secret_name}/versions/latest"
-            )
             secret_version_values = self.client.access_secret_version(
                 name=f"{gcp_secret_name}/versions/latest"
             )
@@ -400,8 +401,6 @@ class GCPSecretsStore(BaseSecretsStore):
 
         return self._convert_gcp_secret(
             labels=secret.labels,
-            created=secret.create_time,
-            updated=secret_version.create_time,
             values=secret_values,
         )
 
@@ -485,26 +484,7 @@ class GCPSecretsStore(BaseSecretsStore):
             }
         ):
             try:
-                gcp_secret_name = self.client.secret_path(
-                    self.config.project_id,
-                    self._get_gcp_secret_name(
-                        secret_id=secret.labels[ZENML_SECRET_ID_LABEL]
-                    ),
-                )
-                try:
-                    secret_version = self.client.get_secret_version(
-                        name=f"{gcp_secret_name}/versions/latest"
-                    )
-                    secrets.append(
-                        self._create_secret_from_metadata(
-                            metadata=secret.labels,
-                            created=secret.create_time,
-                            updated=secret_version.create_time,
-                        )
-                    )
-                except google_exceptions.NotFound:
-                    # keep going / ignore if this secret version doesn't exist
-                    continue
+                secrets.append(self._convert_gcp_secret(secret.labels))
             except KeyError:
                 # keep going / ignore if this secret version doesn't exist or
                 # isn't a ZenML secret
