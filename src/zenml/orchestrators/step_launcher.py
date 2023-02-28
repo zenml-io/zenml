@@ -42,6 +42,7 @@ from zenml.orchestrators.step_runner import StepRunner
 from zenml.orchestrators.utils import is_setting_enabled
 from zenml.stack import Stack
 from zenml.utils import string_utils
+from zenml.utils.source_utils_v2 import get_source_root
 
 if TYPE_CHECKING:
     from zenml.models.artifact_models import ArtifactResponseModel
@@ -283,7 +284,9 @@ class StepLauncher:
             orchestrator_environment=get_run_environment_dict(),
             server_version=client.zen_store.get_store_info().version,
             start_time=datetime.utcnow(),
-            git_sha=client.find_active_code_repository().current_commit,
+            git_sha=client.find_active_code_repository().get_local_repo(
+                path=get_source_root()
+            ).current_commit,
         )
         return client.zen_store.get_or_create_run(pipeline_run)
 
