@@ -19,10 +19,10 @@ import pandas as pd
 from evidently.model_profile import Profile  # type: ignore[import]
 from pydantic import Field
 
-from zenml.integrations.evidently.data_validators import EvidentlyDataValidator
-from zenml.integrations.evidently.steps.evidently_report import (
+from zenml.integrations.evidently.column_mapping import (
     EvidentlyColumnMapping,
 )
+from zenml.integrations.evidently.data_validators import EvidentlyDataValidator
 from zenml.steps import Output
 from zenml.steps.base_parameters import BaseParameters
 from zenml.steps.base_step import BaseStep
@@ -126,7 +126,7 @@ class EvidentlyProfileStep(BaseStep):
             column_mapping = (
                 params.column_mapping.to_evidently_column_mapping()
             )
-        profile, dashboard = data_validator.data_profiling_legacy(
+        profile, dashboard = data_validator.legacy_data_profiling(
             dataset=reference_dataset,
             comparison_dataset=comparison_dataset,
             profile_list=params.profile_sections,

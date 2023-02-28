@@ -12,6 +12,7 @@
 #  permissions and limitations under the License.
 import nltk
 
+from zenml.integrations.evidently.metrics import EvidentlyMetricConfig
 from zenml.integrations.evidently.steps import (
     EvidentlyColumnMapping,
     EvidentlyReportParameters,
@@ -37,13 +38,15 @@ text_data_report = evidently_report_step(
             prediction="class",
         ),
         metrics=[
-            "DataQualityPreset",
-            ["TextOverviewPreset", {"column_name": "Review_Text"}],
-            {
-                "metric": "ColumnRegExpMetric",
-                "parameters": {"reg_exp": "^[0..9]"},
-                "columns": ["Review_Text", "Title"],
-            },
+            EvidentlyMetricConfig.metric("DataQualityPreset"),
+            EvidentlyMetricConfig.metric(
+                "TextOverviewPreset", column_name="Review_Text"
+            ),
+            EvidentlyMetricConfig.metric_generator(
+                "ColumnRegExpMetric",
+                columns=["Review_Text", "Title"],
+                reg_exp=r"[A-Z][A-Za-z0-9 ]*",
+            ),
         ],
     ),
 )

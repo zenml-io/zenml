@@ -15,6 +15,7 @@ from zenml.integrations.evidently.steps import (
     EvidentlyTestParameters,
     evidently_test_step,
 )
+from zenml.integrations.evidently.tests import EvidentlyTestConfig
 
 text_data_test = evidently_test_step(
     step_name="text_data_test",
@@ -31,12 +32,12 @@ text_data_test = evidently_test_step(
             prediction="class",
         ),
         tests=[
-            "DataQualityTestPreset",
-            {
-                "test": "TestColumnRegExp",
-                "parameters": {"reg_exp": "^[0..9]"},
-                "columns": ["Review_Text", "Title"],
-            },
+            EvidentlyTestConfig.test("DataQualityTestPreset"),
+            EvidentlyTestConfig.test_generator(
+                "TestColumnRegExp",
+                columns=["Review_Text", "Title"],
+                reg_exp="^[0..9]",
+            ),
         ],
     ),
 )

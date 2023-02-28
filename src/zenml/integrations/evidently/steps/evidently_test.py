@@ -13,15 +13,16 @@
 #  permissions and limitations under the License.
 """Implementation of the Evidently Test Step."""
 
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union, cast
+from typing import Any, Dict, List, Optional, Sequence, Tuple, cast
 
 import pandas as pd
-from pydantic import Field
+from pydantic import Field, root_validator
 
-from zenml.integrations.evidently.data_validators import EvidentlyDataValidator
-from zenml.integrations.evidently.steps.evidently_report import (
+from zenml.integrations.evidently.column_mapping import (
     EvidentlyColumnMapping,
 )
+from zenml.integrations.evidently.data_validators import EvidentlyDataValidator
+from zenml.integrations.evidently.tests import EvidentlyTestConfig
 from zenml.steps import Output
 from zenml.steps.base_parameters import BaseParameters
 from zenml.steps.base_step import BaseStep
@@ -33,52 +34,56 @@ class EvidentlyTestParameters(BaseParameters):
     Attributes:
         column_mapping: properties of the DataFrame columns used
         ignored_cols: columns to ignore during the Evidently profile step
-        tests: a list of tests, test presets or a dictionary of
-            tests to use with the generate_column_tests method.
-            - For tests and test presets that are on the dataset level or those
-            that don't require any parameters, you can use a string with the exact
-            name as in the evidently library.
-            - For tests and test presets that are on the column level or those
-            that require parameters like "column_name", you can use a list with the
-            exact name of the test as in the evidently library and a dictionary
-            with the parameters.
-            - Pass a dictionary when you want to choose a test for more than
-            one columns.This test should also necessarily have the  "column_name"
-            parameter. The structure of the dictionary should be as follows:
-            {
-                "test": "test_name",
-                "parameters": {},
-                "columns": ["column1", "column2"]
-            }
+        tests: a list of Evidently test configuration to use for the test suite.
         test_options: a list of tuples containing the name of the test
             and a dictionary of options for the test.
     """
 
     column_mapping: Optional[EvidentlyColumnMapping] = None
     ignored_cols: Optional[List[str]] = None
-    tests: List[Union[str, list, Dict[str, Any]]]
+    tests: List[EvidentlyTestConfig]
     test_options: Sequence[Tuple[str, Dict[str, Any]]] = Field(
         default_factory=list
     )
 
+    @root_validator(pre=True)
+    def default_tests(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Default Evidently tests to use if none are provided.
+
+        If no tests are configured, use all available TestPreset tests
+        by default.
+
+        Args:
+            values: The valued configured for the EvidentlyTestParameters
+                instance.
+
+        Returns:
+            The values with the default tests added if no tests were
+            configured.
+        """
+        if not values.get("tests"):
+            values["tests"] = EvidentlyTestConfig.default_tests()
+
+        return values
+
     class Config:
         """Pydantic config class."""
 
-        arbitrary_types_allowed = True
+        extra = "forbid"
 
 
-class EvidentlyTestStep(BaseStep):
-    """Step implementation implementing an Evidently Test Step."""
+class EvidentlyBaseTestStep:
+    """Base implementation for an Evidently Test Step."""
 
-    def entrypoint(
+    def _run_entrypoint(
         self,
         reference_dataset: pd.DataFrame,
-        comparison_dataset: pd.DataFrame,
+        comparison_dataset: Optional[pd.DataFrame],
         params: EvidentlyTestParameters,
     ) -> Output(  # type:ignore[valid-type]
         test_json=str, test_html=str
     ):
-        """Main entrypoint for the Evidently test step.
+        """Evidently test step for one or two datasets.
 
         Args:
             reference_dataset: a Pandas DataFrame
@@ -92,7 +97,7 @@ class EvidentlyTestStep(BaseStep):
                 dataset
 
         Returns:
-            A tuple containing the test json and html
+            A tuple containing the TestSuite in JSON and HTML formats.
         """
         data_validator = cast(
             EvidentlyDataValidator,
@@ -100,30 +105,32 @@ class EvidentlyTestStep(BaseStep):
         )
         column_mapping = None
 
-        if params.ignored_cols is None:
-            pass
-
-        elif not params.ignored_cols:
-            raise ValueError(
-                f"Expects None or list of columns in strings, but got {params.ignored_cols}"
+        if params.ignored_cols:
+            extra_cols = set(params.ignored_cols) - set(
+                reference_dataset.columns
             )
-
-        elif not (
-            set(params.ignored_cols).issubset(set(reference_dataset.columns))
-        ) or not (
-            set(params.ignored_cols).issubset(set(comparison_dataset.columns))
-        ):
-            raise ValueError(
-                "Column is not found in reference or comparison datasets"
-            )
-
-        else:
+            if extra_cols:
+                raise ValueError(
+                    f"Columns {extra_cols} configured in the ignored_cols "
+                    "parameter are not found in the reference dataset."
+                )
             reference_dataset = reference_dataset.drop(
                 labels=list(params.ignored_cols), axis=1
             )
-            comparison_dataset = comparison_dataset.drop(
-                labels=list(params.ignored_cols), axis=1
-            )
+
+            if comparison_dataset is not None:
+                extra_cols = set(params.ignored_cols) - set(
+                    comparison_dataset.columns
+                )
+                if extra_cols:
+                    raise ValueError(
+                        f"Columns {extra_cols} configured in the ignored_cols "
+                        "parameter are not found in the comparison dataset."
+                    )
+
+                comparison_dataset = comparison_dataset.drop(
+                    labels=list(params.ignored_cols), axis=1
+                )
 
         if params.column_mapping:
             column_mapping = (
@@ -136,24 +143,86 @@ class EvidentlyTestStep(BaseStep):
             column_mapping=column_mapping,
             test_options=params.test_options,
         )
-        return [test_suite.json(), test_suite.show().data]
+        return [test_suite.json(), test_suite.show(mode="inline").data]
+
+
+class EvidentlyTestStep(BaseStep, EvidentlyBaseTestStep):
+    """Implementation for an Evidently Test Step using two datasets."""
+
+    def entrypoint(
+        self,
+        reference_dataset: pd.DataFrame,
+        comparison_dataset: pd.DataFrame,
+        params: EvidentlyTestParameters,
+    ) -> Output(  # type:ignore[valid-type]
+        test_json=str, test_html=str
+    ):
+        """Evidently test step for two datasets.
+
+        Args:
+            reference_dataset: a Pandas DataFrame
+            comparison_dataset: a Pandas DataFrame of new data you wish to
+                compare against the reference data
+            params: the parameters for the step
+
+        Returns:
+            A tuple containing the Evidently TestSuite in JSON and HTML formats.
+        """
+        return self._run_entrypoint(
+            reference_dataset=reference_dataset,
+            comparison_dataset=comparison_dataset,
+            params=params,
+        )
+
+
+class EvidentlySingleDatasetTestStep(BaseStep, EvidentlyBaseTestStep):
+    """Implementation for an Evidently Test Step using a single dataset."""
+
+    def entrypoint(
+        self,
+        dataset: pd.DataFrame,
+        params: EvidentlyTestParameters,
+    ) -> Output(  # type:ignore[valid-type]
+        test_json=str, test_html=str
+    ):
+        """Evidently test step for a single dataset.
+
+        Args:
+            dataset: a Pandas DataFrame
+            params: the parameters for the step
+
+        Returns:
+            A tuple containing the Evidently TestSuite in JSON and HTML formats.
+        """
+        return self._run_entrypoint(
+            reference_dataset=dataset, comparison_dataset=None, params=params
+        )
 
 
 def evidently_test_step(
     step_name: str,
     params: EvidentlyTestParameters,
+    single_dataset: bool = False,
+    **kwargs: Any,
 ) -> BaseStep:
-    """Shortcut function to create a new instance of the EvidentlyTestStep.
+    """Create an instance of the Evidently test step.
 
-    The returned EvidentlyTestStep can be used in a pipeline to
-    run model tests on two input pd.DataFrame datasets and return the
-    results as an Evidently TestSuite object in JSON and HTML formats.
+    The returned step can be used in a pipeline to run an Evidently test suite
+    on one or two input pd.DataFrame datasets and return the results as an
+    Evidently TestSuite object in JSON and HTML formats.
 
     Args:
         step_name: The name of the step
         params: The parameters for the step
+        single_dataset: Whether to use a single dataset or two datasets
+            as input.
+        **kwargs: Additional keyword arguments to pass to the step constructor.
 
     Returns:
-        a EvidentlyTestStep step instance
+        a Evidently test step instance
     """
-    return EvidentlyTestStep(name=step_name, params=params)
+    if single_dataset:
+        return EvidentlySingleDatasetTestStep(
+            name=step_name, params=params, **kwargs
+        )
+    return EvidentlyTestStep(name=step_name, params=params, **kwargs)

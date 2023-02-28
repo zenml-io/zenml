@@ -68,7 +68,7 @@ tests:
       - capabilities:
           synchronized: true
 
-  - module: tests.integration.examples.test_evidently_drift_detection
+  - module: tests.integration.examples.test_evidently_data_validation
     requirements:
       - integrations:
           - sklearn

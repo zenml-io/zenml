@@ -14,10 +14,7 @@
 """Initialization of the Evidently data validator for ZenML."""
 
 from zenml.integrations.evidently.data_validators.evidently_data_validator import (
-    EvidentlyDataValidator, EvidentlyMetric,
+    EvidentlyDataValidator,
 )
 
-__all__ = [
-    "EvidentlyDataValidator",
-    "EvidentlyMetric"
-]
+__all__ = ["EvidentlyDataValidator"]

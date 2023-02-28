@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from zenml.integrations.evidently.metrics import EvidentlyMetricConfig
 from zenml.integrations.evidently.steps import (
     EvidentlyReportParameters,
     evidently_report_step,
@@ -19,7 +20,7 @@ from zenml.integrations.evidently.steps import (
 
 # configure the Evidently step
 evidently_report_params = EvidentlyReportParameters(
-    metrics=["DatasetDriftMetric"]
+    metrics=[EvidentlyMetricConfig.metric("DatasetDriftMetric")]
 )
 drift_detector = evidently_report_step(
     step_name="drift_detector", params=evidently_report_params

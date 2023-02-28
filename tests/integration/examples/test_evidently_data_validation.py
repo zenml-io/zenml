@@ -23,9 +23,9 @@ def test_example(request: pytest.FixtureRequest) -> None:
 
     with run_example(
         request=request,
-        name="evidently_data_profiling_and_validation",
+        name="evidently_data_validation",
         pipeline_name="text_data_report_test_pipeline",
-        step_count=4,
+        step_count=5,
         run_count=1,
     ) as (example, runs):
 

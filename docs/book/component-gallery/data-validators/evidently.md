@@ -4,38 +4,45 @@ description: How to keep your data quality in check and guard against data and m
 
 The Evidently [Data Validator](./data-validators.md) flavor
 provided with the ZenML integration uses [Evidently](https://evidentlyai.com/)
-to perform data quality, data drift, model drift and model performance analyses
-and generate reports. The reports can be used to implement automated corrective
-actions in your pipelines or to render interactive representations for further
-visual interpretation, evaluation and documentation.
-
-You can also run a variety of tests on your data using Evidently's TestSuites.
+to perform data quality, data drift, model drift and model performance analyses,
+to generate reports and run checks. The reports and check results can be used to
+implement automated corrective actions in your pipelines or to render
+interactive representations for further visual interpretation, evaluation and
+documentation.
 
 ## When would you want to use it?
 
 [Evidently](https://evidentlyai.com/) is an open-source library that you can use
 to monitor and debug machine learning models by analyzing the data that they
-use through a powerful set of data profiling and visualization features.
+use through a powerful set of data profiling and visualization features, or
+to run a variety of data and model validation reports and tests, from data
+integrity tests that work with a single dataset to model evaluation tests to
+data drift analyses and model performance comparison tests. All this can be done
+with minimal configuration input from the user, or customized with specialized
+conditions that the validation tests should perform.
+
 Evidently currently works with tabular data in `pandas.DataFrame` or CSV file
 formats and can handle both regression and classification tasks.
 
 You should use the Evidently Data Validator when you need the following data
 and/or model validation features that are possible with Evidently:
 
-* [Data Quality](https://docs.evidentlyai.com/presets/data-quality):
+* [Data Quality](https://docs.evidentlyai.com/presets/data-quality) reports and tests:
 provides detailed feature statistics and a feature behavior overview for a
 single dataset. It can also compare any two datasets. E.g. you can use it to
 compare train and test data, reference and current data, or two subgroups of one
 dataset.
 
-* [Data Drift](https://docs.evidentlyai.com/presets/data-drift):
+* [Data Drift](https://docs.evidentlyai.com/presets/data-drift) reports and tests:
 helps detects and explore feature distribution changes in the input data by
 comparing two datasets with identical schema.
 
-* [Target Drift](https://docs.evidentlyai.com/presets/target-drift): helps detect and explore changes in the target function and/or model predictions by comparing two datasets where the target and/or prediction columns are available.
+* [Target Drift](https://docs.evidentlyai.com/presets/target-drift) reports and tests:
+helps detect and explore changes in the target function and/or model predictions
+by comparing two datasets where the target and/or prediction columns are available.
 
 * [Regression Performance](https://docs.evidentlyai.com/presets/reg-performance) or
-[Classification Performance](https://docs.evidentlyai.com/presets/class-performance):
+[Classification Performance](https://docs.evidentlyai.com/presets/class-performance) reports and tests:
 evaluate the performance of a model by analyzing a single dataset where both the
 target and prediction columns are available. It can also compare it to the past
 performance of the same model, or the performance of an alternative model by
