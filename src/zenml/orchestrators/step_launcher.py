@@ -284,9 +284,9 @@ class StepLauncher:
             orchestrator_environment=get_run_environment_dict(),
             server_version=client.zen_store.get_store_info().version,
             start_time=datetime.utcnow(),
-            git_sha=client.find_active_code_repository().get_local_repo(
-                path=get_source_root()
-            ).current_commit,
+            git_sha=client.find_active_code_repository()
+            .get_local_repo(path=get_source_root())
+            .current_commit,
         )
         return client.zen_store.get_or_create_run(pipeline_run)
 

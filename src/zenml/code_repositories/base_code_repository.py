@@ -17,7 +17,7 @@ from typing import Any, Optional, Type, TypeVar, cast
 from uuid import UUID
 
 from git.repo.base import Remote, Repo
-from github import Github
+from github import Github, Repository
 
 from zenml.exceptions import CodeRepoDownloadError
 from zenml.logger import get_logger
@@ -145,27 +145,35 @@ class LocalGitRepository(LocalRepository):
 
 
 class GitHubCodeRepository(BaseCodeRepository):
+
+    _github_session: Github
+
     def __init__(self, owner: str, repository: str, token: str):
         self._owner = owner
         self._repository = repository
         self._token = token
 
+    @property
+    def github_repo(self) -> Repository:
+        return self._github_session.get_repo(
+            f"{self._owner}/{self._repository}"
+        )
+
     def login(
         self,
     ) -> None:
         try:
-            user = self.g.get_user().login
+            self._github_session = Github(self._token)
+            user = self._github_session.get_user().login
             logger.info(f"Logged in as {user}")
         except Exception as e:
             raise RuntimeError(
                 f'f"An error occurred while logging in: {str(e)}'
             )
-        self.g = Github(self._token)
-        self.repo = self.g.get_repo(f"{self._owner}/{self._repository}")
 
     def download_files(self, commit: str, directory: str) -> None:
         try:
-            contents = self.repo.get_contents("", ref=commit)
+            contents = self.github_repo.get_contents("", ref=commit)
             for content_file in contents:
                 if content_file.type == "file":
                     file_contents = content_file.decoded_content
