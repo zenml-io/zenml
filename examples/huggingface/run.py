@@ -75,21 +75,18 @@ from steps.configuration import HuggingfaceParameters
 )
 @click.option(
     "--text_column",
-    default="text",
     help="Column name for text in the dataset. i.e. For sequence "
     "classification, this will be text and for token classification, "
     "this will be tokens",
 )
 @click.option(
     "--label_column",
-    default="label",
     help="Column name for label in the dataset. i.e For sequence"
     " classification, this will be label and for token classification, "
     "this will be ner_tags",
 )
 @click.option(
     "--dataset_name",
-    default="imdb",
     help="Name of the dataset to be used. i.e For sequence classification, "
     "this will be imdb and for token classification, this will be "
     "conll2003",
@@ -100,19 +97,33 @@ def main(
     batch_size: int,
     epochs: int,
     full_set: bool,
-    **kwargs
+    max_seq_length: int,
+    init_lr: float,
+    weight_decay_rate: float,
+    text_column: str,
+    label_column: str,
+    dataset_name: str,
 ):
     if nlp_task == "token-classification":
+        if not text_column:
+            text_column = "tokens"
+        if not label_column:
+            label_column = "ner_tags"
+        if not dataset_name:
+            dataset_name = "conll2003"
+
         token_classification_config = HuggingfaceParameters(
             label_all_tokens=True,
-            pretrained_model=pretrained_model or "distilbert-base-uncased",
-            epochs=epochs or 1,
-            batch_size=batch_size or 16,
+            pretrained_model=pretrained_model,
+            epochs=epochs,
+            batch_size=batch_size,
+            max_seq_length=max_seq_length,
+            init_lr=init_lr,
+            weight_decay_rate=weight_decay_rate,
             dummy_run=not full_set,
-            dataset_name=kwargs.get("dataset_name") or "conll2003",
-            text_column=kwargs.get("text_column") or "tokens",
-            label_column=kwargs.get("label_column") or "ner_tags",
-            **kwargs,
+            dataset_name=dataset_name,
+            text_column=text_column,
+            label_column=label_column,
         )
         pipeline = token_classifier_train_eval_pipeline(
             importer=data_importer(token_classification_config),
@@ -126,15 +137,24 @@ def main(
         pipeline.run()
 
     elif nlp_task == "sequence-classification":
+        if not text_column:
+            text_column = "text"
+        if not label_column:
+            label_column = "label"
+        if not dataset_name:
+            dataset_name = "imdb"
+
         sequence_classification_config = HuggingfaceParameters(
-            pretrained_model=pretrained_model or "distilbert-base-uncased",
-            epochs=epochs or 1,
-            batch_size=batch_size or 16,
+            pretrained_model=pretrained_model,
+            epochs=epochs,
+            batch_size=batch_size,
             dummy_run=not full_set,
-            dataset_name=kwargs.get("dataset_name") or "imdb",
-            text_column=kwargs.get("text_column") or "text",
-            label_column=kwargs.get("label_column") or "label",
-            **kwargs,
+            max_seq_length=max_seq_length,
+            init_lr=init_lr,
+            weight_decay_rate=weight_decay_rate,
+            dataset_name=dataset_name,
+            text_column=text_column,
+            label_column=label_column,
         )
         pipeline = seq_classifier_train_eval_pipeline(
             importer=data_importer(sequence_classification_config),
