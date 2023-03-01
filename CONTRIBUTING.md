@@ -120,7 +120,7 @@ the ["fork-and-pull" Git workflow](https://github.com/susam/gitpr)
 To install ZenML from your local checked out files includin all core dev-dependencies, run:
 
 ```
-pip install -e ".[dev]"
+pip install -e ".[server,dev]"
 ```
 
 Optionally, you might want to run the following commands to ensure you have all

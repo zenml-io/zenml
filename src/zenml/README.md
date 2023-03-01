@@ -37,7 +37,7 @@ pip install --upgrade pip
 
 Then from the root of the package:
 ```bash
-pip install -e ".[dev]"
+pip install -e ".[server,dev]"
 ```
 
 This will install the ZenML package as an editable source (including all dev-dependencies), so now you should be good to go with 
