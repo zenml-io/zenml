@@ -63,3 +63,18 @@ to make this work completely smoothly. Here are some of the known issues:
 - `click`: ZenML currently requires `click~=8.0.3` for its CLI. This is on
   account of another dependency of ZenML. Using versions of `click` in your own
   project that are greater than 8.0.3 may cause unanticipated behaviors.
+
+### Manually bypassing ZenML's integration installation
+
+It is possible to skip ZenML's integration installation process and install
+dependencies manually. This is not recommended, but it is possible and can be
+run at your own risk.
+
+To do this, you will need to install the dependencies for the integration you
+want to use manually. You can find the dependencies for the integrations by
+running `zenml integration list` and looking at the `REQUIRED_PACKAGES` column.
+You can then amend and tweak those requirements as you see fit. Note that if you
+are using a remote orchestrator, you would then have to place the updated
+versions for the dependencies in a `DockerSettings` object (described in detail
+[here](https://docs.zenml.io/advanced-guide/pipelines/containerization#how-to-install-additional-pip-dependencies-or-apt-packages))
+which will then make sure everything is working as you need.
