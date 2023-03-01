@@ -81,7 +81,7 @@ zenml init
 # The CONTAINER_REGISTRY_URI will have a format like this: xxx.dkr.ecr.REGION.amazonaws.com
 zenml container-registry register aws_registry --flavor=aws --uri=<CONTAINER_REGISTRY_URI>
 
-# For the secrets manager, all we'll need it the gcp PROJECT_ID
+# For the secrets manager, all we'll need is your AWS region name
 zenml secrets-manager register aws_secrets_manager --flavor=aws --region_name=<YOUR_AWS_REGION>
 
 # The PATH_TO_YOUR_S3_BUCKET is the path to your S3 bucket: s3://xxx
