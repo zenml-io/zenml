@@ -14,6 +14,7 @@
 import os
 import shutil
 import tempfile
+from uuid import uuid4
 
 import numpy as np
 import pytest
@@ -44,6 +45,7 @@ def model_artifact(mocker):
         uri="gs://my-bucket/model.joblib",
         data_type="path/to/model/class",
         materializer="path/to/materializer/class",
+        artifact_store_id=uuid4(),
     )
 
 
