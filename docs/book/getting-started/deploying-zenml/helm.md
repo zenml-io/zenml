@@ -112,7 +112,7 @@ omit this step.
 For the Google Cloud secrets manager:
 
 - the Google Cloud project ID that you want to use to store your secrets
-- a Google Cloud service account key that has access to the secrets manager
+- a Google Cloud service account that has access to the secrets manager
 service. You can create a dedicated service account for this purpose, or use
 an existing service account with the necessary permissions.
 
@@ -478,6 +478,54 @@ Manager API:
       aws_access_key_id: <your AWS access key ID>
       aws_secret_access_key: <your AWS secret access key>
       aws_session_token: <your AWS session token>
+```
+
+### Using the GCP Secrets Manager as a secrets store backend
+
+Unless explicitly disabled or configured otherwise, the ZenML server will use
+the SQL database as a secrets store backend. If you want to use the GCP Secrets
+Manager instead, you need to configure it in the Helm values. Depending on where
+you deploy your ZenML server and how your Kubernetes cluster is configured, you
+may also need to provide GCP credentials needed to access the GCP Secrets
+Manager API:
+
+```yaml
+ zenml:
+
+  # ...
+
+  # Secrets store settings. This is used to store centralized secrets.
+  secretsStore:
+
+    # Set to false to disable the secrets store.
+    enabled: true
+
+    # The type of the secrets store
+    type: gcp
+
+    # Configuration for the GCP Secrets Manager secrets store
+    gcp:
+
+      # The GCP project ID to use. This must be set to the project ID where the
+      # GCP Secrets Manager service that you want to use is located.
+      project_id: us-east-1
+
+      # Path to the GCP credentials file to use to authenticate with the GCP Secrets
+      # Manager instance. You can omit this if you are running the ZenML server
+      # in a GCP GKE cluster that uses workload identity to authenticate with
+      # GCP services without the need for credentials.
+      # NOTE: the credentials file needs to be copied in the helm chart folder
+      # and the path configured here needs to be relative to the root of the
+      # helm chart.
+      google_application_credentials: cloud-credentials.json
+
+serviceAccount:
+
+  # If you're using workload identity, you need to annotate the service
+  # account with the GCP service account name (see https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity)
+  annotations:
+    iam.gke.io/gcp-service-account: <service-account-name>@<project-name>.iam.gserviceaccount.com
+
 ```
 
 ### Using the Azure Key Vault as a secrets store backend

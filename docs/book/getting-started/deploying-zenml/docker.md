@@ -193,6 +193,17 @@ Manager as the secrets store backend.
 These configuration options are only relevant if you're using the GCP Secrets
 Manager as the secrets store backend.
 
+- **ZENML_SECRETS_STORE_PROJECT_ID**:
+    The GCP project ID to use. This must be set to the project ID where the GCP
+    Secrets Manager service that you want to use is located.
+
+- **GOOGLE_APPLICATION_CREDENTIALS**:
+    The path to the GCP service account credentials file to use for
+    authentication. This must be set to a valid GCP service account credentials
+    file that has access to the GCP Secrets Manager service that you want to
+    use. If you are using a GCP service account attached to a GKE cluster to
+    authenticate, you can omit this variable.
+    NOTE: the path to the credentials file must be mounted into the container.
 
 ### Azure Secrets Store Configuration Options
 

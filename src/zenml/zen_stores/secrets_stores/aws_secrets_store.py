@@ -50,7 +50,6 @@ from zenml.models import (
     SecretUpdateModel,
 )
 from zenml.utils.analytics_utils import AnalyticsEvent, track
-from zenml.zen_stores.base_zen_store import BaseZenStore
 from zenml.zen_stores.secrets_stores.base_secrets_store import (
     BaseSecretsStore,
 )
@@ -159,20 +158,6 @@ class AWSSecretsStore(BaseSecretsStore):
     ] = AWSSecretsStoreConfiguration
 
     _client: Optional[Any] = None
-
-    @property
-    def zen_store(self) -> "BaseZenStore":
-        """The ZenML store that owns this secrets store.
-
-        Returns:
-            The ZenML store that owns this secrets store.
-
-        Raises:
-            ValueError: If the store is not initialized.
-        """
-        if not self._zen_store:
-            raise ValueError("Store not initialized")
-        return self._zen_store
 
     @property
     def client(self) -> Any:

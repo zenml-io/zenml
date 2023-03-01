@@ -51,7 +51,6 @@ from zenml.models import (
     SecretUpdateModel,
 )
 from zenml.utils.analytics_utils import AnalyticsEvent, track
-from zenml.zen_stores.base_zen_store import BaseZenStore
 from zenml.zen_stores.secrets_stores.base_secrets_store import (
     BaseSecretsStore,
 )
@@ -146,20 +145,6 @@ class AzureSecretsStore(BaseSecretsStore):
     ] = AzureSecretsStoreConfiguration
 
     _client: Optional[SecretClient] = None
-
-    @property
-    def zen_store(self) -> "BaseZenStore":
-        """The ZenML store that owns this secrets store.
-
-        Returns:
-            The ZenML store that owns this secrets store.
-
-        Raises:
-            ValueError: If the store is not initialized.
-        """
-        if not self._zen_store:
-            raise ValueError("Store not initialized")
-        return self._zen_store
 
     @property
     def client(self) -> SecretClient:
@@ -289,7 +274,7 @@ class AzureSecretsStore(BaseSecretsStore):
             The ZenML secret.
 
         Raises:
-            KeyError: if the Azure secret cannot be retrieved.
+            KeyError: if the Azure secret cannot be converted.
         """
         try:
             created = datetime.fromisoformat(

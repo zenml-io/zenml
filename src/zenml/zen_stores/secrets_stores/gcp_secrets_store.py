@@ -32,11 +32,10 @@ from typing import (
 from uuid import UUID
 
 from google.api_core import exceptions as google_exceptions
-from google.cloud import secretmanager
+from google.cloud.secretmanager import SecretManagerServiceClient
 
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.enums import (
-    SecretScope,
     SecretsStoreType,
 )
 from zenml.exceptions import EntityExistsError
@@ -48,16 +47,8 @@ from zenml.models import (
     SecretResponseModel,
     SecretUpdateModel,
 )
-from zenml.secrets_managers.base_secrets_manager import (
-    ZENML_SECRET_NAME_LABEL,
-)
 from zenml.utils.analytics_utils import AnalyticsEvent, track
-from zenml.zen_stores.base_zen_store import BaseZenStore
 from zenml.zen_stores.secrets_stores.base_secrets_store import (
-    ZENML_SECRET_ID_LABEL,
-    ZENML_SECRET_SCOPE_LABEL,
-    ZENML_SECRET_USER_LABEL,
-    ZENML_SECRET_WORKSPACE_LABEL,
     BaseSecretsStore,
 )
 
@@ -74,7 +65,13 @@ ZENML_GCP_SECRET_UPDATED_KEY = "zenml-secret-updated"
 
 
 class GCPSecretsStoreConfiguration(SecretsStoreConfiguration):
-    """GCP secrets store configuration."""
+    """GCP secrets store configuration.
+
+    Attributes:
+        type: The type of the store.
+        project_id: The GCP project ID where the secrets are stored.
+
+    """
 
     type: SecretsStoreType = SecretsStoreType.GCP
     project_id: str
@@ -82,10 +79,6 @@ class GCPSecretsStoreConfiguration(SecretsStoreConfiguration):
     class Config:
         """Pydantic configuration class."""
 
-        # Don't validate attributes when assigning them. This is necessary
-        # because the certificate attributes can be expanded to the contents
-        # of the certificate files.
-        validate_assignment = False
         # Forbid extra attributes set in the class.
         extra = "forbid"
 
@@ -99,7 +92,7 @@ class GCPSecretsStore(BaseSecretsStore):
         Type[SecretsStoreConfiguration]
     ] = GCPSecretsStoreConfiguration
 
-    _client: Optional[Any] = None
+    _client: Optional[SecretManagerServiceClient] = None
 
     def _initialize(self) -> None:
         """Initialize the GCP secrets store."""
@@ -109,20 +102,6 @@ class GCPSecretsStore(BaseSecretsStore):
         _ = self.client
 
     @property
-    def zen_store(self) -> "BaseZenStore":
-        """The ZenML store that owns this secrets store.
-
-        Returns:
-            The ZenML store that owns this secrets store.
-
-        Raises:
-            ValueError: If the store is not initialized.
-        """
-        if not self._zen_store:
-            raise ValueError("Store not initialized")
-        return self._zen_store
-
-    @property
     def client(self) -> Any:
         """Initialize and return the GCP Secrets Manager client.
 
@@ -130,7 +109,7 @@ class GCPSecretsStore(BaseSecretsStore):
             The GCP Secrets Manager client.
         """
         if self._client is None:
-            self._client = secretmanager.SecretManagerServiceClient()
+            self._client = SecretManagerServiceClient()
         return self._client
 
     @property
@@ -208,6 +187,9 @@ class GCPSecretsStore(BaseSecretsStore):
     ) -> SecretResponseModel:
         """Create a ZenML secret model from data stored in an GCP secret.
 
+        If the GCP secret cannot be converted, the method acts as if the
+        secret does not exist and raises a KeyError.
+
         Args:
             labels: The GCP secret labels.
             values: The GCP secret values.
@@ -216,21 +198,21 @@ class GCPSecretsStore(BaseSecretsStore):
             The ZenML secret model.
 
         Raises:
-            KeyError: if the GCP secret was not found.
+            KeyError: if the GCP secret cannot be converted.
         """
         # Recover the ZenML secret metadata from the AWS secret tags.
+
+        # The GCP secret labels do not really behave like a dictionary: when
+        # a key is not found, it does not raise a KeyError, but instead
+        # returns an empty string. That's why we make this conversion.
         label_dict = dict(labels)
+
         try:
-            secret_id = UUID(label_dict[ZENML_SECRET_ID_LABEL])
-            name = label_dict[ZENML_SECRET_NAME_LABEL]
-            scope = SecretScope(label_dict[ZENML_SECRET_SCOPE_LABEL])
-            workspace_id = UUID(label_dict[ZENML_SECRET_WORKSPACE_LABEL])
-            user_id = UUID(label_dict[ZENML_SECRET_USER_LABEL])
-            created_date = datetime.strptime(
+            created = datetime.strptime(
                 label_dict[ZENML_GCP_SECRET_CREATED_KEY],
                 ZENML_GCP_DATE_FORMAT_STRING,
             )
-            updated_date = datetime.strptime(
+            updated = datetime.strptime(
                 label_dict[ZENML_GCP_SECRET_UPDATED_KEY],
                 ZENML_GCP_DATE_FORMAT_STRING,
             )
@@ -239,32 +221,11 @@ class GCPSecretsStore(BaseSecretsStore):
                 f"Invalid GCP secret: missing required tag '{e}'"
             ) from e
 
-        try:
-            user, workspace = self._validate_user_and_workspace(
-                user_id, workspace_id
-            )
-        except KeyError as e:
-            # The user or workspace associated with the secret no longer
-            # exists. This can happen if the user or workspace is being
-            # deleted nearly at the same time as this call. In this case, we
-            # raise a KeyError exception. The caller should handle this
-            # exception by assuming that the secret no longer exists.
-            logger.warning(
-                f"Secret with ID '{secret_id}' is associated with a "
-                f"non-existent user or workspace. Silently ignoring the "
-                f"secret: {e}"
-            )
-            raise KeyError(f"Secret with ID {secret_id} not found") from e
-
-        return SecretResponseModel(
-            id=secret_id,
-            name=name,
-            scope=scope,
-            workspace=workspace,
-            user=user,
-            values=values or {},
-            created=created_date,
-            updated=updated_date,
+        return self._create_secret_from_metadata(
+            metadata=label_dict,
+            created=created,
+            updated=updated,
+            values=values,
         )
 
     def _get_gcp_filter_string(
@@ -295,6 +256,14 @@ class GCPSecretsStore(BaseSecretsStore):
     def create_secret(self, secret: SecretRequestModel) -> SecretResponseModel:
         """Create a new secret.
 
+        The new secret is also validated against the scoping rules enforced in
+        the secrets store:
+
+          - only one workspace-scoped secret with the given name can exist
+            in the target workspace.
+          - only one user-scoped secret with the given name can exist in the
+            target workspace for the target user.
+
         Args:
             secret: The secret to create.
 
@@ -303,7 +272,8 @@ class GCPSecretsStore(BaseSecretsStore):
 
         Raises:
             RuntimeError: if the secret was unable to be created.
-            EntityExistsError: if the secret already exists.
+            EntityExistsError: If a secret with the same name already exists
+                in the same scope.
         """
         self._validate_gcp_secret_name(secret.name)
 
@@ -385,6 +355,8 @@ class GCPSecretsStore(BaseSecretsStore):
 
         Raises:
             KeyError: If the secret does not exist.
+            RuntimeError: If the GCP Secrets Manager API returns an unexpected
+                error.
         """
         gcp_secret_name = self.client.secret_path(
             self.config.project_id,
@@ -400,6 +372,10 @@ class GCPSecretsStore(BaseSecretsStore):
             raise KeyError(
                 f"Can't find the specified secret for secret_id '{secret_id}': {str(e)}"
             ) from e
+        except Exception as e:
+            raise RuntimeError(
+                f"Error fetching secret with ID {secret_id} {e}"
+            )
 
         secret_values = json.loads(
             secret_version_values.payload.data.decode("UTF-8")
@@ -410,42 +386,28 @@ class GCPSecretsStore(BaseSecretsStore):
             values=secret_values,
         )
 
-    @track(AnalyticsEvent.DELETED_SECRET)
-    def delete_secret(self, secret_id: UUID) -> None:
-        """Delete a secret.
-
-        Args:
-            secret_id: The ID of the secret to delete.
-
-        Raises:
-            KeyError: If the secret could not be found.
-            RuntimeError: If the secret could not be deleted.
-        """
-        gcp_secret_name = self.client.secret_path(
-            self.config.project_id,
-            self._get_gcp_secret_name(secret_id=secret_id),
-        )
-
-        try:
-            self.client.delete_secret(request={"name": gcp_secret_name})
-        except google_exceptions.NotFound as e:
-            raise KeyError(
-                f"Can't find the specified secret for secret_id '{secret_id}': {str(e)}"
-            ) from e
-        except Exception as e:
-            raise RuntimeError(f"Failed to delete secret: {str(e)}") from e
-
     def list_secrets(
         self, secret_filter_model: SecretFilterModel
     ) -> Page[SecretResponseModel]:
         """List all secrets matching the given filter criteria.
+
+        Note that returned secrets do not include any secret values. To fetch
+        the secret values, use `get_secret`.
 
         Args:
             secret_filter_model: The filter criteria.
 
         Returns:
             A list of all secrets matching the filter criteria, with pagination
-                information and sorted according to the filter criteria.
+            information and sorted according to the filter criteria. The
+            returned secrets do not include any secret values, only metadata. To
+            fetch the secret values, use `get_secret` individually with each
+            secret.
+
+        Raises:
+            ValueError: If the filter contains an out-of-bounds page number.
+            RuntimeError: If the Azure Key Vault API returns an unexpected
+                error.
         """
         # convert the secret_filter_model to a GCP filter string
         gcp_filters = ""
@@ -485,7 +447,13 @@ class GCPSecretsStore(BaseSecretsStore):
             total_pages = 1
         else:
             total_pages = math.ceil(secret_count / secret_filter_model.size)
-
+        if secret_filter_model.page > total_pages:
+            raise ValueError(
+                f"Invalid page {secret_filter_model.page}. The requested page "
+                f"size is {secret_filter_model.size} and there are a total of "
+                f"{secret_count} items for this query. The maximum page value "
+                f"therefore is {total_pages}."
+            )
         return Page(
             total=secret_count,
             total_pages=total_pages,
@@ -504,6 +472,19 @@ class GCPSecretsStore(BaseSecretsStore):
     ) -> SecretResponseModel:
         """Update a secret.
 
+        Secret values that are specified as `None` in the update that are
+        present in the existing secret are removed from the existing secret.
+        Values that are present in both secrets are overwritten. All other
+        values in both the existing secret and the update are kept (merged).
+
+        If the update includes a change of name or scope, the scoping rules
+        enforced in the secrets store are used to validate the update:
+
+          - only one workspace-scoped secret with the given name can exist
+            in the target workspace.
+          - only one user-scoped secret with the given name can exist in the
+            target workspace for the target user.
+
         Args:
             secret_id: The ID of the secret to update.
             secret_update: The update to apply to the secret.
@@ -513,8 +494,9 @@ class GCPSecretsStore(BaseSecretsStore):
 
         Raises:
             RuntimeError: If the secret update is invalid.
-            EntityExistsError: If the secret update would result in a name
-                conflict.
+            EntityExistsError: If the update includes a change of name or
+                scope and a secret with the same name already exists in the
+                same scope.
         """
         secret = self.get_secret(secret_id=secret_id)
         gcp_secret_name = self.client.secret_path(
@@ -573,13 +555,11 @@ class GCPSecretsStore(BaseSecretsStore):
                 "labels": metadata,
             }
             update_mask = {"paths": ["labels"]}
-            gcp_updated_secret = (
-                secretmanager.SecretManagerServiceClient().update_secret(
-                    request={
-                        "secret": update_secret,
-                        "update_mask": update_mask,
-                    }
-                )
+            gcp_updated_secret = self.client.update_secret(
+                request={
+                    "secret": update_secret,
+                    "update_mask": update_mask,
+                }
             )
             # ADD A NEW SECRET VERSION
             secret_value = json.dumps(secret.secret_values)
@@ -604,3 +584,26 @@ class GCPSecretsStore(BaseSecretsStore):
             created=secret.created,
             updated=updated,
         )
+
+    @track(AnalyticsEvent.DELETED_SECRET)
+    def delete_secret(self, secret_id: UUID) -> None:
+        """Delete a secret.
+
+        Args:
+            secret_id: The ID of the secret to delete.
+
+        Raises:
+            KeyError: If the secret could not be found.
+            RuntimeError: If the secret could not be deleted.
+        """
+        gcp_secret_name = self.client.secret_path(
+            self.config.project_id,
+            self._get_gcp_secret_name(secret_id=secret_id),
+        )
+
+        try:
+            self.client.delete_secret(request={"name": gcp_secret_name})
+        except google_exceptions.NotFound:
+            raise KeyError(f"Secret with ID {secret_id} not found")
+        except Exception as e:
+            raise RuntimeError(f"Failed to delete secret: {str(e)}") from e
