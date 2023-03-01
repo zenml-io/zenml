@@ -48,7 +48,7 @@ user_delete_command = cli.commands["user"].commands["delete"]
 
 def sample_name(prefix: str = "aria") -> str:
     """Function to get random username."""
-    return f"{prefix}-{random_str(4)}"
+    return f"{prefix}-{random_str(4)}".lower()
 
 
 def create_sample_user(
