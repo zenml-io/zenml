@@ -11,30 +11,25 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Azure Secrets Store implementation."""
+"""HashiCorp Vault Secrets Store implementation."""
 
-import json
 import logging
 import math
 import re
 import uuid
 from datetime import datetime
 from typing import (
+    Any,
     ClassVar,
     Dict,
     List,
     Optional,
     Type,
-    Union,
 )
 from uuid import UUID
 
-from azure.core.exceptions import HttpResponseError, ResourceNotFoundError
-from azure.identity import (
-    ClientSecretCredential,
-    DefaultAzureCredential,
-)
-from azure.keyvault.secrets import SecretClient
+import hvac  # type: ignore[import]
+from hvac.exceptions import InvalidPath, VaultError  # type: ignore[import]
 from pydantic import SecretStr
 
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
@@ -59,35 +54,35 @@ from zenml.zen_stores.secrets_stores.base_secrets_store import (
 logger = get_logger(__name__)
 
 
-AZURE_ZENML_SECRET_NAME_PREFIX = "zenml"
-ZENML_AZURE_SECRET_CREATED_KEY = "zenml_secret_created"
-ZENML_AZURE_SECRET_UPDATED_KEY = "zenml_secret_updated"
+HVAC_ZENML_SECRET_NAME_PREFIX = "zenml"
+ZENML_VAULT_SECRET_VALUES_KEY = "zenml_secret_values"
+ZENML_VAULT_SECRET_METADATA_KEY = "zenml_secret_metadata"
+ZENML_VAULT_SECRET_CREATED_KEY = "zenml_secret_created"
+ZENML_VAULT_SECRET_UPDATED_KEY = "zenml_secret_updated"
 
 
-class AzureSecretsStoreConfiguration(SecretsStoreConfiguration):
-    """Azure secrets store configuration.
+class HashiCorpVaultSecretsStoreConfiguration(SecretsStoreConfiguration):
+    """HashiCorp Vault secrets store configuration.
 
     Attributes:
         type: The type of the store.
-        key_vault_name: Name of the Azure Key Vault that this secrets store
-            will use to store secrets.
-        azure_client_id: The client ID of the Azure application service
-            principal that will be used to access the Azure Key Vault. If not
-            set, the default Azure credential chain will be used.
-        azure_client_secret: The client secret of the Azure application
-            service principal that will be used to access the Azure Key Vault.
-            If not set, the default Azure credential chain will be used.
-        azure_tenant_id: The tenant ID of the Azure application service
-            principal that will be used to access the Azure Key Vault. If not
-            set, the default Azure credential chain will be used.
+        vault_addr: The url of the Vault server. If not set, the value will be
+            loaded from the VAULT_ADDR environment variable, if configured.
+        vault_token: The token used to authenticate with the Vault server. If
+            not set, the token will be loaded from the VAULT_TOKEN environment
+            variable or from the ~/.vault-token file, if configured.
+        vault_namespace: The Vault Enterprise namespace.
+        mount_point: The mount point to use for all secrets.
+        max_versions: The maximum number of secret versions to keep.
     """
 
-    type: SecretsStoreType = SecretsStoreType.AZURE
+    type: SecretsStoreType = SecretsStoreType.HASHICORP
 
-    key_vault_name: str
-    azure_client_id: Optional[SecretStr] = None
-    azure_client_secret: Optional[SecretStr] = None
-    azure_tenant_id: Optional[SecretStr] = None
+    vault_addr: str
+    vault_token: Optional[SecretStr] = None
+    vault_namespace: Optional[str] = None
+    mount_point: Optional[str] = None
+    max_versions: int = 1
 
     class Config:
         """Pydantic configuration class."""
@@ -96,56 +91,58 @@ class AzureSecretsStoreConfiguration(SecretsStoreConfiguration):
         extra = "forbid"
 
 
-class AzureSecretsStore(BaseSecretsStore):
-    """Secrets store implementation that uses the Azure Key Vault API.
+class HashiCorpVaultSecretsStore(BaseSecretsStore):
+    """Secrets store implementation that uses the HashiCorp Vault API.
 
-    This secrets store implementation uses the Azure Key Vault API to
-    store secrets. It allows a single Azure Key Vault to be shared with other
-    ZenML deployments as well as other third party users and applications.
+    This secrets store implementation uses the HashiCorp Vault API to
+    store secrets. It allows a single HashiCorp Vault server to be shared with
+    other ZenML deployments as well as other third party users and applications.
 
     Here are some implementation highlights:
 
-    * the name/ID of an Azure secret is derived from the ZenML secret UUID and a
-    `zenml` prefix in the form `zenml-{zenml_secret_uuid}`. This clearly
-    identifies a secret as being managed by ZenML in the Azure console.
+    * the name/ID of an HashiCorp Vault secret is derived from the ZenML secret
+    UUID and a `zenml` prefix in the form `zenml/{zenml_secret_uuid}`. This
+    clearly identifies a secret as being managed by ZenML in the HashiCorp Vault
+    server. This also allows use to reduce the scope of `list_secrets` to cover
+    only secrets managed by ZenML by using `zenml/` as the path prefix.
 
-    * the Secrets Store also makes heavy use of Azure Key Vault secret tags to
-    store all the metadata associated with a ZenML secret (e.g. the secret name,
-    scope, user and workspace) and to filter secrets by these metadata. The
-    `zenml` tag in particular is used to identify and group all secrets that
-    belong to the same ZenML deployment.
-
-    * all secret key-values configured in a ZenML secret are stored as a single
-    JSON string value in the Azure Key Vault secret value.
+    * given that HashiCorp Vault secrets do not support attaching arbitrary
+    metadata in the form of label or tags, we store the entire ZenML secret
+    metadata (e.g. name, scope, etc.) alongside the secret values in the
+    HashiCorp Vault secret value.
 
     * when a user or workspace is deleted, the secrets associated with it are
     deleted automatically via registered event handlers.
 
-
     Known challenges and limitations:
 
-    * every Azure Key Vault secret has one or more versions. Every update to a
-    secret creates a new version. The created_on and updated_on timestamps
-    returned by the Secrets Store API are the timestamps of the latest version
-    of the secret. This means that we need to fetch the first version of the
-    secret to get the created_on timestamp. This is not ideal, as we'd need to
-    fetch all versions for every secret to get the created_on timestamp during
-    a list operation. So instead we manage the `created` and `updated`
-    timestamps ourselves and save them as tags in the Azure Key Vault secret.
+    * HashiCorp Vault secrets do not support filtering secrets by metadata
+    attached to secrets in the form of label or tags. This means that we cannot
+    filter secrets server-side based on their metadata (e.g. name, scope, etc.).
+    Instead, we have to retrieve all ZenML managed secrets and filter them
+    client-side.
+
+    * HashiCorp Vault secrets are versioned. This means that when a secret is
+    updated, a new version is created which has its own creation timestamp.
+    Furthermore, older secret versions are deleted automatically after a certain
+    configurable number of versions is reached. To work around this, we also
+    manage `created` and `updated` timestamps here and store them in the secret
+    value itself.
+
 
     Attributes:
-        config: The configuration of the Azure secrets store.
+        config: The configuration of the HashiCorp Vault secrets store.
         TYPE: The type of the store.
         CONFIG_TYPE: The type of the store configuration.
     """
 
-    config: AzureSecretsStoreConfiguration
-    TYPE: ClassVar[SecretsStoreType] = SecretsStoreType.AZURE
+    config: HashiCorpVaultSecretsStoreConfiguration
+    TYPE: ClassVar[SecretsStoreType] = SecretsStoreType.HASHICORP
     CONFIG_TYPE: ClassVar[
         Type[SecretsStoreConfiguration]
-    ] = AzureSecretsStoreConfiguration
+    ] = HashiCorpVaultSecretsStoreConfiguration
 
-    _client: Optional[SecretClient] = None
+    _client: Optional[hvac.Client] = None
 
     @property
     def zen_store(self) -> "BaseZenStore":
@@ -162,45 +159,30 @@ class AzureSecretsStore(BaseSecretsStore):
         return self._zen_store
 
     @property
-    def client(self) -> SecretClient:
-        """Initialize and return the Azure Key Vault client.
+    def client(self) -> hvac.Client:
+        """Initialize and return the HashiCorp Vault client.
 
         Returns:
-            The Azure Key Vault client.
+            The HashiCorp Vault client.
         """
         if self._client is None:
 
-            azure_logger = logging.getLogger("azure")
-
-            # Suppress the INFO logging level of the Azure SDK if the
-            # ZenML logging level is WARNING or lower.
-            if logger.level <= logging.WARNING:
-                azure_logger.setLevel(logging.WARNING)
-            else:
-                azure_logger.setLevel(logging.INFO)
-
-            # Initialize the Azure Key Vault client with the
-            # credentials from the configuration, if provided.
-            vault_url = f"https://{self.config.key_vault_name}.vault.azure.net"
-            credential: Union[
-                ClientSecretCredential,
-                DefaultAzureCredential,
-            ]
-            if (
-                self.config.azure_client_id
-                and self.config.azure_tenant_id
-                and self.config.azure_client_secret
-            ):
-                credential = ClientSecretCredential(
-                    tenant_id=self.config.azure_tenant_id.get_secret_value(),
-                    client_id=self.config.azure_client_id.get_secret_value(),
-                    client_secret=self.config.azure_client_secret.get_secret_value(),
-                )
-            else:
-                credential = DefaultAzureCredential()
-            self._client = SecretClient(
-                vault_url=vault_url, credential=credential
+            # Initialize the HashiCorp Vault client with the
+            # credentials from the configuration.
+            self._client = hvac.Client(
+                url=self.config.vault_addr,
+                token=self.config.vault_token.get_secret_value()
+                if self.config.vault_token
+                else None,
+                namespace=self.config.vault_namespace,
             )
+            self._client.secrets.kv.v2.configure(
+                max_versions=self.config.max_versions,
+            )
+            if self.config.mount_point:
+                self._client.secrets.kv.v2.configure(
+                    mount_point=self.config.mount_point,
+                )
         return self._client
 
     # ====================================
@@ -212,11 +194,12 @@ class AzureSecretsStore(BaseSecretsStore):
     # --------------------------------
 
     def _initialize(self) -> None:
-        """Initialize the Azure secrets store."""
-        logger.debug("Initializing AzureSecretsStore")
+        """Initialize the HashiCorp Vault secrets store."""
+        logger.debug("Initializing HashiCorpVaultSecretsStore")
 
-        # Initialize the Azure client early, just to catch any configuration or
-        # authentication errors early, before the Secrets Store is used.
+        # Initialize the HashiCorp Vault client early, just to catch any
+        # configuration or authentication errors early, before the Secrets
+        # Store is used.
         _ = self.client
 
     # ------
@@ -224,15 +207,11 @@ class AzureSecretsStore(BaseSecretsStore):
     # ------
 
     @staticmethod
-    def _validate_azure_secret_name(name: str) -> None:
+    def _validate_vault_secret_name(name: str) -> None:
         """Validate a secret name.
 
-        Azure secret names must contain only alphanumeric characters and the
-        character `-`.
-
-        Given that the ZenML secret name is stored as an Azure Key Vault secret
-        label, we are also limited by the 256 maximum size limitation that Azure
-        imposes on label values.
+        HashiCorp Vault secret names must contain only alphanumeric characters
+        and the characters _+=.@-/.
 
         Args:
             name: the secret name
@@ -240,72 +219,67 @@ class AzureSecretsStore(BaseSecretsStore):
         Raises:
             ValueError: if the secret name is invalid
         """
-        if not re.fullmatch(r"[0-9a-zA-Z-]+", name):
+        if not re.fullmatch(r"[a-zA-Z0-9_+=\.@\-/]*", name):
             raise ValueError(
                 f"Invalid secret name or namespace '{name}'. Must contain "
-                f"only alphanumeric characters and the character -."
-            )
-
-        if len(name) > 256:
-            raise ValueError(
-                f"Invalid secret name or namespace '{name}'. The length is "
-                f"limited to maximum 256 characters."
+                f"only alphanumeric characters and the characters _+=.@-/."
             )
 
     @staticmethod
-    def _get_azure_secret_id(
+    def _get_vault_secret_id(
         secret_id: UUID,
     ) -> str:
-        """Get the Azure secret ID corresponding to a ZenML secret ID.
+        """Get the HashiCorp Vault secret ID corresponding to a ZenML secret ID.
 
-        The convention used for Azure secret names is to use the ZenML
-        secret UUID prefixed with `zenml` as the Azure secret name,
-        i.e. `zenml-<secret_uuid>`.
+        The convention used for HashiCorp Vault secret names is to use the ZenML
+        secret UUID prefixed with `zenml` as the HashiCorp Vault secret name,
+        i.e. `zenml/<secret_uuid>`.
 
         Args:
             secret_id: The ZenML secret ID.
 
         Returns:
-            The Azure secret name.
+            The HashiCorp Vault secret name.
         """
-        return f"{AZURE_ZENML_SECRET_NAME_PREFIX}-{str(secret_id)}"
+        return f"{HVAC_ZENML_SECRET_NAME_PREFIX}/{str(secret_id)}"
 
-    def _convert_azure_secret(
+    def _convert_vault_secret(
         self,
-        tags: Dict[str, str],
-        values: Optional[str] = None,
+        vault_secret: Dict[str, Any],
     ) -> SecretResponseModel:
-        """Create a ZenML secret model from data stored in an Azure secret.
+        """Create a ZenML secret model from data stored in an HashiCorp Vault secret.
 
-        If the Azure secret cannot be converted, the method acts as if the
-        secret does not exist and raises a KeyError.
+        If the HashiCorp Vault secret cannot be converted, the method acts as if
+        the secret does not exist and raises a KeyError.
 
         Args:
-            tags: The Azure secret tags.
-            created: The Azure secret creation time.
-            updated: The Azure secret last updated time.
-            values: The Azure secret values encoded as a JSON string (optional).
+            vault_secret: The HashiCorp Vault secret in JSON form.
 
         Returns:
             The ZenML secret.
+
+        Raises:
+            KeyError: if the HashiCorp Vault secret cannot be converted.
         """
         try:
+            metadata = vault_secret[ZENML_VAULT_SECRET_METADATA_KEY]
+            values = vault_secret[ZENML_VAULT_SECRET_VALUES_KEY]
             created = datetime.fromisoformat(
-                tags[ZENML_AZURE_SECRET_CREATED_KEY],
+                vault_secret[ZENML_VAULT_SECRET_CREATED_KEY],
             )
             updated = datetime.fromisoformat(
-                tags[ZENML_AZURE_SECRET_UPDATED_KEY],
+                vault_secret[ZENML_VAULT_SECRET_UPDATED_KEY],
             )
-        except KeyError as e:
+        except (KeyError, ValueError) as e:
             raise KeyError(
                 f"Secret could not be retrieved: missing required metadata: {e}"
             )
 
         return self._create_secret_from_metadata(
-            metadata=tags,
+            metadata=metadata,
             created=created,
             updated=updated,
-            values=json.loads(values) if values else None,
+            values=values,
         )
 
     @track(AnalyticsEvent.CREATED_SECRET)
@@ -329,10 +303,10 @@ class AzureSecretsStore(BaseSecretsStore):
         Raises:
             EntityExistsError: If a secret with the same name already exists
                 in the same scope.
-            RuntimeError: If the Azure Key Vault API returns an unexpected
+            RuntimeError: If the HashiCorp Vault API returns an unexpected
                 error.
         """
-        self._validate_azure_secret_name(secret.name)
+        self._validate_vault_secret_name(secret.name)
         user, workspace = self._validate_user_and_workspace(
             secret.user, secret.workspace
         )
@@ -350,31 +324,30 @@ class AzureSecretsStore(BaseSecretsStore):
 
         # Generate a new UUID for the secret
         secret_id = uuid.uuid4()
-        azure_secret_id = self._get_azure_secret_id(secret_id)
-        secret_value = json.dumps(secret.secret_values)
+        vault_secret_id = self._get_vault_secret_id(secret_id)
 
-        # Use the ZenML secret metadata as Azure tags
         metadata = self._get_secret_metadata_for_secret(
             secret, secret_id=secret_id
         )
 
-        # We manage the created and updated times ourselves, so we need to
-        # rely on the Azure Key Vault API to set them.
         created = datetime.utcnow()
-        metadata[ZENML_AZURE_SECRET_CREATED_KEY] = created.isoformat()
-        metadata[ZENML_AZURE_SECRET_UPDATED_KEY] = created.isoformat()
-
         try:
-            self.client.set_secret(
-                azure_secret_id,
-                secret_value,
-                tags=metadata,
-                content_type="application/json",
+            self.client.secrets.kv.v2.create_or_update_secret(
+                path=vault_secret_id,
+                # Store the ZenML secret metadata alongside the secret values
+                secret={
+                    ZENML_VAULT_SECRET_VALUES_KEY: secret.secret_values,
+                    ZENML_VAULT_SECRET_METADATA_KEY: metadata,
+                    ZENML_VAULT_SECRET_CREATED_KEY: created.isoformat(),
+                    ZENML_VAULT_SECRET_UPDATED_KEY: created.isoformat(),
+                },
+                # Do not allow overwriting an existing secret
+                cas=0,
             )
-        except HttpResponseError as e:
+        except VaultError as e:
             raise RuntimeError(f"Error creating secret: {e}")
 
-        logger.debug("Created Azure secret: %s", azure_secret_id)
+        logger.debug("Created HashiCorp Vault secret: %s", vault_secret_id)
 
         secret_model = SecretResponseModel(
             id=secret_id,
@@ -400,30 +373,32 @@ class AzureSecretsStore(BaseSecretsStore):
 
         Raises:
             KeyError: If the secret does not exist.
-            RuntimeError: If the Azure Key Vault API returns an unexpected
+            RuntimeError: If the HashiCorp Vault API returns an unexpected
                 error.
         """
-        azure_secret_id = self._get_azure_secret_id(secret_id)
+        vault_secret_id = self._get_vault_secret_id(secret_id)
 
         try:
-            azure_secret = self.client.get_secret(
-                azure_secret_id,
+            vault_secret = (
+                self.client.secrets.kv.v2.read_secret(
+                    path=vault_secret_id,
+                )
+                .get("data", {})
+                .get("data", {})
             )
-        except ResourceNotFoundError:
+        except InvalidPath:
             raise KeyError(f"Secret with ID {secret_id} not found")
-        except HttpResponseError as e:
+        except VaultError as e:
             raise RuntimeError(
                 f"Error fetching secret with ID {secret_id} {e}"
             )
 
-        # The _convert_azure_secret method raises a KeyError if the
+        # The _convert_vault_secret method raises a KeyError if the
         # secret is tied to a workspace or user that no longer exists. Here we
         # simply pass the exception up the stack, as if the secret was not found
         # in the first place, knowing that it will be cascade-deleted soon.
-        assert azure_secret.properties.tags is not None
-        return self._convert_azure_secret(
-            tags=azure_secret.properties.tags,
-            values=azure_secret.value,
+        return self._convert_vault_secret(
+            vault_secret,
         )
 
     def list_secrets(
@@ -447,45 +422,72 @@ class AzureSecretsStore(BaseSecretsStore):
 
         Raises:
             ValueError: If the filter contains an out-of-bounds page number.
-            RuntimeError: If the Azure Key Vault API returns an unexpected
+            RuntimeError: If the HashiCorp Vault API returns an unexpected
                 error.
         """
-        # The Azure Key Vault API does not natively support any of the
+        # The HashiCorp Vault API does not natively support any of the
         # filtering, sorting or pagination options that ZenML supports. The
         # implementation of this method therefore has to fetch all secrets from
         # the Key Vault, then apply the filtering, sorting and pagination on
         # the client side.
 
-        # The metadata will always contain at least the filter criteria
-        # required to exclude everything but Azure secrets that belong to the
-        # current ZenML deployment.
         results: List[SecretResponseModel] = []
 
         try:
-            all_secrets = self.client.list_properties_of_secrets()
-            for secret_property in all_secrets:
+            # List all ZenML secrets in the Vault
+            all_secrets = (
+                self.client.secrets.kv.v2.list_secrets(
+                    path=HVAC_ZENML_SECRET_NAME_PREFIX
+                )
+                .get("data", {})
+                .get("keys", [])
+            )
+        except InvalidPath:
+            # no secrets created yet
+            pass
+        except VaultError as e:
+            raise RuntimeError(f"Error listing HashiCorp Vault secrets: {e}")
+        else:
+            # Convert the Vault secrets to ZenML secrets
+            for secret_uuid in all_secrets:
+                vault_secret_id = (
+                    f"{HVAC_ZENML_SECRET_NAME_PREFIX}/{secret_uuid}"
+                )
                 try:
-                    # NOTE: we do not include the secret values in the
-                    # response. We would need a separate API call to fetch
-                    # them for each secret, which would be very inefficient
-                    # anyway.
-                    assert secret_property.tags is not None
-                    secret_model = self._convert_azure_secret(
-                        tags=secret_property.tags,
+                    vault_secret = (
+                        self.client.secrets.kv.v2.read_secret(
+                            path=vault_secret_id
+                        )
+                        .get("data", {})
+                        .get("data", {})
                     )
-                except KeyError:
-                    # The _convert_azure_secret method raises a KeyError
+                except (InvalidPath, VaultError) as e:
+                    logging.warning(
+                        f"Error fetching secret with ID {vault_secret_id}: {e}",
+                    )
+                    continue
+
+                try:
+                    secret_model = self._convert_vault_secret(
+                        vault_secret,
+                    )
+                except KeyError as e:
+                    # The _convert_vault_secret method raises a KeyError
                     # if the secret is tied to a workspace or user that no
                     # longer exists or if it is otherwise not valid. Here we
                     # pretend that the secret does not exist.
+                    logging.warning(
+                        f"Error fetching secret with ID {vault_secret_id}: {e}",
+                    )
                     continue
 
                 # Filter the secret on the client side.
                 if not secret_filter_model.secret_matches(secret_model):
                     continue
+
+                # Remove the secret values from the response
+                secret_model.values = {}
                 results.append(secret_model)
-        except HttpResponseError as e:
-            raise RuntimeError(f"Error listing Azure Key Vault secrets: {e}")
 
         # Sort the results
         sorted_results = secret_filter_model.sort_secrets(results)
@@ -544,10 +546,11 @@ class AzureSecretsStore(BaseSecretsStore):
             The updated secret.
 
         Raises:
+            KeyError: If the secret does not exist.
             EntityExistsError: If the update includes a change of name or
                 scope and a secret with the same name already exists in the
                 same scope.
-            RuntimeError: If the Azure Key Vault API returns an unexpected
+            RuntimeError: If the HashiCorp Vault API returns an unexpected
                 error.
         """
         secret = self.get_secret(secret_id)
@@ -561,7 +564,7 @@ class AzureSecretsStore(BaseSecretsStore):
         )
 
         if secret_update.name is not None:
-            self._validate_azure_secret_name(secret_update.name)
+            self._validate_vault_secret_name(secret_update.name)
             secret.name = secret_update.name
         if secret_update.scope is not None:
             secret.scope = secret_update.scope
@@ -585,29 +588,29 @@ class AzureSecretsStore(BaseSecretsStore):
             if secret_exists:
                 raise EntityExistsError(msg)
 
-        azure_secret_id = self._get_azure_secret_id(secret_id)
-        secret_value = json.dumps(secret.secret_values)
+        vault_secret_id = self._get_vault_secret_id(secret_id)
 
-        # Convert the ZenML secret metadata to Azure tags
+        # Convert the ZenML secret metadata to HashiCorp Vault tags
         metadata = self._get_secret_metadata_for_secret(secret)
 
-        # We manage the created and updated times ourselves, so we need to
-        # rely on the Azure Key Vault API to set them.
         updated = datetime.utcnow()
-        metadata[ZENML_AZURE_SECRET_CREATED_KEY] = secret.created.isoformat()
-        metadata[ZENML_AZURE_SECRET_UPDATED_KEY] = updated.isoformat()
-
         try:
-            self.client.set_secret(
-                azure_secret_id,
-                secret_value,
-                tags=metadata,
-                content_type="application/json",
+            self.client.secrets.kv.v2.create_or_update_secret(
+                path=vault_secret_id,
+                # Store the ZenML secret metadata alongside the secret values
+                secret={
+                    ZENML_VAULT_SECRET_VALUES_KEY: secret.secret_values,
+                    ZENML_VAULT_SECRET_METADATA_KEY: metadata,
+                    ZENML_VAULT_SECRET_CREATED_KEY: secret.created.isoformat(),
+                    ZENML_VAULT_SECRET_UPDATED_KEY: updated.isoformat(),
+                },
             )
-        except HttpResponseError as e:
+        except InvalidPath:
+            raise KeyError(f"Secret with ID {secret_id} does not exist.")
+        except VaultError as e:
             raise RuntimeError(f"Error updating secret {secret_id}: {e}")
 
-        logger.debug("Updated Azure secret: %s", azure_secret_id)
+        logger.debug("Updated HashiCorp Vault secret: %s", vault_secret_id)
 
         secret_model = SecretResponseModel(
             id=secret_id,
@@ -631,16 +634,16 @@ class AzureSecretsStore(BaseSecretsStore):
 
         Raises:
             KeyError: If the secret does not exist.
-            RuntimeError: If the Azure Key Vault API returns an unexpected
+            RuntimeError: If the HashiCorp Vault API returns an unexpected
                 error.
         """
         try:
-            self.client.begin_delete_secret(
-                self._get_azure_secret_id(secret_id),
-            ).wait()
-        except ResourceNotFoundError:
-            raise KeyError(f"Secret with ID {secret_id} not found")
-        except HttpResponseError as e:
+            self.client.secrets.kv.v2.delete_metadata_and_all_versions(
+                path=self._get_vault_secret_id(secret_id),
+            )
+        except InvalidPath:
+            raise KeyError(f"Secret with ID {secret_id} does not exist.")
+        except VaultError as e:
             raise RuntimeError(
                 f"Error deleting secret with ID {secret_id}: {e}"
             )
