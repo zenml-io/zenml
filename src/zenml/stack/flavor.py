@@ -148,7 +148,7 @@ class Flavor:
         )
         return model
 
-    def generate_default_docs_url(self, component_name: str = None) -> str:
+    def generate_default_docs_url(self, component_name: str = "") -> str:
         """Generate the doc urls for all inbuilt and integration flavors.
 
         Note that this method is not going to be useful for custom flavors,
