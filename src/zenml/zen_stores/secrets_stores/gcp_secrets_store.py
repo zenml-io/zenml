@@ -415,21 +415,24 @@ class GCPSecretsStore(BaseSecretsStore):
         #     secret_filter_model=secret_filter_model
         # )
 
-        # get all the secrets and their labels (for their names) from GCP
-        # (use the filter string to limit what doesn't match the filter)
-        secrets = []
-        for secret in self.client.list_secrets(
-            request={
-                "parent": self.parent_name,
-                "filter": gcp_filters,
-            }
-        ):
-            try:
-                secrets.append(self._convert_gcp_secret(secret.labels))
-            except KeyError:
-                # keep going / ignore if this secret version doesn't exist or
-                # isn't a ZenML secret
-                continue
+        try:
+            # get all the secrets and their labels (for their names) from GCP
+            # (use the filter string to limit what doesn't match the filter)
+            secrets = []
+            for secret in self.client.list_secrets(
+                request={
+                    "parent": self.parent_name,
+                    "filter": gcp_filters,
+                }
+            ):
+                try:
+                    secrets.append(self._convert_gcp_secret(secret.labels))
+                except KeyError:
+                    # keep going / ignore if this secret version doesn't exist
+                    # or isn't a ZenML secret
+                    continue
+        except Exception as e:
+            raise RuntimeError(f"Error listing GCP secrets: {e}") from e
 
         # do client filtering for anything not covered by the filter string
         filtered_secrets = [
