@@ -32,7 +32,7 @@ class PydanticMaterializer(BuiltInContainerMaterializer):
     )
 
     def load(self, data_type: Type[BaseModel]) -> Any:
-        """Reads basic primitive types from JSON.
+        """Reads BaseModel from JSON.
 
         Args:
             data_type: The type of the data to read.
@@ -44,7 +44,7 @@ class PydanticMaterializer(BuiltInContainerMaterializer):
         return data_type(**contents)
 
     def save(self, data: BaseModel) -> None:
-        """Serialize a basic type to JSON.
+        """Serialize a BaseModel to JSON.
 
         Args:
             data: The data to store.
