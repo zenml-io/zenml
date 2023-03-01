@@ -46,6 +46,8 @@ class EvidentlyVisualizer(BaseVisualizer):
             if (
                 artifact_view.type == ArtifactType.DATA
                 and artifact_view.data_type == "builtins.str"
+                and artifact_view.name
+                in ["report_html", "test_html", "dashboard"]
             ):
                 artifact = cast(str, artifact_view.read())
 

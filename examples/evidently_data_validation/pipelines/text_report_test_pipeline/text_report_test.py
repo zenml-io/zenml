@@ -11,10 +11,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from zenml.config import DockerSettings
-from zenml.integrations.constants import EVIDENTLY, SKLEARN
+from zenml.integrations.constants import SKLEARN
 from zenml.pipelines import pipeline
 
-docker_settings = DockerSettings(required_integrations=[EVIDENTLY, SKLEARN])
+docker_settings = DockerSettings(
+    required_integrations=[SKLEARN],
+    requirements=["nltk"],
+)
 
 
 @pipeline(enable_cache=False, settings={"docker": docker_settings})

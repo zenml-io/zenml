@@ -10,18 +10,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import nltk
-
 from zenml.integrations.evidently.metrics import EvidentlyMetricConfig
 from zenml.integrations.evidently.steps import (
     EvidentlyColumnMapping,
     EvidentlyReportParameters,
     evidently_report_step,
 )
-
-nltk.download("words")
-nltk.download("wordnet")
-nltk.download("omw-1.4")
 
 text_data_report = evidently_report_step(
     step_name="text_data_report",
@@ -35,7 +29,6 @@ text_data_report = evidently_report_step(
                 "Class_Name",
             ],
             text_features=["Review_Text", "Title"],
-            prediction="class",
         ),
         metrics=[
             EvidentlyMetricConfig.metric("DataQualityPreset"),
@@ -48,5 +41,7 @@ text_data_report = evidently_report_step(
                 reg_exp=r"[A-Z][A-Za-z0-9 ]*",
             ),
         ],
+        # We need to download the NLTK data for the TextOverviewPreset
+        download_nltk_data=True,
     ),
 )

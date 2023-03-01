@@ -19,7 +19,7 @@ from zenml.post_execution.pipeline import get_pipeline
 
 
 def test_example(request: pytest.FixtureRequest) -> None:
-    """Runs the evidently_data_profiling_and_validation example."""
+    """Runs the evidently_data_validation example."""
 
     with run_example(
         request=request,

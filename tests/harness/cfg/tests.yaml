@@ -72,6 +72,8 @@ tests:
     requirements:
       - integrations:
           - sklearn
+        packages:
+          - nltk
         stacks:
           - type: data_validator
             flavor: evidently

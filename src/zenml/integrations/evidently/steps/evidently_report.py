@@ -36,6 +36,8 @@ class EvidentlyReportParameters(BaseParameters):
             report.
         report_options: a list of tuples containing the name of the report
             and a dictionary of options for the report.
+        download_nltk_data: whether to download the NLTK data for the report
+            step. Defaults to False.
     """
 
     column_mapping: Optional[EvidentlyColumnMapping] = None
@@ -44,6 +46,7 @@ class EvidentlyReportParameters(BaseParameters):
     report_options: Sequence[Tuple[str, Dict[str, Any]]] = Field(
         default_factory=list
     )
+    download_nltk_data: bool = False
 
     @root_validator(pre=True)
     def default_metrics(cls, values: Dict[str, Any]) -> Dict[str, Any]:
@@ -142,6 +145,7 @@ class EvidentlyReportBaseStep:
             profile_list=params.metrics,
             column_mapping=column_mapping,
             report_options=params.report_options,
+            download_nltk_data=params.download_nltk_data,
         )
         return [report.json(), report.show(mode="inline").data]
 

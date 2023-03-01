@@ -29,7 +29,6 @@ text_data_test = evidently_test_step(
                 "Class_Name",
             ],
             text_features=["Review_Text", "Title"],
-            prediction="class",
         ),
         tests=[
             EvidentlyTestConfig.test("DataQualityTestPreset"),
@@ -39,5 +38,7 @@ text_data_test = evidently_test_step(
                 reg_exp="^[0..9]",
             ),
         ],
+        # We need to download the NLTK data for the TestColumnRegExp test
+        download_nltk_data=True,
     ),
 )

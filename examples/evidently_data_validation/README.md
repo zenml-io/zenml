@@ -10,19 +10,25 @@ This example uses [`evidently`](https://github.com/evidentlyai/evidently), a
 useful open-source library to painlessly check for missing values (among other
 features). 
 
-ZenML implements some standard steps that you can use to get Reports or test your
+ZenML implements some standard steps that you can use to get reports or test your
 data for quality and other purposes. These steps are:
-`EvidentlyReportStep`: This step generates a report for a given dataset.
-You can provide a list of metrics a list of metrics, metrics presets or a dictionary of metrics to use with the "generate_column_metrics" method, to the step as parameters. The full list of metrics can be found [here](
-    https://docs.evidentlyai.com/reference/all-metrics/).
 
-`EvidentlyTestStep`: This step tests a given dataset for quality. You can provide a list of tests, a list of test presets or a dictionary of tests to use with the "generate_column_tests" method, to the step as parameters. The full list of tests can be found [here](https://docs.evidentlyai.com/reference/all-tests/).
+* `EvidentlyReportStep` and `EvidentlySingleDatasetReportStep`: These steps generate
+a report for one or two given datasets. Similar to how you configure an Evidently
+Report, you can configure a list of metrics, metric presets or metrics generators
+for the step as parameters. The full list of metrics can be found
+[here](https://docs.evidentlyai.com/reference/all-metrics/).
+
+* `EvidentlyTestStep` and `EvidentlySingleDatasetTestStep`: These step test one
+or two given datasets using various Evidently tests. Similar to how you configure
+an Evidently TestSuite, you can configure a list of tests, a test presets or
+test generators for the step as parameters. The full list of tests can be found
+[here](https://docs.evidentlyai.com/reference/all-tests/).
 
 ## 🧰 How the example is implemented
 In this example, we compare two separate slices of the same dataset as an easy
 way to get an idea for how `evidently` is making the comparison between the two
-dataframes. We chose some text data to illustrate this.
-to illustrate how it works.
+dataframes. We chose some text data to illustrate how this works.
 
 ```python
 text_data_report = evidently_report_step(
@@ -65,7 +71,7 @@ drift diagrams in your browser or within a Jupyter notebook:
 
 # ☁️ Run in Colab
 If you have a Google account, you can get started directly with Google colab 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/evidently_data_profiling_and_validation/evidently.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/evidently_data_validation/evidently.ipynb)
 
 # 🖥 Run it locally
 
@@ -77,12 +83,13 @@ In order to run this example, you need to install and initialize ZenML:
 # install CLI
 pip install "zenml[server]"
 
-# install ZenML integrations
+# install ZenML integrations and example dependencies
 zenml integration install evidently sklearn -y
+pip install nltk
 
 # pull example
-zenml example pull evidently_data_profiling_and_validation
-cd zenml_examples/evidently_data_profiling_and_validation
+zenml example pull evidently_data_validation
+cd zenml_examples/evidently_data_validation
 
 # Initialize ZenML repo
 zenml init

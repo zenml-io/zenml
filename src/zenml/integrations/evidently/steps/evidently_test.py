@@ -37,6 +37,8 @@ class EvidentlyTestParameters(BaseParameters):
         tests: a list of Evidently test configuration to use for the test suite.
         test_options: a list of tuples containing the name of the test
             and a dictionary of options for the test.
+        download_nltk_data: whether to download the NLTK data for the report
+            step. Defaults to False.
     """
 
     column_mapping: Optional[EvidentlyColumnMapping] = None
@@ -45,6 +47,7 @@ class EvidentlyTestParameters(BaseParameters):
     test_options: Sequence[Tuple[str, Dict[str, Any]]] = Field(
         default_factory=list
     )
+    download_nltk_data: bool = False
 
     @root_validator(pre=True)
     def default_tests(cls, values: Dict[str, Any]) -> Dict[str, Any]:
@@ -142,6 +145,7 @@ class EvidentlyBaseTestStep:
             check_list=params.tests,
             column_mapping=column_mapping,
             test_options=params.test_options,
+            download_nltk_data=params.download_nltk_data,
         )
         return [test_suite.json(), test_suite.show(mode="inline").data]
 

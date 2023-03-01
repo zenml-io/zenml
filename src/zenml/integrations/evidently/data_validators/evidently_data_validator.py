@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the Evidently data validator."""
 
+import os
 from typing import (
     Any,
     ClassVar,
@@ -197,6 +198,32 @@ class EvidentlyDataValidator(BaseDataValidator):
 
         return options
 
+    @staticmethod
+    def _download_nltk_data() -> None:
+        """Download NLTK data for text metrics and tests.
+
+        Raises:
+            ImportError: if NLTK is not installed.
+        """
+        try:
+            import nltk  # type: ignore[import]
+            from nltk.data import path as nltk_path  # type: ignore[import]
+        except ImportError:
+            raise ImportError(
+                "NLTK is not installed. Please install NLTK to use "
+                "Evidently text metrics and tests."
+            )
+
+        # Configure NLTK to use the current working directory to download and
+        # lookup data. This is necessary because the default download directory
+        # is not writable in some Docker containers.
+        nltk_path.append(os.getcwd())
+
+        # Download NLTK data. We need this later on for the Evidently text report.
+        nltk.download("words", download_dir=os.getcwd())
+        nltk.download("wordnet", download_dir=os.getcwd())
+        nltk.download("omw-1.4", download_dir=os.getcwd())
+
     def data_profiling(
         self,
         dataset: pd.DataFrame,
@@ -204,6 +231,7 @@ class EvidentlyDataValidator(BaseDataValidator):
         profile_list: Optional[Sequence[EvidentlyMetricConfig]] = None,
         column_mapping: Optional[ColumnMapping] = None,
         report_options: Sequence[Tuple[str, Dict[str, Any]]] = [],
+        download_nltk_data: bool = False,
         **kwargs: Any,
     ) -> Report:
         """Analyze a dataset and generate a data report with Evidently.
@@ -240,11 +268,16 @@ class EvidentlyDataValidator(BaseDataValidator):
             column_mapping: Properties of the DataFrame columns used
             report_options: List of Evidently options to be passed to the
                 report constructor.
+            download_nltk_data: Whether to download NLTK data for text metrics.
+                Defaults to False.
             **kwargs: Extra keyword arguments (unused).
 
         Returns:
             The Evidently Report as JSON object and as HTML.
         """
+        if download_nltk_data:
+            self._download_nltk_data()
+
         profile_list = profile_list or EvidentlyMetricConfig.default_metrics()
         metrics = [metric.to_evidently_metric() for metric in profile_list]
 
@@ -267,6 +300,7 @@ class EvidentlyDataValidator(BaseDataValidator):
         check_list: Optional[Sequence[EvidentlyTestConfig]] = None,
         test_options: Sequence[Tuple[str, Dict[str, Any]]] = [],
         column_mapping: Optional[ColumnMapping] = None,
+        download_nltk_data: bool = False,
         **kwargs: Any,
     ) -> TestSuite:
         """Validate a dataset with Evidently.
@@ -282,11 +316,16 @@ class EvidentlyDataValidator(BaseDataValidator):
             test_options: List of Evidently options to be passed to the
                 test suite constructor.
             column_mapping: Properties of the DataFrame columns used
+            download_nltk_data: Whether to download NLTK data for text tests.
+                Defaults to False.
             **kwargs: Extra keyword arguments (unused).
 
         Returns:
             The Evidently Test Suite as JSON object and as HTML.
         """
+        if download_nltk_data:
+            self._download_nltk_data()
+
         check_list = check_list or EvidentlyTestConfig.default_tests()
         tests = [test.to_evidently_test() for test in check_list]
 
