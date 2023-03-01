@@ -86,3 +86,27 @@ class MyParameters(BaseParameters):
 def my_step(params: MyParameters)
     raise ValueError("My exception")
 ```
+
+## Linking to the `Alerter` Stack component
+
+A common use-case is to use the [Alerter](../../component-gallery/alerters/alerters.md)
+component inside the failure or success hooks to notify relevant
+people. It is quite easy to do this:
+
+```python
+def on_failure(context: StepContext):
+    context.active_stack.alerter.post(
+        f"{context.step_name} just failed!"
+    )
+```
+
+For convenience, ZenML offers standard failure and success hooks that you can use in your
+pipelines, that utilize any alerter that you have configured in your stack.
+
+```python
+from zenml.hooks import alerter_success_hook, alerter_failure_hook
+
+@step(on_failure=alerter_failure_hook, on_success=alerter_success_hook)
+def my_step(...):
+    ...
+```
