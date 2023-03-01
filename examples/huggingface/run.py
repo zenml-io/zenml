@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -103,13 +103,15 @@ def main(
     **kwargs
 ):
     if nlp_task == "token-classification":
-        # Run Pipeline
         token_classification_config = HuggingfaceParameters(
             label_all_tokens=True,
-            pretrained_model=pretrained_model,
-            epochs=epochs,
-            batch_size=batch_size,
+            pretrained_model=pretrained_model or "distilbert-base-uncased",
+            epochs=epochs or 1,
+            batch_size=batch_size or 16,
             dummy_run=not full_set,
+            dataset_name=kwargs.get("dataset_name") or "conll2003",
+            text_column=kwargs.get("text_column") or "tokens",
+            label_column=kwargs.get("label_column") or "ner_tags",
             **kwargs,
         )
         pipeline = token_classifier_train_eval_pipeline(
@@ -124,12 +126,14 @@ def main(
         pipeline.run()
 
     elif nlp_task == "sequence-classification":
-        # Run Pipeline
         sequence_classification_config = HuggingfaceParameters(
-            pretrained_model=pretrained_model,
-            epochs=epochs,
-            batch_size=batch_size,
+            pretrained_model=pretrained_model or "distilbert-base-uncased",
+            epochs=epochs or 1,
+            batch_size=batch_size or 16,
             dummy_run=not full_set,
+            dataset_name=kwargs.get("dataset_name") or "imdb",
+            text_column=kwargs.get("text_column") or "text",
+            label_column=kwargs.get("label_column") or "label",
             **kwargs,
         )
         pipeline = seq_classifier_train_eval_pipeline(
