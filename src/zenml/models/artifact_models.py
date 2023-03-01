@@ -54,7 +54,7 @@ class ArtifactBaseModel(BaseModel):
         title="Data type of the artifact.",
     )
 
-    @validator("materializer", "data_type")
+    @validator("materializer", "data_type", pre=True)
     def _convert_source(cls, value: Union[Source, str]) -> Source:
         """Converts an old source string to a source object.
 

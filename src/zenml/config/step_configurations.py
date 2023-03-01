@@ -51,7 +51,7 @@ class PartialArtifactConfiguration(StrictBaseModel):
                 values.pop(deprecated_attribute)
         return values
 
-    @validator("materializer_source")
+    @validator("materializer_source", pre=True)
     def _convert_source(
         cls, value: Union[Source, str, None]
     ) -> Optional[Source]:
@@ -74,7 +74,7 @@ class ArtifactConfiguration(PartialArtifactConfiguration):
 
     materializer_source: Source
 
-    @validator("materializer_source")
+    @validator("materializer_source", pre=True)
     def _convert_source(cls, value: Union[Source, str]) -> Source:
         """Converts an old source string to a source object.
 
@@ -183,7 +183,7 @@ class StepSpec(StrictBaseModel):
     # The default value is to ensure compatibility with specs of version <0.2
     pipeline_parameter_name: str = ""
 
-    @validator("source")
+    @validator("source", pre=True)
     def _convert_source(cls, value: Union[Source, str]) -> Source:
         """Converts an old source string to a source object.
 

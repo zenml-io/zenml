@@ -53,7 +53,7 @@ class Source(BaseModel):
             import_path = import_path.split("@", 1)[0]
 
         module, attribute = import_path.rsplit(".", maxsplit=1)
-        return cls(module=module, variable=attribute, type=SourceType.UNKNOWN)
+        return cls(module=module, attribute=attribute, type=SourceType.UNKNOWN)
 
     @property
     def import_path(self) -> str:
