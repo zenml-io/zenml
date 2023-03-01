@@ -4,14 +4,24 @@ description: How to handle issues with conflicting dependencies
 
 # Dependency Resolution and ZenML
 
-This page documents a some of the common issues that arise when using ZenML with other libraries.
+This page documents a some of the common issues that arise when using ZenML with
+other libraries.
 
-**Last Updated**: February 20, 2023
+**Last Updated**: March 1, 2023
 
 When using ZenML with other libraries, you may encounter issues with conflicting
 dependencies. ZenML aims to be stack- and integration-agnostic, allowing you to
 run your pipelines using the tools that make sense for your problems. With this
 flexibility comes the possibility of dependency conflicts.
+
+ZenML allows you to install dependencies required by integrations through the
+`zenml integration install ...` command. This is a convenient way to install
+dependencies for a specific integration, but it can also lead to dependency
+conflicts if you are using other libraries in your environment. An easy way to
+see if the ZenML requirements are still met (after installing any extra
+dependencies required by your work) by running `zenml integration list` and
+checking that your desired integrations still bear the green tick symbol
+denoting that all requirements are met.
 
 ## Suggestions for Resolving Dependency Conflicts
 
@@ -20,6 +30,19 @@ flexibility comes the possibility of dependency conflicts.
 Consider using a tool like `pip-compile` (available through [the `pip-tools`
 package](https://pip-tools.readthedocs.io/)) to compile your dependencies into a
 static `requirements.txt` file that can be used across environments.
+
+For a practical example and explanation of using `pip-compile` to address
+exactly this need, see [our 'gitflow' repository and
+workflow](https://github.com/zenml-io/zenml-gitflow#-software-requirements-management)
+to learn more.
+
+### Use `pip check` to discover dependency conflicts
+
+Running [`pip check`](https://pip.pypa.io/en/stable/cli/pip_check/) will verify
+that your environment's dependencies are compatible with one another. If not,
+you will see a list of the conflicts. This may or may not be a problem or
+something that will prevent you from moving forward with your specific use case,
+but it is certainly worth being aware of whether this is the case.
 
 ### Well-known dependency resolution issues
 
