@@ -503,8 +503,10 @@ class PipelineDockerImageBuilder:
         if docker_settings.copy_files:
             lines.append("COPY . .")
         elif docker_settings.copy_global_config:
-            lines.append(f"COPY {DOCKER_IMAGE_ZENML_CONFIG_DIR} .")
+            config_dir = DOCKER_IMAGE_ZENML_CONFIG_DIR
+            lines.append(f"COPY {config_dir} ./{config_dir}")
 
+        lines.append("COPY Dockerfile Dockerfile")
         lines.append("RUN chmod -R a+rw .")
 
         if docker_settings.user:
