@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of ZenML's pydantic materializer."""
 
-from typing import Any, Type
+from typing import TYPE_CHECKING, Any, Dict, Type
 
 from pydantic import BaseModel
 
@@ -21,6 +21,9 @@ from zenml.enums import ArtifactType
 from zenml.materializers.built_in_materializer import (
     BuiltInContainerMaterializer,
 )
+
+if TYPE_CHECKING:
+    from zenml.metadata.metadata_types import MetadataType
 
 
 class PydanticMaterializer(BuiltInContainerMaterializer):
@@ -50,3 +53,18 @@ class PydanticMaterializer(BuiltInContainerMaterializer):
             data: The data to store.
         """
         super().save(data.dict())
+
+    def extract_metadata(self, data: BaseModel) -> Dict[str, "MetadataType"]:
+        """Extract metadata from the given BaseModel object.
+
+        Args:
+            data: The BaseModel object to extract metadata from.
+
+        Returns:
+            The extracted metadata as a dictionary.
+        """
+        base_metadata = super().extract_metadata(data)
+        container_metadata = {
+            "schema": data.schema(),
+        }
+        return {**base_metadata, **container_metadata}
