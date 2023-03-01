@@ -11,15 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import os
 import re
 from abc import ABC, abstractmethod
 from typing import Any, Optional, Type, TypeVar, cast
 from uuid import UUID
 
 from git.repo.base import Remote, Repo
-from github import Github, Repository
+from github import Github, GithubException, Repository
 
-from zenml.exceptions import CodeRepoDownloadError
 from zenml.logger import get_logger
 from zenml.models.code_repository_models import CodeRepositoryResponseModel
 from zenml.utils import source_utils_v2
@@ -78,7 +78,9 @@ class BaseCodeRepository(ABC):
         pass
 
     @abstractmethod
-    def download_files(self, commit: str, directory: str) -> None:
+    def download_files(
+        self, commit: str, directory: str, repo_sub_directory: Optional[str]
+    ) -> None:
         # download files of commit to local directory
         pass
 
@@ -171,22 +173,35 @@ class GitHubCodeRepository(BaseCodeRepository):
                 f'f"An error occurred while logging in: {str(e)}'
             )
 
-    def download_files(self, commit: str, directory: str) -> None:
-        try:
-            contents = self.github_repo.get_contents("", ref=commit)
-            for content_file in contents:
-                if content_file.type == "file":
-                    file_contents = content_file.decoded_content
-                    file_path = f"{directory}/{content_file.path}"
-                    with open(file_path, "wb") as f:
-                        f.write(file_contents)
-            logger.info(
-                f"Successfully downloaded files for commit {commit} to directory {directory}"
-            )
-        except Exception as e:
-            raise CodeRepoDownloadError(
-                f'f"An error occurred while downloading files: {str(e)}'
-            )
+    def download_files(
+        self, commit: str, directory: str, repo_sub_directory: Optional[str]
+    ) -> None:
+        contents = self.github_repo.get_dir_contents(
+            repo_sub_directory, ref=commit
+        )
+        for content in contents:
+            logger.info(f"Processing {content.path}")
+            if content.type == "dir":
+                path = os.path.join(directory, content.name)
+                os.makedirs(path, exist_ok=True)
+                self.download_files(
+                    commit=commit,
+                    directory=path,
+                    repo_sub_directory=content.path,
+                )
+            else:
+                try:
+                    path = content.path
+                    content_file = self.github_repo.get_contents(
+                        path, ref=commit
+                    )
+                    data = content_file.decoded_content
+                    path = os.path.join(directory, content.name)
+                    with open(path, "wb") as file:
+                        file.write(data)
+                    file.close()
+                except (GithubException, IOError) as e:
+                    logger.error("Error processing %s: %s", content.path, e)
 
     def get_local_repo(self, path: str) -> LocalRepository:
         # TODO: correctly initialize the local git repo, catch potential errors
