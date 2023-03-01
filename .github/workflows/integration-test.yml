@@ -169,7 +169,7 @@ jobs:
           install_components: 'gke-gcloud-auth-plugin'
         if: contains(inputs.test_environment, 'gcp')
 
-      - name: Setup environment with Poetry
+      - name: Setup environment
         uses: ./.github/actions/setup_environment
         with:
           cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
@@ -242,7 +242,7 @@ jobs:
         run: |
           source $VENV
           # re-install zenml to be sure
-          poetry install --extras server --extras secrets-aws --extras secrets-azure --extras secrets-hashicorp
+          pip install -e ".[server,dev]"
           # install airflow requirements
           pip install "numpy>=1.21.0,<1.24.0"
           pip install apache-airflow-providers-docker

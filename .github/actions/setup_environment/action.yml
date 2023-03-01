@@ -1,5 +1,5 @@
-name: "Setup Matrix and Poetry"
-description: "Install Poetry, loads cached venv if applicable, and performs miscellaneous other operations"
+name: "Install ZenML"
+description: "Install ZenML, loads cached venv if applicable, and performs miscellaneous other operations"
 inputs:
   cache_version:
     description: 'Value gets appended to the cache key and will therefore invalidate the cache if it changes'
@@ -32,12 +32,6 @@ runs:
       run: |
         echo "SHELL_EXECUTABLE=C:\Program Files\Git\bin\bash.exe" >> $GITHUB_ENV
 
-    - name: Install Poetry
-      uses: snok/install-poetry@v1.3.1
-      with:
-        virtualenvs-create: true
-        virtualenvs-in-project: true
-
     - name: Get current date
       shell: bash
       id: date
@@ -50,19 +44,31 @@ runs:
         CACHE_VERSION : ${{inputs.cache_version}}
 
     - name: Load cached venv
-      id: cached-poetry-dependencies
+      id: cached-virtualenv
       uses: actions/cache@v2.1.6
       with:
-        path: |
-          .venv
-          poetry.lock
+        path: .venv
         # Cache the complete venv dir for a given os, python version,
         # pyproject.toml, the current calendar week and the cache version.
         # Providing a different value for the cache version enables manual
         # invalidation of the cache in case it is in some erroneous state.
         key: venv-${{ runner.os }}-python-${{ inputs.python-version }}-${{ hashFiles('pyproject.toml') }}-${{ steps.date.outputs.date }}-${{ hashFiles('cache_version') }}
 
+    - name: Set virtualenv activation script env variable (windows)
+      shell: bash
+      run: echo "VENV=.venv/scripts/activate" >> "$GITHUB_ENV"
+      if: runner.os == 'Windows'
+
+    - name: Set virtualenv activation script env variable (unix)
+      shell: bash
+      run: echo "VENV=.venv/bin/activate" >> "$GITHUB_ENV"
+      if: runner.os != 'Windows'
+
     - name: Install Project
       shell: bash
-      if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-      run: poetry install --extras server --extras secrets-aws --extras secrets-azure --extras secrets-hashicorp
+      if: steps.cached-virtualenv.outputs.cache-hit != 'true'
+      run: |
+        python -m venv .venv
+        source $VENV
+        python -m pip install --upgrade pip
+        pip install -e ".[server,dev]"
