@@ -30,8 +30,10 @@ class TensorflowIntegration(Integration):
         """Activates the integration."""
         # need to import this explicitly to load the Tensorflow file IO support
         # for S3 and other file systems
-        target_os = platform.system()
-        if target_os == "Linux" or target_os == "Windows":
+        if (
+            not platform.system() == "Darwin"
+            or not platform.machine() == "arm64"
+        ):
             import tensorflow_io  # type: ignore [import]
 
         from zenml.integrations.tensorflow import materializers  # noqa
@@ -39,17 +41,17 @@ class TensorflowIntegration(Integration):
     @classmethod
     def get_requirements(cls, target_os: Optional[str] = None) -> List[str]:
         """Defines platform specific requirements for the integration.
-        
+
         Args:
             target_os: The target operating system.
-            
+
         Returns:
             A list of requirements.
         """
         target_os = target_os or platform.system()
-        if target_os == "Darwin":
+        if target_os == "Darwin" and platform.machine() == "arm64":
             requirements = [
-                "tensorflow-macos>=2.8.0",
+                "tensorflow-macos==2.8.0",
             ]
         else:
             requirements = [
