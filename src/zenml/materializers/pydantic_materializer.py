@@ -13,26 +13,26 @@
 #  permissions and limitations under the License.
 """Implementation of ZenML's pydantic materializer."""
 
+import os
 from typing import TYPE_CHECKING, Any, Dict, Type
 
 from pydantic import BaseModel
 
 from zenml.enums import ArtifactType
-from zenml.materializers.built_in_materializer import (
-    BuiltInContainerMaterializer,
-)
+from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.utils import yaml_utils
 
 if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType
 
+DEFAULT_FILENAME = "data.json"
 
-class PydanticMaterializer(BuiltInContainerMaterializer):
+
+class PydanticMaterializer(BaseMaterializer):
     """Handle Pydantic BaseModel objects."""
 
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
-    ASSOCIATED_TYPES = BuiltInContainerMaterializer.ASSOCIATED_TYPES + (
-        BaseModel,
-    )
+    ASSOCIATED_TYPES = (BaseModel,)
 
     def load(self, data_type: Type[BaseModel]) -> Any:
         """Reads BaseModel from JSON.
@@ -43,8 +43,10 @@ class PydanticMaterializer(BuiltInContainerMaterializer):
         Returns:
             The data read.
         """
-        contents = super().load(dict)
-        return data_type(**contents)
+        contents = super().load(data_type)
+        data_path = os.path.join(self.uri, DEFAULT_FILENAME)
+        contents = yaml_utils.read_json(data_path)
+        return data_type.parse_raw(contents)
 
     def save(self, data: BaseModel) -> None:
         """Serialize a BaseModel to JSON.
@@ -52,7 +54,9 @@ class PydanticMaterializer(BuiltInContainerMaterializer):
         Args:
             data: The data to store.
         """
-        super().save(data.dict())
+        super().save(data)
+        data_path = os.path.join(self.uri, DEFAULT_FILENAME)
+        yaml_utils.write_json(data_path, data.json())
 
     def extract_metadata(self, data: BaseModel) -> Dict[str, "MetadataType"]:
         """Extract metadata from the given BaseModel object.
