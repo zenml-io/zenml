@@ -53,11 +53,13 @@ def load(source: Union[Source, str]) -> Any:
             )
             if current_package_version != source.version:
                 logger.warning(
-                    "Installed version `%s` of package `%s` does not match "
-                    "source version `%s`.",
+                    "The currently installed version `%s` of package `%s` "
+                    "does not match the source version `%s`. This might lead "
+                    "to unexpected behavior when using the source object `%s`.",
                     current_package_version,
                     source.package_name,
                     source.version,
+                    source.import_path,
                 )
     elif source.type in {SourceType.USER, SourceType.UNKNOWN}:
         # Unknown source might also refer to a user file, include source
@@ -244,40 +246,37 @@ def _resolve_module(
     if not hasattr(module, "__file__") or not module.__file__:
         if module.__name__ == "__main__":
             raise RuntimeError(
-                f"{module} module was not loaded from a file. Cannot "
-                "determine the module root path."
+                f"Unable to resolve module `{module}` because it was "
+                "not loaded from a file."
             )
         return module.__name__
 
-    module_path = os.path.abspath(module.__file__)
+    module_file = os.path.abspath(module.__file__)
 
-    root = custom_source_root or get_source_root()
-    root = os.path.abspath(root)
+    source_root = custom_source_root or get_source_root()
+    source_root = os.path.abspath(source_root)
 
-    # Remove root_path from module_path to get relative path left over
-    module_path = os.path.relpath(module_path, root)
+    module_source_path = os.path.relpath(module_file, source_root)
 
-    if module_path.startswith(os.pardir):
+    if module_source_path.startswith(os.pardir):
         raise RuntimeError(
-            f"Unable to resolve source for module {module}. The module file "
-            f"'{module_path}' does not seem to be inside the source root "
-            f"'{root}'."
+            f"Unable to resolve module `{module}`. The file from which the "
+            f"module was loaded ({module_file}) is outside the source root "
+            f"({source_root})."
         )
 
     # Remove the file extension and replace the os specific path separators
     # with `.` to get the module source
-    module_path, file_extension = os.path.splitext(module_path)
+    module_source_path, file_extension = os.path.splitext(module_source_path)
     if file_extension != ".py":
         raise RuntimeError(
-            f"Unable to resolve source for module {module}. The module file "
-            f"'{module_path}' does not seem to be a python file."
+            f"Unable to resolve module `{module}`. The file from which the "
+            f"module was loaded ({module_file}) is not a python file."
         )
 
-    module_source = module_path.replace(os.path.sep, ".")
+    module_source = module_source_path.replace(os.path.sep, ".")
 
-    logger.debug(
-        f"Resolved module source for module {module} to: `{module_source}`"
-    )
+    logger.debug("Resolved module `%s` to `%s`", module, module_source)
 
     return module_source
 
