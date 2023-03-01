@@ -32,6 +32,9 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
+    from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
+        PipelineDeploymentSchema,
+    )
     from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 
 
@@ -69,6 +72,9 @@ class ScheduleSchema(NamedSchema, table=True):
         nullable=True,
     )
     pipeline: "PipelineSchema" = Relationship(back_populates="schedules")
+    deployment: Optional["PipelineDeploymentSchema"] = Relationship(
+        back_populates="schedule"
+    )
 
     orchestrator_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,

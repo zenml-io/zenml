@@ -35,9 +35,7 @@ from azureml.core.conda_dependencies import CondaDependencies
 import zenml
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
-from zenml.config.pipeline_deployment import PipelineDeployment
 from zenml.constants import (
-    DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE,
     ENV_ZENML_CONFIG_PATH,
 )
 from zenml.environment import Environment as ZenMLEnvironment
@@ -62,8 +60,6 @@ if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
 
 logger = get_logger(__name__)
-
-ENV_ACTIVE_DEPLOYMENT = "ZENML_ACTIVE_DEPLOYMENT"
 
 
 @contextlib.contextmanager
@@ -169,25 +165,6 @@ class AzureMLStepOperator(BaseStepOperator):
             )
         return None
 
-    def prepare_pipeline_deployment(
-        self, deployment: "PipelineDeployment", stack: "Stack"
-    ) -> None:
-        """Store the active deployment in an environment variable.
-
-        Args:
-            deployment: The pipeline deployment configuration.
-            stack: The stack on which the pipeline will be deployed.
-        """
-        steps_to_run = [
-            step
-            for step in deployment.steps.values()
-            if step.config.step_operator == self.name
-        ]
-        if not steps_to_run:
-            return
-
-        os.environ[ENV_ACTIVE_DEPLOYMENT] = deployment.yaml()
-
     def _prepare_environment(
         self,
         workspace: Workspace,
@@ -213,6 +190,7 @@ class AzureMLStepOperator(BaseStepOperator):
         requirements_files = docker_image_builder._gather_requirements_files(
             docker_settings=docker_settings,
             stack=Client().active_stack,
+            log=False,
         )
         requirements = list(
             itertools.chain.from_iterable(
@@ -282,9 +260,6 @@ class AzureMLStepOperator(BaseStepOperator):
         Args:
             info: Information about the step run.
             entrypoint_command: Command that executes the step.
-
-        Raises:
-            RuntimeError: If the deployment config can't be found.
         """
         if not info.config.resource_settings.empty:
             logger.warning(
@@ -308,7 +283,7 @@ class AzureMLStepOperator(BaseStepOperator):
             "copy_global_config",
             "apt_packages",
         ]
-        docker_settings = info.pipeline.docker_settings
+        docker_settings = info.config.docker_settings
         ignored_docker_fields = docker_settings.__fields_set__.intersection(
             unused_docker_fields
         )
@@ -331,18 +306,6 @@ class AzureMLStepOperator(BaseStepOperator):
         )
 
         source_directory = get_source_root_path()
-        deployment = os.environ.get(ENV_ACTIVE_DEPLOYMENT)
-        deployment_path = os.path.join(
-            source_directory, DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE
-        )
-
-        if deployment:
-            with open(deployment_path, "w") as f:
-                f.write(deployment)
-        elif not os.path.exists(deployment_path):
-            # We're running in a non-local environment which should already
-            # include the deployment at the source root
-            raise RuntimeError("Unable to find deployment configuration.")
 
         with _include_global_config(
             build_context_root=source_directory,
@@ -360,21 +323,17 @@ class AzureMLStepOperator(BaseStepOperator):
                 workspace=workspace, name=self.config.compute_target_name
             )
 
-            try:
-                run_config = ScriptRunConfig(
-                    source_directory=source_directory,
-                    environment=environment,
-                    compute_target=compute_target,
-                    command=entrypoint_command,
-                )
+            run_config = ScriptRunConfig(
+                source_directory=source_directory,
+                environment=environment,
+                compute_target=compute_target,
+                command=entrypoint_command,
+            )
 
-                experiment = Experiment(
-                    workspace=workspace, name=info.pipeline.name
-                )
-                run = experiment.submit(config=run_config)
-            finally:
-                if deployment:
-                    os.remove(deployment_path)
+            experiment = Experiment(
+                workspace=workspace, name=info.pipeline.name
+            )
+            run = experiment.submit(config=run_config)
 
         run.display_name = info.run_name
         run.wait_for_completion(show_output=True)

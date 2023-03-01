@@ -169,8 +169,8 @@ class PipelineView(BaseView):
     def runs(self) -> List["PipelineRunView"]:
         """Returns the last 50 stored runs of this pipeline.
 
-        The runs are returned in chronological order, so the latest
-        run will be the last element in this list.
+        The runs are returned in reverse chronological order, so the latest
+        run will be the first element in this list.
 
         Returns:
             A list of all stored runs of this pipeline.
@@ -182,6 +182,7 @@ class PipelineView(BaseView):
             workspace_id=active_workspace_id,
             pipeline_id=self.model.id,
             size=50,
+            sort_by="desc:created",
         )
 
         return [PipelineRunView(run) for run in runs.items]
