@@ -84,7 +84,7 @@ arguments to the `zenml stack register` command, including a list of which
 option to use for which stack component.
 {% endhint %}
 
-And see them on the UI:
+Alternatively, you can see and register stacks on the dashboard as well:
 
 ![Stack list](../../assets/starter_guide/stacks/02_stack_list.png)
 
