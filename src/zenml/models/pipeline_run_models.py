@@ -23,7 +23,6 @@ from typing import (
     Optional,
     Type,
     Union,
-    cast,
 )
 from uuid import UUID
 
@@ -49,36 +48,6 @@ if TYPE_CHECKING:
         RunMetadataResponseModel,
         StackResponseModel,
     )
-
-
-def get_git_sha(clean: bool = True) -> Optional[str]:
-    """Returns the current git HEAD SHA.
-
-    If the current working directory is not inside a git repo, this will return
-    `None`.
-
-    Args:
-        clean: If `True` and there any untracked files or files in the index or
-            working tree, this function will return `None`.
-
-    Returns:
-        The current git HEAD SHA or `None` if the current working directory is
-        not inside a git repo.
-    """
-    try:
-        from git.exc import InvalidGitRepositoryError
-        from git.repo.base import Repo
-    except ImportError:
-        return None
-
-    try:
-        repo = Repo(search_parent_directories=True)
-    except InvalidGitRepositoryError:
-        return None
-
-    if clean and repo.is_dirty(untracked_files=True):
-        return None
-    return cast(str, repo.head.object.hexsha)
 
 
 # ---- #
