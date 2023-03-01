@@ -28,6 +28,15 @@ logger = get_logger(__name__)
 
 
 class LocalRepository(ABC):
+    def __init__(
+        self, zenml_code_repository: "BaseCodeRepository", *args, **kwargs
+    ) -> None:
+        self._zenml_code_repository = zenml_code_repository
+
+    @property
+    def zenml_code_repository(self) -> "BaseCodeRepository":
+        return self._zenml_code_repository
+
     @property
     @abstractmethod
     def root(self) -> str:
@@ -96,7 +105,8 @@ class LocalGitRepository(LocalRepository):
     # TODO: this maybe needs to accept a callback which checks if the remote
     # URL matches? E.g. the ssh remote url of github needs to be checked with
     # a regex and can't simply be passed as a string here
-    def __init__(self, path: str):
+    def __init__(self, zenml_code_repository: "BaseCodeRepository", path: str):
+        super().__init__(zenml_code_repository=zenml_code_repository)
         self._git_repo = Repo(path=path, search_parent_directories=True)
         # TODO: write function that get's the correct remote based on url
         self._remote = self._git_repo.remote()
@@ -206,7 +216,9 @@ class GitHubCodeRepository(BaseCodeRepository):
     def get_local_repo(self, path: str) -> LocalRepository:
         # TODO: correctly initialize the local git repo, catch potential errors
         try:
-            local_git_repo = LocalGitRepository(path=path)
+            local_git_repo = LocalGitRepository(
+                zenml_code_repository=self, path=path
+            )
         except Exception as e:
             logger.info(f"Could not initialize local git repository: {str(e)}")
             return None

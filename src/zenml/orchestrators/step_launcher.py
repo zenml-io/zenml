@@ -42,7 +42,6 @@ from zenml.orchestrators.step_runner import StepRunner
 from zenml.orchestrators.utils import is_setting_enabled
 from zenml.stack import Stack
 from zenml.utils import string_utils
-from zenml.utils.source_utils_v2 import get_source_root
 
 if TYPE_CHECKING:
     from zenml.models.artifact_models import ArtifactResponseModel
@@ -257,16 +256,10 @@ class StepLauncher:
 
         client = Client()
 
-        active_code_repo = client.find_active_code_repository()
+        local_repo = client.find_active_code_repository()
         git_sha = None
-        if active_code_repo:
-            local_repo = active_code_repo.get_local_repo(
-                path=get_source_root()
-            )
-            assert local_repo
-
-            if not local_repo.is_dirty:
-                git_sha = local_repo.current_commit
+        if local_repo and not local_repo.is_dirty:
+            git_sha = local_repo.current_commit
 
         pipeline_run = PipelineRunRequestModel(
             id=run_id,

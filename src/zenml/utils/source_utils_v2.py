@@ -103,24 +103,21 @@ def resolve(obj: Union[Type[Any], FunctionType, ModuleType]) -> Source:
     if source_type == SourceType.USER:
         from zenml.client import Client
 
-        active_repo = Client().find_active_code_repository()
+        local_repo = Client().find_active_code_repository()
 
-        if active_repo:
+        if local_repo and not local_repo.has_local_changes:
+            module_name = _resolve_module(module)
+
             source_root = get_source_root()
-            local_repo = active_repo.get_local_repo(path=source_root)
-            assert local_repo
+            subdir = PurePath(source_root).relative_to(local_repo.root)
 
-            if not local_repo.has_local_changes:
-                module_name = _resolve_module(module)
-                subdir = PurePath(source_root).relative_to(local_repo.root)
-
-                return CodeRepositorySource(
-                    repository_id=active_repo.id,
-                    commit=local_repo.current_commit,
-                    subdirectory=subdir.as_posix(),
-                    module=module_name,
-                    attribute=attribute_name,
-                )
+            return CodeRepositorySource(
+                repository_id=local_repo.zenml_code_repository.id,
+                commit=local_repo.current_commit,
+                subdirectory=subdir.as_posix(),
+                module=module_name,
+                attribute=attribute_name,
+            )
 
         module_name = _resolve_module(module)
     elif source_type == SourceType.DISTRIBUTION_PACKAGE:
@@ -208,20 +205,17 @@ def _load_repository_files(source: CodeRepositorySource) -> str:
     from zenml.client import Client
     from zenml.config.global_config import GlobalConfiguration
 
-    source_root = get_source_root()
-    active_repo = Client().find_active_code_repository(path=source_root)
+    local_repo = Client().find_active_code_repository()
 
-    if active_repo and active_repo.id == source.repository_id:
-        local_repo = active_repo.get_local_repo(path=source_root)
-        assert local_repo
-
-        if (
-            not local_repo.is_dirty
-            and local_repo.current_commit == source.commit
-        ):
-            # The repo is clean and at the correct commit, we can use the file
-            # directly without downloading anything
-            return local_repo.root
+    if (
+        local_repo
+        and local_repo.zenml_code_repository.id == source.repository_id
+        and not local_repo.is_dirty
+        and local_repo.current_commit == source.commit
+    ):
+        # The repo is clean and at the correct commit, we can use the file
+        # directly without downloading anything
+        return local_repo.root
 
     repo_root = os.path.join(
         GlobalConfiguration().config_directory,
