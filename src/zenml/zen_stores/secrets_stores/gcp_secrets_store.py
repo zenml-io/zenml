@@ -321,7 +321,9 @@ class GCPSecretsStore(BaseSecretsStore):
         secret_id = uuid.uuid4()
         secret_value = json.dumps(secret.secret_values)
 
-        created = datetime.now(timezone.utc)
+        created = datetime.now(timezone.utc).replace(
+            tzinfo=None, microsecond=0
+        )
         labels = self._get_secret_metadata_for_secret(
             secret=secret, secret_id=secret_id
         )
@@ -415,6 +417,10 @@ class GCPSecretsStore(BaseSecretsStore):
 
         try:
             self.client.delete_secret(request={"name": gcp_secret_name})
+        except google_exceptions.NotFound as e:
+            raise KeyError(
+                f"Can't find the specified secret for secret_id '{secret_id}': {str(e)}"
+            ) from e
         except Exception as e:
             raise RuntimeError(f"Failed to delete secret: {str(e)}") from e
 
@@ -472,7 +478,11 @@ class GCPSecretsStore(BaseSecretsStore):
         return Page(
             total=secret_count,
             total_pages=total_pages,
-            items=sorted_results,
+            items=sorted_results[
+                (secret_filter_model.page - 1)
+                * secret_filter_model.size : secret_filter_model.page
+                * secret_filter_model.size
+            ],
             index=secret_filter_model.page,
             max_size=secret_filter_model.size,
         )
@@ -529,7 +539,9 @@ class GCPSecretsStore(BaseSecretsStore):
                 raise EntityExistsError(msg)
 
         # Convert the ZenML secret metadata to GCP labels
-        updated = datetime.now(timezone.utc)
+        updated = datetime.now(timezone.utc).replace(
+            tzinfo=None, microsecond=0
+        )
         metadata = self._get_secret_metadata_for_secret(secret)
         metadata[ZENML_GCP_SECRET_UPDATED_KEY] = updated.strftime(
             ZENML_GCP_DATE_FORMAT_STRING
