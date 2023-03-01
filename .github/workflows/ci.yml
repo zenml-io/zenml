@@ -16,23 +16,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  install:
+  setup-python-environment:
     if: github.event.pull_request.draft == false
-    uses: ./.github/workflows/install.yml
+    uses: ./.github/workflows/setup-python-environment.yml
     secrets: inherit
 
   lint-code:
-    needs: install
+    needs: setup-python-environment
     uses: ./.github/workflows/lint.yml
     secrets: inherit
 
   unit-test:
-    needs: install
+    needs: setup-python-environment
     uses: ./.github/workflows/unit-test.yml
     secrets: inherit
 
   integration-test:
-    needs: install
+    needs: setup-python-environment
     # Exit if its a commit from Gitbook
     if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
     strategy:
