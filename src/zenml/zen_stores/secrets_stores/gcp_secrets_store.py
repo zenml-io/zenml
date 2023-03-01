@@ -216,7 +216,7 @@ class GCPSecretsStore(BaseSecretsStore):
             The ZenML secret model.
 
         Raises:
-            ValueError: if the GCP secret was not found.
+            KeyError: if the GCP secret was not found.
         """
         # Recover the ZenML secret metadata from the AWS secret tags.
         label_dict = dict(labels)
@@ -300,6 +300,10 @@ class GCPSecretsStore(BaseSecretsStore):
 
         Returns:
             The created secret.
+
+        Raises:
+            RuntimeError: if the secret was unable to be created.
+            EntityExistsError: if the secret already exists.
         """
         self._validate_gcp_secret_name(secret.name)
 
@@ -378,6 +382,9 @@ class GCPSecretsStore(BaseSecretsStore):
 
         Returns:
             The secret.
+
+        Raises:
+            KeyError: If the secret does not exist.
         """
         gcp_secret_name = self.client.secret_path(
             self.config.project_id,
@@ -409,6 +416,10 @@ class GCPSecretsStore(BaseSecretsStore):
 
         Args:
             secret_id: The ID of the secret to delete.
+
+        Raises:
+            KeyError: If the secret could not be found.
+            RuntimeError: If the secret could not be deleted.
         """
         gcp_secret_name = self.client.secret_path(
             self.config.project_id,
@@ -499,6 +510,11 @@ class GCPSecretsStore(BaseSecretsStore):
 
         Returns:
             The updated secret.
+
+        Raises:
+            RuntimeError: If the secret update is invalid.
+            EntityExistsError: If the secret update would result in a name
+                conflict.
         """
         secret = self.get_secret(secret_id=secret_id)
         gcp_secret_name = self.client.secret_path(

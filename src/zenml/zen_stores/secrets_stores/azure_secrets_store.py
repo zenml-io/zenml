@@ -282,12 +282,14 @@ class AzureSecretsStore(BaseSecretsStore):
 
         Args:
             tags: The Azure secret tags.
-            created: The Azure secret creation time.
-            updated: The Azure secret last updated time.
-            values: The Azure secret values encoded as a JSON string (optional).
+            values: The Azure secret values encoded as a JSON string
+                (optional).
 
         Returns:
             The ZenML secret.
+
+        Raises:
+            KeyError: if the Azure secret cannot be retrieved.
         """
         try:
             created = datetime.fromisoformat(
