@@ -117,7 +117,7 @@ If you experience trouble running `run_ask.py`, where the script halts and seems
 message from a Slack channel but in the first place does not send anything to the Slack channel,
 please refer to this [issue](https://github.com/zenml-io/zenml/issues/1364).
 
-Short fix is to ensure that the alerter is configured with the right `slack_token` (See [prerequisites](#-prerequisites)).
+You can quickly fix this by ensuring that the alerter is configured with the right `slack_token` (See [prerequisites](#-prerequisites)).
 
 # 📜 Learn more
 
