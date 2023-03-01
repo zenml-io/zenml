@@ -498,7 +498,7 @@ def generate_stack_component_delete_command(
             f"Deleting {display_name} '{name_id_or_prefix}'...\n"
         ):
             try:
-                client.deregister_stack_component(
+                client.delete_stack_component(
                     name_id_or_prefix=name_id_or_prefix,
                     component_type=component_type,
                 )
