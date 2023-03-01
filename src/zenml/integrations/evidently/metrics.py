@@ -89,7 +89,7 @@ class EvidentlyMetricConfig(BaseModel):
 
         Raises:
             ValueError: If the name cannot be converted into a valid Evidently
-            metric or metric preset class.
+                metric or metric preset class.
         """
         # First, try to interpret the metric name as a full class path.
         if "." in metric_name:
@@ -195,10 +195,14 @@ class EvidentlyMetricConfig(BaseModel):
         Returns:
             The EvidentlyMetric declarative representation of the Evidently
             Metric generator configuration.
+
+        Raises:
+            ValueError: If `metric` does not point to a valid Evidently Metric
+                or MetricPreset class.
         """
         if isinstance(metric, str):
             metric_class = cls.get_metric_class(metric)
-        elif issubclass(metric, Metric):
+        elif issubclass(metric, (Metric, MetricPreset)):
             metric_class = metric
         else:
             raise ValueError(f"Invalid Evidently Metric class: {metric}")
@@ -269,6 +273,10 @@ class EvidentlyMetricConfig(BaseModel):
         Returns:
             The EvidentlyMetric declarative representation of the Evidently
             Metric configuration.
+
+        Raises:
+            ValueError: If `metric` does not point to a valid Evidently Metric
+                or MetricPreset class.
         """
         if isinstance(metric, str):
             metric_class = cls.get_metric_class(metric)
@@ -320,6 +328,10 @@ class EvidentlyMetricConfig(BaseModel):
 
         Returns:
             The Evidently Metric, MetricPreset or metric generator object.
+
+        Raises:
+            ValueError: If the Evidently Metric, MetricPreset or column metric
+                generator could not be instantiated.
         """
         metric_class = self.get_metric_class(self.class_path)
 

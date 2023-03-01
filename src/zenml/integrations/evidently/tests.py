@@ -86,7 +86,7 @@ class EvidentlyTestConfig(BaseModel):
 
         Raises:
             ValueError: If the name cannot be converted into a valid Evidently
-            test or test preset class.
+                test or test preset class.
         """
         # First, try to interpret the test name as a full class path.
         if "." in test_name:
@@ -189,10 +189,14 @@ class EvidentlyTestConfig(BaseModel):
         Returns:
             The EvidentlyTest declarative representation of the Evidently
             Test generator configuration.
+
+        Raises:
+            ValueError: If `test` does not point to a valid Evidently Test
+                or TestPreset class.
         """
         if isinstance(test, str):
             test_class = cls.get_test_class(test)
-        elif issubclass(test, Test):
+        elif issubclass(test, (Test, TestPreset)):
             test_class = test
         else:
             raise ValueError(f"Invalid Evidently Test class: {test}")
@@ -262,6 +266,10 @@ class EvidentlyTestConfig(BaseModel):
         Returns:
             The EvidentlyTest declarative representation of the Evidently
             Test configuration.
+
+        Raises:
+            ValueError: If `test` does not point to a valid Evidently Test
+                or TestPreset class.
         """
         if isinstance(test, str):
             test_class = cls.get_test_class(test)
@@ -305,6 +313,10 @@ class EvidentlyTestConfig(BaseModel):
 
         Returns:
             The Evidently Test, TestPreset or test generator object.
+
+        Raises:
+            ValueError: If the Evidently Test, TestPreset or column test
+                generator could not be instantiated.
         """
         test_class = self.get_test_class(self.class_path)
 

@@ -28,7 +28,7 @@ test generators for the step as parameters. Instantiating these steps is done th
 ## 🧰 How the example is implemented
 In this example, we compare two separate slices of the same dataset as an easy
 way to get an idea for how Evidently is making the comparison between the two
-dataframes. We chose the [OpenML's Women's E-Commerce Clothing Reviews](https://www.openml.org/search?type=data&status=active&id=43663) text dataset to illustrate how this works.
+dataframes. We chose the [OpenML Women's E-Commerce Clothing Reviews](https://www.openml.org/search?type=data&status=active&id=43663) text dataset to illustrate how this works.
 
 Here you can see how instantiating and configuring the standard Evidently
 report step can be done using our included `evidently_report_step` utility
