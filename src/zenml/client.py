@@ -646,12 +646,15 @@ class Client(metaclass=ClientMetaClass):
         return created_user
 
     def get_user(
-        self, name_id_or_prefix: Union[str, UUID]
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        allow_name_prefix_match: bool = True,
     ) -> UserResponseModel:
         """Gets a user.
 
         Args:
             name_id_or_prefix: The name or ID of the user.
+            allow_name_prefix_match: If True, allow matching by name prefix.
 
         Returns:
             The User
@@ -660,6 +663,7 @@ class Client(metaclass=ClientMetaClass):
             get_method=self.zen_store.get_user,
             list_method=self.list_users,
             name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=allow_name_prefix_match,
         )
 
     def list_users(
@@ -713,18 +717,18 @@ class Client(metaclass=ClientMetaClass):
             )
         )
 
-    def delete_user(self, user_name_or_id: str) -> None:
+    def delete_user(self, name_id_or_prefix: str) -> None:
         """Delete a user.
 
         Args:
-            user_name_or_id: The name or ID of the user to delete.
+            name_id_or_prefix: The name or ID of the user to delete.
         """
-        user = self.get_user(user_name_or_id)
+        user = self.get_user(name_id_or_prefix, allow_name_prefix_match=False)
         self.zen_store.delete_user(user_name_or_id=user.name)
 
     def update_user(
         self,
-        user_name_or_id: Union[str, UUID],
+        name_id_or_prefix: Union[str, UUID],
         updated_name: Optional[str] = None,
         updated_full_name: Optional[str] = None,
         updated_email: Optional[str] = None,
@@ -733,7 +737,7 @@ class Client(metaclass=ClientMetaClass):
         """Update a user.
 
         Args:
-            user_name_or_id: The name or ID of the user to update.
+            name_id_or_prefix: The name or ID of the user to update.
             updated_name: The new name of the user.
             updated_full_name: The new full name of the user.
             updated_email: The new email of the user.
@@ -742,7 +746,9 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The updated user.
         """
-        user = self.get_user(name_id_or_prefix=user_name_or_id)
+        user = self.get_user(
+            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
+        )
         user_update = UserUpdateModel()
         if updated_name:
             user_update.name = updated_name
@@ -765,12 +771,15 @@ class Client(metaclass=ClientMetaClass):
     # ---- #
 
     def get_team(
-        self, name_id_or_prefix: Union[str, UUID]
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        allow_name_prefix_match: bool = True,
     ) -> TeamResponseModel:
         """Gets a team.
 
         Args:
             name_id_or_prefix: The name or ID of the team.
+            allow_name_prefix_match: If True, allow matching by name prefix.
 
         Returns:
             The Team
@@ -779,6 +788,7 @@ class Client(metaclass=ClientMetaClass):
             get_method=self.zen_store.get_team,
             list_method=self.list_teams,
             name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=allow_name_prefix_match,
         )
 
     def list_teams(
@@ -843,18 +853,18 @@ class Client(metaclass=ClientMetaClass):
 
         return self.zen_store.create_team(team=team)
 
-    def delete_team(self, team_name_or_id: str) -> None:
+    def delete_team(self, name_id_or_prefix: str) -> None:
         """Delete a team.
 
         Args:
-            team_name_or_id: The name or ID of the team to delete.
+            name_id_or_prefix: The name or ID of the team to delete.
         """
-        team = self.get_team(team_name_or_id)
-        self.zen_store.delete_team(team_name_or_id=team.name)
+        team = self.get_team(name_id_or_prefix, allow_name_prefix_match=False)
+        self.zen_store.delete_team(team_name_or_id=team.id)
 
     def update_team(
         self,
-        team_name_or_id: str,
+        name_id_or_prefix: str,
         new_name: Optional[str] = None,
         remove_users: Optional[List[str]] = None,
         add_users: Optional[List[str]] = None,
@@ -862,7 +872,7 @@ class Client(metaclass=ClientMetaClass):
         """Update a team.
 
         Args:
-            team_name_or_id: The name or ID of the team to update.
+            name_id_or_prefix: The name or ID of the team to update.
             new_name: The new name of the team.
             remove_users: The users to remove from the team.
             add_users: The users to add to the team.
@@ -874,7 +884,7 @@ class Client(metaclass=ClientMetaClass):
             RuntimeError: If the same user is in both `remove_users` and
                 `add_users`.
         """
-        team = self.get_team(team_name_or_id)
+        team = self.get_team(name_id_or_prefix, allow_name_prefix_match=False)
 
         team_update = TeamUpdateModel()
 
@@ -924,12 +934,15 @@ class Client(metaclass=ClientMetaClass):
     # ----- #
 
     def get_role(
-        self, name_id_or_prefix: Union[str, UUID]
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        allow_name_prefix_match: bool = True,
     ) -> RoleResponseModel:
         """Gets a role.
 
         Args:
             name_id_or_prefix: The name or ID of the role.
+            allow_name_prefix_match: If True, allow matching by name prefix.
 
         Returns:
             The fetched role.
@@ -938,6 +951,7 @@ class Client(metaclass=ClientMetaClass):
             get_method=self.zen_store.get_role,
             list_method=self.list_roles,
             name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=allow_name_prefix_match,
         )
 
     def list_roles(
@@ -1021,7 +1035,9 @@ class Client(metaclass=ClientMetaClass):
             RuntimeError: If the same permission is in both the
                 `remove_permission` and `add_permission` lists.
         """
-        role = self.get_role(name_id_or_prefix=name_id_or_prefix)
+        role = self.get_role(
+            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
+        )
 
         role_update = RoleUpdateModel()
 
@@ -1073,7 +1089,10 @@ class Client(metaclass=ClientMetaClass):
         Args:
             name_id_or_prefix: The name or ID of the role.
         """
-        self.zen_store.delete_role(role_name_or_id=name_id_or_prefix)
+        role = self.get_role(
+            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
+        )
+        self.zen_store.delete_role(role_name_or_id=role.id)
 
     # --------------------- #
     # USER ROLE ASSIGNMENTS #
@@ -1332,12 +1351,15 @@ class Client(metaclass=ClientMetaClass):
         return workspace
 
     def get_workspace(
-        self, name_id_or_prefix: Optional[Union[UUID, str]]
+        self,
+        name_id_or_prefix: Optional[Union[UUID, str]],
+        allow_name_prefix_match: bool = True,
     ) -> WorkspaceResponseModel:
         """Gets a workspace.
 
         Args:
             name_id_or_prefix: The name or ID of the workspace.
+            allow_name_prefix_match: If True, allow matching by name prefix.
 
         Returns:
             The workspace
@@ -1348,6 +1370,7 @@ class Client(metaclass=ClientMetaClass):
             get_method=self.zen_store.get_workspace,
             list_method=self.list_workspaces,
             name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=allow_name_prefix_match,
         )
 
     def list_workspaces(
@@ -1421,7 +1444,9 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The updated workspace.
         """
-        workspace = self.get_workspace(name_id_or_prefix=name_id_or_prefix)
+        workspace = self.get_workspace(
+            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
+        )
         workspace_update = WorkspaceUpdateModel()
         if new_name:
             workspace_update.name = new_name
@@ -1432,26 +1457,26 @@ class Client(metaclass=ClientMetaClass):
             workspace_update=workspace_update,
         )
 
-    def delete_workspace(self, workspace_name_or_id: str) -> None:
+    def delete_workspace(self, name_id_or_prefix: str) -> None:
         """Delete a workspace.
 
         Args:
-            workspace_name_or_id: The name or ID of the workspace to delete.
+            name_id_or_prefix: The name or ID of the workspace to delete.
 
         Raises:
             IllegalOperationError: If the workspace to delete is the active
                 workspace.
         """
-        workspace = self.zen_store.get_workspace(workspace_name_or_id)
+        workspace = self.get_workspace(
+            name_id_or_prefix, allow_name_prefix_match=False
+        )
         if self.active_workspace.id == workspace.id:
             raise IllegalOperationError(
-                f"Workspace '{workspace_name_or_id}' cannot be deleted since "
+                f"Workspace '{name_id_or_prefix}' cannot be deleted since "
                 "it is currently active. Please set another workspace as "
                 "active first."
             )
-        self.zen_store.delete_workspace(
-            workspace_name_or_id=workspace_name_or_id
-        )
+        self.zen_store.delete_workspace(workspace_name_or_id=workspace.id)
 
     # ------ #
     # STACKS #
@@ -1500,7 +1525,9 @@ class Client(metaclass=ClientMetaClass):
         return Stack.from_model(self.active_stack_model)
 
     def get_stack(
-        self, name_id_or_prefix: Optional[Union[UUID, str]] = None
+        self,
+        name_id_or_prefix: Optional[Union[UUID, str]] = None,
+        allow_name_prefix_match: bool = True,
     ) -> "StackResponseModel":
         """Get a stack by name, ID or prefix.
 
@@ -1508,6 +1535,7 @@ class Client(metaclass=ClientMetaClass):
 
         Args:
             name_id_or_prefix: The name, ID or prefix of the stack.
+            allow_name_prefix_match: If True, allow matching by name prefix.
 
         Returns:
             The stack.
@@ -1517,6 +1545,7 @@ class Client(metaclass=ClientMetaClass):
                 get_method=self.zen_store.get_stack,
                 list_method=self.list_stacks,
                 name_id_or_prefix=name_id_or_prefix,
+                allow_name_prefix_match=allow_name_prefix_match,
             )
         else:
             return self.active_stack_model
@@ -1609,7 +1638,9 @@ class Client(metaclass=ClientMetaClass):
             EntityExistsError: If the stack name is already taken.
         """
         # First, get the stack
-        stack = self.get_stack(name_id_or_prefix=name_id_or_prefix)
+        stack = self.get_stack(
+            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
+        )
 
         # Create the update model
         update_model = StackUpdateModel(
@@ -1698,7 +1729,9 @@ class Client(metaclass=ClientMetaClass):
             ValueError: If the stack is the currently active stack for this
                 client.
         """
-        stack = self.get_stack(name_id_or_prefix=name_id_or_prefix)
+        stack = self.get_stack(
+            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
+        )
 
         if stack.id == self.active_stack_model.id:
             raise ValueError(
@@ -1784,13 +1817,10 @@ class Client(metaclass=ClientMetaClass):
 
         Raises:
             KeyError: If the stack is not registered.
-            ZenKeyError: If the stack is not registered.
         """
         # Make sure the stack is registered
         try:
             stack = self.get_stack(name_id_or_prefix=stack_name_id_or_prefix)
-        except ZenKeyError:
-            raise
         except KeyError:
             raise KeyError(
                 f"Stack '{stack_name_id_or_prefix}' cannot be activated since "
@@ -1879,6 +1909,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         component_type: StackComponentType,
         name_id_or_prefix: Optional[Union[str, UUID]] = None,
+        allow_name_prefix_match: bool = True,
     ) -> "ComponentResponseModel":
         """Fetches a registered stack component.
 
@@ -1889,6 +1920,7 @@ class Client(metaclass=ClientMetaClass):
         Args:
             component_type: The type of the component to fetch
             name_id_or_prefix: The id of the component to fetch.
+            allow_name_prefix_match: If True, allow matching by name prefix.
 
         Returns:
             The registered stack component.
@@ -1936,6 +1968,7 @@ class Client(metaclass=ClientMetaClass):
             get_method=self.zen_store.get_stack_component,
             list_method=type_scoped_list_method,
             name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=allow_name_prefix_match,
         )
 
     def list_stack_components(
@@ -2073,6 +2106,7 @@ class Client(metaclass=ClientMetaClass):
         component = self.get_stack_component(
             name_id_or_prefix=name_id_or_prefix,
             component_type=component_type,
+            allow_name_prefix_match=False,
         )
 
         update_model = ComponentUpdateModel(
@@ -2139,7 +2173,7 @@ class Client(metaclass=ClientMetaClass):
             component_update=update_model,
         )
 
-    def deregister_stack_component(
+    def delete_stack_component(
         self,
         name_id_or_prefix: Union[str, UUID],
         component_type: StackComponentType,
@@ -2153,6 +2187,7 @@ class Client(metaclass=ClientMetaClass):
         component = self.get_stack_component(
             name_id_or_prefix=name_id_or_prefix,
             component_type=component_type,
+            allow_name_prefix_match=False,
         )
 
         self.zen_store.delete_stack_component(component_id=component.id)
@@ -2217,8 +2252,7 @@ class Client(metaclass=ClientMetaClass):
         from zenml.utils.source_utils import validate_flavor_source
 
         flavor = validate_flavor_source(
-            source=source,
-            component_type=component_type,
+            source=source, component_type=component_type
         )()
 
         if len(flavor.config_schema) > TEXT_FIELD_MAX_LENGTH:
@@ -2241,12 +2275,17 @@ class Client(metaclass=ClientMetaClass):
 
         return self.zen_store.create_flavor(flavor=create_flavor_request)
 
-    def get_flavor(self, name_id_or_prefix: str) -> "FlavorResponseModel":
+    def get_flavor(
+        self,
+        name_id_or_prefix: str,
+        allow_name_prefix_match: bool = True,
+    ) -> "FlavorResponseModel":
         """Get a stack component flavor.
 
         Args:
             name_id_or_prefix: The name, ID or prefix to the id of the flavor
                 to get.
+            allow_name_prefix_match: If True, allow matching by name prefix.
 
         Returns:
             The stack component flavor.
@@ -2255,6 +2294,7 @@ class Client(metaclass=ClientMetaClass):
             get_method=self.zen_store.get_flavor,
             list_method=self.list_flavors,
             name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=allow_name_prefix_match,
         )
 
     def delete_flavor(self, name_id_or_prefix: str) -> None:
@@ -2264,7 +2304,9 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix: The name, id or prefix of the id for the
                 flavor to delete.
         """
-        flavor = self.get_flavor(name_id_or_prefix)
+        flavor = self.get_flavor(
+            name_id_or_prefix, allow_name_prefix_match=False
+        )
         self.zen_store.delete_flavor(flavor_id=flavor.id)
 
         logger.info(f"Deleted flavor '{flavor.name}' of type '{flavor.type}'.")
@@ -2819,12 +2861,15 @@ class Client(metaclass=ClientMetaClass):
         )
 
     def get_schedule(
-        self, name_id_or_prefix: Union[str, UUID]
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        allow_name_prefix_match: bool = True,
     ) -> ScheduleResponseModel:
         """Get a schedule by name, id or prefix.
 
         Args:
             name_id_or_prefix: The name, id or prefix of the schedule.
+            allow_name_prefix_match: If True, allow matching by name prefix.
 
         Returns:
             The schedule.
@@ -2833,6 +2878,7 @@ class Client(metaclass=ClientMetaClass):
             get_method=self.zen_store.get_schedule,
             list_method=self.list_schedules,
             name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=allow_name_prefix_match,
         )
 
     def delete_schedule(self, name_id_or_prefix: Union[str, UUID]) -> None:
@@ -2842,7 +2888,9 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix: The name, id or prefix id of the schedule
                 to delete.
         """
-        schedule = self.get_schedule(name_id_or_prefix=name_id_or_prefix)
+        schedule = self.get_schedule(
+            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
+        )
         logger.warning(
             f"Deleting schedule '{name_id_or_prefix}'... This will only delete "
             "the reference of the schedule from ZenML. Please make sure to "
@@ -2935,11 +2983,13 @@ class Client(metaclass=ClientMetaClass):
     def get_pipeline_run(
         self,
         name_id_or_prefix: Union[str, UUID],
+        allow_name_prefix_match: bool = True,
     ) -> PipelineRunResponseModel:
         """Gets a pipeline run by name, ID, or prefix.
 
         Args:
             name_id_or_prefix: Name, ID, or prefix of the pipeline run.
+            allow_name_prefix_match: If True, allow matching by name prefix.
 
         Returns:
             The pipeline run.
@@ -2948,6 +2998,7 @@ class Client(metaclass=ClientMetaClass):
             get_method=self.zen_store.get_run,
             list_method=self.list_runs,
             name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=allow_name_prefix_match,
         )
 
     def delete_pipeline_run(
@@ -2959,7 +3010,9 @@ class Client(metaclass=ClientMetaClass):
         Args:
             name_id_or_prefix: Name, ID, or prefix of the pipeline run.
         """
-        run = self.get_pipeline_run(name_id_or_prefix=name_id_or_prefix)
+        run = self.get_pipeline_run(
+            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
+        )
         self.zen_store.delete_run(run_id=run.id)
 
     # -------------
@@ -3752,6 +3805,7 @@ class Client(metaclass=ClientMetaClass):
         get_method: Callable[..., AnyResponseModel],
         list_method: Callable[..., Page[AnyResponseModel]],
         name_id_or_prefix: Union[str, UUID],
+        allow_name_prefix_match: bool = True,
     ) -> "AnyResponseModel":
         """Fetches an entity using the id, name, or partial id/name.
 
@@ -3760,6 +3814,7 @@ class Client(metaclass=ClientMetaClass):
             list_method: The method to use to fetch all entities.
             name_id_or_prefix: The id, name or partial id of the entity to
                 fetch.
+            allow_name_prefix_match: If True, allow matching by name prefix.
 
         Returns:
             The entity with the given name, id or partial id.
@@ -3788,6 +3843,7 @@ class Client(metaclass=ClientMetaClass):
                 get_method=get_method,
                 list_method=list_method,
                 partial_id_or_name=name_id_or_prefix,
+                allow_name_prefix_match=allow_name_prefix_match,
             )
 
         # If more than one entity with the same name is found, raise an error.
@@ -3806,6 +3862,7 @@ class Client(metaclass=ClientMetaClass):
         get_method: Callable[..., AnyResponseModel],
         list_method: Callable[..., Page[AnyResponseModel]],
         partial_id_or_name: str,
+        allow_name_prefix_match: bool,
     ) -> "AnyResponseModel":
         """Fetches an entity using a partial ID or name.
 
@@ -3813,6 +3870,7 @@ class Client(metaclass=ClientMetaClass):
             get_method: The method to use to fetch the entity by id.
             list_method: The method to use to fetch all entities.
             partial_id_or_name: The partial ID or name of the entity to fetch.
+            allow_name_prefix_match: If True, allow matching by name prefix.
 
         Returns:
             The entity with the given partial ID or name.
@@ -3822,11 +3880,14 @@ class Client(metaclass=ClientMetaClass):
             ZenKeyError: If there is more than one entity with that partial ID
                 or name.
         """
-        entity = list_method(
-            logical_operator=LogicalOperators.OR,
-            name=f"contains:{partial_id_or_name}",
-            id=f"startswith:{partial_id_or_name}",
-        )
+        list_method_args: Dict[str, Any] = {
+            "logical_operator": LogicalOperators.OR,
+            "id": f"startswith:{partial_id_or_name}",
+        }
+        if allow_name_prefix_match:
+            list_method_args["name"] = f"startswith:{partial_id_or_name}"
+
+        entity = list_method(**list_method_args)
 
         # If only a single entity is found, return it.
         if entity.total == 1:
@@ -3834,11 +3895,14 @@ class Client(metaclass=ClientMetaClass):
 
         entity_label = get_method.__name__.replace("get_", "") + "s"
 
+        prefix_description = (
+            "a name/ID prefix" if allow_name_prefix_match else "an ID prefix"
+        )
         # If no entity is found, raise an error.
         if entity.total == 0:
             raise KeyError(
-                f"No {entity_label} have been found that have either a name "
-                f"or an id prefix that matches the provided string "
+                f"No {entity_label} have been found that have "
+                f"{prefix_description} that matches the provided string "
                 f"'{partial_id_or_name}'."
             )
 
@@ -3852,7 +3916,7 @@ class Client(metaclass=ClientMetaClass):
                 ambiguous_entities.append(str(model.id))
         raise ZenKeyError(
             f"{entity.total} {entity_label} have been found that have "
-            f"either a name or an id prefix that matches the provided "
+            f"{prefix_description} that matches the provided "
             f"string '{partial_id_or_name}':\n"
             f"{ambiguous_entities}.\n"
             f"Please provide more characters to uniquely identify "
@@ -3873,8 +3937,8 @@ class Client(metaclass=ClientMetaClass):
         """
         page = list_method()
         items = list(page.items)
-        while page.page < page.total_pages:
-            page = list_method(page=page.page + 1)
+        while page.index < page.total_pages:
+            page = list_method(page=page.index + 1)
             items += list(page.items)
 
         return items
