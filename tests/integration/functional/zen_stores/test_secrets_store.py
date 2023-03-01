@@ -1589,7 +1589,7 @@ def test_secret_values_cannot_be_accessed_by_readonly_user():
 
             saved_secret = store.get_secret(secret.id)
             assert saved_secret.secret_values == secret.secret_values
-            assert set(saved_secret.values.values()) != {None}
+            assert all(v is not None for v in saved_secret.values.values())
 
             user_secrets = store.list_secrets(
                 SecretFilterModel(
@@ -1603,7 +1603,7 @@ def test_secret_values_cannot_be_accessed_by_readonly_user():
 
             saved_secret = store.get_secret(user_secrets[0].id)
             assert saved_secret.secret_values == user_secret.secret_values
-            assert set(saved_secret.values.values()) != {None}
+            assert all(v is not None for v in saved_secret.values.values())
 
             # Remove the user's write access
             client.create_user_role_assignment(
