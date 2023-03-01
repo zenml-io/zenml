@@ -124,7 +124,8 @@ def load_artifact(artifact: "ArtifactResponseModel") -> Any:
         logger.warning(
             "Unable to restore artifact store while trying to load artifact "
             "`%s`. If this artifact is stored in a remote artifact store, "
-            "this might lead to issues when trying to load the artifact."
+            "this might lead to issues when trying to load the artifact.",
+            artifact.id,
         )
 
     return _load_artifact(
