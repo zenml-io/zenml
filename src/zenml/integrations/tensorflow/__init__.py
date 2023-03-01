@@ -38,7 +38,14 @@ class TensorflowIntegration(Integration):
 
     @classmethod
     def get_requirements(cls, target_os: Optional[str] = None) -> List[str]:
-        """Defines platform specific requirements for the integration."""
+        """Defines platform specific requirements for the integration.
+        
+        Args:
+            target_os: The target operating system.
+            
+        Returns:
+            A list of requirements.
+        """
         target_os = target_os or platform.system()
         if target_os == "Darwin":
             requirements = [
