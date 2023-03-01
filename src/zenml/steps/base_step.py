@@ -16,10 +16,10 @@
 import inspect
 from abc import abstractmethod
 from collections import defaultdict
+from types import FunctionType
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     ClassVar,
     Dict,
     List,
@@ -62,6 +62,7 @@ from zenml.steps.utils import (
     PARAM_EXPERIMENT_TRACKER,
     PARAM_EXTRA_OPTIONS,
     PARAM_ON_FAILURE,
+    PARAM_ON_SUCCESS,
     PARAM_OUTPUT_ARTIFACTS,
     PARAM_OUTPUT_MATERIALIZERS,
     PARAM_SETTINGS,
@@ -476,6 +477,7 @@ class BaseStep(metaclass=BaseStepMeta):
         settings = options.pop(PARAM_SETTINGS, None) or {}
         output_materializers = options.pop(PARAM_OUTPUT_MATERIALIZERS, None)
         on_failure = options.pop(PARAM_ON_FAILURE, None)
+        on_success = options.pop(PARAM_ON_SUCCESS, None)
         output_artifacts = options.pop(PARAM_OUTPUT_ARTIFACTS, None)
         extra = options.pop(PARAM_EXTRA_OPTIONS, None)
         experiment_tracker = options.pop(PARAM_EXPERIMENT_TRACKER, None)
@@ -485,9 +487,10 @@ class BaseStep(metaclass=BaseStepMeta):
             step_operator=step_operator,
             output_artifacts=output_artifacts,
             output_materializers=output_materializers,
-            on_failure=on_failure,
             settings=settings,
             extra=extra,
+            on_failure=on_failure,
+            on_success=on_success,
         )
 
     def _verify_and_apply_init_params(self, *args: Any, **kwargs: Any) -> None:
@@ -721,7 +724,8 @@ class BaseStep(metaclass=BaseStepMeta):
         output_artifacts: Optional["OutputArtifactsSpecification"] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         extra: Optional[Dict[str, Any]] = None,
-        on_failure: Optional[Callable] = None,
+        on_failure: Optional[FunctionType] = None,
+        on_success: Optional[FunctionType] = None,
         merge: bool = True,
     ) -> T:
         """Configures the step.
@@ -759,6 +763,11 @@ class BaseStep(metaclass=BaseStepMeta):
                 configurations. If `False` the given configurations will
                 overwrite all existing ones. See the general description of this
                 method for an example.
+            on_failure: Callback function in event of failure of the step. Can be
+                a function with three possible parameters, `StepContext`, `BaseParameters`,
+                and `Exception`.
+            on_success: Callback function in event of failure of the step. Can be
+                a function with two possible parameters, `StepContext` abd `BaseParameters.
 
         Returns:
             The step instance that this method was called on.
@@ -786,10 +795,15 @@ class BaseStep(metaclass=BaseStepMeta):
                 source = _resolve_if_necessary(materializer)
                 outputs[output_name]["materializer_source"] = source
 
-        on_failure_source = None
+        failure_hook_source = None
         if on_failure:
             # string of on_failure hook function to be used for this step
-            on_failure_source = _resolve_if_necessary(on_failure)
+            failure_hook_source = _resolve_if_necessary(on_failure)
+
+        success_hook_source = None
+        if on_success:
+            # string of on_success hook function to be used for this step
+            success_hook_source = _resolve_if_necessary(on_success)
 
         if output_artifacts:
             logger.warning(
@@ -811,7 +825,8 @@ class BaseStep(metaclass=BaseStepMeta):
                 "settings": settings,
                 "outputs": outputs or None,
                 "extra": extra,
-                "on_failure": on_failure_source,
+                "failure_hook_source": failure_hook_source,
+                "success_hook_source": success_hook_source,
             }
         )
         config = StepConfigurationUpdate(**values)

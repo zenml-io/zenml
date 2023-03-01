@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Step decorator function."""
 
+from types import FunctionType
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -35,6 +36,7 @@ from zenml.steps.utils import (
     PARAM_EXPERIMENT_TRACKER,
     PARAM_EXTRA_OPTIONS,
     PARAM_ON_FAILURE,
+    PARAM_ON_SUCCESS,
     PARAM_OUTPUT_ARTIFACTS,
     PARAM_OUTPUT_MATERIALIZERS,
     PARAM_SETTINGS,
@@ -77,7 +79,8 @@ def step(
     output_materializers: Optional["OutputMaterializersSpecification"] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
-    on_failure: Optional[Callable] = None,
+    on_failure: Optional[FunctionType] = None,
+    on_success: Optional[FunctionType] = None,
 ) -> Callable[[F], Type[BaseStep]]:
     ...
 
@@ -94,7 +97,8 @@ def step(
     output_materializers: Optional["OutputMaterializersSpecification"] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
-    on_failure: Optional[Callable] = None,
+    on_failure: Optional[FunctionType] = None,
+    on_success: Optional[FunctionType] = None,
 ) -> Union[Type[BaseStep], Callable[[F], Type[BaseStep]]]:
     """Outer decorator function for the creation of a ZenML step.
 
@@ -123,7 +127,12 @@ def step(
             artifact class will be used for all outputs.
         settings: Settings for this step.
         extra: Extra configurations for this step.
-
+        on_failure: Callback function in event of failure of the step. Can be
+            a function with three possible parameters,
+            `StepContext`, `BaseParameters`, and `Exception`.
+        on_success: Callback function in event of failure of the step. Can be
+            a function with two possible parameters, `StepContext` and
+            `BaseParameters.
     Returns:
         the inner decorator which creates the step class based on the
         ZenML BaseStep
@@ -156,6 +165,7 @@ def step(
                     PARAM_SETTINGS: settings,
                     PARAM_EXTRA_OPTIONS: extra,
                     PARAM_ON_FAILURE: on_failure,
+                    PARAM_ON_SUCCESS: on_success,
                 },
                 "__module__": func.__module__,
                 "__doc__": func.__doc__,

@@ -120,15 +120,15 @@ class StepRunner:
                 return_values = step_entrypoint(**function_params)
             except:  # noqa: E722
                 step_failed = True
-                on_fail_source = self.configuration.on_failure
-                if on_fail_source:
+                failure_hook_source = self.configuration.failure_hook_source
+                if failure_hook_source:
                     try:
                         # For now, abusing _parse_inputs to get function_params
                         on_failure = source_utils.load_source_path(
-                            on_fail_source
+                            failure_hook_source
                         )
                         hook_spec = inspect.getfullargspec(
-                            inspect.unwrap(on_failure)
+                            inspect.unwrap(failure_hook_source)
                         )
                         function_params = self._parse_inputs(
                             args=hook_spec.args,
@@ -140,7 +140,7 @@ class StepRunner:
                         on_failure(**function_params)
                     except ImportError as e:
                         raise ValueError(
-                            f"ZenML can not import the config class '{on_fail_source}': {e}"
+                            f"ZenML can not import the config class '{failure_hook_source}': {e}"
                         )
                 raise
             finally:
