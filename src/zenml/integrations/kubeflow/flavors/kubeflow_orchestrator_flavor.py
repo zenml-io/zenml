@@ -200,6 +200,7 @@ class KubeflowOrchestratorConfig(  # type: ignore[misc] # https://github.com/pyd
         provisioning_attrs = [
             "skip_cluster_provisioning",
             "skip_ui_daemon_provisioning",
+            "kubeflow_pipelines_ui_port",
         ]
 
         provisioning_attrs_used = [
