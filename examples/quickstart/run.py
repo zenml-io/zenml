@@ -18,16 +18,23 @@ from steps import (
     drift_detector,
     evaluator,
     inference_data_loader,
-    prediction_service_loader,
     predictor,
     svc_trainer_mlflow,
     training_data_loader,
 )
 
 from zenml.integrations.evidently.visualizers import EvidentlyVisualizer
-from zenml.integrations.mlflow.steps.mlflow_deployer import MLFlowDeployerParameters, mlflow_model_registry_deployer_step
-from zenml.integrations.mlflow.steps.mlflow_registry import MLFlowRegistryParameters, mlflow_register_model_step
-from zenml.model_registries.base_model_registry import ModelRegistryModelMetadata
+from zenml.integrations.mlflow.steps.mlflow_deployer import (
+    MLFlowDeployerParameters,
+    mlflow_model_registry_deployer_step,
+)
+from zenml.integrations.mlflow.steps.mlflow_registry import (
+    MLFlowRegistryParameters,
+    mlflow_register_model_step,
+)
+from zenml.model_registries.base_model_registry import (
+    ModelRegistryModelMetadata,
+)
 
 
 def main():
@@ -38,14 +45,12 @@ def main():
         trainer=svc_trainer_mlflow(),
         evaluator=evaluator(),
         model_register=mlflow_register_model_step(
-                params=MLFlowRegistryParameters(
-                    name="tensorflow-mnist-model",
-                    metadata=ModelRegistryModelMetadata(
-                        gamma=0.01, arch="svc"
-                    ),
-                    description=f"The first run of the Quickstart pipeline.",
-                )
-            ),
+            params=MLFlowRegistryParameters(
+                name="tensorflow-mnist-model",
+                metadata=ModelRegistryModelMetadata(gamma=0.01, arch="svc"),
+                description=f"The first run of the Quickstart pipeline.",
+            )
+        ),
     )
     training_pipeline_instance.run()
 

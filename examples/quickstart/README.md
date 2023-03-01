@@ -68,15 +68,13 @@ def training_pipeline(
     training_data_loader,
     trainer,
     evaluator,
-    deployment_trigger,
-    model_deployer,
+    model_register,
 ):
     """Train, evaluate, and deploy a model."""
     X_train, X_test, y_train, y_test = training_data_loader()
     model = trainer(X_train=X_train, y_train=y_train)
     test_acc = evaluator(X_test=X_test, y_test=y_test, model=model)
-    deployment_decision = deployment_trigger(test_acc)
-    model_deployer(deployment_decision, model)
+    model_register(model)
 ```
 
 #### Stacks & Stack Components
@@ -150,12 +148,15 @@ zenml up
 zenml data-validator register evidently_data_validator --flavor=evidently
 zenml experiment-tracker register mlflow_tracker --flavor=mlflow
 zenml model-deployer register mlflow_deployer --flavor=mlflow
+!zenml model-registry register mlflow_registry --flavor=mlflow
+
 
 # Register a new stack with the new stack components
 zenml stack register quickstart_stack -a default\
                                       -o default\
                                       -d mlflow_deployer\
                                       -e mlflow_tracker\
+                                      -r mlflow_registry\
                                       -dv evidently_data_validator\
                                       --set
 
