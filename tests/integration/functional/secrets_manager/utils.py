@@ -91,7 +91,7 @@ def secrets_manager_session(
     )
 
     if not no_cleanup:
-        Client().deregister_stack_component(
+        Client().delete_stack_component(
             name_id_or_prefix=secrets_manager_model.id,
             component_type=StackComponentType.SECRETS_MANAGER,
         )
