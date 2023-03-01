@@ -15,9 +15,7 @@
 
 from typing import List, Optional, Sequence, Union
 
-from evidently.pipeline.column_mapping import (  # type: ignore[import]
-    ColumnMapping,
-)
+from evidently import ColumnMapping  # type: ignore[import]
 from pydantic import BaseModel
 
 

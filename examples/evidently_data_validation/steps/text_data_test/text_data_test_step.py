@@ -35,7 +35,7 @@ text_data_test = evidently_test_step(
             EvidentlyTestConfig.test_generator(
                 "TestColumnRegExp",
                 columns=["Review_Text", "Title"],
-                reg_exp="^[0..9]",
+                reg_exp=r"[A-Z][A-Za-z0-9 ]*",
             ),
         ],
         # We need to download the NLTK data for the TestColumnRegExp test
