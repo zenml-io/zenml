@@ -484,8 +484,7 @@ def info(
         packages: List of packages to show information about.
         all: Flag to show information about all installed packages.
         file: Flag to output to a file.
-        debug: Flag to output information about stacks and components for
-            debugging.
+        stack: Flag to output information about active stack and components
     """
     gc = GlobalConfiguration()
     environment = Environment()
