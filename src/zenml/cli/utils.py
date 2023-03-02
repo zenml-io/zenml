@@ -996,7 +996,8 @@ def print_debug_stack(stack: "StackResponseModel") -> None:
     console.print(f"Name: {stack.name}")
     console.print(f"ID: {str(stack.id)}")
     console.print(f"Shared: {'Yes' if stack.is_shared else 'No'}")
-    console.print(f"User: {stack.user.name} / {str(stack.user.id)}")
+    if stack.user and stack.user.name and stack.user.id:  # mypy check
+        console.print(f"User: {stack.user.name} / {str(stack.user.id)}")
     console.print(
         f"Workspace: {stack.workspace.name} / {str(stack.workspace.id)}"
     )
@@ -1011,9 +1012,12 @@ def print_debug_stack(stack: "StackResponseModel") -> None:
         console.print(f"Flavor: {component.flavor}")
         console.print(f"Configuration: {component.configuration}")
         console.print(f"Shared: {'Yes' if component.is_shared else 'No'}")
-        console.print(
-            f"User: {component.user.name} / {str(component.user.id)}"
-        )
+        if (
+            component.user and component.user.name and component.user.id
+        ):  # mypy check
+            console.print(
+                f"User: {component.user.name} / {str(component.user.id)}"
+            )
         console.print(
             f"Workspace: {component.workspace.name} / {str(component.workspace.id)}"
         )
