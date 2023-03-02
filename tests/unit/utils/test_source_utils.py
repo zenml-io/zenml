@@ -32,13 +32,12 @@ def test_is_third_party_module(mocker: MockerFixture):
     """Tests that third party modules get detected correctly."""
     mocker.patch(
         "zenml.utils.source_utils.get_source_root_path",
-        return_value=str(pathlib.Path(__file__).absolute().parents[3]),
+        return_value=str(pathlib.Path(__file__).absolute().parent),
     )
     third_party_file = inspect.getfile(pytest.Cache)
     assert source_utils.is_third_party_module(third_party_file)
 
-    non_third_party_file = inspect.getfile(source_utils)
-    assert not source_utils.is_third_party_module(non_third_party_file)
+    assert not source_utils.is_third_party_module(__file__)
 
     standard_lib_file = inspect.getfile(OrderedDict)
     assert source_utils.is_third_party_module(standard_lib_file)

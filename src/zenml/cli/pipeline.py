@@ -39,7 +39,7 @@ logger = get_logger(__name__)
 
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
 def pipeline() -> None:
-    """Interact with pipelines, pipeline runs and schedules."""
+    """Interact with pipelines, runs and schedules."""
 
 
 @pipeline.command(

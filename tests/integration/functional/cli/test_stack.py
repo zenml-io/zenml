@@ -20,7 +20,7 @@ from uuid import UUID, uuid4
 import pytest
 from click.testing import CliRunner
 
-from tests.integration.functional.cli.test_utils import (
+from tests.integration.functional.cli.utils import (
     create_sample_user_and_login,
 )
 from zenml.artifact_stores.local_artifact_store import (
@@ -794,11 +794,11 @@ def test_stack_export_delete_import(clean_workspace) -> None:
 
     # delete stack and corresponding components
     clean_workspace.delete_stack(name_id_or_prefix=new_stack_model.name)
-    clean_workspace.deregister_stack_component(
+    clean_workspace.delete_stack_component(
         name_id_or_prefix=new_orchestrator_model.name,
         component_type=StackComponentType.ORCHESTRATOR,
     )
-    clean_workspace.deregister_stack_component(
+    clean_workspace.delete_stack_component(
         name_id_or_prefix=new_artifact_store_model.name,
         component_type=StackComponentType.ARTIFACT_STORE,
     )
