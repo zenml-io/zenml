@@ -224,6 +224,7 @@ jobs:
           # install integrations: round 1
           zenml integration export-requirements --output-file requirements.txt --ignore-integration feast --ignore-integration label_studio --ignore-integration bentoml --ignore-integration seldon --ignore-integration kserve
           pip install -r requirements.txt
+          pip install mlflow>=2.0.1
           rm requirements.txt
 
       # - name: Install Prerequisites - Stage 2
