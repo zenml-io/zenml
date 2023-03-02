@@ -29,6 +29,7 @@ from zenml.constants import (
     ENV_ZENML_CONFIG_PATH,
     ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
 )
+from zenml.enums import OperatingSystemType
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 from zenml.utils import docker_utils, io_utils, source_utils
@@ -446,7 +447,8 @@ class PipelineDockerImageBuilder:
         integration_requirements = set(
             itertools.chain.from_iterable(
                 integration_registry.select_integration_requirements(
-                    integration
+                    integration_name=integration,
+                    target_os=OperatingSystemType.LINUX,
                 )
                 for integration in docker_settings.required_integrations
             )

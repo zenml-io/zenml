@@ -105,7 +105,7 @@ class DockerSettings(BaseSettings):
             for a full list of available options.
         skip_build: If set to `True`, the parent image will be used directly to
             run the steps of your pipeline.
-        docker_target_repository: Name of the Docker repository to which the
+        target_repository: Name of the Docker repository to which the
             image should be pushed. This repository will be appended to the
             registry URI of the container registry of your stack and should
             therefore **not** include any registry.
