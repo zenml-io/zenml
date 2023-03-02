@@ -23,6 +23,9 @@ from sagemaker.workflow.pipeline import Pipeline
 from sagemaker.workflow.steps import ProcessingStep
 
 from zenml.config.base_settings import BaseSettings
+from zenml.constants import (
+    METADATA_ORCHESTRATOR_URL,
+)
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.enums import StackComponentType
 from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
@@ -215,6 +218,20 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             )
             logger.info("Pipeline completed successfully.")
 
+    def _get_region_name(self) -> str:
+        """Returns the AWS region name.
+
+        Returns:
+            The region name.
+        """
+        try:
+            return sagemaker.Session().boto_region_name
+        except Exception as e:
+            raise RuntimeError(
+                "Unable to get region name. Please ensure that you have "
+                "configured your AWS credentials correctly."
+            ) from e
+
     def get_pipeline_run_metadata(
         self, run_id: UUID
     ) -> Dict[str, "MetadataType"]:
@@ -226,11 +243,15 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         Returns:
             A dictionary of metadata.
         """
+        region_name = self._get_region_name()
+        aws_run_id = os.environ[ENV_ZENML_SAGEMAKER_RUN_ID]
+        orchestrator_logs_url = f"https://{region_name}.console.aws.amazon.com/cloudwatch/home?region={region_name}#logsV2:log-groups/log-group/$252Faws$252Fsagemaker$252FProcessingJobs$3FlogStreamNameFilter$3Dpipelines-{aws_run_id}-"
         # TODO: Add this once we can get the region
         # run_url = (
         #     f"https://{region}.console.aws.amazon.com/sagemaker/"
         #     f"home?region={region}"
         # )
         return {
-            "pipeline_execution_arn": os.environ[ENV_ZENML_SAGEMAKER_RUN_ID]
+            METADATA_ORCHESTRATOR_URL: orchestrator_logs_url,
+            "pipeline_execution_arn": os.environ[ENV_ZENML_SAGEMAKER_RUN_ID],
         }
