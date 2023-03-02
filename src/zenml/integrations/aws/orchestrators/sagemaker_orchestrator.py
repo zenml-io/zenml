@@ -223,6 +223,9 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
         Returns:
             The region name.
+
+        Raises:
+            RuntimeError: If the region name cannot be retrieved.
         """
         try:
             return sagemaker.Session().boto_region_name
