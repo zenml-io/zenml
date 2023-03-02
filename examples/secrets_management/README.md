@@ -80,4 +80,4 @@ general or about how to build your own secrets store back-end, check out our
 [docs](https://docs.zenml.io/advanced-guide/practical-mlops/secrets-management).
 
 We also have extensive docs for the
-[secrets CLI](https://apidocs.zenml.io/latest/cli/#zenml.cli--using-secrets).
+[secrets CLI](https://apidocs.zenml.io/latest/cli/#zenml.cli--secrets-management).

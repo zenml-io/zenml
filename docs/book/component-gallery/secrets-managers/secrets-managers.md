@@ -83,7 +83,7 @@ zenml secrets-manager flavor list
 ### In the CLI
 
 A full guide on using the CLI interface to register, access, update and delete
-secrets is available [here](https://apidocs.zenml.io/latest/cli/#zenml.cli--using-secrets).
+secrets is available [here](https://apidocs.zenml.io/latest/cli/#zenml.cli--secrets-management-with-secrets-managers).
 
 {% hint style="info" %}
 

@@ -67,7 +67,7 @@ zenml secret create <SECRET_NAME> \
 
 The CLI also includes commands that can be used to list, update and delete
 secrets. A full guide on using the CLI to create, access, update and delete
-secrets is available [here](https://apidocs.zenml.io/latest/cli/#zenml.cli--using-secrets).
+secrets is available [here](https://apidocs.zenml.io/latest/cli/#zenml.cli--secrets-management).
 
 ### How to create a secret with the ZenML Client API
 
@@ -176,7 +176,7 @@ zenml secrets-manager secret register <SECRET_NAME> \
 ```
 
 A full guide on using the CLI to register, access, update and delete
-secrets is available [here](https://apidocs.zenml.io/latest/cli/#zenml.cli--using-secrets).
+secrets is available [here](https://apidocs.zenml.io/latest/cli/#zenml.cli--secrets-management-with-secrets-managers).
 
 ### Interactively register missing secrets for your stack
 
