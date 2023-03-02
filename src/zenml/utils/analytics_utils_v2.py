@@ -40,6 +40,7 @@ TRACK_ENDPOINT = "/track"
 GROUP_ENDPOINT = "/group"
 IDENTIFY_ENDPOINT = "/identify"
 
+
 class TrackRequest(BaseModel):
     """Base model for track requests.
 
@@ -48,6 +49,7 @@ class TrackRequest(BaseModel):
         event: the type of the event.
         properties: the metadata about the event.
     """
+
     user_id: UUID
     event: AnalyticsEvent
     properties: Dict[Any, Any]
@@ -61,6 +63,7 @@ class GroupRequest(BaseModel):
         group_id: the ID of the group.
         traits: traits of the group.
     """
+
     user_id: UUID
     group_id: UUID
     traits: Dict[Any, Any]
@@ -73,6 +76,7 @@ class IdentifyRequest(BaseModel):
         user_id: the canonical ID of the user.
         traits: traits of the identified user.
     """
+
     user_id: UUID
     traits: Dict[Any, Any]
 
@@ -138,9 +142,7 @@ class event_handler_v2(object):
     """Context handler to enable tracking the success status of an event."""
 
     def __init__(
-        self,
-        event: AnalyticsEvent,
-        metadata: Optional[Dict[str, Any]] = None
+        self, event: AnalyticsEvent, metadata: Optional[Dict[str, Any]] = None
     ):
         """Initialization of the context manager.
 
@@ -459,4 +461,3 @@ class AnalyticsClient:
                 "Error retrieving from API. Got response "
                 f"{response.status_code} with body:\n{response.text}"
             )
-
