@@ -18,7 +18,7 @@ import time
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import Generator, List, Optional, Tuple
+from typing import Dict, Generator, List, Optional, Tuple
 
 import pytest
 
@@ -65,20 +65,22 @@ def run_example(
     request: pytest.FixtureRequest,
     name: str,
     example_args: Optional[List[str]] = None,
-    pipeline_name: Optional[str] = None,
-    run_count: Optional[int] = None,
-    step_count: Optional[int] = None,
-) -> Generator[Tuple[LocalExample, List[PipelineRunView]], None, None]:
+    pipelines: Optional[Dict[str, Tuple[int, int]]] = None
+    # pipeline_name: Optional[str] = None,
+    # run_count: Optional[int] = None,
+    # step_count: Optional[int] = None,
+) -> Generator[
+    Tuple[LocalExample, Dict[str, List[PipelineRunView]]], None, None
+]:
     """Runs the given example and validates it ran correctly.
 
     Args:
         request: The pytest request object.
         name: The name (=directory name) of the example.
         example_args: Additional arguments to pass to the example
-        pipeline_name: Validate that a pipeline with this name was registered.
-        run_count: Validate that this many pipeline runs were executed during
-            the example run.
-        step_count: Validate that the pipeline runs had this many steps.
+        pipelines: Validate that the pipelines were executed during the example
+            run. Maps pipeline names to a Tuple (run_count, step_count) that
+            specifies the expected number of runs (and their steps) to validate.
 
     Yields:
         The example and the pipeline runs that were executed and validated.
@@ -109,9 +111,10 @@ def run_example(
     example_args = example_args or []
     example.run_example_directly(*example_args)
 
-    runs: List[PipelineRunView] = []
-    if pipeline_name:
-        runs = wait_and_validate_pipeline_run(
+    pipelines = pipelines or {}
+    runs: Dict[str, List[PipelineRunView]] = {}
+    for pipeline_name, (run_count, step_count) in pipelines.items():
+        runs[pipeline_name] = wait_and_validate_pipeline_run(
             pipeline_name=pipeline_name,
             run_count=run_count,
             step_count=step_count,
@@ -123,7 +126,10 @@ def run_example(
     # Cleanup registered pipelines so they don't cause trouble in future
     # example runs
     for pipeline in client.depaginate(list_method=client.list_pipelines):
-        if pipeline.id not in existing_pipeline_ids:
+        if (
+            pipeline.id not in existing_pipeline_ids
+            and pipeline_name in pipelines
+        ):
             client.delete_pipeline(pipeline.id)
 
     cleanup_docker = request.config.getoption("cleanup_docker", False)

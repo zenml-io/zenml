@@ -26,9 +26,10 @@ def test_example(request: pytest.FixtureRequest) -> None:
     with run_example(
         request=request,
         name="mlflow_deployment",
-        pipeline_name="inference_pipeline",
-        run_count=1,
-        step_count=4,
+        pipelines={
+            "continuous_deployment_pipeline": (1, 6),
+            "inference_pipeline": (1, 4),
+        },
     ):
         import mlflow
         from mlflow.tracking import MlflowClient

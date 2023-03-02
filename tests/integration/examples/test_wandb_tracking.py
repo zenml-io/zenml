@@ -23,8 +23,6 @@ def test_example(request: pytest.FixtureRequest) -> None:
     with run_example(
         request=request,
         name="wandb_tracking",
-        pipeline_name="wandb_example_pipeline",
-        run_count=2,
-        step_count=4,
+        pipelines={"wandb_example_pipeline": (2, 4)},
     ):
         pass

@@ -25,15 +25,15 @@ def test_example(request: pytest.FixtureRequest) -> None:
     with run_example(
         request=request,
         name="evidently_drift_detection",
-        pipeline_name="drift_detection_pipeline",
-        step_count=4,
-        run_count=1,
+        pipelines={"drift_detection_pipeline": (1, 4)},
     ) as (example, runs):
 
         pipeline = get_pipeline("drift_detection_pipeline")
         assert pipeline
 
         # Final step should have output a data drift report
-        drift_detection_step = runs[0].get_step("drift_detector")
+        drift_detection_step = runs["drift_detection_pipeline"][0].get_step(
+            "drift_detector"
+        )
         output = drift_detection_step.outputs["profile"].read()
         assert isinstance(output, Profile)

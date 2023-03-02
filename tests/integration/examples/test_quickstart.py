@@ -24,9 +24,7 @@ def test_example(request: pytest.FixtureRequest) -> None:
     with run_example(
         request=request,
         name="quickstart",
-        pipeline_name="inference_pipeline",
-        run_count=1,
-        step_count=5,
+        pipelines={"training_pipeline": (1, 5), "inference_pipeline": (1, 5)},
     ):
         from zenml.integrations.mlflow.services import MLFlowDeploymentService
 

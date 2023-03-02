@@ -24,9 +24,7 @@ from tests.integration.examples.utils import run_example
 #         request=request,
 #         name="huggingface",
 #         example_args=["--nlp_task", "token-classification"],
-#         pipeline_name="token_classifier_train_eval_pipeline",
-#         run_count=1,
-#         step_count=5,
+#         pipelines={"token_classifier_train_eval_pipeline": (1, 5)}
 #     ):
 #         pass
 
@@ -38,8 +36,6 @@ def test_sequence_classification(request: pytest.FixtureRequest) -> None:
         request=request,
         name="huggingface",
         example_args=["--nlp_task", "sequence-classification"],
-        pipeline_name="seq_classifier_train_eval_pipeline",
-        run_count=1,
-        step_count=5,
+        pipelines={"seq_classifier_train_eval_pipeline": (1, 5)},
     ):
         pass

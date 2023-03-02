@@ -23,10 +23,8 @@ def test_example(request: pytest.FixtureRequest) -> None:
     with run_example(
         request=request,
         name="slack_alert",
-        pipeline_name="slack_post_pipeline",
-        run_count=1,
-        step_count=5,
+        pipelines={"slack_post_pipeline": (1, 5)},
     ) as (_, runs):
-        run = runs[0]
+        run = runs["slack_post_pipeline"][0]
         alert_step = run.get_step("alerter")
         assert alert_step.output.read() is True

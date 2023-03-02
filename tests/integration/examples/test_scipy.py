@@ -23,8 +23,6 @@ def test_example(request: pytest.FixtureRequest) -> None:
     with run_example(
         request=request,
         name="scipy",
-        pipeline_name="scipy_example_pipeline",
-        run_count=1,
-        step_count=4,
+        pipelines={"scipy_example_pipeline": (1, 4)},
     ):
         pass
