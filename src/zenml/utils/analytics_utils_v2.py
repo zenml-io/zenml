@@ -12,16 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import os
-from enum import Enum
 from types import TracebackType
-from typing import Callable, Any, Optional, Dict, Union, Type
+from typing import Callable, Any, Optional, Dict, Union, Type, List
 from uuid import UUID
-
-from analytics import Client
-
+import requests
 from zenml import __version__
 from zenml.config.global_config import GlobalConfiguration
-from zenml.constants import SEGMENT_KEY_PROD_V2, ENV_ZENML_SERVER_FLAG
+from zenml.constants import ENV_ZENML_SERVER_FLAG, ANALYTICS_SERVER_URL
+
 from zenml.environment import Environment, get_environment
 from zenml.logger import get_logger
 from zenml.models.server_models import ServerDatabaseType, ServerDeploymentType
@@ -31,8 +29,52 @@ from zenml.utils.analytics_utils import (
     parametrized,
 )
 from zenml.zen_server.auth import get_auth_context
+from pydantic import BaseModel
+
+Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
+
 
 logger = get_logger(__name__)
+
+TRACK_ENDPOINT = "/track"
+GROUP_ENDPOINT = "/group"
+IDENTIFY_ENDPOINT = "/identify"
+
+class TrackRequest(BaseModel):
+    """Base model for track requests.
+
+    Attributes:
+        user_id: the canonical ID of the user.
+        event: the type of the event.
+        properties: the metadata about the event.
+    """
+    user_id: UUID
+    event: AnalyticsEvent
+    properties: Dict[Any, Any]
+
+
+class GroupRequest(BaseModel):
+    """Base Model for group requests.
+
+    Attributes:
+        user_id: the canonical ID of the user.
+        group_id: the ID of the group.
+        traits: traits of the group.
+    """
+    user_id: UUID
+    group_id: UUID
+    traits: Dict[Any, Any]
+
+
+class IdentifyRequest(BaseModel):
+    """Base model for identify requests.
+
+    Attributes:
+        user_id: the canonical ID of the user.
+        traits: traits of the identified user.
+    """
+    user_id: UUID
+    traits: Dict[Any, Any]
 
 
 @parametrized
@@ -164,71 +206,23 @@ def track_event_v2(
 
     metadata.setdefault("event_success", True)
 
-    with AnalyticsContextV2() as analytics_v2:
+    with AnalyticsClient() as analytics_v2:
         return analytics_v2.track(event, metadata)
 
     return False
 
 
-def identify_user_v2(user_metadata: Optional[Dict[str, Any]] = None) -> bool:
-    """Attach metadata to user directly.
-
-    Args:
-        user_metadata: Dict of metadata to attach to the user.
-
-    Returns:
-        True if event is sent successfully, False is not.
-    """
-    with AnalyticsContextV2() as analytics:
-        if user_metadata is None:
-            return False
-
-        return analytics.identify(traits=user_metadata)
-
-    return False
-
-
-def identify_group_v2(
-    group_id: str,
-    group_metadata: Optional[Dict[str, Any]] = None,
-) -> bool:
-    """Attach metadata to a segment group.
-
-    Args:
-        group_id: ID of the group.
-        group_metadata: Metadata to attach to the group.
-
-    Returns:
-        True if event is sent successfully, False is not.
-    """
-    with AnalyticsContextV2() as analytics:
-        return analytics.group(group_id, traits=group_metadata)
-
-    return False
-
-
-def get_segment_key() -> str:
-    """Get key for authorizing to Segment backend.
-
-    Return:
-        Segment key as string
-    """
-    return SEGMENT_KEY_PROD_V2
-
-
-class AnalyticsContextV2:
-    """Context manager for analytics."""
+class AnalyticsClient:
+    """Client class for ZenML Analytics v2."""
 
     def __init__(self) -> None:
-        """Context manager for analytics.
+        """Initialization.
 
         Use this as a context manager to ensure that analytics are initialized
         properly, only tracked when configured to do so and that any errors
         are handled gracefully.
         """
         self.analytics_opt_in: bool = False
-
-        self.segment_client: Optional[Client] = None
 
         self.user_id: Optional[UUID] = None
         self.client_id: Optional[UUID] = None
@@ -238,11 +232,11 @@ class AnalyticsContextV2:
         self.deployment_type: Optional[ServerDeploymentType] = None
 
     @property
-    def is_server(self):
+    def in_server(self):
         """Flag to check whether the code is running on the server side."""
         return os.getenv(ENV_ZENML_SERVER_FLAG, False)
 
-    def __enter__(self) -> "AnalyticsContextV2":
+    def __enter__(self) -> "AnalyticsClient":
         """Enter analytics context manager.
 
         Returns:
@@ -253,38 +247,35 @@ class AnalyticsContextV2:
         self.analytics_opt_in = gc.analytics_opt_in
 
         if self.analytics_opt_in:
-            # Create the segment client
-            self.segment_client = Client(
-                write_key=get_segment_key(),
-                max_retries=1,
-            )
+            try:
+                # Fetch the `user_id`
+                if self.in_server:
+                    # If the code is running on the server side, use the auth context.
+                    auth_context = get_auth_context()
+                    if auth_context is not None:
+                        self.user_id = auth_context.user.id
+                else:
+                    # If the code is running on the client side, use the default user.
+                    default_user = gc.zen_store.get_user()
+                    self.user_id = default_user.id
 
-            # Fetch the `user_id`
-            if self.is_server:
-                # If the code is running on the server side, use the auth context.
-                auth_context = get_auth_context()
-                if auth_context is not None:
-                    self.user_id = auth_context.user.id
-            else:
-                # If the code is running on the client side, use the default user.
-                default_user = gc.zen_store.get_user()
-                self.user_id = default_user.id
+                # Fetch the `client_id`
+                if self.in_server:
+                    # If the code is running on the server side, there is no client id.
+                    self.client_id = None
+                else:
+                    # If the code is running on the client side, attach the client id.
+                    self.client_id = gc.user_id
 
-            # Fetch the `client_id`
-            if self.is_server:
-                # If the code is running on the server side, there is no client id.
-                self.client_id = None
-            else:
-                # If the code is running on the client side, attach the client id.
-                self.client_id = gc.user_id
+                # Fetch the store information including the `server_id`
+                store_info = gc.zen_store.get_store_info()
 
-            # Fetch the store information including the `server_id`
-            store_info = gc.zen_store.get_store_info()
-
-            self.server_id = store_info.id
-            self.deployment_type = store_info.deployment_type
-            self.database_type = store_info.database_type
-
+                self.server_id = store_info.id
+                self.deployment_type = store_info.deployment_type
+                self.database_type = store_info.database_type
+            except Exception as e:
+                self.analytics_opt_in = False
+                logger.debug(f"Analytics initialization failed: {e}")
         return self
 
     def __exit__(
@@ -304,9 +295,22 @@ class AnalyticsContextV2:
             True if exception was handled, False otherwise.
         """
         if exc_val is not None:
-            logger.debug("Sending telemetry data failed: {exc_val}")
+            logger.debug(f"Sending telemetry data failed: {exc_val}")
 
         return True
+
+    def _post(self, endpoint, payload) -> Json:
+        headers = {
+            "accept": "application/json",
+            "content-type": "application/json",
+        }
+        return self._handle_response(
+            requests.post(
+                url=ANALYTICS_SERVER_URL + endpoint,
+                headers=headers,
+                json=payload.json(),
+            )
+        )
 
     def identify(self, traits: Optional[Dict[str, Any]] = None) -> bool:
         """Identify the user through segment.
@@ -319,7 +323,12 @@ class AnalyticsContextV2:
         """
 
         if self.analytics_opt_in:
-            self.segment_client.identify(self.user_id, traits)
+            payload = TrackRequest(
+                user_id=self.user_id,
+                traits=traits,
+            )
+            self._post(endpoint=IDENTIFY_ENDPOINT, payload=payload)
+
             return True
         return False
 
@@ -343,7 +352,13 @@ class AnalyticsContextV2:
 
             traits.update({"group_id": group_id})
 
-            self.segment_client.group(self.user_id, group_id, traits=traits)
+            payload = GroupRequest(
+                user_id=self.user_id,
+                group_id=group_id,
+                traits=traits,
+            )
+
+            self._post(endpoint=GROUP_ENDPOINT, payload=payload)
             return True
 
         return False
@@ -368,12 +383,10 @@ class AnalyticsContextV2:
                 "event types."
             )
 
-        event = event.value
-
         if properties is None:
             properties = {}
 
-        if not self.analytics_opt_in and event not in {
+        if not self.analytics_opt_in and event.value not in {
             AnalyticsEvent.OPT_OUT_ANALYTICS,
             AnalyticsEvent.OPT_IN_ANALYTICS,
         }:
@@ -398,7 +411,13 @@ class AnalyticsContextV2:
             if isinstance(v, UUID):
                 properties[k] = str(v)
 
-        self.segment_client.track(self.user_id, event, properties)
+        payload = TrackRequest(
+            user_id=self.user_id,
+            event=event,
+            properties=properties,
+        )
+
+        self._post(endpoint=TRACK_ENDPOINT, payload=payload)
 
         logger.debug(
             f"Analytics sent: User: {self.user_id}, Event: {event}, Metadata: "
@@ -406,3 +425,38 @@ class AnalyticsContextV2:
         )
 
         return True
+
+    @staticmethod
+    def _handle_response(response: requests.Response) -> Json:
+        """Handle API response, translating http status codes to Exception.
+
+        Args:
+            response: The response to handle.
+
+        Returns:
+            The parsed response.
+        """
+        if 200 <= response.status_code < 300:
+            try:
+                payload: Json = response.json()
+                return payload
+            except requests.exceptions.JSONDecodeError:
+                logger.debug(
+                    "Bad response from API. Expected json, got\n"
+                    f"{response.text}"
+                )
+        elif response.status_code == 422:
+            response_details = response.json().get("detail", (response.text,))
+            if isinstance(response_details[0], str):
+                response_msg = ": ".join(response_details)
+            else:
+                # This is an "Unprocessable Entity" error, which has a special
+                # structure in the response.
+                response_msg = response.text
+            raise logger.debug(response_msg)
+        else:
+            raise logger.debug(
+                "Error retrieving from API. Got response "
+                f"{response.status_code} with body:\n{response.text}"
+            )
+
