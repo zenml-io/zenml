@@ -222,6 +222,14 @@ zenml:
       # `zenml.zen_stores.secrets_stores.base_secrets_store.BaseSecretsStore`
       # base class. The class should be importable from the container image
       # that you are using for the ZenML server.
+      #
+      # Any additional configuration options for the custom secrets store
+      # implementation should be passed through the `environment` and the
+      # `secretEnvironment` variables and using the `ZENML_SECRETS_STORE_<OPTION_NAME>`
+      # environment variable naming convention. For example, if the custom
+      # secrets store implementation expects an `aws_access_key_id` option, you
+      # should set the `ZENML_SECRETS_STORE_AWS_ACCESS_KEY_ID` environment
+      # variable in the `zenml.secretEnvironment` variable.
       class_path: my.custom.secrets.store.MyCustomSecretsStore
 
   # Extra environment variables to set in the ZenML server container.

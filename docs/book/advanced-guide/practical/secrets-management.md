@@ -4,18 +4,19 @@ description: How to register and use secrets
 
 ## What is a ZenML secret
 
-ZenML secrets are groupings of **key-value pairs** which are securely stored by
-your [centralized ZenML secrets store](../../getting-started/deploying-zenml/deploying-zenml.md) or
-your ZenML [secrets manager](../../component-gallery/secrets-managers/secrets-managers.md).
-Additionally, a secret always has a **name** which allows you to fetch or reference
-them in your pipelines and stacks.
+ZenML secrets are groupings of **key-value pairs** which are securely stored in
+the ZenML secrets store. Additionally, a secret always has a **name** which
+allows you to fetch or reference them in your pipelines and stacks.
 
 {% hint style="warning" %}
-We are slowly deprecating Secrets Managers in favor of [the centralized ZenML secrets store](#centralized-secrets-store).
+We are deprecating Secrets Managers in favor of [the centralized ZenML secrets store](#centralized-secrets-store).
 Going forward, we recommend using the ZenML secrets store instead of secrets
 manager stack components to configure and store secrets. [Referencing secrets in your pipelines and stacks](#how-to-use-registered-secrets)
 works the same way regardless of whether you are using a secrets manager or the
 centralized secrets store.
+If you already use secrets managers to manage your secrets, please use the
+provided `zenml secrets-manager secrets migrate` CLI command to migrate your
+secrets to the centralized secrets store.
 {% endhint %}
 
 ## Centralized secrets store
@@ -23,19 +24,24 @@ centralized secrets store.
 ZenML provides a centralized secrets management system that allows you to
 register and manage secrets in a secure way. When you are using a local ZenML
 deployment, the secrets are stored in the local SQLite database. If you are
-connected to a local or remote ZenML server, the secrets are stored in one
-of the centralized secrets management back-ends that the server is connected to,
-but all access to the secrets is done through the ZenML server API.
+connected to a remote ZenML server, the secrets are stored in the secrets
+management back-end that the server is configured to use, but all access to the
+secrets is done through the ZenML server API.
 
-Currently, the only back-end supported for the centralized secrets store is
-the ZenML SQL database, but more back-ends will be added in the near future to
-replace the existing [secrets manager](../../component-gallery/secrets-managers/secrets-managers.md)
-stack components:
+Currently, the ZenML server can be configured to use one of the following
+supported secret store back-ends:
 
-* AWS Secrets Manager
-* GCP Secret Manager
-* Azure Key Vault
-* HashiCorp Vault
+* the SQL database that the ZenML server is using to store other managed objects
+such as pipelines, stacks, etc. This is the default option.
+* the AWS Secrets Manager
+* the GCP Secret Manager
+* the Azure Key Vault
+* the HashiCorp Vault
+* a custom secrets store back-end implementation is also supported
+
+Configuring the specific secrets store back-end that the ZenML server uses is
+done at deployment time. For more information on how to deploy a ZenML server
+and configure the secrets store back-end, refer to the [deployment guide](../../getting-started/deploying-zenml/deploying-zenml.md).
 
 ### How to create a secret with the CLI
 
@@ -112,84 +118,6 @@ Scopes also act as individual namespaces. When you are referencing a secret by
 name in your pipelines and stacks, ZenML will first look for a secret with
 that name scoped to the active user, and if it doesn't find one, it will look
 for one in the active workspace.
-
-## Secrets management with Secrets Managers
-
-[Secrets Managers](../../component-gallery/secrets-managers/secrets-managers.md)
-are ZenML stack components that allow you to register and access secrets when
-used as part of your active stack.
-
-{% hint style="warning" %}
-We are slowly deprecating secrets managers in favor of the [centralized ZenML secrets store](#centralized-secrets-store).
-Going forward, we recommend using the secrets store instead of secrets managers
-to configure and store secrets.
-
-Managing secrets through a secrets manager stack component suffers from a
-number of limitations, some of which are:
-
-* you need to configure [a Secrets Manager stack component](../../component-gallery/secrets-managers/secrets-managers.md)
-and add it to your active stack before you can register and access secrets. With
-centralized secrets management, you don't need to configure anything, your ZenML
-local deployment or ZenML server replaces the secrets manager role.
-
-* even with a secrets manager configured in your active stack, if you are using
-a secrets manager flavor with a cloud back-end (e.g. AWS, GCP or Azure), you
-still need to configure all your ZenML clients with the authentication credentials
-required to access the back-end directly. This is not only an inconvenience, it
-is also a security risk, because it basically represents a large attack surface.
-With centralized secrets management, you only need to configure the ZenML server
-to access the cloud back-end.
-
-{% endhint %}
-
-### How to register a secret
-
-{% hint style="info" %}
-To register a secret, you'll need a [secrets manager](../../component-gallery/secrets-managers/secrets-managers.md)
-in your active stack.
-{% endhint %}
-
-To register a secret with name `<SECRET_NAME>` and a key-value pair, you
-can then run the following CLI command:
-```shell
-zenml secrets-manager secret register <SECRET_NAME> \
-    --<KEY_1>=<VALUE_1> \
-    --<KEY_2>=<VALUE_2>
-```
-
-Alternatively, you can start an interactive registration (in which ZenML will query you for
-the secret keys and values) by passing the
-`--interactive/-i` parameter:
-
-```shell
-zenml secrets-manager secret register <SECRET_NAME> -i
-```
-
-For secret values that are too big to pass as a command line argument, or have
-special characters, you can also use the special `@` syntax to indicate to ZenML
-that the value needs to be read from a file:
-
-```bash
-zenml secrets-manager secret register <SECRET_NAME> \
-   --key=@path/to/file.txt \
-   ...
-```
-
-A full guide on using the CLI to register, access, update and delete
-secrets is available [here](https://apidocs.zenml.io/latest/cli/#zenml.cli--secrets-management-with-secrets-managers).
-
-### Interactively register missing secrets for your stack
-
-If you're using components with
-[secret references](#reference-secrets-in-stack-component-attributes-and-settings)
-in your stack, you need to make sure that the stack contains a
-[secrets manager](../../component-gallery/secrets-managers/secrets-managers.md)
-and all the referenced secrets exist in this secrets manager. To make this process easier, you can
-use the following CLI command to interactively register all secrets for a stack:
-
-```shell
-zenml stack register-secrets [<STACK_NAME>]
-```
 
 ## How to use registered secrets
 
@@ -312,3 +240,174 @@ This will only work if the environment that your orchestrator uses to execute
 steps has access to the secrets manager. For example a local secrets manager
 will not work in combination with a remote orchestrator.
 {% endhint %}
+
+
+## Secrets management with Secrets Managers
+
+[Secrets Managers](../../component-gallery/secrets-managers/secrets-managers.md)
+are ZenML stack components that allow you to register and access secrets when
+used as part of your active stack.
+
+{% hint style="warning" %}
+We are deprecating secrets managers in favor of the [centralized ZenML secrets store](#centralized-secrets-store).
+Going forward, we recommend using the secrets store instead of secrets managers
+to configure and store secrets.
+
+If you already use secrets managers to manage your secrets, please use the
+provided `zenml secrets-manager secrets migrate` CLI command to migrate your
+secrets to the centralized secrets store.
+
+Managing secrets through a secrets manager stack component suffers from a
+number of limitations, some of which are:
+
+* you need to configure [a Secrets Manager stack component](../../component-gallery/secrets-managers/secrets-managers.md)
+and add it to your active stack before you can register and access secrets. With
+centralized secrets management, you don't need to configure anything, your ZenML
+local deployment or ZenML server replaces the secrets manager role.
+
+* even with a secrets manager configured in your active stack, if you are using
+a secrets manager flavor with a cloud back-end (e.g. AWS, GCP or Azure), you
+still need to configure all your ZenML clients with the authentication credentials
+required to access the back-end directly. This is not only an inconvenience, it
+is also a security risk, because it basically represents a large attack surface.
+With centralized secrets management, you only need to configure the ZenML server
+to access the cloud back-end.
+
+{% endhint %}
+
+### How to register a secret
+
+{% hint style="info" %}
+To register a secret, you'll need a [secrets manager](../../component-gallery/secrets-managers/secrets-managers.md)
+in your active stack.
+{% endhint %}
+
+To register a secret with name `<SECRET_NAME>` and a key-value pair, you
+can then run the following CLI command:
+```shell
+zenml secrets-manager secret register <SECRET_NAME> \
+    --<KEY_1>=<VALUE_1> \
+    --<KEY_2>=<VALUE_2>
+```
+
+Alternatively, you can start an interactive registration (in which ZenML will query you for
+the secret keys and values) by passing the
+`--interactive/-i` parameter:
+
+```shell
+zenml secrets-manager secret register <SECRET_NAME> -i
+```
+
+For secret values that are too big to pass as a command line argument, or have
+special characters, you can also use the special `@` syntax to indicate to ZenML
+that the value needs to be read from a file:
+
+```bash
+zenml secrets-manager secret register <SECRET_NAME> \
+   --key=@path/to/file.txt \
+   ...
+```
+
+A full guide on using the CLI to register, access, update and delete
+secrets is available [here](https://apidocs.zenml.io/latest/cli/#zenml.cli--secrets-management-with-secrets-managers).
+
+### Interactively register missing secrets for your stack
+
+If you're using components with
+[secret references](#reference-secrets-in-stack-component-attributes-and-settings)
+in your stack, you need to make sure that the stack contains a
+[secrets manager](../../component-gallery/secrets-managers/secrets-managers.md)
+and all the referenced secrets exist in this secrets manager. To make this process easier, you can
+use the following CLI command to interactively register all secrets for a stack:
+
+```shell
+zenml stack register-secrets [<STACK_NAME>]
+```
+
+
+## Implement your own secrets store backend
+
+The secrets store acts as the one-stop shop for all the secrets to which your 
+pipeline or stack components might need access. The secrets store interface
+implemented by all available secrets store back-ends is defined in the
+`zenml.zen_stores.secrets_stores.secrets_store_interface` core module and looks
+more or less like this:
+
+```python
+class SecretsStoreInterface(ABC):
+    """ZenML secrets store interface.
+
+    All ZenML secrets stores must implement the methods in this interface.
+    """
+
+    @abstractmethod
+    def _initialize(self) -> None:
+        """Initialize the secrets store.
+        """
+
+    @abstractmethod
+    def create_secret(
+        self,
+        secret: SecretRequestModel,
+    ) -> SecretResponseModel:
+        """Creates a new secret.
+        """
+
+    @abstractmethod
+    def get_secret(self, secret_id: UUID) -> SecretResponseModel:
+        """Get a secret with a given name.
+        """
+
+    @abstractmethod
+    def list_secrets(
+        self, secret_filter_model: SecretFilterModel
+    ) -> Page[SecretResponseModel]:
+        """List all secrets matching the given filter criteria.
+
+        Note that returned secrets do not include any secret values. To fetch
+        the secret values, use `get_secret`.
+        """
+
+    @abstractmethod
+    def update_secret(
+        self,
+        secret_id: UUID,
+        secret_update: SecretUpdateModel,
+    ) -> SecretResponseModel:
+        """Updates a secret.
+
+        Secret values that are specified as `None` in the update that are
+        present in the existing secret are removed from the existing secret.
+        Values that are present in both secrets are overwritten. All other
+        values in both the existing secret and the update are kept (merged).
+        """
+
+    @abstractmethod
+    def delete_secret(self, secret_id: UUID) -> None:
+        """Deletes a secret.
+        """
+
+```
+
+{% hint style="info" %}
+This is a slimmed-down version of the real interface which aims to 
+highlight the abstraction layer. In order to see the full definition 
+and get the complete docstrings, please check the [API docs](https://apidocs.zenml.io/latest/core_code_docs/core-zen_stores/#zenml.zen_stores.secrets_stores.secrets_store_interface.SecretsStoreInterface).
+{% endhint %}
+
+### Build your own custom secrets manager
+
+If you want to create your own custom secrets store implementation, you can 
+follow the following steps:
+
+1. Create a class which inherits from the `zenml.zen_stores.secrets_stores.base_secrets_store.BaseSecretsManager` base class and implement the `abstractmethod`s shown in the interface above.
+Use `SecretsStoreType.CUSTOM` as the `TYPE` value for your secrets store class.
+2. If you need to provide any configuration, create a class which inherits 
+from the `SecretsStoreConfiguration` class and add your configuration
+parameters there. Use that as the `CONFIG_TYPE` value for your secrets store
+class.
+3. To configure the ZenML server to use your custom secrets store, make sure
+your code is available in the container image that is used to run the ZenML
+server. Then, use environment variables or helm chart values to configure the
+ZenML server to use your custom secrets store, as covered in the
+[deployment guide](../../getting-started/deploying-zenml/deploying-zenml.md).

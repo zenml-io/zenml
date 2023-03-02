@@ -10,10 +10,14 @@ ZenML secrets managers can be used to store and retrieve these values
 in a secure manner.
 
 {% hint style="warning" %}
-We are slowly deprecating secrets managers in favor of the
+We are deprecating secrets managers in favor of the
 [centralized ZenML secrets store](../../advanced-guide/practical/secrets-management.md#centralized-secrets-store).
 Going forward, we recommend using the secrets store instead of secrets managers
 to configure and store secrets.
+
+If you already use secrets managers to manage your secrets, please use the
+provided `zenml secrets-manager secrets migrate` CLI command to migrate your
+secrets to the centralized secrets store.
 
 Managing secrets through a secrets manager stack component suffers from a
 number of limitations, some of which are:
@@ -31,11 +35,25 @@ is also a security risk, because it basically represents a large attack surface.
 With centralized secrets management, you only need to configure the ZenML server
 to access the cloud back-end.
 
-ZenML currently only supports a SQL database as a centralized secrets store, but
-we are working on re-purposing all existing secrets manager flavors (AWS, GCP,
-Azure and HashiCorp Vault) to act as back-ends for the centralized secrets
-store. As soon as this is available, we will deprecate the secrets manager stack
-component and provide an upgrade path for existing users.
+ZenML currently supports configuring the ZenML server to use the following
+back-ends as centralized secrets store replacements for secrets managers:
+
+* the SQL database that the ZenML server is using to store other managed objects
+such as pipelines, stacks, etc. This is the default option and replaces the
+`local` secrets manager flavor.
+* AWS Secrets Manager - replaces the `aws` secrets manager flavor.
+* GCP Secret Manager - replaces the `gcp` secrets manager flavor.
+* Azure Key Vault - replaces the `azure` secrets manager flavor.
+* HashiCorp Vault - replaces the `vault` secrets manager flavor.
+
+The centralized secrets store also supports using a custom back-end
+implementation.
+
+There is no direct migration path planned for the GitHub secrets manager flavor,
+given that it can only be used inside a GitHub Action workflow and thus is not
+a service that can be used as a centralized secrets store.
+If you are using the GitHub secrets manager flavor, you have the option of
+migrating your secrets to one of the other supported secrets store back-ends.
 {% endhint %}
 
 ## When to use it
@@ -70,7 +88,6 @@ in local files. Additional cloud secrets managers are provided by integrations:
 | [Azure](./azure.md)                     | `azure`  | `azure`       | Yes              | Uses Azure Key Vaults to store secrets                                     |
 | [GitHub](./github.md)                   | `github` | `github`      | No               | Uses GitHub to store secrets                                               |
 | [HashiCorp Vault](./vault.md) | `vault`  | `vault`       | Yes              | Uses HashiCorp Vault to store secrets                                      |
-| [Custom Implementation](./custom.md)    | _custom_ |               | No               | Extend the secrets manager abstraction and provide your own implementation |
 
 If you would like to see the available flavors of secrets managers, you can 
 use the command:

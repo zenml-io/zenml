@@ -96,6 +96,9 @@ spec:
             - name: ZENML_SECRETS_STORE_MAX_VERSIONS
               value: {{ .Values.zenml.secretsStore.hashicorp.max_versions | quote }}
             {{- end }}
+            {{- else if eq .Values.zenml.secretsStore.type "custom" }}
+            - name: ZENML_SECRETS_STORE_CLASS_PATH
+              value: {{ .Values.zenml.secretsStore.custom.class_path | quote }}
             {{- end }}
             {{- else }}
             - name: ZENML_SECRETS_STORE_TYPE
@@ -177,6 +180,9 @@ spec:
             - name: ZENML_SECRETS_STORE_MAX_VERSIONS
               value: {{ .Values.zenml.secretsStore.hashicorp.max_versions | quote }}
             {{- end }}
+            {{- else if eq .Values.zenml.secretsStore.type "custom" }}
+            - name: ZENML_SECRETS_STORE_CLASS_PATH
+              value: {{ .Values.zenml.secretsStore.custom.class_path | quote }}
             {{- end }}
             {{- else }}
             - name: ZENML_SECRETS_STORE_TYPE

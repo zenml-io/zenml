@@ -35,9 +35,10 @@ you probably need to configure some settings for it like the database it should
 use, the default user details and more. The ZenML server container image uses
 sensible defaults, so you can simply start a container without worrying too much
 about the configuration. However, if you're looking to connect the ZenML server
-to an external MySQL database, or to persist the internal SQLite database, or
-simply want to control other settings like the default account, you can do so
-by customizing the container's environment variables.
+to an external MySQL database or secrets management service, or to persist the
+internal SQLite database, or simply want to control other settings like the
+default account, you can do so by customizing the container's environment
+variables.
 
 The following environment variables can be passed to the container:
 
@@ -104,6 +105,8 @@ The following environment variables can be passed to the container:
     section below for more configuration options.
     - `hashicorp`: Use HashiCorp Vault as the secrets store backend. See the
     [HashiCorp Vault Secrets Store Configuration Options](#hashicorp-vault-secrets-store-configuration-options)
+    - `custom`: Use a custom secrets store backend implementation. See the
+    [Custom Secrets Store Configuration Options](#custom-secrets-store-configuration-options).
 
 - **ZENML_LOGGING_VERBOSITY**:
     Use this variable to control the verbosity of logs inside the container.
@@ -262,6 +265,37 @@ the secrets store backend.
     The maximum number of secret versions to keep for each Vault secret. If not
     set, the default value of 1 will be used (only the latest version will be
     kept).
+
+### Custom Secrets Store Configuration Options
+
+These configuration options are only relevant if you're using a custom secrets
+store backend implementation. For this to work, you must have
+[a custom implementation of the secrets store API](../../advanced-guide/practical/secrets-management.md#build-your-own-custom-secrets-manager)
+in the form of a class derived from
+`zenml.zen_stores.secrets_stores.base_secrets_store.BaseSecretsStore`. This
+class must be importable from within the ZenML server container, which means
+you most likely need to mount the directory containing the class into the
+container or build a custom container image that contains the class.
+
+The following configuration option is required:
+
+- **ZENML_SECRETS_STORE_CLASS_PATH**:
+    The fully qualified path to the class that implements the custom secrets
+    store API (e.g. `my_package.my_module.MySecretsStore`).
+
+If your custom secrets store implementation requires additional configuration
+options, you can pass them as environment variables using the following naming
+convention:
+
+- `ZENML_SECRETS_STORE_<OPTION_NAME>`:
+    The name of the option to pass to the custom secrets store class. The
+    option name must be in uppercase and any hyphens (`-`) must be replaced
+    with underscores (`_`). ZenML will automatically convert the environment
+    variable name to the corresponding option name by removing the prefix
+    and converting the remaining characters to lowercase. For example, the
+    environment variable `ZENML_SECRETS_STORE_MY_OPTION` will be converted to
+    the option name `my_option` and passed to the custom secrets store class
+    configuration.
 
 ### Advanced Server Configuration Options
 

@@ -598,6 +598,53 @@ Vault service instead, you need to configure it in the Helm values:
       vault_namespace: <your Vault namespace>
 ```
 
+### Using a custom secrets store backend implementation
+
+You have the option of using
+[a custom implementation of the secrets store API](../../advanced-guide/practical/secrets-management.md#build-your-own-custom-secrets-manager) as your secrets store back-end.
+This must come in the form of a class derived from
+`zenml.zen_stores.secrets_stores.base_secrets_store.BaseSecretsStore`. This
+class must be importable from within the ZenML server container, which means
+you most likely need to build a custom container image that contains the class.
+Then, you can configure the Helm values to use your custom secrets store
+as follows:
+
+```yaml
+ zenml:
+
+  # ...
+
+  # Secrets store settings. This is used to store centralized secrets.
+  secretsStore:
+
+    # Set to false to disable the secrets store.
+    enabled: true
+
+    # The type of the secrets store
+    type: custom
+
+    # Configuration for the HashiCorp Vault secrets store
+    custom:
+
+      # The class path of the custom secrets store implementation. This should
+      # point to a full Python class that extends the
+      # `zenml.zen_stores.secrets_stores.base_secrets_store.BaseSecretsStore`
+      # base class. The class should be importable from the container image
+      # that you are using for the ZenML server.
+      class_path: my.custom.secrets.store.MyCustomSecretsStore
+
+  # Extra environment variables used to configure the custom secrets store.
+  environment:
+    ZENML_SECRETS_STORE_OPTION_1: value1
+    ZENML_SECRETS_STORE_OPTION_2: value2
+
+  # Extra environment variables to set in the ZenML server container that
+  # should be kept secret and are used to configure the custom secrets store.
+  secretEnvironment:
+    ZENML_SECRETS_STORE_SECRET_OPTION_3: value3
+    ZENML_SECRETS_STORE_SECRET_OPTION_4: value4
+```
+
 ## Upgrading your ZenML server
 
 To upgrade your ZenML server Helm release to a new version, follow the steps
