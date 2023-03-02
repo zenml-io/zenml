@@ -74,7 +74,7 @@ class BaseDataValidator(StackComponent):
         self,
         dataset: Any,
         comparison_dataset: Optional[Any] = None,
-        profile_list: Optional[Sequence[str]] = None,
+        profile_list: Optional[Sequence[Any]] = None,
         **kwargs: Any,
     ) -> Any:
         """Analyze one or more datasets and generate a data profile.
@@ -122,7 +122,7 @@ class BaseDataValidator(StackComponent):
         self,
         dataset: Any,
         comparison_dataset: Optional[Any] = None,
-        check_list: Optional[Sequence[str]] = None,
+        check_list: Optional[Sequence[Any]] = None,
         **kwargs: Any,
     ) -> Any:
         """Run data validation checks on a dataset.
@@ -168,7 +168,7 @@ class BaseDataValidator(StackComponent):
         dataset: Any,
         model: Any,
         comparison_dataset: Optional[Any] = None,
-        check_list: Optional[Sequence[str]] = None,
+        check_list: Optional[Sequence[Any]] = None,
         **kwargs: Any,
     ) -> Any:
         """Run model validation checks.
