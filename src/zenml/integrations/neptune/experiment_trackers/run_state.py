@@ -18,8 +18,8 @@ from typing import Any, List, Optional
 
 try:
     # neptune-client>=1.0.0 package structure
-    import neptune  # type: ignore
-    from neptune import Run  # type: ignore
+    import neptune
+    from neptune import Run
 except ImportError:
     # neptune-client=0.9.0+ package structure
     import neptune.new as neptune  # type: ignore
