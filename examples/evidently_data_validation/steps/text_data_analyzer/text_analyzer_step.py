@@ -10,15 +10,20 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import pandas as pd
+import json
 
 from zenml.steps import Output, step
 
 
 @step
-def data_splitter(
-    input_df: pd.DataFrame,
-) -> Output(reference_dataset=pd.DataFrame, comparison_dataset=pd.DataFrame):
-    """Splits the dataset into two subsets, the reference dataset and the
-    comparison dataset."""
-    return input_df[100:], input_df[:100]
+def text_analyzer(
+    report: str,
+) -> Output(ref_missing_values=int, comp_missing_values=int):
+    """Analyze the Evidently text Report and return the number of missing
+    values in the reference and comparison datasets.
+    """
+    result = json.loads(report)["metrics"][0]["result"]
+    return (
+        result["current"]["number_of_missing_values"],
+        result["reference"]["number_of_missing_values"],
+    )

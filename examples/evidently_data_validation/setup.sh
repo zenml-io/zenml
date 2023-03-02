@@ -16,8 +16,10 @@ setup_stack () {
 
 pre_run () {
   zenml integration install evidently sklearn
+  pip install nltk
 }
 
 pre_run_forced () {
   zenml integration install evidently sklearn -y
+  pip install nltk
 }

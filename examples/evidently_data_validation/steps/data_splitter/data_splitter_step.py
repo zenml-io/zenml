@@ -10,15 +10,22 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from evidently.model_profile import Profile  # type: ignore
+import pandas as pd
 
-from zenml.steps import step
+from zenml.steps import Output, step
 
 
 @step
-def analyze_drift(
-    profile: Profile,
-) -> bool:
-    """Analyze the Evidently drift report and return a true/false value
-    indicating whether data drift was detected."""
-    return profile.object()["data_drift"]["data"]["metrics"]["dataset_drift"]
+def data_splitter(
+    reviews: pd.DataFrame,
+) -> Output(reference_dataset=pd.DataFrame, comparison_dataset=pd.DataFrame):
+    """Splits the dataset into two subsets, the reference dataset and the
+    comparison dataset.
+    """
+    ref_df = reviews[reviews.Rating > 3].sample(
+        n=5000, replace=True, ignore_index=True, random_state=42
+    )
+    comp_df = reviews[reviews.Rating < 3].sample(
+        n=5000, replace=True, ignore_index=True, random_state=42
+    )
+    return ref_df, comp_df

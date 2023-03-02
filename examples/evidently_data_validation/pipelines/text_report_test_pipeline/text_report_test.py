@@ -11,24 +11,32 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from zenml.config import DockerSettings
-from zenml.integrations.constants import EVIDENTLY, SKLEARN
+from zenml.integrations.constants import SKLEARN
 from zenml.pipelines import pipeline
 
-docker_settings = DockerSettings(required_integrations=[EVIDENTLY, SKLEARN])
+docker_settings = DockerSettings(
+    required_integrations=[SKLEARN],
+    requirements=["nltk"],
+)
 
 
 @pipeline(enable_cache=False, settings={"docker": docker_settings})
-def drift_detection_pipeline(
+def text_data_report_test_pipeline(
     data_loader,
     data_splitter,
-    drift_detector,
-    drift_analyzer,
+    text_report,
+    text_test,
+    text_analyzer,
 ):
     """Links all the steps together in a pipeline."""
     data = data_loader()
     reference_dataset, comparison_dataset = data_splitter(data)
-    drift_report, _ = drift_detector(
+    report, _ = text_report(
         reference_dataset=reference_dataset,
         comparison_dataset=comparison_dataset,
     )
-    drift_analyzer(drift_report)
+    test_report, _ = text_test(
+        reference_dataset=reference_dataset,
+        comparison_dataset=comparison_dataset,
+    )
+    text_analyzer(report)
