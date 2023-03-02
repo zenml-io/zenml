@@ -771,7 +771,9 @@ def pretty_print_model_version_table(
             "NAME": model_version.registered_model.name,
             "MODEL_VERSION": model_version.version,
             "VERSION_DESCRIPTION": model_version.description,
-            "METADATA": model_version.metadata.dict(),
+            "METADATA": model_version.metadata.dict()
+            if model_version.metadata
+            else {},
         }
         for model_version in model_versions
     ]
@@ -807,7 +809,9 @@ def pretty_print_model_version_details(
         "UPDATED_AT": str(model_version.last_updated_at)
         if model_version.last_updated_at
         else "N/A",
-        "METADATA": model_version.metadata.dict(),
+        "METADATA": model_version.metadata.dict()
+        if model_version.metadata
+        else {},
         "MODEL_SOURCE_URI": model_version.model_source_uri,
         "STAGE": model_version.stage.value,
     }

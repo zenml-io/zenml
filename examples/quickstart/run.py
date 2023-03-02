@@ -48,7 +48,7 @@ def main():
             params=MLFlowRegistryParameters(
                 name="tensorflow-mnist-model",
                 metadata=ModelRegistryModelMetadata(gamma=0.01, arch="svc"),
-                description=f"The first run of the Quickstart pipeline.",
+                description="The first run of the Quickstart pipeline.",
             )
         ),
     )

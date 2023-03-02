@@ -38,7 +38,10 @@ from zenml.integrations.mlflow.services.mlflow_deployment import (
 )
 from zenml.logger import get_logger
 from zenml.materializers import UnmaterializedArtifact
-from zenml.model_registries.base_model_registry import ModelVersionStage
+from zenml.model_registries.base_model_registry import (
+    ModelRegistryModelMetadata,
+    ModelVersionStage,
+)
 from zenml.steps import (
     STEP_ENVIRONMENT_NAME,
     BaseParameters,
@@ -312,6 +315,7 @@ def mlflow_model_registry_deployer_step(
     )
 
     # create a config for the new model service
+    metadata = model_version.metadata or ModelRegistryModelMetadata()
     predictor_cfg = MLFlowDeploymentConfig(
         model_name=params.model_name or "",
         model_uri=model_version.model_source_uri,
@@ -320,9 +324,9 @@ def mlflow_model_registry_deployer_step(
         registry_model_stage=model_version.stage.value,
         workers=params.workers,
         mlserver=params.mlserver,
-        pipeline_name=model_version.metadata.zenml_pipeline_name or "",
-        pipeline_run_id=model_version.metadata.zenml_pipeline_run_id or "",
-        pipeline_step_name=model_version.metadata.zenml_step_name or "",
+        pipeline_name=metadata.zenml_pipeline_name or "",
+        pipeline_run_id=metadata.zenml_pipeline_run_id or "",
+        pipeline_step_name=metadata.zenml_step_name or "",
         timeout=params.timeout,
     )
 

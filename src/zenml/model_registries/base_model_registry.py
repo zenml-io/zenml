@@ -163,9 +163,7 @@ class ModelVersion(BaseModel):
     created_at: Optional[datetime] = None
     last_updated_at: Optional[datetime] = None
     stage: ModelVersionStage = ModelVersionStage.NONE
-    metadata: ModelRegistryModelMetadata = Field(
-        default_factory=ModelRegistryModelMetadata
-    )
+    metadata: Optional[ModelRegistryModelMetadata] = None
 
 
 class BaseModelRegistryConfig(StackComponentConfig):
