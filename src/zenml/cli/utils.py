@@ -296,7 +296,9 @@ def format_integration_list(
             {
                 "INSTALLED": ":white_check_mark:" if is_installed else ":x:",
                 "INTEGRATION": name,
-                "REQUIRED_PACKAGES": ", ".join(integration_impl.REQUIREMENTS),
+                "REQUIRED_PACKAGES": ", ".join(
+                    integration_impl.get_requirements()
+                ),
             }
         )
     return list_of_dicts

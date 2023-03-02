@@ -200,3 +200,11 @@ class LogicalOperators(StrEnum):
 
     OR = "or"
     AND = "and"
+
+
+class OperatingSystemType(StrEnum):
+    """Enum for OS types."""
+
+    LINUX = "Linux"
+    WINDOWS = "Windows"
+    MACOS = "Darwin"
