@@ -45,6 +45,12 @@ variable "kubectl_config_path" {
   type        = string
 }
 
+variable "analytics_opt_in" {
+  description = "The flag to enable/disable analytics"
+  default     = true
+  type        = bool
+}
+
 # If you want a new Flexible Server, choose a name and a password. If you already
 # have an instance, provide the name and the password here too.
 variable "database_username" {

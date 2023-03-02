@@ -16,7 +16,10 @@ zenml:
     # Overrides the image tag whose default is the chart appVersion.
     tag:
 
-  debug: True
+  debug: true
+
+  # Flag to enable/disable the tracking process of the analytics
+  analyticsOptIn: true
 
   # ZenML server deployment type. This field is used for telemetry purposes.
   # Example values are "local", "kubernetes", "aws", "gcp", "azure".

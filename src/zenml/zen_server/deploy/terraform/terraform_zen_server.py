@@ -113,6 +113,7 @@ class TerraformServerDeploymentConfig(ServerDeploymentConfig):
             database connection.
         database_ssl_verify_server_cert: Whether to verify the database server
             SSL certificate.
+        analytics_opt_in: Whether to enable analytics.
     """
 
     log_level: str = "ERROR"
@@ -139,6 +140,7 @@ class TerraformServerDeploymentConfig(ServerDeploymentConfig):
     database_ssl_cert: str = ""
     database_ssl_key: str = ""
     database_ssl_verify_server_cert: bool = True
+    analytics_opt_in: bool = True
 
     class Config:
         """Pydantic configuration."""

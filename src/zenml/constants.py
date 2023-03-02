@@ -58,6 +58,7 @@ CONFIG_VERSION = "1"
 GIT_REPO_URL = "https://github.com/zenml-io/zenml.git"
 
 # Environment variables
+ENV_ZENML_ANALYTICS_OPT_IN = "ZENML_ANALYTICS_OPT_IN"
 ENV_ZENML_CONFIG_PATH = "ZENML_CONFIG_PATH"
 ENV_ZENML_DEBUG = "ZENML_DEBUG"
 ENV_ZENML_LOGGING_VERBOSITY = "ZENML_LOGGING_VERBOSITY"
@@ -119,7 +120,9 @@ REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://", "az://", "abfs://"]
 # Segment
 SEGMENT_KEY_DEV = "mDBYI0m7GcCj59EZ4f9d016L1T3rh8J5"
 SEGMENT_KEY_PROD = "sezE77zEoxHPFDXuyFfILx6fBnJFZ4p7"
-SEGMENT_KEY_PROD_V2 = ""
+
+# ZenML Analytics Server - URL
+ANALYTICS_SERVER_URL = ""
 
 # Container utils
 SHOULD_PREVENT_PIPELINE_EXECUTION = handle_bool_env_var(
