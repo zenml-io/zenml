@@ -54,9 +54,11 @@ list of registered artifact stores, which you can access using the following com
 zenml artifact-store list
 ```
 
-Or on the UI directly:
+Or you can register on the dashboard directly:
 
 ![Orchestrator list](../../assets/starter_guide/stacks/01_orchestrator_list.png)
+
+![Registering stack components](../../assets/starter_guide/stacks/03_register_stack_component.gif)
 
 {% hint style="info" %}
 Our CLI features a wide variety of commands that let you manage and use your
@@ -82,9 +84,11 @@ arguments to the `zenml stack register` command, including a list of which
 option to use for which stack component.
 {% endhint %}
 
-And see them on the UI:
+Alternatively, you can see and register stacks on the dashboard as well:
 
 ![Stack list](../../assets/starter_guide/stacks/02_stack_list.png)
+
+![Registering stack](../../assets/starter_guide/stacks/04_register_stack.gif)
 
 ### Activating a Stack
 
