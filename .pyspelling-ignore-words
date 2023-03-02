@@ -75,6 +75,7 @@ BaseEntrypointConfiguration
 BaseEnvironmentComponent
 BaseException
 BaseExecutorOperator
+BaseGenerator
 BaseImageBuilder
 BaseMaterializer
 BaseMaterializerMeta
@@ -147,6 +148,7 @@ ClusterServingRuntimes
 Colab
 ColorOptions
 ColumnMapping
+ColumnRegExpMetric
 CompareScoreParams
 ComponentModel
 ComponentModels
@@ -200,9 +202,12 @@ DataFrame
 DataFrame's
 DataFrames
 DataLoader
+DataQualityPreset
 DataQualityProfileSection
+DataQualityTestPreset
 DataValidator
 Databricks
+DatasetDriftMetric
 DatasetProfile
 DatasetProfileView
 Deepchecks
@@ -251,9 +256,16 @@ EvaluationParams
 Evidently
 Evidently's
 EvidentlyColumnMapping
+EvidentlyDataValidator
+EvidentlyMetricConfig
 EvidentlyProfileConfig
 EvidentlyProfileParameters
 EvidentlyProfileStep
+EvidentlyReportParameters
+EvidentlyReportStep
+EvidentlyTestConfig
+EvidentlyTestParameters
+EvidentlyTestStep
 EvidentlyVisualizer
 ExampleFlavor
 ExampleIntegration
@@ -437,6 +449,7 @@ MLflow's
 MNIST
 MNISTDigitClassifier
 MREwDwYDVQQDEwh
+MRO
 MSI
 MWAA
 MXNet
@@ -451,6 +464,7 @@ Mesos
 MetadataStore
 MetadataStoreClientConfig
 MetadataType
+MetricPreset
 MiB
 Microsoft
 MinIO
@@ -484,7 +498,6 @@ MyModelDeployerFlavor
 MyObj
 MyOrchestrator
 MyOrchestratorFlavor
-MyOrchestratorFlavor
 MySQLMetadataStore
 MySecretsManagerFlavor
 MyService
@@ -496,6 +509,7 @@ NDArray
 NDhaFw
 NFS
 NLP
+NLTK
 NLU
 NODEGROUP
 NONINFRINGEMENT
@@ -762,7 +776,12 @@ TensorBoard
 TensorBoardInfo
 TensorRT
 Terraform
+TestColumnRegExp
 TestHarness
+TestPreset
+TestSuite
+TestSuites
+TextOverviewPreset
 TheMatrix
 TimeoutError
 Tokenize
@@ -834,6 +853,7 @@ Yatai
 Yurii
 ZSH
 ZW
+Za
 ZenAzure
 ZenBytes
 ZenFiles
@@ -853,18 +873,6 @@ ZenStoreModel
 ZenStores
 ZenTemplates
 Zipfile
-EvidentlyReportStep
-EvidentlyTestStep
-TestSuite
-ColumnRegExpMetric
-DataQualityPreset
-DataQualityTestPreset
-EvidentlyDataValidator
-EvidentlyReportParameters
-EvidentlyTestParameters
-TestColumnRegExp
-TestSuites
-TextOverviewPreset
 aDHogqi
 aZ
 aa
@@ -1356,6 +1364,7 @@ nginx
 nitty
 nitty-gritty
 nlp
+nltk
 nn
 nodegroup
 noqa
