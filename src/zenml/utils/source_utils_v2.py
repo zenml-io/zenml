@@ -44,8 +44,8 @@ def load(source: Union[Source, str]) -> Any:
 
     import_root = None
     if isinstance(source, CodeRepositorySource):
-        repo_root = _load_repository_files(source=source)
-        import_root = str(PurePath(repo_root) / PurePath(source.subdirectory))
+        _check_local_code_repository(source=source)
+        import_root = get_source_root()
     elif isinstance(source, DistributionPackageSource):
         if source.version:
             current_package_version = _get_package_version(
@@ -201,37 +201,20 @@ def prepend_python_path(path: str) -> Iterator[None]:
         sys.path.remove(path)
 
 
-def _load_repository_files(source: CodeRepositorySource) -> str:
+def _check_local_code_repository(source: CodeRepositorySource) -> None:
     from zenml.client import Client
-    from zenml.config.global_config import GlobalConfiguration
 
     local_repo = Client().find_active_code_repository()
 
     if (
-        local_repo
-        and local_repo.zenml_code_repository.id == source.repository_id
-        and not local_repo.is_dirty
-        and local_repo.current_commit == source.commit
+        not local_repo
+        or local_repo.zenml_code_repository.id != source.repository_id
     ):
-        # The repo is clean and at the correct commit, we can use the file
-        # directly without downloading anything
-        return local_repo.root
-
-    repo_root = os.path.join(
-        GlobalConfiguration().config_directory,
-        "code_repositories",
-        str(source.repository_id),
-        source.commit,
-    )
-    if not os.path.exists(repo_root):
-        from zenml.code_repositories import BaseCodeRepository
-
-        model = Client().get_code_repository(source.repository_id)
-        repo = BaseCodeRepository.from_model(model)
-
-        repo.download_files(commit=source.commit, directory=repo_root)
-
-    return repo_root
+        logger.warning("No or wrong code repo for source")
+    elif local_repo.current_commit != source.commit:
+        logger.warning("Wrong commit")
+    elif local_repo.is_dirty:
+        logger.warning("Repo dirty")
 
 
 def _resolve_module(

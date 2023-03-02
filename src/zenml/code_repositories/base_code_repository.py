@@ -14,7 +14,7 @@
 import os
 import re
 from abc import ABC, abstractmethod
-from typing import Any, Optional, Type, TypeVar, cast
+from typing import Optional, Type, TypeVar, cast
 from uuid import UUID
 
 from git.repo.base import Remote, Repo
@@ -64,7 +64,7 @@ C = TypeVar("C", bound="BaseCodeRepository")
 
 
 class BaseCodeRepository(ABC):
-    def __init__(self, id: UUID, **kwargs: Any) -> None:
+    def __init__(self, id: UUID) -> None:
         self._id = id
 
     @classmethod
@@ -76,7 +76,7 @@ class BaseCodeRepository(ABC):
         ] = source_utils_v2.load_and_validate_class(
             source=model.source, expected_class=BaseCodeRepository
         )
-        return class_(**model.config)
+        return class_(id=model.id, **model.config)
 
     @property
     def id(self) -> UUID:
@@ -160,7 +160,8 @@ class GitHubCodeRepository(BaseCodeRepository):
 
     _github_session: Github
 
-    def __init__(self, owner: str, repository: str, token: str):
+    def __init__(self, id: UUID, owner: str, repository: str, token: str):
+        super().__init__(id=id)
         self._owner = owner
         self._repository = repository
         self._token = token
