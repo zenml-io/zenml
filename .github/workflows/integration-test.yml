@@ -249,6 +249,8 @@ jobs:
           pip install apache-airflow-providers-docker
           # Version 4.2.1 raises: AttributeError: type object 'Draft7Validator' has no attribute 'FORMAT_CHECKER'
           pip install altair==4.2.0
+          # Need this for the Evidently example
+          pip install nltk
 
       - name: Check Python Env ahead of tests
         run: |
