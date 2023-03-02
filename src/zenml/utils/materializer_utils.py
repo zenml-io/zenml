@@ -17,10 +17,13 @@ import os
 import tempfile
 from typing import TYPE_CHECKING, Any
 
+from zenml.client import Client
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
+from zenml.enums import StackComponentType
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.stack import StackComponent
 from zenml.utils import source_utils
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
@@ -105,6 +108,26 @@ def load_artifact(artifact: "ArtifactResponseModel") -> Any:
     Returns:
         The artifact loaded into memory.
     """
+    artifact_store_loaded = False
+    if artifact.artifact_store_id:
+        try:
+            artifact_store_model = Client().get_stack_component(
+                component_type=StackComponentType.ARTIFACT_STORE,
+                name_id_or_prefix=artifact.artifact_store_id,
+            )
+            _ = StackComponent.from_model(artifact_store_model)
+            artifact_store_loaded = True
+        except KeyError:
+            pass
+
+    if not artifact_store_loaded:
+        logger.warning(
+            "Unable to restore artifact store while trying to load artifact "
+            "`%s`. If this artifact is stored in a remote artifact store, "
+            "this might lead to issues when trying to load the artifact.",
+            artifact.id,
+        )
+
     return _load_artifact(
         materializer=artifact.materializer,
         data_type=artifact.data_type,
