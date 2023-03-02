@@ -384,7 +384,9 @@ class BuiltInContainerMaterializer(BaseMaterializer):
             The extracted metadata as a dictionary.
         """
         base_metadata = super().extract_metadata(data)
-        container_metadata = {
-            "length": len(data),
-        }
+        container_metadata = {}
+        if hasattr(data, "__len__"):
+            container_metadata = {
+                "length": len(data),
+            }
         return {**base_metadata, **container_metadata}
