@@ -255,12 +255,6 @@ class StepLauncher:
         )
 
         client = Client()
-
-        local_repo = client.find_active_code_repository()
-        git_sha = None
-        if local_repo and not local_repo.is_dirty:
-            git_sha = local_repo.current_commit
-
         pipeline_run = PipelineRunRequestModel(
             id=run_id,
             name=run_name,
@@ -289,7 +283,6 @@ class StepLauncher:
             orchestrator_environment=get_run_environment_dict(),
             server_version=client.zen_store.get_store_info().version,
             start_time=datetime.utcnow(),
-            git_sha=git_sha,
         )
         return client.zen_store.get_or_create_run(pipeline_run)
 

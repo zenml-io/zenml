@@ -39,8 +39,10 @@ class CodeRepositoryBaseModel(BaseModel):
         title="The name of the code repository.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    config: Dict[str, Any]
-    source: Source
+    config: Dict[str, Any] = Field(
+        description="Configuration for the code repository."
+    )
+    source: Source = Field(description="The code repository source.")
 
 
 # -------- #
@@ -92,3 +94,20 @@ class CodeRepositoryRequestModel(
 @update_model
 class CodeRepositoryUpdateModel(CodeRepositoryRequestModel):
     """Code repository update model."""
+
+
+class CodeRepositoryReferenceBaseModel(BaseModel):
+    commit: str = Field()
+    subdirectory: str = Field()
+
+
+class CodeRepositoryReferenceRequestModel(
+    CodeRepositoryReferenceBaseModel, WorkspaceScopedRequestModel
+):
+    code_repository: UUID
+
+
+class CodeRepositoryReferenceResponseModel(
+    CodeRepositoryReferenceBaseModel, WorkspaceScopedResponseModel
+):
+    code_repository: CodeRepositoryResponseModel

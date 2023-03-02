@@ -178,7 +178,7 @@ class GitHubCodeRepository(BaseCodeRepository):
         try:
             self._github_session = Github(self._token)
             user = self._github_session.get_user().login
-            logger.info(f"Logged in as {user}")
+            logger.debug(f"Logged in as {user}")
         except Exception as e:
             raise RuntimeError(
                 f'f"An error occurred while logging in: {str(e)}'
@@ -191,7 +191,7 @@ class GitHubCodeRepository(BaseCodeRepository):
             repo_sub_directory, ref=commit
         )
         for content in contents:
-            logger.info(f"Processing {content.path}")
+            logger.debug(f"Processing {content.path}")
             if content.type == "dir":
                 path = os.path.join(directory, content.name)
                 os.makedirs(path, exist_ok=True)

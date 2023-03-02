@@ -12,19 +12,25 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base class for entrypoint configurations that run a single step."""
+import os
 from typing import TYPE_CHECKING, Any, List, Set
 
 from zenml.client import Client
+from zenml.code_repositories import BaseCodeRepository
 from zenml.entrypoints.base_entrypoint_configuration import (
     BaseEntrypointConfiguration,
 )
 from zenml.integrations.registry import integration_registry
+from zenml.logger import get_logger
+from zenml.utils import source_utils
 
 if TYPE_CHECKING:
     from zenml.config.step_configurations import Step
     from zenml.models import (
         PipelineDeploymentResponseModel,
     )
+
+logger = get_logger(__name__)
 
 STEP_NAME_OPTION = "step_name"
 
@@ -145,12 +151,14 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
         """Prepares the environment and runs the configured step."""
         deployment = self.load_deployment()
 
-        step_name = self.entrypoint_args[STEP_NAME_OPTION]
-        pipeline_name = deployment.pipeline_configuration.name
-
         # Activate all the integrations. This makes sure that all materializers
         # and stack component flavors are registered.
         integration_registry.activate_integrations()
+
+        self._download_code_if_necessary(deployment=deployment)
+
+        step_name = self.entrypoint_args[STEP_NAME_OPTION]
+        pipeline_name = deployment.pipeline_configuration.name
 
         step = deployment.step_configurations[step_name]
         self._run_step(step, deployment=deployment)
@@ -174,3 +182,29 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
         orchestrator = Client().active_stack.orchestrator
         orchestrator._prepare_run(deployment=deployment)
         orchestrator.run_step(step=step)
+
+    def _download_code_if_necessary(
+        self, deployment: "PipelineDeploymentResponseModel"
+    ) -> None:
+        repo_reference = deployment.code_repository_reference
+        if repo_reference:
+            logger.info(
+                "Downloading code from code repository `%s` (commit %s).",
+                repo_reference.code_repository.name,
+                repo_reference.commit,
+            )
+            model = Client().get_code_repository(
+                repo_reference.code_repository.id
+            )
+            repo = BaseCodeRepository.from_model(model)
+            code_directory = os.path.abspath("code")
+            os.makedirs(code_directory)
+            repo.login()
+            repo.download_files(
+                commit=repo_reference.commit,
+                directory=code_directory,
+                repo_sub_directory=repo_reference.subdirectory,
+            )
+            source_utils.set_custom_source_root(code_directory)
+
+            logger.info("Code download finished.")

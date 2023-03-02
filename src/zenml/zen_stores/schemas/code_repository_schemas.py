@@ -22,11 +22,13 @@ from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
 from zenml.models.code_repository_models import (
+    CodeRepositoryReferenceRequestModel,
+    CodeRepositoryReferenceResponseModel,
     CodeRepositoryRequestModel,
     CodeRepositoryResponseModel,
     CodeRepositoryUpdateModel,
 )
-from zenml.zen_stores.schemas.base_schemas import NamedSchema
+from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
@@ -121,3 +123,83 @@ class CodeRepositorySchema(NamedSchema, table=True):
 
         self.updated = datetime.utcnow()
         return self
+
+
+class CodeRepositoryReferenceSchema(BaseSchema, table=True):
+    """SQL Model for code repository references."""
+
+    __tablename__ = "code_repository_reference"
+
+    workspace_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=WorkspaceSchema.__tablename__,
+        source_column="workspace_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    workspace: "WorkspaceSchema" = Relationship()
+
+    user_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=UserSchema.__tablename__,
+        source_column="user_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+
+    user: Optional["UserSchema"] = Relationship()
+
+    code_repository_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=CodeRepositorySchema.__tablename__,
+        source_column="code_repository_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    code_repository: "CodeRepositorySchema" = Relationship()
+
+    commit: str
+    subdirectory: str
+
+    @classmethod
+    def from_request(
+        cls,
+        request: "CodeRepositoryReferenceRequestModel",
+    ) -> "CodeRepositorySchema":
+        """Convert a `CodeRepositoryReferenceRequestModel` to a `CodeRepositoryReferenceSchema`.
+
+        Args:
+            request: The request model to convert.
+
+        Returns:
+            The converted schema.
+        """
+        return cls(
+            workspace_id=request.workspace,
+            user_id=request.user,
+            commit=request.commit,
+            subdirectory=request.subdirectory,
+            code_repository_id=request.code_repository,
+        )
+
+    def to_model(
+        self,
+    ) -> "CodeRepositoryReferenceResponseModel":
+        """Convert a `CodeRepositoryReferenceSchema` to a `CodeRepositoryReferenceResponseModel`.
+
+        Returns:
+            The created CodeRepositoryReferenceResponseModel.
+        """
+        return CodeRepositoryReferenceResponseModel(
+            id=self.id,
+            workspace=self.workspace.to_model(),
+            user=self.user.to_model(True) if self.user else None,
+            created=self.created,
+            updated=self.updated,
+            commit=self.commit,
+            subdirectory=self.subdirectory,
+            code_repository=self.code_repository.to_model(),
+        )

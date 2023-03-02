@@ -98,6 +98,7 @@ class PipelineRunBaseModel(BaseModel):
             "(OS, Python version, etc.)."
         ),
     )
+    # TODO: this is deprecated and will be removed in the future
     git_sha: Optional[str] = None
 
 

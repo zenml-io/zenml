@@ -273,7 +273,10 @@ def _get_package_version(package_name: str) -> Optional[str]:
     # TODO: catch errors
     from importlib.metadata import version
 
-    return version(distribution_name=package_name)
+    try:
+        return version(distribution_name=package_name)
+    except:
+        return None
 
 
 # Ideally both the expected_class and return type should be annotated with a

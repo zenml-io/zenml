@@ -94,6 +94,7 @@ class DistributionPackageSource(Source):
     @property
     def package_name(self) -> str:
         # TODO: are dots allowed in package names? If yes we need to handle that
+        # TODO: the package name might be different than the import module
         return self.module.split(".", maxsplit=1)[0]
 
 

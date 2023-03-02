@@ -17,6 +17,7 @@ from zenml.zen_stores.schemas.artifact_schemas import ArtifactSchema
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.code_repository_schemas import (
     CodeRepositorySchema,
+    CodeRepositoryReferenceSchema,
 )
 from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
@@ -58,6 +59,7 @@ __all__ = [
     "BaseSchema",
     "NamedSchema",
     "CodeRepositorySchema",
+    "CodeRepositoryReferenceSchema",
     "FlavorSchema",
     "IdentitySchema",
     "PipelineBuildSchema",
