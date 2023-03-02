@@ -166,10 +166,3 @@ requirements:
         flavor: mlflow
     capabilities:
       mlflow: true
-
-    # Local secrets manager
-  - name: local-secrets-manager
-    stacks:
-      - name: local
-        type: secrets_manager
-        flavor: local

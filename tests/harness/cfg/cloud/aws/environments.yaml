@@ -17,7 +17,6 @@ environments:
       - external-data-validators
       - mlflow-local-tracker
       - mlflow-local-deployer
-      - local-secrets-manager
     capabilities:
       synchronized: true
 
@@ -30,7 +29,6 @@ environments:
       - external-data-validators
       - mlflow-local-tracker
       - mlflow-local-deployer
-      - local-secrets-manager
     mandatory_requirements:
       - docker-local
 
@@ -43,7 +41,6 @@ environments:
       - external-data-validators
       - mlflow-local-tracker
       - mlflow-local-deployer
-      - local-secrets-manager
     mandatory_requirements:
       - airflow-local
 
