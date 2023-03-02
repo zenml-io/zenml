@@ -970,15 +970,28 @@ def print_components_table(
     print_table(configurations)
 
 
-def print_debug_stack(
-    stack: "StackResponseModel", components: "List[ComponentResponseModel]"
-) -> None:
+def _get_stack_components(
+    stack: "StackResponseModel",
+) -> "List[ComponentResponseModel]":
+    """Get a dict of all components in a stack.
+
+    Args:
+        stack: A stack
+
+    Returns:
+        A list of all components in a stack.
+    """
+    return [component[1][0] for component in stack.components.items()]
+
+
+def print_debug_stack(stack: "StackResponseModel") -> None:
     """Print stack and components for debugging purposes.
 
     Args:
         stack: A stack
-        components: List of components
     """
+    components = _get_stack_components(stack)
+
     declare("\nCURRENT STACK\n", bold=True)
     console.print(f"Name: {stack.name}")
     console.print(f"ID: {str(stack.id)}")

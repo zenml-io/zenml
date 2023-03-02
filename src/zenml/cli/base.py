@@ -465,18 +465,18 @@ def _prompt_email(event_source: AnalyticsEventSource) -> bool:
     type=str,
 )
 @click.option(
-    "--debug",
-    "-d",
+    "--stack",
+    "-s",
     is_flag=True,
     default=False,
-    help="Output information about stacks and components for debugging.",
+    help="Output information about active stack and components.",
     type=bool,
 )
 def info(
     packages: Tuple[str],
     all: bool = False,
     file: str = "",
-    debug: bool = False,
+    stack: bool = False,
 ) -> None:
     """Show information about the current user setup.
 
@@ -539,10 +539,6 @@ def info(
     else:
         cli_utils.print_user_info(user_info)
 
-    if debug:
-        # with contextlib.suppress(Exception):
+    if stack:
         stack_ = client.get_stack()
-        components_ = [
-            component[1][0] for component in stack_.components.items()
-        ]
-        cli_utils.print_debug_stack(stack=stack_, components=components_)
+        cli_utils.print_debug_stack(stack=stack_)
