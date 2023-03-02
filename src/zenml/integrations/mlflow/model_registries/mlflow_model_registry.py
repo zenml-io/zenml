@@ -21,7 +21,6 @@ import mlflow
 from mlflow import MlflowClient
 from mlflow.entities.model_registry import ModelVersion as MLflowModelVersion
 from mlflow.exceptions import MlflowException
-from mlflow.models import get_model_info
 from mlflow.pyfunc import load_model
 from pydantic import Field
 
@@ -280,8 +279,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
             The model.
 
         Raises:
-            KeyError: If the model does not exist.
-            RuntimeError: If mlflow fails to get the model.
+            KeyError: If mlflow fails to get the model.
         """
         # Get the registered model.
         try:
@@ -289,12 +287,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
                 name=name,
             )
         except MlflowException as e:
-            if "Could not find registered model" in e.message:
-                raise KeyError(
-                    f"Model with name {name} does not exist in the MLflow model "
-                    f"registry.",
-                )
-            raise RuntimeError(
+            raise KeyError(
                 f"Failed to get model with name {name} from the MLflow model "
                 f"registry: {str(e)}",
             )
@@ -740,11 +733,17 @@ class MLFlowModelRegistry(BaseModelRegistry):
             metadata["mlflow_run_id"] = mlflow_model_version.run_id
         if mlflow_model_version.run_link:
             metadata["mlflow_run_link"] = mlflow_model_version.run_link
-        model_library = (
-            get_model_info(model_uri=mlflow_model_version.source)
-            .flavors.get("python_function", {})
-            .get("loader_module")
-        )
+
+        try:
+            from mlflow.models import get_model_info
+
+            model_library = (
+                get_model_info(model_uri=mlflow_model_version.source)
+                .flavors.get("python_function", {})
+                .get("loader_module")
+            )
+        except ImportError:
+            model_library = None
         return ModelVersion(
             registered_model=RegisteredModel(name=mlflow_model_version.name),
             model_format=MLFLOW_MODEL_FORMAT,
