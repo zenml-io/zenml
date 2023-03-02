@@ -19,21 +19,20 @@ from zenml.post_execution.pipeline import get_pipeline
 
 
 def test_example(request: pytest.FixtureRequest) -> None:
-    """Runs the evidently_drift_detection example."""
-    from evidently.model_profile import Profile  # type: ignore[import]
+    """Runs the evidently_data_validation example."""
 
     with run_example(
         request=request,
-        name="evidently_drift_detection",
-        pipeline_name="drift_detection_pipeline",
-        step_count=4,
+        name="evidently_data_validation",
+        pipeline_name="text_data_report_test_pipeline",
+        step_count=5,
         run_count=1,
     ) as (example, runs):
 
-        pipeline = get_pipeline("drift_detection_pipeline")
+        pipeline = get_pipeline("text_data_report_test_pipeline")
         assert pipeline
 
-        # Final step should have output a data drift report
-        drift_detection_step = runs[0].get_step("drift_detector")
-        output = drift_detection_step.outputs["profile"].read()
-        assert isinstance(output, Profile)
+        # Analyzer step should have output missing values
+        text_analyzer_step = runs[0].get_step(step="text_analyzer")
+        output = text_analyzer_step.outputs["ref_missing_values"].read()
+        assert isinstance(output, int)
