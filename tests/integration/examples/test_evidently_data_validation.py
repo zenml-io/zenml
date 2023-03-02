@@ -23,7 +23,7 @@ def test_example(request: pytest.FixtureRequest) -> None:
 
     with run_example(
         request=request,
-        name="evidently_drift_detection",
+        name="evidently_data_validation",
         pipelines={"text_data_report_test_pipeline": (1, 5)},
     ) as (example, runs):
 
