@@ -464,13 +464,28 @@ def _prompt_email(event_source: AnalyticsEventSource) -> bool:
     help="Select specific installed packages.",
     type=str,
 )
-def info(packages: Tuple[str], all: bool = False, file: str = "") -> None:
+@click.option(
+    "--debug",
+    "-d",
+    is_flag=True,
+    default=False,
+    help="Output information about stacks and components for debugging.",
+    type=bool,
+)
+def info(
+    packages: Tuple[str],
+    all: bool = False,
+    file: str = "",
+    debug: bool = False,
+) -> None:
     """Show information about the current user setup.
 
     Args:
         packages: List of packages to show information about.
         all: Flag to show information about all installed packages.
         file: Flag to output to a file.
+        debug: Flag to output information about stacks and components for
+            debugging.
     """
     gc = GlobalConfiguration()
     environment = Environment()
@@ -523,3 +538,11 @@ def info(packages: Tuple[str], all: bool = False, file: str = "") -> None:
         declare(f"Wrote user debug info to file at '{file_write_path}'.")
     else:
         cli_utils.print_user_info(user_info)
+
+    if debug:
+        # with contextlib.suppress(Exception):
+        stack_ = client.get_stack()
+        components_ = [
+            component[1][0] for component in stack_.components.items()
+        ]
+        cli_utils.print_debug_stack(stack=stack_, components=components_)

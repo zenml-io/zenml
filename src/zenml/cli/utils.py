@@ -970,6 +970,42 @@ def print_components_table(
     print_table(configurations)
 
 
+def print_debug_stack(
+    stack: "StackResponseModel", components: "List[ComponentResponseModel]"
+) -> None:
+    """Print stack and components for debugging purposes.
+
+    Args:
+        stack: A stack
+        components: List of components
+    """
+    declare("\nCURRENT STACK\n", bold=True)
+    console.print(f"Name: {stack.name}")
+    console.print(f"ID: {str(stack.id)}")
+    console.print(f"Shared: {'Yes' if stack.is_shared else 'No'}")
+    console.print(f"User: {stack.user.name} / {str(stack.user.id)}")
+    console.print(
+        f"Workspace: {stack.workspace.name} / {str(stack.workspace.id)}"
+    )
+
+    for component in components:
+        declare(
+            f"\n{component.type.value.upper()}: {component.name}\n", bold=True
+        )
+        console.print(f"Name: {component.name}")
+        console.print(f"ID: {str(component.id)}")
+        console.print(f"Type: {component.type.value}")
+        console.print(f"Flavor: {component.flavor}")
+        console.print(f"Configuration: {component.configuration}")
+        console.print(f"Shared: {'Yes' if component.is_shared else 'No'}")
+        console.print(
+            f"User: {component.user.name} / {str(component.user.id)}"
+        )
+        console.print(
+            f"Workspace: {component.workspace.name} / {str(component.workspace.id)}"
+        )
+
+
 def _component_display_name(
     component_type: "StackComponentType", plural: bool = False
 ) -> str:
