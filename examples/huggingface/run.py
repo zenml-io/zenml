@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from typing import Optional
+
 import click
 from pipelines import (
     seq_classifier_train_eval_pipeline,
@@ -100,9 +102,9 @@ def main(
     max_seq_length: int,
     init_lr: float,
     weight_decay_rate: float,
-    text_column: str,
-    label_column: str,
-    dataset_name: str,
+    text_column: Optional[str] = None,
+    label_column: Optional[str] = None,
+    dataset_name: Optional[str] = None,
 ):
     if nlp_task == "token-classification":
         if not text_column:
