@@ -22,6 +22,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Tuple,
     Type,
     TypeVar,
     Union,
@@ -43,10 +44,14 @@ from zenml.constants import (
     DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     FLAVORS,
+    GET_OR_CREATE,
     INFO,
     LOGIN,
+    PIPELINE_BUILDS,
+    PIPELINE_DEPLOYMENTS,
     PIPELINES,
     ROLES,
+    RUN_METADATA,
     RUNS,
     SCHEDULES,
     STACK_COMPONENTS,
@@ -59,7 +64,7 @@ from zenml.constants import (
     VERSION_1,
     WORKSPACES,
 )
-from zenml.enums import StoreType
+from zenml.enums import SecretsStoreType, StoreType
 from zenml.exceptions import (
     AuthorizationException,
     DoesNotExistException,
@@ -82,6 +87,13 @@ from zenml.models import (
     FlavorFilterModel,
     FlavorRequestModel,
     FlavorResponseModel,
+    FlavorUpdateModel,
+    PipelineBuildFilterModel,
+    PipelineBuildRequestModel,
+    PipelineBuildResponseModel,
+    PipelineDeploymentFilterModel,
+    PipelineDeploymentRequestModel,
+    PipelineDeploymentResponseModel,
     PipelineFilterModel,
     PipelineRequestModel,
     PipelineResponseModel,
@@ -94,6 +106,8 @@ from zenml.models import (
     RoleRequestModel,
     RoleResponseModel,
     RoleUpdateModel,
+    RunMetadataRequestModel,
+    RunMetadataResponseModel,
     ScheduleRequestModel,
     ScheduleResponseModel,
     ScheduleUpdateModel,
@@ -126,9 +140,9 @@ from zenml.models.base_models import (
     BaseRequestModel,
     BaseResponseModel,
     WorkspaceScopedRequestModel,
-    WorkspaceScopedResponseModel,
 )
 from zenml.models.page_model import Page
+from zenml.models.run_metadata_models import RunMetadataFilterModel
 from zenml.models.schedule_model import ScheduleFilterModel
 from zenml.models.server_models import ServerModel
 from zenml.models.team_models import TeamFilterModel, TeamUpdateModel
@@ -137,6 +151,9 @@ from zenml.utils.networking_utils import (
     replace_localhost_with_internal_hostname,
 )
 from zenml.zen_stores.base_zen_store import BaseZenStore
+from zenml.zen_stores.secrets_stores.rest_secrets_store import (
+    RestSecretsStoreConfiguration,
+)
 
 logger = get_logger(__name__)
 
@@ -147,14 +164,8 @@ if TYPE_CHECKING:
 Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
 
 AnyRequestModel = TypeVar("AnyRequestModel", bound=BaseRequestModel)
-AnyProjestRequestModel = TypeVar(
-    "AnyProjestRequestModel", bound=WorkspaceScopedRequestModel
-)
-
 AnyResponseModel = TypeVar("AnyResponseModel", bound=BaseResponseModel)
-AnyProjestResponseModel = TypeVar(
-    "AnyProjestResponseModel", bound=WorkspaceScopedResponseModel
-)
+
 
 DEFAULT_HTTP_TIMEOUT = 30
 
@@ -163,20 +174,53 @@ class RestZenStoreConfiguration(StoreConfiguration):
     """REST ZenML store configuration.
 
     Attributes:
+        type: The type of the store.
+        secrets_store: The configuration of the secrets store to use.
+            This defaults to a REST secrets store that extends the REST ZenML
+            store.
         username: The username to use to connect to the Zen server.
         password: The password to use to connect to the Zen server.
         verify_ssl: Either a boolean, in which case it controls whether we
             verify the server's TLS certificate, or a string, in which case it
             must be a path to a CA bundle to use or the CA bundle value itself.
         http_timeout: The timeout to use for all requests.
+
     """
 
     type: StoreType = StoreType.REST
+
+    secrets_store: Optional[RestSecretsStoreConfiguration] = None
+
     username: Optional[str] = None
     password: Optional[str] = None
     api_token: Optional[str] = None
     verify_ssl: Union[bool, str] = True
     http_timeout: int = DEFAULT_HTTP_TIMEOUT
+
+    @validator("secrets_store")
+    def validate_secrets_store(
+        cls, secrets_store: Optional[RestSecretsStoreConfiguration]
+    ) -> RestSecretsStoreConfiguration:
+        """Ensures that the secrets store uses an associated REST secrets store.
+
+        Args:
+            secrets_store: The secrets store config to be validated.
+
+        Returns:
+            The validated secrets store config.
+
+        Raises:
+            ValueError: If the secrets store is not of type REST.
+        """
+        if secrets_store is None:
+            secrets_store = RestSecretsStoreConfiguration()
+        elif secrets_store.type != SecretsStoreType.REST:
+            raise ValueError(
+                "The secrets store associated with a REST zen store must be "
+                f"of type REST, but is of type {secrets_store.type}."
+            )
+
+        return secrets_store
 
     @root_validator
     def validate_credentials(cls, values: Dict[str, Any]) -> Dict[str, Any]:
@@ -572,8 +616,27 @@ class RestZenStore(BaseZenStore):
         Returns:
             The newly created flavor.
         """
-        return self._create_workspace_scoped_resource(
+        return self._create_resource(
             resource=flavor,
+            route=FLAVORS,
+            response_model=FlavorResponseModel,
+        )
+
+    def update_flavor(
+        self, flavor_id: UUID, flavor_update: FlavorUpdateModel
+    ) -> FlavorResponseModel:
+        """Updates an existing user.
+
+        Args:
+            flavor_id: The id of the flavor to update.
+            flavor_update: The update to be applied to the flavor.
+
+        Returns:
+            The updated flavor.
+        """
+        return self._update_resource(
+            resource_id=flavor_id,
+            resource_update=flavor_update,
             route=FLAVORS,
             response_model=FlavorResponseModel,
         )
@@ -1225,6 +1288,140 @@ class RestZenStore(BaseZenStore):
         )
 
     # ---------
+    # Builds
+    # ---------
+
+    def create_build(
+        self,
+        build: PipelineBuildRequestModel,
+    ) -> PipelineBuildResponseModel:
+        """Creates a new build in a workspace.
+
+        Args:
+            build: The build to create.
+
+        Returns:
+            The newly created build.
+        """
+        return self._create_workspace_scoped_resource(
+            resource=build,
+            route=PIPELINE_BUILDS,
+            response_model=PipelineBuildResponseModel,
+        )
+
+    def get_build(self, build_id: UUID) -> PipelineBuildResponseModel:
+        """Get a build with a given ID.
+
+        Args:
+            build_id: ID of the build.
+
+        Returns:
+            The build.
+        """
+        return self._get_resource(
+            resource_id=build_id,
+            route=PIPELINE_BUILDS,
+            response_model=PipelineBuildResponseModel,
+        )
+
+    def list_builds(
+        self, build_filter_model: PipelineBuildFilterModel
+    ) -> Page[PipelineBuildResponseModel]:
+        """List all builds matching the given filter criteria.
+
+        Args:
+            build_filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all builds matching the filter criteria.
+        """
+        return self._list_paginated_resources(
+            route=PIPELINE_BUILDS,
+            response_model=PipelineBuildResponseModel,
+            filter_model=build_filter_model,
+        )
+
+    def delete_build(self, build_id: UUID) -> None:
+        """Deletes a build.
+
+        Args:
+            build_id: The ID of the build to delete.
+        """
+        self._delete_resource(
+            resource_id=build_id,
+            route=PIPELINE_BUILDS,
+        )
+
+    # ----------------------
+    # Pipeline Deployments
+    # ----------------------
+
+    def create_deployment(
+        self,
+        deployment: PipelineDeploymentRequestModel,
+    ) -> PipelineDeploymentResponseModel:
+        """Creates a new deployment in a workspace.
+
+        Args:
+            deployment: The deployment to create.
+
+        Returns:
+            The newly created deployment.
+        """
+        return self._create_workspace_scoped_resource(
+            resource=deployment,
+            route=PIPELINE_DEPLOYMENTS,
+            response_model=PipelineDeploymentResponseModel,
+        )
+
+    def get_deployment(
+        self, deployment_id: UUID
+    ) -> PipelineDeploymentResponseModel:
+        """Get a deployment with a given ID.
+
+        Args:
+            deployment_id: ID of the deployment.
+
+        Returns:
+            The deployment.
+        """
+        return self._get_resource(
+            resource_id=deployment_id,
+            route=PIPELINE_DEPLOYMENTS,
+            response_model=PipelineDeploymentResponseModel,
+        )
+
+    def list_deployments(
+        self, deployment_filter_model: PipelineDeploymentFilterModel
+    ) -> Page[PipelineDeploymentResponseModel]:
+        """List all deployments matching the given filter criteria.
+
+        Args:
+            deployment_filter_model: All filter parameters including pagination
+                params.
+
+        Returns:
+            A page of all deployments matching the filter criteria.
+        """
+        return self._list_paginated_resources(
+            route=PIPELINE_DEPLOYMENTS,
+            response_model=PipelineDeploymentResponseModel,
+            filter_model=deployment_filter_model,
+        )
+
+    def delete_deployment(self, deployment_id: UUID) -> None:
+        """Deletes a deployment.
+
+        Args:
+            deployment_id: The ID of the deployment to delete.
+        """
+        self._delete_resource(
+            resource_id=deployment_id,
+            route=PIPELINE_DEPLOYMENTS,
+        )
+
+    # ---------
     # Schedules
     # ---------
 
@@ -1350,7 +1547,7 @@ class RestZenStore(BaseZenStore):
 
     def get_or_create_run(
         self, pipeline_run: PipelineRunRequestModel
-    ) -> PipelineRunResponseModel:
+    ) -> Tuple[PipelineRunResponseModel, bool]:
         """Gets or creates a pipeline run.
 
         If a run with the same ID or name already exists, it is returned.
@@ -1360,13 +1557,13 @@ class RestZenStore(BaseZenStore):
             pipeline_run: The pipeline run to get or create.
 
         Returns:
-            The pipeline run.
+            The pipeline run, and a boolean indicating whether the run was
+            created or not.
         """
-        return self._create_workspace_scoped_resource(
+        return self._get_or_create_workspace_scoped_resource(
             resource=pipeline_run,
             route=RUNS,
             response_model=PipelineRunResponseModel,
-            params={"get_if_exists": True},
         )
 
     def list_runs(
@@ -1555,6 +1752,46 @@ class RestZenStore(BaseZenStore):
         """
         self._delete_resource(resource_id=artifact_id, route=ARTIFACTS)
 
+    # ------------
+    # Run Metadata
+    # ------------
+
+    def create_run_metadata(
+        self, run_metadata: RunMetadataRequestModel
+    ) -> RunMetadataResponseModel:
+        """Creates run metadata.
+
+        Args:
+            run_metadata: The run metadata to create.
+
+        Returns:
+            The created run metadata.
+        """
+        return self._create_workspace_scoped_resource(
+            resource=run_metadata,
+            response_model=RunMetadataResponseModel,
+            route=RUN_METADATA,
+        )
+
+    def list_run_metadata(
+        self,
+        run_metadata_filter_model: RunMetadataFilterModel,
+    ) -> Page[RunMetadataResponseModel]:
+        """List run metadata.
+
+        Args:
+            run_metadata_filter_model: All filter parameters including
+                pagination params.
+
+        Returns:
+            The run metadata.
+        """
+        return self._list_paginated_resources(
+            route=RUN_METADATA,
+            response_model=RunMetadataResponseModel,
+            filter_model=run_metadata_filter_model,
+        )
+
     # =======================
     # Internal helper methods
     # =======================
@@ -1656,6 +1893,8 @@ class RestZenStore(BaseZenStore):
                 entity already exists.
             ValueError: If the response indicates that the requested entity
                 does not exist.
+            NotImplementedError: If the response indicates that the requested
+                operation is not implemented.
         """
         if 200 <= response.status_code < 300:
             try:
@@ -1678,9 +1917,13 @@ class RestZenStore(BaseZenStore):
             raise IllegalOperationError(msg)
         elif response.status_code == 404:
             if "KeyError" in response.text:
-                raise KeyError(
-                    response.json().get("detail", (response.text,))[1]
-                )
+                # In case the backend does not return more detailed info
+                error_message = "KeyError"
+
+                error_output = response.json().get("detail", (response.text,))
+                if len(error_output) > 1:
+                    error_message = error_output[1]
+                raise KeyError(error_message)
             elif "DoesNotExistException" in response.text:
                 message = ": ".join(
                     response.json().get("detail", (response.text,))
@@ -1711,6 +1954,10 @@ class RestZenStore(BaseZenStore):
                     ": ".join(response.json().get("detail", (response.text,)))
                 )
         elif response.status_code == 422:
+            if "NotImplementedError" in response.text:
+                raise NotImplementedError(
+                    ": ".join(response.json().get("detail", (response.text,)))
+                )
             response_details = response.json().get("detail", (response.text,))
             if isinstance(response_details[0], str):
                 response_msg = ": ".join(response_details)
@@ -1890,10 +2137,10 @@ class RestZenStore(BaseZenStore):
     def _create_workspace_scoped_resource(
         self,
         resource: WorkspaceScopedRequestModel,
-        response_model: Type[AnyProjestResponseModel],
+        response_model: Type[AnyResponseModel],
         route: str,
         params: Optional[Dict[str, Any]] = None,
-    ) -> AnyProjestResponseModel:
+    ) -> AnyResponseModel:
         """Create a new workspace scoped resource.
 
         Args:
@@ -1907,6 +2154,83 @@ class RestZenStore(BaseZenStore):
             The created resource.
         """
         return self._create_resource(
+            resource=resource,
+            response_model=response_model,
+            route=f"{WORKSPACES}/{str(resource.workspace)}{route}",
+            params=params,
+        )
+
+    def _get_or_create_resource(
+        self,
+        resource: BaseRequestModel,
+        response_model: Type[AnyResponseModel],
+        route: str,
+        params: Optional[Dict[str, Any]] = None,
+    ) -> Tuple[AnyResponseModel, bool]:
+        """Get or create a resource.
+
+        Args:
+            resource: The resource to get or create.
+            route: The resource REST API route to use.
+            response_model: Optional model to use to deserialize the response
+                body. If not provided, the resource class itself will be used.
+            params: Optional query parameters to pass to the endpoint.
+
+        Returns:
+            The created resource, and a boolean indicating whether the resource
+            was created or not.
+
+        Raises:
+            ValueError: If the response body is not a list with 2 elements
+                where the first element is the resource and the second element
+                a boolean indicating whether the resource was created or not.
+        """
+        response_body = self.post(
+            f"{route}{GET_OR_CREATE}",
+            body=resource,
+            params=params,
+        )
+        if not isinstance(response_body, list):
+            raise ValueError(
+                f"Expected a list response from the {route}{GET_OR_CREATE} "
+                f"endpoint but got {type(response_body)} instead."
+            )
+        if len(response_body) != 2:
+            raise ValueError(
+                f"Expected a list response with 2 elements from the "
+                f"{route}{GET_OR_CREATE} endpoint but got {len(response_body)} "
+                f"elements instead."
+            )
+        model_json, was_created = response_body
+        if not isinstance(was_created, bool):
+            raise ValueError(
+                f"Expected a boolean as the second element of the list "
+                f"response from the {route}{GET_OR_CREATE} endpoint but got "
+                f"{type(was_created)} instead."
+            )
+        return response_model.parse_obj(model_json), was_created
+
+    def _get_or_create_workspace_scoped_resource(
+        self,
+        resource: WorkspaceScopedRequestModel,
+        response_model: Type[AnyResponseModel],
+        route: str,
+        params: Optional[Dict[str, Any]] = None,
+    ) -> Tuple[AnyResponseModel, bool]:
+        """Get or create a workspace scoped resource.
+
+        Args:
+            resource: The resource to get or create.
+            route: The resource REST API route to use.
+            response_model: Optional model to use to deserialize the response
+                body. If not provided, the resource class itself will be used.
+            params: Optional query parameters to pass to the endpoint.
+
+        Returns:
+            The created resource, and a boolean indicating whether the resource
+            was created or not.
+        """
+        return self._get_or_create_resource(
             resource=resource,
             response_model=response_model,
             route=f"{WORKSPACES}/{str(resource.workspace)}{route}",

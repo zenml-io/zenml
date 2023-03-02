@@ -28,6 +28,8 @@ from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 if TYPE_CHECKING:
     from zenml.models.stack_models import StackUpdateModel
     from zenml.zen_stores.schemas import (
+        PipelineBuildSchema,
+        PipelineDeploymentSchema,
         PipelineRunSchema,
         StackComponentSchema,
     )
@@ -91,6 +93,10 @@ class StackSchema(ShareableSchema, table=True):
         link_model=StackCompositionSchema,
     )
     runs: List["PipelineRunSchema"] = Relationship(back_populates="stack")
+    builds: List["PipelineBuildSchema"] = Relationship(back_populates="stack")
+    deployments: List["PipelineDeploymentSchema"] = Relationship(
+        back_populates="stack",
+    )
 
     def update(
         self,

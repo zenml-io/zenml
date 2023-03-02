@@ -73,4 +73,4 @@ def get_requirements_for_module(module_name: str) -> List[str]:
         A list of requirements for the module.
     """
     integration = get_integration_for_module(module_name)
-    return integration.REQUIREMENTS if integration else []
+    return integration.get_requirements() if integration else []

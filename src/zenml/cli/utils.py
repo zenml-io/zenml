@@ -12,8 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Utility functions for the CLI."""
-
-import json
+import contextlib
 import os
 import subprocess
 import sys
@@ -22,6 +21,7 @@ from typing import (
     Any,
     Callable,
     Dict,
+    Iterator,
     List,
     NoReturn,
     Optional,
@@ -60,6 +60,8 @@ from zenml.zen_server.deploy import ServerDeployment
 logger = get_logger(__name__)
 
 if TYPE_CHECKING:
+    from uuid import UUID
+
     from rich.text import Text
 
     from zenml.client import Client
@@ -72,6 +74,7 @@ if TYPE_CHECKING:
         PipelineRunResponseModel,
         StackResponseModel,
     )
+    from zenml.stack import Stack
 
 MAX_ARGUMENT_VALUE_SIZE = 10240
 
@@ -293,7 +296,9 @@ def format_integration_list(
             {
                 "INSTALLED": ":white_check_mark:" if is_installed else ":x:",
                 "INTEGRATION": name,
-                "REQUIRED_PACKAGES": ", ".join(integration_impl.REQUIREMENTS),
+                "REQUIRED_PACKAGES": ", ".join(
+                    integration_impl.get_requirements()
+                ),
             }
         )
     return list_of_dicts
@@ -335,14 +340,14 @@ def print_stack_configuration(
     )
 
 
-def print_flavor_list(flavors: List["FlavorResponseModel"]) -> None:
+def print_flavor_list(flavors: Page["FlavorResponseModel"]) -> None:
     """Prints the list of flavors.
 
     Args:
         flavors: List of flavors to print.
     """
     flavor_table = []
-    for f in flavors:
+    for f in flavors.items:
         flavor_table.append(
             {
                 "FLAVOR": f.name,
@@ -632,29 +637,29 @@ def uninstall_package(package: str) -> None:
 
 
 def pretty_print_secret(
-    secret: "BaseSecretSchema", hide_secret: bool = True
+    secret: "Union[BaseSecretSchema, Dict[str, str]]", hide_secret: bool = True
 ) -> None:
-    """Given a secret set, print all key-value pairs associated with the secret.
+    """Given a secret with values, print all key-value pairs associated with the secret.
 
     Args:
         secret: Secret of type BaseSecretSchema
         hide_secret: boolean that configures if the secret values are shown
             on the CLI
     """
+    if isinstance(secret, BaseSecretSchema):
+        secret = secret.content
 
     def get_secret_value(value: Any) -> str:
         if value is None:
             return ""
-        if hide_secret:
-            return "***"
-        return str(value)
+        return "***" if hide_secret else str(value)
 
     stack_dicts = [
         {
             "SECRET_KEY": key,
             "SECRET_VALUE": get_secret_value(value),
         }
-        for key, value in secret.content.items()
+        for key, value in secret.items()
     ]
     print_table(stack_dicts)
 
@@ -842,21 +847,19 @@ def print_server_deployment(server: "ServerDeployment") -> None:
     console.print(rich_table)
 
 
-def describe_pydantic_object(schema_json: str) -> None:
-    """Describes a Pydantic object based on the json of its schema.
+def describe_pydantic_object(schema_json: Dict[str, Any]) -> None:
+    """Describes a Pydantic object based on the dict-representation of its schema.
 
     Args:
         schema_json: str, represents the schema of a Pydantic object, which
             can be obtained through BaseModelClass.schema_json()
     """
     # Get the schema dict
-    schema = json.loads(schema_json)
-
     # Extract values with defaults
-    schema_title = schema["title"]
-    required = schema.get("required", [])
-    description = schema.get("description", "")
-    properties = schema.get("properties", {})
+    schema_title = schema_json["title"]
+    required = schema_json.get("required", [])
+    description = schema_json.get("description", "")
+    properties = schema_json.get("properties", {})
 
     # Pretty print the schema
     warning(f"Configuration class: {schema_title}\n", bold=True)
@@ -867,10 +870,12 @@ def describe_pydantic_object(schema_json: str) -> None:
     if properties:
         warning("Properties", bold=True)
         for prop, prop_schema in properties.items():
-            warning(
-                f"{prop}, {prop_schema['type']}"
-                f"{', REQUIRED' if prop in required else ''}"
-            )
+
+            if "$ref" not in prop_schema.keys():
+                warning(
+                    f"{prop}, {prop_schema['type']}"
+                    f"{', REQUIRED' if prop in required else ''}"
+                )
 
             if "description" in prop_schema:
                 declare(f"  {prop_schema['description']}", width=80)
@@ -1070,7 +1075,7 @@ def print_page_info(page: Page[T]) -> None:
         page: The page to print the information for.
     """
     declare(
-        f"Page `({page.page}/{page.total_pages})`, `{page.total}` items "
+        f"Page `({page.index}/{page.total_pages})`, `{page.total}` items "
         f"found for the applied filters."
     )
 
@@ -1231,3 +1236,78 @@ def list_options(filter_model: Type[BaseFilterModel]) -> Callable[[F], F]:
         return wrapper(func)
 
     return inner_decorator
+
+
+@contextlib.contextmanager
+def temporary_active_stack(
+    stack_name_or_id: Union["UUID", str, None] = None
+) -> Iterator["Stack"]:
+    """Contextmanager to temporarily activate a stack.
+
+    Args:
+        stack_name_or_id: The name or ID of the stack to activate. If not given,
+            this contextmanager will not do anything.
+
+    Yields:
+        The active stack.
+    """
+    from zenml.client import Client
+
+    try:
+        if stack_name_or_id:
+            old_stack_id = Client().active_stack_model.id
+            Client().activate_stack(stack_name_or_id)
+        else:
+            old_stack_id = None
+        yield Client().active_stack
+    finally:
+        if old_stack_id:
+            Client().activate_stack(old_stack_id)
+
+
+def get_package_information(
+    package_names: Optional[List[str]] = None,
+) -> Dict[str, str]:
+    """Get a dictionary of installed packages.
+
+    Args:
+        package_names: Specific package names to get the information for.
+
+    Returns:
+        A dictionary of the name:version for the package names passed in or
+            all packages and their respective versions.
+    """
+    import pkg_resources
+
+    if package_names:
+        return {
+            pkg.key: pkg.version
+            for pkg in pkg_resources.working_set
+            if pkg.key in package_names
+        }
+
+    return {pkg.key: pkg.version for pkg in pkg_resources.working_set}
+
+
+def print_user_info(info: Dict[str, Any]) -> None:
+    """Print user information to the terminal.
+
+    Args:
+        info: The information to print.
+    """
+    for key, value in info.items():
+        if key in ["packages", "query_packages"] and not bool(value):
+            continue
+
+        declare(f"{key.upper()}: {value}")
+
+
+def warn_deprecated_secrets_manager() -> None:
+    """Warning for deprecating secrets managers."""
+    warning(
+        "Secrets managers are deprecated and will be removed in an upcoming "
+        "release in favor of centralized secrets management. Please see the "
+        "`zenml secret` CLI command and the "
+        "https://docs.zenml.io/advanced-guide/practical-mlops/secrets-management#centralized-secrets-store "
+        "documentation page for more information."
+    )

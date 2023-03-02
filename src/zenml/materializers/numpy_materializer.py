@@ -14,7 +14,7 @@
 """Implementation of the ZenML NumPy materializer."""
 
 import os
-from typing import TYPE_CHECKING, Any, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, Type, cast
 
 import numpy as np
 
@@ -22,6 +22,7 @@ from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.metadata.metadata_types import DType, MetadataType
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -115,3 +116,33 @@ class NumpyMaterializer(BaseMaterializer):
             # about either an untyped function call or an unused ignore
             # statement
             cast(Any, np.save)(f, arr)
+
+    def extract_metadata(
+        self, arr: "NDArray[Any]"
+    ) -> Dict[str, "MetadataType"]:
+        """Extract metadata from the given numpy array.
+
+        Args:
+            arr: The numpy array to extract metadata from.
+
+        Returns:
+            The extracted metadata as a dictionary.
+        """
+        base_metadata = super().extract_metadata(arr)
+
+        # These functions are untyped for numpy versions supporting python
+        # 3.7, but typed for numpy versions installed on python 3.8+.
+        # We need to cast them to Any here so that numpy doesn't complain
+        # about either an untyped function call or an unused ignore statement.
+        min_val = cast(Any, np.min)(arr).item()
+        max_val = cast(Any, np.max)(arr).item()
+
+        numpy_metadata: Dict[str, "MetadataType"] = {
+            "shape": tuple(arr.shape),
+            "dtype": DType(arr.dtype.type),
+            "mean": np.mean(arr).item(),
+            "std": np.std(arr).item(),
+            "min": min_val,
+            "max": max_val,
+        }
+        return {**base_metadata, **numpy_metadata}

@@ -69,7 +69,7 @@ docker run -it zenmldocker/zenml /bin/bash
 If you would like to run the ZenML server with Docker:
 
 ```shell
-docker run -it -d -p 8080:80 zenmldocker/zenml-server
+docker run -it -d -p 8080:8080 zenmldocker/zenml-server
 ```
 
 ## Installing Develop

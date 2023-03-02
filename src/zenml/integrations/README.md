@@ -34,7 +34,7 @@ and use/test them as a regular custom flavor. E.g., when
 you can use:
 
 ```
-zenml orchestrator flavor register <THE-SOURCE-PATH-OF-YOUR-ORCHESTRATOR>
+zenml orchestrator flavor register <flavor.my_flavor.MyOrchestratorFlavor>
 ```
 
 See the docs on extensibility of the different components 

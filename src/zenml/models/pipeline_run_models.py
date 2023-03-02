@@ -42,8 +42,13 @@ if TYPE_CHECKING:
     from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
     from sqlmodel import SQLModel
 
-    from zenml.models.pipeline_models import PipelineResponseModel
-    from zenml.models.stack_models import StackResponseModel
+    from zenml.models import (
+        PipelineBuildResponseModel,
+        PipelineDeploymentResponseModel,
+        PipelineResponseModel,
+        RunMetadataResponseModel,
+        StackResponseModel,
+    )
 
 
 def get_git_sha(clean: bool = True) -> Optional[str]:
@@ -95,6 +100,7 @@ class PipelineRunBaseModel(BaseModel):
     )
     schedule_id: Optional[UUID]
     enable_cache: Optional[bool]
+    enable_artifact_metadata: Optional[bool]
     start_time: Optional[datetime]
     end_time: Optional[datetime]
     status: ExecutionStatus
@@ -145,6 +151,19 @@ class PipelineRunResponseModel(
         title="The stack that was used for this run."
     )
 
+    metadata: Dict[str, "RunMetadataResponseModel"] = Field(
+        default={},
+        title="Metadata associated with this pipeline run.",
+    )
+
+    build: Optional["PipelineBuildResponseModel"] = Field(
+        title="The pipeline build that was used for this run."
+    )
+
+    deployment: Optional["PipelineDeploymentResponseModel"] = Field(
+        title="The deployment that was used for this run."
+    )
+
 
 # ------ #
 # FILTER #
@@ -169,18 +188,26 @@ class PipelineRunFilterModel(WorkspaceScopedFilterModel):
     )
 
     pipeline_id: Union[UUID, str] = Field(
-        default=None, description="Pipeline associated with the Pipeline"
+        default=None, description="Pipeline associated with the Pipeline Run"
     )
     workspace_id: Union[UUID, str] = Field(
-        default=None, description="Workspace of the Pipeline"
+        default=None, description="Workspace of the Pipeline Run"
     )
-    user_id: Union[UUID, str] = Field(None, description="User of the Pipeline")
+    user_id: Union[UUID, str] = Field(
+        None, description="User that created the Pipeline Run"
+    )
 
     stack_id: Union[UUID, str] = Field(
         default=None, description="Stack used for the Pipeline Run"
     )
     schedule_id: Union[UUID, str] = Field(
         default=None, description="Schedule that triggered the Pipeline Run"
+    )
+    build_id: Union[UUID, str] = Field(
+        default=None, description="Build used for the Pipeline Run"
+    )
+    deployment_id: Union[UUID, str] = Field(
+        default=None, description="Deployment used for the Pipeline Run"
     )
 
     status: str = Field(
@@ -243,6 +270,8 @@ class PipelineRunRequestModel(
     id: UUID
     stack: Optional[UUID]  # Might become None if the stack is deleted.
     pipeline: Optional[UUID]  # Unlisted runs have this as None.
+    build: Optional[UUID]
+    deployment: Optional[UUID]
 
 
 # ------ #

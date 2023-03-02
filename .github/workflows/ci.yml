@@ -16,23 +16,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  poetry-install:
+  setup-python-environment:
     if: github.event.pull_request.draft == false
-    uses: ./.github/workflows/poetry-install.yml
+    uses: ./.github/workflows/setup-python-environment.yml
     secrets: inherit
 
   lint-code:
-    needs: poetry-install
+    needs: setup-python-environment
     uses: ./.github/workflows/lint.yml
     secrets: inherit
 
   unit-test:
-    needs: poetry-install
+    needs: setup-python-environment
     uses: ./.github/workflows/unit-test.yml
     secrets: inherit
 
   integration-test:
-    needs: poetry-install
+    needs: setup-python-environment
     # Exit if its a commit from Gitbook
     if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
     strategy:
@@ -58,6 +58,8 @@ jobs:
             python-version: "3.9"
           - test_environment: default-kubeflow-orchestrator
             python-version: "3.10"
+          - test_environment: default-kubeflow-orchestrator
+            python-version: "3.8"
           # docker is time-consuming to run, so we only run it on 3.8
           - test_environment: docker-server-docker-orchestrator
             python-version: "3.7"

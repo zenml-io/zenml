@@ -79,6 +79,7 @@ def test_step_is_running():
     )
     with StepEnvironment(
         step_run_info=step_run_info,
+        cache_enabled=True,
     ):
         assert Environment().step_is_running is True
 

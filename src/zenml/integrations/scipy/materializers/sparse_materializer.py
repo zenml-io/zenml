@@ -14,13 +14,14 @@
 """Implementation of the Scipy Sparse Materializer."""
 
 import os
-from typing import Any, Type
+from typing import Any, Dict, Type
 
 from scipy.sparse import load_npz, save_npz, spmatrix
 
 from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.metadata.metadata_types import DType, MetadataType
 
 DATA_FILENAME = "data.npz"
 
@@ -54,3 +55,19 @@ class SparseMaterializer(BaseMaterializer):
         super().save(mat)
         with fileio.open(os.path.join(self.uri, DATA_FILENAME), "wb") as f:
             save_npz(f, mat)
+
+    def extract_metadata(self, mat: spmatrix) -> Dict[str, "MetadataType"]:
+        """Extract metadata from the given `spmatrix` object.
+
+        Args:
+            mat: The `spmatrix` object to extract metadata from.
+
+        Returns:
+            The extracted metadata as a dictionary.
+        """
+        super().extract_metadata(mat)
+        return {
+            "shape": mat.shape,
+            "dtype": DType(mat.dtype),
+            "nnz": mat.nnz,
+        }

@@ -30,6 +30,7 @@ from zenml.cli.utils import (
     _component_display_name,
     list_options,
     print_page_info,
+    warn_deprecated_secrets_manager,
 )
 from zenml.client import Client
 from zenml.console import console
@@ -54,6 +55,9 @@ def generate_stack_component_get_command(
 
     def get_stack_component_command() -> None:
         """Prints the name of the active component."""
+        if component_type == StackComponentType.SECRETS_MANAGER:
+            warn_deprecated_secrets_manager()
+
         client = Client()
         display_name = _component_display_name(component_type)
 
@@ -97,6 +101,9 @@ def generate_stack_component_describe_command(
         Args:
             name_id_or_prefix: Name or id of the component to describe.
         """
+        if component_type == StackComponentType.SECRETS_MANAGER:
+            warn_deprecated_secrets_manager()
+
         client = Client()
         try:
             component_ = client.get_stack_component(
@@ -141,6 +148,9 @@ def generate_stack_component_list_command(
         Args:
             kwargs: Keyword arguments to filter the components.
         """
+        if component_type == StackComponentType.SECRETS_MANAGER:
+            warn_deprecated_secrets_manager()
+
         client = Client()
         with console.status(f"Listing {component_type.plural}..."):
             kwargs["type"] = component_type
@@ -206,6 +216,9 @@ def generate_stack_component_register_command(
             share: Share the stack with other users.
             args: Additional arguments to pass to the component.
         """
+        if component_type == StackComponentType.SECRETS_MANAGER:
+            warn_deprecated_secrets_manager()
+
         client = Client()
 
         # Parse the given args
@@ -263,6 +276,9 @@ def generate_stack_component_update_command(
             name_id_or_prefix: The name or id of the stack component to update.
             args: Additional arguments to pass to the update command.
         """
+        if component_type == StackComponentType.SECRETS_MANAGER:
+            warn_deprecated_secrets_manager()
+
         client = Client()
 
         # Parse the given args
@@ -320,6 +336,9 @@ def generate_stack_component_share_command(
         Args:
             name_id_or_prefix: The name or id of the stack component to update.
         """
+        if component_type == StackComponentType.SECRETS_MANAGER:
+            warn_deprecated_secrets_manager()
+
         client = Client()
 
         with console.status(
@@ -371,6 +390,9 @@ def generate_stack_component_remove_attribute_command(
                 attribute from.
             args: Additional arguments to pass to the remove_attribute command.
         """
+        if component_type == StackComponentType.SECRETS_MANAGER:
+            warn_deprecated_secrets_manager()
+
         client = Client()
 
         with console.status(
@@ -424,6 +446,9 @@ def generate_stack_component_rename_command(
             name_id_or_prefix: The name of the stack component to rename.
             new_name: The new name of the stack component.
         """
+        if component_type == StackComponentType.SECRETS_MANAGER:
+            warn_deprecated_secrets_manager()
+
         client = Client()
 
         with console.status(
@@ -472,7 +497,7 @@ def generate_stack_component_delete_command(
             f"Deleting {display_name} '{name_id_or_prefix}'...\n"
         ):
             try:
-                client.deregister_stack_component(
+                client.delete_stack_component(
                     name_id_or_prefix=name_id_or_prefix,
                     component_type=component_type,
                 )
@@ -512,6 +537,9 @@ def generate_stack_component_copy_command(
                                          component to copy.
             target_component: Name of the copied component.
         """
+        if component_type == StackComponentType.SECRETS_MANAGER:
+            warn_deprecated_secrets_manager()
+
         client = Client()
 
         with console.status(
@@ -795,6 +823,9 @@ def generate_stack_component_explain_command(
 
     def explain_stack_components_command() -> None:
         """Explains the concept of the stack component."""
+        if component_type == StackComponentType.SECRETS_MANAGER:
+            warn_deprecated_secrets_manager()
+
         component_module = import_module(f"zenml.{component_type.plural}")
 
         if component_module.__doc__ is not None:
@@ -826,12 +857,16 @@ def generate_stack_component_flavor_list_command(
 
     def list_stack_component_flavor_command() -> None:
         """Lists the flavors for a single type of stack component."""
+        if component_type == StackComponentType.SECRETS_MANAGER:
+            warn_deprecated_secrets_manager()
+
         client = Client()
 
         with console.status(f"Listing {display_name} flavors`...\n"):
             flavors = client.get_flavors_by_type(component_type=component_type)
 
             cli_utils.print_flavor_list(flavors=flavors)
+            cli_utils.print_page_info(flavors)
 
     return list_stack_component_flavor_command
 
@@ -847,6 +882,7 @@ def generate_stack_component_flavor_register_command(
     Returns:
         A function that can be used as a `click` command.
     """
+    command_name = component_type.value.replace("_", "-")
     display_name = _component_display_name(component_type)
 
     @click.argument(
@@ -857,17 +893,45 @@ def generate_stack_component_flavor_register_command(
     def register_stack_component_flavor_command(source: str) -> None:
         """Adds a flavor for a stack component type.
 
+        Example:
+            Let's say you create an artifact store flavor class `MyArtifactStoreFlavor`
+            in the file path `flavors/my_flavor.py`. You would register it as:
+
+            ```shell
+            zenml artifact-store flavor register flavors.my_flavor.MyArtifactStoreFlavor
+            ```
+
         Args:
-            source: The source file to read the flavor from.
+            source: The source path of the flavor class in dot notation format.
         """
+        if component_type == StackComponentType.SECRETS_MANAGER:
+            warn_deprecated_secrets_manager()
+
         client = Client()
 
-        with console.status(f"Registering a new {display_name} flavor`...\n"):
-            # Register the new model
-            new_flavor = client.create_flavor(
-                source=source,
-                component_type=component_type,
+        if not client.root:
+            cli_utils.warning(
+                f"You're running the `zenml {command_name} flavor register` "
+                "command without a ZenML repository. Your current working "
+                "directory will be used as the source root relative to which "
+                "the `source` argument is expected. To silence this warning, "
+                "run `zenml init` at your source code root."
             )
+
+        with console.status(f"Registering a new {display_name} flavor`...\n"):
+            try:
+                # Register the new model
+                new_flavor = client.create_flavor(
+                    source=source,
+                    component_type=component_type,
+                )
+            except ValueError as e:
+                root_path = Client.find_repository()
+                cli_utils.error(
+                    f"Flavor registration failed! ZenML tried loading the module `{source}` from path "
+                    f"`{root_path}`. If this is not what you expect, then please ensure you have run "
+                    f"`zenml init` at the root of your repository.\n\nOriginal exception: {str(e)}"
+                )
 
             cli_utils.declare(
                 f"Successfully registered new flavor '{new_flavor.name}' "
@@ -901,6 +965,9 @@ def generate_stack_component_flavor_describe_command(
         Args:
             name: The name of the flavor.
         """
+        if component_type == StackComponentType.SECRETS_MANAGER:
+            warn_deprecated_secrets_manager()
+
         client = Client()
 
         with console.status(f"Describing {display_name} flavor: {name}`...\n"):
@@ -1093,7 +1160,7 @@ def register_single_stack_component_cli_commands(
     )
     flavor_group.command(
         "register",
-        help=f"Identify a new flavor for {plural_display_name}.",
+        help=f"Register a new {singular_display_name} flavor.",
     )(register_flavor_command)
 
     # zenml stack-component flavor list

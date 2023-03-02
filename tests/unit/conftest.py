@@ -23,6 +23,7 @@ from zenml.artifact_stores.local_artifact_store import (
     LocalArtifactStoreConfig,
 )
 from zenml.client import Client
+from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.config.step_configurations import Step
 from zenml.container_registries.base_container_registry import (
     BaseContainerRegistry,
@@ -32,6 +33,9 @@ from zenml.enums import ArtifactType, ExecutionStatus
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.models import (
     ArtifactResponseModel,
+    PipelineBuildResponseModel,
+    PipelineDeploymentResponseModel,
+    PipelineResponseModel,
     PipelineRunResponseModel,
     StepRunResponseModel,
     UserResponseModel,
@@ -182,7 +186,7 @@ def remote_container_registry():
         name="",
         id=uuid4(),
         config=BaseContainerRegistryConfig(uri="gcr.io/my-project"),
-        flavor="default",
+        flavor="gcp",
         type=StackComponentType.CONTAINER_REGISTRY,
         user=uuid4(),
         workspace=uuid4(),
@@ -507,3 +511,63 @@ def create_step_run(
         return StepRunResponseModel(**model_args)
 
     return f
+
+
+@pytest.fixture
+def create_pipeline_model(
+    sample_user_model: UserResponseModel,
+    sample_workspace_model: WorkspaceResponseModel,
+) -> Callable[..., PipelineResponseModel]:
+    """Fixture that returns a function which can be used to create a
+    customizable PipelineResponseModel."""
+
+    def f(
+        **kwargs: Any,
+    ) -> PipelineResponseModel:
+        model_args = {
+            "id": uuid4(),
+            "name": "sample_pipeline",
+            "version": 1,
+            "version_hash": "",
+            "created": datetime.now(),
+            "updated": datetime.now(),
+            "workspace": sample_workspace_model,
+            "user": sample_user_model,
+            "spec": PipelineSpec(steps=[]),
+            **kwargs,
+        }
+        return PipelineResponseModel(**model_args)
+
+    return f
+
+
+@pytest.fixture
+def sample_deployment_response_model(
+    sample_user_model: UserResponseModel,
+    sample_workspace_model: WorkspaceResponseModel,
+) -> PipelineDeploymentResponseModel:
+    return PipelineDeploymentResponseModel(
+        id=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+        user=sample_user_model,
+        workspace=sample_workspace_model,
+        run_name_template="",
+        pipeline_configuration={"name": ""},
+    )
+
+
+@pytest.fixture
+def sample_build_response_model(
+    sample_user_model: UserResponseModel,
+    sample_workspace_model: WorkspaceResponseModel,
+) -> PipelineBuildResponseModel:
+    return PipelineBuildResponseModel(
+        id=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+        user=sample_user_model,
+        workspace=sample_workspace_model,
+        images={},
+        is_local=False,
+    )

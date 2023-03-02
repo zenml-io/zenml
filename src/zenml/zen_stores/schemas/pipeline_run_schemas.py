@@ -22,9 +22,16 @@ from sqlalchemy import TEXT, Column
 from sqlmodel import Field, Relationship
 
 from zenml.enums import ExecutionStatus
-from zenml.models import PipelineRunResponseModel
-from zenml.models.pipeline_run_models import PipelineRunRequestModel
+from zenml.models import (
+    PipelineRunRequestModel,
+    PipelineRunResponseModel,
+    PipelineRunUpdateModel,
+)
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
+from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
+from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
+    PipelineDeploymentSchema,
+)
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
 from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
@@ -33,7 +40,7 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineRunUpdateModel
+    from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
     from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
 
 
@@ -50,7 +57,7 @@ class PipelineRunSchema(NamedSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    stack: "StackSchema" = Relationship(back_populates="runs")
+    stack: Optional["StackSchema"] = Relationship(back_populates="runs")
 
     pipeline_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -60,7 +67,31 @@ class PipelineRunSchema(NamedSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    pipeline: "PipelineSchema" = Relationship(back_populates="runs")
+    pipeline: Optional["PipelineSchema"] = Relationship(back_populates="runs")
+
+    build_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=PipelineBuildSchema.__tablename__,
+        source_column="build_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+    build: Optional["PipelineBuildSchema"] = Relationship(
+        back_populates="runs"
+    )
+
+    deployment_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=PipelineDeploymentSchema.__tablename__,
+        source_column="deployment_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+    deployment: Optional["PipelineDeploymentSchema"] = Relationship(
+        back_populates="runs"
+    )
 
     schedule_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -70,7 +101,7 @@ class PipelineRunSchema(NamedSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    schedule: ScheduleSchema = Relationship(back_populates="runs")
+    schedule: Optional[ScheduleSchema] = Relationship(back_populates="runs")
 
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -95,6 +126,7 @@ class PipelineRunSchema(NamedSchema, table=True):
     orchestrator_run_id: Optional[str] = Field(nullable=True)
 
     enable_cache: Optional[bool] = Field(nullable=True)
+    enable_artifact_metadata: Optional[bool] = Field(nullable=True)
     start_time: Optional[datetime] = Field(nullable=True)
     end_time: Optional[datetime] = Field(nullable=True)
     status: ExecutionStatus
@@ -110,6 +142,10 @@ class PipelineRunSchema(NamedSchema, table=True):
     )
     git_sha: Optional[str] = Field(nullable=True)
 
+    run_metadata: List["RunMetadataSchema"] = Relationship(
+        back_populates="pipeline_run",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
     step_runs: List["StepRunSchema"] = Relationship(
         back_populates="pipeline_run",
         sa_relationship_kwargs={"cascade": "delete"},
@@ -139,6 +175,8 @@ class PipelineRunSchema(NamedSchema, table=True):
             workspace_id=request.workspace,
             user_id=request.user,
             pipeline_id=request.pipeline,
+            build_id=request.build,
+            deployment_id=request.deployment,
             schedule_id=request.schedule_id,
             enable_cache=request.enable_cache,
             start_time=request.start_time,
@@ -173,6 +211,10 @@ class PipelineRunSchema(NamedSchema, table=True):
             if self.orchestrator_environment
             else {}
         )
+        metadata = {
+            metadata_schema.key: metadata_schema.to_model()
+            for metadata_schema in self.run_metadata
+        }
 
         if _block_recursion:
             return PipelineRunResponseModel(
@@ -183,6 +225,7 @@ class PipelineRunSchema(NamedSchema, table=True):
                 schedule_id=self.schedule_id,
                 orchestrator_run_id=self.orchestrator_run_id,
                 enable_cache=self.enable_cache,
+                enable_artifact_metadata=self.enable_artifact_metadata,
                 start_time=self.start_time,
                 end_time=self.end_time,
                 status=self.status,
@@ -195,6 +238,7 @@ class PipelineRunSchema(NamedSchema, table=True):
                 orchestrator_environment=orchestrator_environment,
                 created=self.created,
                 updated=self.updated,
+                metadata=metadata,
             )
         else:
             return PipelineRunResponseModel(
@@ -205,12 +249,17 @@ class PipelineRunSchema(NamedSchema, table=True):
                 user=self.user.to_model(True) if self.user else None,
                 orchestrator_run_id=self.orchestrator_run_id,
                 enable_cache=self.enable_cache,
+                enable_artifact_metadata=self.enable_artifact_metadata,
                 start_time=self.start_time,
                 end_time=self.end_time,
                 status=self.status,
                 pipeline=(
                     self.pipeline.to_model(False) if self.pipeline else None
                 ),
+                build=self.build.to_model() if self.build else None,
+                deployment=self.deployment.to_model()
+                if self.deployment
+                else None,
                 schedule_id=self.schedule_id,
                 pipeline_configuration=json.loads(self.pipeline_configuration),
                 num_steps=self.num_steps,
@@ -221,6 +270,7 @@ class PipelineRunSchema(NamedSchema, table=True):
                 orchestrator_environment=orchestrator_environment,
                 created=self.created,
                 updated=self.updated,
+                metadata=metadata,
             )
 
     def update(

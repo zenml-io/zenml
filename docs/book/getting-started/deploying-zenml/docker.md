@@ -86,6 +86,37 @@ The following environment variables can be passed to the container:
     This boolean variable controls whether the SSL certificate in use by the
     MySQL server is verified. Only valid when `ZENML_STORE_URL` points to a
     MySQL database that uses SSL secured connections. Defaults to `False`.
+- **ZENML_SECRETS_STORE_TYPE**:
+    Set this variable to one of the supported secrets store types:
+
+    - `none`: Use this value to disable the secrets store functionality.
+    - `sql`: Use the ZenML SQL database as the secrets store. This is the default value.
+    - (more types to come)
+- **ZENML_SECRETS_STORE_ENCRYPTION_KEY**:
+    This is a secret key used to encrypt all secrets stored in the SQL secrets
+    store. If not set, encryption will not be used and passwords will be stored
+    unencrypted in the database. This should be set to a random string with a
+    recommended length of at least 32 characters, e.g.:
+  
+     ```python
+     from secrets import token_hex
+     token_hex(32)
+     ```
+    
+    or:
+
+     ```shell
+     openssl rand -hex 32
+     ```
+
+> **Important**
+> If you configure encryption for your SQL database secrets store, you should
+keep the `ZENML_SECRETS_STORE_ENCRYPTION_KEY` value somewhere safe and secure,
+as it will be required to decrypt the secrets in the database. If you lose the
+encryption key, you will not be able to decrypt the secrets in the database and
+will have to reset them.
+
+
 - **ZENML_LOGGING_VERBOSITY**:
     Use this variable to control the verbosity of logs inside the container.
     It can be set to one of the following values: `NOTSET`, `ERROR`, `WARN`,
@@ -131,7 +162,7 @@ with Docker without any additional configuration and it will work out of the
 box for most use cases:
 
 ```
-docker run -it -d -p 8080:80 --name zenml zenmldocker/zenml-server
+docker run -it -d -p 8080:8080 --name zenml zenmldocker/zenml-server
 ```
 
 > **Note**
@@ -179,7 +210,7 @@ and then pass them to the container using the `docker run` `--env` or
 for more details). For example:
 
 ```shell
-docker run -it -d -p 8080:80 --name zenml \
+docker run -it -d -p 8080:8080 --name zenml \
     --env ZENML_STORE_URL=mysql://username:password@host:port/database \
     zenmldocker/zenml-server
 ```
@@ -199,7 +230,7 @@ for more details). For example:
 
 ```shell
 mkdir zenml-server
-docker run -it -d -p 8080:80 --name zenml \
+docker run -it -d -p 8080:8080 --name zenml \
     --mount type=bind,source=$PWD/zenml-server,target=/zenml/.zenconfig/local_stores/default_zen_store \
     zenmldocker/zenml-server
 ```
@@ -240,7 +271,7 @@ for more details). On Linux, this needs to be explicitly enabled in the
 `docker run` command with the `--add-host` argument:
 
 ```shell
-docker run -it -d -p 8080:80 --name zenml \
+docker run -it -d -p 8080:8080 --name zenml \
     --add-host host.docker.internal:host-gateway \
     --env ZENML_STORE_URL=mysql://root:password@host.docker.internal/zenml \
     zenmldocker/zenml-server
@@ -302,11 +333,11 @@ services:
   zenml:
     image: zenmldocker/zenml-server
     ports:
-      - "8080:80"
+      - "8080:8080"
     environment:
       - ZENML_STORE_URL=mysql://root:password@host.docker.internal/zenml
-      - ZENML_DEFAULT_USERNAME=admin
-      - ZENML_DEFAULT_PASSWORD=zenml
+      - ZENML_DEFAULT_USER_NAME=admin
+      - ZENML_DEFAULT_USER_PASSWORD=zenml
     links:
       - mysql
     depends_on:
@@ -322,7 +353,7 @@ Note the following:
 to instruct the server to connect to the database over the Docker network.
 - The `extra_hosts` section is needed on Linux to make the `host.docker.internal`
 hostname resolvable from the ZenML server container.
-- This example also uses the `ZENML_DEFAULT_USERNAME` and `ZENML_DEFAULT_PASSWORD`
+- This example also uses the `ZENML_DEFAULT_USER_NAME` and `ZENML_DEFAULT_USER_PASSWORD`
 environment variables to customize the default account credentials.
 
 To start the containers, run the following command from the directory where
@@ -404,7 +435,7 @@ To upgrade to a new version with docker, you would have to delete the existing c
 - Deploy the version of the `zenml-server` image that you want to use. Find all versions [here](https://hub.docker.com/r/zenmldocker/zenml-server/tags).
 
   ```bash
-  docker run -it -d -p 8080:80 --name <CONTAINER_NAME> zenmldocker/zenml-server:<VERSION>
+  docker run -it -d -p 8080:8080 --name <CONTAINER_NAME> zenmldocker/zenml-server:<VERSION>
   ```
 
 If you wish to keep your data after the upgrade, you should choose to deploy the container either with a persistent storage or with an external MySQL instance. In all other cases, your data will be lost once the container is deleted and a new one is spun up.

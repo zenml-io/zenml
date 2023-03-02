@@ -87,6 +87,47 @@ This call will produce a `.zip` file containing a representation of your ZenML
 pipeline to the Airflow DAGs directory. From there, the local Airflow server
 will load it and run your pipeline (It might take a few seconds until the pipeline
 shows up in the Airflow UI).
+
+{% hint style="info" %}
+
+The ability to provision resources using the `zenml stack up` command
+is deprecated and will be removed in a future release. While it is still
+available for the Airflow orchestrator, we recommend following the
+steps to set up a local Airflow server manually.
+
+1. Install the `apache-airflow` package in your Python environment where ZenML is installed.
+2. The Airflow environment variables are used to configure the behavior of the 
+Airflow server. The following variables are particularly important to set:
+
+* `AIRFLOW_HOME`: This variable defines the location where the Airflow server 
+stores its database and configuration files. The default value is ~/airflow.
+* `AIRFLOW__CORE__DAGS_FOLDER`: This variable defines the location where the 
+Airflow server looks for DAG files. The default value is <AIRFLOW_HOME>/dags.
+* `AIRFLOW__CORE__LOAD_EXAMPLES`: This variable controls whether the Airflow 
+server should load the default set of example DAGs. The default value is false, 
+which means that the example DAGs will not be loaded.
+* `AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL`: This variable controls how often 
+the Airflow scheduler checks for new or updated DAGs. By default, the scheduler 
+will check for new DAGs every 30 seconds. This variable can be used to increase 
+or decrease the frequency of the checks, depending on the specific needs of 
+your pipeline.
+
+```bash
+export AIRFLOW_HOME=...
+export AIRFLOW__CORE__DAGS_FOLDER=...
+export AIRFLOW__CORE__LOAD_EXAMPLES=false
+export AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL=10
+
+# Prevent crashes during forking on MacOS
+# https://github.com/apache/airflow/issues/28487
+export no_proxy=*
+```
+
+3. Run `airflow standalone` to initialise the database, create a user, and start
+all components for you.
+
+{% endhint %}
+
 {% endtab %}
 
 {% tab title="Remote" %}
@@ -117,6 +158,21 @@ Check out [this page](../../advanced-guide/pipelines/containerization.md)
 if you want to learn more about how ZenML builds these images and how you can 
 customize them.
 {% endhint %}
+
+### Airflow UI
+
+Airflow comes with its own UI that you can use to find further details about
+your pipeline runs, such as the logs of your steps. For local Airflow, you can
+find the Airflow UI at [http://localhost:8080](http://localhost:8080) by 
+default. Alternatively, you can get the orchestrator UI URL in Python using the
+following code snippet:
+
+```python
+from zenml.post_execution import get_run
+
+pipeline_run = get_run("<PIPELINE_RUN_NAME>")
+orchestrator_url = deployer_step.metadata["orchestrator_url"].value
+```
 
 ### Additional configuration
 
