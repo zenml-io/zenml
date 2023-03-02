@@ -5,7 +5,7 @@ repos:
     hooks:
       - id: lint
         name: lint
-        entry: poetry run bash scripts/lint.sh
+        entry: bash scripts/lint.sh
         language: system
         files: ^src/zenml/|^tests/|^examples/
         types: [file, python]
@@ -15,7 +15,7 @@ repos:
     hooks:
       - id: docstringcheck
         name: docstringcheck
-        entry: poetry run bash scripts/docstring.sh
+        entry: bash scripts/docstring.sh
         language: system
         files: ^src/zenml/
         types: [file, python]
@@ -25,7 +25,7 @@ repos:
     hooks:
       - id: pytest
         name: pytest
-        entry: poetry run bash scripts/test-coverage-xml.sh unit
+        entry: bash scripts/test-coverage-xml.sh unit
         language: system
         files: ^src/zenml/|^tests/
         types: [file, python]

@@ -1057,6 +1057,25 @@ class BasePipeline(metaclass=BasePipelineMeta):
         else:
             return None
 
+    def _get_registered_model(self) -> Optional[PipelineResponseModel]:
+        """Gets the registered pipeline model for this instance.
+
+        Returns:
+            The registered pipeline model or None if no model is registered yet.
+        """
+        pipeline_spec = Compiler().compile_spec(self)
+        version_hash = self._compute_unique_identifier(
+            pipeline_spec=pipeline_spec
+        )
+
+        pipelines = Client().list_pipelines(
+            name=self.name, version_hash=version_hash
+        )
+        if len(pipelines) == 1:
+            return pipelines.items[0]
+
+        return None
+
     def _load_or_create_pipeline_build(
         self,
         deployment: "PipelineDeploymentBaseModel",
