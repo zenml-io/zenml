@@ -7,7 +7,7 @@ description: How to handle issues with conflicting dependencies
 This page documents a some of the common issues that arise when using ZenML with
 other libraries.
 
-**Last Updated**: March 1, 2023
+**Last Updated**: March 2, 2023
 
 When using ZenML with other libraries, you may encounter issues with conflicting
 dependencies. ZenML aims to be stack- and integration-agnostic, allowing you to
@@ -69,6 +69,15 @@ to make this work completely smoothly. Here are some of the known issues:
 It is possible to skip ZenML's integration installation process and install
 dependencies manually. This is not recommended, but it is possible and can be
 run at your own risk.
+
+{% hint style="info" %}
+Note that the `zenml integration install ...` command runs a `pip install ...`
+under the hood as part of its implementation, taking the dependencies listed in
+the integration object and installing them. For example, `zenml integration
+install gcp` will run `pip install "kfp==1.8.16" "gcsfs"
+"google-cloud-secret-manager" ...` and so on, since they are [specified in the
+integration definition](https://github.com/zenml-io/zenml/blob/ec2283473e5e0c5a2f1b7868875539a83e617f8c/src/zenml/integrations/gcp/__init__.py#L45).
+{% endhint %}
 
 To do this, you will need to install the dependencies for the integration you
 want to use manually. You can find the dependencies for the integrations by
