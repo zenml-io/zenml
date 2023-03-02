@@ -27,97 +27,13 @@ from zenml.steps import Output, step
 from zenml.steps.base_step import BaseStep
 
 
-def test_is_cache_enabled():
-    """Unit test for `is_cache_enabled()`.
-
-    Tests that:
-    - caching is enabled by default (when neither step nor pipeline set it),
-    - caching is always enabled if explicitly enabled for the step,
-    - caching is always disabled if explicitly disabled for the step,
-    - caching is set to the pipeline cache if not configured for the step.
-    """
-    # Caching is enabled by default
-    assert (
-        cache_utils.is_cache_enabled(
-            step_enable_cache=None, pipeline_enable_cache=None
-        )
-        is True
-    )
-
-    # Caching is always enabled if explicitly enabled for the step
-    assert (
-        cache_utils.is_cache_enabled(
-            step_enable_cache=True,
-            pipeline_enable_cache=True,
-        )
-        is True
-    )
-
-    assert (
-        cache_utils.is_cache_enabled(
-            step_enable_cache=True,
-            pipeline_enable_cache=False,
-        )
-        is True
-    )
-
-    assert (
-        cache_utils.is_cache_enabled(
-            step_enable_cache=True,
-            pipeline_enable_cache=None,
-        )
-        is True
-    )
-
-    # Caching is always disabled if explicitly disabled for the step
-    assert (
-        cache_utils.is_cache_enabled(
-            step_enable_cache=False,
-            pipeline_enable_cache=True,
-        )
-        is False
-    )
-
-    assert (
-        cache_utils.is_cache_enabled(
-            step_enable_cache=False,
-            pipeline_enable_cache=False,
-        )
-        is False
-    )
-
-    assert (
-        cache_utils.is_cache_enabled(
-            step_enable_cache=False,
-            pipeline_enable_cache=None,
-        )
-        is False
-    )
-
-    # Caching is set to the pipeline cache if not configured for the step
-    assert (
-        cache_utils.is_cache_enabled(
-            step_enable_cache=None,
-            pipeline_enable_cache=True,
-        )
-        is True
-    )
-
-    assert (
-        cache_utils.is_cache_enabled(
-            step_enable_cache=None,
-            pipeline_enable_cache=False,
-        )
-        is False
-    )
-
-
 def _compile_step(step: BaseStep) -> Step:
     # Call the step here to finalize the configuration
     step()
 
     compiler = Compiler()
     return compiler._compile_step(
+        pipeline_parameter_name="",
         step=step,
         pipeline_settings={},
         pipeline_extra={},
@@ -242,8 +158,8 @@ def test_fetching_cached_step_run_queries_cache_candidates(
     mock_list_run_steps = mocker.patch(
         "zenml.client.Client.list_run_steps",
         return_value=Page(
-            page=1,
-            size=1,
+            index=1,
+            max_size=1,
             total_pages=1,
             total=0,
             items=[],
@@ -257,8 +173,8 @@ def test_fetching_cached_step_run_queries_cache_candidates(
     mock_list_run_steps = mocker.patch(
         "zenml.client.Client.list_run_steps",
         return_value=Page(
-            page=1,
-            size=1,
+            index=1,
+            max_size=1,
             total_pages=1,
             total=1,
             items=[cache_candidate],

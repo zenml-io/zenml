@@ -69,6 +69,25 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         """
         # write `data` to self.uri
         ...
+    
+    def extract_metadata(self, data: Any) -> Dict[str, "MetadataType"]:
+        """Extract metadata from the given data.
+
+        This metadata will be tracked and displayed alongside the artifact.
+
+        Args:
+            data: The data to extract metadata from.
+
+        Returns:
+            A dictionary of metadata.
+        """
+        # Optionally, extract some metadata from `data` for ZenML to store.
+        # E.g.:
+        # return {
+        #     "some_attribute_i_want_to_track": self.some_attribute,
+        #     "pi": 3.14,
+        # }
+        ...
 ```
 
 ### Which Data Type to Handle?
@@ -108,6 +127,33 @@ of artifacts.
 You will need to overwrite these methods according to how you plan to serialize
 your objects. E.g., if you have custom PyTorch classes as `ASSOCIATED_TYPES`,
 then you might want to use `torch.save()` and `torch.load()` here.
+
+### (Optional) Which Metadata to Extract for the Artifact
+
+Optionally, you can overwrite the `extract_metadata()` method to track custom 
+metadata for all artifacts saved by your materializer. Anything you extract 
+here will be displayed in the dashboard next to your artifacts.
+
+To extract metadata, define and return a dictionary of values you want to track. 
+The only requirement is that all your values are built-in types (like `str`, 
+`int`, `list`, `dict`, ...) or among the special types defined in
+[src.zenml.metadata.metadata_types](https://github.com/zenml-io/zenml/blob/main/src/zenml/metadata/metadata_types.py)
+that are displayed in a dedicated way in the dashboard.
+See [src.zenml.metadata.metadata_types.MetadataType](https://github.com/zenml-io/zenml/blob/main/src/zenml/metadata/metadata_types.py)
+for more details.
+
+By default, this method will only extract the storage size of an artifact, but
+you can overwrite it to track anything you wish. E.g., the 
+`zenml.materializers.NumpyMaterializer` overwrites this method to track the 
+`shape`, `dtype`, and some statistical properties of each `np.ndarray` that it saves.
+
+{% hint style="info" %}
+If you would like to disable artifact metadata extraction altogether, you can 
+set `enable_artifact_metadata` at either pipeline, step, or run level via 
+`@pipeline(enable_artifact_metadata=False)` or 
+`@step(enable_artifact_metadata=False)` or
+`my_pipeline(...).run(enable_artifact_metadata=False)`.
+{% endhint %}
 
 ## Using a Custom Materializer
 
@@ -220,7 +266,7 @@ error:
 `
 zenml.exceptions.StepInterfaceError: Unable to find materializer for output 'output' of 
 type <class '__main__.MyObj'> in step 'step1'. Please make sure to either explicitly set a materializer for step 
-outputs using step.with_return_materializers(...) or registering a default materializer for specific types by 
+outputs using step.configure(output_materializers=...) or registering a default materializer for specific types by 
 subclassing BaseMaterializer and setting its ASSOCIATED_TYPES class variable. 
 For more information, visit https://docs.zenml.io/advanced-guide/pipelines/materializers
 `

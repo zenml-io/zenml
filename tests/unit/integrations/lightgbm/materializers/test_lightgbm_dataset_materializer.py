@@ -29,4 +29,6 @@ def test_lightgbm_dataset_materializer():
         return lgb.Dataset(data=[[1, 2, 3]], label=[1])
 
     with does_not_raise():
-        some_step().with_return_materializers(LightGBMDatasetMaterializer)()
+        some_step().configure(
+            output_materializers=LightGBMDatasetMaterializer
+        )()

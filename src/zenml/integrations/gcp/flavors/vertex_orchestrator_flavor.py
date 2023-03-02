@@ -71,8 +71,6 @@ class VertexOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydan
     """Configuration for the Vertex orchestrator.
 
     Attributes:
-        project: GCP project name. If `None`, the project will be inferred from
-            the environment.
         location: Name of GCP region where the pipeline job will be executed.
             Vertex AI Pipelines is available in the following regions:
             https://cloud.google.com/vertex-ai/docs/general/locations#feature
@@ -107,7 +105,6 @@ class VertexOrchestratorConfig(  # type: ignore[misc] # https://github.com/pydan
             https://cloud.google.com/vertex-ai/docs/training/configure-compute#specifying_gpus
     """
 
-    project: Optional[str] = None
     location: str
     pipeline_root: Optional[str] = None
     encryption_spec_key_name: Optional[str] = None
@@ -147,6 +144,24 @@ class VertexOrchestratorFlavor(BaseOrchestratorFlavor):
             Name of the orchestrator flavor.
         """
         return GCP_VERTEX_ORCHESTRATOR_FLAVOR
+
+    @property
+    def docs_url(self) -> Optional[str]:
+        """A url to point at docs explaining this flavor.
+
+        Returns:
+            A flavor docs url.
+        """
+        return self.generate_default_docs_url()
+
+    @property
+    def logo_url(self) -> str:
+        """A url to represent the flavor in the dashboard.
+
+        Returns:
+            The flavor logo.
+        """
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/vertexai.png"
 
     @property
     def config_class(self) -> Type[VertexOrchestratorConfig]:

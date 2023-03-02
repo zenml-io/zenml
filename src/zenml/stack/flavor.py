@@ -12,14 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base ZenML Flavor implementation."""
-
+import json
 from abc import abstractmethod
-from typing import Optional, Type, cast
+from typing import Any, Dict, Optional, Type, cast
 
 from zenml.enums import StackComponentType
 from zenml.models import FlavorRequestModel, FlavorResponseModel
 from zenml.stack.stack_component import StackComponent, StackComponentConfig
-from zenml.utils.source_utils import load_source_path_class, resolve_class
+from zenml.utils.source_utils import load_source_path, resolve_class
 
 
 class Flavor:
@@ -33,6 +33,24 @@ class Flavor:
         Returns:
             The flavor name.
         """
+
+    @property
+    def docs_url(self) -> Optional[str]:
+        """A url to point at docs explaining this flavor.
+
+        Returns:
+            A flavor docs url.
+        """
+        return None
+
+    @property
+    def logo_url(self) -> Optional[str]:
+        """A url to represent the flavor in the dashboard.
+
+        Returns:
+            The flavor logo.
+        """
+        return None
 
     @property
     @abstractmethod
@@ -62,13 +80,16 @@ class Flavor:
         """
 
     @property
-    def config_schema(self) -> str:
+    def config_schema(self) -> Dict[str, Any]:
         """The config schema for a flavor.
 
         Returns:
             The config schema.
         """
-        return self.config_class.schema_json()
+        config_schema: Dict[str, Any] = json.loads(
+            self.config_class.schema_json()
+        )
+        return config_schema
 
     @classmethod
     def from_model(cls, flavor_model: FlavorResponseModel) -> "Flavor":
@@ -80,16 +101,23 @@ class Flavor:
         Returns:
             The loaded flavor.
         """
-        flavor = load_source_path_class(flavor_model.source)()  # noqa
+        flavor = load_source_path(flavor_model.source)()  # noqa
         return cast(Flavor, flavor)
 
     def to_model(
-        self, integration: Optional[str] = None
+        self,
+        integration: Optional[str] = None,
+        scoped_by_workspace: bool = True,
+        is_custom: bool = True,
     ) -> FlavorRequestModel:
         """Converts a flavor to a model.
 
         Args:
             integration: The integration to use for the model.
+            scoped_by_workspace: Whether this flavor should live in the scope
+                of the active workspace
+            is_custom: Whether the flavor is a custom flavor. Custom flavors
+                are then scoped by user and workspace
 
         Returns:
             The model.
@@ -98,12 +126,33 @@ class Flavor:
 
         client = Client()
         model = FlavorRequestModel(
-            user=client.active_user.id,
-            workspace=client.active_workspace.id,
+            user=client.active_user.id if is_custom else None,
+            workspace=client.active_workspace.id if is_custom else None,
             name=self.name,
             type=self.type,
             source=resolve_class(self.__class__),  # noqa
             config_schema=self.config_schema,
             integration=integration,
+            logo_url=self.logo_url,
+            docs_url=self.docs_url,
+            is_custom=is_custom,
         )
         return model
+
+    def generate_default_docs_url(self) -> str:
+        """Generate the doc urls for all inbuilt and integration flavors.
+
+        Note that this method is not going to be useful for custom flavors,
+        which do not have any docs in the main zenml docs.
+
+        Returns:
+            The complete url to the zenml docs
+        """
+        from zenml import __version__
+
+        component_type = self.type.plural.replace("_", "-")
+        name = self.name.replace("_", "-")
+        base = f"https://docs.zenml.io/v/{__version__}"
+        url = f"{base}/component-gallery/{component_type}/{name}"
+
+        return url

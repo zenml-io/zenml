@@ -10,10 +10,10 @@ metrics).
 
 ## When would you want to use it?
 
-[Neptune](https://neptune.ai/product/experiment-tracking) is a
-popular platform that you would normally use in the iterative ML experimentation
-phase to track and visualize experiment results. Neptune can also
-track and visualize the results produced by your
+[Neptune](https://neptune.ai/product/experiment-tracking) is a popular tool that
+you would normally use in the iterative ML experimentation phase to track and
+visualize experiment results or as a model registry for your production-ready
+models. Neptune can also track and visualize the results produced by your
 automated pipeline runs, as you make the transition towards a more production
 oriented workflow.
 
@@ -112,7 +112,7 @@ For more practical examples of how to use the Secrets Manager, check out the
 {% endtabs %}
 
 For more, up-to-date information on the Neptune Experiment Tracker
-implementation and its configuration, you can have a look at [the API docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-wandb/#zenml.integrations.neptune.experiment_trackers.neptune_experiment_tracker).
+implementation and its configuration, you can have a look at [the API docs](https://apidocs.zenml.io/latest/integration_code_docs/integrations-neptune/#zenml.integrations.neptune.experiment_trackers.neptune_experiment_tracker).
 
 ## How do you use it?
 

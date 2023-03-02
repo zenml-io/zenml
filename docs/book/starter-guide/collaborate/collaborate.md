@@ -73,7 +73,7 @@ stack components that point to tooling infrastructure that is also running on th
 uses the following components:
 
 - [Kubeflow**Orchestrator**](../../component-gallery/orchestrators/kubeflow.md) which orchestrates your ML workflows on [Kubeflow Pipelines](https://www.kubeflow.org/docs/components/pipelines/v1/introduction/). 
-- [S3**ArtifactStore**](../../component-gallery/artifact-stores/amazon-s3.md) which can store your artifacts in a [S3 storage](https://aws.amazon.com/s3/).
+- [S3**ArtifactStore**](../../component-gallery/artifact-stores/s3.md) which can store your artifacts in a [S3 storage](https://aws.amazon.com/s3/).
 - [MLflow**ExperimentTracker**](../../component-gallery/experiment-trackers/mlflow.md) which can track your experiments with [MLFlow](https://mlflow.org/).
 - [Evidently**DataValidator**](../../component-gallery/data-validators/evidently.md) which can help you validate your data with [Evidently](https://www.evidentlyai.com/).
 

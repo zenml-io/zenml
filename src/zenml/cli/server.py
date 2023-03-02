@@ -29,6 +29,7 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.constants import ENV_AUTO_OPEN_DASHBOARD, handle_bool_env_var
 from zenml.enums import ServerProviderType, StoreType
+from zenml.exceptions import IllegalOperationError
 from zenml.logger import get_logger
 from zenml.utils import yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
@@ -195,7 +196,10 @@ def up(
             config_attrs["image"] = image
         if port is not None:
             config_attrs["port"] = port
-        if ip_address is not None and provider == ServerProviderType.DOCKER:
+        if ip_address is not None and provider in [
+            ServerProviderType.LOCAL,
+            ServerProviderType.DOCKER,
+        ]:
             config_attrs["ip_address"] = ip_address
 
         from zenml.zen_server.deploy.deployment import ServerDeploymentConfig
@@ -225,7 +229,6 @@ def up(
                 and gc.store.type == StoreType.REST
                 and not connect
             ):
-
                 try:
                     if gc.zen_store.is_local_store():
                         connect = True
@@ -542,6 +545,9 @@ def status() -> None:
     store_cfg = gc.store
 
     cli_utils.declare(f"Using configuration from: '{gc.config_directory}'")
+    cli_utils.declare(
+        f"Local store files are located at: '{gc.local_stores_path}'"
+    )
     if client.root:
         cli_utils.declare(f"Active repository root: {client.root}")
     if store_cfg is not None:
@@ -578,7 +584,7 @@ def status() -> None:
 @cli.command(
     "connect",
     help=(
-        """Configure your client to connect to a remote ZenML server.
+        """Connect to a remote ZenML server.
 
     Examples:
 
@@ -716,7 +722,6 @@ def connect(
     verify_ssl = ssl_ca_cert if ssl_ca_cert is not None else not no_verify_ssl
 
     if config:
-
         if os.path.isfile(config):
             store_dict = yaml_utils.read_yaml(config)
         else:
@@ -781,7 +786,15 @@ def connect(
     assert store_config_class is not None
 
     store_config = store_config_class.parse_obj(store_dict)
-    GlobalConfiguration().set_store(store_config)
+    try:
+        GlobalConfiguration().set_store(store_config)
+    except IllegalOperationError as e:
+        cli_utils.warning(
+            f"User '{username}' does not have sufficient permissions to "
+            f"to access the server at '{url}'. Please ask the server "
+            f"administrator to assign a role with permissions to your "
+            f"username: {str(e)}"
+        )
 
     if workspace:
         try:

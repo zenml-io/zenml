@@ -13,7 +13,9 @@
 #  permissions and limitations under the License.
 """Kubernetes orchestrator flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type
+
+from pydantic import root_validator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.kubernetes import KUBERNETES_ORCHESTRATOR_FLAVOR
@@ -49,19 +51,54 @@ class KubernetesOrchestratorConfig(  # type: ignore[misc] # https://github.com/p
     """Configuration for the Kubernetes orchestrator.
 
     Attributes:
-        kubernetes_context: Optional name of a Kubernetes context to run
-            pipelines in. If not set, the current active context will be used.
-            You can find the active context by running `kubectl config
-            current-context`.
+        kubernetes_context: Name of a Kubernetes context to run pipelines in.
         kubernetes_namespace: Name of the Kubernetes namespace to be used.
             If not provided, `zenml` namespace will be used.
-        skip_config_loading: If `True`, don't load the Kubernetes context and
-            clients. This is only useful for unit testing.
+        local: If `True`, the orchestrator will assume it is connected to a
+            local kubernetes cluster and will perform additional validations and
+            operations to allow using the orchestrator in combination with other
+            local stack components that store data in the local filesystem
+            (i.e. it will mount the local stores directory into the pipeline
+            containers).
+        skip_local_validations: If `True`, the local validations will be
+            skipped.
     """
 
-    kubernetes_context: Optional[str] = None  # TODO: Potential setting
+    kubernetes_context: str  # TODO: Potential setting
     kubernetes_namespace: str = "zenml"
-    skip_config_loading: bool = False  # TODO: Remove?
+    local: bool = False
+    skip_local_validations: bool = False
+
+    @root_validator(pre=True)
+    def _validate_deprecated_attrs(
+        cls, values: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Pydantic root_validator for deprecated attributes.
+
+        This root validator is used for backwards compatibility purposes. E.g.
+        it handles attributes that are no longer available or that have become
+        mandatory in the meantime.
+
+        Args:
+            values: Values passed to the object constructor
+
+        Returns:
+            Values passed to the object constructor
+
+        Raises:
+            ValueError: If the attributes or their values are not valid.
+        """
+        if not values.get("kubernetes_context"):
+            raise ValueError(
+                "An empty value is no longer allowed for the "
+                "`kubernetes_context` attribute of the Kubernetes "
+                "orchestrator, to avoid unpredictable behavior. Please set "
+                "the `kubernetes_context` attribute to the name of the "
+                "Kubernetes config context pointing to the cluster where "
+                "you would like to run pipelines."
+            )
+
+        return values
 
     @property
     def is_remote(self) -> bool:
@@ -74,7 +111,19 @@ class KubernetesOrchestratorConfig(  # type: ignore[misc] # https://github.com/p
         Returns:
             True if this config is for a remote component, False otherwise.
         """
-        return True
+        return not self.local
+
+    @property
+    def is_local(self) -> bool:
+        """Checks if this stack component is running locally.
+
+        This designation is used to determine if the stack component can be
+        shared with other users or if it is only usable on the local host.
+
+        Returns:
+            True if this config is for a local component, False otherwise.
+        """
+        return self.local
 
 
 class KubernetesOrchestratorFlavor(BaseOrchestratorFlavor):
@@ -88,6 +137,24 @@ class KubernetesOrchestratorFlavor(BaseOrchestratorFlavor):
             The name of the flavor.
         """
         return KUBERNETES_ORCHESTRATOR_FLAVOR
+
+    @property
+    def docs_url(self) -> Optional[str]:
+        """A url to point at docs explaining this flavor.
+
+        Returns:
+            A flavor docs url.
+        """
+        return self.generate_default_docs_url()
+
+    @property
+    def logo_url(self) -> str:
+        """A url to represent the flavor in the dashboard.
+
+        Returns:
+            The flavor logo.
+        """
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/kubernetes.png"
 
     @property
     def config_class(self) -> Type[KubernetesOrchestratorConfig]:

@@ -17,7 +17,11 @@ from zenml.models.artifact_models import (
     ArtifactFilterModel,
     ArtifactRequestModel,
     ArtifactResponseModel,
-    ArtifactUpdateModel,
+)
+from zenml.models.pipeline_build_models import (
+    PipelineBuildFilterModel,
+    PipelineBuildRequestModel,
+    PipelineBuildResponseModel,
 )
 from zenml.models.component_models import (
     ComponentFilterModel,
@@ -30,12 +34,18 @@ from zenml.models.flavor_models import (
     FlavorFilterModel,
     FlavorRequestModel,
     FlavorResponseModel,
+    FlavorUpdateModel,
 )
 from zenml.models.pipeline_models import (
     PipelineFilterModel,
     PipelineRequestModel,
     PipelineResponseModel,
     PipelineUpdateModel,
+)
+from zenml.models.pipeline_deployment_models import (
+    PipelineDeploymentFilterModel,
+    PipelineDeploymentRequestModel,
+    PipelineDeploymentResponseModel,
 )
 from zenml.models.pipeline_run_models import (
     PipelineRunFilterModel,
@@ -55,11 +65,22 @@ from zenml.models.role_models import (
     RoleResponseModel,
     RoleUpdateModel,
 )
+from zenml.models.run_metadata_models import (
+    RunMetadataFilterModel,
+    RunMetadataRequestModel,
+    RunMetadataResponseModel,
+)
 from zenml.models.schedule_model import (
     ScheduleRequestModel,
     ScheduleResponseModel,
     ScheduleUpdateModel,
     ScheduleFilterModel,
+)
+from zenml.models.secret_models import (
+    SecretRequestModel,
+    SecretFilterModel,
+    SecretResponseModel,
+    SecretUpdateModel,
 )
 from zenml.models.stack_models import (
     StackFilterModel,
@@ -135,9 +156,28 @@ PipelineResponseModel.update_forward_refs(
     WorkspaceResponseModel=WorkspaceResponseModel,
 )
 
+RunMetadataResponseModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
+)
 ScheduleResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
     WorkspaceResponseModel=WorkspaceResponseModel,
+)
+PipelineBuildResponseModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
+    PipelineResponseModel=PipelineResponseModel,
+    StackResponseModel=StackResponseModel,
+)
+
+PipelineDeploymentResponseModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
+    PipelineResponseModel=PipelineResponseModel,
+    StackResponseModel=StackResponseModel,
+    PipelineBuildResponseModel=PipelineBuildResponseModel,
+    ScheduleResponseModel=ScheduleResponseModel,
 )
 
 PipelineRunResponseModel.update_forward_refs(
@@ -145,15 +185,25 @@ PipelineRunResponseModel.update_forward_refs(
     WorkspaceResponseModel=WorkspaceResponseModel,
     PipelineResponseModel=PipelineResponseModel,
     StackResponseModel=StackResponseModel,
+    RunMetadataResponseModel=RunMetadataResponseModel,
+    PipelineBuildResponseModel=PipelineBuildResponseModel,
+    PipelineDeploymentResponseModel=PipelineDeploymentResponseModel,
 )
 
 StepRunResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
     WorkspaceResponseModel=WorkspaceResponseModel,
     ArtifactResponseModel=ArtifactResponseModel,
+    RunMetadataResponseModel=RunMetadataResponseModel,
 )
 
 ArtifactResponseModel.update_forward_refs(
+    UserResponseModel=UserResponseModel,
+    WorkspaceResponseModel=WorkspaceResponseModel,
+    RunMetadataResponseModel=RunMetadataResponseModel,
+)
+
+SecretResponseModel.update_forward_refs(
     UserResponseModel=UserResponseModel,
     WorkspaceResponseModel=WorkspaceResponseModel,
 )
@@ -161,8 +211,10 @@ ArtifactResponseModel.update_forward_refs(
 __all__ = [
     "ArtifactRequestModel",
     "ArtifactResponseModel",
-    "ArtifactUpdateModel",
     "ArtifactFilterModel",
+    "PipelineBuildFilterModel",
+    "PipelineBuildRequestModel",
+    "PipelineBuildResponseModel",
     "ComponentRequestModel",
     "ComponentResponseModel",
     "ComponentUpdateModel",
@@ -170,11 +222,15 @@ __all__ = [
     "FlavorRequestModel",
     "FlavorResponseModel",
     "FlavorFilterModel",
+    "FlavorUpdateModel",
     "BaseFilterModel",
     "PipelineRequestModel",
     "PipelineResponseModel",
     "PipelineUpdateModel",
     "PipelineFilterModel",
+    "PipelineDeploymentRequestModel",
+    "PipelineDeploymentResponseModel",
+    "PipelineDeploymentFilterModel",
     "PipelineRunRequestModel",
     "PipelineRunResponseModel",
     "PipelineRunUpdateModel",
@@ -193,10 +249,17 @@ __all__ = [
     "RoleResponseModel",
     "RoleUpdateModel",
     "RoleFilterModel",
+    "RunMetadataFilterModel",
+    "RunMetadataRequestModel",
+    "RunMetadataResponseModel",
     "ScheduleRequestModel",
     "ScheduleResponseModel",
     "ScheduleUpdateModel",
     "ScheduleFilterModel",
+    "SecretRequestModel",
+    "SecretFilterModel",
+    "SecretResponseModel",
+    "SecretUpdateModel",
     "StackRequestModel",
     "StackResponseModel",
     "StackUpdateModel",

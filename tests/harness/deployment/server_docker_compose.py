@@ -76,7 +76,7 @@ services:
   zenml:
     image: {ZENML_SERVER_IMAGE_NAME}
     ports:
-      - "{zenml_port}:80"
+      - "{zenml_port}:8080"
     environment:
       - ZENML_STORE_URL=mysql://root:{MYSQL_DEFAULT_PASSWORD}@host.docker.internal/zenml
     links:
@@ -192,6 +192,7 @@ services:
             "--no-color": False,
             "--detach": True,
             "--scale": "",
+            "--no-log-prefix": False,
         }
 
         project = project_from_options(str(path), options)
@@ -273,7 +274,7 @@ services:
         container = self.zenml_container
         assert container is not None
         try:
-            port = int(container.ports[f"{80}/tcp"][0]["HostPort"])
+            port = int(container.ports[f"{8080}/tcp"][0]["HostPort"])
         except (KeyError, IndexError):
             raise RuntimeError(
                 f"Could not find the port for the '{self.config.name}' "

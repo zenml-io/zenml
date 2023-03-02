@@ -24,9 +24,9 @@ class ArtifactType(StrEnum):
     DATA_ANALYSIS = "DataAnalysisArtifact"
     DATA = "DataArtifact"
     MODEL = "ModelArtifact"
-    SCHEMA = "SchemaArtifact"
+    SCHEMA = "SchemaArtifact"  # deprecated
     SERVICE = "ServiceArtifact"
-    STATISTICS = "StatisticsArtifact"
+    STATISTICS = "StatisticsArtifact"  # deprecated in favor of `DATA_ANALYSIS`
     BASE = "BaseArtifact"
 
 
@@ -79,11 +79,30 @@ class StackComponentType(StrEnum):
         return f"{self.value}s"
 
 
+class SecretScope(StrEnum):
+    """Enum for the scope of a secret."""
+
+    WORKSPACE = "workspace"
+    USER = "user"
+
+
 class StoreType(StrEnum):
-    """Repository Store Backend Types."""
+    """Zen Store Backend Types."""
 
     SQL = "sql"
     REST = "rest"
+
+
+class SecretsStoreType(StrEnum):
+    """Secrets Store Backend Types.
+
+    NOTE: this is a superset of the StoreType values because the set of secrets
+    store backends includes all the backends supported for zen stores.
+    """
+
+    NONE = "none"  # indicates that the secrets store is disabled
+    SQL = StoreType.SQL.value
+    REST = StoreType.REST.value
 
 
 class ContainerRegistryFlavor(StrEnum):
@@ -141,6 +160,7 @@ class AnalyticsEventSource(StrEnum):
     """Enum to identify analytics events source."""
 
     ZENML_GO = "zenml go"
+    ZENML_INIT = "zenml init"
     ZENML_SERVER = "zenml server"
 
 
@@ -180,3 +200,11 @@ class LogicalOperators(StrEnum):
 
     OR = "or"
     AND = "and"
+
+
+class OperatingSystemType(StrEnum):
+    """Enum for OS types."""
+
+    LINUX = "Linux"
+    WINDOWS = "Windows"
+    MACOS = "Darwin"

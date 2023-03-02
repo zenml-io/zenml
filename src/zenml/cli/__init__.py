@@ -78,6 +78,15 @@ You can also pass in a directory path manually using the
 
 ```bash
 zenml init --path /path/to/dir
+```
+
+If you wish to use one of [the available ZenML project templates](https://github.com/zenml-io/zenml-project-templates)
+to generate a ready-to-use project scaffold in your repository, you can do so by
+passing the ``--template`` option:
+
+```bash
+zenml init --template
+```
 
 If you wish to delete all data relating to your workspace from the
 directory, use the ``zenml clean`` command. This will:
@@ -382,10 +391,99 @@ This can then be used as part of your Stack (see below).
 Using Secrets
 -------------
 
-Secrets are administered by the Secrets Manager. You must first register that
-and then register a stack that includes the secrets manager before you can start
-to use it. To get a full list of all the possible commands, type `zenml secret
---help`. A ZenML Secret is a collection or grouping of key-value pairs. These
+A ZenML Secret is a collection or grouping of key-value pairs securely stored by
+the centralized ZenML secrets store or by the ZenML secrets manager in your
+active stack. ZenML Secrets are identified by a unique name which allows you to
+fetch or reference them in your pipelines and stacks.
+
+Centralized Secrets Management
+------------------------------
+
+When you use centralized secrets management, ZenML secrets are stored in the
+ZenML secrets store. Depending on how you set up and deployed ZenML, the secrets
+store is using a local database, a remote database or remote service as a
+backend:
+
+* if you are using the default ZenML client settings, the secrets store
+is using the same local SQLite database as the rest of ZenML
+* if you connect your ZenML client to a local or remote ZenML server, the
+secrets store is using the same database as the ZenML server
+* if your ZenML server is deployed in a managed cloud, the server may use one
+of the supported cloud services as a backend for the secrets store
+
+
+To create a secret, use the `create` command and pass the key-value pairs
+as command-line arguments:
+
+```bash
+zenml secret create SECRET_NAME --key1=value1 --key2=value2 --key3=value3 ...
+```
+
+Note that the keys and values will be preserved in your `bash_history` file, so
+you may prefer to use the interactive `create` command instead:
+
+```shell
+zenml secret create SECRET_NAME -i
+```
+
+As an alternative to the interactive mode, also useful for values that
+are long or contain newline or special characters, you can also use the special
+`@` syntax to indicate to ZenML that the value needs to be read from a file:
+
+```bash
+zenml secret create SECRET_NAME \
+   --aws_access_key_id=1234567890 \
+   --aws_secret_access_key=abcdefghij \
+   --aws_session_token=@/path/to/token.txt
+```
+
+To list all the secrets available, use the `list` command:
+
+```bash
+zenml secret list
+```
+
+To get the key-value pairs for a particular secret, use the `get` command:
+
+```bash
+zenml secret get SECRET_NAME
+```
+
+To update a secret, use the `update` command:
+
+```bash
+zenml secret update SECRET_NAME --key1=value1 --key2=value2 --key3=value3 ...
+```
+
+Note that the keys and values will be preserved in your `bash_history` file, so
+you may prefer to use the interactive `update` command instead:
+
+```shell
+zenml secret update SECRET_NAME -i
+```
+
+Finally, to delete a secret, use the `delete` command:
+
+```bash
+zenml secret delete SECRET_NAME
+```
+
+Centralized secrets can be scoped to a workspace or a user. By default, secrets
+are scoped to the current workspace. To scope a secret to a user, use the
+`--scope user` argument in the `register` command.
+
+Secrets Management through Secrets Managers
+-------------------------------------------
+
+When you use a secrets manager, ZenML secrets are managed through the secrets
+manager stack component in your active stack. This means that you can only
+use the CLI commands described here if the active stack contains a secrets
+manager.
+
+NOTE: We are slowly deprecating Secrets Managers in favor of the centralized
+ZenML secrets store. Going forward, we recommend using centralized ZenML secrets
+instead of secrets manager stack components to configure and store secrets.
+
 Secret groupings come in different types, and certain types have predefined keys
 that should be used. For example, an AWS secret has predefined keys of
 `aws_access_key_id` and `aws_secret_access_key` (and an optional
@@ -716,8 +814,27 @@ Administering your Pipelines
 ZenML provides several CLI commands to help you administer your pipelines and
 pipeline runs.
 
-After you have run some pipelines by by executing the corresponding Python 
-scripts, you can list all pipelines via:
+To explicitly register a pipeline you need to point to a pipeline instance
+in your Python code. Let's say you have a Python file called `run.py` and
+it contains the following code:
+
+```python
+from zenml.pipelines import pipeline
+
+@pipeline
+def my_pipeline(...):
+   # Connect your pipeline steps here
+   pass
+
+pipeline_instance = my_pipeline(...)
+```
+
+You can register your pipeline like this:
+```bash
+zenml pipeline register run.pipeline_instance
+```
+
+To list all registered pipelines, use:
 
 ```bash
 zenml pipeline list
@@ -785,6 +902,65 @@ To delete a specific artifact, use:
 ```bash
 zenml artifact delete <ARTIFACT_NAME_OR_ID>
 ```
+
+Each pipeline run that requires Docker images also stores a build which
+contains the image names used for this run. To list all builds, use:
+
+```bash
+zenml pipeline builds list
+```
+
+To delete a specific build, use:
+
+```bash
+zenml pipeline builds delete <BUILD_ID>
+```
+
+Building an image without running your Pipelines
+----------------------------------
+
+To build Docker images for your pipeline without actually running the pipeline,
+use:
+
+```bash
+zenml pipeline build <PIPELINE_ID_OR_NAME>
+```
+
+To specify settings for the Docker builds, use the `--config/-c` option of the
+command. For more information about the structure of this configuration file,
+check out the `zenml.pipelines.base_pipeline.BasePipeline.build(...)` method.
+
+```bash
+zenml pipeline build <PIPELINE_ID_OR_NAME> --config=<PATH_TO_CONFIG_YAML>
+```
+
+If you want to build the pipeline for a stack different than your current active
+stack, use the `--stack` option.
+```bash
+zenml pipeline build <PIPELINE_ID_OR_NAME> --stack=<STACK_ID_OR_NAME>
+```
+
+
+To run a pipeline that was previously registered, use:
+
+```bash
+zenml pipeline run  <PIPELINE_ID_OR_NAME>
+```
+
+To specify settings for the pipeline, use the `--config/-c` option of the
+command. For more information about the structure of this configuration file,
+check out the `zenml.pipelines.base_pipeline.BasePipeline.run(...)` method.
+
+```bash
+zenml pipeline run <PIPELINE_ID_OR_NAME> --config=<PATH_TO_CONFIG_YAML>
+```
+
+If you want to run the pipeline on a stack different than your current active
+stack, use the `--stack` option.
+```bash
+zenml pipeline run <PIPELINE_ID_OR_NAME> --stack=<STACK_ID_OR_NAME>
+```
+
 
 Managing the local ZenML Dashboard
 ----------------------------------

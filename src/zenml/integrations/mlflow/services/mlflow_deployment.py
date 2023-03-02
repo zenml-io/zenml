@@ -33,6 +33,7 @@ from zenml.services import (
     ServiceEndpointProtocol,
     ServiceType,
 )
+from zenml.services.service import BaseDeploymentService
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -100,7 +101,7 @@ class MLFlowDeploymentConfig(LocalDaemonServiceConfig):
     timeout: int = DEFAULT_SERVICE_START_STOP_TIMEOUT
 
 
-class MLFlowDeploymentService(LocalDaemonService):
+class MLFlowDeploymentService(LocalDaemonService, BaseDeploymentService):
     """MLflow deployment service used to start a local prediction server for MLflow models.
 
     Attributes:
