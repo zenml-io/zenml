@@ -16,7 +16,7 @@
 import tempfile
 import webbrowser
 from abc import abstractmethod
-from typing import Any
+from typing import Any, Optional, cast
 
 from zenml.enums import ArtifactType
 from zenml.environment import Environment
@@ -39,14 +39,21 @@ class EvidentlyVisualizer(BaseVisualizer):
             *args: Additional arguments.
             **kwargs: Additional keyword arguments.
         """
+        artifact: Optional[str] = None
+
         for artifact_view in object.outputs.values():
             # filter out anything but data artifacts
             if (
                 artifact_view.type == ArtifactType.DATA
                 and artifact_view.data_type == "builtins.str"
+                and artifact_view.name
+                in ["report_html", "test_html", "dashboard"]
             ):
-                artifact = artifact_view.read()
-                self.generate_facet(artifact)
+                artifact = cast(str, artifact_view.read())
+
+        # Display the last artifact
+        if artifact:
+            self.generate_facet(artifact)
 
     def generate_facet(self, html_: str) -> None:
         """Generate a Facet Overview.
