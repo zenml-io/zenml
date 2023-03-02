@@ -152,7 +152,12 @@ def warning(
     console.print(text, style=style, **kwargs)
 
 
-def print_table(obj: List[Dict[str, Any]], **columns: table.Column) -> None:
+def print_table(
+    obj: List[Dict[str, Any]],
+    title: Optional[str] = None,
+    caption: Optional[str] = None,
+    **columns: table.Column,
+) -> None:
     """Prints the list of dicts in a table format.
 
     The input object should be a List of Dicts. Each item in that list represent
@@ -161,11 +166,15 @@ def print_table(obj: List[Dict[str, Any]], **columns: table.Column) -> None:
 
     Args:
         obj: A List containing dictionaries.
+        title: Title of the table.
+        caption: Caption of the table.
         columns: Optional column configurations to be used in the table.
     """
     column_keys = {key: None for dict_ in obj for key in dict_}
     column_names = [columns.get(key, key.upper()) for key in column_keys]
-    rich_table = table.Table(box=box.HEAVY_EDGE, show_lines=True)
+    rich_table = table.Table(
+        box=box.HEAVY_EDGE, show_lines=True, title=title, caption=caption
+    )
     for col_name in column_names:
         if isinstance(col_name, str):
             rich_table.add_column(str(col_name), overflow="fold")
@@ -637,7 +646,9 @@ def uninstall_package(package: str) -> None:
 
 
 def pretty_print_secret(
-    secret: "Union[BaseSecretSchema, Dict[str, str]]", hide_secret: bool = True
+    secret: "Union[BaseSecretSchema, Dict[str, str]]",
+    hide_secret: bool = True,
+    print_name: bool = False,
 ) -> None:
     """Given a secret with values, print all key-value pairs associated with the secret.
 
@@ -645,8 +656,13 @@ def pretty_print_secret(
         secret: Secret of type BaseSecretSchema
         hide_secret: boolean that configures if the secret values are shown
             on the CLI
+        print_name: boolean that configures if the secret name is shown on the
+            CLI
     """
+    title: Optional[str] = None
     if isinstance(secret, BaseSecretSchema):
+        if print_name:
+            title = f"Secret: {secret.name}"
         secret = secret.content
 
     def get_secret_value(value: Any) -> str:
@@ -661,7 +677,8 @@ def pretty_print_secret(
         }
         for key, value in secret.items()
     ]
-    print_table(stack_dicts)
+
+    print_table(stack_dicts, title=title)
 
 
 def print_list_items(list_items: List[str], column_title: str) -> None:
@@ -1306,8 +1323,10 @@ def warn_deprecated_secrets_manager() -> None:
     """Warning for deprecating secrets managers."""
     warning(
         "Secrets managers are deprecated and will be removed in an upcoming "
-        "release in favor of centralized secrets management. Please see the "
-        "`zenml secret` CLI command and the "
-        "https://docs.zenml.io/advanced-guide/practical-mlops/secrets-management#centralized-secrets-store "
+        "release in favor of centralized secrets management. Please consider "
+        "migrating all your secrets to the centralized secrets store by means "
+        "of the `zenml secrets-manager secret migrate` CLI command. "
+        "See the `zenml secret` CLI command and the "
+        "https://docs.zenml.io/advanced-guide/practical-mlops/secrets-management "
         "documentation page for more information."
     )
