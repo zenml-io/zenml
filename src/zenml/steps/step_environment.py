@@ -100,7 +100,7 @@ class StepEnvironment(BaseEnvironmentComponent):
         Returns:
             The name of the currently running step.
         """
-        return self._step_run_info.config.name
+        return self._step_run_info.pipeline_step_name
 
     @property
     def step_run_info(self) -> "StepRunInfo":
