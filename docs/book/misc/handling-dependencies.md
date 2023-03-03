@@ -25,7 +25,7 @@ denoting that all requirements are met.
 
 ## Suggestions for Resolving Dependency Conflicts
 
-### Use a tool like `pip-compile` for reproduciblity
+### Use a tool like `pip-compile` for reproducibility
 
 Consider using a tool like `pip-compile` (available through [the `pip-tools`
 package](https://pip-tools.readthedocs.io/)) to compile your dependencies into a
