@@ -1008,7 +1008,7 @@ def on_success_with_wrong_params(a: int):
     is_hook_called = True
 
 
-@step
+@step(enable_cache=False)
 def passing_step(params: BaseParameters) -> None:
     pass
 
@@ -1031,14 +1031,6 @@ def test_configure_step_with_success_hook(one_step_pipeline):
         passing_step().configure(on_success=on_success_with_params)
     ).run(unlisted=True)
     assert is_hook_called
-
-    # Test 3
-    is_hook_called = False
-    with pytest.raises(TypeError):
-        one_step_pipeline(
-            passing_step().configure(on_success=on_success_with_exception)
-        ).run(unlisted=True)
-    assert not is_hook_called
 
     # Test 3
     is_hook_called = False

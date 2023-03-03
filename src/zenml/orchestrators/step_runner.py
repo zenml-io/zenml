@@ -127,14 +127,6 @@ class StepRunner:
             step_failed = False
             try:
                 return_values = step_entrypoint(**function_params)
-                success_hook_source = self.configuration.success_hook_source
-                if success_hook_source:
-                    self._run_hook(
-                        success_hook_source,
-                        step_exception=None,
-                        output_artifact_uris=output_artifact_uris,
-                        output_materializers=output_materializers,
-                    )
             except Exception as step_exception:  # noqa: E722
                 step_failed = True
                 failure_hook_source = self.configuration.failure_hook_source
@@ -157,6 +149,17 @@ class StepRunner:
                 self._stack.cleanup_step_run(
                     info=step_run_info, step_failed=step_failed
                 )
+                if not step_failed:
+                    success_hook_source = (
+                        self.configuration.success_hook_source
+                    )
+                    if success_hook_source:
+                        self._run_hook(
+                            success_hook_source,
+                            step_exception=None,
+                            output_artifact_uris=output_artifact_uris,
+                            output_materializers=output_materializers,
+                        )
 
         # Store and publish the output artifacts of the step function.
         output_annotations = parse_return_type_annotations(spec.annotations)
