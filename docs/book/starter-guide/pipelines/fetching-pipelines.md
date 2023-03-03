@@ -25,7 +25,7 @@ Let us investigate how to traverse this hierarchy level by level:
 ## Pipelines
 
 ZenML keeps a collection of all created pipelines with at least one
-run sorted by the time of their first run from oldest to newest.
+run sorted by the time of their first run from from newest to oldest.
 
 You can either access this collection via the `get_pipelines()` method or query
 a specific pipeline by name using `get_pipeline(pipeline=...)`:
@@ -36,8 +36,9 @@ from zenml.post_execution import get_pipelines, get_pipeline
 # get all pipelines from all stacks
 pipelines = get_pipelines()
 
-# now you can get pipelines by index
-pipeline_with_latest_initial_run_time = pipelines[-1]
+# now you can get pipelines by index; pipelines are sorted in descending order
+# of their first run time (most recent first)
+pipeline_with_latest_initial_run_time = pipelines[0]
 
 # or get one pipeline by name
 pipeline_x = get_pipeline(pipeline="example_pipeline")
