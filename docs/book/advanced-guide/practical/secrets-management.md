@@ -29,7 +29,7 @@ management back-end that the server is configured to use, but all access to the
 secrets is done through the ZenML server API.
 
 Currently, the ZenML server can be configured to use one of the following
-supported secret store back-ends:
+supported secrets store back-ends:
 
 * the SQL database that the ZenML server is using to store other managed objects
 such as pipelines, stacks, etc. This is the default option.
@@ -263,7 +263,7 @@ number of limitations, some of which are:
 * you need to configure [a Secrets Manager stack component](../../component-gallery/secrets-managers/secrets-managers.md)
 and add it to your active stack before you can register and access secrets. With
 centralized secrets management, you don't need to configure anything, your ZenML
-local deployment or ZenML server replaces the secrets manager role.
+local deployment or ZenML server takes on the secrets manager role.
 
 * even with a secrets manager configured in your active stack, if you are using
 a secrets manager flavor with a cloud back-end (e.g. AWS, GCP or Azure), you

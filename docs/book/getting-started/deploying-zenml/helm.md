@@ -508,7 +508,7 @@ Manager API:
 
       # The GCP project ID to use. This must be set to the project ID where the
       # GCP Secrets Manager service that you want to use is located.
-      project_id: us-east-1
+      project_id: my-zenml-project
 
       # Path to the GCP credentials file to use to authenticate with the GCP Secrets
       # Manager instance. You can omit this if you are running the ZenML server
@@ -524,7 +524,7 @@ serviceAccount:
   # If you're using workload identity, you need to annotate the service
   # account with the GCP service account name (see https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity)
   annotations:
-    iam.gke.io/gcp-service-account: <service-account-name>@<project-name>.iam.gserviceaccount.com
+    iam.gke.io/gcp-service-account: <SERVICE_ACCOUNT_NAME>@<PROJECT_NAME>.iam.gserviceaccount.com
 
 ```
 

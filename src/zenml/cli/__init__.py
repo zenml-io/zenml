@@ -206,7 +206,7 @@ of key-value pairs securely stored by the ZenML secrets store.
 ZenML Secrets are identified by a unique name which allows you to fetch or
 reference them in your pipelines and stacks.
 
-Depending on how you set up and deployed ZenML, the secrets store keep secrets
+Depending on how you set up and deployed ZenML, the secrets store keeps secrets
 in the local database or uses the ZenML server your client is connected to:
 
 * if you are using the default ZenML client settings, or if you connect your
@@ -261,7 +261,7 @@ To update a secret, use the `update` command:
 zenml secret update SECRET_NAME --key1=value1 --key2=value2 --key3=value3 ...
 ```
 
-Note that the keys and values will be preserved in your `bash_history` file, so
+Note that when using the previous command the keys and values will be preserved in your `bash_history` file, so
 you may prefer to use the interactive `update` command instead:
 
 ```shell
