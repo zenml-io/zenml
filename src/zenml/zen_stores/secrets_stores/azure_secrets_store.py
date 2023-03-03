@@ -578,7 +578,7 @@ class AzureSecretsStore(BaseSecretsStore):
         # Convert the ZenML secret metadata to Azure tags
         metadata = self._get_secret_metadata_for_secret(secret)
 
-        # We manage the created and updated times ourselves, so we need to
+        # We manage the created and updated times ourselves, so we don't need to
         # rely on the Azure Key Vault API to set them.
         updated = datetime.utcnow()
         metadata[ZENML_AZURE_SECRET_CREATED_KEY] = secret.created.isoformat()
