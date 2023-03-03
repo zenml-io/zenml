@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -19,20 +19,19 @@ from zenml.post_execution.pipeline import get_pipeline
 
 
 def test_example(request: pytest.FixtureRequest) -> None:
-    """Runs the evidently_data_validation example."""
+    """Runs the quickstart example."""
 
     with run_example(
         request=request,
-        name="evidently_data_validation",
-        pipelines={"text_data_report_test_pipeline": (1, 5)},
-    ) as (example, runs):
+        name="quickstart",
+        pipelines={"training_pipeline": (1, 5), "inference_pipeline": (1, 5)},
+    ):
+        from zenml.integrations.mlflow.services import MLFlowDeploymentService
 
-        pipeline = get_pipeline("text_data_report_test_pipeline")
-        assert pipeline
+        training_run = get_pipeline("training_pipeline").runs[0]
 
-        # Analyzer step should have output missing values
-        text_analyzer_step = runs["text_data_report_test_pipeline"][
-            0
-        ].get_step(step="text_analyzer")
-        output = text_analyzer_step.outputs["ref_missing_values"].read()
-        assert isinstance(output, int)
+        service = training_run.get_step("model_deployer").output.read()
+        assert isinstance(service, MLFlowDeploymentService)
+
+        if service.is_running:
+            service.stop(timeout=60)
