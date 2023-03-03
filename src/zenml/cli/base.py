@@ -539,5 +539,5 @@ def info(
         cli_utils.print_user_info(user_info)
 
     if stack:
-        stack_ = client.get_stack()
-        cli_utils.print_debug_stack(stack=stack_)
+        active_stack_ = client.active_stack
+        cli_utils.print_debug_stack(stack=active_stack_)

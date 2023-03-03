@@ -55,6 +55,8 @@ from zenml.models.filter_models import (
 from zenml.models.page_model import Page
 from zenml.secret import BaseSecretSchema
 from zenml.services import BaseService, ServiceState
+from zenml.stack import StackComponent
+from zenml.utils import secret_utils
 from zenml.zen_server.deploy import ServerDeployment
 
 logger = get_logger(__name__)
@@ -971,8 +973,8 @@ def print_components_table(
 
 
 def _get_stack_components(
-    stack: "StackResponseModel",
-) -> "List[ComponentResponseModel]":
+    stack: "Stack",
+) -> "List[StackComponent]":
     """Get a dict of all components in a stack.
 
     Args:
@@ -981,10 +983,27 @@ def _get_stack_components(
     Returns:
         A list of all components in a stack.
     """
-    return [component[1][0] for component in stack.components.items()]
+    return list(stack.components.values())
 
 
-def print_debug_stack(stack: "StackResponseModel") -> None:
+# secret_utils.is_secret_field(m.__fields__['tracking_password'])
+# c.active_stack.annotator.config.__class__.__fields__
+def _scrub_secret(configuration: Dict[str, Any]) -> Dict[str, Any]:
+    """Remove secret values from a configuration.
+
+    Args:
+        configuration: A configuration
+
+    Returns:
+        A configuration with secret values removed.
+    """
+    for key, value in configuration.items():
+        if secret_utils.is_secret_field(value):
+            configuration[key] = "********"
+    return configuration
+
+
+def print_debug_stack(stack: "Stack") -> None:
     """Print stack and components for debugging purposes.
 
     Args:
@@ -1010,7 +1029,10 @@ def print_debug_stack(stack: "StackResponseModel") -> None:
         console.print(f"ID: {str(component.id)}")
         console.print(f"Type: {component.type.value}")
         console.print(f"Flavor: {component.flavor}")
-        console.print(f"Configuration: {component.configuration}")
+        breakpoint()
+        console.print(
+            f"Configuration: {_scrub_secret(component.configuration)}"
+        )
         console.print(f"Shared: {'Yes' if component.is_shared else 'No'}")
         if (
             component.user and component.user.name and component.user.id
