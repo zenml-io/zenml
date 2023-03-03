@@ -50,10 +50,10 @@ The centralized secrets store also supports using a custom back-end
 implementation.
 
 There is no direct migration path planned for the GitHub secrets manager flavor,
-given that it can only be used inside a GitHub Action workflow and thus is not
+given that it can only be used inside a GitHub Actions workflow and thus is not
 a service that can be used as a centralized secrets store.
 If you are using the GitHub secrets manager flavor, you have the option of
-migrating your secrets to one of the other supported secrets store back-ends.
+manually transferring your secrets to one of the other supported secrets store back-ends.
 {% endhint %}
 
 ## When to use it
