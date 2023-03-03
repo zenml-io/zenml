@@ -162,7 +162,7 @@ zenml experiment-tracker register mlflow_tracker --flavor=mlflow
 zenml model-deployer register mlflow_deployer --flavor=mlflow
 
 # Register a new stack with the new stack components
-zenml stack register quickstart_stack -a default\
+zenml stack register quickstart_py37_stack -a default\
                                       -o default\
                                       -d mlflow_deployer\
                                       -e mlflow_tracker\

@@ -10,15 +10,15 @@ setup_stack () {
     msg "${WARNING}Reusing preexisting experiment tracker ${NOFORMAT}mlflow_tracker"
   zenml data-validator register evidently_validator --flavor=evidently || \
     msg "${WARNING}Reusing preexisting data validator ${NOFORMAT}evidently_validator"
-  zenml stack register quickstart_stack \
+  zenml stack register quickstart_py37_stack \
       -a default \
       -o default \
       -dv evidently_validator \
       -d mlflow_deployer \
       -e mlflow_tracker || \
-    msg "${WARNING}Reusing preexisting stack ${NOFORMAT}quickstart_stack"
+    msg "${WARNING}Reusing preexisting stack ${NOFORMAT}quickstart_py37_stack"
 
-  zenml stack set quickstart_stack
+  zenml stack set quickstart_py37_stack
 }
 
 pre_run () {

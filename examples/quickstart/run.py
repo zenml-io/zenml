@@ -45,7 +45,7 @@ def main():
         evaluator=evaluator(),
         model_register=mlflow_register_model_step(
             params=MLFlowRegistryParameters(
-                name="tensorflow-mnist-model",
+                name="zenml-quickstart-model",
                 metadata=ModelRegistryModelMetadata(gamma=0.01, arch="svc"),
                 description="The first run of the Quickstart pipeline.",
             )
@@ -58,7 +58,7 @@ def main():
         inference_data_loader=inference_data_loader(),
         mlflow_model_deployer=mlflow_model_registry_deployer_step(
             params=MLFlowDeployerParameters(
-                registry_model_name="tensorflow-mnist-model",
+                registry_model_name="zenml-quickstart-model",
                 registry_model_version="1",
                 # or you can use the model stage if you have set it in the MLflow registry
                 # registered_model_stage="None" # "Staging", "Production", "Archived"
