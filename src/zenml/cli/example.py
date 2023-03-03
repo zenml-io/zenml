@@ -25,6 +25,7 @@ from rich.markdown import Markdown
 from rich.text import Text
 
 from zenml import __version__ as zenml_version_installed
+from zenml.analytics.trackers import event_handler_v2
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import confirmation, declare, error, print_table, warning
 from zenml.console import console
@@ -182,19 +183,22 @@ class LocalExample:
             event=AnalyticsEvent.RUN_EXAMPLE,
             metadata={"example_name": self.name},
         ):
-
-            call = [sys.executable, self.executable_python_example, *args]
-            try:
-                subprocess.check_call(
-                    call,
-                    cwd=str(self.path),
-                    shell=click._compat.WIN,
-                    env=os.environ.copy(),
-                )
-            except Exception as e:
-                raise RuntimeError(
-                    f"Failed to run example {self.name}."
-                ) from e
+            with event_handler_v2(
+                event=AnalyticsEvent.RUN_EXAMPLE,
+                metadata={"example_name": self.name},
+            ):
+                call = [sys.executable, self.executable_python_example, *args]
+                try:
+                    subprocess.check_call(
+                        call,
+                        cwd=str(self.path),
+                        shell=click._compat.WIN,
+                        env=os.environ.copy(),
+                    )
+                except Exception as e:
+                    raise RuntimeError(
+                        f"Failed to run example {self.name}."
+                    ) from e
 
     def run_example(
         self,
@@ -220,42 +224,46 @@ class LocalExample:
             event=AnalyticsEvent.RUN_EXAMPLE,
             metadata={"example_name": self.name},
         ):
+            with event_handler_v2(
+                event=AnalyticsEvent.RUN_EXAMPLE,
+                metadata={"example_name": self.name},
+            ):
 
-            if all(map(fileio.exists, example_runner)):
-                call = (
-                    example_runner
-                    + ["--executable", self.executable_python_example]
-                    + ["-y"] * force
-                    + ["--no-stack-setup"] * prevent_stack_setup
-                )
-                try:
-                    # TODO [ENG-271]: Catch errors that might be thrown
-                    #  in subprocess
-                    subprocess.check_call(
-                        call,
-                        cwd=str(self.path),
-                        shell=click._compat.WIN,
-                        env=os.environ.copy(),
+                if all(map(fileio.exists, example_runner)):
+                    call = (
+                        example_runner
+                        + ["--executable", self.executable_python_example]
+                        + ["-y"] * force
+                        + ["--no-stack-setup"] * prevent_stack_setup
                     )
-                except RuntimeError:
-                    raise NotImplementedError(
-                        f"Currently the example {self.name} "
-                        "has no implementation for the "
-                        "run method"
-                    )
-                except subprocess.CalledProcessError as e:
-                    if e.returncode == 38:
+                    try:
+                        # TODO [ENG-271]: Catch errors that might be thrown
+                        #  in subprocess
+                        subprocess.check_call(
+                            call,
+                            cwd=str(self.path),
+                            shell=click._compat.WIN,
+                            env=os.environ.copy(),
+                        )
+                    except RuntimeError:
                         raise NotImplementedError(
                             f"Currently the example {self.name} "
                             "has no implementation for the "
                             "run method"
                         )
-                    raise
-            else:
-                raise FileNotFoundError(
-                    "Bash File(s) to run Examples not found at"
-                    f"{example_runner}"
-                )
+                    except subprocess.CalledProcessError as e:
+                        if e.returncode == 38:
+                            raise NotImplementedError(
+                                f"Currently the example {self.name} "
+                                "has no implementation for the "
+                                "run method"
+                            )
+                        raise
+                else:
+                    raise FileNotFoundError(
+                        "Bash File(s) to run Examples not found at"
+                        f"{example_runner}"
+                    )
 
 
 class Example:

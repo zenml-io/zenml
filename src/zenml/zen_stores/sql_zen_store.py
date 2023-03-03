@@ -184,6 +184,7 @@ from zenml.zen_stores.schemas import (
 from zenml.zen_stores.secrets_stores.sql_secrets_store import (
     SqlSecretsStoreConfiguration,
 )
+from zenml.analytics.trackers import track_v2
 
 AnyNamedSchema = TypeVar("AnyNamedSchema", bound=NamedSchema)
 AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -936,8 +937,8 @@ class SqlZenStore(BaseZenStore):
     # ------
     # Stacks
     # ------
-
     @track(AnalyticsEvent.REGISTERED_STACK)
+    @track_v2(AnalyticsEvent.REGISTERED_STACK)
     def create_stack(self, stack: StackRequestModel) -> StackResponseModel:
         """Register a new stack.
 
@@ -1037,6 +1038,7 @@ class SqlZenStore(BaseZenStore):
             )
 
     @track(AnalyticsEvent.UPDATED_STACK)
+    @track_v2(AnalyticsEvent.UPDATED_STACK)
     def update_stack(
         self, stack_id: UUID, stack_update: StackUpdateModel
     ) -> StackResponseModel:
@@ -1219,8 +1221,8 @@ class SqlZenStore(BaseZenStore):
     # ----------------
     # Stack components
     # ----------------
-
     @track(AnalyticsEvent.REGISTERED_STACK_COMPONENT)
+    @track_v2(AnalyticsEvent.REGISTERED_STACK_COMPONENT)
     def create_stack_component(
         self,
         component: ComponentRequestModel,
@@ -1541,6 +1543,7 @@ class SqlZenStore(BaseZenStore):
     # Stack component flavors
     # -----------------------
 
+    @track_v2(AnalyticsEvent.CREATED_FLAVOR)
     def create_flavor(self, flavor: FlavorRequestModel) -> FlavorResponseModel:
         """Creates a new stack component flavor.
 
@@ -2475,6 +2478,7 @@ class SqlZenStore(BaseZenStore):
     # --------
 
     @track(AnalyticsEvent.CREATED_WORKSPACE)
+    @track_v2(AnalyticsEvent.CREATED_WORKSPACE)
     def create_workspace(
         self, workspace: WorkspaceRequestModel
     ) -> WorkspaceResponseModel:
@@ -2623,8 +2627,8 @@ class SqlZenStore(BaseZenStore):
     # ---------
     # Pipelines
     # ---------
-
     @track(AnalyticsEvent.CREATE_PIPELINE)
+    @track_v2(AnalyticsEvent.CREATE_PIPELINE)
     def create_pipeline(
         self,
         pipeline: PipelineRequestModel,

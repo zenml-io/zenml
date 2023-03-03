@@ -22,6 +22,7 @@ import click
 import yaml
 from rich.errors import MarkupError
 
+from zenml.analytics.trackers import event_handler_v2
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
 from zenml.client import Client
@@ -153,132 +154,145 @@ def up(
     with event_handler(
         AnalyticsEvent.ZENML_SERVER_STARTED
     ) as analytics_handler:
-        from zenml.zen_server.deploy.deployer import ServerDeployer
-        from zenml.zen_stores.sql_zen_store import SQLDatabaseDriver
+        with event_handler(
+            AnalyticsEvent.ZENML_SERVER_STARTED
+        ) as analytics_handler_v2:
 
-        gc = GlobalConfiguration()
+            from zenml.zen_server.deploy.deployer import ServerDeployer
+            from zenml.zen_stores.sql_zen_store import SQLDatabaseDriver
 
-        if docker:
-            from zenml.utils.docker_utils import check_docker
+            gc = GlobalConfiguration()
 
-            if not check_docker():
-                cli_utils.error(
-                    "Docker does not seem to be installed on your system. Please "
-                    "install Docker to use the Docker ZenML server local "
-                    "deployment or use one of the other deployment options."
-                )
-            provider = ServerProviderType.DOCKER
-        else:
-            if sys.platform == "win32" and not blocking:
-                cli_utils.error(
-                    "Running the ZenML server locally as a background process is "
-                    "not supported on Windows. Please use the `--blocking` flag "
-                    "to run the server in blocking mode, or run the server in "
-                    "a Docker container by setting `--docker` instead."
-                )
+            if docker:
+                from zenml.utils.docker_utils import check_docker
+
+                if not check_docker():
+                    cli_utils.error(
+                        "Docker does not seem to be installed on your system. Please "
+                        "install Docker to use the Docker ZenML server local "
+                        "deployment or use one of the other deployment options."
+                    )
+                provider = ServerProviderType.DOCKER
             else:
-                pass
-            provider = ServerProviderType.LOCAL
+                if sys.platform == "win32" and not blocking:
+                    cli_utils.error(
+                        "Running the ZenML server locally as a background process is "
+                        "not supported on Windows. Please use the `--blocking` flag "
+                        "to run the server in blocking mode, or run the server in "
+                        "a Docker container by setting `--docker` instead."
+                    )
+                else:
+                    pass
+                provider = ServerProviderType.LOCAL
 
-        deployer = ServerDeployer()
+            deployer = ServerDeployer()
 
-        server = get_active_deployment(local=True)
-        if server and server.config.provider != provider:
-            deployer.remove_server(LOCAL_ZENML_SERVER_NAME)
+            server = get_active_deployment(local=True)
+            if server and server.config.provider != provider:
+                deployer.remove_server(LOCAL_ZENML_SERVER_NAME)
 
-        config_attrs: Dict[str, Any] = dict(
-            name=LOCAL_ZENML_SERVER_NAME,
-            provider=provider,
-        )
-        if not docker:
-            config_attrs["blocking"] = blocking
-        elif image:
-            config_attrs["image"] = image
-        if port is not None:
-            config_attrs["port"] = port
-        if ip_address is not None and provider in [
-            ServerProviderType.LOCAL,
-            ServerProviderType.DOCKER,
-        ]:
-            config_attrs["ip_address"] = ip_address
+            config_attrs: Dict[str, Any] = dict(
+                name=LOCAL_ZENML_SERVER_NAME,
+                provider=provider,
+            )
+            if not docker:
+                config_attrs["blocking"] = blocking
+            elif image:
+                config_attrs["image"] = image
+            if port is not None:
+                config_attrs["port"] = port
+            if ip_address is not None and provider in [
+                ServerProviderType.LOCAL,
+                ServerProviderType.DOCKER,
+            ]:
+                config_attrs["ip_address"] = ip_address
 
-        from zenml.zen_server.deploy.deployment import ServerDeploymentConfig
-
-        server_config = ServerDeploymentConfig(**config_attrs)
-
-        server = deployer.deploy_server(server_config)
-
-        assert gc.store is not None
-
-        analytics_handler.metadata = {
-            "server_id": str(gc.user_id),
-            "server_deployment": str(provider),
-            "database_type": SQLDatabaseDriver.SQLITE.value,
-        }
-
-        if not blocking:
-            from zenml.zen_stores.base_zen_store import (
-                DEFAULT_PASSWORD,
-                DEFAULT_USERNAME,
+            from zenml.zen_server.deploy.deployment import (
+                ServerDeploymentConfig,
             )
 
-            # Don't connect to the local server if the client is already
-            # connected to a remote server.
-            if (
-                gc.store is not None
-                and gc.store.type == StoreType.REST
-                and not connect
-            ):
-                try:
-                    if gc.zen_store.is_local_store():
-                        connect = True
-                    else:
-                        cli_utils.declare(
-                            "Skipped connecting to the local server. The "
-                            "client is already connected to a remote ZenML "
-                            "server. Pass the `--connect` flag to connect to "
-                            "the local server anyway."
-                        )
-                except Exception as e:
-                    logger.debug(
-                        f"The current ZenML server configuration is no longer "
-                        f"valid. Connecting to the local server: {e}"
-                    )
-                    # even when connected to a remote ZenML server, if the
-                    # connection is not working, we default to connecting to the
-                    # local server
-                    connect = True
-            else:
-                connect = True
+            server_config = ServerDeploymentConfig(**config_attrs)
 
-            if connect:
-                deployer.connect_to_server(
-                    LOCAL_ZENML_SERVER_NAME,
-                    DEFAULT_USERNAME,
+            server = deployer.deploy_server(server_config)
+
+            assert gc.store is not None
+
+            analytics_handler.metadata = {
+                "server_id": str(gc.user_id),
+                "server_deployment": str(provider),
+                "database_type": SQLDatabaseDriver.SQLITE.value,
+            }
+            analytics_handler_v2.metadata = {
+                "server_id": str(gc.user_id),
+                "server_deployment": str(provider),
+                "database_type": SQLDatabaseDriver.SQLITE.value,
+            }
+
+            if not blocking:
+                from zenml.zen_stores.base_zen_store import (
                     DEFAULT_PASSWORD,
+                    DEFAULT_USERNAME,
                 )
 
-            if server.status and server.status.url:
-                cli_utils.declare(
-                    f"The local ZenML dashboard is available at "
-                    f"'{server.status.url}'. You can connect to it using the "
-                    f"'{DEFAULT_USERNAME}' username and an empty password. "
-                    f"To open the dashboard in a browser automatically, "
-                    f"set the env variable AUTO_OPEN_DASHBOARD=true."
-                )
-
-                if handle_bool_env_var(ENV_AUTO_OPEN_DASHBOARD, default=True):
+                # Don't connect to the local server if the client is already
+                # connected to a remote server.
+                if (
+                    gc.store is not None
+                    and gc.store.type == StoreType.REST
+                    and not connect
+                ):
                     try:
-                        import webbrowser
-
-                        webbrowser.open(server.status.url)
-                        cli_utils.declare(
-                            "Automatically opening the dashboard in your "
-                            "browser. To disable this, set the env variable "
-                            "AUTO_OPEN_DASHBOARD=false."
-                        )
+                        if gc.zen_store.is_local_store():
+                            connect = True
+                        else:
+                            cli_utils.declare(
+                                "Skipped connecting to the local server. The "
+                                "client is already connected to a remote ZenML "
+                                "server. Pass the `--connect` flag to connect to "
+                                "the local server anyway."
+                            )
                     except Exception as e:
-                        logger.error(e)
+                        logger.debug(
+                            f"The current ZenML server configuration is no longer "
+                            f"valid. Connecting to the local server: {e}"
+                        )
+                        # even when connected to a remote ZenML server, if the
+                        # connection is not working, we default to connecting to the
+                        # local server
+                        connect = True
+                else:
+                    connect = True
+
+                if connect:
+                    deployer.connect_to_server(
+                        LOCAL_ZENML_SERVER_NAME,
+                        DEFAULT_USERNAME,
+                        DEFAULT_PASSWORD,
+                    )
+
+                if server.status and server.status.url:
+                    cli_utils.declare(
+                        f"The local ZenML dashboard is available at "
+                        f"'{server.status.url}'. You can connect to it using the "
+                        f"'{DEFAULT_USERNAME}' username and an empty password. "
+                        f"To open the dashboard in a browser automatically, "
+                        f"set the env variable AUTO_OPEN_DASHBOARD=true."
+                    )
+
+                    if handle_bool_env_var(
+                        ENV_AUTO_OPEN_DASHBOARD, default=True
+                    ):
+                        try:
+                            import webbrowser
+
+                            webbrowser.open(server.status.url)
+                            cli_utils.declare(
+                                "Automatically opening the dashboard in your "
+                                "browser. To disable this, set the env variable "
+                                "AUTO_OPEN_DASHBOARD=false."
+                            )
+                        except Exception as e:
+                            logger.error(e)
 
 
 @cli.command("down", help="Shut down the local ZenML dashboard.")
@@ -393,116 +407,123 @@ def deploy(
     with event_handler(
         AnalyticsEvent.ZENML_SERVER_DEPLOYED
     ) as analytics_handler:
-        config_dict: Dict[str, Any] = {}
+        with event_handler_v2(
+            AnalyticsEvent.ZENML_SERVER_DEPLOYED
+        ) as analytics_handler_v2:
 
-        if config:
-            if os.path.isfile(config):
-                config_dict = yaml_utils.read_yaml(config)
-            else:
-                config_dict = yaml.safe_load(config)
-            if not isinstance(config_dict, dict):
-                cli_utils.error(
-                    "The configuration argument must be JSON/YAML content or "
-                    "point to a valid configuration file."
-                )
+            config_dict: Dict[str, Any] = {}
 
-            name = config_dict.get("name", name)
-            provider = config_dict.get("provider", provider)
-            username = config_dict.get("username", username)
-            password = config_dict.get("password", password)
-
-        if not name:
-            name = click.prompt(
-                "ZenML server name (used as a prefix for the names of deployed "
-                "resources)",
-                default="zenml",
-            )
-        config_dict["name"] = name
-
-        if not provider:
-            provider = click.prompt(
-                "ZenML server provider",
-                type=click.Choice(
-                    [
-                        ServerProviderType.AWS.value,
-                        ServerProviderType.GCP.value,
-                        ServerProviderType.AZURE.value,
-                    ],
-                    case_sensitive=True,
-                ),
-                default=ServerProviderType.AWS.value,
-            )
-        config_dict["provider"] = provider
-
-        if provider == ServerProviderType.GCP.value:
-            if "project_id" not in config_dict:
-                if not gcp_project_id:
-                    gcp_project_id = click.prompt(
-                        "GCP project ID",
+            if config:
+                if os.path.isfile(config):
+                    config_dict = yaml_utils.read_yaml(config)
+                else:
+                    config_dict = yaml.safe_load(config)
+                if not isinstance(config_dict, dict):
+                    cli_utils.error(
+                        "The configuration argument must be JSON/YAML content or "
+                        "point to a valid configuration file."
                     )
-                config_dict["project_id"] = gcp_project_id
 
-        if not username:
-            username = click.prompt(
-                "ZenML admin account username", default="default"
+                name = config_dict.get("name", name)
+                provider = config_dict.get("provider", provider)
+                username = config_dict.get("username", username)
+                password = config_dict.get("password", password)
+
+            if not name:
+                name = click.prompt(
+                    "ZenML server name (used as a prefix for the names of deployed "
+                    "resources)",
+                    default="zenml",
+                )
+            config_dict["name"] = name
+
+            if not provider:
+                provider = click.prompt(
+                    "ZenML server provider",
+                    type=click.Choice(
+                        [
+                            ServerProviderType.AWS.value,
+                            ServerProviderType.GCP.value,
+                            ServerProviderType.AZURE.value,
+                        ],
+                        case_sensitive=True,
+                    ),
+                    default=ServerProviderType.AWS.value,
+                )
+            config_dict["provider"] = provider
+
+            if provider == ServerProviderType.GCP.value:
+                if "project_id" not in config_dict:
+                    if not gcp_project_id:
+                        gcp_project_id = click.prompt(
+                            "GCP project ID",
+                        )
+                    config_dict["project_id"] = gcp_project_id
+
+            if not username:
+                username = click.prompt(
+                    "ZenML admin account username", default="default"
+                )
+            config_dict["username"] = username
+
+            password = password or config_dict.get("password", None)
+            if not password:
+                password = click.prompt(
+                    "ZenML admin account password", hide_input=True
+                )
+            config_dict["password"] = password
+
+            from zenml.zen_server.deploy.deployment import (
+                ServerDeploymentConfig,
             )
-        config_dict["username"] = username
 
-        password = password or config_dict.get("password", None)
-        if not password:
-            password = click.prompt(
-                "ZenML admin account password", hide_input=True
-            )
-        config_dict["password"] = password
+            server_config = ServerDeploymentConfig.parse_obj(config_dict)
 
-        from zenml.zen_server.deploy.deployment import ServerDeploymentConfig
+            from zenml.zen_server.deploy.deployer import ServerDeployer
 
-        server_config = ServerDeploymentConfig.parse_obj(config_dict)
+            deployer = ServerDeployer()
 
-        from zenml.zen_server.deploy.deployer import ServerDeployer
+            server = get_active_deployment(local=False)
+            if server:
+                if server.config.provider != provider:
+                    cli_utils.error(
+                        "ZenML is already deployed using a different provider "
+                        f"({server.config.provider}). Please tear down the "
+                        "existing deployment by running `zenml destroy` before "
+                        "deploying a new one."
+                    )
 
-        deployer = ServerDeployer()
+                if server.config.name != name:
+                    cli_utils.error(
+                        f"An existing deployment with a different name "
+                        f"'{server.config.name}' already exists. Please tear down "
+                        f"the existing deployment by running `zenml destroy` "
+                        f"before deploying a new one."
+                    )
 
-        server = get_active_deployment(local=False)
-        if server:
-            if server.config.provider != provider:
-                cli_utils.error(
-                    "ZenML is already deployed using a different provider "
-                    f"({server.config.provider}). Please tear down the "
-                    "existing deployment by running `zenml destroy` before "
-                    "deploying a new one."
+            server = deployer.deploy_server(server_config, timeout=timeout)
+
+            metadata = {
+                "server_deployment": str(server.config.provider),
+            }
+
+            analytics_handler.metadata = metadata
+            analytics_handler_v2.metadata = metadata
+
+            if server.status and server.status.url:
+                cli_utils.declare(
+                    f"ZenML server '{name}' running at '{server.status.url}'."
                 )
 
-            if server.config.name != name:
-                cli_utils.error(
-                    f"An existing deployment with a different name "
-                    f"'{server.config.name}' already exists. Please tear down "
-                    f"the existing deployment by running `zenml destroy` "
-                    f"before deploying a new one."
-                )
-
-        server = deployer.deploy_server(server_config, timeout=timeout)
-
-        metadata = {
-            "server_deployment": str(server.config.provider),
-        }
-
-        analytics_handler.metadata = metadata
-
-        if server.status and server.status.url:
-            cli_utils.declare(
-                f"ZenML server '{name}' running at '{server.status.url}'."
-            )
-
-            if connect and username:
-                deployer.connect_to_server(
-                    server_config.name,
-                    username,
-                    password or "",
-                    verify_ssl=server.status.ca_crt
-                    if server.status.ca_crt is not None
-                    else False,
-                )
+                if connect and username:
+                    deployer.connect_to_server(
+                        server_config.name,
+                        username,
+                        password or "",
+                        verify_ssl=server.status.ca_crt
+                        if server.status.ca_crt is not None
+                        else False,
+                    )
 
 
 @cli.command(

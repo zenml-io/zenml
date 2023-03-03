@@ -79,6 +79,7 @@ from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
 from zenml.utils.pipeline_docker_image_builder import (
     PipelineDockerImageBuilder,
 )
+from zenml.analytics.trackers import event_handler_v2
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
@@ -425,120 +426,140 @@ class BasePipeline(metaclass=BasePipelineMeta):
             return
 
         with event_handler(AnalyticsEvent.RUN_PIPELINE) as analytics_handler:
-            deployment, pipeline_spec, schedule, build = self._compile(
-                config_path=config_path,
-                run_name=run_name,
-                enable_cache=enable_cache,
-                enable_artifact_metadata=enable_artifact_metadata,
-                steps=step_configurations,
-                settings=settings,
-                schedule=schedule,
-                build=build,
-                extra=extra,
-            )
-
-            skip_pipeline_registration = constants.handle_bool_env_var(
-                constants.ENV_ZENML_SKIP_PIPELINE_REGISTRATION, default=False
-            )
-
-            register_pipeline = not (skip_pipeline_registration or unlisted)
-
-            pipeline_id = None
-            if register_pipeline:
-                pipeline_id = self._register(pipeline_spec=pipeline_spec).id
-
-            # TODO: check whether orchestrator even support scheduling before
-            # registering the schedule
-            schedule_id = None
-            if schedule:
-                if schedule.name:
-                    schedule_name = schedule.name
-                else:
-                    date = datetime.utcnow().strftime("%Y_%m_%d")
-                    time = datetime.utcnow().strftime("%H_%M_%S_%f")
-                    schedule_name = deployment.run_name_template.format(
-                        date=date, time=time
-                    )
-                components = Client().active_stack_model.components
-                orchestrator = components[StackComponentType.ORCHESTRATOR][0]
-                schedule_model = ScheduleRequestModel(
-                    workspace=Client().active_workspace.id,
-                    user=Client().active_user.id,
-                    pipeline_id=pipeline_id,
-                    orchestrator_id=orchestrator.id,
-                    name=schedule_name,
-                    active=True,
-                    cron_expression=schedule.cron_expression,
-                    start_time=schedule.start_time,
-                    end_time=schedule.end_time,
-                    interval_second=schedule.interval_second,
-                    catchup=schedule.catchup,
+            with event_handler_v2(
+                AnalyticsEvent.RUN_PIPELINE
+            ) as analytics_handler_v2:
+                deployment, pipeline_spec, schedule, build = self._compile(
+                    config_path=config_path,
+                    run_name=run_name,
+                    enable_cache=enable_cache,
+                    enable_artifact_metadata=enable_artifact_metadata,
+                    steps=step_configurations,
+                    settings=settings,
+                    schedule=schedule,
+                    build=build,
+                    extra=extra,
                 )
-                schedule_id = (
-                    Client().zen_store.create_schedule(schedule_model).id
+
+                skip_pipeline_registration = constants.handle_bool_env_var(
+                    constants.ENV_ZENML_SKIP_PIPELINE_REGISTRATION,
+                    default=False,
+                )
+
+                register_pipeline = not (
+                    skip_pipeline_registration or unlisted
+                )
+
+                pipeline_id = None
+                if register_pipeline:
+                    pipeline_id = self._register(
+                        pipeline_spec=pipeline_spec
+                    ).id
+
+                # TODO: check whether orchestrator even support scheduling before
+                # registering the schedule
+                schedule_id = None
+                if schedule:
+                    if schedule.name:
+                        schedule_name = schedule.name
+                    else:
+                        date = datetime.utcnow().strftime("%Y_%m_%d")
+                        time = datetime.utcnow().strftime("%H_%M_%S_%f")
+                        schedule_name = deployment.run_name_template.format(
+                            date=date, time=time
+                        )
+                    components = Client().active_stack_model.components
+                    orchestrator = components[StackComponentType.ORCHESTRATOR][
+                        0
+                    ]
+                    schedule_model = ScheduleRequestModel(
+                        workspace=Client().active_workspace.id,
+                        user=Client().active_user.id,
+                        pipeline_id=pipeline_id,
+                        orchestrator_id=orchestrator.id,
+                        name=schedule_name,
+                        active=True,
+                        cron_expression=schedule.cron_expression,
+                        start_time=schedule.start_time,
+                        end_time=schedule.end_time,
+                        interval_second=schedule.interval_second,
+                        catchup=schedule.catchup,
+                    )
+                    schedule_id = (
+                        Client().zen_store.create_schedule(schedule_model).id
+                    )
+                    logger.info(
+                        f"Created schedule `{schedule_name}` for pipeline "
+                        f"`{deployment.pipeline_configuration.name}`."
+                    )
+
+                stack = Client().active_stack
+
+                build_model = self._load_or_create_pipeline_build(
+                    deployment=deployment,
+                    pipeline_spec=pipeline_spec,
+                    pipeline_id=pipeline_id,
+                    build=build,
+                )
+                build_id = build_model.id if build_model else None
+
+                deployment_request = PipelineDeploymentRequestModel(
+                    user=Client().active_user.id,
+                    workspace=Client().active_workspace.id,
+                    stack=stack.id,
+                    pipeline=pipeline_id,
+                    build=build_id,
+                    schedule=schedule_id,
+                    **deployment.dict(),
+                )
+                deployment_model = Client().zen_store.create_deployment(
+                    deployment=deployment_request
+                )
+
+                analytics_handler.metadata = (
+                    self._get_pipeline_analytics_metadata(
+                        deployment=deployment_model, stack=stack
+                    )
+                )
+                analytics_handler_v2.metadata = (
+                    self._get_pipeline_analytics_metadata(
+                        deployment=deployment_model, stack=stack
+                    )
+                )
+
+                caching_status = (
+                    "enabled"
+                    if deployment.pipeline_configuration.enable_cache
+                    is not False
+                    else "disabled"
                 )
                 logger.info(
-                    f"Created schedule `{schedule_name}` for pipeline "
-                    f"`{deployment.pipeline_configuration.name}`."
+                    "%s %s on stack `%s` (caching %s)",
+                    "Scheduling" if deployment_model.schedule else "Running",
+                    f"pipeline `{deployment_model.pipeline_configuration.name}`"
+                    if register_pipeline
+                    else "unlisted pipeline",
+                    stack.name,
+                    caching_status,
                 )
 
-            stack = Client().active_stack
+                stack.prepare_pipeline_deployment(deployment=deployment_model)
 
-            build_model = self._load_or_create_pipeline_build(
-                deployment=deployment,
-                pipeline_spec=pipeline_spec,
-                pipeline_id=pipeline_id,
-                build=build,
-            )
-            build_id = build_model.id if build_model else None
+                # Prevent execution of nested pipelines which might lead to
+                # unexpected behavior
+                constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True
+                try:
+                    stack.deploy_pipeline(
+                        deployment=deployment_model,
+                    )
+                finally:
+                    constants.SHOULD_PREVENT_PIPELINE_EXECUTION = False
 
-            deployment_request = PipelineDeploymentRequestModel(
-                user=Client().active_user.id,
-                workspace=Client().active_workspace.id,
-                stack=stack.id,
-                pipeline=pipeline_id,
-                build=build_id,
-                schedule=schedule_id,
-                **deployment.dict(),
-            )
-            deployment_model = Client().zen_store.create_deployment(
-                deployment=deployment_request
-            )
-
-            analytics_handler.metadata = self._get_pipeline_analytics_metadata(
-                deployment=deployment_model, stack=stack
-            )
-            caching_status = (
-                "enabled"
-                if deployment.pipeline_configuration.enable_cache is not False
-                else "disabled"
-            )
-            logger.info(
-                "%s %s on stack `%s` (caching %s)",
-                "Scheduling" if deployment_model.schedule else "Running",
-                f"pipeline `{deployment_model.pipeline_configuration.name}`"
-                if register_pipeline
-                else "unlisted pipeline",
-                stack.name,
-                caching_status,
-            )
-
-            stack.prepare_pipeline_deployment(deployment=deployment_model)
-
-            # Prevent execution of nested pipelines which might lead to
-            # unexpected behavior
-            constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True
-            try:
-                stack.deploy_pipeline(
-                    deployment=deployment_model,
+                # Log the dashboard URL
+                dashboard_utils.print_run_url(
+                    run_name=deployment.run_name_template,
+                    pipeline_id=pipeline_id,
                 )
-            finally:
-                constants.SHOULD_PREVENT_PIPELINE_EXECUTION = False
-
-            # Log the dashboard URL
-            dashboard_utils.print_run_url(
-                run_name=deployment.run_name_template, pipeline_id=pipeline_id
-            )
 
     @classmethod
     def get_runs(cls) -> Optional[List["PipelineRunView"]]:
