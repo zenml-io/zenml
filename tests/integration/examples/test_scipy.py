@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -15,24 +15,14 @@
 import pytest
 
 from tests.integration.examples.utils import run_example
-from zenml.post_execution.pipeline import get_pipeline
 
 
 def test_example(request: pytest.FixtureRequest) -> None:
-    """Runs the evidently_data_validation example."""
+    """Runs the scipy example."""
 
     with run_example(
         request=request,
-        name="evidently_data_validation",
-        pipelines={"text_data_report_test_pipeline": (1, 5)},
-    ) as (example, runs):
-
-        pipeline = get_pipeline("text_data_report_test_pipeline")
-        assert pipeline
-
-        # Analyzer step should have output missing values
-        text_analyzer_step = runs["text_data_report_test_pipeline"][
-            0
-        ].get_step(step="text_analyzer")
-        output = text_analyzer_step.outputs["ref_missing_values"].read()
-        assert isinstance(output, int)
+        name="scipy",
+        pipelines={"scipy_example_pipeline": (1, 4)},
+    ):
+        pass

@@ -22,8 +22,6 @@ def test_example(request: pytest.FixtureRequest) -> None:
     with run_example(
         request=request,
         name="neural_prophet",
-        pipeline_name="neural_prophet_pipeline",
-        step_count=3,
-        run_count=1,
+        pipelines={"neural_prophet_pipeline": (1, 3)},
     ):
         pass
