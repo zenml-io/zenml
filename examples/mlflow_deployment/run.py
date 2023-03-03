@@ -113,7 +113,7 @@ def main(config: str, epochs: int, lr: float, min_accuracy: float):
 
     print(
         "You can run:\n "
-        f"[italic green]    mlflow ui --backend-store-uri {get_tracking_uri()}"
+        f"[italic green]    mlflow ui --backend-store-uri '{get_tracking_uri()}"
         "[/italic green]\n ...to inspect your experiment runs within the MLflow"
         " UI.\nYou can find your runs tracked within the "
         "`mlflow_example_pipeline` experiment. There you'll also be able to "
