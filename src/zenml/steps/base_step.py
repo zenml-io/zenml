@@ -1082,69 +1082,11 @@ class BaseStep(metaclass=BaseStepMeta):
         if not callable(hook_func):
             raise ValueError(f"{hook_func} is not a valid function.")
 
-        if hook_func.__annotations__:
-            assert any(
-                isinstance(param, (Exception, BaseParameters, StepContext))
-                for param in hook_func.__annotations__.values()
-            ), "Hook parameters must be of type `Exception`, `BaseParameters`, and/or `StepContext`"
+        # TODO: Have to enforce this
+        # if hook_func.__annotations__:
+        #     assert any(
+        #         isinstance(param, (Exception, BaseParameters, StepContext))
+        #         for param in hook_func.__annotations__.values()
+        #     ), "Hook parameters must be of type `Exception`, `BaseParameters`, and/or `StepContext`"
 
         return source_utils.resolve_class(hook_func)
-
-
-
-
-# def _resolve_and_validate_hook(hook_func: Type[FunctionType]) -> str:
-#     """Resolves and validates a hook callback.
-
-#     Args:
-#         hook_func: Callable hook function.
-
-#     Returns:
-#         resolved_hook: Source path of `hook_func`.
-#     """
-#     if not callable(hook_func):
-#         raise ValueError(f"{hook_func} is not a valid function.")
-
-#     if hook_func.__annotations__:
-#         assert all(
-#             isinstance(param, (type(Exception), type(BaseParameters), type(StepContext)))
-#             for param in hook_func.__annotations__.values()
-#         ), "Hook parameters must be of type `Exception`, `BaseParameters`, and/or `StepContext`"
-
-#     return source_utils.resolve_class(hook_func)
-
-
-# if __name__ == "__main__":
-#     def hook():
-#         pass
-
-#     print(_resolve_and_validate_hook(hook))
-
-#     def hook(e: Exception):
-#         pass
-#     print(_resolve_and_validate_hook(hook))
-
-#     def hook(e: BaseParameters):
-#         pass
-#     print(_resolve_and_validate_hook(hook))
-
-#     def hook(e: StepContext):
-#         pass
-#     print(_resolve_and_validate_hook(hook))
-
-#     def hook(e: BaseParameters, d: StepContext):
-#         pass
-#     print(_resolve_and_validate_hook(hook))
-
-#     def hook(e: StepContext, d: StepContext, g: Exception):
-#         pass
-#     print(_resolve_and_validate_hook(hook))
-
-#     def hook(a: int):
-#         pass
-#     print(_resolve_and_validate_hook(hook))
-
-#     def hook(a: int, e: StepContext):
-#         pass
-#     print(_resolve_and_validate_hook(hook))
-

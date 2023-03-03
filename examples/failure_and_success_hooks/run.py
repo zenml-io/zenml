@@ -14,26 +14,44 @@
 
 import random
 
-from zenml.pipelines import pipeline
-from zenml.steps import Output, step
-from zenml.pipelines import pipeline
-from zenml.steps import Output, step, StepContext
 from zenml.environment import Environment
+from zenml.pipelines import pipeline
+from zenml.steps import BaseParameters, Output, StepContext, step
 
 
-def on_fail(context: StepContext):
-    context.step_name
+class HookParams(BaseParameters):
+    """Parameters to define which hook to trigger"""
+
+    fail: bool = True
+
+
+def on_fail(context: StepContext, params: HookParams, exception: Exception):
+    """Failure hook"""
     env = Environment().step_environment
     pipeline_name = env.pipeline_name
     run_name = env.run_name
-    context.stack.alerter.ask(
-        f"Pipeline {pipeline_name} on Run {run_name} failed on step {env.step_name}!"
+    context.stack.alerter.post(
+        f"Pipeline `{pipeline_name}` on Run `{run_name}` failed on step `{env.step_name}` "
+        f"with exception: `({type(exception)}) {exception}`."
     )
 
-@step(enable_cache=False, on_failure=on_fail)
-def get_first_num() -> Output(first_num=int):
+
+def on_success(context: StepContext, params: HookParams):
+    """Success hook"""
+    env = Environment().step_environment
+    pipeline_name = env.pipeline_name
+    run_name = env.run_name
+    context.stack.alerter.post(
+        f"Pipeline `{pipeline_name}` on Run `{run_name}` succeeded on step `{env.step_name}`!"
+    )
+
+
+@step(enable_cache=False, on_failure=on_fail, on_success=on_success)
+def get_first_num(params: HookParams) -> int:
     """Returns an integer."""
-    raise ValueError("Baris was right")
+    if params.fail:
+        raise ValueError("This is an exception")
+
     return 10
 
 
@@ -46,33 +64,29 @@ def get_random_int() -> Output(random_num=int):
 @step
 def subtract_numbers(first_num: int, random_num: int) -> Output(result=int):
     """Subtract random_num from first_num."""
-    import time
-
-    time.sleep(10)
     return first_num - random_num
 
 
 @pipeline()
-def hamzas_example_pipeline(get_first_num, get_random_int, subtract_numbers):
+def hook_pipeline(get_first_num, get_random_int, subtract_numbers):
     # Link all the steps artifacts together
     first_num = get_first_num()
     random_num = get_random_int()
     subtract_numbers(first_num, random_num)
 
 
-# NOTE: the airflow DAG object returned by the aep.run() call actually
-# needs to be a global object (airflow imports this file and does a for-loop
-# over globals() that checks if there are any DAG instances). That's why
-# pipelines run via airflow can't have the `__name__=="__main__"` condition
-
-# Run the new pipeline
-
-# aep.write_run_configuration_template('config.yml')
 if __name__ == "__main__":
     # Initialize a new pipeline run
-    aep = hamzas_example_pipeline(
-        get_first_num=get_first_num(),
+    p1 = hook_pipeline(
+        get_first_num=get_first_num(params=HookParams(fail=False)),
         get_random_int=get_random_int(),
         subtract_numbers=subtract_numbers(),
     )
-    aep.run()
+    p1.run()
+
+    p2 = hook_pipeline(
+        get_first_num=get_first_num(params=HookParams(fail=True)),
+        get_random_int=get_random_int(),
+        subtract_numbers=subtract_numbers(),
+    )
+    p2.run()

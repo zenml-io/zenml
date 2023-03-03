@@ -15,7 +15,16 @@
 """Class to run steps."""
 
 import inspect
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Tuple, Type
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+)
 
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.client import Client
@@ -118,30 +127,24 @@ class StepRunner:
             step_failed = False
             try:
                 return_values = step_entrypoint(**function_params)
-            except:  # noqa: E722
+                success_hook_source = self.configuration.success_hook_source
+                if success_hook_source:
+                    self._run_hook(
+                        success_hook_source,
+                        step_exception=None,
+                        output_artifact_uris=output_artifact_uris,
+                        output_materializers=output_materializers,
+                    )
+            except Exception as step_exception:  # noqa: E722
                 step_failed = True
                 failure_hook_source = self.configuration.failure_hook_source
                 if failure_hook_source:
-                    try:
-                        # For now, abusing _parse_inputs to get function_params
-                        on_failure = source_utils.load_source_path(
-                            failure_hook_source
-                        )
-                        hook_spec = inspect.getfullargspec(
-                            inspect.unwrap(failure_hook_source)
-                        )
-                        function_params = self._parse_inputs(
-                            args=hook_spec.args,
-                            annotations=hook_spec.annotations,
-                            input_artifacts=input_artifacts,
-                            output_artifact_uris=output_artifact_uris,
-                            output_materializers=output_materializers,
-                        )
-                        on_failure(**function_params)
-                    except ImportError as e:
-                        raise ValueError(
-                            f"ZenML can not import the config class '{failure_hook_source}': {e}"
-                        )
+                    self._run_hook(
+                        failure_hook_source,
+                        step_exception=step_exception,
+                        output_artifact_uris=output_artifact_uris,
+                        output_materializers=output_materializers,
+                    )
                 raise
             finally:
                 step_run_metadata = self._stack.get_step_run_metadata(
@@ -261,6 +264,64 @@ class StepRunner:
                 # At this point, it has to be an artifact, so we resolve
                 function_params[arg] = self._load_input_artifact(
                     input_artifacts[arg], arg_type
+                )
+
+        return function_params
+
+    def _parse_hook_inputs(
+        self,
+        args: List[str],
+        annotations: Dict[str, Any],
+        step_exception: Optional[Exception],
+        output_artifact_uris: Dict[str, str],
+        output_materializers: Dict[str, Type[BaseMaterializer]],
+    ) -> Dict[str, Any]:
+        """Parses the inputs for a step entrypoint function.
+
+        Args:
+            args: The arguments of the step entrypoint function.
+            annotations: The annotations of the step entrypoint function.
+            step_exception: The exception of the original step.
+            output_artifact_uris: The URIs of the output artifacts of the step.
+            output_materializers: The output materializers of the step.
+
+        Returns:
+            The parsed inputs for the step entrypoint function.
+        """
+        from zenml.steps import BaseParameters
+
+        function_params: Dict[str, Any] = {}
+
+        if args and args[0] == "self":
+            args.pop(0)
+
+        for arg in args:
+            arg_type = annotations.get(arg, None)
+            arg_type = resolve_type_annotation(arg_type)
+
+            # Parse the parameters
+            if issubclass(arg_type, BaseParameters):
+                step_params = arg_type.parse_obj(self.configuration.parameters)
+                function_params[arg] = step_params
+
+            # Parse the step context
+            elif issubclass(arg_type, StepContext):
+                step_name = self.configuration.name
+                context = arg_type(
+                    step_name=step_name,
+                    output_materializers=output_materializers,
+                    output_artifact_uris=output_artifact_uris,
+                )
+                function_params[arg] = context
+
+            elif issubclass(arg_type, Exception):
+                function_params[arg] = step_exception
+
+            else:
+                # It should not be of any other type
+                raise TypeError(
+                    "Hook functions can only take parameters of type `StepContext`,"
+                    f"`BaseParameters`, or `Exception`, not {arg_type}"
                 )
 
         return function_params
@@ -437,3 +498,37 @@ class StepRunner:
             )
             output_artifacts[output_name] = output_artifact
         return output_artifacts, output_artifact_metadata
+
+    def _run_hook(
+        self,
+        hook_source: str,
+        step_exception: Optional[Exception],
+        output_artifact_uris: Dict[str, str],
+        output_materializers: Dict[str, Type[BaseMaterializer]],
+    ) -> Dict[str, Any]:
+        """Runs a step hook.
+
+        Args:
+            hook_source: The source of the hook function.
+            step_exception: The exception of the original step.
+            output_artifact_uris: The URIs of the output artifacts of the step.
+            output_materializers: The output materializers of the step.
+
+        Returns:
+            The parsed inputs for the step entrypoint function.
+        """
+        try:
+            hook = source_utils.load_source_path(hook_source)
+            hook_spec = inspect.getfullargspec(inspect.unwrap(hook))
+            function_params = self._parse_hook_inputs(
+                args=hook_spec.args,
+                annotations=hook_spec.annotations,
+                step_exception=step_exception,
+                output_artifact_uris=output_artifact_uris,
+                output_materializers=output_materializers,
+            )
+            hook(**function_params)
+        except ImportError as e:
+            raise ValueError(
+                f"Failed to load hook source with exception: '{hook_source}': {e}"
+            )
