@@ -102,7 +102,7 @@ def main(config: str, epochs: int, lr: float, min_accuracy: float):
             prediction_service_loader=prediction_service_loader(
                 MLFlowDeploymentLoaderStepParameters(
                     pipeline_name="continuous_deployment_pipeline",
-                    pipeline_step_name="mlflow_model_deployer_step",
+                    pipeline_step_name="model_deployer",
                     running=False,
                 )
             ),
@@ -123,7 +123,7 @@ def main(config: str, epochs: int, lr: float, min_accuracy: float):
     # fetch existing services with same pipeline name, step name and model name
     existing_services = mlflow_model_deployer_component.find_model_server(
         pipeline_name="continuous_deployment_pipeline",
-        pipeline_step_name="mlflow_model_deployer_step",
+        pipeline_step_name="model_deployer",
         model_name="model",
     )
 

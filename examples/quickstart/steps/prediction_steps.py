@@ -26,7 +26,7 @@ def prediction_service_loader() -> BaseService:
     model_deployer = client.active_stack.model_deployer
     services = model_deployer.find_model_server(
         pipeline_name="training_pipeline",
-        pipeline_step_name="mlflow_model_deployer_step",
+        pipeline_step_name="model_deployer",
         running=False,
     )
     service = services[0]
