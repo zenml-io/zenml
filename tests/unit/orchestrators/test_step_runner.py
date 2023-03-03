@@ -71,6 +71,7 @@ def test_running_a_successful_step(mocker, local_stack):
         step_run_id=uuid4(),
         run_id=uuid4(),
         run_name="run_name",
+        pipeline_step_name="step_name",
         config=step.config,
         pipeline=pipeline_config,
     )
@@ -121,6 +122,7 @@ def test_running_a_failing_step(mocker, local_stack):
         step_run_id=uuid4(),
         run_id=uuid4(),
         run_name="run_name",
+        pipeline_step_name="step_name",
         config=step.config,
         pipeline=pipeline_config,
     )

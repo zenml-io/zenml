@@ -31,7 +31,7 @@ class KServeIntegration(Integration):
 
     NAME = KSERVE
     REQUIREMENTS = [
-        "kserve==0.9.0",
+        "kserve>=0.9.0,<=10",
         "torch-model-archiver",
     ]
 
