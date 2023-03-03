@@ -976,16 +976,81 @@ def test_configure_step_with_failure_hook(one_step_pipeline):
 
     # Test 4
     is_hook_called = False
-    with pytest.raises(Exception):
-        one_step_pipeline(
-            exception_step().configure(on_failure=on_failure_with_all)
-        ).run(unlisted=True)
-    assert is_hook_called
-
-    # Test 5
-    is_hook_called = False
     with pytest.raises(TypeError):
         one_step_pipeline(
             exception_step().configure(on_failure=on_failure_with_wrong_params)
+        ).run(unlisted=True)
+    assert not is_hook_called
+
+
+def on_success_with_context(context: StepContext):
+    global is_hook_called
+    is_hook_called = True
+
+
+def on_success_with_params(params: BaseParameters):
+    global is_hook_called
+    is_hook_called = True
+
+
+def on_success_with_exception(e: Exception):
+    global is_hook_called
+    is_hook_called = True
+
+
+def on_success_with_all(context: StepContext, params: BaseParameters):
+    global is_hook_called
+    is_hook_called = True
+
+
+def on_success_with_wrong_params(a: int):
+    global is_hook_called
+    is_hook_called = True
+
+
+@step
+def passing_step(params: BaseParameters) -> None:
+    pass
+
+
+def test_configure_step_with_success_hook(one_step_pipeline):
+    """Tests that configuring a step with different success
+    hook configurations"""
+    global is_hook_called
+
+    # Test 1
+    is_hook_called = False
+    one_step_pipeline(
+        passing_step().configure(on_success=on_success_with_context)
+    ).run(unlisted=True)
+    assert is_hook_called
+
+    # Test 2
+    is_hook_called = False
+    one_step_pipeline(
+        passing_step().configure(on_success=on_success_with_params)
+    ).run(unlisted=True)
+    assert is_hook_called
+
+    # Test 3
+    is_hook_called = False
+    with pytest.raises(TypeError):
+        one_step_pipeline(
+            passing_step().configure(on_success=on_success_with_exception)
+        ).run(unlisted=True)
+    assert not is_hook_called
+
+    # Test 3
+    is_hook_called = False
+    one_step_pipeline(
+        passing_step().configure(on_success=on_success_with_all)
+    ).run(unlisted=True)
+    assert is_hook_called
+
+    # Test 4
+    is_hook_called = False
+    with pytest.raises(TypeError):
+        one_step_pipeline(
+            passing_step().configure(on_success=on_success_with_wrong_params)
         ).run(unlisted=True)
     assert not is_hook_called
