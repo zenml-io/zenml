@@ -16,6 +16,7 @@
 from typing import TYPE_CHECKING, Dict, NamedTuple, Optional, Type
 
 from zenml.client import Client
+from zenml.environment import Environment
 from zenml.exceptions import StepContextError
 
 if TYPE_CHECKING:
@@ -143,6 +144,26 @@ class StepContext:
             The current active stack or None.
         """
         return self._stack
+
+    @property
+    def pipeline_name(self) -> Optional[str]:
+        """Returns the current pipeline name.
+
+        Returns:
+            The current pipeline name or None.
+        """
+        env = Environment().step_environment
+        return env.pipeline_name
+
+    @property
+    def run_name(self) -> Optional[str]:
+        """Returns the current run name.
+
+        Returns:
+            The current run name or None.
+        """
+        env = Environment().step_environment
+        return env.run_name
 
     def get_output_materializer(
         self,

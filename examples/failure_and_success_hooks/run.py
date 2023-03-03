@@ -14,7 +14,6 @@
 
 import random
 
-from zenml.environment import Environment
 from zenml.pipelines import pipeline
 from zenml.steps import BaseParameters, Output, StepContext, step
 
@@ -25,28 +24,22 @@ class HookParams(BaseParameters):
     fail: bool = True
 
 
-def on_fail(context: StepContext, params: HookParams, exception: Exception):
+def on_failure(context: StepContext, params: HookParams, exception: Exception):
     """Failure hook"""
-    env = Environment().step_environment
-    pipeline_name = env.pipeline_name
-    run_name = env.run_name
     context.stack.alerter.post(
-        f"Pipeline `{pipeline_name}` on Run `{run_name}` failed on step `{env.step_name}` "
+        f"Pipeline `{context.pipeline_name}` on Run `{context.run_name}` failed on step `{context.step_name}` "
         f"with exception: `({type(exception)}) {exception}`."
     )
 
 
 def on_success(context: StepContext, params: HookParams):
     """Success hook"""
-    env = Environment().step_environment
-    pipeline_name = env.pipeline_name
-    run_name = env.run_name
     context.stack.alerter.post(
-        f"Pipeline `{pipeline_name}` on Run `{run_name}` succeeded on step `{env.step_name}`!"
+        f"Pipeline `{context.pipeline_name}` on Run `{context.run_name}` succeeded on step `{context.step_name}`"
     )
 
 
-@step(on_failure=on_fail, on_success=on_success)
+@step(on_failure=on_failure, on_success=on_success)
 def get_first_num(params: HookParams) -> int:
     """Returns an integer."""
     if params.fail:
@@ -67,7 +60,7 @@ def subtract_numbers(first_num: int, random_num: int) -> Output(result=int):
     return first_num - random_num
 
 
-@pipeline()
+@pipeline(enable_cache=False)
 def hook_pipeline(get_first_num, get_random_int, subtract_numbers):
     # Link all the steps artifacts together
     first_num = get_first_num()
