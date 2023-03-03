@@ -531,7 +531,7 @@ class StepRunner:
                 output_materializers=output_materializers,
             )
             hook(**function_params)
-        except ImportError as e:
+        except (ImportError, TypeError, ValueError) as e:
             raise ValueError(
                 f"Failed to load hook source with exception: '{hook_source}': {e}"
-            )
+            ) from step_exception
