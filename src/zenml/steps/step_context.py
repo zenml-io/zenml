@@ -20,6 +20,7 @@ from zenml.environment import Environment
 from zenml.exceptions import StepContextError
 
 if TYPE_CHECKING:
+    from zenml.config.step_run_info import StepRunInfo
     from zenml.materializers.base_materializer import BaseMaterializer
     from zenml.stack import Stack
 
@@ -164,6 +165,26 @@ class StepContext:
         """
         env = Environment().step_environment
         return env.run_name
+
+    @property
+    def step_run_info(self) -> "StepRunInfo":
+        """Info about the currently running step.
+
+        Returns:
+            Info about the currently running step.
+        """
+        env = Environment().step_environment
+        return env.step_run_info
+
+    @property
+    def cache_enabled(self) -> bool:
+        """Returns whether cache is enabled for the step.
+
+        Returns:
+            True if cache is enabled for the step, otherwise False.
+        """
+        env = Environment().step_environment
+        return env.cache_enabled
 
     def get_output_materializer(
         self,

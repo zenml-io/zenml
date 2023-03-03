@@ -35,7 +35,8 @@ def on_failure(context: StepContext, params: HookParams, exception: Exception):
 def on_success(context: StepContext, params: HookParams):
     """Success hook"""
     context.stack.alerter.post(
-        f"Pipeline `{context.pipeline_name}` on Run `{context.run_name}` succeeded on step `{context.step_name}`"
+        f"Pipeline `{context.pipeline_name}` on Run `{context.run_name}` succeeded on step `{context.step_name}` "
+        f"Step run info: {context.step_run_info}, Cache: {context.cache_enabled}"
     )
 
 
