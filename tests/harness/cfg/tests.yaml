@@ -61,7 +61,7 @@ tests:
       - integrations:
           - sklearn
         packages:
-          - nltk
+          - pyarrow
         stacks:
           - type: data_validator
             flavor: evidently
