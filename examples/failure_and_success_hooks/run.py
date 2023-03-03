@@ -46,7 +46,7 @@ def on_success(context: StepContext, params: HookParams):
     )
 
 
-@step(enable_cache=False, on_failure=on_fail, on_success=on_success)
+@step(on_failure=on_fail, on_success=on_success)
 def get_first_num(params: HookParams) -> int:
     """Returns an integer."""
     if params.fail:
