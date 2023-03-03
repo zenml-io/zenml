@@ -213,7 +213,7 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
         "-t",
         type=(str, str),
         default=None,
-        help="Metadata or Tags to add to the model. can be used like: -m key1 value1 -m key2 value",
+        help="Metadata or Tags to add to the model. Ran be used like: -m key1 value1 -m key2 value",
         multiple=True,
     )
     @click.pass_obj
@@ -361,7 +361,7 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
                 f"Do you want to delete it?"
             )
             if not confirmation:
-                cli_utils.declare("Model Version deletion canceled.")
+                cli_utils.declare("Model version deletion canceled.")
                 return
         model_registry.delete_model_version(name, version)
         cli_utils.declare(
@@ -634,7 +634,7 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
             zenml_pipeline_name: ZenML pipeline name of the model to register.
             zenml_step_name: ZenML step name of the model to register.
         """
-        # Parse metadata``
+        # Parse metadata
         metadata = dict(metadata) if metadata else {}
         registerted_metadata = ModelRegistryModelMetadata(**dict(metadata))
         registerted_metadata.zenml_version = zenml_version

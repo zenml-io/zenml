@@ -302,8 +302,8 @@ def mlflow_model_registry_deployer_step(
         raise ValueError(
             f"Model version {model_version.version} of model "
             f"{model_version.registered_model.name} is not an MLflow model."
-            f"Only MLflow models can be deployed with the MLflow deployer"
-            f"Using this step."
+            f"Only MLflow models can be deployed with the MLflow deployer "
+            f"using this step."
         )
     # fetch existing services with same pipeline name, step name and model name
     existing_services = (

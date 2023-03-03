@@ -16,6 +16,7 @@ it, and embed it in an inference pipeline,
 - Track model hyperparameters and metrics in an experiment tracking tool,
 - Measure and visualize train-test skew, training-serving skew, and data drift.
 
+{% hint style="warning" %}
 Please note that this version of the `quickstart` is intended for use with
 Python 3.7 and does not support the [MLflow model registry](https://docs.zenml.io/component-gallery/model-registries/mlflow).
 If you are using Python 3.8 or higher, we recommend that you use the quickstart
@@ -23,6 +24,7 @@ instead. The main difference between the two versions is that this version
 deploys the model directly to MLflow after training, whereas the other version
 registers the model with the MLflow model registry, then deploys a given version
 of the model.
+{% endhint %}
 
 ## :star: Introduction to ZenML
 
