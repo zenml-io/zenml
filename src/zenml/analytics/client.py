@@ -118,7 +118,7 @@ class Client(object):
             return True, msg
 
         if self.sync_mode:
-            post(timeout=self.timeout,batch=[msg])
+            post(timeout=self.timeout, batch=[msg])
             return True, msg
 
         try:

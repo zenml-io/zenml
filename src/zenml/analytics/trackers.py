@@ -20,6 +20,7 @@ from zenml.utils.analytics_utils import (
     parametrized,
 )
 from zenml.analytics.context import AnalyticsContext
+
 Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
 
 logger = get_logger(__name__)

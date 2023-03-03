@@ -13,29 +13,30 @@
 #  permissions and limitations under the License.
 import os
 from types import TracebackType
-from typing import Any, Optional, Dict, Union, Type, List
+from typing import Any, Optional, Dict, Union, Type, List, TYPE_CHECKING
 from uuid import UUID
 
 import requests
-from zenml.analytics.models import TrackRequest, GroupRequest, IdentifyRequest
+
 from zenml import __version__
-from zenml.config.global_config import GlobalConfiguration
-from zenml.constants import ENV_ZENML_SERVER_FLAG, ANALYTICS_SERVER_URL
 from zenml.analytics.constants import (
     TRACK_ENDPOINT,
     IDENTIFY_ENDPOINT,
     GROUP_ENDPOINT,
 )
+from zenml.analytics.models import TrackRequest, GroupRequest, IdentifyRequest
+from zenml.constants import ENV_ZENML_SERVER_FLAG, ANALYTICS_SERVER_URL
 from zenml.environment import Environment, get_environment
-from zenml.models.server_models import ServerDatabaseType, ServerDeploymentType
+from zenml.logger import get_logger
 from zenml.utils.analytics_utils import (
     AnalyticsEvent,
 )
-from zenml.zen_server.auth import get_auth_context
 
-from zenml.logger import get_logger
-
-
+if TYPE_CHECKING:
+    from zenml.models.server_models import (
+        ServerDatabaseType,
+        ServerDeploymentType,
+    )
 Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
 
 logger = get_logger(__name__)
@@ -57,8 +58,8 @@ class AnalyticsContext:
         self.client_id: Optional[UUID] = None
         self.server_id: Optional[UUID] = None
 
-        self.database_type: Optional[ServerDatabaseType] = None
-        self.deployment_type: Optional[ServerDeploymentType] = None
+        self.database_type: Optional["ServerDatabaseType"] = None
+        self.deployment_type: Optional["ServerDeploymentType"] = None
 
     @property
     def in_server(self):
@@ -72,6 +73,9 @@ class AnalyticsContext:
             self.
         """
         # Fetch the analytics opt-in setting
+        from zenml.config.global_config import GlobalConfiguration
+        from zenml.zen_server.auth import get_auth_context
+
         gc = GlobalConfiguration()
         self.analytics_opt_in = gc.analytics_opt_in
 
