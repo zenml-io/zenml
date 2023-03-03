@@ -20,7 +20,7 @@ from zenml.steps import BaseParameters, StepContext
 logger = get_logger(__name__)
 
 
-def on_failure_use_alerter(
+def alerter_failure_hook(
     context: StepContext, params: BaseParameters, exception: Exception
 ) -> None:
     """Standard failure hook that executes after step fails.
@@ -50,7 +50,7 @@ def on_failure_use_alerter(
         )
 
 
-def on_success_use_alerter(
+def alerter_success_hook(
     context: StepContext, params: BaseParameters
 ) -> None:
     """Standard success hook that executes after step finishes successfully.
