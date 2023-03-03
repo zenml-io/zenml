@@ -144,6 +144,7 @@ class Flavor:
             integration=integration,
             logo_url=self.logo_url,
             docs_url=self.docs_url,
+            sdk_docs_url=self.sdk_docs_url,
             is_custom=is_custom,
         )
         return model
