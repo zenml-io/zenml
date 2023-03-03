@@ -566,6 +566,13 @@ use the `--delete` flag:
         type=click.BOOL,
     )
     @click.option(
+        "--show-secrets",
+        is_flag=True,
+        default=False,
+        help="Include the secrets values when prompting.",
+        type=click.BOOL,
+    )
+    @click.option(
         "--non-interactive",
         is_flag=True,
         default=False,
@@ -586,6 +593,7 @@ use the `--delete` flag:
     def migrate_secrets(
         secrets_manager: "BaseSecretsManager",
         delete: bool,
+        show_secrets: bool,
         non_interactive: bool,
         scope: str,
         secret_names: List[str],
@@ -594,9 +602,9 @@ use the `--delete` flag:
 
         Args:
             secrets_manager: The secrets manager to use.
-            all: Whether to migrate all secrets managed by the Secrets Manager.
             delete: Whether to delete the secret(s) from the Secrets Manager
                 after successful migration.
+            show_secrets: Whether to include the secrets values when prompting.
             non_interactive: Whether to prompt for confirmation.
             scope: The scope where to migrate the secrets.
             secret_names: The names of the secrets to migrate.
@@ -653,7 +661,9 @@ use the `--delete` flag:
                 )
                 continue
 
-            pretty_print_secret(secret, hide_secret=False, print_name=True)
+            pretty_print_secret(
+                secret, hide_secret=not show_secrets, print_name=True
+            )
 
             secret_exists = False
             skip_migration = False
