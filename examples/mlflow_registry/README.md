@@ -45,6 +45,10 @@ The example consists of two individual pipelines:
     MLflow server using a built-in ZenML step that takes the model name and
     version as input. Then it runs inference on the deployed model.
 
+Note: Please note that the current version of the MLflow quickstart requires
+Python version 3.8 or higher.
+
+
 ## 🧰 How the example is implemented
 This example contains two very important aspects that should be highlighted.
 

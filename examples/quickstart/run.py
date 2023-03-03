@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-
 from pipelines import inference_pipeline, training_pipeline
 from steps import (
     drift_detector,
