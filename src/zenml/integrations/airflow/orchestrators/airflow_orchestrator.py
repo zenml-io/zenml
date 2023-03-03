@@ -254,6 +254,7 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
                         "configuration for step %s.",
                         step.config.name,
                     )
+
             task = dag_generator_values.task_configuration_class(
                 id=step_name,
                 zenml_step_name=step.config.name,
@@ -318,6 +319,12 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
             if resource_settings.memory is not None:
                 memory_limit = resource_settings.memory[:-1]
                 limits["memory"] = memory_limit
+
+            if resource_settings.gpu_count is not None:
+                logger.warning(
+                    "Specifying GPU resources is not supported for the Airflow "
+                    "orchestrator."
+                )
 
             operator_args["container_resources"] = {"limits": limits}
 
