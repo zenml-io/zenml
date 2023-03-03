@@ -26,8 +26,8 @@ def prediction_service_loader() -> BaseService:
     model_deployer = client.active_stack.model_deployer
     services = model_deployer.find_model_server(
         pipeline_name="training_pipeline",
-        pipeline_step_name="mlflow_model_deployer_step",
-        running=True,
+        pipeline_step_name="model_deployer",
+        running=False,
     )
     service = services[0]
     return service
@@ -39,7 +39,7 @@ def predictor(
     data: pd.DataFrame,
 ) -> Output(predictions=list):
     """Run a inference request against a prediction service."""
-    service.start(timeout=10)  # should be a NOP if already started
+    service.start(timeout=60)  # should be a NOP if already started
     prediction = service.predict(data.to_numpy())
     prediction = prediction.argmax(axis=-1)
     print(f"Prediction is: {[prediction.tolist()]}")

@@ -104,6 +104,8 @@ def mlflow_model_deployer_step(
     run_name = step_env.run_name
     step_name = step_env.step_name
 
+    # Configure Mlflow so the client points to the correct store
+    experiment_tracker.configure_mlflow()
     client = MlflowClient()
     mlflow_run_id = experiment_tracker.get_run_id(
         experiment_name=params.experiment_name or pipeline_name,

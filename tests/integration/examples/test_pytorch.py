@@ -22,8 +22,6 @@ def test_example(request: pytest.FixtureRequest) -> None:
     with run_example(
         request=request,
         name="pytorch",
-        pipeline_name="fashion_mnist_pipeline",
-        step_count=3,
-        run_count=1,
+        pipelines={"fashion_mnist_pipeline": (1, 3)},
     ):
         pass

@@ -66,14 +66,7 @@ class LightGBMBoosterMaterializer(BaseMaterializer):
 
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
 
-        # Make a temporary phantom artifact
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".txt", delete=False
-        ) as f:
-            booster.save_model(f.name)
-            # Copy it into artifact store
-            fileio.copy(f.name, filepath)
-
-        # Close and remove the temporary file
-        f.close()
-        fileio.remove(f.name)
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_path = os.path.join(tmp_dir, "model.txt")
+            booster.save_model(tmp_path)
+            fileio.copy(tmp_path, filepath)
