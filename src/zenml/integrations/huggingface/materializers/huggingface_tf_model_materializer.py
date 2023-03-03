@@ -45,16 +45,17 @@ class HFTFModelMaterializer(BaseMaterializer):
         """
         super().load(data_type)
 
-        config = AutoConfig.from_pretrained(
-            os.path.join(self.uri, DEFAULT_TF_MODEL_DIR)
+        temp_dir = TemporaryDirectory()
+        io_utils.copy_dir(
+            os.path.join(self.uri, DEFAULT_TF_MODEL_DIR), temp_dir.name
         )
+
+        config = AutoConfig.from_pretrained(temp_dir.name)
         architecture = "TF" + config.architectures[0]
         model_cls = getattr(
             importlib.import_module("transformers"), architecture
         )
-        return model_cls.from_pretrained(
-            os.path.join(self.uri, DEFAULT_TF_MODEL_DIR)
-        )
+        return model_cls.from_pretrained(temp_dir.name)
 
     def save(self, model: TFPreTrainedModel) -> None:
         """Writes a Model to the specified dir.
