@@ -26,6 +26,7 @@ from zenml.cli import EXAMPLES_RUN_SCRIPT, SHELL_EXECUTABLE, LocalExample
 from zenml.enums import ExecutionStatus
 from zenml.post_execution.pipeline import get_pipeline
 from zenml.post_execution.pipeline_run import PipelineRunView
+from zenml.utils.pagination_utils import depaginate
 
 DEFAULT_PIPELINE_RUN_START_TIMEOUT = 30
 DEFAULT_PIPELINE_RUN_FINISH_TIMEOUT = 300
@@ -98,10 +99,10 @@ def run_example(
     client = Client()
     existing_pipeline_ids = {
         pipeline.id
-        for pipeline in client.depaginate(list_method=client.list_pipelines)
+        for pipeline in depaginate(list_method=client.list_pipelines)
     }
     existing_build_ids = {
-        build.id for build in client.depaginate(list_method=client.list_builds)
+        build.id for build in depaginate(list_method=client.list_builds)
     }
 
     now = datetime.utcnow()
@@ -125,7 +126,7 @@ def run_example(
 
     # Cleanup registered pipelines so they don't cause trouble in future
     # example runs
-    for pipeline in client.depaginate(list_method=client.list_pipelines):
+    for pipeline in depaginate(list_method=client.list_pipelines):
         if (
             pipeline.id not in existing_pipeline_ids
             and pipeline_name in pipelines
@@ -138,7 +139,7 @@ def run_example(
         # Clean up more expensive resources like docker containers, volumes and
         # images, if any were created.
         image_names = set()
-        for build in client.depaginate(list_method=client.list_builds):
+        for build in depaginate(list_method=client.list_builds):
             if build.id in existing_build_ids:
                 continue
 
