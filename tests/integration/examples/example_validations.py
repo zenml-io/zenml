@@ -47,7 +47,7 @@ def mlflow_deployment_example_validation():
     inference_pipeline = get_pipeline("inference_pipeline")
     assert inference_pipeline is not None
 
-    deployment_run = deployment_pipeline.runs[-1]
+    deployment_run = deployment_pipeline.runs[0]
 
     # Run should be completed
     assert deployment_run.status == ExecutionStatus.COMPLETED
@@ -55,7 +55,7 @@ def mlflow_deployment_example_validation():
     for step in deployment_run.steps:
         assert step.status == ExecutionStatus.COMPLETED
 
-    inference_run = inference_pipeline.runs[-1]
+    inference_run = inference_pipeline.runs[0]
 
     # Run should be completed
     assert inference_run.status == ExecutionStatus.COMPLETED
