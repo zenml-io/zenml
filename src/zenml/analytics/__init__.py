@@ -20,7 +20,6 @@ debug = Client.DefaultConfig.debug
 send = Client.DefaultConfig.send
 sync_mode = Client.DefaultConfig.sync_mode
 max_queue_size = Client.DefaultConfig.max_queue_size
-gzip = Client.DefaultConfig.gzip
 timeout = Client.DefaultConfig.timeout
 max_retries = Client.DefaultConfig.max_retries
 
@@ -83,7 +82,6 @@ def _proxy(method, *args, **kwargs):
             max_queue_size=max_queue_size,
             send=send,
             on_error=on_error,
-            gzip=gzip,
             max_retries=max_retries,
             sync_mode=sync_mode,
             timeout=timeout,
