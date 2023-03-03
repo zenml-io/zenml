@@ -359,6 +359,7 @@ class StepLauncher:
             config=self._step.config,
             pipeline=self._deployment.pipeline_configuration,
             run_name=pipeline_run.name,
+            pipeline_step_name=self._step_name,
             run_id=pipeline_run.id,
             step_run_id=step_run.id,
         )
