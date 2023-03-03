@@ -202,7 +202,7 @@ Secrets Management
 
 ZenML offers a way to securely store secrets associated with your other
 stack components and infrastructure. A ZenML Secret is a collection or grouping
-of key-value pairs securely stored by the ZenML secrets store.
+of key-value pairs stored by the ZenML secrets store.
 ZenML Secrets are identified by a unique name which allows you to fetch or
 reference them in your pipelines and stacks.
 
@@ -225,7 +225,7 @@ as command-line arguments:
 zenml secret create SECRET_NAME --key1=value1 --key2=value2 --key3=value3 ...
 ```
 
-Note that the keys and values will be preserved in your `bash_history` file, so
+Note that when using the previous command the keys and values will be preserved in your `bash_history` file, so
 you may prefer to use the interactive `create` command instead:
 
 ```shell

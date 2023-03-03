@@ -43,8 +43,8 @@ class SecretsStoreConfiguration(BaseModel):
     class_path: Optional[str] = None
 
     @root_validator
-    def validate_external(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """Validate that class_path is set for external secrets stores.
+    def validate_custom(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate that class_path is set for custom secrets stores.
 
         Args:
             values: Dict representing user-specified runtime settings.
@@ -53,7 +53,7 @@ class SecretsStoreConfiguration(BaseModel):
             Validated settings.
 
         Raises:
-            ValueError: If class_path is not set when using an external secrets
+            ValueError: If class_path is not set when using an custom secrets
                 store.
         """
         if not values.get("type"):
@@ -64,14 +64,7 @@ class SecretsStoreConfiguration(BaseModel):
                     "A class_path must be set when using a custom secrets "
                     "store implementation."
                 )
-        elif (
-            values["type"]
-            in [
-                SecretsStoreType.SQL,
-                SecretsStoreType.REST,
-            ]
-            and values["class_path"] is not None
-        ):
+        elif values["class_path"] is not None:
             raise ValueError(
                 f"The class_path attribute is not supported for the "
                 f"{values['type']} secrets store type."

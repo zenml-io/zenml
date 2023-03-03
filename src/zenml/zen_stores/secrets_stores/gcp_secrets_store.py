@@ -18,7 +18,7 @@ import json
 import math
 import re
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import (
     Any,
     ClassVar,
@@ -295,9 +295,7 @@ class GCPSecretsStore(BaseSecretsStore):
         secret_id = uuid.uuid4()
         secret_value = json.dumps(secret.secret_values)
 
-        created = datetime.now(timezone.utc).replace(
-            tzinfo=None, microsecond=0
-        )
+        created = datetime.utcnow().replace(tzinfo=None, microsecond=0)
         labels = self._get_secret_metadata_for_secret(
             secret=secret, secret_id=secret_id
         )
@@ -540,9 +538,7 @@ class GCPSecretsStore(BaseSecretsStore):
                 raise EntityExistsError(msg)
 
         # Convert the ZenML secret metadata to GCP labels
-        updated = datetime.now(timezone.utc).replace(
-            tzinfo=None, microsecond=0
-        )
+        updated = datetime.utcnow().replace(tzinfo=None, microsecond=0)
         metadata = self._get_secret_metadata_for_secret(secret)
         metadata[ZENML_GCP_SECRET_UPDATED_KEY] = updated.strftime(
             ZENML_GCP_DATE_FORMAT_STRING

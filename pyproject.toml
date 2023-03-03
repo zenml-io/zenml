@@ -144,7 +144,7 @@ templates = ["copier", "jinja2-time", "black", "ruff"]
 secrets-aws = ["boto3"]
 secrets-gcp = ["google-cloud-secret-manager"]
 secrets-azure = ["azure-identity", "azure-keyvault-secrets"]
-secrets-hashicorp = ["hashicorp"]
+secrets-hashicorp = ["hvac"]
 dev = ["black", "ruff", "coverage", "pytest", "mypy", "pre-commit", "pyment", "tox", "hypothesis", "typing-extensions", "darglint", "pytest-randomly", "pytest-mock", "pytest-clarity", "mkdocs", "mkdocs-material", "mkdocs-awesome-pages-plugin", "mkdocstrings", "mike", "types-certifi", "types-croniter", "types-futures", "types-Markdown", "types-Pillow", "types-protobuf", "types-PyMySQL", "types-python-dateutil", "types-python-slugify", "types-PyYAML", "types-redis", "types-requests", "types-setuptools", "types-six", "types-termcolor", "types-psutil", "docker-compose"]
 
 [build-system]

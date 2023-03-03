@@ -47,7 +47,9 @@ from zenml.utils.analytics_utils import (
     track_event,
 )
 from zenml.utils.pagination_utils import depaginate
-from zenml.utils.source_utils import import_class_by_path
+from zenml.utils.source_utils import (
+    load_and_validate_class,
+)
 from zenml.zen_stores.enums import StoreEvent
 from zenml.zen_stores.secrets_stores.secrets_store_interface import (
     SecretsStoreInterface,
@@ -122,16 +124,16 @@ class BaseSecretsStore(
             ) from e
 
     @staticmethod
-    def _load_external_store_class(
+    def _load_custom_store_class(
         store_config: SecretsStoreConfiguration,
     ) -> Type["BaseSecretsStore"]:
-        """Loads the external secrets store class from the given config.
+        """Loads the custom secrets store class from the given config.
 
         Args:
             store_config: The configuration of the secrets store.
 
         Returns:
-            The secrets store class corresponding to the configured external
+            The secrets store class corresponding to the configured custom
             secrets store.
 
         Raises:
@@ -143,17 +145,13 @@ class BaseSecretsStore(
 
         # Import the class dynamically
         try:
-            store_class = import_class_by_path(store_config.class_path)
+            store_class = load_and_validate_class(
+                store_config.class_path, expected_class=BaseSecretsStore
+            )
         except (ImportError, AttributeError) as e:
             raise ValueError(
                 f"Could not import class `{store_config.class_path}`: {str(e)}"
             ) from e
-
-        if not issubclass(store_class, BaseSecretsStore):
-            raise ValueError(
-                f"Class `{store_config.class_path}` is not a subclass of "
-                f"`BaseSecretsStore`."
-            )
 
         return store_class
 
@@ -188,20 +186,36 @@ class BaseSecretsStore(
             return RestSecretsStore
 
         if store_config.type == SecretsStoreType.AWS:
-            store_config.class_path = "zenml.zen_stores.secrets_stores.aws_secrets_store.AWSSecretsStore"
+            from zenml.zen_stores.secrets_stores.aws_secrets_store import (
+                AWSSecretsStore,
+            )
+
+            return AWSSecretsStore
         elif store_config.type == SecretsStoreType.GCP:
-            store_config.class_path = "zenml.zen_stores.secrets_stores.gcp_secrets_store.GCPSecretsStore"
+            from zenml.zen_stores.secrets_stores.gcp_secrets_store import (
+                GCPSecretsStore,
+            )
+
+            return GCPSecretsStore
         elif store_config.type == SecretsStoreType.AZURE:
-            store_config.class_path = "zenml.zen_stores.secrets_stores.azure_secrets_store.AzureSecretsStore"
+            from zenml.zen_stores.secrets_stores.azure_secrets_store import (
+                AzureSecretsStore,
+            )
+
+            return AzureSecretsStore
         elif store_config.type == SecretsStoreType.HASHICORP:
-            store_config.class_path = "zenml.zen_stores.secrets_stores.hashicorp_secrets_store.HashiCorpVaultSecretsStore"
+            from zenml.zen_stores.secrets_stores.hashicorp_secrets_store import (
+                HashiCorpVaultSecretsStore,
+            )
+
+            return HashiCorpVaultSecretsStore
         elif store_config.type != SecretsStoreType.CUSTOM:
             raise TypeError(
                 f"No store implementation found for secrets store type "
                 f"`{store_config.type.value}`."
             )
 
-        return BaseSecretsStore._load_external_store_class(store_config)
+        return BaseSecretsStore._load_custom_store_class(store_config)
 
     @staticmethod
     def create_store(

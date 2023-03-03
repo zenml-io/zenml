@@ -508,7 +508,7 @@ Manager API:
 
       # The GCP project ID to use. This must be set to the project ID where the
       # GCP Secrets Manager service that you want to use is located.
-      project_id: my-zenml-project
+      project_id: my-gcp-project
 
       # Path to the GCP credentials file to use to authenticate with the GCP Secrets
       # Manager instance. You can omit this if you are running the ZenML server

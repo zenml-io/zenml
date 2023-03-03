@@ -38,6 +38,6 @@ def secret_loader() -> None:
     # Load specific secret value from the secret using the secret key
     print(
         f"The secret `{SECRET_NAME}` contains the following key-value pair "
-        f"{{{SECRET_KEY}: {secret.secret_values[SECRET_KEY]}}}"
+        f"{{{SECRET_KEY}: {secret.secret_values}}}"
     )
     return

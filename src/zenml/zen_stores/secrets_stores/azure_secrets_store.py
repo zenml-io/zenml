@@ -345,7 +345,7 @@ class AzureSecretsStore(BaseSecretsStore):
             secret, secret_id=secret_id
         )
 
-        # We manage the created and updated times ourselves, so we need to
+        # We manage the created and updated times ourselves, so we don't need to
         # rely on the Azure Key Vault API to set them.
         created = datetime.utcnow()
         metadata[ZENML_AZURE_SECRET_CREATED_KEY] = created.isoformat()
