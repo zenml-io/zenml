@@ -407,6 +407,7 @@ class GCPSecretsStore(BaseSecretsStore):
             RuntimeError: If the Azure Key Vault API returns an unexpected
                 error.
         """
+        # TODO: implement filter method for server-side filtering
         # convert the secret_filter_model to a GCP filter string
         gcp_filters = ""
         # gcp_filters = self._get_gcp_filter_string(
