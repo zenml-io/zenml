@@ -27,11 +27,9 @@ from pydantic import BaseModel, ValidationError
 
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import declare, error, print_table
-from zenml.constants import ENV_ZENML_HUB_URL
 from zenml.enums import CliCategories
+from zenml.hub.config import get_settings
 from zenml.logger import get_logger
-
-HUB_URL = os.getenv(ENV_ZENML_HUB_URL)
 
 logger = get_logger(__name__)
 
@@ -43,6 +41,8 @@ class PluginBaseModel(BaseModel):
     """Base model for a plugin."""
 
     name: str
+    version: Optional[str]
+    release_notes: Optional[str]
     repository_url: str
     repository_subdirectory: Optional[str]
     repository_branch: Optional[str]
@@ -52,8 +52,6 @@ class PluginBaseModel(BaseModel):
 
 class PluginRequestModel(PluginBaseModel):
     """Request model for a plugin."""
-
-    major_version: bool
 
 
 class PluginResponseModel(PluginBaseModel):
@@ -67,73 +65,95 @@ class PluginResponseModel(PluginBaseModel):
     requirements: Optional[List[str]]
 
 
-def server_url() -> str:
-    """Helper function to get the hub url."""
-    if HUB_URL:
-        return HUB_URL
-    return "https://staginghub.zenml.io/"
-    # return "http://localhost:8080"
+def _hub_request(
+    method: str, url: str, data: Optional[str] = None
+) -> Optional[Json]:
+    """Helper function to make a request to the hub."""
+    session = requests.Session()
+
+    # Define headers
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+    }
+    auth_token = get_settings().AUTH_TOKEN
+    if auth_token:
+        headers["Authorization"] = f"Bearer {auth_token}"
+
+    # Make the request
+    response = session.request(
+        method=method,
+        url=url,
+        data=data,
+        headers=headers,
+        params={},
+        verify=False,
+        timeout=30,
+    )
+
+    # Parse and return the response
+    payload: Json = response.json() if response else None
+    return payload
 
 
 def _hub_get(url: str) -> Optional[Json]:
     """Helper function to make a GET request to the hub."""
-    session = requests.Session()
-    response = session.request(
-        "GET",
-        url,
-        params={},
-        verify=False,
-        timeout=30,
-    )
-    payload: Json = response.json() if response else None
-    return payload
+    return _hub_request("GET", url)
 
 
 def _hub_post(url: str, model: PluginRequestModel) -> Optional[Json]:
     """Helper function to make a POST request to the hub."""
-    session = requests.Session()
-    response = session.request(
-        "POST",
-        url,
-        params={},
-        data=model.json(),
-        verify=False,
-        timeout=30,
-    )
-    payload: Json = response.json() if response else None
-    return payload
+    return _hub_request("POST", url, data=model.json())
 
 
 def _list_plugins() -> List[PluginResponseModel]:
     """Helper function to list all plugins in the hub."""
-    payload = _hub_get(f"{server_url()}/plugins")
+    payload = _hub_get(f"{get_settings().SERVER_URL}/plugins")
     if not isinstance(payload, list):
         return []
     return [PluginResponseModel.parse_obj(plugin) for plugin in payload]
 
 
 def _get_plugin(
-    plugin_name: str, plugin_version: str
+    plugin_name: str, plugin_version: Optional[str] = None
 ) -> Optional[PluginResponseModel]:
     """Helper function to get a specfic plugin from the hub."""
-    payload = _hub_get(
-        f"{server_url()}/plugins/{plugin_name}:{plugin_version}"
-    )
+    url = f"{get_settings().SERVER_URL}/plugins/{plugin_name}"
+    if plugin_version:
+        url += f"?version={plugin_version}"
+
+    payload = _hub_get(url)
+
     try:
         return PluginResponseModel.parse_obj(payload)
     except ValidationError:
         return None
 
 
-def _create_plugin(plugin: PluginRequestModel) -> PluginResponseModel:
+def _create_plugin(
+    plugin_request: PluginRequestModel, is_new_version: bool
+) -> PluginResponseModel:
     """Helper function to create a plugin in the hub."""
-    payload = _hub_post(f"{server_url()}/plugins", plugin)
-    return PluginResponseModel.parse_obj(payload)
+    url = f"{get_settings().SERVER_URL}/plugins"
+    if is_new_version:
+        url += f"/{plugin_request.name}/versions"
+
+    payload = _hub_post(url, plugin_request)
+
+    try:
+        return PluginResponseModel.parse_obj(payload)
+    except ValidationError:
+        raise RuntimeError(
+            f"Failed to create plugin {plugin_request.name}: {payload}"
+        )
 
 
 def _stream_plugin_build_logs(plugin_name: str, plugin_version: str) -> None:
     """Helper function to stream the build logs of a plugin."""
-    logs_url = f"{server_url()}/plugins/{plugin_name}:{plugin_version}/logs"
+    logs_url = (
+        f"{get_settings().SERVER_URL}/plugins/{plugin_name}/versions/"
+        f"{plugin_version}/logs"
+    )
     found_logs = False
     with requests.get(logs_url, stream=True) as response:
         for line in response.iter_lines(chunk_size=None, decode_unicode=True):
@@ -191,10 +211,9 @@ def list_plugins() -> None:
     "--version",
     "-v",
     type=str,
-    default="latest",
     help="Version of the plugin to install.",
 )
-def install_plugin(plugin_name: str, version: str) -> None:
+def install_plugin(plugin_name: str, version: Optional[str] = None) -> None:
     """Install a plugin from the hub."""
     # Get plugin from hub
     plugin = _get_plugin(plugin_name, version)
@@ -262,10 +281,9 @@ def install_plugin(plugin_name: str, version: str) -> None:
     "--version",
     "-v",
     type=str,
-    default="latest",
     help="Version of the plugin to uninstall.",
 )
-def uninstall_plugin(plugin_name: str, version: str) -> None:
+def uninstall_plugin(plugin_name: str, version: Optional[str] = None) -> None:
     """Uninstall a plugin from the hub."""
     # Get plugin from hub
     plugin = _get_plugin(plugin_name, version)
@@ -294,7 +312,6 @@ def uninstall_plugin(plugin_name: str, version: str) -> None:
     "--version",
     "-v",
     type=str,
-    default="latest",
     help="Version of the plugin to pull.",
 )
 @click.option(
@@ -303,7 +320,9 @@ def uninstall_plugin(plugin_name: str, version: str) -> None:
     help="Output directory to pull the plugin to.",
 )
 def pull_plugin(
-    plugin_name: str, version: str, output_dir: Optional[str]
+    plugin_name: str,
+    version: Optional[str] = None,
+    output_dir: Optional[str] = None,
 ) -> None:
     """Pull a plugin from the hub."""
     # Get plugin from hub
@@ -356,14 +375,23 @@ def pull_plugin(
     ),
 )
 @click.option(
-    "--major_version",
-    "-m",
-    is_flag=True,
-    help="Increment the major version of the plugin.",
+    "--version",
+    "-v",
+    type=str,
+    help=(
+        "Version of the plugin to push. Can only be set if the plugin already "
+        "exists. If not provided, the version will be autoincremented."
+    ),
+)
+@click.option(
+    "--release_notes",
+    "-r",
+    type=str,
+    help="Release notes for the plugin version.",
 )
 @click.option(
     "--repository_url",
-    "-r",
+    "-u",
     type=str,
     help="URL to the public Git repository containing the plugin source code.",
 )
@@ -400,7 +428,8 @@ def pull_plugin(
 )
 def push_plugin(
     plugin_name: Optional[str],
-    major_version: bool,
+    version: Optional[str],
+    release_notes: Optional[str],
     repository_url: Optional[str],
     repository_subdir: Optional[str],
     repository_branch: Optional[str],
@@ -410,7 +439,37 @@ def push_plugin(
 ) -> None:
     """Push a plugin to the hub."""
     # Validate that the plugin name is provided and available
-    plugin_name = _validate_plugin_name(plugin_name, interactive=interactive)
+    plugin_name, plugin_exists = _validate_plugin_name(
+        plugin_name=plugin_name, interactive=interactive
+    )
+
+    # If the plugin exists, ask for version and release notes in interactive
+    # mode.
+    if plugin_exists and interactive:
+        if not version:
+            logger.info(
+                "You are about to create a new version of plugin "
+                f"'{plugin_name}'. By default, this will increment the minor "
+                "version of the plugin. If you want to specify a different "
+                "version, you can do so below. In that case, make sure that "
+                "the version is of shape '<int>.<int>' and is higher than the "
+                "current latest version of the plugin."
+            )
+            version = click.prompt("(Optional) plugin version")
+        if not release_notes:
+            logger.info(
+                f"You are about to create a new version '{version}' of plugin "
+                f"'{plugin_name}'. You can optionally provide release notes "
+                "for this version below."
+            )
+            release_notes = click.prompt("(Optional) release notes")
+
+    # Raise an error if the plugin does not exist and a version is provided.
+    elif not plugin_exists and version:
+        error(
+            "You cannot specify a version for a plugin that does not exist "
+            "yet. Please remove the '--version' flag and try again."
+        )
 
     # Clone the repo and validate the commit / branch / subdir / structure
     repository_url, repo, repo_path = _clone_repository(
@@ -441,25 +500,25 @@ def push_plugin(
     finally:
         shutil.rmtree(repo_path)
 
-    # In interactive mode, also ask for major version and tags
-    if interactive and not major_version:
-        major_version = click.confirm(
-            "Do you want to increment the major version of the plugin?"
-        )
+    # In interactive mode, also ask for tags
     if interactive and not tags:
         tags = _ask_for_tags()
 
     # Make a create request to the hub
     plugin_request = PluginRequestModel(
         name=plugin_name,
-        major_version=major_version,
+        version=version,
+        release_notes=release_notes,
         repository_url=repository_url,
         repository_subdirectory=repository_subdir,
         repository_branch=repository_branch,
         repository_commit=repository_commit,
         tags=",".join(tags),
     )
-    plugin_response = _create_plugin(plugin_request)
+    plugin_response = _create_plugin(
+        plugin_request=plugin_request,
+        is_new_version=plugin_exists,
+    )
 
     # Stream the build logs
     plugin_name = plugin_response.name
@@ -479,7 +538,7 @@ def push_plugin(
 
 def _validate_plugin_name(
     plugin_name: Optional[str], interactive: bool
-) -> str:
+) -> Tuple[str, bool]:
     """Validate that the plugin name is provided and available.
 
     Args:
@@ -487,7 +546,7 @@ def _validate_plugin_name(
         interactive: Whether to run in interactive mode.
 
     Returns:
-        The validated plugin name.
+        The validated plugin name, and whether the plugin already exists.
     """
     # Make sure the plugin name is provided.
     if not plugin_name:
@@ -499,10 +558,11 @@ def _validate_plugin_name(
     # Make sure the plugin name is available.
     while True:
         if plugin_name:
+            existing_plugin = _get_plugin(plugin_name)
+            plugin_exists = existing_plugin is not None
             # TODO: if plugin exists, check if it's the same user
-            # existing_plugin = _get_plugin(plugin_name)
             # if not existing_plugin or existing_plugin.user == user:
-            return plugin_name
+            return plugin_name, plugin_exists
         if not interactive:
             error("Plugin name not provided or not available.")
         logger.info(
@@ -754,10 +814,9 @@ def _ask_for_tags() -> List[str]:
     "--version",
     "-v",
     type=str,
-    default="latest",
     help="Version of the plugin to pull.",
 )
-def get_logs(plugin_name: str, version: str) -> None:
+def get_logs(plugin_name: str, version: Optional[str] = None) -> None:
     plugin = _get_plugin(plugin_name=plugin_name, plugin_version=version)
     if not plugin:
         error(f"Could not find plugin '{plugin_name}:{version}' on the hub.")
