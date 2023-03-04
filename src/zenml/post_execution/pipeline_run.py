@@ -67,7 +67,10 @@ def get_unlisted_runs() -> List["PipelineRunView"]:
     """
     client = Client()
     runs = client.list_runs(
-        workspace_id=client.active_workspace.id, unlisted=True, size=50
+        workspace_id=client.active_workspace.id,
+        unlisted=True,
+        size=50,
+        sort_by="desc:created",
     )
     return [PipelineRunView(model) for model in runs.items]
 
