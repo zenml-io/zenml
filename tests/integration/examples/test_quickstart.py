@@ -57,7 +57,7 @@ def test_example(request: pytest.FixtureRequest) -> None:
         # Check that the deployment service is running
         from zenml.integrations.mlflow.services import MLFlowDeploymentService
 
-        training_run = get_pipeline("inference_pipeline").runs[-1]
+        training_run = get_pipeline("training_pipeline").runs[0]
 
         service = training_run.get_step("mlflow_model_deployer").output.read()
         assert isinstance(service, MLFlowDeploymentService)
