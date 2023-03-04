@@ -36,7 +36,12 @@ from zenml.cli.utils import (
 )
 from zenml.client import Client
 from zenml.console import console
-from zenml.enums import CliCategories, SecretScope, StackComponentType
+from zenml.enums import (
+    CliCategories,
+    SecretScope,
+    SecretsStoreType,
+    StackComponentType,
+)
 from zenml.exceptions import EntityExistsError, SecretExistsError, ZenKeyError
 from zenml.logger import get_logger
 from zenml.models.secret_models import SecretFilterModel
@@ -525,6 +530,278 @@ def register_secrets_manager_subcommands() -> None:
             secrets_manager.delete_all_secrets()
             console.print("Deleted all secrets.")
 
+    @secret.command(
+        "migrate",
+        help="""
+Migrate secrets to the centralized secrets store.
+
+Using Secrets Manager stack components to manage your secrets is deprecated
+and will be removed in a future release. You can use this command to migrate the
+secrets managed through the active Secrets Manager stack component to
+the centralized ZenML secrets store.
+
+To migrate one or more secrets, pass the secret names as arguments:
+
+    zenml secrets-manager secret migrate my-secret-1 my-secret-2
+
+If you want to migrate all secrets managed by the Secrets Manager, omit
+the secret names:
+
+    zenml secrets-manager secret migrate
+
+To delete the secret(s) from the Secrets Manager after successful migration,
+use the `--delete` flag:
+
+    zenml secrets-manager secret migrate --delete
+    zenml secrets-manager secret migrate --delete my-secret my-other-secret
+
+""",
+    )
+    @click.option(
+        "--delete",
+        is_flag=True,
+        default=False,
+        help="Remove the secret(s) from the Secrets Manager after successful "
+        "migration.",
+        type=click.BOOL,
+    )
+    @click.option(
+        "--show-secrets",
+        is_flag=True,
+        default=False,
+        help="Include the secrets values when prompting.",
+        type=click.BOOL,
+    )
+    @click.option(
+        "--non-interactive",
+        is_flag=True,
+        default=False,
+        help="Do not prompt for confirmation. USE WITH CAUTION, as this will "
+        "overwrite all existing secrets with the same name without asking.",
+        type=click.BOOL,
+    )
+    @click.option(
+        "--scope",
+        "-s",
+        "scope",
+        help="The scope where to migrate the secrets.",
+        type=click.Choice([scope.value for scope in list(SecretScope)]),
+        default=SecretScope.WORKSPACE.value,
+    )
+    @click.argument("secret_names", nargs=-1, type=click.UNPROCESSED)
+    @click.pass_obj
+    def migrate_secrets(
+        secrets_manager: "BaseSecretsManager",
+        delete: bool,
+        show_secrets: bool,
+        non_interactive: bool,
+        scope: str,
+        secret_names: List[str],
+    ) -> None:
+        """Migrate secrets to the centralized secrets store.
+
+        Args:
+            secrets_manager: The secrets manager to use.
+            delete: Whether to delete the secret(s) from the Secrets Manager
+                after successful migration.
+            show_secrets: Whether to include the secrets values when prompting.
+            non_interactive: Whether to prompt for confirmation.
+            scope: The scope where to migrate the secrets.
+            secret_names: The names of the secrets to migrate.
+        """
+        client = Client()
+        secret_scope = SecretScope(scope)
+
+        if (
+            client.zen_store.get_store_info().secrets_store_type
+            == SecretsStoreType.NONE
+        ):
+            error(
+                "A centralized secrets store has not been configured for your "
+                "local ZenML deployment or server. Please update your ZenML "
+                "deployment configuration to use a secrets store to enable "
+                "centralized secrets management."
+            )
+
+        if secret_names:
+            try:
+                secret_names = [
+                    secrets_manager.get_secret(secret_name).name
+                    for secret_name in secret_names
+                ]
+            except KeyError as e:
+                error(
+                    f"Secret with name `{e.args[0]}` not found. Please "
+                    f"double-check the name and try again."
+                )
+        else:
+            secret_names = secrets_manager.get_all_secret_keys()
+
+        if not secret_names:
+            declare(
+                "Your Secrets Manager is empty. Nothing to migrate. You should "
+                "consider deleting the Secrets Manager stack component now."
+            )
+
+        prompt_migrate = not non_interactive
+        prompt_delete = not non_interactive
+        prompt_overwrite = not non_interactive
+
+        migrated_secrets_count = 0
+        for secret_name in secret_names:
+
+            migrated_secret_name = secret_name
+
+            try:
+                secret = secrets_manager.get_secret(secret_name)
+            except KeyError:
+                warning(
+                    f"Secret with name `{secret_name}` not found. "
+                    f"Skipping..."
+                )
+                continue
+
+            pretty_print_secret(
+                secret, hide_secret=not show_secrets, print_name=True
+            )
+
+            secret_exists = False
+            skip_migration = False
+            try:
+                # Check if a secret with the same name already exists in the
+                # centralized store in the target scope.
+                existing_secret = client.get_secret(
+                    name_id_or_prefix=secret_name,
+                    scope=secret_scope,
+                    allow_partial_id_match=False,
+                    allow_partial_name_match=False,
+                )
+
+                secret_exists = True
+
+                # Check if the secret values are the same.
+                if existing_secret.secret_values == secret.content:
+                    # If so, skip the migration.
+                    skip_migration = True
+                    declare(
+                        f"A {secret_scope.value} scoped secret with name "
+                        f"`{secret_name}` already exists "
+                        f"in the centralized secrets store and has the "
+                        f"same values. Skipping migration..."
+                    )
+                else:
+                    warning(
+                        f"A {secret_scope.value} scoped secret with name "
+                        f"`{secret_name}` already exists "
+                        f"in the centralized secrets store and has different "
+                        f"values."
+                    )
+            except KeyError:
+                pass
+
+            if not skip_migration:
+
+                if prompt_migrate:
+                    choice = click.prompt(
+                        "Would you like to migrate this secret ?",
+                        type=click.Choice(["y", "n", "all"]),
+                        default="y",
+                    )
+                    if choice == "n":
+                        continue
+                    elif choice == "all":
+                        prompt_migrate = False
+
+                while secret_exists and prompt_overwrite:
+                    choice = click.prompt(
+                        f"A {secret_scope.value} scoped secret with name "
+                        f"`{migrated_secret_name}` already "
+                        f"exists in the centralized secrets store. Would you "
+                        f"like to overwrite it ?",
+                        type=click.Choice(["y", "n", "all"]),
+                        default="n",
+                    )
+                    if choice == "y":
+                        break
+                    elif choice == "all":
+                        prompt_overwrite = False
+                        break
+
+                    migrated_secret_name = click.prompt(
+                        "Please enter a new name for the secret.",
+                        type=click.STRING,
+                        default=migrated_secret_name,
+                    )
+
+                    # Check if a secret with the same name already exists in the
+                    # centralized store in the target scope.
+                    try:
+                        existing_secret = client.get_secret(
+                            name_id_or_prefix=migrated_secret_name,
+                            scope=secret_scope,
+                            allow_partial_id_match=False,
+                            allow_partial_name_match=False,
+                        )
+                    except KeyError:
+                        secret_exists = False
+
+                with console.status(f"Migrating secret `{secret_name}`..."):
+                    if not secret_exists:
+                        client.create_secret(
+                            name=migrated_secret_name,
+                            values=secret.content,
+                            scope=secret_scope,
+                        )
+                    else:
+                        client.update_secret(
+                            name_id_or_prefix=existing_secret.id,
+                            add_or_update_values=secret.content,
+                            remove_values=[
+                                k
+                                for k in existing_secret.secret_values
+                                if k not in secret.content
+                            ],
+                            scope=secret_scope,
+                        )
+
+                migrated_secrets_count += 1
+                declare(f"Secret `{secret_name}` migrated successfully.")
+
+            if delete:
+
+                if prompt_delete:
+                    choice = click.prompt(
+                        "Would you like to delete the secret ?",
+                        type=click.Choice(["y", "n", "all"]),
+                        default="n",
+                    )
+                    if choice == "n":
+                        continue
+                    elif choice == "all":
+                        prompt_delete = False
+
+                with console.status(f"Deleting secret `{secret_name}`..."):
+                    try:
+                        secrets_manager.delete_secret(secret_name)
+                    except KeyError:
+                        pass
+
+                declare(f"Secret `{secret_name}` deleted.")
+
+        if migrated_secrets_count > 0:
+            declare(
+                "Congratulations! Your secrets were migrated successfully."
+            )
+            if not delete:
+                declare(
+                    "If you migrated all your secrets, we recommend removing "
+                    "all secrets from your Secrets Manager. You can delete "
+                    "secrets from the Secrets Manager one by one by running "
+                    "`zenml secrets-manager secret delete <secret_name>` or "
+                    "use the hidden CLI command `zenml secrets-manager secret "
+                    "cleanup` to delete all secrets at once."
+                )
+
 
 ### NEW SECRETS STORE PARADIGM
 
@@ -579,13 +856,6 @@ def create_secret(
     try:
         client = Client()
         if interactive:
-            # check and exit early if secret already exists
-            current_secrets = [
-                item.name for item in client.list_secrets().items
-            ]
-            if name in current_secrets:
-                error(f"Secret with name `{name}` already exists.")
-
             if parsed_args:
                 error(
                     "Cannot pass secret fields as arguments when using "
@@ -726,7 +996,7 @@ def get_secret(name_id_or_prefix: str, scope: str) -> None:
     type=click.STRING,
 )
 @click.option(
-    "--new_scope",
+    "--new-scope",
     "-s",
     type=click.Choice([scope.value for scope in list(SecretScope)]),
 )
@@ -738,7 +1008,7 @@ def get_secret(name_id_or_prefix: str, scope: str) -> None:
     help="Use interactive mode to update the secret values.",
     type=click.BOOL,
 )
-@click.option("--remove_keys", "-r", type=click.STRING, multiple=True)
+@click.option("--remove-keys", "-r", type=click.STRING, multiple=True)
 @click.argument("extra_args", nargs=-1, type=click.UNPROCESSED)
 def update_secret(
     name_or_id: str,
@@ -850,7 +1120,7 @@ def update_secret(
     type=click.STRING,
 )
 @click.option(
-    "--new_name",
+    "--new-name",
     "-n",
     type=click.STRING,
 )

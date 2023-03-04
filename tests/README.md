@@ -129,7 +129,6 @@ INFO:root:Registered data_validator stack component 'great_expectations'
 INFO:root:Registered data_validator stack component 'whylogs'
 INFO:root:Registered experiment_tracker stack component 'mlflow-local'
 INFO:root:Registered model_deployer stack component 'mlflow-local'
-INFO:root:Registered secrets_manager stack component 'local'
 Environment 'docker-server' is provisioned and running at http://127.0.0.1:9000.
 ```
 
@@ -185,9 +184,10 @@ any external dependencies or special deployment configurations like databases,
 ZenML servers or other services. When they do, these dependencies should be
 mocked and/or stubbed out.
 * integration tests are tests that exercise an entire API or abstraction layer
-(e.g. the ZenML CLI or the Secrets Manager abstraction) and test it against a
-real ZenML deployment or stack component deployment, like a local ZenML server
-running in a Docker container, or a Secrets Manager running in the cloud. Given
+(e.g. the ZenML CLI, Client, the ZenML store interface or the ZenML artifact
+store abstraction) and test it against a real ZenML deployment or stack
+component deployment, like a local ZenML server running in a Docker container,
+a remote ZenML server running in the cloud or a cloud artifact store. Given
 that the ZenML code is designed to be highly modular and extensible, it is often
 the case that the integration tests don't need to be written for a particular
 implementation of a given API or abstraction layer, but are reusable across

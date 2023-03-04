@@ -46,18 +46,6 @@ tests:
       - capabilities:
           server: true
 
-  - module: tests.integration.functional.secrets_manager
-    requirements:
-      - stacks:
-          - type: secrets_manager
-      - capabilities:
-          secrets-scoping: true
-
-  - module: tests.integration.examples.test_cloud_secrets_manager
-    requirements:
-      - stacks:
-          - type: secrets_manager
-
   - module: tests.integration.examples.test_deepchecks_data_validation
     requirements:
       - integrations:
@@ -73,7 +61,7 @@ tests:
       - integrations:
           - sklearn
         packages:
-          - nltk
+          - pyarrow
         stacks:
           - type: data_validator
             flavor: evidently

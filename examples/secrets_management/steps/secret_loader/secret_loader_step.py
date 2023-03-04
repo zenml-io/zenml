@@ -12,32 +12,32 @@
 #  permissions and limitations under the License.
 from rich import print
 
-from zenml.steps import StepContext, step
+from zenml.client import Client
+from zenml.steps import step
 
-SECRET_NAME = "example_secret"
-AZURE_SECRET_NAME = "examplesecret"
+SECRET_NAME = "example-secret"
 SECRET_KEY = "example_secret_key"
 
 
 @step
-def secret_loader(
-    context: StepContext,
-) -> None:
-    """Load the example secret from the secret manager."""
-    # Load Secret from active secret manager. This will fail if no secret
-    #  manager is active or if that secret does not exist
-    if context.stack.secrets_manager.flavor == "azure":
-        retrieved_secret = context.stack.secrets_manager.get_secret(
-            AZURE_SECRET_NAME
+def secret_loader() -> None:
+    """Load the example secret from the secrets store."""
+    client = Client()
+
+    try:
+        secret = client.get_secret(
+            name_id_or_prefix=SECRET_NAME,
         )
-    else:
-        retrieved_secret = context.stack.secrets_manager.get_secret(
-            SECRET_NAME
+    except KeyError:
+        print(
+            f"Could not find secret `{SECRET_NAME}`. "
+            f"Please run `zenml secrets create` to create it."
         )
+        return
 
     # Load specific secret value from the secret using the secret key
     print(
         f"The secret `{SECRET_NAME}` contains the following key-value pair "
-        f"{{{SECRET_KEY}: {retrieved_secret.content[SECRET_KEY]}}}"
+        f"{{{SECRET_KEY}: {secret.secret_values}}}"
     )
     return

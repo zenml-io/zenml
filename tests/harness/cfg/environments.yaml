@@ -45,7 +45,6 @@ environments:
       - mlflow-local-tracker
       - mlflow-local-registry
       - mlflow-local-deployer
-      - local-secrets-manager
     capabilities:
       synchronized: true
 
@@ -59,7 +58,6 @@ environments:
       - mlflow-local-tracker
       - mlflow-local-registry
       - mlflow-local-deployer
-      - local-secrets-manager
     mandatory_requirements:
       - docker-local
 
@@ -73,7 +71,6 @@ environments:
       - mlflow-local-tracker
       - mlflow-local-deployer
       - mlflow-local-registry
-      - local-secrets-manager
     mandatory_requirements:
       - airflow-local
 
@@ -91,7 +88,6 @@ environments:
       - mlflow-local-tracker
       - mlflow-local-registry
       - mlflow-local-deployer
-      - local-secrets-manager
     capabilities:
       synchronized: true
 
@@ -109,7 +105,6 @@ environments:
       - mlflow-local-tracker
       - mlflow-local-registry
       - mlflow-local-deployer
-      - local-secrets-manager
     mandatory_requirements:
       - docker-local
 
@@ -127,7 +122,6 @@ environments:
       - mlflow-local-tracker
       - mlflow-local-registry
       - mlflow-local-deployer
-      - local-secrets-manager
     mandatory_requirements:
       - airflow-local
 
@@ -141,7 +135,6 @@ environments:
       - mlflow-local-tracker
       - mlflow-local-registry
       - mlflow-local-deployer
-      - local-secrets-manager
     capabilities:
       synchronized: true
 
@@ -155,7 +148,6 @@ environments:
       - mlflow-local-tracker
       - mlflow-local-registry
       - mlflow-local-deployer
-      - local-secrets-manager
     mandatory_requirements:
       - docker-local
 
@@ -169,6 +161,5 @@ environments:
       - mlflow-local-tracker
       - mlflow-local-registry
       - mlflow-local-deployer
-      - local-secrets-manager
     mandatory_requirements:
       - airflow-local
