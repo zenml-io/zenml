@@ -767,7 +767,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 a function with three possible parameters, `StepContext`, `BaseParameters`,
                 and `Exception`.
             on_success: Callback function in event of failure of the step. Can be
-                a function with two possible parameters, `StepContext` abd `BaseParameters.
+                a function with two possible parameters, `StepContext` and `BaseParameters.
 
         Returns:
             The step instance that this method was called on.
