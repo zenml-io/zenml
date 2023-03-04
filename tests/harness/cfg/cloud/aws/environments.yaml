@@ -20,7 +20,6 @@ environments:
       - external-slack-alerter
       - mlflow-local-tracker
       - mlflow-local-deployer
-      - local-secrets-manager
     capabilities:
       synchronized: true
 
@@ -36,7 +35,6 @@ environments:
       - external-slack-alerter
       - mlflow-local-tracker
       - mlflow-local-deployer
-      - local-secrets-manager
     mandatory_requirements:
       - docker-local
 
@@ -52,7 +50,6 @@ environments:
       - external-slack-alerter
       - mlflow-local-tracker
       - mlflow-local-deployer
-      - local-secrets-manager
     mandatory_requirements:
       - airflow-local
 

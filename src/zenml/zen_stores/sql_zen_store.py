@@ -46,6 +46,7 @@ from sqlmodel import Session, create_engine, or_, select
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
 from zenml.config.global_config import GlobalConfiguration
+from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
@@ -150,6 +151,7 @@ from zenml.zen_stores.base_zen_store import (
     DEFAULT_STACK_NAME,
     BaseZenStore,
 )
+from zenml.zen_stores.enums import StoreEvent
 from zenml.zen_stores.migrations.alembic import (
     ZENML_ALEMBIC_START_REVISION,
     Alembic,
@@ -257,7 +259,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
     type: StoreType = StoreType.SQL
 
-    secrets_store: Optional[SqlSecretsStoreConfiguration] = None
+    secrets_store: Optional[SecretsStoreConfiguration] = None
 
     driver: Optional[SQLDatabaseDriver] = None
     database: Optional[str] = None
@@ -272,8 +274,8 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
     @validator("secrets_store")
     def validate_secrets_store(
-        cls, secrets_store: Optional[SqlSecretsStoreConfiguration]
-    ) -> SqlSecretsStoreConfiguration:
+        cls, secrets_store: Optional[SecretsStoreConfiguration]
+    ) -> SecretsStoreConfiguration:
         """Ensures that the secrets store is initialized with a default SQL secrets store.
 
         Args:
@@ -1870,6 +1872,9 @@ class SqlZenStore(BaseZenStore):
                 raise IllegalOperationError(
                     "The default user account cannot be deleted."
                 )
+
+            self._trigger_event(StoreEvent.USER_DELETED, user_id=user.id)
+
             session.delete(user)
             session.commit()
 
@@ -2616,6 +2621,10 @@ class SqlZenStore(BaseZenStore):
                 raise IllegalOperationError(
                     "The default workspace cannot be deleted."
                 )
+
+            self._trigger_event(
+                StoreEvent.WORKSPACE_DELETED, workspace_id=workspace.id
+            )
 
             session.delete(workspace)
             session.commit()

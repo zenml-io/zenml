@@ -23,6 +23,7 @@ from zenml.logger import get_apidocs_link, get_logger
 from zenml.models import PipelineRunResponseModel
 from zenml.post_execution.base_view import BaseView
 from zenml.post_execution.step import StepView
+from zenml.utils.pagination_utils import depaginate
 
 logger = get_logger(__name__)
 
@@ -262,7 +263,7 @@ class PipelineRunView(BaseView):
             return
 
         client = Client()
-        steps = client.depaginate(
+        steps = depaginate(
             partial(client.list_run_steps, pipeline_run_id=self.model.id)
         )
 
