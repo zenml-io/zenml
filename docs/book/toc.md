@@ -125,7 +125,10 @@
   * [Kaniko Image Builder](./component-gallery/image-builders/kaniko.md)
   * [Google Cloud Image Builder](./component-gallery/image-builders/gcp.md)
   * [Develop a Custom Image Builder](./component-gallery/image-builders/custom.md)
-
+* [Model Registries](./component-gallery/model-registries/model-registries.md)
+  * [MLflow Model Registry](./component-gallery/model-registries/mlflow.md)
+  * [Develop a Custom Model Registry](./component-gallery/model-registries/custom.md)
+  
 ## Guidelines
 
 * [Best Practices](guidelines/best-practices.md)

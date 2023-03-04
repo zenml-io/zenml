@@ -65,6 +65,7 @@ class StackComponentType(StrEnum):
     ORCHESTRATOR = "orchestrator"
     SECRETS_MANAGER = "secrets_manager"
     STEP_OPERATOR = "step_operator"
+    MODEL_REGISTRY = "model_registry"
 
     @property
     def plural(self) -> str:

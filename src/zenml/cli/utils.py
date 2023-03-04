@@ -44,6 +44,10 @@ from zenml.console import console, zenml_style_defaults
 from zenml.constants import FILTERING_DATETIME_FORMAT, IS_DEBUG_ENV
 from zenml.enums import GenericFilterOps, StackComponentType, StoreType
 from zenml.logger import get_logger
+from zenml.model_registries.base_model_registry import (
+    ModelVersion,
+    RegisteredModel,
+)
 from zenml.models import BaseFilterModel
 from zenml.models.base_models import BaseResponseModel
 from zenml.models.filter_models import (
@@ -748,6 +752,96 @@ def pretty_print_model_deployer(
     print_table(
         model_service_dicts, UUID=table.Column(header="UUID", min_width=36)
     )
+
+
+def pretty_print_registered_model_table(
+    registered_models: List["RegisteredModel"],
+) -> None:
+    """Given a list of registered_models, print all associated key-value pairs.
+
+    Args:
+        registered_models: list of registered models
+    """
+    registered_model_dicts = [
+        {
+            "NAME": registered_model.name,
+            "DESCRIPTION": registered_model.description,
+            "METADATA": registered_model.metadata,
+        }
+        for registered_model in registered_models
+    ]
+    print_table(
+        registered_model_dicts, UUID=table.Column(header="UUID", min_width=36)
+    )
+
+
+def pretty_print_model_version_table(
+    model_versions: List["ModelVersion"],
+) -> None:
+    """Given a list of model_versions, print all associated key-value pairs.
+
+    Args:
+        model_versions: list of model versions
+    """
+    model_version_dicts = [
+        {
+            "NAME": model_version.registered_model.name,
+            "MODEL_VERSION": model_version.version,
+            "VERSION_DESCRIPTION": model_version.description,
+            "METADATA": model_version.metadata.dict()
+            if model_version.metadata
+            else {},
+        }
+        for model_version in model_versions
+    ]
+    print_table(
+        model_version_dicts, UUID=table.Column(header="UUID", min_width=36)
+    )
+
+
+def pretty_print_model_version_details(
+    model_version: "ModelVersion",
+) -> None:
+    """Given a model_version, print all associated key-value pairs.
+
+    Args:
+        model_version: model version
+    """
+    title_ = f"Properties of model `{model_version.registered_model.name}` version `{model_version.version}`"
+
+    rich_table = table.Table(
+        box=box.HEAVY_EDGE,
+        title=title_,
+        show_lines=True,
+    )
+    rich_table.add_column("MODEL VERSION PROPERTY", overflow="fold")
+    rich_table.add_column("VALUE", overflow="fold")
+    model_version_info = {
+        "REGISTERED_MODEL_NAME": model_version.registered_model.name,
+        "VERSION": model_version.version,
+        "VERSION_DESCRIPTION": model_version.description,
+        "CREATED_AT": str(model_version.created_at)
+        if model_version.created_at
+        else "N/A",
+        "UPDATED_AT": str(model_version.last_updated_at)
+        if model_version.last_updated_at
+        else "N/A",
+        "METADATA": model_version.metadata.dict()
+        if model_version.metadata
+        else {},
+        "MODEL_SOURCE_URI": model_version.model_source_uri,
+        "STAGE": model_version.stage.value,
+    }
+
+    for item in model_version_info.items():
+        rich_table.add_row(*[str(elem) for elem in item])
+
+    # capitalize entries in first column
+    rich_table.columns[0]._cells = [
+        component.upper()  # type: ignore[union-attr]
+        for component in rich_table.columns[0]._cells
+    ]
+    console.print(rich_table)
 
 
 def print_served_model_configuration(
