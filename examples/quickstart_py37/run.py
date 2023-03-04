@@ -52,7 +52,7 @@ def main():
     inference_pipeline_instance.run()
 
     # visualize the data drift
-    inf_run = inference_pipeline_instance.get_runs()[-1]
+    inf_run = inference_pipeline_instance.get_runs()[0]
     drift_detection_step = inf_run.get_step(step="drift_detector")
     EvidentlyVisualizer().visualize(drift_detection_step)
 
