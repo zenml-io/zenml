@@ -40,12 +40,14 @@ def test_example(request: pytest.FixtureRequest) -> None:
     with run_example(
         request=request,
         name="mlflow_registry",
-        pipeline_name="mlflow_training_pipeline",
-        run_count=1,
+        pipelines={
+            "mlflow_training_pipeline": (1, 5),
+            "deployment_inference_pipeline": (1, 4),
+        },
     ) as (example, runs):
         pipeline = get_pipeline("mlflow_training_pipeline")
         assert pipeline
-        first_run = runs[0]
+        first_training_run = runs["mlflow_training_pipeline"][0]
 
         # activate the stack set up and used by the example
         client = Client()
@@ -69,7 +71,7 @@ def test_example(request: pytest.FixtureRequest) -> None:
         # fetch the MLflow run created for the pipeline run
         mlflow_runs = mlflow.search_runs(
             experiment_ids=[mlflow_experiment.experiment_id],
-            filter_string=f'tags.mlflow.runName = "{first_run.name}"',
+            filter_string=f'tags.mlflow.runName = "{first_training_run.name}"',
             output_format="list",
         )
         assert len(mlflow_runs) == 1
