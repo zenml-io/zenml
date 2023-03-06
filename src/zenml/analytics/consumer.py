@@ -19,6 +19,7 @@ import backoff
 import monotonic
 
 from zenml.analytics.request import APIError, post
+from zenml.analytics.utils import UUIDEncoder
 
 try:
     from queue import Empty
@@ -111,7 +112,7 @@ class Consumer(Thread):
                 item = queue.get(
                     block=True, timeout=self.upload_interval - elapsed
                 )
-                item_size = len(item.json().encode())
+                item_size = len(json.dumps(item, cls=UUIDEncoder).encode())
 
                 if item_size > MAX_MSG_SIZE:
                     logger.error(

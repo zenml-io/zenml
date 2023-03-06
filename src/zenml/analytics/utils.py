@@ -15,7 +15,8 @@ import logging
 import numbers
 from datetime import date, datetime
 from decimal import Decimal
-
+import json
+from uuid import UUID
 import six
 
 logger = logging.getLogger(__name__)
@@ -66,3 +67,11 @@ def _coerce_unicode(cmplx):
         logger.warning("Error decoding: %s", item)
         return None
     return item
+
+
+class UUIDEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, UUID):
+            # if the obj is uuid, we simply return the value of uuid
+            return str(obj)
+        return json.JSONEncoder.default(self, obj)

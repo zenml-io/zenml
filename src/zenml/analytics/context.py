@@ -122,10 +122,7 @@ class AnalyticsContext:
         Returns:
             True if exception was handled, False otherwise.
         """
-        if exc_val is not None:
-            logger.debug(f"Sending telemetry data failed: {exc_val}")
-
-        return True
+        pass
 
     def identify(self, traits: Optional[Dict[str, Any]] = None) -> bool:
         """Identify the user through segment.
@@ -234,37 +231,3 @@ class AnalyticsContext:
         )
 
         return success
-
-    @staticmethod
-    def _handle_response(response: requests.Response) -> Json:
-        """Handle API response, translating http status codes to Exception.
-
-        Args:
-            response: The response to handle.
-
-        Returns:
-            The parsed response.
-        """
-        if 200 <= response.status_code < 300:
-            try:
-                payload: Json = response.json()
-                return payload
-            except requests.exceptions.JSONDecodeError:
-                logger.debug(
-                    "Bad response from API. Expected json, got\n"
-                    f"{response.text}"
-                )
-        elif response.status_code == 422:
-            response_details = response.json().get("detail", (response.text,))
-            if isinstance(response_details[0], str):
-                response_msg = ": ".join(response_details)
-            else:
-                # This is an "Unprocessable Entity" error, which has a special
-                # structure in the response.
-                response_msg = response.text
-            raise logger.debug(response_msg)
-        else:
-            raise logger.debug(
-                "Error retrieving from API. Got response "
-                f"{response.status_code} with body:\n{response.text}"
-            )

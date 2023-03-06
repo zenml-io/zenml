@@ -98,7 +98,7 @@ class Client(object):
     def identify(self, user_id, traits):
         return self._enqueue(
             msg={
-                "user_id": user_id,
+                "user_id": str(user_id),
                 "traits": traits,
                 "type": "identify",
             }
@@ -107,7 +107,7 @@ class Client(object):
     def track(self, user_id, event, properties):
         return self._enqueue(
             msg={
-                "user_id": user_id,
+                "user_id": str(user_id),
                 "event": event,
                 "properties": properties,
                 "type": "track",
@@ -117,8 +117,8 @@ class Client(object):
     def group(self, user_id, group_id, traits):
         return self._enqueue(
             msg={
-                "user_id": user_id,
-                "group_id": group_id,
+                "user_id": str(user_id),
+                "group_id": str(group_id),
                 "traits": traits,
                 "type": "group",
             }
