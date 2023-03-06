@@ -21,7 +21,6 @@ from typing import Dict, Type
 from transformers import AutoConfig, PreTrainedModel  # type: ignore [import]
 
 from zenml.enums import ArtifactType
-from zenml.integrations.pytorch.utils import count_module_params
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.metadata.metadata_types import DType, MetadataType
 from zenml.utils import io_utils
@@ -46,16 +45,17 @@ class HFPTModelMaterializer(BaseMaterializer):
         """
         super().load(data_type)
 
-        config = AutoConfig.from_pretrained(
-            os.path.join(self.uri, DEFAULT_PT_MODEL_DIR)
+        temp_dir = TemporaryDirectory()
+        io_utils.copy_dir(
+            os.path.join(self.uri, DEFAULT_PT_MODEL_DIR), temp_dir.name
         )
+
+        config = AutoConfig.from_pretrained(temp_dir.name)
         architecture = config.architectures[0]
         model_cls = getattr(
             importlib.import_module("transformers"), architecture
         )
-        return model_cls.from_pretrained(
-            os.path.join(self.uri, DEFAULT_PT_MODEL_DIR)
-        )
+        return model_cls.from_pretrained(temp_dir.name)
 
     def save(self, model: PreTrainedModel) -> None:
         """Writes a Model to the specified dir.
@@ -82,6 +82,8 @@ class HFPTModelMaterializer(BaseMaterializer):
         Returns:
             The extracted metadata as a dictionary.
         """
+        from zenml.integrations.pytorch.utils import count_module_params
+
         super().extract_metadata(model)
         module_param_metadata = count_module_params(model)
         return {

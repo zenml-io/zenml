@@ -28,6 +28,7 @@ from tests.harness.model.base import BaseTestConfigModel
 from tests.harness.model.secret import BaseTestSecretConfigModel
 from zenml.client import Client
 from zenml.enums import StackComponentType
+from zenml.utils.pagination_utils import depaginate
 
 if TYPE_CHECKING:
     from tests.harness.environment import TestEnvironment
@@ -96,7 +97,7 @@ class StackRequirement(BaseTestConfigModel):
         Returns:
             The stack component or None if no component was found.
         """
-        components = client.depaginate(
+        components = depaginate(
             partial(
                 client.list_stack_components,
                 user_id=client.active_user.id,

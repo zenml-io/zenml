@@ -997,13 +997,13 @@ def create_secret(
 
     if secret.workspace != workspace.id:
         raise IllegalOperationError(
-            "Creating pipeline runs outside of the workspace scope "
+            "Creating a secret outside of the workspace scope "
             f"of this endpoint `{workspace_name_or_id}` is "
             f"not supported."
         )
     if secret.user != auth_context.user.id:
         raise IllegalOperationError(
-            "Creating pipeline runs for a user other than yourself "
+            "Creating secrets for a user other than yourself "
             "is not supported."
         )
     return zen_store().create_secret(secret=secret)

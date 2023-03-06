@@ -15,7 +15,9 @@ from zenml.config import DockerSettings
 from zenml.integrations.constants import LIGHTGBM
 from zenml.pipelines import pipeline
 
-docker_settings = DockerSettings(required_integrations=[LIGHTGBM])
+docker_settings = DockerSettings(
+    required_integrations=[LIGHTGBM], apt_packages=["libgomp1"]
+)
 
 
 @pipeline(enable_cache=False, settings={"docker": docker_settings})

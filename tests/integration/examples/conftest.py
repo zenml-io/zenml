@@ -21,7 +21,7 @@ from zenml.client import Client
 from zenml.stack.stack import Stack
 
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="function", autouse=True)
 def module_auto_setup_stack(
     check_module_requirements,
     auto_environment: Tuple[TestEnvironment, Client],

@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -116,6 +116,8 @@ class MLFlowModelDeployer(BaseModelDeployer):
             "PREDICTION_URL": service_instance.endpoint.prediction_url,
             "MODEL_URI": service_instance.config.model_uri,
             "MODEL_NAME": service_instance.config.model_name,
+            "REGISTRY_MODEL_NAME": service_instance.config.registry_model_name,
+            "REGISTRY_MODEL_VERSION": service_instance.config.registry_model_version,
             "SERVICE_PATH": service_instance.status.runtime_path,
             "DAEMON_PID": str(service_instance.status.pid),
         }
@@ -261,6 +263,8 @@ class MLFlowModelDeployer(BaseModelDeployer):
         model_name: Optional[str] = None,
         model_uri: Optional[str] = None,
         model_type: Optional[str] = None,
+        registry_model_name: Optional[str] = None,
+        registry_model_version: Optional[str] = None,
     ) -> List[BaseService]:
         """Finds one or more model servers that match the given criteria.
 
@@ -278,6 +282,10 @@ class MLFlowModelDeployer(BaseModelDeployer):
             model_uri: URI of the deployed model.
             model_type: Type/format of the deployed model. Not used in this
                 MLflow case.
+            registry_model_name: Name of the registered model that the
+                deployed model belongs to.
+            registry_model_version: Version of the registered model that
+                the deployed model belongs to.
 
         Returns:
             One or more Service objects representing model servers that match
@@ -293,6 +301,8 @@ class MLFlowModelDeployer(BaseModelDeployer):
             pipeline_name=pipeline_name or "",
             pipeline_run_id=pipeline_run_id or "",
             pipeline_step_name=pipeline_step_name or "",
+            registry_model_name=registry_model_name,
+            registry_model_version=registry_model_version,
         )
 
         # find all services that match the input criteria
@@ -372,6 +382,18 @@ class MLFlowModelDeployer(BaseModelDeployer):
                 not config.pipeline_run_id
                 or existing_service_config.pipeline_run_id
                 == config.pipeline_run_id
+            )
+            and (
+                (
+                    not config.registry_model_name
+                    and not config.registry_model_version
+                )
+                or (
+                    existing_service_config.registry_model_name
+                    == config.registry_model_name
+                    and existing_service_config.registry_model_version
+                    == config.registry_model_version
+                )
             )
         ):
             return True
