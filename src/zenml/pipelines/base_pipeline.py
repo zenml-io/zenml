@@ -495,7 +495,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             )
             build_id = build_model.id if build_model else None
 
-            local_code_repo = Client().find_active_code_repository()
+            local_code_repo = source_utils_v2.find_active_code_repository()
             code_repository_reference = None
             if local_code_repo and not local_code_repo.is_dirty:
                 source_root = source_utils_v2.get_source_root()

@@ -35,14 +35,14 @@ from zenml.utils import source_utils
 if TYPE_CHECKING:
     from zenml.code_repositories.base_code_repository import (
         BaseCodeRepository,
-        _DownloadedRepository,
+        LocalRepository,
     )
 
 logger = get_logger(__name__)
 
 
 _SOURCE_MAPPING: Dict[int, Source] = {}
-_CUSTOM_CODE_REPOSITORY: Optional["_DownloadedRepository"] = None
+_CODE_REPOSITORY_CACHE: Dict[str, "LocalRepository"] = {}
 
 
 def load(source: Union[Source, str]) -> Any:
@@ -51,7 +51,7 @@ def load(source: Union[Source, str]) -> Any:
 
     import_root = None
     if isinstance(source, CodeRepositorySource):
-        _check_local_code_repository(source=source)
+        _warn_about_potential_source_loading_issues(source=source)
         import_root = get_source_root()
     elif isinstance(source, DistributionPackageSource):
         if source.version:
@@ -108,12 +108,7 @@ def resolve(obj: Union[Type[Any], FunctionType, ModuleType]) -> Source:
     source_type = get_source_type(module=module)
 
     if source_type == SourceType.USER:
-        if _CUSTOM_CODE_REPOSITORY:
-            local_repo = _CUSTOM_CODE_REPOSITORY
-        else:
-            from zenml.client import Client
-
-            local_repo = Client().find_active_code_repository()
+        local_repo = find_active_code_repository()
 
         if local_repo and not local_repo.has_local_changes:
             module_name = _resolve_module(module)
@@ -156,10 +151,38 @@ def set_custom_code_repo(
         _DownloadedRepository,
     )
 
-    global _CUSTOM_CODE_REPOSITORY
-    _CUSTOM_CODE_REPOSITORY = _DownloadedRepository(
+    global _CODE_REPOSITORY_CACHE
+
+    path = os.path.abspath(get_source_root())
+    _CODE_REPOSITORY_CACHE[path] = _DownloadedRepository(
         zenml_code_repository=repo, root=root, commit=commit
     )
+
+
+def find_active_code_repository(
+    path: Optional[str] = None,
+) -> Optional["LocalRepository"]:
+    global _CODE_REPOSITORY_CACHE
+    from zenml.client import Client
+    from zenml.code_repositories import BaseCodeRepository
+
+    path = path or get_source_root()
+    path = os.path.abspath(path)
+
+    if path in _CODE_REPOSITORY_CACHE:
+        return _CODE_REPOSITORY_CACHE[path]
+
+    for model in Client().depaginate(
+        list_method=Client().list_code_repositories
+    ):
+        repo = BaseCodeRepository.from_model(model)
+
+        local_repo = repo.get_local_repo(path)
+        if local_repo:
+            _CODE_REPOSITORY_CACHE[path] = local_repo
+            return local_repo
+
+    return None
 
 
 def is_user_file(file_path: str) -> bool:
@@ -224,23 +247,58 @@ def prepend_python_path(path: str) -> Iterator[None]:
         sys.path.remove(path)
 
 
-def _check_local_code_repository(source: CodeRepositorySource) -> None:
-    if _CUSTOM_CODE_REPOSITORY:
-        local_repo = _CUSTOM_CODE_REPOSITORY
-    else:
-        from zenml.client import Client
+def _warn_about_potential_source_loading_issues(
+    source: CodeRepositorySource,
+) -> None:
+    local_repo = find_active_code_repository()
 
-        local_repo = Client().find_active_code_repository()
-
-    if (
-        not local_repo
-        or local_repo.zenml_code_repository.id != source.repository_id
-    ):
-        logger.warning("No or wrong code repo for source")
+    if not local_repo:
+        logger.warning(
+            "Potential issue when loading the source `%s`: The source "
+            "references the code repository `%s` which is not active at the "
+            "current source root `%s`. The source loading might fail or load "
+            "your local code which might differ from the one used when the "
+            "source was originally stored.",
+            source.import_path,
+            source.repository_id,
+            get_source_root(),
+        )
+    elif local_repo.zenml_code_repository.id != source.repository_id:
+        logger.warning(
+            "Potential issue when loading the source `%s`: The source "
+            "references the code repository `%s` but there is a different "
+            "code repository `%s` active at the current source root `%s`. The "
+            "source loading might fail or load "
+            "your local code which might differ from the one used when the "
+            "source was originally stored.",
+            source.import_path,
+            source.repository_id,
+            local_repo.zenml_code_repository.id,
+            get_source_root(),
+        )
     elif local_repo.current_commit != source.commit:
-        logger.warning("Wrong commit")
+        logger.warning(
+            "Potential issue when loading the source `%s`: The source "
+            "references the commit `%s` of code repository `%s` but your local "
+            "code is at commit `%s`. The source loading might fail or load "
+            "your local code which might differ from the one used when the "
+            "source was originally stored.",
+            source.import_path,
+            source.commit,
+            source.repository_id,
+            local_repo.current_commit,
+        )
     elif local_repo.is_dirty:
-        logger.warning("Repo dirty")
+        logger.warning(
+            "Potential issue when loading the source `%s`: The source "
+            "references the commit `%s` of code repository `%s` but your local "
+            "repository contains uncommitted changes. The source loading might "
+            "fail or load your local code which might differ from the one used "
+            "when the source was originally stored.",
+            source.import_path,
+            source.commit,
+            source.repository_id,
+        )
 
 
 def _resolve_module(
