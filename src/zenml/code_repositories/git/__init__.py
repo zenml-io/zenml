@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,13 +11,4 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
-from zenml.code_repositories.base_code_repository import (
-    BaseCodeRepository,
-)
-from zenml.code_repositories.git.git_code_repository import LocalGitRepository
-
-__all__ = [
-    "BaseCodeRepository",
-    "LocalGitRepository",
-]
+"""Initialization of the ZenML git code repository."""
