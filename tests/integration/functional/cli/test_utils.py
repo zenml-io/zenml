@@ -86,14 +86,11 @@ def test_parsing_name_and_arguments():
 def test_parsing_unknown_component_attributes():
     """Test that our ability to parse CLI arguments works."""
     assert cli_utils.parse_unknown_component_attributes(
-        ["foo=bar", "baz=qux"]
-    ) == {"foo": "bar", "baz": "qux"}
-    assert cli_utils.parse_unknown_component_attributes(
-        ["foo=bar", "baz=qux", "foo=bar2"]
-    ) == {"foo": "bar2", "baz": "qux"}
-    with pytest.raises(ClickException):
+        ["--foo", "--bar", "--baz", "--qux"]
+    ) == ["foo", "bar", "baz", "qux"]
+    with pytest.raises(AssertionError):
         cli_utils.parse_unknown_component_attributes(["foo"])
-    with pytest.raises(ClickException):
+    with pytest.raises(AssertionError):
         cli_utils.parse_unknown_component_attributes(["foo=bar=qux"])
 
 

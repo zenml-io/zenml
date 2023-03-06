@@ -1,0 +1,81 @@
+# A list of ZenML deployments, either local or remote (external), that
+# can be included in test environments to be used to run automated tests or
+# passed to pytest directly using the `--deployment` command line argument.
+#
+# Local deployments are provisioned by the test framework on the fly in the test
+# preparation phase, and are torn down after the tests have finished. Remote
+# deployments are assumed to be already provisioned and ready to use.
+#
+# A deployment has the following properties:
+#
+# - name: The name of the deployment. This is used to refer to the deployment
+#   in test environments and in the test framework CLI. It is also used to
+#   generate unique names for resources that may need to be deployed locally.
+# - type: The deployment type. It can take one of the following values:
+#   -  local: A local deployment that doesn't use a ZenML server. Clients have
+#      to connect directly to a local database.
+#   -  server: A deployment that uses a ZenML server running either locally or
+#      remotely.
+# - setup: The type of setup used to deploy and manage the test environment. For
+#   deployments that are running locally, that are provisioned and managed by
+#   the test framework, this controls how the deployment is provisioned.
+#   It can take one of the following values:
+#   -  default: Indicates that the default setup method should be used. For
+#      `local` deployments, this means that the default SQLite database will be
+#      used. For `server` deployments, this is equivalent to deploying the
+#      default ZenML server with `zenml up`.
+#   -  docker: When used with a `local` deployment type, a MySQL database
+#      service container is provisioned locally and used instead of the default
+#      SQLite database. When used with a `server` deployment type, a local ZenML
+#      server is deployed, similar to running `zenml up --docker`. The test
+#      framework also takes care of building and using a `zenml-server` Docker
+#      image with the latest code available in the local zenml code repository
+#      clone.
+#   -  docker-compose: A ZenML server and MySQL database are both provisioned
+#      locally using Docker Compose. The test framework also takes care of
+#      building and using a `zenml-server` Docker image with the latest code
+#      available in the local zenml code repository clone.
+#   -  external: A 3rd party ZenML server that is installed and maintained
+#      externally. The test framework will not provision or manage this server.
+#      The test framework will only connect to the server and run tests against
+#      it. A `config` section must be provided in the deployment configuration
+#      to specify the connection details.
+# - config: A dictionary of configuration parameters that are used to initialize
+#   the ZenML store to connect to a remote ZenML server or database. The values
+#   may reference secrets that are defined in the test configuration or as
+#   environment variables using the `{{SECRET_NAME_OR_ENV_VAR}}` syntax.
+# - disabled: A boolean flag that can be used to administratively disable a
+#   deployment. A disabled deployment will not be checked for operational
+#   readiness and will not be usable to run tests. This is useful to temporarily
+#   disable a deployment that is not operational without having to remove it
+#   from the configuration.
+# - capabilities: A list of custom capabilities that the deployment supports or
+#   does not support. This is compared against the capabilities required by the
+#   tests to determine if the deployment is suitable to run the tests. A `true`
+#   value indicates that the deployment supports the capability, while a `false`
+#   value indicates that it doesn't.
+#
+deployments:
+
+  - name: devel
+    description: >-
+      Development deployment.
+    type: server
+    setup: external
+    config:
+      url: sqlite:////Users/strickvl/Library/Application Support/zenml/local_stores/default_zen_store/zenml.db
+      secrets_store:
+        type: gcp
+        project_id: zenml-core
+
+  - name: devel-two
+    description: >-
+      Custom docker-compose deployment running locally.
+    type: server
+    setup: external
+    config:
+      url: http://localhost:8080
+      username: admin
+      password: zenml
+    capabilities:
+      server: true
