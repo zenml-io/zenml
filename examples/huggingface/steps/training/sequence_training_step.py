@@ -59,11 +59,10 @@ def sequence_trainer(
 
     # Convert tokenized datasets into tf dataset
     train_set = tokenized_datasets["train"].to_tf_dataset(
-        columns=["attention_mask", "input_ids"],
+        columns=["attention_mask", "input_ids", "labels"],
         shuffle=True,
         batch_size=params.batch_size,
         collate_fn=DataCollatorWithPadding(tokenizer, return_tensors="tf"),
-        label_cols="label",
     )
 
     if params.dummy_run:

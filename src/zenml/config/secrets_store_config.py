@@ -14,7 +14,9 @@
 """Functionality to support ZenML secrets store configurations."""
 
 
-from pydantic import BaseModel
+from typing import Any, Dict, Optional
+
+from pydantic import BaseModel, root_validator
 
 from zenml.enums import SecretsStoreType
 from zenml.logger import get_logger
@@ -31,9 +33,44 @@ class SecretsStoreConfiguration(BaseModel):
 
     Attributes:
         type: The type of store backend.
+        class_path: The Python class path of the store backend. Should point to
+            a subclass of `BaseSecretsStore`. This is optional and only
+            required if the store backend is not one of the built-in
+            implementations.
     """
 
     type: SecretsStoreType
+    class_path: Optional[str] = None
+
+    @root_validator
+    def validate_custom(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate that class_path is set for custom secrets stores.
+
+        Args:
+            values: Dict representing user-specified runtime settings.
+
+        Returns:
+            Validated settings.
+
+        Raises:
+            ValueError: If class_path is not set when using an custom secrets
+                store.
+        """
+        if not values.get("type"):
+            return values
+        if values["type"] == SecretsStoreType.CUSTOM:
+            if values["class_path"] is None:
+                raise ValueError(
+                    "A class_path must be set when using a custom secrets "
+                    "store implementation."
+                )
+        elif values["class_path"] is not None:
+            raise ValueError(
+                f"The class_path attribute is not supported for the "
+                f"{values['type']} secrets store type."
+            )
+
+        return values
 
     class Config:
         """Pydantic configuration class."""

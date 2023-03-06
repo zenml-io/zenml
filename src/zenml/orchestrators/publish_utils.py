@@ -27,6 +27,7 @@ from zenml.models.step_run_models import (
     StepRunResponseModel,
     StepRunUpdateModel,
 )
+from zenml.utils.pagination_utils import depaginate
 
 if TYPE_CHECKING:
     from uuid import UUID
@@ -163,7 +164,7 @@ def update_pipeline_run_status(pipeline_run: PipelineRunResponseModel) -> None:
     """
     assert pipeline_run.num_steps is not None
     client = Client()
-    steps_in_current_run = client.depaginate(
+    steps_in_current_run = depaginate(
         partial(client.list_run_steps, pipeline_run_id=pipeline_run.id)
     )
 

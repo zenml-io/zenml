@@ -29,6 +29,7 @@ from zenml.models.component_models import (
     ComponentResponseModel,
     ComponentUpdateModel,
 )
+from zenml.models.base_models import BaseRequestModel, BaseResponseModel
 from zenml.models.filter_models import Filter, BaseFilterModel
 from zenml.models.flavor_models import (
     FlavorFilterModel,
@@ -42,6 +43,7 @@ from zenml.models.pipeline_models import (
     PipelineResponseModel,
     PipelineUpdateModel,
 )
+from zenml.models.page_model import Page
 from zenml.models.pipeline_deployment_models import (
     PipelineDeploymentFilterModel,
     PipelineDeploymentRequestModel,
@@ -77,6 +79,7 @@ from zenml.models.schedule_model import (
     ScheduleFilterModel,
 )
 from zenml.models.secret_models import (
+    SecretBaseModel,
     SecretRequestModel,
     SecretFilterModel,
     SecretResponseModel,
@@ -212,6 +215,8 @@ __all__ = [
     "ArtifactRequestModel",
     "ArtifactResponseModel",
     "ArtifactFilterModel",
+    "BaseRequestModel",
+    "BaseResponseModel",
     "PipelineBuildFilterModel",
     "PipelineBuildRequestModel",
     "PipelineBuildResponseModel",
@@ -224,6 +229,7 @@ __all__ = [
     "FlavorFilterModel",
     "FlavorUpdateModel",
     "BaseFilterModel",
+    "Page",
     "PipelineRequestModel",
     "PipelineResponseModel",
     "PipelineUpdateModel",
@@ -256,6 +262,7 @@ __all__ = [
     "ScheduleResponseModel",
     "ScheduleUpdateModel",
     "ScheduleFilterModel",
+    "SecretBaseModel",
     "SecretRequestModel",
     "SecretFilterModel",
     "SecretResponseModel",

@@ -2,22 +2,14 @@ requirements:
 
   - name: aws-us-east-1-cloud
     description: >-
-      AWS environment in the us-east-1 region with access to an S3 bucket and an
-      AWS Secrets Manager.
-    capabilities:
-      secrets-scoping: true
+      AWS environment in the us-east-1 region with access to an S3 bucket.
     stacks:
       - name: aws-ci-store
         type: artifact_store
         flavor: s3
         external: true
 
-      - name: aws-us-east-1
-        type: secrets_manager
-        flavor: aws
-        external: true
-
-  - name: aws-us-east-1-sagemaker
+  - name: aws-us-east-1-sagemaker-op
     description: >-
       AWS environment in the us-east-1 region that provides a Sagemaker step
       operator.
@@ -26,6 +18,20 @@ requirements:
     stacks:
       - name: aws-us-east-1-sagemaker
         type: step_operator
+        flavor: sagemaker
+        containerized: true
+        external: true
+
+  - name: aws-us-east-1-sagemaker-orch
+    description: >-
+      AWS environment in the us-east-1 region that provides a Sagemaker orchestrator.
+    system_tools:
+      - docker
+    capabilities:
+      synchronized: true
+    stacks:
+      - name: aws-us-east-1-sagemaker
+        type: orchestrator
         flavor: sagemaker
         containerized: true
         external: true

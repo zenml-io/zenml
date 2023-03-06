@@ -24,15 +24,15 @@ def test_example(request: pytest.FixtureRequest) -> None:
     with run_example(
         request=request,
         name="evidently_data_validation",
-        pipeline_name="text_data_report_test_pipeline",
-        step_count=5,
-        run_count=1,
+        pipelines={"text_data_report_test_pipeline": (1, 5)},
     ) as (example, runs):
 
         pipeline = get_pipeline("text_data_report_test_pipeline")
         assert pipeline
 
         # Analyzer step should have output missing values
-        text_analyzer_step = runs[0].get_step(step="text_analyzer")
+        text_analyzer_step = runs["text_data_report_test_pipeline"][
+            0
+        ].get_step(step="text_analyzer")
         output = text_analyzer_step.outputs["ref_missing_values"].read()
         assert isinstance(output, int)

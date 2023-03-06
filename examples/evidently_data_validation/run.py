@@ -27,9 +27,9 @@ from zenml.post_execution import get_pipeline
 def visualize_statistics():
     """Visualize statistics from the last run of the pipeline."""
     pipeline = get_pipeline(pipeline="text_data_report_test_pipeline")
-    text_report_step = pipeline.runs[-1].get_step(step="text_report")
+    text_report_step = pipeline.runs[0].get_step(step="text_report")
     EvidentlyVisualizer().visualize(text_report_step)
-    text_test_step = pipeline.runs[-1].get_step(step="text_test")
+    text_test_step = pipeline.runs[0].get_step(step="text_test")
     EvidentlyVisualizer().visualize(text_test_step)
 
 
@@ -43,7 +43,7 @@ if __name__ == "__main__":
     )
     pipeline_instance.run()
 
-    last_run = pipeline_instance.get_runs()[-1]
+    last_run = pipeline_instance.get_runs()[0]
     text_analysis_step = last_run.get_step(step="text_analyzer")
 
     print(
