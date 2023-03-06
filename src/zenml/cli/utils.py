@@ -1107,13 +1107,14 @@ def _scrub_secret(config: StackComponentConfig) -> Dict[str, Any]:
     Returns:
         A configuration with secret values removed.
     """
+    config_dict = {}
     config_fields = dict(config.__class__.__fields__)
     for key, value in config_fields.items():
         if secret_utils.is_secret_field(value):
-            config_fields[key] = "********"
+            config_dict[key] = "********"
         else:
-            config_fields[key] = getattr(config, key)
-    return config_fields
+            config_dict[key] = getattr(config, key)
+    return config_dict
 
 
 def print_debug_stack() -> None:
