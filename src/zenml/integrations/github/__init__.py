@@ -44,14 +44,9 @@ class GitHubIntegration(Integration):
             GitHubActionsOrchestratorFlavor,
             GitHubSecretsManagerFlavor,
         )
-        from zenml.integrations.github.code_repository import (
-            GitHubCodeRepository,
-        )
-
         return [
             GitHubActionsOrchestratorFlavor,
             GitHubSecretsManagerFlavor,
-            GitHubCodeRepository,
         ]
 
 
