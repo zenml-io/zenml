@@ -509,7 +509,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     user=Client().active_user.id,
                     workspace=Client().active_workspace.id,
                     commit=local_code_repo.current_commit,
-                    subdirectory=str(subdirectory),
+                    subdirectory=subdirectory.as_posix(),
                     code_repository=local_code_repo.zenml_code_repository.id,
                 )
 
