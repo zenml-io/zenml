@@ -538,7 +538,7 @@ def parse_name_and_extra_arguments(
         ('foo', {})
         >>> parse_name_and_extra_arguments(['foo', '--bar=1'])
         ('foo', {'bar': '1'})
-        >>> parse_name_and_extra_arguments('--bar=1', 'foo', '--baz=2'])
+        >>> parse_name_and_extra_arguments(['--bar=1', 'foo', '--baz=2'])
         ('foo', {'bar': '1', 'baz': '2'})
         >>> parse_name_and_extra_arguments(['--bar=1'])
         Traceback (most recent call last):
