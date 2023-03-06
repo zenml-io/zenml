@@ -73,15 +73,7 @@ class AWSContainerRegistryFlavor(BaseContainerRegistryFlavor):
         Returns:
             A flavor docs url.
         """
-        from packaging.version import parse
-
-        from zenml import __version__
-
-        if parse(__version__) >= parse("0.34.0"):
-            return self.generate_default_docs_url()
-
-        old_docs_name = "amazon-ecr"
-        return self.generate_default_docs_url(component_name=old_docs_name)
+        return self.generate_default_docs_url()
 
     @property
     def sdk_docs_url(self) -> Optional[str]:
