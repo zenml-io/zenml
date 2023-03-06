@@ -496,6 +496,15 @@ class BasePipeline(metaclass=BasePipelineMeta):
             build_id = build_model.id if build_model else None
 
             local_code_repo = source_utils_v2.find_active_code_repository()
+
+            if build_model and build_model.requires_code_download:
+                if not local_code_repo:
+                    raise RuntimeError("Missing code repo.")
+                elif local_code_repo.is_dirty:
+                    raise RuntimeError("dirty repo")
+                elif local_code_repo.has_local_changes:
+                    raise RuntimeError("Unpushed changes")
+
             code_repository_reference = None
             if local_code_repo and not local_code_repo.is_dirty:
                 source_root = source_utils_v2.get_source_root()
@@ -1203,7 +1212,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
         docker_image_builder = PipelineDockerImageBuilder()
         images: Dict[str, BuildItem] = {}
-        image_names: Dict[str, str] = {}
+        checksums: Dict[str, str] = {}
 
         for build_config in required_builds:
             combined_key = PipelineBuildBaseModel.get_image_key(
@@ -1228,8 +1237,10 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 else:
                     continue
 
-            if checksum in image_names:
-                image_name_or_digest = image_names[checksum]
+            if checksum in checksums:
+                item_key = checksums[checksum]
+                image_name_or_digest = images[item_key].image
+                contains_code = images[item_key].contains_code
             else:
                 tag = deployment.pipeline_configuration.name
                 if build_config.step_name:
@@ -1243,11 +1254,14 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     entrypoint=build_config.entrypoint,
                     extra_files=build_config.extra_files,
                 )
+                contains_code = build_config.settings.copy_files
 
             images[combined_key] = BuildItem(
-                image=image_name_or_digest, settings_checksum=checksum
+                image=image_name_or_digest,
+                settings_checksum=checksum,
+                contains_code=contains_code,
             )
-            image_names[checksum] = image_name_or_digest
+            checksums[checksum] = combined_key
 
         logger.info("Finished building Docker image(s).")
 

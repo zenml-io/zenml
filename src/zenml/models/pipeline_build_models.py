@@ -47,6 +47,9 @@ class BuildItem(BaseModel):
     settings_checksum: Optional[str] = Field(
         title="The checksum of the build settings."
     )
+    contains_code: bool = Field(
+        default=True, title="Whether the image contains user code."
+    )
 
 
 class PipelineBuildBaseModel(pydantic_utils.YAMLSerializationMixin):
@@ -64,6 +67,10 @@ class PipelineBuildBaseModel(pydantic_utils.YAMLSerializationMixin):
     is_local: bool = Field(
         title="Whether the build images are stored in a container registry or locally.",
     )
+
+    @property
+    def requires_code_download(self) -> bool:
+        return any(not item.contains_code for item in self.images.values())
 
     @staticmethod
     def get_image_key(component_key: str, step: Optional[str] = None) -> str:
