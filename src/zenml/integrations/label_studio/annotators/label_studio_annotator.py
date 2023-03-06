@@ -240,21 +240,20 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
                 client.
 
         Raises:
-            NotImplementedError: If the deletion of a dataset is not supported.
+            ValueError: If the dataset name is not provided or if the dataset
+                does not exist.
         """
-        raise NotImplementedError("Awaiting Label Studio release.")
-        # TODO: Awaiting a new Label Studio version to be released with this method
-        # ls = self._get_client()
-        # dataset_name = kwargs.get("dataset_name")
-        # if not dataset_name:
-        #     raise ValueError("`dataset_name` keyword argument is required.")
+        ls = self._get_client()
+        dataset_name = kwargs.get("dataset_name")
+        if not dataset_name:
+            raise ValueError("`dataset_name` keyword argument is required.")
 
-        # dataset_id = self.get_id_from_name(dataset_name)
-        # if not dataset_id:
-        #     raise ValueError(
-        #         f"Dataset name '{dataset_name}' has no corresponding `dataset_id` in Label Studio."
-        #     )
-        # ls.delete_project(dataset_id)
+        dataset_id = self.get_id_from_name(dataset_name)
+        if not dataset_id:
+            raise ValueError(
+                f"Dataset name '{dataset_name}' has no corresponding `dataset_id` in Label Studio."
+            )
+        ls.delete_project(dataset_id)
 
     def get_dataset(self, **kwargs: Any) -> Any:
         """Gets the dataset with the given name.

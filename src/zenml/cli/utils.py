@@ -44,6 +44,10 @@ from zenml.console import console, zenml_style_defaults
 from zenml.constants import FILTERING_DATETIME_FORMAT, IS_DEBUG_ENV
 from zenml.enums import GenericFilterOps, StackComponentType, StoreType
 from zenml.logger import get_logger
+from zenml.model_registries.base_model_registry import (
+    ModelVersion,
+    RegisteredModel,
+)
 from zenml.models import BaseFilterModel
 from zenml.models.base_models import BaseResponseModel
 from zenml.models.filter_models import (
@@ -154,7 +158,12 @@ def warning(
     console.print(text, style=style, **kwargs)
 
 
-def print_table(obj: List[Dict[str, Any]], **columns: table.Column) -> None:
+def print_table(
+    obj: List[Dict[str, Any]],
+    title: Optional[str] = None,
+    caption: Optional[str] = None,
+    **columns: table.Column,
+) -> None:
     """Prints the list of dicts in a table format.
 
     The input object should be a List of Dicts. Each item in that list represent
@@ -163,11 +172,15 @@ def print_table(obj: List[Dict[str, Any]], **columns: table.Column) -> None:
 
     Args:
         obj: A List containing dictionaries.
+        title: Title of the table.
+        caption: Caption of the table.
         columns: Optional column configurations to be used in the table.
     """
     column_keys = {key: None for dict_ in obj for key in dict_}
     column_names = [columns.get(key, key.upper()) for key in column_keys]
-    rich_table = table.Table(box=box.HEAVY_EDGE, show_lines=True)
+    rich_table = table.Table(
+        box=box.HEAVY_EDGE, show_lines=True, title=title, caption=caption
+    )
     for col_name in column_names:
         if isinstance(col_name, str):
             rich_table.add_column(str(col_name), overflow="fold")
@@ -639,7 +652,9 @@ def uninstall_package(package: str) -> None:
 
 
 def pretty_print_secret(
-    secret: "Union[BaseSecretSchema, Dict[str, str]]", hide_secret: bool = True
+    secret: "Union[BaseSecretSchema, Dict[str, str]]",
+    hide_secret: bool = True,
+    print_name: bool = False,
 ) -> None:
     """Given a secret with values, print all key-value pairs associated with the secret.
 
@@ -647,8 +662,13 @@ def pretty_print_secret(
         secret: Secret of type BaseSecretSchema
         hide_secret: boolean that configures if the secret values are shown
             on the CLI
+        print_name: boolean that configures if the secret name is shown on the
+            CLI
     """
+    title: Optional[str] = None
     if isinstance(secret, BaseSecretSchema):
+        if print_name:
+            title = f"Secret: {secret.name}"
         secret = secret.content
 
     def get_secret_value(value: Any) -> str:
@@ -663,7 +683,8 @@ def pretty_print_secret(
         }
         for key, value in secret.items()
     ]
-    print_table(stack_dicts)
+
+    print_table(stack_dicts, title=title)
 
 
 def print_list_items(list_items: List[str], column_title: str) -> None:
@@ -733,6 +754,96 @@ def pretty_print_model_deployer(
     print_table(
         model_service_dicts, UUID=table.Column(header="UUID", min_width=36)
     )
+
+
+def pretty_print_registered_model_table(
+    registered_models: List["RegisteredModel"],
+) -> None:
+    """Given a list of registered_models, print all associated key-value pairs.
+
+    Args:
+        registered_models: list of registered models
+    """
+    registered_model_dicts = [
+        {
+            "NAME": registered_model.name,
+            "DESCRIPTION": registered_model.description,
+            "METADATA": registered_model.metadata,
+        }
+        for registered_model in registered_models
+    ]
+    print_table(
+        registered_model_dicts, UUID=table.Column(header="UUID", min_width=36)
+    )
+
+
+def pretty_print_model_version_table(
+    model_versions: List["ModelVersion"],
+) -> None:
+    """Given a list of model_versions, print all associated key-value pairs.
+
+    Args:
+        model_versions: list of model versions
+    """
+    model_version_dicts = [
+        {
+            "NAME": model_version.registered_model.name,
+            "MODEL_VERSION": model_version.version,
+            "VERSION_DESCRIPTION": model_version.description,
+            "METADATA": model_version.metadata.dict()
+            if model_version.metadata
+            else {},
+        }
+        for model_version in model_versions
+    ]
+    print_table(
+        model_version_dicts, UUID=table.Column(header="UUID", min_width=36)
+    )
+
+
+def pretty_print_model_version_details(
+    model_version: "ModelVersion",
+) -> None:
+    """Given a model_version, print all associated key-value pairs.
+
+    Args:
+        model_version: model version
+    """
+    title_ = f"Properties of model `{model_version.registered_model.name}` version `{model_version.version}`"
+
+    rich_table = table.Table(
+        box=box.HEAVY_EDGE,
+        title=title_,
+        show_lines=True,
+    )
+    rich_table.add_column("MODEL VERSION PROPERTY", overflow="fold")
+    rich_table.add_column("VALUE", overflow="fold")
+    model_version_info = {
+        "REGISTERED_MODEL_NAME": model_version.registered_model.name,
+        "VERSION": model_version.version,
+        "VERSION_DESCRIPTION": model_version.description,
+        "CREATED_AT": str(model_version.created_at)
+        if model_version.created_at
+        else "N/A",
+        "UPDATED_AT": str(model_version.last_updated_at)
+        if model_version.last_updated_at
+        else "N/A",
+        "METADATA": model_version.metadata.dict()
+        if model_version.metadata
+        else {},
+        "MODEL_SOURCE_URI": model_version.model_source_uri,
+        "STAGE": model_version.stage.value,
+    }
+
+    for item in model_version_info.items():
+        rich_table.add_row(*[str(elem) for elem in item])
+
+    # capitalize entries in first column
+    rich_table.columns[0]._cells = [
+        component.upper()  # type: ignore[union-attr]
+        for component in rich_table.columns[0]._cells
+    ]
+    console.print(rich_table)
 
 
 def print_served_model_configuration(
@@ -1381,8 +1492,10 @@ def warn_deprecated_secrets_manager() -> None:
     """Warning for deprecating secrets managers."""
     warning(
         "Secrets managers are deprecated and will be removed in an upcoming "
-        "release in favor of centralized secrets management. Please see the "
-        "`zenml secret` CLI command and the "
-        "https://docs.zenml.io/advanced-guide/practical-mlops/secrets-management#centralized-secrets-store "
+        "release in favor of centralized secrets management. Please consider "
+        "migrating all your secrets to the centralized secrets store by means "
+        "of the `zenml secrets-manager secret migrate` CLI command. "
+        "See the `zenml secret` CLI command and the "
+        "https://docs.zenml.io/advanced-guide/practical-mlops/secrets-management "
         "documentation page for more information."
     )

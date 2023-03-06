@@ -50,6 +50,7 @@ MLFLOW_TRACKING_USERNAME = "MLFLOW_TRACKING_USERNAME"
 MLFLOW_TRACKING_PASSWORD = "MLFLOW_TRACKING_PASSWORD"
 MLFLOW_TRACKING_TOKEN = "MLFLOW_TRACKING_TOKEN"
 MLFLOW_TRACKING_INSECURE_TLS = "MLFLOW_TRACKING_INSECURE_TLS"
+MLFLOW_BACKEND_STORE_URI = "_MLFLOW_SERVER_FILE_STORE"
 
 DATABRICKS_HOST = "DATABRICKS_HOST"
 DATABRICKS_USERNAME = "DATABRICKS_USERNAME"
@@ -154,10 +155,10 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         """
         client = Client()
         artifact_store = client.active_stack.artifact_store
-        local_mlflow_backend_uri = os.path.join(artifact_store.path, "mlruns")
-        if not os.path.exists(local_mlflow_backend_uri):
-            os.makedirs(local_mlflow_backend_uri)
-        return "file:" + local_mlflow_backend_uri
+        local_mlflow_tracking_uri = os.path.join(artifact_store.path, "mlruns")
+        if not os.path.exists(local_mlflow_tracking_uri):
+            os.makedirs(local_mlflow_tracking_uri)
+        return "file:" + local_mlflow_tracking_uri
 
     def get_tracking_uri(self) -> str:
         """Returns the configured tracking URI or a local fallback.
@@ -234,6 +235,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         """Configures the MLflow tracking URI and any additional credentials."""
         tracking_uri = self.get_tracking_uri()
         mlflow.set_tracking_uri(tracking_uri)
+        mlflow.set_registry_uri(tracking_uri)
 
         if is_databricks_tracking_uri(tracking_uri):
             if self.config.databricks_host:
@@ -277,9 +279,9 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         runs = mlflow.search_runs(
             experiment_names=[experiment_name],
             filter_string=f'tags.mlflow.runName = "{run_name}"',
+            run_view_type=3,
             output_format="list",
         )
-
         if not runs:
             return None
 

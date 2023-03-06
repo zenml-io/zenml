@@ -16,8 +16,10 @@ import os
 from abc import ABC
 from typing import (
     Any,
+    Callable,
     ClassVar,
     Dict,
+    List,
     Optional,
     Tuple,
     Type,
@@ -70,6 +72,7 @@ from zenml.utils.analytics_utils import (
     track_event,
 )
 from zenml.utils.proxy_utils import make_proxy_class
+from zenml.zen_stores.enums import StoreEvent
 from zenml.zen_stores.secrets_stores.base_secrets_store import BaseSecretsStore
 from zenml.zen_stores.secrets_stores.secrets_store_interface import (
     SecretsStoreInterface,
@@ -109,6 +112,7 @@ class BaseZenStore(
     config: StoreConfiguration
     track_analytics: bool = True
     _secrets_store: Optional[BaseSecretsStore] = None
+    _event_handlers: Dict[StoreEvent, List[Callable[..., Any]]] = {}
 
     TYPE: ClassVar[StoreType]
     CONFIG_TYPE: ClassVar[Type[StoreConfiguration]]
@@ -247,7 +251,7 @@ class BaseZenStore(
             and secrets_store_config.type != SecretsStoreType.NONE
         ):
             secrets_store_class = BaseSecretsStore.get_store_class(
-                secrets_store_config.type
+                secrets_store_config
             )
             store._secrets_store = secrets_store_class(
                 zen_store=store,
@@ -447,6 +451,9 @@ class BaseZenStore(
                 ENV_ZENML_SERVER_DEPLOYMENT_TYPE, ServerDeploymentType.OTHER
             ),
             database_type=ServerDatabaseType.OTHER,
+            secrets_store_type=self.secrets_store.type
+            if self.secrets_store
+            else SecretsStoreType.NONE,
         )
 
     def is_local_store(self) -> bool:
@@ -476,6 +483,42 @@ class BaseZenStore(
             return self._default_workspace
         except KeyError:
             return self._create_default_workspace()  # type: ignore[no-any-return]
+
+    # --------------
+    # Event Handlers
+    # --------------
+
+    def register_event_handler(
+        self,
+        event: StoreEvent,
+        handler: Callable[..., Any],
+    ) -> None:
+        """Register an external event handler.
+
+        The handler will be called when the store event is triggered.
+
+        Args:
+            event: The event to register the handler for.
+            handler: The handler function to register.
+        """
+        self._event_handlers.setdefault(event, []).append(handler)
+
+    def _trigger_event(self, event: StoreEvent, **kwargs: Any) -> None:
+        """Trigger an event and call all registered handlers.
+
+        Args:
+            event: The event to trigger.
+            **kwargs: The event arguments.
+        """
+        for handler in self._event_handlers.get(event, []):
+            try:
+                handler(event, **kwargs)
+            except Exception as e:
+                logger.error(
+                    f"Silently ignoring error caught while triggering event "
+                    f"store handler for event {event.value}: {e}",
+                    exc_info=True,
+                )
 
     # ------
     # Stacks
