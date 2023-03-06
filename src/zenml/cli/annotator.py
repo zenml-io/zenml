@@ -69,8 +69,12 @@ def register_annotator_subcommands() -> None:
         Args:
             annotator: The annotator stack component.
         """
+        dataset_names = annotator.get_dataset_names()
+        if not dataset_names:
+            cli_utils.warning("No datasets found.")
+            return
         cli_utils.print_list_items(
-            list_items=annotator.get_dataset_names(),
+            list_items=dataset_names,
             column_title="DATASETS",
         )
 
@@ -109,7 +113,7 @@ def register_annotator_subcommands() -> None:
     @click.option(
         "--all",
         "-a",
-        "all",
+        "all_",
         is_flag=True,
         help="Use this flag to delete all datasets.",
         type=click.BOOL,
