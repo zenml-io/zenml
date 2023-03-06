@@ -44,6 +44,7 @@ class GitHubIntegration(Integration):
             GitHubActionsOrchestratorFlavor,
             GitHubSecretsManagerFlavor,
         )
+
         return [
             GitHubActionsOrchestratorFlavor,
             GitHubSecretsManagerFlavor,
