@@ -78,6 +78,7 @@ runs:
 
     - name: Install requirements and ZenML
       if: steps.cache-virtualenv.outputs.cache-hit != 'true'
+      shell: bash
       run: |
         pip install -r zenml-requirements.txt
         pip install -e .
