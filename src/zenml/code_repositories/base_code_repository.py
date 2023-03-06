@@ -202,6 +202,7 @@ class GitHubCodeRepository(BaseCodeRepository):
         self._owner = owner
         self._repository = repository
         self._token = token
+        self.login()
 
     @property
     def github_repo(self) -> Repository:
