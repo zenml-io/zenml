@@ -27,6 +27,7 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
     ENV_ZENML_CONFIG_PATH,
     ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
+    ENV_ZENML_REQUIRES_CODE_DOWNLOAD,
 )
 from zenml.enums import OperatingSystemType
 from zenml.integrations.registry import integration_registry
@@ -494,6 +495,9 @@ class PipelineDockerImageBuilder:
             )
 
         lines.append(f"ENV {ENV_ZENML_ENABLE_REPO_INIT_WARNINGS}=False")
+        if not docker_settings.copy_files:
+            lines.append(f"ENV {ENV_ZENML_REQUIRES_CODE_DOWNLOAD}=True")
+
         if docker_settings.copy_global_config:
             lines.append(
                 f"ENV {ENV_ZENML_CONFIG_PATH}={DOCKER_IMAGE_ZENML_CONFIG_PATH}"
