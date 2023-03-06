@@ -190,6 +190,21 @@ def _format_plugins_table(
     return plugins_table
 
 
+def _plugin_display_name(plugin_name: str, version: Optional[str]) -> str:
+    """Helper function to get the display name of a plugin.
+
+    Args:
+        plugin_name: Name of the plugin.
+        version: Version of the plugin.
+
+    Returns:
+        Display name of the plugin.
+    """
+    if version:
+        return f"{plugin_name}:{version}"
+    return f"{plugin_name}:latest"
+
+
 @cli.group(cls=TagGroup, tag=CliCategories.HUB)
 def hub() -> None:
     """Interact with the ZenML Hub."""
@@ -213,66 +228,84 @@ def list_plugins() -> None:
     type=str,
     help="Version of the plugin to install.",
 )
-def install_plugin(plugin_name: str, version: Optional[str] = None) -> None:
+@click.option(
+    "--no-deps",
+    "--no-dependencies",
+    is_flag=True,
+    help="Do not install dependencies of the plugin.",
+)
+@click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    help="Do not ask for confirmation before installing.",
+)
+def install_plugin(
+    plugin_name: str,
+    version: Optional[str] = None,
+    no_deps: bool = False,
+    yes: bool = False,
+) -> None:
     """Install a plugin from the hub."""
+    display_name = _plugin_display_name(plugin_name, version)
+
     # Get plugin from hub
     plugin = _get_plugin(plugin_name, version)
     if not plugin:
-        error(f"Could not find plugin '{plugin_name}:{version}' on the hub.")
+        error(f"Could not find plugin '{display_name}' on the hub.")
 
     # Check if plugin can be installed
     index_url = plugin.index_url
     wheel_name = plugin.wheel_name
     if not index_url or not wheel_name:
-        error(
-            f"Plugin '{plugin_name}:{version}' is not available for "
-            "installation."
-        )
+        error(f"Plugin '{display_name}' is not available for installation.")
 
-    # Install plugin requirements
-    requirements = plugin.requirements
-    if requirements:
-        requirements_str = " ".join(f"'{r}'" for r in requirements)
-        confirmation = click.confirm(
-            f"Plugin '{plugin_name}:{version}' requires the following "
-            f"packages to be installed: {requirements_str}. Do you want to "
-            f"install them now?"
-        )
-        if not confirmation:
-            error(
-                f"Plugin '{plugin_name}:{version}' cannot be installed "
-                "without the required packages."
+    # Install plugin dependencies
+    if not no_deps and plugin.requirements:
+        requirements_str = " ".join(f"'{r}'" for r in plugin.requirements)
+
+        if not yes:
+            confirmation = click.confirm(
+                f"Plugin '{display_name}' requires the following "
+                f"packages to be installed: {requirements_str}. Do you want to "
+                f"install them now?"
             )
+            if not confirmation:
+                error(
+                    f"Plugin '{display_name}' cannot be installed "
+                    "without the required packages."
+                )
 
         logger.info(
-            f"Installing requirements for plugin '{plugin_name}:{version}': "
+            f"Installing requirements for plugin '{display_name}': "
             f"{requirements_str}..."
         )
         subprocess.check_call(
-            [sys.executable, "-m", "pip", "install", *requirements]
+            [sys.executable, "-m", "pip", "install", *plugin.requirements]
         )
         logger.info(
             f"Successfully installed requirements for plugin "
-            f"'{plugin_name}:{version}'."
+            f"'{display_name}'."
         )
 
     # pip install the wheel
     logger.info(
-        f"Installing plugin '{plugin_name}:{version}' from "
+        f"Installing plugin '{display_name}' from "
         f"{index_url}{wheel_name}..."
     )
-    subprocess.check_call(
-        [
-            sys.executable,
-            "-m",
-            "pip",
-            "install",
-            "--index-url",
-            index_url,
-            wheel_name,
-        ]
-    )
-    logger.info(f"Successfully installed plugin '{plugin_name}:{version}'.")
+    install_call = [
+        sys.executable,
+        "-m",
+        "pip",
+        "install",
+        "--index-url",
+        index_url,
+        wheel_name,
+    ]
+    if no_deps:
+        install_call.append("--no-deps")
+    subprocess.check_call(install_call)
+    logger.info(f"Successfully installed plugin '{display_name}'.")
 
 
 @hub.command("uninstall")
@@ -285,25 +318,26 @@ def install_plugin(plugin_name: str, version: Optional[str] = None) -> None:
 )
 def uninstall_plugin(plugin_name: str, version: Optional[str] = None) -> None:
     """Uninstall a plugin from the hub."""
+    display_name = _plugin_display_name(plugin_name, version)
+
     # Get plugin from hub
     plugin = _get_plugin(plugin_name, version)
     if not plugin:
-        error(f"Could not find plugin '{plugin_name}:{version}' on the hub.")
+        error(f"Could not find plugin '{display_name}' on the hub.")
 
     # Check if plugin can be uninstalled
     wheel_name = plugin.wheel_name
     if not wheel_name:
         error(
-            f"Plugin '{plugin_name}:{version}' is not available for "
-            "uninstallation."
+            f"Plugin '{display_name}' is not available for " "uninstallation."
         )
 
     # pip uninstall the wheel
-    logger.info(f"Uninstalling plugin '{plugin_name}:{version}'...")
+    logger.info(f"Uninstalling plugin '{display_name}'...")
     subprocess.check_call(
         [sys.executable, "-m", "pip", "uninstall", wheel_name, "-y"]
     )
-    logger.info(f"Successfully uninstalled plugin '{plugin_name}:{version}'.")
+    logger.info(f"Successfully uninstalled plugin '{display_name}'.")
 
 
 @hub.command("pull")
@@ -325,10 +359,12 @@ def pull_plugin(
     output_dir: Optional[str] = None,
 ) -> None:
     """Pull a plugin from the hub."""
+    display_name = _plugin_display_name(plugin_name, version)
+
     # Get plugin from hub
     plugin = _get_plugin(plugin_name, version)
     if not plugin:
-        error(f"Could not find plugin '{plugin_name}:{version}' on the hub.")
+        error(f"Could not find plugin '{display_name}' on the hub.")
 
     repo_url = plugin.repository_url
     subdir = plugin.repository_subdirectory
@@ -336,7 +372,7 @@ def pull_plugin(
     # Clone the source repo
     if output_dir is None:
         output_dir = os.path.join(os.getcwd(), plugin_name)
-    logger.info(f"Pulling plugin '{plugin_name}:{version}' to {output_dir}...")
+    logger.info(f"Pulling plugin '{display_name}' to {output_dir}...")
     # If no subdir, we can clone directly into output_dir
     if not subdir:
         repo_path = plugin_dir = output_dir
@@ -361,7 +397,7 @@ def pull_plugin(
     if subdir:
         shutil.move(plugin_dir, output_dir)
         shutil.rmtree(repo_path)
-    logger.info(f"Successfully pulled plugin '{plugin_name}:{version}'.")
+    logger.info(f"Successfully pulled plugin '{display_name}'.")
 
 
 @hub.command("push")
@@ -525,15 +561,15 @@ def push_plugin(
     plugin_version = plugin_response.version
     logger.info(
         "Thanks for submitting your plugin to the ZenML Hub. The plugin is now "
-        "being built into an installable package and build logs will be "
-        "streamed below. This may take a few minutes. If you want to cancel "
-        "this process, you can also retrieve the build logs later by running "
+        "being built into an installable package. This may take a few minutes. "
+        "To view the build logs, run "
         f"`zenml hub logs {plugin_name} --version {plugin_version}`."
     )
-    _stream_plugin_build_logs(
-        plugin_name=plugin_response.name,
-        plugin_version=plugin_response.version,
-    )  # TODO: why doesn't this wait till all the logs are streamed?
+    # TODO
+    # _stream_plugin_build_logs(
+    #     plugin_name=plugin_response.name,
+    #     plugin_version=plugin_response.version,
+    # )
 
 
 def _validate_plugin_name(
@@ -817,9 +853,14 @@ def _ask_for_tags() -> List[str]:
     help="Version of the plugin to pull.",
 )
 def get_logs(plugin_name: str, version: Optional[str] = None) -> None:
+    display_name = _plugin_display_name(plugin_name, version)
+
+    # Get the plugin from the hub
     plugin = _get_plugin(plugin_name=plugin_name, plugin_version=version)
     if not plugin:
-        error(f"Could not find plugin '{plugin_name}:{version}' on the hub.")
+        error(f"Could not find plugin '{display_name}' on the hub.")
+
+    # Stream the logs
     _stream_plugin_build_logs(
         plugin_name=plugin_name, plugin_version=plugin.version
     )
