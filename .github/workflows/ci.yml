@@ -16,13 +16,13 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  setup-python-environment:
-    if: github.event.pull_request.draft == false
-    uses: ./.github/workflows/setup-python-environment.yml
-    secrets: inherit
+  # setup-python-environment:
+  #   if: github.event.pull_request.draft == false
+  #   uses: ./.github/workflows/setup-python-environment.yml
+  #   secrets: inherit
 
   lint-code:
-    needs: setup-python-environment
+    # needs: setup-python-environment
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
@@ -35,7 +35,7 @@ jobs:
     secrets: inherit
 
   unit-test:
-    needs: setup-python-environment
+    # needs: setup-python-environment
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
@@ -48,7 +48,7 @@ jobs:
     secrets: inherit
 
   integration-test:
-    needs: setup-python-environment
+    # needs: setup-python-environment
     # Exit if its a commit from Gitbook
     if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
     strategy:
