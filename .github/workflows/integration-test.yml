@@ -173,7 +173,7 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup_environment
         with:
-          cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
+          cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}-integration
           python-version: ${{ inputs.python-version }}
           os: ${{ inputs.os }}
 
@@ -221,7 +221,6 @@ jobs:
 
       - name: Install Prerequisites - Stage 1
         run: |
-          source $VENV
           # install integrations: round 1
           zenml integration export-requirements --output-file requirements.txt --ignore-integration feast --ignore-integration label_studio --ignore-integration bentoml --ignore-integration seldon --ignore-integration kserve
           pip install -r requirements.txt
@@ -229,7 +228,6 @@ jobs:
 
       # - name: Install Prerequisites - Stage 2
       #   run: |
-      #     source $VENV
       #     # install integrations: round 2, needed because:
       #     #  - kserve requires a tritonclient version that is lower that the one needed by mlflow
       #     #  - seldon requires a prometheus-client version that is lower that the one needed by bentoml
@@ -241,7 +239,6 @@ jobs:
 
       - name: Install Prerequisites - Stage 3
         run: |
-          source $VENV
           # re-install zenml to be sure
           pip install -e ".[server,dev]"
           # install airflow requirements
@@ -254,7 +251,6 @@ jobs:
 
       - name: Check Python Env ahead of tests
         run: |
-          source $VENV
           zenml integration list
           pip list
           pip check || true
@@ -292,7 +288,6 @@ jobs:
 
       - name: Test
         run: |
-          source $VENV
           bash scripts/test-coverage-xml.sh integration ${{ inputs.test_environment }}
 
       - name: Setup tmate session after tests
@@ -303,7 +298,6 @@ jobs:
 
       - name: Verify Python Env unaffected
         run: |
-          source $VENV
           zenml integration list
           pip list
           pip check || true

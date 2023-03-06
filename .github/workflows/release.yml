@@ -8,8 +8,9 @@ on:
       - '*'
 
 jobs:
-  lint-code:
-    uses: ./.github/workflows/lint.yml
+
+  lint-unit-test:
+    uses: ./.github/workflows/lint-unit-test.yml
     with:
       os: "ubuntu-latest"
       python-version: "3.8"

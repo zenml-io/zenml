@@ -43,7 +43,7 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup_environment
         with:
-          cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
+          cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}-api-docs
           python-version: '3.8'
           os: ubuntu-latest
 
@@ -62,7 +62,6 @@ jobs:
       # deprecated in 3.1.0 but mkdocstring depends on this method
       - name: Install Dependencies
         run: |
-          source $VENV
           zenml integration install -y feast
           zenml integration install -y label_studio seldon
           zenml integration install -y bentoml
@@ -81,7 +80,6 @@ jobs:
         # the migration versions are not necessary parts of the api docs
       - name: Initialize DB and delete unnecessary alembic files
         run: |
-          source $VENV
           zenml status # to initialize the db
           rm -rf src/zenml/zen_stores/migrations/env.py
           rm -rf src/zenml/zen_stores/migrations/versions
@@ -89,5 +87,4 @@ jobs:
 
       - name: Runs docs generation
         run: |
-          source $VENV
           bash scripts/generate-docs.sh -s src/zenml/ --push --latest -v ${{ steps.get_version.outputs.VERSION }}

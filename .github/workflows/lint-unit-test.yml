@@ -1,4 +1,4 @@
-name: Code Linting, Formatting, and Type Checking
+name: Unit Test & Upload Coverage
 
 on:
   workflow_call:
@@ -11,6 +11,11 @@ on:
         description: 'Python version'
         type: string
         required: true
+      enable_tmate:
+        description: 'Enable tmate session for debugging'
+        type: string
+        required: false
+        default: "never"
 
   workflow_dispatch:
     inputs:
@@ -33,17 +38,30 @@ on:
           - '3.10'
         required: false
         default: '3.8'
+      enable_tmate:
+        description: 'Enable tmate session for debugging'
+        type: choice
+        options:
+          - 'no'
+          - 'on-failure'
+          - 'always'
+          - 'before-tests'
+        required: false
+        default: 'no'
 
 jobs:
-  lint:
-    name: lint
+  unittest:
+    name: unittest
     runs-on: ${{ inputs.os }}
     env:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: "utf-8"
-
-    # Exit if its a commit from Gitbook
+      # on MAC OS, we need to set this environment variable
+      # to fix problems with the fork() calls (see this thread
+      # for more information: http://sealiesoftware.com/blog/archive/2017/6/5/Objective-C_and_fork_in_macOS_1013.html)
+      OBJC_DISABLE_INITIALIZE_FORK_SAFETY: "YES"
+    # Exit if it's a commit from Gitbook
     if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
 
     defaults:
@@ -56,25 +74,39 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup_environment
         with:
-          cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
+          cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}-unit
           python-version: ${{ inputs.python-version }}
           os: ${{ inputs.os }}
 
-      - name: Install Dependencies
+      - name: Install Prerequisites - Stage 1
         run: |
-          source $VENV
-          zenml integration export-requirements --output-file requirements.txt --ignore-integration feast --ignore-integration label_studio --ignore-integration kserve --ignore-integration bentoml --ignore-integration tekton --ignore-integration airflow
+          zenml integration export-requirements --output-file requirements.txt kubeflow s3 gcp azure vault pillow evidently deepchecks great_expectations huggingface lightgbm neural_prophet pytorch tensorflow whylogs xgboost mlflow neptune
           pip install -r requirements.txt
           rm requirements.txt
           pip install click~=8.0.3
+          # Version 4.2.1 raises: AttributeError: type object 'Draft7Validator' has no attribute 'FORMAT_CHECKER'
+          pip install altair==4.2.0
+
+      # ADD BACK IN IF TESTING KSERVE
+      # - name: Install Prerequisites - Stage 2
+      #   run: |
+      #     # install kserve on python < 3.10
+      #     # kserve is not compatible with Python 3.10 yet
+      #     zenml integration export-requirements --output-file requirements.txt kserve
+      #     pip install -r requirements.txt
+      #     rm requirements.txt
+      #   if: ${{ inputs.python-version != '3.10' }}
 
       - name: Install Aspell
         run: sudo apt-get install aspell aspell-en
         if: ${{ inputs.os == 'ubuntu-latest' }} && ${{ inputs.python-version == '3.8' }}
 
-      - name: Lint
+      - name: Setup tmate session before tests
+        if: ${{ inputs.enable_tmate == 'before-tests' }}
+        uses: mxschmitt/action-tmate@v3
+
+      - name: Lint check
         run: |
-          source $VENV
           bash scripts/lint.sh
 
       - name: Spell check
@@ -82,12 +114,12 @@ jobs:
         # Only run the spell check on ubuntu-latest and python 3.8
         if: ${{ inputs.os == 'ubuntu-latest' }} && ${{ inputs.python-version == '3.8' }}
 
-      - name: Docstring Check
+      - name: Docstring check
         run: bash scripts/docstring.sh
         # Only run the docstring check on ubuntu-latest and python 3.8
         if: ${{ inputs.os == 'ubuntu-latest' }} && ${{ inputs.python-version == '3.8' }}
 
-      - name: Markdown Link Check
+      - name: Markdown link check
         uses: gaurav-nelson/github-action-markdown-link-check@v1
         with:
           use-quiet-mode: 'yes'
@@ -98,3 +130,16 @@ jobs:
         continue-on-error: true
         # Only run the markdown link check on ubuntu-latest and python 3.8
         if: ${{ inputs.os == 'ubuntu-latest' }} && ${{ inputs.python-version == '3.8' }}
+
+      - name: Run unit tests
+        run: |
+          bash scripts/test-coverage-xml.sh unit
+
+      - name: Upload coverage
+        # only do it for python 3.8, we don't need to do it for every version
+        if: ${{ inputs.python-version == '3.8' && inputs.os == 'ubuntu-latest' }}
+        uses: codecov/codecov-action@v2
+
+      - name: Setup tmate session after tests
+        if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
+        uses: mxschmitt/action-tmate@v3
