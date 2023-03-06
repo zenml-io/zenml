@@ -31,6 +31,7 @@ from zenml.config.source import (
 )
 from zenml.logger import get_logger
 from zenml.utils import source_utils
+from zenml.utils.pagination_utils import depaginate
 
 if TYPE_CHECKING:
     from zenml.code_repositories.base_code_repository import (
@@ -172,9 +173,7 @@ def find_active_code_repository(
     if path in _CODE_REPOSITORY_CACHE:
         return _CODE_REPOSITORY_CACHE[path]
 
-    for model in Client().depaginate(
-        list_method=Client().list_code_repositories
-    ):
+    for model in depaginate(list_method=Client().list_code_repositories):
         repo = BaseCodeRepository.from_model(model)
 
         local_repo = repo.get_local_repo(path)
