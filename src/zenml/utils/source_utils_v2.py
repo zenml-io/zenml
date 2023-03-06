@@ -21,7 +21,7 @@ import sys
 from distutils.sysconfig import get_python_lib
 from pathlib import Path, PurePath
 from types import FunctionType, ModuleType
-from typing import Any, Dict, Iterator, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, Iterator, Optional, Type, Union
 
 from zenml.config.source import (
     CodeRepositorySource,
@@ -32,10 +32,17 @@ from zenml.config.source import (
 from zenml.logger import get_logger
 from zenml.utils import source_utils
 
+if TYPE_CHECKING:
+    from zenml.code_repositories.base_code_repository import (
+        BaseCodeRepository,
+        _DownloadedRepository,
+    )
+
 logger = get_logger(__name__)
 
 
 _SOURCE_MAPPING: Dict[int, Source] = {}
+_CUSTOM_CODE_REPOSITORY: Optional["_DownloadedRepository"] = None
 
 
 def load(source: Union[Source, str]) -> Any:
@@ -101,9 +108,12 @@ def resolve(obj: Union[Type[Any], FunctionType, ModuleType]) -> Source:
     source_type = get_source_type(module=module)
 
     if source_type == SourceType.USER:
-        from zenml.client import Client
+        if _CUSTOM_CODE_REPOSITORY:
+            local_repo = _CUSTOM_CODE_REPOSITORY
+        else:
+            from zenml.client import Client
 
-        local_repo = Client().find_active_code_repository()
+            local_repo = Client().find_active_code_repository()
 
         if local_repo and not local_repo.has_local_changes:
             module_name = _resolve_module(module)
@@ -137,6 +147,19 @@ def resolve(obj: Union[Type[Any], FunctionType, ModuleType]) -> Source:
 
 def get_source_root() -> str:
     return source_utils.get_source_root_path()
+
+
+def set_custom_code_repo(
+    root: str, commit: str, repo: "BaseCodeRepository"
+) -> None:
+    from zenml.code_repositories.base_code_repository import (
+        _DownloadedRepository,
+    )
+
+    global _CUSTOM_CODE_REPOSITORY
+    _CUSTOM_CODE_REPOSITORY = _DownloadedRepository(
+        zenml_code_repository=repo, root=root, commit=commit
+    )
 
 
 def is_user_file(file_path: str) -> bool:
@@ -202,9 +225,12 @@ def prepend_python_path(path: str) -> Iterator[None]:
 
 
 def _check_local_code_repository(source: CodeRepositorySource) -> None:
-    from zenml.client import Client
+    if _CUSTOM_CODE_REPOSITORY:
+        local_repo = _CUSTOM_CODE_REPOSITORY
+    else:
+        from zenml.client import Client
 
-    local_repo = Client().find_active_code_repository()
+        local_repo = Client().find_active_code_repository()
 
     if (
         not local_repo

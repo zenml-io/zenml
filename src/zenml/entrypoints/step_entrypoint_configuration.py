@@ -22,7 +22,7 @@ from zenml.entrypoints.base_entrypoint_configuration import (
 )
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
-from zenml.utils import source_utils
+from zenml.utils import source_utils, source_utils_v2
 
 if TYPE_CHECKING:
     from zenml.config.step_configurations import Step
@@ -197,14 +197,20 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
                 repo_reference.code_repository.id
             )
             repo = BaseCodeRepository.from_model(model)
-            code_directory = os.path.abspath("code")
-            os.makedirs(code_directory)
+            code_repo_root = os.path.abspath("code")
+            download_dir = os.path.join(
+                code_repo_root, repo_reference.subdirectory
+            )
+            os.makedirs(download_dir)
             repo.login()
             repo.download_files(
                 commit=repo_reference.commit,
-                directory=code_directory,
+                directory=download_dir,
                 repo_sub_directory=repo_reference.subdirectory,
             )
-            source_utils.set_custom_source_root(code_directory)
+            source_utils.set_custom_source_root(download_dir)
+            source_utils_v2.set_custom_code_repo(
+                root=code_repo_root, commit=repo_reference.commit, repo=repo
+            )
 
             logger.info("Code download finished.")

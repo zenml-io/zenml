@@ -248,3 +248,31 @@ class GitHubCodeRepository(BaseCodeRepository):
             return True
 
         return False
+
+
+class _DownloadedRepository(LocalRepository):
+    def __init__(
+        self,
+        zenml_code_repository: "BaseCodeRepository",
+        commit: str,
+        root: str,
+    ):
+        super().__init__(zenml_code_repository=zenml_code_repository)
+        self._commit = commit
+        self._root = root
+
+    @property
+    def root(self) -> str:
+        return self._root
+
+    @property
+    def is_dirty(self) -> bool:
+        return False
+
+    @property
+    def has_local_changes(self) -> bool:
+        return False
+
+    @property
+    def current_commit(self) -> str:
+        return self._commit
