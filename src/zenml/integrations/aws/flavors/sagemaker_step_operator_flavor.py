@@ -13,7 +13,9 @@
 #  permissions and limitations under the License.
 """Amazon SageMaker step operator flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING, Optional, Type, Union
+
+import sagemaker
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.aws import AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR
@@ -29,17 +31,68 @@ if TYPE_CHECKING:
 class SagemakerStepOperatorSettings(BaseSettings):
     """Settings for the Sagemaker step operator.
 
-    Attributes:
-        instance_type: The type of the compute instance where jobs will run.
-            Check https://docs.aws.amazon.com/sagemaker/latest/dg/notebooks-available-instance-types.html
-            for a list of available instance types.
+    Non-Estimator attributes:
         experiment_name: The name for the experiment to which the job
             will be associated. If not provided, the job runs would be
             independent.
-    """
+        input_data_s3_uri: S3 URI where training data is located if not locally,
+            e.g. s3://my-bucket/my-data/train. How data will be made available
+            to the container is configured with input_mode. Two possible
+            input types:
+                - str: S3 location where training data is saved.
+                - dict[str, str]: (ChannelName, S3Location) which represent
+                    channels (e.g. training, validation, testing) where
+                    specific parts of the data are saved in S3.
 
+    Estimator attributes:
+        See https://sagemaker.readthedocs.io/en/stable/api/training/estimators.html#sagemaker.estimator.Estimator
+        for a full list of attributes.
+
+    """
+    instance_count: Optional[int] = None
     instance_type: Optional[str] = None
+    keep_alive_period_in_seconds: Optional[int] = None
+    volume_size: Optional[int] = None
+    volume_kms_key: Optional[str] = None
+    max_run: Optional[int] = None
+    input_mode: Optional[str] = None
+    output_path: Optional[str] = None
+    output_kms_key: Optional[str] = None
+    base_job_name: Optional[str] = None
+    sagemaker_session: Optional[sagemaker.session.Session] = None
+    hyperparameters: Optional[dict[str, str]] = None
+    tags: Optional[list[dict[str, str]]] = None
+    subnets: Optional[list[str]] = None
+    security_group_ids: Optional[list[str]] = None
+    model_uri: Optional[str] = None
+    model_channel_name: Optional[str] = None
+    metric_definitions: Optional[list[dict[str, str]]] = None
+    encrypt_inter_container_traffic: Optional[bool] = None
+    use_spot_instances: Optional[bool] = None
+    max_wait: Optional[int] = None
+    checkpoint_s3_uri: Optional[str] = None
+    checkpoint_local_path: Optional[str] = None
+    enable_network_isolation: Optional[bool] = None
+    rules: Optional[list[sagemaker.debugger.RuleBase]] = None
+    debugger_hook_config: Optional[Union[sagemaker.debugger.DebuggerHookConfig, bool]] = None
+    tensorboard_output_config: Optional[sagemaker.debugger.TensorBoardOutputConfig] = None
+    enable_sagemaker_metrics: Optional[bool] = None
+    profiler_config: Optional[sagemaker.debugger.ProfilerConfig] = None
+    disable_profiler: Optional[bool] = None
+    environment: Optional[dict[str, str]] = None
+    max_retry_attempts: Optional[int] = None
+    source_dir: Optional[str] = None
+    git_config: Optional[dict[str, str]] = None
+    container_log_level: Optional[int] = None
+    code_location: Optional[str] = None
+    entry_point: Optional[str] = None
+    dependencies: Optional[list[str]] = None
+    instance_groups: Optional[list[sagemaker.instance_group.InstanceGroup]] = None
+    training_repository_access_mode: Optional[str] = None
+    training_repository_credentials_provider_arn: Optional[str] = None
+
     experiment_name: Optional[str] = None
+    input_data_s3_uri: Optional[Union[str, dict[str, str]]] = None
 
 
 class SagemakerStepOperatorConfig(  # type: ignore[misc] # https://github.com/pydantic/pydantic/issues/4173
