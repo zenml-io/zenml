@@ -16,7 +16,7 @@ from zenml.pipelines import pipeline
 
 docker_settings = DockerSettings(
     required_integrations=[SKLEARN],
-    requirements=["nltk"],
+    requirements=["pyarrow"],
 )
 
 

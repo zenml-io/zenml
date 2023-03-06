@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""MLFlow experiment tracker flavor."""
+"""MLflow experiment tracker flavor."""
 
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 

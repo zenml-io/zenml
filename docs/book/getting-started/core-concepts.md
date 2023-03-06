@@ -98,6 +98,8 @@ In order to run *stack components* that are running on infrastructure on the clo
 A **ZenML Server** keeps track of all the bits of metadata around a pipeline run. It allows you to fetch specific steps from your pipeline run and their output artifacts in a post-execution workflow. With a ZenML server, you are able to access all of your previous experiments with the associated details.
 This is extremely helpful in troubleshooting.
 
+The **ZenML Server** also acts as a [centralized secrets store](../advanced-guide/practical/secrets-management.md) that safely and securely stores sensitive data such as credentials used to access the services that are part of your stack. It can be configured to use a variety of different backends for this purpose, such as the AWS Secrets Manager, GCP Secret Manager, Azure Key Vault and Hashicorp Vault.
+
 ![ZenML Architectural Diagram](../assets/core_concepts/04_architecture.png)
 
 The **ZenML Dashboard** also communicates with the ZenML Server to visualize your *pipelines*, *stacks*, and *stack components*. The dashboard serves as a visual interface to showcase collaboration with ZenML. You can invite *users*, and share your stacks with them.
@@ -112,6 +114,11 @@ There are lots of different ways to use ZenML which will depend on your precise
 use case. The following concepts and stack components are things you'll possibly
 encounter further down the road while using ZenML.
 
+- **Secrets** - Secrets are sensitive data that you don't want to store in your
+  code or configure alongside your stacks and pipelines. For example, you might
+  want to store the AWS credentials required to access an S3 artifact store in a
+  secret. ZenML includes a [centralized secrets store](../advanced-guide/practical/secrets-management.md)
+  that you can use to store and access your secrets securely.
 - **Materializers** - ZenML stores the data inputs and outputs to your steps in the
   Artifact Store as we saw above. In order to store the data, it needs to
   serialize everything in a format that can fit into the Artifact Store. ZenML
