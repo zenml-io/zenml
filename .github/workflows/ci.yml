@@ -23,12 +23,28 @@ jobs:
 
   lint-code:
     needs: setup-python-environment
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
+      fail-fast: false
     uses: ./.github/workflows/lint.yml
+    with:
+      os: ${{ matrix.os }}
+      python-version: ${{ matrix.python-version }}
     secrets: inherit
 
   unit-test:
     needs: setup-python-environment
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
+      fail-fast: false
     uses: ./.github/workflows/unit-test.yml
+    with:
+      os: ${{ matrix.os }}
+      python-version: ${{ matrix.python-version }}
     secrets: inherit
 
   integration-test:
@@ -83,12 +99,3 @@ jobs:
       python-version: ${{ matrix.python-version }}
       test_environment: ${{ matrix.test_environment }}
     secrets: inherit
-
-  markdown-link-check:
-    uses: ./.github/workflows/markdown-link-check.yml
-
-  docstring-check:
-    uses: ./.github/workflows/docstring.yml
-
-  spell-check:
-    uses: ./.github/workflows/spellcheck.yml

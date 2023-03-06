@@ -137,6 +137,8 @@ types-termcolor = { version = "^1.1.2", optional = true }
 types-psutil = { version = "^5.8.13", optional = true }
 # test framework dependencies
 docker-compose = { version = "^1.28", optional = true }
+# spell checker dependencies
+pyspelling = { version = ">=2.8.2", optional = true }
 
 [tool.poetry.extras]
 server = ["fastapi", "uvicorn", "python-multipart", "python-jose", "fastapi-utils"]
@@ -145,7 +147,7 @@ secrets-aws = ["boto3"]
 secrets-gcp = ["google-cloud-secret-manager"]
 secrets-azure = ["azure-identity", "azure-keyvault-secrets"]
 secrets-hashicorp = ["hvac"]
-dev = ["black", "ruff", "coverage", "pytest", "mypy", "pre-commit", "pyment", "tox", "hypothesis", "typing-extensions", "darglint", "pytest-randomly", "pytest-mock", "pytest-clarity", "mkdocs", "mkdocs-material", "mkdocs-awesome-pages-plugin", "mkdocstrings", "mike", "types-certifi", "types-croniter", "types-futures", "types-Markdown", "types-Pillow", "types-protobuf", "types-PyMySQL", "types-python-dateutil", "types-python-slugify", "types-PyYAML", "types-redis", "types-requests", "types-setuptools", "types-six", "types-termcolor", "types-psutil", "docker-compose"]
+dev = ["black", "ruff", "coverage", "pytest", "mypy", "pre-commit", "pyment", "tox", "hypothesis", "typing-extensions", "darglint", "pytest-randomly", "pytest-mock", "pytest-clarity", "mkdocs", "mkdocs-material", "mkdocs-awesome-pages-plugin", "mkdocstrings", "mike", "types-certifi", "types-croniter", "types-futures", "types-Markdown", "types-Pillow", "types-protobuf", "types-PyMySQL", "types-python-dateutil", "types-python-slugify", "types-PyYAML", "types-redis", "types-requests", "types-setuptools", "types-six", "types-termcolor", "types-psutil", "docker-compose", "pyspelling"]
 
 [build-system]
 requires = ["poetry-core"]

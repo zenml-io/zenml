@@ -10,6 +10,9 @@ on:
 jobs:
   lint-code:
     uses: ./.github/workflows/lint.yml
+    with:
+      os: "ubuntu-latest"
+      python-version: "3.8"
     secrets: inherit
 
   publish-python-package:

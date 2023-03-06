@@ -16,10 +16,21 @@ inputs:
 runs:
   using: "composite"
   steps:
+
+    - name: Write cache version
+      shell: bash
+      run: echo $CACHE_VERSION >> cache_version
+      env:
+        CACHE_VERSION : ${{inputs.cache_version}}
+
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ inputs.python-version }}
+        cache: 'pip' # caching the pip download cache
+        cache-dependency-path: |
+          pyproject.toml
+          cache_version
 
     - name: Delete error-causing bash
       shell: bash
@@ -32,43 +43,41 @@ runs:
       run: |
         echo "SHELL_EXECUTABLE=C:\Program Files\Git\bin\bash.exe" >> $GITHUB_ENV
 
-    - name: Get current date
+    - name: Install pip-tools
       shell: bash
-      id: date
-      run: echo "::set-output name=date::$(date +'calendar-week-%W')"
+      run: pip install pip-tools
 
-    - name: Write cache version
+    # We generate a set of frozen requirements to be used as a key for the
+    # cached virtualenv. This ensures that the virtualenv cache is invalidated
+    # if the requirements change.
+    # Note that we explicitly avoid using pyproject.toml directly as a cache key
+    # because it contains a lot of packages that are not pinned to a specific
+    # version. Even when this file doesn't change, new versions of the packages
+    # might be released and we want to make sure to always test against the
+    # latest versions.
+    #
+    # Assumption: pip-compile computes the same list of packages that the
+    # `pip install` command would compute.
+    - name: Generate frozen requirements
       shell: bash
-      run: echo $CACHE_VERSION >> cache_version
-      env:
-        CACHE_VERSION : ${{inputs.cache_version}}
-
-    - name: Load cached venv
-      id: cached-virtualenv
-      uses: actions/cache@v2.1.6
-      with:
-        path: .venv
-        # Cache the complete venv dir for a given os, python version,
-        # pyproject.toml, the current calendar week and the cache version.
-        # Providing a different value for the cache version enables manual
-        # invalidation of the cache in case it is in some erroneous state.
-        key: venv-${{ runner.os }}-python-${{ inputs.python-version }}-${{ hashFiles('pyproject.toml') }}-${{ steps.date.outputs.date }}-${{ hashFiles('cache_version') }}
-
-    - name: Set virtualenv activation script env variable (windows)
-      shell: bash
-      run: echo "VENV=.venv/scripts/activate" >> "$GITHUB_ENV"
-      if: runner.os == 'Windows'
-
-    - name: Set virtualenv activation script env variable (unix)
-      shell: bash
-      run: echo "VENV=.venv/bin/activate" >> "$GITHUB_ENV"
-      if: runner.os != 'Windows'
-
-    - name: Install Project
-      shell: bash
-      if: steps.cached-virtualenv.outputs.cache-hit != 'true'
       run: |
-        python -m venv .venv
-        source $VENV
-        python -m pip install --upgrade pip
-        pip install -e ".[server,dev]"
+        python -m piptools compile -v --all-extras -o zenml-requirements.txt \
+          --resolver=backtracking pyproject.toml
+
+    - uses: syphar/restore-virtualenv@v1
+      id: cache-virtualenv
+      with:
+        requirement_files: 'zenml-requirements.txt'
+        custom_cache_key_element: ${{ inputs.cache_version }}
+
+    - uses: syphar/restore-pip-download-cache@v1
+      if: steps.cache-virtualenv.outputs.cache-hit != 'true'
+      with:
+        requirement_files: 'zenml-requirements.txt'
+        custom_cache_key_element: ${{ inputs.cache_version }}
+
+    - name: Install requirements and ZenML
+      if: steps.cache-virtualenv.outputs.cache-hit != 'true'
+      run: |
+        pip install -r zenml-requirements.txt
+        pip install -e .
