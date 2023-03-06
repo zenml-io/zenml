@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Initialization of the ZenML GitHub code repository."""
 
-from zenml.integrations.github.code_repository.github_code_repository import (
+from zenml.integrations.github.code_repositories.github_code_repository import (
     GitHubCodeRepository,
 )
 
