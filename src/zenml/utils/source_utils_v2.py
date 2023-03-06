@@ -35,6 +35,7 @@ from zenml.utils import source_utils
 if TYPE_CHECKING:
     from zenml.code_repositories.base_code_repository import (
         BaseCodeRepository,
+        LocalRepository,
         _DownloadedRepository,
     )
 
@@ -51,7 +52,7 @@ def load(source: Union[Source, str]) -> Any:
 
     import_root = None
     if isinstance(source, CodeRepositorySource):
-        _check_local_code_repository(source=source)
+        _warn_about_potential_source_loading_issues(source=source)
         import_root = get_source_root()
     elif isinstance(source, DistributionPackageSource):
         if source.version:
@@ -108,12 +109,7 @@ def resolve(obj: Union[Type[Any], FunctionType, ModuleType]) -> Source:
     source_type = get_source_type(module=module)
 
     if source_type == SourceType.USER:
-        if _CUSTOM_CODE_REPOSITORY:
-            local_repo = _CUSTOM_CODE_REPOSITORY
-        else:
-            from zenml.client import Client
-
-            local_repo = Client().find_active_code_repository()
+        local_repo = get_code_repo()
 
         if local_repo and not local_repo.has_local_changes:
             module_name = _resolve_module(module)
@@ -160,6 +156,15 @@ def set_custom_code_repo(
     _CUSTOM_CODE_REPOSITORY = _DownloadedRepository(
         zenml_code_repository=repo, root=root, commit=commit
     )
+
+
+def get_code_repo() -> Optional["LocalRepository"]:
+    if _CUSTOM_CODE_REPOSITORY:
+        return _CUSTOM_CODE_REPOSITORY
+
+    from zenml.client import Client
+
+    return Client().find_active_code_repository()
 
 
 def is_user_file(file_path: str) -> bool:
@@ -224,13 +229,10 @@ def prepend_python_path(path: str) -> Iterator[None]:
         sys.path.remove(path)
 
 
-def _check_local_code_repository(source: CodeRepositorySource) -> None:
-    if _CUSTOM_CODE_REPOSITORY:
-        local_repo = _CUSTOM_CODE_REPOSITORY
-    else:
-        from zenml.client import Client
-
-        local_repo = Client().find_active_code_repository()
+def _warn_about_potential_source_loading_issues(
+    source: CodeRepositorySource,
+) -> None:
+    local_repo = get_code_repo()
 
     if not local_repo:
         logger.warning(
