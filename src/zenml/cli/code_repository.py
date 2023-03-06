@@ -106,7 +106,7 @@ def connect_code_repository(
             "token": token,
         }
         source = Source(
-            module="zenml.code_repositories.base_code_repository",
+            module="zenml.integrations.github.github_code_repository",
             attribute="GitHubCodeRepository",
             type=SourceType.UNKNOWN,
         )

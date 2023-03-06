@@ -31,7 +31,7 @@ class GitHubIntegration(Integration):
     """Definition of GitHub integration for ZenML."""
 
     NAME = GITHUB
-    REQUIREMENTS: List[str] = ["PyNaCl~=1.5.0"]
+    REQUIREMENTS: List[str] = ["PyNaCl~=1.5.0", "pygithub"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
@@ -45,7 +45,10 @@ class GitHubIntegration(Integration):
             GitHubSecretsManagerFlavor,
         )
 
-        return [GitHubActionsOrchestratorFlavor, GitHubSecretsManagerFlavor]
+        return [
+            GitHubActionsOrchestratorFlavor,
+            GitHubSecretsManagerFlavor,
+        ]
 
 
 GitHubIntegration.check_installation()
