@@ -57,6 +57,7 @@ if TYPE_CHECKING:
     from zenml.feature_stores import BaseFeatureStore
     from zenml.image_builders import BaseImageBuilder
     from zenml.model_deployers import BaseModelDeployer
+    from zenml.model_registries import BaseModelRegistry
     from zenml.models.pipeline_deployment_models import (
         PipelineDeploymentBaseModel,
         PipelineDeploymentResponseModel,
@@ -98,6 +99,7 @@ class Stack:
         annotator: Optional["BaseAnnotator"] = None,
         data_validator: Optional["BaseDataValidator"] = None,
         image_builder: Optional["BaseImageBuilder"] = None,
+        model_registry: Optional["BaseModelRegistry"] = None,
     ):
         """Initializes and validates a stack instance.
 
@@ -116,6 +118,7 @@ class Stack:
             annotator: Annotator component of the stack.
             data_validator: Data validator component of the stack.
             image_builder: Image builder component of the stack.
+            model_registry: Model registry component of the stack.
         """
         self._id = id
         self._name = name
@@ -130,6 +133,7 @@ class Stack:
         self._alerter = alerter
         self._annotator = annotator
         self._data_validator = data_validator
+        self._model_registry = model_registry
 
         requires_image_builder = (
             orchestrator.flavor != "local"
@@ -241,6 +245,7 @@ class Stack:
         from zenml.feature_stores import BaseFeatureStore
         from zenml.image_builders import BaseImageBuilder
         from zenml.model_deployers import BaseModelDeployer
+        from zenml.model_registries import BaseModelRegistry
         from zenml.orchestrators import BaseOrchestrator
         from zenml.secrets_managers import BaseSecretsManager
         from zenml.step_operators import BaseStepOperator
@@ -331,6 +336,12 @@ class Stack:
         ):
             _raise_type_error(image_builder, BaseImageBuilder)
 
+        model_registry = components.get(StackComponentType.MODEL_REGISTRY)
+        if model_registry is not None and not isinstance(
+            model_registry, BaseModelRegistry
+        ):
+            _raise_type_error(model_registry, BaseModelRegistry)
+
         return Stack(
             id=id,
             name=name,
@@ -346,6 +357,7 @@ class Stack:
             annotator=annotator,
             data_validator=data_validator,
             image_builder=image_builder,
+            model_registry=model_registry,
         )
 
     @property
@@ -370,6 +382,7 @@ class Stack:
                 self.annotator,
                 self.data_validator,
                 self.image_builder,
+                self.model_registry,
             ]
             if component is not None
         }
@@ -500,6 +513,15 @@ class Stack:
             The image builder of the stack.
         """
         return self._image_builder
+
+    @property
+    def model_registry(self) -> Optional["BaseModelRegistry"]:
+        """The model registry of the stack.
+
+        Returns:
+            The model registry of the stack.
+        """
+        return self._model_registry
 
     def dict(self) -> Dict[str, str]:
         """Converts the stack into a dictionary.

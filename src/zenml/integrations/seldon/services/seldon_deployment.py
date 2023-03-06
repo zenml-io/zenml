@@ -94,6 +94,9 @@ class SeldonDeploymentConfig(ServiceConfig):
             labels["zenml.model_uri"] = self.model_uri
         if self.implementation:
             labels["zenml.model_type"] = self.implementation
+        if self.extra_args:
+            for key, value in self.extra_args.items():
+                labels[f"zenml.{key}"] = value
         SeldonClient.sanitize_labels(labels)
         return labels
 

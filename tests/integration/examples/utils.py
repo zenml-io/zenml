@@ -18,7 +18,7 @@ import time
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import Generator, List, Optional, Tuple
+from typing import Dict, Generator, List, Optional, Tuple
 
 import pytest
 
@@ -26,6 +26,7 @@ from zenml.cli import EXAMPLES_RUN_SCRIPT, SHELL_EXECUTABLE, LocalExample
 from zenml.enums import ExecutionStatus
 from zenml.post_execution.pipeline import get_pipeline
 from zenml.post_execution.pipeline_run import PipelineRunView
+from zenml.utils.pagination_utils import depaginate
 
 DEFAULT_PIPELINE_RUN_START_TIMEOUT = 30
 DEFAULT_PIPELINE_RUN_FINISH_TIMEOUT = 300
@@ -64,27 +65,28 @@ def example_runner(examples_dir: Path) -> List[str]:
 def run_example(
     request: pytest.FixtureRequest,
     name: str,
-    *args: str,
-    pipeline_name: Optional[str] = None,
-    run_count: Optional[int] = None,
-    step_count: Optional[int] = None,
-) -> Generator[Tuple[LocalExample, List[PipelineRunView]], None, None]:
+    example_args: Optional[List[str]] = None,
+    pipelines: Optional[Dict[str, Tuple[int, int]]] = None
+    # pipeline_name: Optional[str] = None,
+    # run_count: Optional[int] = None,
+    # step_count: Optional[int] = None,
+) -> Generator[
+    Tuple[LocalExample, Dict[str, List[PipelineRunView]]], None, None
+]:
     """Runs the given example and validates it ran correctly.
 
     Args:
         request: The pytest request object.
         name: The name (=directory name) of the example.
-        *args: Additional arguments to pass to the example
-        pipeline_name: Validate that a pipeline with this name was registered.
-        run_count: Validate that this many pipeline runs were executed during
-            the example run.
-        step_count: Validate that the pipeline runs had this many steps.
+        example_args: Additional arguments to pass to the example
+        pipelines: Validate that the pipelines were executed during the example
+            run. Maps pipeline names to a Tuple (run_count, step_count) that
+            specifies the expected number of runs (and their steps) to validate.
 
     Yields:
         The example and the pipeline runs that were executed and validated.
     """
     from zenml.client import Client
-    from zenml.enums import StackComponentType
 
     # Root directory of all checked out examples
     examples_directory = Path(__file__).parents[3] / "examples"
@@ -94,15 +96,26 @@ def run_example(
     # Copy all example files into the repository directory
     copy_example_files(str(examples_directory / name), str(dst_dir))
 
+    client = Client()
+    existing_pipeline_ids = {
+        pipeline.id
+        for pipeline in depaginate(list_method=client.list_pipelines)
+    }
+    existing_build_ids = {
+        build.id for build in depaginate(list_method=client.list_builds)
+    }
+
     now = datetime.utcnow()
 
     # Run the example
     example = LocalExample(name=name, path=dst_dir, skip_manual_check=True)
-    example.run_example_directly(*args)
+    example_args = example_args or []
+    example.run_example_directly(*example_args)
 
-    runs: List[PipelineRunView] = []
-    if pipeline_name:
-        runs = wait_and_validate_pipeline_run(
+    pipelines = pipelines or {}
+    runs: Dict[str, List[PipelineRunView]] = {}
+    for pipeline_name, (run_count, step_count) in pipelines.items():
+        runs[pipeline_name] = wait_and_validate_pipeline_run(
             pipeline_name=pipeline_name,
             run_count=run_count,
             step_count=step_count,
@@ -111,24 +124,26 @@ def run_example(
 
     yield example, runs
 
+    # Cleanup registered pipelines so they don't cause trouble in future
+    # example runs
+    for pipeline in depaginate(list_method=client.list_pipelines):
+        if (
+            pipeline.id not in existing_pipeline_ids
+            and pipeline_name in pipelines
+        ):
+            client.delete_pipeline(pipeline.id)
+
     cleanup_docker = request.config.getoption("cleanup_docker", False)
 
     if cleanup_docker:
         # Clean up more expensive resources like docker containers, volumes and
         # images, if any were created.
+        image_names = set()
+        for build in depaginate(list_method=client.list_builds):
+            if build.id in existing_build_ids:
+                continue
 
-        active_stack = Client().active_stack_model
-        if StackComponentType.CONTAINER_REGISTRY in active_stack.components:
-            container_registry = active_stack.components[
-                StackComponentType.CONTAINER_REGISTRY
-            ][0]
-            image_name = f"{container_registry.configuration['uri']}/zenml:{pipeline_name}"
-        else:
-            # For orchestrators that don't need a container registry (e.g. local
-            # Docker orchestrator and local Airflow orchestrator) and for step
-            # operators, we leverage the default convention used to name the
-            # image `zenml:<pipeline_name>`.
-            image_name = f"zenml:{pipeline_name}"
+            image_names.update(item.image for item in build.images.values())
 
         try:
             from docker.client import DockerClient
@@ -141,19 +156,17 @@ def run_example(
             # Docker is not installed or running
             pass
         else:
-            try:
-                # If the image is not present on the local machine, the build
-                # phase either failed or we don't even have an orchestrator that
-                # builds a container image. Either way, we don't need to clean
-                # up any Docker resources.
-                pipeline_image = docker_client.images.get(image_name)
-                docker_client.containers.prune()
-                docker_client.volumes.prune()
-                logging.debug(f"Removing Docker image {pipeline_name}")
-                docker_client.images.remove(pipeline_image.id)
-                docker_client.images.prune()
-            except ImageNotFound:
-                pass
+            docker_client.containers.prune()
+            docker_client.volumes.prune()
+            for image_name in image_names:
+                try:
+                    logging.debug(f"Removing Docker image {image_name}")
+                    image = docker_client.images.get(image_name)
+                    docker_client.images.remove(image.id, force=True)
+                except ImageNotFound:
+                    pass
+
+            docker_client.images.prune()
 
 
 def wait_and_validate_pipeline_run(

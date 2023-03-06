@@ -43,7 +43,7 @@ def test_generate_run_nodes_and_edges(
         step_2=int_plus_one_test_step(),
     )
     pipeline_instance.run()
-    pipeline_run = get_pipeline("connected_two_step_pipeline").runs[-1]
+    pipeline_run = get_pipeline("connected_two_step_pipeline").runs[0]
 
     # Write some metadata for the pipeline run
     clean_client.create_run_metadata(
@@ -71,7 +71,7 @@ def test_generate_run_nodes_and_edges(
             )
 
     # Get the run again so all the metadata is loaded
-    pipeline_run = get_pipeline("connected_two_step_pipeline").runs[-1]
+    pipeline_run = get_pipeline("connected_two_step_pipeline").runs[0]
 
     # Generate a lineage graph for the pipeline run
     graph = LineageGraph()

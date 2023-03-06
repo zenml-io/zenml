@@ -24,3 +24,33 @@ requirements:
       evidently: true
       great_expectations: true
       whylogs: true
+
+  # External Neptune experiment tracker
+  - name: external-neptune-experiment-tracker
+    stacks:
+      - name: neptune
+        type: experiment_tracker
+        flavor: neptune
+        external: true
+    capabilities:
+      neptune: true
+
+  # Weights and biases experiment tracker
+  - name: external-wandb-experiment-tracker
+    stacks:
+      - name: wandb
+        type: experiment_tracker
+        flavor: wandb
+        external: true
+    capabilities:
+      wandb: true
+
+  # Slack alerter
+  - name: external-slack-alerter
+    stacks:
+      - name: slack
+        type: alerter
+        flavor: slack
+        external: true
+    capabilities:
+      slack: true

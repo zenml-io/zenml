@@ -65,6 +65,7 @@ class StackComponentType(StrEnum):
     ORCHESTRATOR = "orchestrator"
     SECRETS_MANAGER = "secrets_manager"
     STEP_OPERATOR = "step_operator"
+    MODEL_REGISTRY = "model_registry"
 
     @property
     def plural(self) -> str:
@@ -103,6 +104,11 @@ class SecretsStoreType(StrEnum):
     NONE = "none"  # indicates that the secrets store is disabled
     SQL = StoreType.SQL.value
     REST = StoreType.REST.value
+    AWS = "aws"
+    GCP = "gcp"
+    AZURE = "azure"
+    HASHICORP = "hashicorp"
+    CUSTOM = "custom"  # indicates that the secrets store uses a custom backend
 
 
 class ContainerRegistryFlavor(StrEnum):
