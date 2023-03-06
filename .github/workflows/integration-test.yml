@@ -173,7 +173,7 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup_environment
         with:
-          cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}-integration
+          cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}-integration-${{ inputs.test_environment }}
           python-version: ${{ inputs.python-version }}
           os: ${{ inputs.os }}
 
