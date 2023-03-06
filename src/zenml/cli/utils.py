@@ -60,6 +60,7 @@ from zenml.models.page_model import Page
 from zenml.secret import BaseSecretSchema
 from zenml.services import BaseService, ServiceState
 from zenml.stack import StackComponent
+from zenml.stack.stack_component import StackComponentConfig
 from zenml.utils import secret_utils
 from zenml.zen_server.deploy import ServerDeployment
 
@@ -1097,30 +1098,32 @@ def _get_stack_components(
     return list(stack.components.values())
 
 
-# secret_utils.is_secret_field(m.__fields__['tracking_password'])
-# c.active_stack.annotator.config.__class__.__fields__
-def _scrub_secret(configuration: Dict[str, Any]) -> Dict[str, Any]:
+def _scrub_secret(config: StackComponentConfig) -> Dict[str, Any]:
     """Remove secret values from a configuration.
 
     Args:
-        configuration: A configuration
+        config: configuration for a stack component
 
     Returns:
         A configuration with secret values removed.
     """
-    for key, value in configuration.items():
+    config_fields = dict(config.__class__.__fields__)
+    for key, value in config_fields.items():
         if secret_utils.is_secret_field(value):
-            configuration[key] = "********"
-    return configuration
+            config_fields[key] = "********"
+        else:
+            config_fields[key] = getattr(config, key)
+    return config_fields
 
 
-def print_debug_stack(stack: "Stack") -> None:
-    """Print stack and components for debugging purposes.
+def print_debug_stack() -> None:
+    """Print active stack and components for debugging purposes."""
+    from zenml.client import Client
 
-    Args:
-        stack: A stack
-    """
-    components = _get_stack_components(stack)
+    client = Client()
+    stack = client.get_stack()
+    active_stack = client.active_stack
+    components = _get_stack_components(active_stack)
 
     declare("\nCURRENT STACK\n", bold=True)
     console.print(f"Name: {stack.name}")
@@ -1133,6 +1136,9 @@ def print_debug_stack(stack: "Stack") -> None:
     )
 
     for component in components:
+        component_response = client.get_stack_component(
+            name_id_or_prefix=component.id, component_type=component.type
+        )
         declare(
             f"\n{component.type.value.upper()}: {component.name}\n", bold=True
         )
@@ -1140,19 +1146,20 @@ def print_debug_stack(stack: "Stack") -> None:
         console.print(f"ID: {str(component.id)}")
         console.print(f"Type: {component.type.value}")
         console.print(f"Flavor: {component.flavor}")
-        breakpoint()
+        console.print(f"Configuration: {_scrub_secret(component.config)}")
         console.print(
-            f"Configuration: {_scrub_secret(component.configuration)}"
+            f"Shared: {'Yes' if component_response.is_shared else 'No'}"
         )
-        console.print(f"Shared: {'Yes' if component.is_shared else 'No'}")
         if (
-            component.user and component.user.name and component.user.id
+            component_response.user
+            and component_response.user.name
+            and component_response.user.id
         ):  # mypy check
             console.print(
-                f"User: {component.user.name} / {str(component.user.id)}"
+                f"User: {component_response.user.name} / {str(component_response.user.id)}"
             )
         console.print(
-            f"Workspace: {component.workspace.name} / {str(component.workspace.id)}"
+            f"Workspace: {component_response.workspace.name} / {str(component_response.workspace.id)}"
         )
 
 
