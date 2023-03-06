@@ -50,9 +50,7 @@ def alerter_failure_hook(
         )
 
 
-def alerter_success_hook(
-    context: StepContext, params: BaseParameters
-) -> None:
+def alerter_success_hook(context: StepContext, params: BaseParameters) -> None:
     """Standard success hook that executes after step finishes successfully.
 
     This hook uses any `BaseAlerter` that is configured within the active stack to post a message.
