@@ -36,14 +36,13 @@ if TYPE_CHECKING:
     from zenml.code_repositories.base_code_repository import (
         BaseCodeRepository,
         LocalRepository,
-        _DownloadedRepository,
     )
 
 logger = get_logger(__name__)
 
 
 _SOURCE_MAPPING: Dict[int, Source] = {}
-_CUSTOM_CODE_REPOSITORY: Optional["_DownloadedRepository"] = None
+_CODE_REPOSITORY_CACHE: Dict[str, "LocalRepository"] = {}
 
 
 def load(source: Union[Source, str]) -> Any:
@@ -109,7 +108,7 @@ def resolve(obj: Union[Type[Any], FunctionType, ModuleType]) -> Source:
     source_type = get_source_type(module=module)
 
     if source_type == SourceType.USER:
-        local_repo = get_code_repo()
+        local_repo = find_active_code_repository()
 
         if local_repo and not local_repo.has_local_changes:
             module_name = _resolve_module(module)
@@ -152,19 +151,38 @@ def set_custom_code_repo(
         _DownloadedRepository,
     )
 
-    global _CUSTOM_CODE_REPOSITORY
-    _CUSTOM_CODE_REPOSITORY = _DownloadedRepository(
+    global _CODE_REPOSITORY_CACHE
+
+    path = os.path.abspath(get_source_root())
+    _CODE_REPOSITORY_CACHE[path] = _DownloadedRepository(
         zenml_code_repository=repo, root=root, commit=commit
     )
 
 
-def get_code_repo() -> Optional["LocalRepository"]:
-    if _CUSTOM_CODE_REPOSITORY:
-        return _CUSTOM_CODE_REPOSITORY
-
+def find_active_code_repository(
+    path: Optional[str] = None,
+) -> Optional["LocalRepository"]:
+    global _CODE_REPOSITORY_CACHE
     from zenml.client import Client
+    from zenml.code_repositories import BaseCodeRepository
 
-    return Client().find_active_code_repository()
+    path = path or get_source_root()
+    path = os.path.abspath(path)
+
+    if path in _CODE_REPOSITORY_CACHE:
+        return _CODE_REPOSITORY_CACHE[path]
+
+    for model in Client().depaginate(
+        list_method=Client().list_code_repositories
+    ):
+        repo = BaseCodeRepository.from_model(model)
+
+        local_repo = repo.get_local_repo(path)
+        if local_repo:
+            _CODE_REPOSITORY_CACHE[path] = local_repo
+            return local_repo
+
+    return None
 
 
 def is_user_file(file_path: str) -> bool:
@@ -232,7 +250,7 @@ def prepend_python_path(path: str) -> Iterator[None]:
 def _warn_about_potential_source_loading_issues(
     source: CodeRepositorySource,
 ) -> None:
-    local_repo = get_code_repo()
+    local_repo = find_active_code_repository()
 
     if not local_repo:
         logger.warning(
