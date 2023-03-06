@@ -80,7 +80,7 @@ jobs:
 
       - name: Install Prerequisites - Stage 1
         run: |
-          zenml integration export-requirements --output-file requirements.txt kubeflow s3 gcp azure vault pillow evidently deepchecks great_expectations huggingface lightgbm neural_prophet pytorch tensorflow whylogs xgboost mlflow neptune
+          zenml integration export-requirements --output-file requirements.txt --ignore-integration feast --ignore-integration label_studio --ignore-integration kserve --ignore-integration bentoml --ignore-integration tekton --ignore-integration airflow
           pip install -r requirements.txt
           rm requirements.txt
           pip install click~=8.0.3
