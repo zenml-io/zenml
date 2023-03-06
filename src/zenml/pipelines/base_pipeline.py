@@ -1129,6 +1129,20 @@ class BasePipeline(metaclass=BasePipelineMeta):
             The build response.
         """
         if not build:
+            existing_build = self._find_existing_build(
+                deployment=deployment, pipeline_id=pipeline_id
+            )
+
+            if existing_build:
+                logger.info(
+                    "Reusing existing build `%s` for pipeline `%s` and "
+                    "stack `%s`.",
+                    existing_build.id,
+                    self.name,
+                    Client().active_stack.name,
+                )
+                return existing_build
+
             return self._build(deployment=deployment, pipeline_id=pipeline_id)
 
         logger.info(
@@ -1178,6 +1192,37 @@ class BasePipeline(metaclass=BasePipelineMeta):
             )
 
         return build_model
+
+    def _find_existing_build(
+        self,
+        deployment: "PipelineDeploymentBaseModel",
+        pipeline_id: Optional[UUID] = None,
+    ) -> Optional["PipelineBuildResponseModel"]:
+        # TODO: Do we need a way to explicitly stop this from happening?
+        if not pipeline_id:
+            return None
+
+        client = Client()
+        stack = client.active_stack
+        matches = client.list_builds(
+            sort_by="desc:created",
+            size=1,
+            pipeline_id=pipeline_id,
+            stack_id=stack.id,
+        )
+
+        if not matches.items:
+            return None
+
+        potential_build = matches[0]
+
+        if any(item.contains_code for item in potential_build.images.values()):
+            # The build contains some code which might be different than the
+            # local code the user is expecting to run
+            return None
+
+        # TODO: validate build docker settings match
+        return potential_build
 
     def _build(
         self,
