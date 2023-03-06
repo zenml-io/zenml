@@ -1596,6 +1596,7 @@ class SqlZenStore(BaseZenStore):
                     user_id=flavor.user,
                     logo_url=flavor.logo_url,
                     docs_url=flavor.docs_url,
+                    sdk_docs_url=flavor.sdk_docs_url,
                     is_custom=flavor.is_custom,
                 )
                 session.add(new_flavor)
