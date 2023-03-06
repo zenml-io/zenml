@@ -14,7 +14,7 @@
 
 import random
 
-from zenml.hooks import on_failure_use_alerter, on_success_use_alerter
+from zenml.hooks import alerter_failure_hook, alerter_success_hook
 from zenml.pipelines import pipeline
 from zenml.steps import BaseParameters, Output, step
 
@@ -25,7 +25,7 @@ class HookParams(BaseParameters):
     fail: bool = True
 
 
-@step(on_failure=on_failure_use_alerter, on_success=on_success_use_alerter)
+@step(on_failure=alerter_failure_hook, on_success=alerter_success_hook)
 def get_first_num(params: HookParams) -> int:
     """Returns an integer."""
     if params.fail:
