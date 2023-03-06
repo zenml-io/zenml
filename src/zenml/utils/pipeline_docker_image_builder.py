@@ -19,7 +19,7 @@ import sys
 import tempfile
 from collections import defaultdict
 from pathlib import PurePosixPath
-from typing import TYPE_CHECKING, Dict, List, Optional, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Dict, List, Optional, Sequence, Tuple
 
 import zenml
 from zenml.config import DockerSettings
@@ -213,7 +213,10 @@ class PipelineDockerImageBuilder:
                 dockerignore_file=docker_settings.dockerignore,
             )
 
-            requirements_file_names, extra_index_reqs = self._get_requirements(
+            (
+                requirements_file_names,
+                extra_index_requirements,
+            ) = self._add_requirements_files(
                 docker_settings=docker_settings,
                 build_context=build_context,
                 stack=stack,
@@ -251,7 +254,7 @@ class PipelineDockerImageBuilder:
                 parent_image=parent_image,
                 docker_settings=docker_settings,
                 requirements_files=requirements_file_names,
-                extra_index_requirements=extra_index_reqs,
+                extra_index_requirements=extra_index_requirements,
                 apt_packages=apt_packages,
                 entrypoint=entrypoint,
             )
@@ -314,7 +317,7 @@ class PipelineDockerImageBuilder:
         return target_image_name
 
     @classmethod
-    def _get_requirements(
+    def _add_requirements_files(
         cls,
         docker_settings: DockerSettings,
         build_context: "BuildContext",
@@ -337,14 +340,14 @@ class PipelineDockerImageBuilder:
             - Extra index requirements, mapping index URLs to lists of packages
         """
         requirements_file_names: List[str] = []
-        extra_index_reqs: Dict[str, List[str]] = {}
+        extra_index_requirements: Dict[str, List[str]] = {}
         hub_requirements: List[str] = []
 
         if docker_settings.required_hub_plugins:
             hub_packages, hub_requirements = cls._get_hub_requirements(
                 docker_settings.required_hub_plugins
             )
-            extra_index_reqs = {**extra_index_reqs, **hub_packages}
+            extra_index_requirements.update(hub_packages)
 
         requirements_files = cls._gather_requirements_files(
             docker_settings=docker_settings,
@@ -356,7 +359,7 @@ class PipelineDockerImageBuilder:
             build_context.add_file(source=file_content, destination=filename)
             requirements_file_names.append(filename)
 
-        return requirements_file_names, extra_index_reqs
+        return requirements_file_names, extra_index_requirements
 
     @staticmethod
     def _gather_requirements_files(
@@ -492,12 +495,12 @@ class PipelineDockerImageBuilder:
 
     @staticmethod
     def _get_hub_requirements(
-        required_hub_plugins: List[Union[str, Tuple[str, str]]]
+        required_hub_plugins: List[str],
     ) -> Tuple[Dict[str, List[str]], List[str]]:
         """Gets the requirements for the hub plugins.
 
         Args:
-            required_hub_plugins: List of hub plugin names.
+            required_hub_plugins: List of hub plugins.
 
         Returns:
             - Extra index requirements (the hub plugins themselves), mapping
@@ -510,11 +513,20 @@ class PipelineDockerImageBuilder:
         hub_requirements: List[str] = []
 
         for required_plugin in required_hub_plugins:
-            if isinstance(required_plugin, str):
-                plugin_name = required_plugin
+            parts = required_plugin.split("==")
+            if len(parts) == 2:
+                plugin_name = parts[0]
+                plugin_version = parts[1]
+            elif len(parts) == 1:
+                plugin_name = parts[0]
                 plugin_version = "latest"
             else:
-                plugin_name, plugin_version = required_plugin
+                raise ValueError(
+                    f"Invalid required hub plugin `{required_plugin}`. "
+                    "Supported formats: `<plugin_name>==<version>` or "
+                    "`plugin_name`."
+                )
+
             plugin = _get_plugin(plugin_name, plugin_version)
             if plugin and plugin.index_url and plugin.wheel_name:
                 hub_packages[plugin.index_url].append(plugin.wheel_name)

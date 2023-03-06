@@ -14,7 +14,7 @@
 """Docker settings."""
 
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Union
 
 from pydantic import Extra, root_validator
 
@@ -122,10 +122,10 @@ class DockerSettings(BaseSettings):
             installed. All requirements for the specified integrations will
             be installed inside the Docker image.
         required_hub_plugins: List of ZenML Hub plugins that should be
-            installed. Can either be a tuple of plugin name and version, or only
-            a plugin name in which case the latest version is taken. All
-            requirements for the specified plugins will be installed inside the
-            Docker image.
+            installed. Can either be an exact version specifier
+            '<plugin_name>==<version>', or only a plugin name in which case the
+            latest version is taken. All requirements for the specified plugins
+            will be installed inside the Docker image.
         install_stack_requirements: If `True`, ZenML will automatically detect
             if components of your active stack are part of a ZenML integration
             and install the corresponding requirements and apt packages.
@@ -162,7 +162,7 @@ class DockerSettings(BaseSettings):
     ] = None
     requirements: Union[None, str, List[str]] = None
     required_integrations: List[str] = []
-    required_hub_plugins: List[Union[str, Tuple[str, str]]] = []
+    required_hub_plugins: List[str] = []
     install_stack_requirements: bool = True
     apt_packages: List[str] = []
     environment: Dict[str, Any] = {}
