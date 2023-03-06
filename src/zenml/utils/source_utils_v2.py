@@ -232,15 +232,53 @@ def _check_local_code_repository(source: CodeRepositorySource) -> None:
 
         local_repo = Client().find_active_code_repository()
 
-    if (
-        not local_repo
-        or local_repo.zenml_code_repository.id != source.repository_id
-    ):
-        logger.warning("No or wrong code repo for source")
+    if not local_repo:
+        logger.warning(
+            "Potential issue when loading the source `%s`: The source "
+            "references the code repository `%s` which is not active at the "
+            "current source root `%s`. The source loading might fail or load "
+            "your local code which might differ from the one used when the "
+            "source was originally stored.",
+            source.import_path,
+            source.repository_id,
+            get_source_root(),
+        )
+    elif local_repo.zenml_code_repository.id != source.repository_id:
+        logger.warning(
+            "Potential issue when loading the source `%s`: The source "
+            "references the code repository `%s` but there is a different "
+            "code repository `%s` active at the current source root `%s`. The "
+            "source loading might fail or load "
+            "your local code which might differ from the one used when the "
+            "source was originally stored.",
+            source.import_path,
+            source.repository_id,
+            local_repo.zenml_code_repository.id,
+            get_source_root(),
+        )
     elif local_repo.current_commit != source.commit:
-        logger.warning("Wrong commit")
+        logger.warning(
+            "Potential issue when loading the source `%s`: The source "
+            "references the commit `%s` of code repository `%s` but your local "
+            "code is at commit `%s`. The source loading might fail or load "
+            "your local code which might differ from the one used when the "
+            "source was originally stored.",
+            source.import_path,
+            source.commit,
+            source.repository_id,
+            local_repo.current_commit,
+        )
     elif local_repo.is_dirty:
-        logger.warning("Repo dirty")
+        logger.warning(
+            "Potential issue when loading the source `%s`: The source "
+            "references the commit `%s` of code repository `%s` but your local "
+            "repository contains uncommitted changes. The source loading might "
+            "fail or load your local code which might differ from the one used "
+            "when the source was originally stored.",
+            source.import_path,
+            source.commit,
+            source.repository_id,
+        )
 
 
 def _resolve_module(
