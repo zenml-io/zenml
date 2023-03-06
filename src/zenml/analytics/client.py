@@ -19,7 +19,6 @@ import numbers
 from six import string_types
 
 from zenml.analytics.consumer import Consumer
-from zenml.analytics.models import GroupRequest, TrackRequest, IdentifyRequest
 from zenml.analytics.request import post
 
 try:
@@ -40,7 +39,7 @@ class Client(object):
         sync_mode = False
         max_queue_size = 10000
         timeout = 15
-        max_retries = 10
+        max_retries = 1
         thread = 1
         upload_interval = 0.5
         upload_size = 100
@@ -97,22 +96,36 @@ class Client(object):
                     consumer.start()
 
     def identify(self, user_id, traits):
-        return self._enqueue(IdentifyRequest(user_id=user_id, traits=traits))
+        return self._enqueue(
+            msg={
+                "user_id": user_id,
+                "traits": traits,
+                "type": "identify",
+            }
+        )
 
     def track(self, user_id, event, properties):
         return self._enqueue(
-            TrackRequest(user_id=user_id, event=event, properties=properties)
+            msg={
+                "user_id": user_id,
+                "event": event,
+                "properties": properties,
+                "type": "track",
+            }
         )
 
     def group(self, user_id, group_id, traits):
         return self._enqueue(
-            GroupRequest(user_id=user_id, group_id=group_id, traits=traits)
+            msg={
+                "user_id": user_id,
+                "group_id": group_id,
+                "traits": traits,
+                "type": "group",
+            }
         )
 
     def _enqueue(self, msg):
         """Push a new `msg` onto the queue, return `(success, msg)`"""
-        logger.debug("queueing: %s", msg.json())
-
         # if send is False, return msg as if it was successfully queued
         if not self.send:
             return True, msg

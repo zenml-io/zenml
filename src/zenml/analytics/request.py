@@ -26,7 +26,6 @@ def post(batch, timeout=15):
         "accept": "application/json",
         "content-type": "application/json",
     }
-
     response = requests.post(
         url=ANALYTICS_SERVER_URL + "/batch",
         headers=headers,

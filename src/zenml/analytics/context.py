@@ -19,13 +19,8 @@ from uuid import UUID
 import requests
 
 from zenml import __version__
-from zenml.analytics.constants import (
-    TRACK_ENDPOINT,
-    IDENTIFY_ENDPOINT,
-    GROUP_ENDPOINT,
-)
-from zenml.analytics.models import TrackRequest, GroupRequest, IdentifyRequest
-from zenml.constants import ENV_ZENML_SERVER_FLAG, ANALYTICS_SERVER_URL
+from zenml import analytics
+from zenml.constants import ENV_ZENML_SERVER_FLAG
 from zenml.environment import Environment, get_environment
 from zenml.logger import get_logger
 from zenml.utils.analytics_utils import (
@@ -132,19 +127,6 @@ class AnalyticsContext:
 
         return True
 
-    def _post(self, endpoint, payload) -> Json:
-        headers = {
-            "accept": "application/json",
-            "content-type": "application/json",
-        }
-        return self._handle_response(
-            requests.post(
-                url=ANALYTICS_SERVER_URL + endpoint,
-                headers=headers,
-                json=payload.json(),
-            )
-        )
-
     def identify(self, traits: Optional[Dict[str, Any]] = None) -> bool:
         """Identify the user through segment.
 
@@ -154,16 +136,14 @@ class AnalyticsContext:
         Returns:
             True if tracking information was sent, False otherwise.
         """
-
+        success = False
         if self.analytics_opt_in:
-            payload = IdentifyRequest(
+            success, _ = analytics.identify(
                 user_id=self.user_id,
                 traits=traits,
             )
-            self._post(endpoint=IDENTIFY_ENDPOINT, payload=payload)
 
-            return True
-        return False
+        return success
 
     def group(
         self,
@@ -179,22 +159,20 @@ class AnalyticsContext:
         Returns:
             True if tracking information was sent, False otherwise.
         """
+        success = False
         if self.analytics_opt_in:
             if traits is None:
                 traits = {}
 
             traits.update({"group_id": group_id})
 
-            payload = GroupRequest(
+            success, _ = analytics.group(
                 user_id=self.user_id,
                 group_id=group_id,
                 traits=traits,
             )
 
-            self._post(endpoint=GROUP_ENDPOINT, payload=payload)
-            return True
-
-        return False
+        return success
 
     def track(
         self,
@@ -244,20 +222,18 @@ class AnalyticsContext:
             if isinstance(v, UUID):
                 properties[k] = str(v)
 
-        payload = TrackRequest(
+        success, _ = analytics.track(
             user_id=self.user_id,
             event=event,
             properties=properties,
         )
-
-        self._post(endpoint=TRACK_ENDPOINT, payload=payload)
 
         logger.debug(
             f"Analytics sent: User: {self.user_id}, Event: {event}, Metadata: "
             f"{properties}"
         )
 
-        return True
+        return success
 
     @staticmethod
     def _handle_response(response: requests.Response) -> Json:
