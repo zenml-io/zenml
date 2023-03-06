@@ -34,7 +34,7 @@
 #     to the test requirements. Mandatory for environment requirements, optional
 #     for test requirements.
 #   - external: If set to true, the stack component is assumed to be
-#     externally provisioned and the test framework is not responsible for
+#     already registered in the deployment and the test framework is not responsible for
 #     creating it.
 #   - containerized (optional): Whether the stack component uses (and builds)
 #     container images or not (default: `false`). If this flag is set, the
@@ -155,6 +155,15 @@ requirements:
     capabilities:
       mlflow: true
 
+    # Local mlflow model registry 
+  - name: mlflow-local-registry
+    stacks:
+      - name: mlflow-local
+        type: model_registry
+        flavor: mlflow
+    capabilities:
+      mlflow: true
+
     # Local mlflow model deployer
   - name: mlflow-local-deployer
     system_os:
@@ -166,10 +175,3 @@ requirements:
         flavor: mlflow
     capabilities:
       mlflow: true
-
-    # Local secrets manager
-  - name: local-secrets-manager
-    stacks:
-      - name: local
-        type: secrets_manager
-        flavor: local

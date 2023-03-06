@@ -188,7 +188,7 @@ pipeline_instance = get_pipeline(
 )
 runs = pipeline_instance.runs
 print(f"Pipeline `seq_classifier_train_eval_pipeline` has {len(runs)} run(s)")
-latest_run = runs[-1]
+latest_run = runs[0]
 trainer_step = latest_run.get_step('trainer')
 load_tokenizer_step = latest_run.get_step("load_tokenizer")
 
@@ -207,7 +207,7 @@ pipeline_instance = get_pipeline(
 )
 runs = pipeline_instance.runs
 print(f"Pipeline `token_classifier_train_eval_pipeline` has {len(runs)} run(s)")
-latest_run = runs[-1]
+latest_run = runs[0]
 trainer_step = latest_run.get_step('trainer')
 load_tokenizer_step = latest_run.get_step("load_tokenizer")
 

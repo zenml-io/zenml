@@ -1,5 +1,121 @@
 <!-- markdown-link-check-disable -->
 
+# 0.35.0
+
+This release is packed with big features as well as documentation updates and
+some bug fixes.
+
+The 0.35.0 release puts models front and center in ZenML with the addition of
+the **Model Registry** abstraction and Stack Component. You can now register,
+version and manage models as first class citizens in ZenML. This is a major
+milestone for ZenML and we are excited to see what you build with it!
+The introduction of Model Registries greatly simplifies the journey that the
+model takes from training to deployment and extends the ZenML ecosystem to
+include model registry tools and libraries. The first Model Registry integration
+included in this release is MLFlow, with many more to come in the future. 
+
+This release also continues the deprecation of Secrets Managers and the
+introduction of Secret Stores. You now have the option of configuring the ZenML
+server to use AWS, GCP, Azure or Hashicorp Vault directly as a centralized
+secrets store back-end. This is meant to replace all Secrets Manager flavors
+which were previously used to store secrets using the same cloud services.
+
+Please be reminded that all Secrets Managers are now deprecated and will be
+removed in the near future. We recommend that you migrate all your secrets from
+the Secrets Manager stack components to the centralized secrets store by means
+of the included `zenml secrets-manager secret migrate` CLI command.
+
+Last but not least, this release includes an updated Evidently integration that
+is compatible with the latest and greatest features from Evidently: reports and
+test suites. Check out the updated example to get a feel for the new features.
+
+## Breaking Changes
+
+This release introduces a few breaking changes. Please update your code to
+reflect the changes below:
+
+* the order of pipelines and runs in the post-execution results has been
+reversed. This means that the most recent pipeline and pipeline run can be
+accessed using the first index of the respective lists instead of the last
+index. This change was made to make the post-execution results more intuitive
+and to allow returning multi-page results in the future. This is a code snippet
+outlining the changes that you need to make in your post-execution code:
+
+    ```python
+    from zenml.post_execution import get_pipelines, get_unlisted_runs
+
+    pipelines = get_pipelines()
+
+    # instead of calling this to get the pipeline last created
+    latest_pipeline = pipelines[-1]
+
+    # you now have to call this
+    latest_pipeline = pipelines[0]
+
+    # and instead of calling this to get the latest run of a pipeine
+    latest_pipeline_run = latest_pipeline.get_runs()[-1]
+    # or
+    latest_pipeline_run = latest_pipeline.runs[-1]
+    
+    # you now have to call this
+    latest_pipeline_run = latest_pipeline.get_runs()[0]
+    # or
+    latest_pipeline_run = latest_pipeline.runs[0]
+
+    # the same applies to the unlisted runs; instead of
+    last_unlisted_run = get_unlisted_runs()[-1]
+
+    # you now have to call this
+    last_unlisted_run = get_unlisted_runs()[0]
+    ```
+
+* if you were using the `StepEnvironment` to fetch the name of the active step
+in your step implementation, this name no longer reflects the name of the step
+function. Instead, it now reflects the name of the step used in the pipeline
+DAG, similar to what you would see in the ZenML dashboard when visualizing the
+pipeline. This is also implicitly reflected in the output of `zenml model-deployer model`
+CLI commands.
+
+## What's Changed
+* Upgrade dev dependencies by @strickvl in https://github.com/zenml-io/zenml/pull/1334
+* Add warning when attempting server connection without user permissions by @strickvl in https://github.com/zenml-io/zenml/pull/1314
+* Keep CLI help text for `zenml pipeline` to a single line by @strickvl in https://github.com/zenml-io/zenml/pull/1338
+* Rename page attributes by @schustmi in https://github.com/zenml-io/zenml/pull/1266
+* Add missing docs for pipeline build by @schustmi in https://github.com/zenml-io/zenml/pull/1341
+* Sagemaker orchestrator docstring and example update by @strickvl in https://github.com/zenml-io/zenml/pull/1350
+* Fix `secret create` docs error for secret store by @strickvl in https://github.com/zenml-io/zenml/pull/1355
+* Update README for test environment provisioning by @strickvl in https://github.com/zenml-io/zenml/pull/1336
+* Disable name prefix matching when updating/deleting entities by @schustmi in https://github.com/zenml-io/zenml/pull/1345
+* Add Kubeflow Pipeline UI Port to deprecated config by @safoinme in https://github.com/zenml-io/zenml/pull/1358
+* Small clarifications for slack alerter by @htahir1 in https://github.com/zenml-io/zenml/pull/1365
+* update Neptune integration for v1.0 compatibility by @AleksanderWWW in https://github.com/zenml-io/zenml/pull/1335
+* Integrations conditional requirements by @safoinme in https://github.com/zenml-io/zenml/pull/1255
+* Fix fetching versioned pipelines in post execution by @schustmi in https://github.com/zenml-io/zenml/pull/1363
+* Load artifact store before loading artifact to register filesystem by @schustmi in https://github.com/zenml-io/zenml/pull/1367
+* Remove poetry from CI by @schustmi in https://github.com/zenml-io/zenml/pull/1346
+* Fix Sagemaker example readme by @strickvl in https://github.com/zenml-io/zenml/pull/1370
+* Update evidently to include reports and tests by @wjayesh in https://github.com/zenml-io/zenml/pull/1283
+* Fix neptune linting error on `develop` (and bump ruff) by @strickvl in https://github.com/zenml-io/zenml/pull/1372
+* Add pydantic materializer by @htahir1 in https://github.com/zenml-io/zenml/pull/1371
+* Registering GIFs added by @htahir1 in https://github.com/zenml-io/zenml/pull/1368
+* Refresh CLI cheat sheet by @strickvl in https://github.com/zenml-io/zenml/pull/1347
+* Add dependency resolution docs by @strickvl in https://github.com/zenml-io/zenml/pull/1337
+* [BUGFIX] Fix error while using an existing SQL server with GCP ZenServer by @wjayesh in https://github.com/zenml-io/zenml/pull/1353
+* Update step name assignment with the parameter name by @strickvl in https://github.com/zenml-io/zenml/pull/1310
+* Copy huggingface data directory to local before loading in materializers by @TimovNiedek in https://github.com/zenml-io/zenml/pull/1351
+* Update huggingface token classification example by @strickvl in https://github.com/zenml-io/zenml/pull/1369
+* Use the most specialized materializer based on MRO by @schustmi in https://github.com/zenml-io/zenml/pull/1376
+* Update Kserve to support 0.10.0 by @safoinme in https://github.com/zenml-io/zenml/pull/1373
+* Add more examples to integration tests by @schustmi in https://github.com/zenml-io/zenml/pull/1245
+* Fix order of runs and order of pipelines in post-execution by @stefannica in https://github.com/zenml-io/zenml/pull/1380
+* Add Cloud Secrets Store back-ends by @stefannica in https://github.com/zenml-io/zenml/pull/1348
+* Model Registry Stack Component + MLFlow integration by @safoinme in https://github.com/zenml-io/zenml/pull/1309
+* Fix broken docs URLs and add SDK docs url by @strickvl in https://github.com/zenml-io/zenml/pull/1349
+* Fix label studio `dataset delete` command by @strickvl in https://github.com/zenml-io/zenml/pull/1377
+* Add missing links to Quickstart by @strickvl in https://github.com/zenml-io/zenml/pull/1379
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.34.0...0.35.0
+
 # 0.34.0
 
 This release comes with major upgrades to the python library as well as the dashboard:
@@ -1614,7 +1730,7 @@ We improved a few of our error messages, too, like for when the return type of a
 ZenML 0.5.7 is here  :100:  and it brings not one, but :fire:TWO:fire: brand new integrations :rocket:! ZenML now support [MLFlow](https://www.mlflow.org/docs/latest/tracking.html) for tracking pipelines as experiments and [Evidently](https://github.com/evidentlyai/evidently) for detecting drift in your ML pipelines in production!
 
 ## New Features
-* Introducing the [MLFLow Tracking](https://www.mlflow.org/docs/latest/tracking.html) Integration, a first step towards 
+* Introducing the [MLFlow Tracking](https://www.mlflow.org/docs/latest/tracking.html) Integration, a first step towards 
 our complete MLFlow Integration as described in the [#115 poll](https://github.com/zenml-io/zenml/discussions/115). 
 Full example found [here](https://github.com/zenml-io/zenml/tree/0.5.7/examples/mlflow).
 * Introducing the [Evidently](https://github.com/evidentlyai/evidently) integration. Use the standard 
