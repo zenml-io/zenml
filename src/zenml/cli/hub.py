@@ -66,7 +66,10 @@ class PluginResponseModel(PluginBaseModel):
 
 
 def _hub_request(
-    method: str, url: str, data: Optional[str] = None
+    method: str,
+    url: str,
+    data: Optional[str] = None,
+    params: Optional[Dict[str, Any]] = None,
 ) -> Optional[Json]:
     """Helper function to make a request to the hub."""
     session = requests.Session()
@@ -86,32 +89,23 @@ def _hub_request(
         url=url,
         data=data,
         headers=headers,
-        params={},
+        params=params,
         verify=False,
         timeout=30,
     )
 
     # Parse and return the response
-    payload: Json = response.json() if response else None
-    return payload
+    response_json: Json = response.json() if response else None
+    return response_json
 
 
-def _hub_get(url: str) -> Optional[Json]:
-    """Helper function to make a GET request to the hub."""
-    return _hub_request("GET", url)
-
-
-def _hub_post(url: str, model: PluginRequestModel) -> Optional[Json]:
-    """Helper function to make a POST request to the hub."""
-    return _hub_request("POST", url, data=model.json())
-
-
-def _list_plugins() -> List[PluginResponseModel]:
+def _list_plugins(**params: Any) -> List[PluginResponseModel]:
     """Helper function to list all plugins in the hub."""
-    payload = _hub_get(f"{get_settings().SERVER_URL}/plugins")
-    if not isinstance(payload, list):
+    url = f"{get_settings().SERVER_URL}/plugins"
+    response = _hub_request("GET", url, params=params)
+    if not isinstance(response, list):
         return []
-    return [PluginResponseModel.parse_obj(plugin) for plugin in payload]
+    return [PluginResponseModel.parse_obj(plugin) for plugin in response]
 
 
 def _get_plugin(
@@ -122,10 +116,9 @@ def _get_plugin(
     if plugin_version:
         url += f"?version={plugin_version}"
 
-    payload = _hub_get(url)
-
+    response = _hub_request("GET", url)
     try:
-        return PluginResponseModel.parse_obj(payload)
+        return PluginResponseModel.parse_obj(response)
     except ValidationError:
         return None
 
@@ -138,13 +131,13 @@ def _create_plugin(
     if is_new_version:
         url += f"/{plugin_request.name}/versions"
 
-    payload = _hub_post(url, plugin_request)
+    response = _hub_request("POST", url, data=plugin_request.json())
 
     try:
-        return PluginResponseModel.parse_obj(payload)
+        return PluginResponseModel.parse_obj(response)
     except ValidationError:
         raise RuntimeError(
-            f"Failed to create plugin {plugin_request.name}: {payload}"
+            f"Failed to create plugin {plugin_request.name}: {response}"
         )
 
 
@@ -211,11 +204,27 @@ def hub() -> None:
 
 
 @hub.command("list")
-def list_plugins() -> None:
+@click.option(
+    "--mine",
+    "-m",
+    is_flag=True,
+    help="List only plugins that you own.",
+)
+@click.option(
+    "--installed",
+    "-i",
+    is_flag=True,
+    help="List only plugins that are installed.",
+)
+def list_plugins(mine: bool, installed: bool) -> None:
     """List all plugins available on the hub."""
-    plugins = _list_plugins()
+    plugins = _list_plugins(mine=mine)
     if not plugins:
         declare("No plugins found.")
+    if installed:
+        plugins = [
+            plugin for plugin in plugins if _is_plugin_installed(plugin.name)
+        ]
     plugins_table = _format_plugins_table(plugins)
     print_table(plugins_table)
 
