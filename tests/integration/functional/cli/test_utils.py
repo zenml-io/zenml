@@ -65,6 +65,12 @@ def test_file_expansion_works(tmp_path):
         == not_from_file_value
     )
 
+    non_existent_file = tmp_path / "non_existent_file.txt"
+    with pytest.raises(ValueError):
+        cli_utils.expand_argument_value_from_file(
+            name="non_existent_file", value=f"@{non_existent_file}"
+        )
+
 
 def test_parsing_name_and_arguments():
     """Test that our ability to parse CLI arguments works."""
@@ -79,6 +85,11 @@ def test_parsing_name_and_arguments():
         "foo",
         {"bar": "1", "baz": "2"},
     )
+
+    assert cli_utils.parse_name_and_extra_arguments(
+        ["foo", "--bar=![@#$%^&*()"]
+    ) == ("foo", {"bar": "![@#$%^&*()"})
+
     with pytest.raises(ClickException):
         cli_utils.parse_name_and_extra_arguments(["--bar=1"])
 
