@@ -43,6 +43,7 @@ class PluginBaseModel(BaseModel):
     """Base model for a plugin."""
 
     name: str
+    description: Optional[str]
     version: Optional[str]
     release_notes: Optional[str]
     repository_url: str
@@ -467,6 +468,12 @@ def _clone_repo(
     help="Release notes for the plugin version.",
 )
 @click.option(
+    "--description",
+    "-d",
+    type=str,
+    help="Description of the plugin.",
+)
+@click.option(
     "--repository_url",
     "-u",
     type=str,
@@ -507,6 +514,7 @@ def push_plugin(
     plugin_name: Optional[str],
     version: Optional[str],
     release_notes: Optional[str],
+    description: Optional[str],
     repository_url: Optional[str],
     repository_subdir: Optional[str],
     repository_branch: Optional[str],
@@ -564,12 +572,21 @@ def push_plugin(
         interactive=interactive,
     )
 
+    # In interactive mode, ask for a description if none is provided
+    if interactive and not description:
+        logger.info(
+            "You can optionally provide a description for your plugin below. "
+            "If not set, the first line of your README.md will be used."
+        )
+        description = click.prompt("(Optional) plugin description", default="")
+
     # Validate the tags
     tags = _validate_tags(tags=tags, interactive=interactive)
 
     # Make a create request to the hub
     plugin_request = PluginRequestModel(
         name=plugin_name,
+        description=description,
         version=version,
         release_notes=release_notes,
         repository_url=repository_url,
@@ -784,12 +801,13 @@ def _validate_repository_subdir(
             _validate_repository_structure(plugin_path)
             return repository_subdir
         except ValueError as e:
-            if not interactive:
-                error(str(e))
-            logger.info(
+            msg = (
                 f"Plugin code structure at {repository_subdir} is invalid: "
                 f"{str(e)}"
             )
+            if not interactive:
+                error(str(e))
+            logger.info(msg)
             logger.info("Please enter a valid subdirectory.")
             repository_subdir = click.prompt("Repository subdirectory")
 
