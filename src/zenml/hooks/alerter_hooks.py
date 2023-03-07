@@ -12,8 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Functionality for standard hooks."""
-
-
 from zenml.logger import get_logger
 from zenml.steps import BaseParameters, StepContext
 
@@ -42,7 +40,7 @@ def alerter_failure_hook(
         + "\n"
     )
 
-    if context.stack.alerter:
+    if context.stack and context.stack.alerter:
         context.stack.alerter.post(message)
     else:
         logger.warning(
@@ -69,7 +67,7 @@ def alerter_success_hook(context: StepContext, params: BaseParameters) -> None:
         f"Step Cache Enabled: `{'True' if context.cache_enabled else 'False'}`"
         + "\n"
     )
-    if context.stack.alerter:
+    if context.stack and context.stack.alerter:
         context.stack.alerter.post(message)
     else:
         logger.warning(

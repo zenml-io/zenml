@@ -514,7 +514,7 @@ class StepRunner:
         step_exception: Optional[Exception],
         output_artifact_uris: Dict[str, str],
         output_materializers: Dict[str, Type[BaseMaterializer]],
-    ):
+    ) -> None:
         """Runs a step hook.
 
         Args:
