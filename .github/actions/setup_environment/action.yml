@@ -93,9 +93,9 @@ runs:
       if: ${{ inputs.install_integrations == 'yes' }}
       shell: bash
       run: |
-        zenml integration export-requirements --output-file requirements.txt --ignore-integration feast --ignore-integration label_studio --ignore-integration bentoml --ignore-integration seldon --ignore-integration kserve
-        pip install -r requirements.txt
-        rm requirements.txt
+        zenml integration export-requirements --output-file integration-requirements.txt --ignore-integration feast --ignore-integration label_studio --ignore-integration bentoml --ignore-integration seldon --ignore-integration kserve
+        pip install -r integration-requirements.txt
+        rm integration-requirements.txt
 
     - name: Install ZenML integrations - final
       if: ${{ inputs.install_integrations == 'yes' }}
@@ -105,10 +105,8 @@ runs:
         # re-install zenml requirements to be sure
         pip install -r zenml-requirements.txt
         # install airflow requirements
-        pip install --upgrade "numpy>=1.21.0,<1.24.0"
+        # pip install --upgrade "numpy>=1.21.0,<1.24.0"
         pip install apache-airflow-providers-docker
-        # Version 4.2.1 raises: AttributeError: type object 'Draft7Validator' has no attribute 'FORMAT_CHECKER'
-        pip install altair==4.2.0
 
     - name: Check Python environment
       shell: bash
