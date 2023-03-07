@@ -1087,7 +1087,6 @@ class BaseStep(metaclass=BaseStepMeta):
 
         Raises:
             ValueError: If `hook_func` is not a valid callable.
-            AssertionError: If `hook_func` has the wrong params.
         """
         if type(hook_func) is str:
             func = source_utils.load_source_path(hook_func)

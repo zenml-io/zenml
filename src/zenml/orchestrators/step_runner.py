@@ -134,6 +134,7 @@ class StepRunner:
                 step_failed = True
                 failure_hook_source = self.configuration.failure_hook_source
                 if failure_hook_source:
+                    logger.info("Detected failure hook. Running...")
                     self._run_hook(
                         failure_hook_source,
                         step_exception=step_exception,
@@ -157,6 +158,7 @@ class StepRunner:
                         self.configuration.success_hook_source
                     )
                     if success_hook_source:
+                        logger.info("Detected success hook. Running...")
                         self._run_hook(
                             success_hook_source,
                             step_exception=None,
@@ -536,6 +538,7 @@ class StepRunner:
                 output_artifact_uris=output_artifact_uris,
                 output_materializers=output_materializers,
             )
+            logger.debug(f"Running hook {hook} with params: {function_params}")
             hook(**function_params)
         except (ImportError, TypeError, ValueError) as e:
             raise ValueError(
