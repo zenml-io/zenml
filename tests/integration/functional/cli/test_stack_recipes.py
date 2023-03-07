@@ -53,8 +53,6 @@ def test_stack_recipes_list(clean_client, cli_runner):
     list_command = cli.commands["stack"].commands["recipe"].commands["list"]
     result = cli_runner.invoke(list_command)
 
-    logging.info(result.output)
-
     assert "aws-minimal" in result.output
 
 
