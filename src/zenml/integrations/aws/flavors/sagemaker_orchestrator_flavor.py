@@ -52,7 +52,7 @@ class SagemakerOrchestratorConfig(  # type: ignore[misc] # https://github.com/py
     Attributes:
         synchronous: Whether to run the processing job synchronously or
             asynchronously. Defaults to False.
-        execution_role: The IAM role to use for the pipeline.
+        execution_role: The IAM role ARN to use for the pipeline.
         bucket: Name of the S3 bucket to use for storing artifacts
             from the job run. If not provided, a default bucket will be created
             based on the following format:
@@ -97,6 +97,15 @@ class SagemakerOrchestratorFlavor(BaseOrchestratorFlavor):
             A flavor docs url.
         """
         return self.generate_default_docs_url()
+
+    @property
+    def sdk_docs_url(self) -> Optional[str]:
+        """A url to point at SDK docs explaining this flavor.
+
+        Returns:
+            A flavor SDK docs url.
+        """
+        return self.generate_default_sdk_docs_url()
 
     @property
     def logo_url(self) -> str:

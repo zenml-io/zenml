@@ -114,6 +114,11 @@ class AnalyticsEvent(str, Enum):
     UPDATED_FLAVOR = "Flavor updated"
     DELETED_FLAVOR = "Flavor deleted"
 
+    # Secret
+    CREATED_SECRET = "Secret created"
+    UPDATED_SECRET = "Secret updated"
+    DELETED_SECRET = "Secret deleted"
+
     # Test event
     EVENT_TEST = "Test event"
 
@@ -355,6 +360,9 @@ class AnalyticsContext:
                         "server_id": str(server_info.id),
                         "server_deployment": str(server_info.deployment_type),
                         "database_type": str(server_info.database_type),
+                        "secrets_store_type": str(
+                            server_info.secrets_store_type
+                        ),
                     }
                 )
 

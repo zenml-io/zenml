@@ -65,6 +65,7 @@ class StackComponentType(StrEnum):
     ORCHESTRATOR = "orchestrator"
     SECRETS_MANAGER = "secrets_manager"
     STEP_OPERATOR = "step_operator"
+    MODEL_REGISTRY = "model_registry"
 
     @property
     def plural(self) -> str:
@@ -79,11 +80,35 @@ class StackComponentType(StrEnum):
         return f"{self.value}s"
 
 
+class SecretScope(StrEnum):
+    """Enum for the scope of a secret."""
+
+    WORKSPACE = "workspace"
+    USER = "user"
+
+
 class StoreType(StrEnum):
-    """Repository Store Backend Types."""
+    """Zen Store Backend Types."""
 
     SQL = "sql"
     REST = "rest"
+
+
+class SecretsStoreType(StrEnum):
+    """Secrets Store Backend Types.
+
+    NOTE: this is a superset of the StoreType values because the set of secrets
+    store backends includes all the backends supported for zen stores.
+    """
+
+    NONE = "none"  # indicates that the secrets store is disabled
+    SQL = StoreType.SQL.value
+    REST = StoreType.REST.value
+    AWS = "aws"
+    GCP = "gcp"
+    AZURE = "azure"
+    HASHICORP = "hashicorp"
+    CUSTOM = "custom"  # indicates that the secrets store uses a custom backend
 
 
 class ContainerRegistryFlavor(StrEnum):
@@ -181,3 +206,11 @@ class LogicalOperators(StrEnum):
 
     OR = "or"
     AND = "and"
+
+
+class OperatingSystemType(StrEnum):
+    """Enum for OS types."""
+
+    LINUX = "Linux"
+    WINDOWS = "Windows"
+    MACOS = "Darwin"

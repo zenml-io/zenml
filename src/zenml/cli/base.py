@@ -17,11 +17,12 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
 
 import click
 
 from zenml import __version__ as zenml_version
+from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
 from zenml.cli.server import down
 from zenml.cli.utils import confirmation, declare, error, warning
@@ -33,12 +34,15 @@ from zenml.constants import (
     REPOSITORY_DIRECTORY_NAME,
 )
 from zenml.enums import AnalyticsEventSource
+from zenml.environment import Environment, get_environment
 from zenml.exceptions import GitNotFoundError, InitializationException
+from zenml.integrations.registry import integration_registry
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
 from zenml.utils.enum_utils import StrEnum
 from zenml.utils.io_utils import copy_dir, get_global_config_directory
+from zenml.utils.yaml_utils import write_yaml
 
 logger = get_logger(__name__)
 # WT_SESSION is a Windows Terminal specific environment variable. If it
@@ -416,7 +420,7 @@ def _prompt_email(event_source: AnalyticsEventSource) -> bool:
 
             # Add consent and email to user model
             client.update_user(
-                user_name_or_id=client.active_user.id,
+                name_id_or_prefix=client.active_user.id,
                 updated_email=email,
                 updated_email_opt_in=True,
             )
@@ -433,3 +437,106 @@ def _prompt_email(event_source: AnalyticsEventSource) -> bool:
         )
 
     return False
+
+
+@cli.command(
+    "info", help="Show information about the current user setup.", hidden=True
+)
+@click.option(
+    "--all",
+    "-a",
+    is_flag=True,
+    default=False,
+    help="Output information about all installed packages.",
+    type=bool,
+)
+@click.option(
+    "--file",
+    "-f",
+    default="",
+    help="Path to export to a .yaml file.",
+    type=click.Path(exists=False, dir_okay=False),
+)
+@click.option(
+    "--packages",
+    "-p",
+    multiple=True,
+    help="Select specific installed packages.",
+    type=str,
+)
+@click.option(
+    "--stack",
+    "-s",
+    is_flag=True,
+    default=False,
+    help="Output information about active stack and components.",
+    type=bool,
+)
+def info(
+    packages: Tuple[str],
+    all: bool = False,
+    file: str = "",
+    stack: bool = False,
+) -> None:
+    """Show information about the current user setup.
+
+    Args:
+        packages: List of packages to show information about.
+        all: Flag to show information about all installed packages.
+        file: Flag to output to a file.
+        stack: Flag to output information about active stack and components
+    """
+    gc = GlobalConfiguration()
+    environment = Environment()
+    client = Client()
+    store_info = client.zen_store.get_store_info()
+
+    store_cfg = gc.store
+
+    user_info = {
+        "zenml_local_version": zenml_version,
+        "zenml_server_version": store_info.version,
+        "zenml_server_database": str(store_info.database_type),
+        "zenml_server_deployment_type": str(store_info.deployment_type),
+        "zenml_config_dir": gc.config_directory,
+        "zenml_local_store_dir": gc.local_stores_path,
+        "zenml_server_url": "" if store_cfg is None else store_cfg.url,
+        "zenml_active_repository_root": str(client.root),
+        "python_version": environment.python_version(),
+        "environment": get_environment(),
+        "system_info": environment.get_system_info(),
+        "active_workspace": client.active_workspace.name,
+        "active_stack": client.active_stack_model.name,
+        "active_user": client.active_user.name,
+        "telemetry_status": "enabled" if gc.analytics_opt_in else "disabled",
+        "analytics_client_id": str(gc.user_id),
+        "analytics_user_id": str(client.active_user.id),
+        "analytics_server_id": str(client.zen_store.get_store_info().id),
+        "integrations": integration_registry.get_installed_integrations(),
+        "packages": {},
+        "query_packages": {},
+    }
+
+    if all:
+        user_info["packages"] = cli_utils.get_package_information()
+    if packages:
+        if user_info.get("packages"):
+            if isinstance(user_info["packages"], dict):
+                user_info["query_packages"] = {
+                    p: v
+                    for p, v in user_info["packages"].items()
+                    if p in packages
+                }
+        else:
+            user_info["query_packages"] = cli_utils.get_package_information(
+                list(packages)
+            )
+    if file:
+        file_write_path = os.path.abspath(file)
+        write_yaml(file, user_info)
+        declare(f"Wrote user debug info to file at '{file_write_path}'.")
+    else:
+        cli_utils.print_user_info(user_info)
+
+    if stack:
+        cli_utils.print_debug_stack()

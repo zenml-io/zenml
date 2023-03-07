@@ -74,6 +74,7 @@ on:
           - aws-cloud-kubeflow-orchestrator
           - aws-cloud-kubernetes-orchestrator
           - aws-cloud-tekton-orchestrator
+          - aws-cloud-sagemaker-orchestrator
           # GCP ZenML server deployment with local components
           - gcp-local-orchestrator
           - gcp-docker-orchestrator
@@ -169,7 +170,7 @@ jobs:
           install_components: 'gke-gcloud-auth-plugin'
         if: contains(inputs.test_environment, 'gcp')
 
-      - name: Setup environment with Poetry
+      - name: Setup environment
         uses: ./.github/actions/setup_environment
         with:
           cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
@@ -242,12 +243,14 @@ jobs:
         run: |
           source $VENV
           # re-install zenml to be sure
-          poetry install --extras server
+          pip install -e ".[server,dev]"
           # install airflow requirements
-          pip install "numpy>=1.21.0,<1.24.0"
+          pip install --upgrade "numpy>=1.21.0,<1.24.0"
           pip install apache-airflow-providers-docker
           # Version 4.2.1 raises: AttributeError: type object 'Draft7Validator' has no attribute 'FORMAT_CHECKER'
           pip install altair==4.2.0
+          # Need this for the Evidently example
+          pip install nltk
 
       - name: Check Python Env ahead of tests
         run: |

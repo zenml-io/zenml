@@ -24,6 +24,7 @@ from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Type, cast
 from google.cloud import aiplatform
 
 from zenml import __version__
+from zenml.config.build_configuration import BuildConfiguration
 from zenml.enums import StackComponentType
 from zenml.integrations.gcp.constants import (
     CONNECTION_ERROR_RETRY_LIMIT,
@@ -42,18 +43,17 @@ from zenml.integrations.gcp.google_credentials_mixin import (
 from zenml.logger import get_logger
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
-from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilder,
-)
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
-    from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.config.step_run_info import StepRunInfo
+    from zenml.models.pipeline_deployment_models import (
+        PipelineDeploymentBaseModel,
+    )
 
 logger = get_logger(__name__)
 
-VERTEX_DOCKER_IMAGE_DIGEST_KEY = "vertex_docker_image"
+VERTEX_DOCKER_IMAGE_KEY = "vertex_step_operator"
 
 
 def validate_accelerator_type(accelerator_type: Optional[str] = None) -> None:
@@ -149,31 +149,28 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
             custom_validation_function=_validate_remote_components,
         )
 
-    def prepare_pipeline_deployment(
-        self,
-        deployment: "PipelineDeployment",
-        stack: "Stack",
-    ) -> None:
-        """Build a Docker image and push it to the container registry.
+    def get_docker_builds(
+        self, deployment: "PipelineDeploymentBaseModel"
+    ) -> List["BuildConfiguration"]:
+        """Gets the Docker builds required for the component.
 
         Args:
-            deployment: The pipeline deployment configuration.
-            stack: The stack on which the pipeline will be deployed.
-        """
-        steps_to_run = [
-            step
-            for step in deployment.steps.values()
-            if step.config.step_operator == self.name
-        ]
-        if not steps_to_run:
-            return
-        docker_image_builder = PipelineDockerImageBuilder()
-        repo_digest = docker_image_builder.build_docker_image(
-            deployment=deployment, stack=stack
-        )
+            deployment: The pipeline deployment for which to get the builds.
 
-        for step in steps_to_run:
-            step.config.extra[VERTEX_DOCKER_IMAGE_DIGEST_KEY] = repo_digest
+        Returns:
+            The required Docker builds.
+        """
+        builds = []
+        for step_name, step in deployment.step_configurations.items():
+            if step.config.step_operator == self.name:
+                build = BuildConfiguration(
+                    key=VERTEX_DOCKER_IMAGE_KEY,
+                    settings=step.config.docker_settings,
+                    step_name=step_name,
+                )
+                builds.append(build)
+
+        return builds
 
     def launch(
         self,
@@ -208,7 +205,8 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
 
         # Step 1: Authenticate with Google
         credentials, project_id = self._get_authentication()
-        image_name = info.config.extra[VERTEX_DOCKER_IMAGE_DIGEST_KEY]
+
+        image_name = info.get_image(key=VERTEX_DOCKER_IMAGE_KEY)
 
         # Step 3: Launch the job
         # The AI Platform services require regional API endpoints.

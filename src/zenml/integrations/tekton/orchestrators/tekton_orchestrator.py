@@ -27,7 +27,6 @@ from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
     ENV_ZENML_LOCAL_STORES_PATH,
-    ORCHESTRATOR_DOCKER_IMAGE_KEY,
 )
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.enums import StackComponentType
@@ -39,17 +38,16 @@ from zenml.integrations.tekton.flavors.tekton_orchestrator_flavor import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.orchestrators import BaseOrchestrator
+from zenml.orchestrators import ContainerizedOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 from zenml.utils import io_utils
-from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilder,
-)
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
-    from zenml.config.pipeline_deployment import PipelineDeployment
+    from zenml.models.pipeline_deployment_models import (
+        PipelineDeploymentResponseModel,
+    )
     from zenml.stack import Stack
     from zenml.steps import ResourceSettings
 
@@ -59,7 +57,7 @@ logger = get_logger(__name__)
 ENV_ZENML_TEKTON_RUN_ID = "ZENML_TEKTON_RUN_ID"
 
 
-class TektonOrchestrator(BaseOrchestrator):
+class TektonOrchestrator(ContainerizedOrchestrator):
     """Orchestrator responsible for running pipelines using Tekton."""
 
     @property
@@ -205,23 +203,6 @@ class TektonOrchestrator(BaseOrchestrator):
             custom_validation_function=_validate,
         )
 
-    def prepare_pipeline_deployment(
-        self,
-        deployment: "PipelineDeployment",
-        stack: "Stack",
-    ) -> None:
-        """Build a Docker image and push it to the container registry.
-
-        Args:
-            deployment: The pipeline deployment configuration.
-            stack: The stack on which the pipeline will be deployed.
-        """
-        docker_image_builder = PipelineDockerImageBuilder()
-        repo_digest = docker_image_builder.build_docker_image(
-            deployment=deployment, stack=stack
-        )
-        deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
-
     def _configure_container_op(
         self,
         container_op: dsl.ContainerOp,
@@ -314,7 +295,7 @@ class TektonOrchestrator(BaseOrchestrator):
 
     def prepare_or_run_pipeline(
         self,
-        deployment: "PipelineDeployment",
+        deployment: "PipelineDeploymentResponseModel",
         stack: "Stack",
     ) -> Any:
         """Runs the pipeline on Tekton.
@@ -341,10 +322,9 @@ class TektonOrchestrator(BaseOrchestrator):
             )
 
         assert stack.container_registry
-        image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
 
         orchestrator_run_name = get_orchestrator_run_name(
-            pipeline_name=deployment.pipeline.name
+            pipeline_name=deployment.pipeline_configuration.name
         )
 
         def _construct_kfp_pipeline() -> None:
@@ -359,17 +339,21 @@ class TektonOrchestrator(BaseOrchestrator):
             # Dictionary of container_ops index by the associated step name
             step_name_to_container_op: Dict[str, dsl.ContainerOp] = {}
 
-            for step_name, step in deployment.steps.items():
+            for step_name, step in deployment.step_configurations.items():
+                image = self.get_image(
+                    deployment=deployment, step_name=step_name
+                )
+
                 command = StepEntrypointConfiguration.get_entrypoint_command()
                 arguments = (
                     StepEntrypointConfiguration.get_entrypoint_arguments(
-                        step_name=step_name,
+                        step_name=step_name, deployment_id=deployment.id
                     )
                 )
 
                 container_op = dsl.ContainerOp(
                     name=step.config.name,
-                    image=image_name,
+                    image=image,
                     command=command,
                     arguments=arguments,
                 )

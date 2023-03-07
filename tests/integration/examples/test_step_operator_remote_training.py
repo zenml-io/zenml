@@ -22,8 +22,6 @@ def test_example(request: pytest.FixtureRequest) -> None:
     with run_example(
         request=request,
         name="step_operator_remote_training",
-        pipeline_name="step_operator_pipeline",
-        step_count=3,
-        run_count=1,
+        pipelines={"step_operator_pipeline": (1, 3)},
     ):
         pass

@@ -55,10 +55,20 @@ fits into the overall architecture.
 
 ![Experiment Tracker](../assets/diagrams/Remote_with_exp_tracker.png) 
 
+
 ## The Model Deployer
 At the end of a successful training pipeline, you might want to deploy your
 models as prediction endpoints. This can be easily accomplished using
 [model deployers](../component-gallery/model-deployers/model-deployers.md).
 
-
 ![Model Deployer](../assets/diagrams/Remote_with_deployer.png) 
+
+
+## The Model Registry
+The [model registry](../component-gallery/model-registry/model-registry.md)
+is a component that helps you keep track of your models. It can be used to
+keep track of the different versions of a model, as well as enabling you to
+easily deploy your models as prediction endpoints. This diagram shows how
+the model registry fits into the overall architecture.
+
+![Model Registry](../assets/diagrams/Remote_with_model_registry.png)

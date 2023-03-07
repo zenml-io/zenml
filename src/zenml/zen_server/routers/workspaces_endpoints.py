@@ -20,10 +20,13 @@ from fastapi import APIRouter, Depends, Security
 from zenml.constants import (
     API,
     GET_OR_CREATE,
+    PIPELINE_BUILDS,
+    PIPELINE_DEPLOYMENTS,
     PIPELINES,
     RUN_METADATA,
     RUNS,
     SCHEDULES,
+    SECRETS,
     STACK_COMPONENTS,
     STACKS,
     STATISTICS,
@@ -38,6 +41,12 @@ from zenml.models import (
     ComponentFilterModel,
     ComponentRequestModel,
     ComponentResponseModel,
+    PipelineBuildFilterModel,
+    PipelineBuildRequestModel,
+    PipelineBuildResponseModel,
+    PipelineDeploymentFilterModel,
+    PipelineDeploymentRequestModel,
+    PipelineDeploymentResponseModel,
     PipelineFilterModel,
     PipelineRequestModel,
     PipelineResponseModel,
@@ -61,6 +70,7 @@ from zenml.models import (
     WorkspaceUpdateModel,
 )
 from zenml.models.page_model import Page
+from zenml.models.secret_models import SecretRequestModel, SecretResponseModel
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import (
     error_response,
@@ -573,6 +583,157 @@ def create_pipeline(
 
 
 @router.get(
+    WORKSPACES + "/{workspace_name_or_id}" + PIPELINE_BUILDS,
+    response_model=Page[PipelineBuildResponseModel],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def list_workspace_builds(
+    workspace_name_or_id: Union[str, UUID],
+    build_filter_model: PipelineBuildFilterModel = Depends(
+        make_dependable(PipelineBuildFilterModel)
+    ),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+) -> Page[PipelineBuildResponseModel]:
+    """Gets builds defined for a specific workspace.
+
+    # noqa: DAR401
+
+    Args:
+        workspace_name_or_id: Name or ID of the workspace.
+        build_filter_model: Filter model used for pagination, sorting,
+            filtering
+
+    Returns:
+        All builds within the workspace.
+    """
+    workspace = zen_store().get_workspace(workspace_name_or_id)
+    build_filter_model.set_scope_workspace(workspace.id)
+    return zen_store().list_builds(build_filter_model=build_filter_model)
+
+
+@router.post(
+    WORKSPACES + "/{workspace_name_or_id}" + PIPELINE_BUILDS,
+    response_model=PipelineBuildResponseModel,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_build(
+    workspace_name_or_id: Union[str, UUID],
+    build: PipelineBuildRequestModel,
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
+) -> PipelineBuildResponseModel:
+    """Creates a build.
+
+    Args:
+        workspace_name_or_id: Name or ID of the workspace.
+        build: Build to create.
+        auth_context: Authentication context.
+
+    Returns:
+        The created build.
+
+    Raises:
+        IllegalOperationError: If the workspace or user specified in the build
+            does not match the current workspace or authenticated user.
+    """
+    workspace = zen_store().get_workspace(workspace_name_or_id)
+
+    if build.workspace != workspace.id:
+        raise IllegalOperationError(
+            "Creating builds outside of the workspace scope "
+            f"of this endpoint `{workspace_name_or_id}` is "
+            f"not supported."
+        )
+    if build.user != auth_context.user.id:
+        raise IllegalOperationError(
+            "Creating builds for a user other than yourself "
+            "is not supported."
+        )
+
+    return zen_store().create_build(build=build)
+
+
+@router.get(
+    WORKSPACES + "/{workspace_name_or_id}" + PIPELINE_DEPLOYMENTS,
+    response_model=Page[PipelineDeploymentResponseModel],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def list_workspace_deployments(
+    workspace_name_or_id: Union[str, UUID],
+    deployment_filter_model: PipelineDeploymentFilterModel = Depends(
+        make_dependable(PipelineDeploymentFilterModel)
+    ),
+    _: AuthContext = Security(authorize, scopes=[PermissionType.READ]),
+) -> Page[PipelineDeploymentResponseModel]:
+    """Gets deployments defined for a specific workspace.
+
+    # noqa: DAR401
+
+    Args:
+        workspace_name_or_id: Name or ID of the workspace.
+        deployment_filter_model: Filter model used for pagination, sorting,
+            filtering
+
+    Returns:
+        All deployments within the workspace.
+    """
+    workspace = zen_store().get_workspace(workspace_name_or_id)
+    deployment_filter_model.set_scope_workspace(workspace.id)
+    return zen_store().list_deployments(
+        deployment_filter_model=deployment_filter_model
+    )
+
+
+@router.post(
+    WORKSPACES + "/{workspace_name_or_id}" + PIPELINE_DEPLOYMENTS,
+    response_model=PipelineDeploymentResponseModel,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_deployment(
+    workspace_name_or_id: Union[str, UUID],
+    deployment: PipelineDeploymentRequestModel,
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
+) -> PipelineDeploymentResponseModel:
+    """Creates a deployment.
+
+    Args:
+        workspace_name_or_id: Name or ID of the workspace.
+        deployment: Deployment to create.
+        auth_context: Authentication context.
+
+    Returns:
+        The created deployment.
+
+    Raises:
+        IllegalOperationError: If the workspace or user specified in the
+            deployment does not match the current workspace or authenticated
+            user.
+    """
+    workspace = zen_store().get_workspace(workspace_name_or_id)
+
+    if deployment.workspace != workspace.id:
+        raise IllegalOperationError(
+            "Creating deployments outside of the workspace scope "
+            f"of this endpoint `{workspace_name_or_id}` is "
+            f"not supported."
+        )
+    if deployment.user != auth_context.user.id:
+        raise IllegalOperationError(
+            "Creating deployments for a user other than yourself "
+            "is not supported."
+        )
+
+    return zen_store().create_deployment(deployment=deployment)
+
+
+@router.get(
     WORKSPACES + "/{workspace_name_or_id}" + RUNS,
     response_model=Page[PipelineRunResponseModel],
     responses={401: error_response, 404: error_response, 422: error_response},
@@ -799,6 +960,49 @@ def create_run_metadata(
         )
 
     return zen_store().create_run_metadata(run_metadata=run_metadata)
+
+
+@router.post(
+    WORKSPACES + "/{workspace_name_or_id}" + SECRETS,
+    response_model=SecretResponseModel,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_secret(
+    workspace_name_or_id: Union[str, UUID],
+    secret: SecretRequestModel,
+    auth_context: AuthContext = Security(
+        authorize, scopes=[PermissionType.WRITE]
+    ),
+) -> SecretResponseModel:
+    """Creates a secret.
+
+    Args:
+        workspace_name_or_id: Name or ID of the workspace.
+        secret: Secret to create.
+        auth_context: Authentication context.
+
+    Returns:
+        The created secret.
+
+    Raises:
+        IllegalOperationError: If the workspace or user specified in the
+            secret does not match the current workspace or authenticated user.
+    """
+    workspace = zen_store().get_workspace(workspace_name_or_id)
+
+    if secret.workspace != workspace.id:
+        raise IllegalOperationError(
+            "Creating a secret outside of the workspace scope "
+            f"of this endpoint `{workspace_name_or_id}` is "
+            f"not supported."
+        )
+    if secret.user != auth_context.user.id:
+        raise IllegalOperationError(
+            "Creating secrets for a user other than yourself "
+            "is not supported."
+        )
+    return zen_store().create_secret(secret=secret)
 
 
 @router.get(

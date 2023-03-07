@@ -739,14 +739,6 @@ def info(git_examples_handler: GitExamplesHandler, example_name: str) -> None:
     "folder.",
 )
 @click.option(
-    "--force",
-    "-f",
-    "old_force",
-    is_flag=True,
-    help="DEPRECATED: Force the redownload of the examples folder to the ZenML "
-    "config folder. Use `-y/--yes` instead.",
-)
-@click.option(
     "--version",
     "-v",
     type=click.STRING,
@@ -773,7 +765,6 @@ def pull(
     git_examples_handler: GitExamplesHandler,
     example_name: str,
     force: bool,
-    old_force: bool,
     version: str,
     path: str,
     branch: Optional[str],
@@ -789,21 +780,12 @@ def pull(
         example_name: The name of the example.
         force: Force the redownload of the examples folder to the ZenML config
             folder.
-        old_force: DEPRECATED: Force the redownload of the examples folder to
-            the ZenML config folder.
         version: The version of ZenML to use for the force-redownloaded
             examples.
         path: The path at which you want to install the example(s).
         branch: The branch of the ZenML repo to use for the force-redownloaded
             examples.
     """
-    if old_force:
-        force = old_force
-        warning(
-            "The `--force` flag will soon be deprecated. Use `--yes` or "
-            "`-y` instead."
-        )
-
     branch = branch.strip() if branch else f"release/{version}"
     git_examples_handler.pull(branch=branch, force=force)
 
@@ -866,15 +848,6 @@ def pull(
     "requirements.",
 )
 @click.option(
-    "--force",
-    "-f",
-    "old_force",
-    is_flag=True,
-    help="DEPRECATED: Force the run of the example. This deletes the .zen "
-    "folder from the example folder and force installs all necessary "
-    "integration requirements. Use `-y/--yes` instead.",
-)
-@click.option(
     "--shell-executable",
     "-x",
     type=click.Path(exists=True),
@@ -892,7 +865,6 @@ def run(
     example_name: str,
     path: str,
     force: bool,
-    old_force: bool,
     shell_executable: Optional[str],
 ) -> None:
     """Run the example at the specified relative path.
@@ -906,16 +878,9 @@ def run(
         example_name: The name of the example.
         path: The path at which you want to install the example(s).
         force: Force the run of the example.
-        old_force: DEPRECATED: Force the run of the example.
         shell_executable: Manually specify the path to the executable that
             runs .sh files.
     """
-    if old_force:
-        force = old_force
-        warning(
-            "The `--force` flag will soon be deprecated. Use `--yes` or "
-            "`-y` instead."
-        )
     check_for_version_mismatch(git_examples_handler)
 
     # TODO [ENG-272]: - create a post_run function inside individual setup.sh

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.33.0"
+version = "0.35.0"
 packages = [
     { include = "zenml", from = "src" },
 ]
@@ -83,58 +83,69 @@ fastapi-utils = { version = "~0.2.1", optional = true}
 copier = { version = ">=7.0.0", optional = true }
 jinja2-time = { version = "^0.2.0", optional = true }
 black = { version = "^22.3.0", optional = true }
-ruff = { version = "^0.0.246", optional = true }
+ruff = { version = "^0.0.253", optional = true }
+
+# Optional dependencies for the AWS secrets store
+boto3 = { version=">=1.16.0", optional = true }
+
+# Optional dependencies for the GCP secrets store
+google-cloud-secret-manager = { version=">=2.12.5", optional = true }
+
+# Optional dependencies for the Azure Key Vault secrets store
+azure-identity = { version=">=1.4.0", optional = true }
+azure-keyvault-secrets = { version=">=4.0.0", optional = true }
+
+# Optional dependencies for the HashiCorp Vault secrets store
+hvac = { version=">=0.11.2", optional = true }
+
+# Optional development dependencies
+coverage = { extras = ["toml"], version = "^5.5", optional = true }
+mypy = { version = "^1.0.0", optional = true }
+pre-commit = { version = "^2.14.0", optional = true }
+pyment = { version = "^0.3.3", optional = true }
+tox = { version = "^3.24.3", optional = true }
+hypothesis = { version = "^6.43.1", optional = true }
+typing-extensions = { version = ">=3.7.4", optional = true }
+darglint = { version = "^1.8.1", optional = true }
+# pytest
+pytest = { version = "^6.2.4", optional = true }
+pytest-randomly = { version = "^3.10.1", optional = true }
+pytest-mock = { version = "^3.6.1", optional = true }
+pytest-clarity = { version = "^1.0.1", optional = true }
+# mkdocs including plugins
+mkdocs = { version = "^1.2.3", optional = true }
+mkdocs-material = { version = "^8.1.7", optional = true }
+mkdocs-awesome-pages-plugin = { version = "^2.6.1", optional = true }
+mkdocstrings = { version = "^0.17.0", optional = true }
+mike = { version = "^1.1.2", optional = true }
+# mypy type stubs
+types-certifi = { version = "^2021.10.8.0", optional = true }
+types-croniter = { version = "^1.0.2", optional = true }
+types-futures = { version = "^3.3.1", optional = true }
+types-Markdown = { version = "^3.3.6", optional = true }
+types-Pillow = { version = "^9.2.1", optional = true }
+types-protobuf = { version = "^3.18.0", optional = true }
+types-PyMySQL = { version = "^1.0.4", optional = true }
+types-python-dateutil = { version = "^2.8.2", optional = true }
+types-python-slugify = { version = "^5.0.2", optional = true }
+types-PyYAML = { version = "^6.0.0", optional = true }
+types-redis = { version = "^4.1.19", optional = true }
+types-requests = { version = "^2.27.11", optional = true }
+types-setuptools = { version = "^57.4.2", optional = true }
+types-six = { version = "^1.16.2", optional = true }
+types-termcolor = { version = "^1.1.2", optional = true }
+types-psutil = { version = "^5.8.13", optional = true }
+# test framework dependencies
+docker-compose = { version = "^1.28", optional = true }
 
 [tool.poetry.extras]
 server = ["fastapi", "uvicorn", "python-multipart", "python-jose", "fastapi-utils"]
 templates = ["copier", "jinja2-time", "black", "ruff"]
-
-[tool.poetry.dev-dependencies]
-black = "^22.3.0"
-pytest = "^6.2.4"
-mypy = "^0.991"
-ruff = "^0.0.246"
-coverage = { extras = ["toml"], version = "^5.5" }
-pre-commit = "^2.14.0"
-pyment = "^0.3.3"
-tox = "^3.24.3"
-hypothesis = "^6.43.1"
-typing-extensions = ">=3.7.4"
-darglint = "^1.8.1"
-
-# pytest dev dependencies
-pytest-randomly = "^3.10.1"
-pytest-mock = "^3.6.1"
-pytest-clarity = "^1.0.1"
-pytest-xdist = "^3.0.2"
-
-# mkdocs including plugins
-mkdocs="^1.2.3"
-mkdocs-material="^8.1.7"
-mkdocs-awesome-pages-plugin="^2.6.1"
-mkdocstrings="^0.17.0"
-mike="^1.1.2"
-
-# mypy type stubs
-types-certifi = "^2021.10.8.0"
-types-croniter = "^1.0.2"
-types-futures = "^3.3.1"
-types-Markdown = "^3.3.6"
-types-Pillow = "^9.2.1"
-types-protobuf = "^3.18.0"
-types-PyMySQL = "^1.0.4"
-types-python-dateutil = "^2.8.2"
-types-python-slugify = "^5.0.2"
-types-PyYAML = "^6.0.0"
-types-redis = "^4.1.19"
-types-requests = "^2.27.11"
-types-setuptools = "^57.4.2"
-types-six = "^1.16.2"
-types-termcolor = "^1.1.2"
-types-psutil = "^5.8.13"
-
-# test framework dependencies
-docker-compose = "^1.28"
+secrets-aws = ["boto3"]
+secrets-gcp = ["google-cloud-secret-manager"]
+secrets-azure = ["azure-identity", "azure-keyvault-secrets"]
+secrets-hashicorp = ["hvac"]
+dev = ["black", "ruff", "coverage", "pytest", "mypy", "pre-commit", "pyment", "tox", "hypothesis", "typing-extensions", "darglint", "pytest-randomly", "pytest-mock", "pytest-clarity", "mkdocs", "mkdocs-material", "mkdocs-awesome-pages-plugin", "mkdocstrings", "mike", "types-certifi", "types-croniter", "types-futures", "types-Markdown", "types-Pillow", "types-protobuf", "types-PyMySQL", "types-python-dateutil", "types-python-slugify", "types-PyYAML", "types-redis", "types-requests", "types-setuptools", "types-six", "types-termcolor", "types-psutil", "docker-compose"]
 
 [build-system]
 requires = ["poetry-core"]
@@ -142,24 +153,6 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry-version-plugin]
 source = "init"
-
-[tool.tox]
-name = "ZenML"
-authors = ["Hamza Tahir <hamza@zenml.io>"]
-legacy_tox_ini = """
-[tox]
-isolated_build = True
-skipsdist = true
-envlist = py36,py37,py38,py39
-
-
-[testenv]
-whitelist_externals = poetry
-commands =
-    poetry install -v --extras all
-    poetry run pytest tests
-    poetry run bash scripts/mypy.sh --install-types
-"""
 
 [tool.pytest.ini_options]
 filterwarnings = [
@@ -250,11 +243,12 @@ follow_imports = "skip"
 
 # end of fix
 
-# import all google and transformers files as `Any`
+# import all google, transformers and datasets files as `Any`
 [[tool.mypy.overrides]]
 module = [
     "google.*" ,
-    "transformers.*"  # https://github.com/huggingface/transformers/issues/13390
+    "transformers.*",  # https://github.com/huggingface/transformers/issues/13390
+    "datasets.*"
 ]
 follow_imports = "skip"
 
@@ -263,7 +257,6 @@ module = [
     "tensorflow.*",
     "apache_beam.*",
     "pandas.*",
-    "ml_metadata.*",
     "distro.*",
     "analytics.*",
     "absl.*",
@@ -311,7 +304,8 @@ module = [
     "jose.*",
     "fastapi_utils.*",
     "sqlalchemy_utils.*",
-    "copier.*"
+    "copier.*",
+    "datasets.*"
 ]
 ignore_missing_imports = true
 

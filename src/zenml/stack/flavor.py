@@ -19,7 +19,7 @@ from typing import Any, Dict, Optional, Type, cast
 from zenml.enums import StackComponentType
 from zenml.models import FlavorRequestModel, FlavorResponseModel
 from zenml.stack.stack_component import StackComponent, StackComponentConfig
-from zenml.utils.source_utils import load_source_path_class, resolve_class
+from zenml.utils.source_utils import load_source_path, resolve_class
 
 
 class Flavor:
@@ -40,6 +40,15 @@ class Flavor:
 
         Returns:
             A flavor docs url.
+        """
+        return None
+
+    @property
+    def sdk_docs_url(self) -> Optional[str]:
+        """A url to point at SDK docs explaining this flavor.
+
+        Returns:
+            A flavor SDK docs url.
         """
         return None
 
@@ -101,7 +110,7 @@ class Flavor:
         Returns:
             The loaded flavor.
         """
-        flavor = load_source_path_class(flavor_model.source)()  # noqa
+        flavor = load_source_path(flavor_model.source)()  # noqa
         return cast(Flavor, flavor)
 
     def to_model(
@@ -135,24 +144,42 @@ class Flavor:
             integration=integration,
             logo_url=self.logo_url,
             docs_url=self.docs_url,
+            sdk_docs_url=self.sdk_docs_url,
             is_custom=is_custom,
         )
         return model
 
-    def generate_default_docs_url(self) -> str:
+    def generate_default_docs_url(self, component_name: str = "") -> str:
         """Generate the doc urls for all inbuilt and integration flavors.
 
         Note that this method is not going to be useful for custom flavors,
         which do not have any docs in the main zenml docs.
 
+        Args:
+            component_name: The name of the component for docs generation. Used
+                for legacy documentation before ZenML v0.34.0.
+
         Returns:
-            The complete url to the zenml docs
+            The complete url to the zenml documentation
         """
         from zenml import __version__
 
         component_type = self.type.plural.replace("_", "-")
         name = self.name.replace("_", "-")
+        docs_component_name = component_name or name
         base = f"https://docs.zenml.io/v/{__version__}"
-        url = f"{base}/component-gallery/{component_type}/{name}"
+        return (
+            f"{base}/component-gallery/{component_type}/{docs_component_name}"
+        )
 
-        return url
+    def generate_default_sdk_docs_url(self) -> str:
+        """Generate SDK docs url for a flavor.
+
+        Returns:
+            The complete url to the zenml SDK docs
+        """
+        from zenml import __version__
+
+        base = f"https://apidocs.zenml.io/{__version__}"
+        component_type = self.type.plural
+        return f"{base}/core_code_docs/core-{component_type}/#zenml.{component_type}.{self.name}_{self.type}"
