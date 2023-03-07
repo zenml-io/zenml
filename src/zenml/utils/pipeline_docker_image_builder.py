@@ -528,8 +528,8 @@ class PipelineDockerImageBuilder:
                 )
 
             plugin = _get_plugin(plugin_name, plugin_version)
-            if plugin and plugin.index_url and plugin.wheel_name:
-                hub_packages[plugin.index_url].append(plugin.wheel_name)
+            if plugin and plugin.index_url and plugin.package_name:
+                hub_packages[plugin.index_url].append(plugin.package_name)
                 if plugin.requirements:
                     hub_requirements.extend(plugin.requirements)
             else:

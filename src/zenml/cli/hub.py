@@ -22,6 +22,7 @@ from uuid import uuid4
 
 import click
 import requests
+from git import GitCommandError
 from git.repo import Repo
 from pydantic import BaseModel, ValidationError
 
@@ -47,7 +48,7 @@ class PluginBaseModel(BaseModel):
     repository_subdirectory: Optional[str]
     repository_branch: Optional[str]
     repository_commit: Optional[str]
-    tags: Optional[str]  # TODO: make this a list?
+    tags: Optional[List[str]]
 
 
 class PluginRequestModel(PluginBaseModel):
@@ -57,10 +58,10 @@ class PluginRequestModel(PluginBaseModel):
 class PluginResponseModel(PluginBaseModel):
     """Response model for a plugin."""
 
-    status: Optional[str]  # TODO: make this a required enum
+    status: str
     version: str
     index_url: Optional[str]
-    wheel_name: Optional[str]  # TODO: rename to package_name?
+    package_name: Optional[str]
     logo: Optional[str]
     requirements: Optional[List[str]]
 
@@ -162,9 +163,6 @@ def _stream_plugin_build_logs(plugin_name: str, plugin_version: str) -> None:
 
 def _is_plugin_installed(plugin_name: str) -> bool:
     """Helper function to check if a plugin is installed."""
-    # TODO: we need to determine this based on the package name, not based on
-    # the import path (which is not always the same and can be defined by
-    # multiple plugins)
     spec = find_spec(f"zenml.hub.{plugin_name}")
     return spec is not None
 
@@ -265,8 +263,8 @@ def install_plugin(
 
     # Check if plugin can be installed
     index_url = plugin.index_url
-    wheel_name = plugin.wheel_name
-    if not index_url or not wheel_name:
+    package_name = plugin.package_name
+    if not index_url or not package_name:
         error(f"Plugin '{display_name}' is not available for installation.")
 
     # Install plugin dependencies
@@ -300,7 +298,7 @@ def install_plugin(
     # pip install the wheel
     logger.info(
         f"Installing plugin '{display_name}' from "
-        f"{index_url}{wheel_name}..."
+        f"{index_url}{package_name}..."
     )
     install_call = [
         sys.executable,
@@ -309,7 +307,7 @@ def install_plugin(
         "install",
         "--index-url",
         index_url,
-        wheel_name,
+        package_name,
     ]
     if no_deps:
         install_call.append("--no-deps")
@@ -335,8 +333,8 @@ def uninstall_plugin(plugin_name: str, version: Optional[str] = None) -> None:
         error(f"Could not find plugin '{display_name}' on the hub.")
 
     # Check if plugin can be uninstalled
-    wheel_name = plugin.wheel_name
-    if not wheel_name:
+    package_name = plugin.package_name
+    if not package_name:
         error(
             f"Plugin '{display_name}' is not available for " "uninstallation."
         )
@@ -344,7 +342,7 @@ def uninstall_plugin(plugin_name: str, version: Optional[str] = None) -> None:
     # pip uninstall the wheel
     logger.info(f"Uninstalling plugin '{display_name}'...")
     subprocess.check_call(
-        [sys.executable, "-m", "pip", "uninstall", wheel_name, "-y"]
+        [sys.executable, "-m", "pip", "uninstall", package_name, "-y"]
     )
     logger.info(f"Successfully uninstalled plugin '{display_name}'.")
 
@@ -377,6 +375,7 @@ def pull_plugin(
 
     repo_url = plugin.repository_url
     subdir = plugin.repository_subdirectory
+    commit = plugin.repository_commit
 
     # Clone the source repo
     if output_dir is None:
@@ -393,20 +392,29 @@ def pull_plugin(
         )
         plugin_dir = os.path.join(repo_path, subdir)
 
-    # TODO: adjust below once all plugins have commit hashes
-    # Clone the repo and checkout the right commit
-    Repo.clone_from(
-        url=repo_url,
-        to_path=repo_path,
-        # no_checkout=True,
-    )
-    # repo.git.checkout(commit)
-
-    # Move the subdir into the output_dir
-    if subdir:
+    # Clone the repo, checkout the right commit, and move to `output_dir`
+    try:
+        if commit:
+            repo = Repo.clone_from(
+                url=repo_url,
+                to_path=repo_path,
+                no_checkout=True,
+            )
+            repo.git.checkout(commit)
+        else:
+            Repo.clone_from(url=repo_url, to_path=repo_path)
         shutil.move(plugin_dir, output_dir)
+        logger.info(f"Successfully pulled plugin '{display_name}'.")
+    except GitCommandError:
+        error(
+            f"Could not find commit '{commit}' in repository '{repo_url}' "
+            f"of plugin '{display_name}'. This might happen if the owner "
+            "of the plugin has force-pushed to the plugin repository. "
+            "Please report this plugin version in the ZenML Hub or via "
+            "Slack."
+        )
+    finally:
         shutil.rmtree(repo_path)
-    logger.info(f"Successfully pulled plugin '{display_name}'.")
 
 
 @hub.command("push")
@@ -500,14 +508,16 @@ def push_plugin(
                 "the version is of shape '<int>.<int>' and is higher than the "
                 "current latest version of the plugin."
             )
-            version = click.prompt("(Optional) plugin version")
+            version = click.prompt("(Optional) plugin version", default="")
         if not release_notes:
             logger.info(
-                f"You are about to create a new version '{version}' of plugin "
+                f"You are about to create a new version of plugin "
                 f"'{plugin_name}'. You can optionally provide release notes "
                 "for this version below."
             )
-            release_notes = click.prompt("(Optional) release notes")
+            release_notes = click.prompt(
+                "(Optional) release notes", default=""
+            )
 
     # Raise an error if the plugin does not exist and a version is provided.
     elif not plugin_exists and version:
@@ -558,7 +568,7 @@ def push_plugin(
         repository_subdirectory=repository_subdir,
         repository_branch=repository_branch,
         repository_commit=repository_commit,
-        tags=",".join(tags),
+        tags=tags,
     )
     plugin_response = _create_plugin(
         plugin_request=plugin_request,
@@ -574,11 +584,6 @@ def push_plugin(
         "To view the build logs, run "
         f"`zenml hub logs {plugin_name} --version {plugin_version}`."
     )
-    # TODO
-    # _stream_plugin_build_logs(
-    #     plugin_name=plugin_response.name,
-    #     plugin_version=plugin_response.version,
-    # )
 
 
 def _validate_plugin_name(
@@ -600,14 +605,21 @@ def _validate_plugin_name(
         logger.info("Please enter a name for the plugin.")
         plugin_name = click.prompt("Plugin name")
 
-    # Make sure the plugin name is available.
+    # Make sure the plugin name is valid.
     while True:
         if plugin_name:
             existing_plugin = _get_plugin(plugin_name)
-            plugin_exists = existing_plugin is not None
-            # TODO: if plugin exists, check if it's the same user
-            # if not existing_plugin or existing_plugin.user == user:
-            return plugin_name, plugin_exists
+
+            # If the plugin name is available, we're good.
+            if not existing_plugin:
+                return plugin_name, False
+
+            # if the plugin already exists, make sure it's the user's plugin.
+            my_plugins = _list_plugins(mine=True)
+            for plugin in my_plugins:
+                if plugin.name == plugin_name:
+                    return plugin_name, True
+
         if not interactive:
             error("Plugin name not provided or not available.")
         logger.info(
