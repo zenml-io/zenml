@@ -16,7 +16,7 @@ import random
 
 from zenml.hooks import alerter_failure_hook, alerter_success_hook
 from zenml.pipelines import pipeline
-from zenml.steps import BaseParameters, Output, step, StepContext
+from zenml.steps import BaseParameters, Output, StepContext, step
 
 
 def pipeline_success_hook(context: StepContext) -> None:

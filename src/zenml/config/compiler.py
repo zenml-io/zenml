@@ -363,8 +363,8 @@ class Compiler:
         pipeline_settings: Dict[str, "BaseSettings"],
         pipeline_extra: Dict[str, Any],
         stack: "Stack",
-        pipeline_failure_hook_source: Optional[str],
-        pipeline_success_hook_source: Optional[str],
+        pipeline_failure_hook_source: Optional[str] = None,
+        pipeline_success_hook_source: Optional[str] = None,
     ) -> Step:
         """Compiles a ZenML step.
 

@@ -12,14 +12,20 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Functionality for standard hooks."""
+
+from typing import TYPE_CHECKING
+
 from zenml.logger import get_logger
-from zenml.steps import BaseParameters, StepContext
 
 logger = get_logger(__name__)
 
 
+if TYPE_CHECKING:
+    from zenml.steps import BaseParameters, StepContext
+
+
 def alerter_failure_hook(
-    context: StepContext, params: BaseParameters, exception: Exception
+    context: "StepContext", params: "BaseParameters", exception: Exception
 ) -> None:
     """Standard failure hook that executes after step fails.
 
@@ -48,7 +54,9 @@ def alerter_failure_hook(
         )
 
 
-def alerter_success_hook(context: StepContext, params: BaseParameters) -> None:
+def alerter_success_hook(
+    context: "StepContext", params: "BaseParameters"
+) -> None:
     """Standard success hook that executes after step finishes successfully.
 
     This hook uses any `BaseAlerter` that is configured within the active stack to post a message.
