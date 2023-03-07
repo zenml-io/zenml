@@ -25,12 +25,14 @@ class TestBaseArtifactStoreConfig:
         "path",
         [
             "aria://my-bucket/my-folder/my-file.txt",
-            "'aria://my-bucket/my-folder/my file.txt'",
+            "'aria://my-bucket/my-folder/my-file.txt'",
+            "`aria://my-bucket/my-folder/my-file.txt`",
+            '"aria://my-bucket/my-folder/my-file.txt"',
         ],
     )
     def test_valid_path(self, path):
         config = self.AriaArtifactStoreConfig(path=path)
-        assert config.path == path.strip("'")
+        assert config.path == "aria://my-bucket/my-folder/my-file.txt"
 
     @pytest.mark.parametrize(
         "path",
