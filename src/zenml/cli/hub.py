@@ -17,7 +17,7 @@ import shutil
 import subprocess
 import sys
 from importlib.util import find_spec
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 from uuid import uuid4
 
 import click
@@ -28,13 +28,12 @@ from pydantic import BaseModel, ValidationError
 
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import declare, error, print_table
+from zenml.config.global_config import GlobalConfiguration
+from zenml.constants import ENV_ZENML_HUB_URL
 from zenml.enums import CliCategories
-from zenml.hub.config import get_settings
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
-
-Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
 
 ZENML_HUB_INTERNAL_TAG_PREFIX = "zenml-"
 
@@ -68,21 +67,32 @@ class PluginResponseModel(PluginBaseModel):
     requirements: Optional[List[str]]
 
 
+def get_server_url() -> str:
+    """Helper function to get the hub url."""
+    return os.getenv(ENV_ZENML_HUB_URL, default="https://hub.zenml.io/")
+
+
+def get_auth_token() -> Optional[str]:
+    """Helper function to get the hub auth token."""
+    return GlobalConfiguration().hub_auth_token
+
+
 def _hub_request(
     method: str,
     url: str,
-    data: Optional[str] = None,
+    data: Optional[Any] = None,
     params: Optional[Dict[str, Any]] = None,
-) -> Optional[Json]:
+    content_type: str = "application/json",
+) -> Any:
     """Helper function to make a request to the hub."""
     session = requests.Session()
 
     # Define headers
     headers = {
         "Accept": "application/json",
-        "Content-Type": "application/json",
+        "Content-Type": content_type,
     }
-    auth_token = get_settings().AUTH_TOKEN
+    auth_token = get_auth_token()
     if auth_token:
         headers["Authorization"] = f"Bearer {auth_token}"
 
@@ -98,13 +108,16 @@ def _hub_request(
     )
 
     # Parse and return the response
-    response_json: Json = response.json() if response else None
-    return response_json
+    response_json = response.json()
+    if 200 <= response.status_code < 300:
+        return response_json
+    error_msg = response_json.get("detail", response.text)
+    error(f"Request to ZenML Hub failed: {error_msg}")
 
 
 def _list_plugins(**params: Any) -> List[PluginResponseModel]:
     """Helper function to list all plugins in the hub."""
-    url = f"{get_settings().SERVER_URL}/plugins"
+    url = f"{get_server_url()}/plugins"
     response = _hub_request("GET", url, params=params)
     if not isinstance(response, list):
         return []
@@ -115,7 +128,7 @@ def _get_plugin(
     plugin_name: str, plugin_version: Optional[str] = None
 ) -> Optional[PluginResponseModel]:
     """Helper function to get a specfic plugin from the hub."""
-    url = f"{get_settings().SERVER_URL}/plugins/{plugin_name}"
+    url = f"{get_server_url()}/plugins/{plugin_name}"
     if plugin_version:
         url += f"?version={plugin_version}"
 
@@ -130,7 +143,7 @@ def _create_plugin(
     plugin_request: PluginRequestModel, is_new_version: bool
 ) -> PluginResponseModel:
     """Helper function to create a plugin in the hub."""
-    url = f"{get_settings().SERVER_URL}/plugins"
+    url = f"{get_server_url()}/plugins"
     if is_new_version:
         url += f"/{plugin_request.name}/versions"
 
@@ -147,8 +160,8 @@ def _create_plugin(
 def _stream_plugin_build_logs(plugin_name: str, plugin_version: str) -> None:
     """Helper function to stream the build logs of a plugin."""
     logs_url = (
-        f"{get_settings().SERVER_URL}/plugins/{plugin_name}/versions/"
-        f"{plugin_version}/logs"
+        f"{get_server_url}/plugins/{plugin_name}/versions/{plugin_version}"
+        "/logs"
     )
     found_logs = False
     with requests.get(logs_url, stream=True) as response:
@@ -218,6 +231,11 @@ def hub() -> None:
 )
 def list_plugins(mine: bool, installed: bool) -> None:
     """List all plugins available on the hub."""
+    if not get_auth_token():
+        error(
+            "You must be logged in to list your own plugins via --mine. Please "
+            "run `zenml hub login` to login."
+        )
     plugins = _list_plugins(mine=mine)
     if not plugins:
         declare("No plugins found.")
@@ -461,6 +479,67 @@ def _clone_repo(
         )
 
 
+@hub.command("login")
+def login() -> None:
+    """Login to the ZenML Hub."""
+    logger.info(
+        "You can either login via your ZenML Hub account or via GitHub."
+    )
+    confirmation = click.confirm("Login via ZenML Hub account?")
+    if confirmation:
+        auth_token = _login_via_zenml_hub()
+    else:
+        auth_token = _login_via_github()
+    GlobalConfiguration().hub_auth_token = auth_token
+
+
+def _login_via_zenml_hub() -> str:
+    """Login via ZenML Hub username and password.
+
+    Returns:
+        The auth token of the logged in user.
+    """
+    logger.info("Please enter your ZenML Hub credentials.")
+    username = click.prompt("Username", type=str)
+    password = click.prompt("Password", type=str, hide_input=True)
+    url = f"{get_server_url()}/user/auth/jwt/login"
+    response = _hub_request(
+        method="POST",
+        url=url,
+        data={"username": username, "password": password},
+        content_type="application/x-www-form-urlencoded",
+    )
+    if not isinstance(response, dict):
+        error(f"Unexpected response from the ZenML Hub: {response}")
+    if auth_token := response.get("access_token"):
+        logger.info("Successfully logged in to the ZenML Hub.")
+        return str(auth_token)
+    error(f"Could not login to the ZenML Hub: {response.get('detail')}")
+
+
+def _login_via_github() -> str:
+    """Login via GitHub.
+
+    Returns:
+        The auth token of the logged in user.
+    """
+    url = f"{get_server_url()}/user/auth/github/authorize"
+    response = _hub_request("GET", url=url)
+    if not isinstance(response, dict):
+        error(f"Unexpected response from the ZenML Hub: {response}")
+    auth_url = response.get("authorization_url")
+    logger.info(f"Please open the following URL in your browser: {auth_url}")
+    auth_token = click.prompt("Please enter your auth token", type=str)
+    return str(auth_token)
+
+
+@hub.command("logout")
+def logout() -> None:
+    """Logout from the ZenML Hub."""
+    GlobalConfiguration().hub_auth_token = None
+    logger.info("Successfully logged out from the ZenML Hub.")
+
+
 @hub.command("push")
 @click.option(
     "--plugin_name",
@@ -542,6 +621,13 @@ def push_plugin(
     interactive: bool,
 ) -> None:
     """Push a plugin to the hub."""
+    # Validate that the user is logged in
+    if not get_auth_token():
+        error(
+            "You must be logged in to contribute a plugin to the Hub. Please "
+            "run `zenml hub login` to login."
+        )
+
     # Validate that the plugin name is provided and available
     plugin_name, plugin_exists = _validate_plugin_name(
         plugin_name=plugin_name, interactive=interactive

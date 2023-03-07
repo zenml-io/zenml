@@ -151,6 +151,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
     active_stack_id: Optional[uuid.UUID]
     active_workspace_name: Optional[str]
     jwt_secret_key: str = Field(default_factory=generate_jwt_secret_key)
+    hub_auth_token: Optional[str] = None
 
     _config_path: str
     _zen_store: Optional["BaseZenStore"] = None
