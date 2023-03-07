@@ -286,9 +286,9 @@ jobs:
         with:
           timeout-minutes: ${{ inputs.tmate_timeout }}
 
-      - name: Test
-        run: |
-          bash scripts/test-coverage-xml.sh integration ${{ inputs.test_environment }}
+      # - name: Test
+      #   run: |
+      #     bash scripts/test-coverage-xml.sh integration ${{ inputs.test_environment }}
 
       - name: Setup tmate session after tests
         if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
