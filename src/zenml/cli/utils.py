@@ -59,6 +59,9 @@ from zenml.models.filter_models import (
 from zenml.models.page_model import Page
 from zenml.secret import BaseSecretSchema
 from zenml.services import BaseService, ServiceState
+from zenml.stack import StackComponent
+from zenml.stack.stack_component import StackComponentConfig
+from zenml.utils import secret_utils
 from zenml.zen_server.deploy import ServerDeployment
 
 logger = get_logger(__name__)
@@ -1079,6 +1082,86 @@ def print_components_table(
         }
         configurations.append(component_config)
     print_table(configurations)
+
+
+def _get_stack_components(
+    stack: "Stack",
+) -> "List[StackComponent]":
+    """Get a dict of all components in a stack.
+
+    Args:
+        stack: A stack
+
+    Returns:
+        A list of all components in a stack.
+    """
+    return list(stack.components.values())
+
+
+def _scrub_secret(config: StackComponentConfig) -> Dict[str, Any]:
+    """Remove secret values from a configuration.
+
+    Args:
+        config: configuration for a stack component
+
+    Returns:
+        A configuration with secret values removed.
+    """
+    config_dict = {}
+    config_fields = dict(config.__class__.__fields__)
+    for key, value in config_fields.items():
+        if secret_utils.is_secret_field(value):
+            config_dict[key] = "********"
+        else:
+            config_dict[key] = getattr(config, key)
+    return config_dict
+
+
+def print_debug_stack() -> None:
+    """Print active stack and components for debugging purposes."""
+    from zenml.client import Client
+
+    client = Client()
+    stack = client.get_stack()
+    active_stack = client.active_stack
+    components = _get_stack_components(active_stack)
+
+    declare("\nCURRENT STACK\n", bold=True)
+    console.print(f"Name: {stack.name}")
+    console.print(f"ID: {str(stack.id)}")
+    console.print(f"Shared: {'Yes' if stack.is_shared else 'No'}")
+    if stack.user and stack.user.name and stack.user.id:  # mypy check
+        console.print(f"User: {stack.user.name} / {str(stack.user.id)}")
+    console.print(
+        f"Workspace: {stack.workspace.name} / {str(stack.workspace.id)}"
+    )
+
+    for component in components:
+        component_response = client.get_stack_component(
+            name_id_or_prefix=component.id, component_type=component.type
+        )
+        declare(
+            f"\n{component.type.value.upper()}: {component.name}\n", bold=True
+        )
+        console.print(f"Name: {component.name}")
+        console.print(f"ID: {str(component.id)}")
+        console.print(f"Type: {component.type.value}")
+        console.print(f"Flavor: {component.flavor}")
+        console.print(f"Configuration: {_scrub_secret(component.config)}")
+        console.print(
+            f"Shared: {'Yes' if component_response.is_shared else 'No'}"
+        )
+        if (
+            component_response.user
+            and component_response.user.name
+            and component_response.user.id
+        ):  # mypy check
+            console.print(
+                f"User: {component_response.user.name} / {str(component_response.user.id)}"
+            )
+        console.print(
+            f"Workspace: {component_response.workspace.name} / {str(component_response.workspace.id)}"
+        )
 
 
 def _component_display_name(
