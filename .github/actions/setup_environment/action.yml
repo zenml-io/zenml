@@ -14,9 +14,9 @@ inputs:
     required: true
   install_integrations:
     description: 'Install ZenML integrations'
-    type: bool
+    type: string
     required: false
-    default: true
+    default: 'yes'
 
 runs:
   using: "composite"
@@ -90,7 +90,7 @@ runs:
         pip install -e .
 
     - name: Install basic ZenML integrations
-      if: ${{ inputs.install_integrations }}
+      if: ${{ inputs.install_integrations == 'yes' }}
       shell: bash
       run: |
         zenml integration export-requirements --output-file requirements.txt --ignore-integration feast --ignore-integration label_studio --ignore-integration bentoml --ignore-integration seldon --ignore-integration kserve
@@ -98,7 +98,7 @@ runs:
         rm requirements.txt
 
     - name: Install ZenML integrations - final
-      if: ${{ inputs.install_integrations }}
+      if: ${{ inputs.install_integrations == 'yes' }}
       shell: bash
       run: |
 

@@ -18,9 +18,9 @@ on:
         default: "never"
       install_integrations:
         description: 'Install ZenML integrations'
-        type: bool
+        type: string
         required: false
-        default: true
+        default: 'yes'
         
 jobs:
   setup:

@@ -42,7 +42,7 @@ jobs:
           python-version: '3.8'
           os: ubuntu-latest
           # We need to install integrations in a different way to avoid conflicts
-          install_integrations: false
+          install_integrations: 'no'
 
       # IMPORTANT: there's a strategy to installing integrations here in a way
       # that avoids conflicts while at the same time making it possible for all

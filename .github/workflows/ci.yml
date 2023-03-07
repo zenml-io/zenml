@@ -27,7 +27,6 @@ jobs:
     with:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
-      install_integrations: true
     secrets: inherit
 
   lint-unit-test:
