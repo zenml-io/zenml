@@ -43,24 +43,16 @@ runs:
       id: date
       run: echo "::set-output name=week::$(date +'calendar-week-%W')"
 
-    - name: Get current ZenML version
-      shell: bash
-      id: zenml
-      run: echo "::set-output name=version::$(cat src/zenml/VERSION)"
-
     - uses: syphar/restore-virtualenv@v1
       id: cache-virtualenv
       with:
         requirement_files: 'pyproject.toml'
-        # The cache key used for the virtualenv consists of:
-        # - a custom cache version token that can be used to manually invalidate
-        # the cache if it is in some erroneous state
-        # - the current calendar week
-        # - the zenml version (to ensure full testing during a release)
-        # - whether it contains integrations or not
-        # - a hash of all the integration __init__.py files, which contain the
-        # integration requirements
-        custom_cache_key_element: ${{ inputs.cache_version }}-${{steps.date.outputs.week}}-${{steps.zenml.outputs.version}}-${{inputs.install_integrations}}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
+        # The virtualenv cache is invalidated when:
+        # - manually triggered by means of a custom cache version token
+        # - on a weekly basis
+        # - any of the integration requirements change (a hash of the
+        # __init__.py files is included in the cache key)
+        custom_cache_key_element: ${{ inputs.cache_version }}-${{steps.date.outputs.week}}-${{inputs.install_integrations}}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
 
     - uses: syphar/restore-pip-download-cache@v1
       with:
