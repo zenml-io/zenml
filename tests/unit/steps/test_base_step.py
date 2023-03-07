@@ -763,6 +763,8 @@ def test_step_decorator_configuration_gets_applied_during_initialization(
         "settings": {"docker": {"target_repository": "custom_repo"}},
         "output_artifacts": None,
         "output_materializers": None,
+        "on_failure": None,
+        "on_success": None,
     }
 
     @step(**config)
