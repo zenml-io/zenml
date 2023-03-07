@@ -34,8 +34,9 @@ from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
-
 Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
+
+ZENML_HUB_INTERNAL_TAG_PREFIX = "zenml-"
 
 
 class PluginBaseModel(BaseModel):
@@ -48,7 +49,7 @@ class PluginBaseModel(BaseModel):
     repository_subdirectory: Optional[str]
     repository_branch: Optional[str]
     repository_commit: Optional[str]
-    tags: Optional[List[str]]
+    tags: List[str]
 
 
 class PluginRequestModel(PluginBaseModel):
@@ -563,9 +564,8 @@ def push_plugin(
         interactive=interactive,
     )
 
-    # In interactive mode, also ask for tags
-    if interactive and not tags:
-        tags = _ask_for_tags()
+    # Validate the tags
+    tags = _validate_tags(tags=tags, interactive=interactive)
 
     # Make a create request to the hub
     plugin_request = PluginRequestModel(
@@ -853,6 +853,32 @@ def _validate_repository_structure(plugin_root: str) -> None:
         raise ValueError("src/zenml/hub/ is empty")
 
 
+def _validate_tags(tags: List[str], interactive: bool) -> List[str]:
+    """Validate the provided tags.
+
+    Args:
+        tags: The tags to validate.
+
+    Returns:
+        The validated tags.
+    """
+    if not tags:
+        if not interactive:
+            return []
+
+        # In interactive mode, ask for tags if none were provided.
+        return _ask_for_tags()
+
+    # If tags were provided, print a warning if any of them is invalid.
+    for tag in tags:
+        if tag.startswith(ZENML_HUB_INTERNAL_TAG_PREFIX):
+            logger.warning(
+                f"Tag '{tag}' will be ignored because it starts with "
+                f"disallowed prefix '{ZENML_HUB_INTERNAL_TAG_PREFIX}'."
+            )
+    return tags
+
+
 def _ask_for_tags() -> List[str]:
     """Repeatedly ask the user for tags to assign to the plugin.
 
@@ -867,7 +893,13 @@ def _ask_for_tags() -> List[str]:
         )
         if not tag:
             return tags
-        tags.append(tag)
+        if tag.startswith(ZENML_HUB_INTERNAL_TAG_PREFIX):
+            logger.warning(
+                "User-defined tags may not start with "
+                f"'{ZENML_HUB_INTERNAL_TAG_PREFIX}'."
+            )
+        else:
+            tags.append(tag)
 
 
 @hub.command("logs")
