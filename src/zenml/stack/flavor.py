@@ -175,13 +175,11 @@ class Flavor:
     def generate_default_sdk_docs_url(self) -> str:
         """Generate SDK docs url for a flavor.
 
-        Args:
-            module_path: Path to the implementation class.
-
         Returns:
             The complete url to the zenml SDK docs
         """
         from zenml import __version__
+
         base = f"https://apidocs.zenml.io/{__version__}"
 
         component_type = self.type.plural
@@ -191,12 +189,15 @@ class Flavor:
             #  like this "zenml.integrations.<integration>....
             integration = self.__module__.split(
                 "zenml.integrations.", maxsplit=1
-            )[1].split('.')[0]
+            )[1].split(".")[0]
 
-            return f"{base}/integration_code_docs" \
-            f"/integrations-{integration}/#{self.__module__}"
+            return (
+                f"{base}/integration_code_docs"
+                f"/integrations-{integration}/#{self.__module__}"
+            )
 
         else:
-            return f"{base}/core_code_docs/core-{component_type}/" \
-                   f"#{self.__module__}"
-
+            return (
+                f"{base}/core_code_docs/core-{component_type}/"
+                f"#{self.__module__}"
+            )
