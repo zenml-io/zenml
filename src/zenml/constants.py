@@ -233,3 +233,7 @@ FILTERING_DATETIME_FORMAT: str = "%Y-%m-%d %H:%M:%S"
 METADATA_ORCHESTRATOR_URL = "orchestrator_url"
 METADATA_EXPERIMENT_TRACKER_URL = "experiment_tracker_url"
 METADATA_DEPLOYED_MODEL_URL = "deployed_model_url"
+
+
+# Model registries constants
+MLFLOW_MODEL_FORMAT = "MLflow"

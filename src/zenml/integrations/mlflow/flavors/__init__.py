@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -22,9 +22,16 @@ from zenml.integrations.mlflow.flavors.mlflow_model_deployer_flavor import (
     MLFlowModelDeployerFlavor,
 )
 
+from zenml.integrations.mlflow.flavors.mlflow_model_registry_flavor import (
+    MLFlowModelRegistryConfig,
+    MLFlowModelRegistryFlavor,
+)
+
 __all__ = [
     "MLFlowExperimentTrackerFlavor",
     "MLFlowExperimentTrackerConfig",
     "MLFlowModelDeployerFlavor",
     "MLFlowModelDeployerConfig",
+    "MLFlowModelRegistryFlavor",
+    "MLFlowModelRegistryConfig",
 ]

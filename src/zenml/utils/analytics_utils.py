@@ -359,6 +359,9 @@ class AnalyticsContext:
                         "server_id": str(server_info.id),
                         "server_deployment": str(server_info.deployment_type),
                         "database_type": str(server_info.database_type),
+                        "secrets_store_type": str(
+                            server_info.secrets_store_type
+                        ),
                     }
                 )
 

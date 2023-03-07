@@ -36,6 +36,7 @@ from pydantic import BaseModel, root_validator, validator
 
 import zenml
 from zenml.config.global_config import GlobalConfiguration
+from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     API,
@@ -189,7 +190,7 @@ class RestZenStoreConfiguration(StoreConfiguration):
 
     type: StoreType = StoreType.REST
 
-    secrets_store: Optional[RestSecretsStoreConfiguration] = None
+    secrets_store: Optional[SecretsStoreConfiguration] = None
 
     username: Optional[str] = None
     password: Optional[str] = None
@@ -199,8 +200,8 @@ class RestZenStoreConfiguration(StoreConfiguration):
 
     @validator("secrets_store")
     def validate_secrets_store(
-        cls, secrets_store: Optional[RestSecretsStoreConfiguration]
-    ) -> RestSecretsStoreConfiguration:
+        cls, secrets_store: Optional[SecretsStoreConfiguration]
+    ) -> SecretsStoreConfiguration:
         """Ensures that the secrets store uses an associated REST secrets store.
 
         Args:

@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, cast
 from uuid import UUID
 
 from packaging import version
-from pydantic import BaseModel, Field, ValidationError, validator
+from pydantic import BaseModel, Field, SecretStr, ValidationError, validator
 from pydantic.main import ModelMetaclass
 
 from zenml import __version__
@@ -828,3 +828,9 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         # all attributes with leading underscore are private and therefore
         # are mutable and not included in serialization
         underscore_attrs_are_private = True
+
+        # This is needed to allow correct handling of SecretStr values during
+        # serialization.
+        json_encoders = {
+            SecretStr: lambda v: v.get_secret_value() if v else None
+        }

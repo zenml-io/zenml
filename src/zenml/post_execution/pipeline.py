@@ -37,7 +37,10 @@ def get_pipelines() -> List["PipelineView"]:
     """
     # TODO: [server] handle the active stack correctly
     client = Client()
-    pipelines = client.list_pipelines(workspace_id=client.active_workspace.id)
+    pipelines = client.list_pipelines(
+        workspace_id=client.active_workspace.id,
+        sort_by="desc:created",
+    )
     return [PipelineView(model) for model in pipelines.items]
 
 

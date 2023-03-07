@@ -21,6 +21,21 @@ from tests.integration.functional.zen_stores.utils import (
 from zenml.config.schedule import Schedule
 
 
+@pytest.fixture(scope="session", autouse=True)
+def initialize_store():
+    """Fixture to initialize the zen and secrets stores.
+
+    NOTE: this fixture initializes the Zen store and the secrets store
+    before any CLI tests are run because some backends (AWS) are known to mess
+    up the stdout and stderr streams upon initialization and this impacts the
+    click.testing.CliRunner ability to capture the output and restore the
+    streams upon exit.
+    """
+    from zenml.client import Client
+
+    _ = Client().zen_store
+
+
 @pytest.fixture
 def clean_workspace_with_run(clean_workspace, connected_two_step_pipeline):
     """Fixture to get a clean workspace with an existing pipeline run in it."""
