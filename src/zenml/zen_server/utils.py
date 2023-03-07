@@ -23,8 +23,8 @@ from pydantic import BaseModel, ValidationError
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
-    ENV_ZENML_SERVER_ROOT_URL_PATH,
     ENV_ZENML_SERVER_FLAG,
+    ENV_ZENML_SERVER_ROOT_URL_PATH,
 )
 from zenml.enums import StoreType
 from zenml.exceptions import (

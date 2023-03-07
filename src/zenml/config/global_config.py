@@ -26,7 +26,7 @@ from pydantic import BaseModel, Field, SecretStr, ValidationError, validator
 from pydantic.main import ModelMetaclass
 
 from zenml import __version__
-from zenml.analytics.trackers import track_event_v2, event_handler_v2
+from zenml.analytics.trackers import event_handler_v2, track_event_v2
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (

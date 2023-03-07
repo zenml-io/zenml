@@ -20,13 +20,13 @@ import zenml
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
+    ENV_ZENML_ANALYTICS_OPT_IN,
     ENV_ZENML_CONFIG_PATH,
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
     ENV_ZENML_LOCAL_STORES_PATH,
     ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
     LOCAL_STORES_DIRECTORY_NAME,
     ZEN_SERVER_ENTRYPOINT,
-    ENV_ZENML_ANALYTICS_OPT_IN,
 )
 from zenml.enums import StoreType
 from zenml.logger import get_logger

@@ -38,6 +38,7 @@ import yaml
 from packaging import version
 
 from zenml import constants
+from zenml.analytics.trackers import event_handler_v2
 from zenml.client import Client
 from zenml.config.compiler import Compiler
 from zenml.config.pipeline_configurations import (
@@ -79,7 +80,6 @@ from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
 from zenml.utils.pipeline_docker_image_builder import (
     PipelineDockerImageBuilder,
 )
-from zenml.analytics.trackers import event_handler_v2
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
