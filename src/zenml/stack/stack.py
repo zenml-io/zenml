@@ -58,7 +58,6 @@ if TYPE_CHECKING:
     from zenml.image_builders import BaseImageBuilder
     from zenml.model_deployers import BaseModelDeployer
     from zenml.model_registries import BaseModelRegistry
-    from zenml.models import PipelineBuildResponseModel
     from zenml.models.pipeline_deployment_models import (
         PipelineDeploymentBaseModel,
         PipelineDeploymentResponseModel,
@@ -796,11 +795,7 @@ class Stack:
                 ZenML server with a local one.
         """
         self.validate(fail_if_secrets_missing=True)
-
-        required_builds = self.get_docker_builds(deployment=deployment)
-        self.validate_build(
-            required_builds=required_builds, build=deployment.build
-        )
+        self._validate_build(deployment=deployment)
 
         for component in self.components.values():
             if not component.is_running:
@@ -869,42 +864,45 @@ class Stack:
         """
         return self.orchestrator.run(deployment=deployment, stack=self)
 
-    def validate_build(
+    def _validate_build(
         self,
-        required_builds: List["BuildConfiguration"],
-        build: Optional["PipelineBuildResponseModel"],
+        deployment: "PipelineDeploymentResponseModel",
     ) -> None:
         """Validates the build of a pipeline deployment.
 
         Args:
-            required_builds: The required builds for the stack.
-            build: The pipeline build to be used.
+            deployment: The deployment for which to validate the build.
 
         Raises:
-            RuntimeError: If some required images are missing in the build.
+            RuntimeError: If some required images for the deployment are missing
+                in the build.
         """
-        if required_builds and not build:
+        required_builds = self.get_docker_builds(deployment=deployment)
+
+        if required_builds and not deployment.build:
             # This should never actually happen as we either used a build
             # provided by the user or run the build process
             raise RuntimeError(
-                f"Running a pipeline on stack {self.name} requires Docker "
-                "builds but no pipeline build was passed."
+                f"Running the pipeline "
+                f"{deployment.pipeline_configuration.name} on stack "
+                f"{self.name} requires Docker builds but no pipeline build "
+                "was passed."
             )
-        elif not build:
+        elif not deployment.build:
             return
 
-        build_stack = build.stack
+        build_stack = deployment.build.stack
         if build_stack and build_stack.id != self.id:
             logger.warning(
                 f"The stack `{build_stack.name}` used for the build "
-                f"`{build.id}` is not the same as the stack "
+                f"`{deployment.build.id}` is not the same as the stack "
                 f"`{self.name}` that the pipeline will run on. This could lead "
                 "to issues if the stacks have different build requirements."
             )
 
         for build_config in required_builds:
             try:
-                image = build.get_image(
+                image = deployment.build.get_image(
                     component_key=build_config.key, step=build_config.step_name
                 )
             except KeyError:
@@ -914,7 +912,7 @@ class Stack:
 
             if build_config.compute_settings_checksum(
                 stack=self
-            ) != build.get_settings_checksum(
+            ) != deployment.build.get_settings_checksum(
                 component_key=build_config.key, step=build_config.step_name
             ):
                 logger.warning(
