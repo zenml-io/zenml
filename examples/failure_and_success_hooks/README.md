@@ -1,7 +1,7 @@
 # 🪝 Failure and Success hooks in ZenML
 
 In order to perform an action after a step has completed execution,
-one can leverage hooks. A hook executes right after step execution,
+users can leverage hooks. A hook executes right after step execution,
 within the same environment as the step, therefore it has access to all the
 dependencies that a step has.
 
@@ -30,6 +30,11 @@ def my_successful_step() -> Output(first_num=int):
     """Returns an integer."""
     raise ValueError("Error")
 ```
+
+A step can also be specified as a local user-defined function
+path (of the form `mymodule.myfile.my_function`). This is
+particularly useful when defining the hooks via
+a [YAML Config](../pipelines/settings.md).
 
 ## Defining steps on a pipeline level
 
@@ -81,4 +86,28 @@ class MyParameters(BaseParameters):
 @step(on_failure=on_failure)
 def my_step(params: MyParameters)
     raise ValueError("My exception")
+```
+
+## Linking to the `Alerter` Stack component
+
+A common use-case is to use the [Alerter](../../component-gallery/alerters/alerters.md)
+component inside the failure or success hooks to notify relevant
+people. It is quite easy to do this:
+
+```python
+def on_failure(context: StepContext):
+    context.stack.alerter.post(
+        f"{context.step_name} just failed!"
+    )
+```
+
+For convenience, ZenML offers standard failure and success hooks that you can use in your
+pipelines, that utilize any alerter that you have configured in your stack.
+
+```python
+from zenml.hooks import alerter_success_hook, alerter_failure_hook
+
+@step(on_failure=alerter_failure_hook, on_success=alerter_success_hook)
+def my_step(...):
+    ...
 ```

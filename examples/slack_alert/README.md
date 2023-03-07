@@ -16,8 +16,8 @@ These functionalities are very useful in practice:
 
 The following are two very simple examples where we build a pipeline that trains 
 and evaluates a sklearn SVC model on the digits datasets, and:
-- `run_post.py` posts the evaluation result (test accuracy) to Slack.
-- `run_ask.py` posts the evaluation result (test accuracy) to Slack, 
+- posts the evaluation result (test accuracy) to Slack.
+- posts the evaluation result (test accuracy) to Slack, 
   then deploys with MLflow if the user approved it in Slack.
 
 ## 🖥 Run it locally
@@ -84,7 +84,7 @@ Now we're ready. Execute on of the following:
 #### `post()` example
 
 ```shell
-python run_post.py
+python run.py -c post
 ```
 
 You should see the following output in your Slack channel:
@@ -94,7 +94,7 @@ You should see the following output in your Slack channel:
 #### `ask()` example
 
 ```shell
-python run_ask.py
+python run.py -c ask
 ```
 
 You should see the following output in your Slack channel:

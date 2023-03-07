@@ -108,7 +108,7 @@ class SecretSchema(NamedSchema, table=True):
     def _load_secret_values(
         cls,
         encrypted_values: bytes,
-        encryption_engine: Optional[AesGcmEngine],
+        encryption_engine: Optional[AesGcmEngine] = None,
     ) -> Dict[str, str]:
         """Load the secret values from a base64 encoded byte string.
 
@@ -134,7 +134,7 @@ class SecretSchema(NamedSchema, table=True):
     def from_request(
         cls,
         secret: SecretRequestModel,
-        encryption_engine: Optional[AesGcmEngine],
+        encryption_engine: Optional[AesGcmEngine] = None,
     ) -> "SecretSchema":
         """Create a `SecretSchema` from a `SecretRequestModel`.
 
@@ -160,7 +160,7 @@ class SecretSchema(NamedSchema, table=True):
     def update(
         self,
         secret_update: SecretUpdateModel,
-        encryption_engine: Optional[AesGcmEngine],
+        encryption_engine: Optional[AesGcmEngine] = None,
     ) -> "SecretSchema":
         """Update a `SecretSchema` from a `SecretUpdateModel`.
 
@@ -198,13 +198,17 @@ class SecretSchema(NamedSchema, table=True):
         return self
 
     def to_model(
-        self, encryption_engine: Optional[AesGcmEngine]
+        self,
+        encryption_engine: Optional[AesGcmEngine] = None,
+        include_values: bool = True,
     ) -> SecretResponseModel:
         """Converts a secret schema to a secret model.
 
         Args:
             encryption_engine: The encryption engine to use to decrypt the
                 secret values. If None, the values will be base64 decoded.
+            include_values: Whether to include the secret values in the
+                response model or not.
 
         Returns:
             The secret model.
@@ -213,7 +217,9 @@ class SecretSchema(NamedSchema, table=True):
             id=self.id,
             name=self.name,
             scope=self.scope,
-            values=self._load_secret_values(self.values, encryption_engine),
+            values=self._load_secret_values(self.values, encryption_engine)
+            if include_values
+            else {},
             user=self.user.to_model() if self.user else None,
             workspace=self.workspace.to_model(),
             created=self.created,

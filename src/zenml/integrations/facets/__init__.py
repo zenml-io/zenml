@@ -27,7 +27,11 @@ class FacetsIntegration(Integration):
     """Definition of [Facet](https://pair-code.github.io/facets/) integration for ZenML."""
 
     NAME = FACETS
-    REQUIREMENTS = ["facets-overview>=1.0.0", "IPython"]
+    REQUIREMENTS = [
+        "facets-overview>=1.0.0",
+        "IPython",
+        "numpy>=1.16.0,<1.23.0",
+    ]
 
 
 FacetsIntegration.check_installation()

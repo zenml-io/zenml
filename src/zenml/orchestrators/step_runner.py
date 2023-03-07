@@ -97,6 +97,9 @@ class StepRunner:
             input_artifacts: The input artifacts of the step.
             output_artifact_uris: The URIs of the output artifacts of the step.
             step_run_info: The step run info.
+
+        Raises:
+            Exception: A general exception if the step fails.
         """
         step_entrypoint = self._load_step_entrypoint()
         output_materializers = self._load_output_materializers()
@@ -131,6 +134,7 @@ class StepRunner:
                 step_failed = True
                 failure_hook_source = self.configuration.failure_hook_source
                 if failure_hook_source:
+                    logger.info("Detected failure hook. Running...")
                     self._run_hook(
                         failure_hook_source,
                         step_exception=step_exception,
@@ -154,6 +158,7 @@ class StepRunner:
                         self.configuration.success_hook_source
                     )
                     if success_hook_source:
+                        logger.info("Detected success hook. Running...")
                         self._run_hook(
                             success_hook_source,
                             step_exception=None,
@@ -290,6 +295,9 @@ class StepRunner:
 
         Returns:
             The parsed inputs for the step entrypoint function.
+
+        Raises:
+            TypeError: If hook function is passed a wrong parameter type.
         """
         from zenml.steps import BaseParameters
 
@@ -508,7 +516,7 @@ class StepRunner:
         step_exception: Optional[Exception],
         output_artifact_uris: Dict[str, str],
         output_materializers: Dict[str, Type[BaseMaterializer]],
-    ) -> Dict[str, Any]:
+    ) -> None:
         """Runs a step hook.
 
         Args:
@@ -517,8 +525,8 @@ class StepRunner:
             output_artifact_uris: The URIs of the output artifacts of the step.
             output_materializers: The output materializers of the step.
 
-        Returns:
-            The parsed inputs for the step entrypoint function.
+        Raises:
+            ValueError: When failed to load hook source.
         """
         try:
             hook = source_utils.load_source_path(hook_source)
@@ -530,6 +538,7 @@ class StepRunner:
                 output_artifact_uris=output_artifact_uris,
                 output_materializers=output_materializers,
             )
+            logger.debug(f"Running hook {hook} with params: {function_params}")
             hook(**function_params)
         except (ImportError, TypeError, ValueError) as e:
             raise ValueError(

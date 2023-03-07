@@ -52,6 +52,7 @@ if TYPE_CHECKING:
 
     ArtifactClassOrStr = Union[str, Type["BaseArtifact"]]
     MaterializerClassOrStr = Union[str, Type["BaseMaterializer"]]
+    HookSpecification = Union[str, FunctionType]
     OutputArtifactsSpecification = Union[
         "ArtifactClassOrStr", Mapping[str, "ArtifactClassOrStr"]
     ]
@@ -79,8 +80,8 @@ def step(
     output_materializers: Optional["OutputMaterializersSpecification"] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
-    on_failure: Optional[FunctionType] = None,
-    on_success: Optional[FunctionType] = None,
+    on_failure: Optional["HookSpecification"] = None,
+    on_success: Optional["HookSpecification"] = None,
 ) -> Callable[[F], Type[BaseStep]]:
     ...
 
@@ -97,8 +98,8 @@ def step(
     output_materializers: Optional["OutputMaterializersSpecification"] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
-    on_failure: Optional[FunctionType] = None,
-    on_success: Optional[FunctionType] = None,
+    on_failure: Optional["HookSpecification"] = None,
+    on_success: Optional["HookSpecification"] = None,
 ) -> Union[Type[BaseStep], Callable[[F], Type[BaseStep]]]:
     """Outer decorator function for the creation of a ZenML step.
 
@@ -129,12 +130,16 @@ def step(
         extra: Extra configurations for this step.
         on_failure: Callback function in event of failure of the step. Can be
             a function with three possible parameters,
-            `StepContext`, `BaseParameters`, and `Exception`.
+            `StepContext`, `BaseParameters`, and `Exception`,
+            or a UDF path to a function of the same specifications
+            (e.g. `module.my_file.my_function`).
         on_success: Callback function in event of failure of the step. Can be
             a function with two possible parameters, `StepContext` and
-            `BaseParameters.
+            `BaseParameters, or a UDF path to a function of the same specifications
+            (e.g. `module.my_file.my_function`).
+
     Returns:
-        the inner decorator which creates the step class based on the
+        The inner decorator which creates the step class based on the
         ZenML BaseStep
     """
 

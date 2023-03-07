@@ -16,10 +16,12 @@
 Hooks are functions that run after a step has exited.
 """
 
-from zenml.hooks.alerter_hooks import on_success_use_alerter
-from zenml.hooks.alerter_hooks import on_failure_use_alerter
+from zenml.hooks.alerter_hooks import alerter_success_hook
+from zenml.hooks.alerter_hooks import alerter_failure_hook
+from zenml.hooks.hook_validators import resolve_and_validate_hook
 
 __all__ = [
-    "on_success_use_alerter",
-    "on_failure_use_alerter",
+    "alerter_success_hook",
+    "alerter_failure_hook",
+    "resolve_and_validate_hook",
 ]

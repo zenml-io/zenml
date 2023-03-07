@@ -47,6 +47,7 @@ from zenml.config.step_configurations import (
 )
 from zenml.constants import STEP_SOURCE_PARAMETER_NAME
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
+from zenml.hooks.hook_validators import resolve_and_validate_hook
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.default_materializer_registry import (
@@ -85,6 +86,7 @@ if TYPE_CHECKING:
     ParametersOrDict = Union["BaseParameters", Dict[str, Any]]
     ArtifactClassOrStr = Union[str, Type["BaseArtifact"]]
     MaterializerClassOrStr = Union[str, Type["BaseMaterializer"]]
+    HookSpecification = Union[str, FunctionType]
     OutputArtifactsSpecification = Union[
         "ArtifactClassOrStr", Mapping[str, "ArtifactClassOrStr"]
     ]
@@ -476,11 +478,11 @@ class BaseStep(metaclass=BaseStepMeta):
         step_operator = options.pop(PARAM_STEP_OPERATOR, None)
         settings = options.pop(PARAM_SETTINGS, None) or {}
         output_materializers = options.pop(PARAM_OUTPUT_MATERIALIZERS, None)
-        on_failure = options.pop(PARAM_ON_FAILURE, None)
-        on_success = options.pop(PARAM_ON_SUCCESS, None)
         output_artifacts = options.pop(PARAM_OUTPUT_ARTIFACTS, None)
         extra = options.pop(PARAM_EXTRA_OPTIONS, None)
         experiment_tracker = options.pop(PARAM_EXPERIMENT_TRACKER, None)
+        on_failure = options.pop(PARAM_ON_FAILURE, None)
+        on_success = options.pop(PARAM_ON_SUCCESS, None)
 
         self.configure(
             experiment_tracker=experiment_tracker,
@@ -724,8 +726,8 @@ class BaseStep(metaclass=BaseStepMeta):
         output_artifacts: Optional["OutputArtifactsSpecification"] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         extra: Optional[Dict[str, Any]] = None,
-        on_failure: Optional[FunctionType] = None,
-        on_success: Optional[FunctionType] = None,
+        on_failure: Optional["HookSpecification"] = None,
+        on_success: Optional["HookSpecification"] = None,
         merge: bool = True,
     ) -> T:
         """Configures the step.
@@ -765,9 +767,12 @@ class BaseStep(metaclass=BaseStepMeta):
                 method for an example.
             on_failure: Callback function in event of failure of the step. Can be
                 a function with three possible parameters, `StepContext`, `BaseParameters`,
-                and `Exception`.
+                and `Exception`, or a UDF path to a function of the same specifications
+                (e.g. `module.my_file.my_function`)
             on_success: Callback function in event of failure of the step. Can be
-                a function with two possible parameters, `StepContext` and `BaseParameters.
+                a function with two possible parameters, `StepContext` and `BaseParameters, or
+                a UDF path to a function of the same specifications
+                (e.g. `module.my_file.my_function`).
 
         Returns:
             The step instance that this method was called on.
@@ -798,12 +803,12 @@ class BaseStep(metaclass=BaseStepMeta):
         failure_hook_source = None
         if on_failure:
             # string of on_failure hook function to be used for this step
-            failure_hook_source = _resolve_if_necessary(on_failure)
+            failure_hook_source = resolve_and_validate_hook(on_failure)
 
         success_hook_source = None
         if on_success:
             # string of on_success hook function to be used for this step
-            success_hook_source = _resolve_if_necessary(on_success)
+            success_hook_source = resolve_and_validate_hook(on_success)
 
         if output_artifacts:
             logger.warning(
@@ -1069,24 +1074,3 @@ class BaseStep(metaclass=BaseStepMeta):
             raise StepInterfaceError("Failed to validate function parameters.")
 
         return values
-
-    def _resolve_and_validate_hook(self, hook_func: Type[FunctionType]) -> str:
-        """Resolves and validates a hook callback.
-
-        Args:
-            hook_func: Callable hook function.
-
-        Returns:
-            resolved_hook: Source path of `hook_func`.
-        """
-        if not callable(hook_func):
-            raise ValueError(f"{hook_func} is not a valid function.")
-
-        # TODO: Have to enforce this
-        # if hook_func.__annotations__:
-        #     assert any(
-        #         isinstance(param, (Exception, BaseParameters, StepContext))
-        #         for param in hook_func.__annotations__.values()
-        #     ), "Hook parameters must be of type `Exception`, `BaseParameters`, and/or `StepContext`"
-
-        return source_utils.resolve_class(hook_func)

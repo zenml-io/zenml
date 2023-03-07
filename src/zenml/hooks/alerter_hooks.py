@@ -13,15 +13,19 @@
 #  permissions and limitations under the License.
 """Functionality for standard hooks."""
 
+from typing import TYPE_CHECKING
 
 from zenml.logger import get_logger
-from zenml.steps import BaseParameters, StepContext
 
 logger = get_logger(__name__)
 
 
+if TYPE_CHECKING:
+    from zenml.steps import BaseParameters, StepContext
+
+
 def alerter_failure_hook(
-    context: StepContext, params: BaseParameters, exception: Exception
+    context: "StepContext", params: "BaseParameters", exception: Exception
 ) -> None:
     """Standard failure hook that executes after step fails.
 
@@ -42,7 +46,7 @@ def alerter_failure_hook(
         + "\n"
     )
 
-    if context.stack.alerter:
+    if context.stack and context.stack.alerter:
         context.stack.alerter.post(message)
     else:
         logger.warning(
@@ -51,7 +55,7 @@ def alerter_failure_hook(
 
 
 def alerter_success_hook(
-    context: StepContext, params: BaseParameters
+    context: "StepContext", params: "BaseParameters"
 ) -> None:
     """Standard success hook that executes after step finishes successfully.
 
@@ -71,7 +75,7 @@ def alerter_success_hook(
         f"Step Cache Enabled: `{'True' if context.cache_enabled else 'False'}`"
         + "\n"
     )
-    if context.stack.alerter:
+    if context.stack and context.stack.alerter:
         context.stack.alerter.post(message)
     else:
         logger.warning(

@@ -143,6 +143,7 @@ class UserContext:
         password: Optional[str] = None,
         login: bool = False,
         existing_user: bool = False,
+        delete: bool = True,
     ):
         if existing_user:
             self.user_name = user_name
@@ -153,6 +154,7 @@ class UserContext:
         self.login = login
         self.password = password or random_str(32)
         self.existing_user = existing_user
+        self.delete = delete
 
     def __enter__(self):
         if not self.existing_user:
@@ -190,7 +192,7 @@ class UserContext:
             GlobalConfiguration._reset_instance(self.original_config)
             Client._reset_instance(self.original_client)
             _ = Client().zen_store
-        if not self.existing_user:
+        if not self.existing_user and self.delete:
             try:
                 self.store.delete_user(self.created_user.id)
             except KeyError:
@@ -350,9 +352,10 @@ class SecretContext:
         },
         user_id: Optional[uuid.UUID] = None,
         workspace_id: Optional[uuid.UUID] = None,
+        delete: bool = True,
     ):
         self.secret_name = (
-            sample_name("axls_secrets") if not secret_name else secret_name
+            sample_name("axls-secrets") if not secret_name else secret_name
         )
         self.scope = scope
         self.values = values
@@ -360,6 +363,7 @@ class SecretContext:
         self.workspace_id = workspace_id
         self.client = Client()
         self.store = self.client.zen_store
+        self.delete = delete
 
     def __enter__(self):
         new_secret = SecretRequestModel(
@@ -373,10 +377,11 @@ class SecretContext:
         return self.created_secret
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
-        try:
-            self.store.delete_secret(self.created_secret.id)
-        except KeyError:
-            pass
+        if self.delete:
+            try:
+                self.store.delete_secret(self.created_secret.id)
+            except KeyError:
+                pass
 
 
 AnyRequestModel = TypeVar("AnyRequestModel", bound=BaseRequestModel)
