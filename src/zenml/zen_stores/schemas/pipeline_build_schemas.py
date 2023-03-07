@@ -91,6 +91,7 @@ class PipelineBuildSchema(BaseSchema, table=True):
 
     images: str = Field(sa_column=Column(TEXT, nullable=False))
     is_local: bool
+    zenml_version: Optional[str]
 
     @classmethod
     def from_request(
@@ -111,6 +112,7 @@ class PipelineBuildSchema(BaseSchema, table=True):
             pipeline_id=request.pipeline,
             images=json.dumps(request.images, default=pydantic_encoder),
             is_local=request.is_local,
+            zenml_version=request.zenml_version,
         )
 
     def to_model(
@@ -133,4 +135,5 @@ class PipelineBuildSchema(BaseSchema, table=True):
             updated=self.updated,
             images=json.loads(self.images),
             is_local=self.is_local,
+            zenml_version=self.zenml_version,
         )

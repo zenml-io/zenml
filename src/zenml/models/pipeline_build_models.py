@@ -67,6 +67,9 @@ class PipelineBuildBaseModel(pydantic_utils.YAMLSerializationMixin):
     is_local: bool = Field(
         title="Whether the build images are stored in a container registry or locally.",
     )
+    zenml_version: Optional[str] = Field(
+        title="The version of ZenML used for this build."
+    )
 
     @property
     def contains_code(self) -> bool:
@@ -196,6 +199,9 @@ class PipelineBuildFilterModel(WorkspaceScopedFilterModel):
     )
     stack_id: Union[UUID, str, None] = Field(
         description="Stack used for the Pipeline Run"
+    )
+    zenml_version: Optional[str] = Field(
+        description="The version of ZenML used for this build."
     )
 
 

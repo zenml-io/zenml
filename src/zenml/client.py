@@ -2589,6 +2589,7 @@ class Client(metaclass=ClientMetaClass):
         user_id: Optional[Union[str, UUID]] = None,
         pipeline_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[Union[str, UUID]] = None,
+        zenml_version: Optional[str] = None,
     ) -> Page[PipelineBuildResponseModel]:
         """List all builds.
 
@@ -2604,6 +2605,7 @@ class Client(metaclass=ClientMetaClass):
             user_id: The  id of the user to filter by.
             pipeline_id: The id of the pipeline to filter by.
             stack_id: The id of the stack to filter by.
+            zenml_version: The version of ZenML to filter by.
 
         Returns:
             A page with builds fitting the filter description
@@ -2620,6 +2622,7 @@ class Client(metaclass=ClientMetaClass):
             user_id=user_id,
             pipeline_id=pipeline_id,
             stack_id=stack_id,
+            zenml_version=zenml_version,
         )
         build_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_builds(

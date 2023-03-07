@@ -38,6 +38,7 @@ from uuid import UUID
 import yaml
 from packaging import version
 
+import zenml
 from zenml import constants
 from zenml.client import Client
 from zenml.config.compiler import Compiler
@@ -1248,6 +1249,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             size=1,
             pipeline_id=pipeline_id,
             stack_id=stack.id,
+            zenml_version=zenml.__version__,
         )
 
         if not matches.items:
@@ -1396,5 +1398,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
             pipeline=pipeline_id,
             is_local=is_local,
             images=images,
+            zenml_version=zenml.__version__,
         )
         return client.zen_store.create_build(build_request)
