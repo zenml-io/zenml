@@ -509,11 +509,10 @@ def clean(
     """
     stack_recipes_directory = os.path.join(os.getcwd(), path)
     if fileio.isdir(stack_recipes_directory) and (
-        cli_utils.confirmation(
+        yes or cli_utils.confirmation(
             "Do you wish to delete the stack recipes directory? \n"
             f"{stack_recipes_directory}"
         )
-        or yes
     ):
         git_stack_recipes_handler.clean_current_stack_recipes()
         cli_utils.declare(
