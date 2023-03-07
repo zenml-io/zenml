@@ -41,7 +41,7 @@ from packaging import version
 from zenml import constants
 from zenml.client import Client
 from zenml.config.compiler import Compiler
-from zenml.config.docker_settings import FileCopyingMode
+from zenml.config.docker_settings import SourceFileMode
 from zenml.config.pipeline_configurations import (
     PipelineConfiguration,
     PipelineConfigurationUpdate,
@@ -1335,23 +1335,34 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     tag += f"-{build_config.step_name}"
                 tag += f"-{build_config.key}"
 
-                copy_files = (
-                    build_config.settings.copy_files is FileCopyingMode.ALWAYS
+                include_files = (
+                    build_config.settings.source_files
+                    == SourceFileMode.INCLUDE
                     or (
-                        build_config.settings.copy_files
-                        is FileCopyingMode.IF_DIRTY
+                        build_config.settings.source_files
+                        is SourceFileMode.DOWNLOAD_OR_INCLUDE
                         and not allow_code_download
+                    )
+                )
+                download_files = (
+                    build_config.settings.source_files
+                    == SourceFileMode.DOWNLOAD
+                    or (
+                        build_config.settings.source_files
+                        is SourceFileMode.DOWNLOAD_OR_INCLUDE
+                        and allow_code_download
                     )
                 )
                 image_name_or_digest = docker_image_builder.build_docker_image(
                     docker_settings=build_config.settings,
                     tag=tag,
                     stack=stack,
-                    copy_files=copy_files,
+                    include_files=include_files,
+                    download_files=download_files,
                     entrypoint=build_config.entrypoint,
                     extra_files=build_config.extra_files,
                 )
-                contains_code = copy_files
+                contains_code = include_files
 
             images[combined_key] = BuildItem(
                 image=image_name_or_digest,

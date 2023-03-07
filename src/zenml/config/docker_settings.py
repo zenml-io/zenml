@@ -16,7 +16,7 @@
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import Extra, root_validator, validator
+from pydantic import Extra, root_validator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.logger import get_logger
@@ -46,10 +46,11 @@ class PythonEnvironmentExportMethod(Enum):
         }[self]
 
 
-class FileCopyingMode(Enum):
-    ALWAYS = "always"
-    IF_DIRTY = "if_dirty"
-    NEVER = "never"
+class SourceFileMode(Enum):
+    INCLUDE = "include"
+    DOWNLOAD_OR_INCLUDE = "download_or_include"
+    DOWNLOAD = "download"
+    IGNORE = "ignore"
 
 
 class DockerSettings(BaseSettings):
@@ -171,29 +172,28 @@ class DockerSettings(BaseSettings):
 
     environment: Dict[str, Any] = {}
     dockerignore: Optional[str] = None
-    copy_files: FileCopyingMode = FileCopyingMode.IF_DIRTY
+    copy_files: bool = True
     copy_global_config: bool = True
     user: Optional[str] = None
 
-    @validator("copy_files", pre=True)
-    def _convert_copy_files(
-        cls, value: Union[FileCopyingMode, bool]
-    ) -> FileCopyingMode:
-        """Converts the old copy_files boolean to the new enum values.
+    source_files: SourceFileMode = SourceFileMode.DOWNLOAD_OR_INCLUDE
 
-        Args:
-            value: Value for the copy_files attribute.
+    @root_validator(pre=True)
+    def _migrate_copy_files(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        copy_files = values.get("copy_files", None)
 
-        Returns:
-            The converted value.
-        """
-        if value is True:
-            return FileCopyingMode.ALWAYS
+        if copy_files is None:
+            return values
 
-        if value is False:
-            return FileCopyingMode.NEVER
+        if values.get("source_files", None):
+            # Ignore the copy files value in favor of the new source files
+            logger.warning()
+        elif copy_files is True:
+            values["source_files"] = SourceFileMode.INCLUDE
+        elif copy_files is False:
+            values["source_files"] = SourceFileMode.IGNORE
 
-        return value
+        return values
 
     @root_validator
     def _validate_skip_build(cls, values: Dict[str, Any]) -> Dict[str, Any]:

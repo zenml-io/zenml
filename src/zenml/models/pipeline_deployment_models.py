@@ -18,7 +18,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from zenml.config.docker_settings import FileCopyingMode
+from zenml.config.docker_settings import SourceFileMode
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import Step
 from zenml.models.base_models import (
@@ -61,26 +61,26 @@ class PipelineDeploymentBaseModel(BaseModel):
     @property
     def requires_included_files(self) -> bool:
         if (
-            self.pipeline_configuration.docker_settings.copy_files
-            == FileCopyingMode.ALWAYS
+            self.pipeline_configuration.docker_settings.source_files
+            == SourceFileMode.INCLUDE
         ):
             return True
 
         return any(
-            step.config.docker_settings.copy_files == FileCopyingMode.ALWAYS
+            step.config.docker_settings.source_files == SourceFileMode.INCLUDE
             for step in self.step_configurations.values()
         )
 
     @property
     def requires_code_download(self) -> bool:
         if (
-            self.pipeline_configuration.docker_settings.copy_files
-            == FileCopyingMode.NEVER
+            self.pipeline_configuration.docker_settings.source_files
+            == SourceFileMode.DOWNLOAD
         ):
             return True
 
         return any(
-            step.config.docker_settings.copy_files == FileCopyingMode.NEVER
+            step.config.docker_settings.source_files == SourceFileMode.DOWNLOAD
             for step in self.step_configurations.values()
         )
 
