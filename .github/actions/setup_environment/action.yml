@@ -60,7 +60,7 @@ runs:
         # - whether it contains integrations or not
         # - a hash of all the integration __init__.py files, which contain the
         # integration requirements
-        custom_cache_key_element: ${{ inputs.cache_version }}-${{steps.date.outputs.week}}-${{steps.zenml.outputs.version}}-${{inputs.install_integrations}}-{{ hashFiles('src/zenml/integrations/*/__init__.py') }}
+        custom_cache_key_element: ${{ inputs.cache_version }}-${{steps.date.outputs.week}}-${{steps.zenml.outputs.version}}-${{inputs.install_integrations}}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
 
     - uses: syphar/restore-pip-download-cache@v1
       if: steps.cache-virtualenv.outputs.cache-hit != 'true'
@@ -68,7 +68,7 @@ runs:
         requirement_files: 'pyproject.toml'
         # The cache key used for the pip download cache is the same as the one
         # for the virtualenv
-        custom_cache_key_element: ${{ inputs.cache_version }}-${{steps.date.outputs.week}}-${{steps.zenml.outputs.version}}-${{inputs.install_integrations}}-{{ hashFiles('src/zenml/integrations/*/__init__.py') }}
+        custom_cache_key_element: ${{ inputs.cache_version }}-${{steps.date.outputs.week}}-${{steps.zenml.outputs.version}}-${{inputs.install_integrations}}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
 
     - name: Install ZenML
       if: steps.cache-virtualenv.outputs.cache-hit != 'true'
