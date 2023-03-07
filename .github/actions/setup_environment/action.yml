@@ -63,7 +63,7 @@ runs:
         custom_cache_key_element: ${{ inputs.cache_version }}-${{steps.date.outputs.week}}-${{steps.zenml.outputs.version}}-${{inputs.install_integrations}}-{{ hashFiles('src/zenml/integrations/*/__init__.py') }}
 
     - uses: syphar/restore-pip-download-cache@v1
-      if: ${{ steps.cache-virtualenv.outputs.cache-hit != 'true' }}
+      if: steps.cache-virtualenv.outputs.cache-hit != 'true'
       with:
         requirement_files: 'pyproject.toml'
         # The cache key used for the pip download cache is the same as the one
@@ -71,7 +71,7 @@ runs:
         custom_cache_key_element: ${{ inputs.cache_version }}-${{steps.date.outputs.week}}-${{steps.zenml.outputs.version}}-${{inputs.install_integrations}}-{{ hashFiles('src/zenml/integrations/*/__init__.py') }}
 
     - name: Install ZenML
-      if: ${{ steps.cache-virtualenv.outputs.cache-hit != 'true' }}
+      if: steps.cache-virtualenv.outputs.cache-hit != 'true'
       shell: bash
       run: |
 
@@ -85,7 +85,7 @@ runs:
         pip install -e .
 
     - name: Install basic ZenML integrations
-      if: ${{ steps.cache-virtualenv.outputs.cache-hit != 'true' and inputs.install_integrations == 'yes' }}
+      if: steps.cache-virtualenv.outputs.cache-hit != 'true' && inputs.install_integrations == 'yes'
       shell: bash
       run: |
         zenml integration export-requirements --output-file integration-requirements.txt --ignore-integration feast --ignore-integration label_studio --ignore-integration bentoml --ignore-integration seldon --ignore-integration kserve
@@ -95,7 +95,7 @@ runs:
       # Refresh the ZenML installation if using a cached virtualenv or after
       # installing integrations
     - name: Refresh ZenML installation
-      if: ${{ steps.cache-virtualenv.outputs.cache-hit == 'true' or inputs.install_integrations == 'yes' }}
+      if: steps.cache-virtualenv.outputs.cache-hit == 'true' || inputs.install_integrations == 'yes'
       shell: bash
       run: |
 
