@@ -1257,10 +1257,22 @@ class BasePipeline(metaclass=BasePipelineMeta):
             # local code the user is expecting to run
             return None
 
-        required_builds = stack.get_docker_builds(deployment=deployment)
-        stack.validate_build(
-            required_builds=required_builds, build=potential_build
-        )
+        for build_config in stack.get_docker_builds(deployment=deployment):
+            try:
+                _ = potential_build.get_image(
+                    component_key=build_config.key, step=build_config.step_name
+                )
+            except KeyError:
+                # Build is missing an image, can't reuse it
+                return None
+
+            if build_config.compute_settings_checksum(
+                stack=stack
+            ) != potential_build.get_settings_checksum(
+                component_key=build_config.key, step=build_config.step_name
+            ):
+                # Current Docker settings don't match the build, can't reuse it
+                return None
 
         return potential_build
 
