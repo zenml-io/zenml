@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import atexit
+import json
 import logging
 import numbers
 
@@ -20,6 +21,7 @@ from six import string_types
 
 from zenml.analytics.consumer import Consumer
 from zenml.analytics.request import post
+from zenml.analytics.utils import UUIDEncoder
 
 try:
     import queue
@@ -96,33 +98,30 @@ class Client(object):
                     consumer.start()
 
     def identify(self, user_id, traits):
-        return self._enqueue(
-            msg={
-                "user_id": str(user_id),
-                "traits": traits,
-                "type": "identify",
-            }
-        )
+        msg = {
+            "user_id": user_id,
+            "traits": traits,
+            "type": "identify",
+        }
+        return self._enqueue(msg)
 
     def track(self, user_id, event, properties):
-        return self._enqueue(
-            msg={
-                "user_id": str(user_id),
-                "event": event,
-                "properties": properties,
-                "type": "track",
-            }
-        )
+        msg = {
+            "user_id": user_id,
+            "event": event,
+            "properties": properties,
+            "type": "track",
+        }
+        return self._enqueue(msg)
 
     def group(self, user_id, group_id, traits):
-        return self._enqueue(
-            msg={
-                "user_id": str(user_id),
-                "group_id": str(group_id),
-                "traits": traits,
-                "type": "group",
-            }
-        )
+        msg = {
+            "user_id": user_id,
+            "group_id": group_id,
+            "traits": traits,
+            "type": "group",
+        }
+        return self._enqueue(msg)
 
     def _enqueue(self, msg):
         """Push a new `msg` onto the queue, return `(success, msg)`"""

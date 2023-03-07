@@ -11,10 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import json
 import logging
 
 import requests
 
+from zenml.analytics.utils import UUIDEncoder
 from zenml.constants import ANALYTICS_SERVER_URL
 
 logger = logging.getLogger(__name__)
@@ -29,7 +31,7 @@ def post(batch, timeout=15):
     response = requests.post(
         url=ANALYTICS_SERVER_URL + "/batch",
         headers=headers,
-        json=batch,
+        data=json.dumps(batch, cls=UUIDEncoder),
         timeout=timeout,
     )
 
@@ -41,18 +43,17 @@ def post(batch, timeout=15):
         payload = response.json()
         logger.debug("received response: %s", payload)
         raise APIError(
-            response.status_code, payload["code"], payload["message"]
+            response.status_code, payload.get("detail", (response.text,))
         )
     except ValueError:
-        raise APIError(response.status_code, "unknown", response.text)
+        raise APIError(response.status_code, response.text)
 
 
 class APIError(Exception):
-    def __init__(self, status, code, message):
+    def __init__(self, status, message):
         self.message = message
         self.status = status
-        self.code = code
 
     def __str__(self):
-        msg = "[ZenML Analytics] {0}: {1} ({2})"
-        return msg.format(self.code, self.message, self.status)
+        msg = "[ZenML Analytics] {1}: {0}"
+        return msg.format(self.message, self.status)
