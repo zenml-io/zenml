@@ -22,8 +22,6 @@ runs:
   using: "composite"
   steps:
 
-    - uses: actions/checkout@v2
-
     - name: Write cache version
       shell: bash
       run: echo $CACHE_VERSION >> cache_version

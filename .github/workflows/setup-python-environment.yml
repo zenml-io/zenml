@@ -1,0 +1,43 @@
+name: Setup the Python Environment
+
+on:
+  workflow_call:
+    inputs:
+      os:
+        description: 'OS'
+        type: string
+        required: true
+      python-version:
+        description: 'Python version'
+        type: string
+        required: true
+      enable_tmate:
+        description: 'Enable tmate session for debugging'
+        type: string
+        required: false
+        default: "never"
+      install_integrations:
+        description: 'Install ZenML integrations'
+        type: bool
+        required: false
+        default: true
+        
+jobs:
+  setup:
+    name: setup
+    runs-on: ${{ matrix.os }}
+    env:
+      ZENML_DEBUG: 1
+      ZENML_ANALYTICS_OPT_IN: false
+      PYTHONIOENCODING: 'utf-8'
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup environment
+        uses: ./.github/actions/setup_environment
+        with:
+          cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
+          python-version: ${{ inputs.python-version }}
+          os: ${{ inputs.os }}
+          install_integrations: ${{ inputs.install_integrations }}

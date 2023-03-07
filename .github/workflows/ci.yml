@@ -23,11 +23,11 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
         python-version: ["3.7", "3.8", "3.9", "3.10"]
       fail-fast: false
-    uses: ./.github/actions/setup_environment
+    uses: ./.github/workflows/setup-python-environment.yml
     with:
-      cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
+      install_integrations: true
     secrets: inherit
 
   lint-unit-test:
