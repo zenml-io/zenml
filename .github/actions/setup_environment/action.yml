@@ -22,20 +22,20 @@ runs:
   using: "composite"
   steps:
 
-    - name: Write cache version
-      shell: bash
-      run: echo $CACHE_VERSION >> cache_version
-      env:
-        CACHE_VERSION : ${{inputs.cache_version}}-${{inputs.install_integrations}}
+    # - name: Write cache version
+    #   shell: bash
+    #   run: echo $CACHE_VERSION >> cache_version
+    #   env:
+    #     CACHE_VERSION : ${{inputs.cache_version}}-${{inputs.install_integrations}}
 
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: ${{ inputs.python-version }}
-        cache: 'pip' # caching the pip download cache
-        cache-dependency-path: |
-          pyproject.toml
-          cache_version
+        # cache: 'pip' # caching the pip download cache
+        # cache-dependency-path: |
+        #   pyproject.toml
+        #   cache_version
 
     - name: Delete error-causing bash
       shell: bash
@@ -75,11 +75,11 @@ runs:
         requirement_files: 'zenml-requirements.txt'
         custom_cache_key_element: ${{ inputs.cache_version }}-${{inputs.install_integrations}}
 
-    # - uses: syphar/restore-pip-download-cache@v1
-    #   if: steps.cache-virtualenv.outputs.cache-hit != 'true'
-    #   with:
-    #     requirement_files: 'zenml-requirements.txt'
-    #     custom_cache_key_element: ${{ inputs.cache_version }}-${{inputs.install_integrations}}
+    - uses: syphar/restore-pip-download-cache@v1
+      if: steps.cache-virtualenv.outputs.cache-hit != 'true'
+      with:
+        requirement_files: 'zenml-requirements.txt'
+        custom_cache_key_element: ${{ inputs.cache_version }}-${{inputs.install_integrations}}
 
     - name: Install ZenML
       if: steps.cache-virtualenv.outputs.cache-hit != 'true'
