@@ -393,6 +393,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         extra: Optional[Dict[str, Any]] = None,
         config_path: Optional[str] = None,
         unlisted: bool = False,
+        allow_build_reuse: bool = True,
     ) -> None:
         """Runs the pipeline on the active stack of the current repository.
 
@@ -525,6 +526,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 deployment=deployment,
                 pipeline_spec=pipeline_spec,
                 allow_code_download=allow_code_download,
+                allow_build_reuse=allow_build_reuse,
                 pipeline_id=pipeline_id,
                 build=build,
             )
@@ -1137,6 +1139,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         deployment: "PipelineDeploymentBaseModel",
         pipeline_spec: "PipelineSpec",
         allow_code_download: bool,
+        allow_build_reuse: bool,
         pipeline_id: Optional[UUID] = None,
         build: Union["UUID", "PipelineBuildBaseModel", None] = None,
     ) -> Optional["PipelineBuildResponseModel"]:
@@ -1157,11 +1160,11 @@ class BasePipeline(metaclass=BasePipelineMeta):
             The build response.
         """
         if not build:
-            allow_build_reuse = (
-                allow_code_download and not deployment.requires_included_files
-            )
-
-            if allow_build_reuse:
+            if (
+                allow_build_reuse
+                and allow_code_download
+                and not deployment.requires_included_files
+            ):
                 existing_build = self._find_existing_build(
                     deployment=deployment, pipeline_id=pipeline_id
                 )
