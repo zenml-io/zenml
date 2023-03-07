@@ -115,7 +115,8 @@ class FlavorRegistry:
             )
             existing_flavor = store.list_flavors(
                 FlavorFilterModel(
-                    name="built-in", type=flavor_request_model.type
+                    name=flavor_request_model.name,
+                    type=flavor_request_model.type,
                 )
             )
             if len(existing_flavor) == 0:
@@ -143,7 +144,8 @@ class FlavorRegistry:
                 )
                 existing_flavor = store.list_flavors(
                     FlavorFilterModel(
-                        name=name, type=flavor_request_model.type
+                        name=flavor_request_model.name,
+                        type=flavor_request_model.type,
                     )
                 )
                 if len(existing_flavor) == 0:
