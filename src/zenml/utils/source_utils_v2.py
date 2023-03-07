@@ -204,10 +204,13 @@ def is_distribution_package_file(file_path: str, module_name: str) -> bool:
             return True
 
     if _get_package_for_module(module_name=module_name):
-        # The previous logic doesn't detect editable installs because
-        # the site packages dir only contains a reference to the source files,
-        # not the actual files.
         return True
+
+    # TODO: Both of the previous checks don't detect editable installs because
+    # the site packages dir only contains a reference to the source files,
+    # not the actual files and importlib_metadata doesn't detect it as a valid
+    # distribution package. That means currently editable installs get a
+    # source type UNKNOWN which might or might not lead to issues.
 
     return False
 
@@ -358,9 +361,9 @@ def _load_module(
 
 def _get_package_for_module(module_name: str) -> Optional[str]:
     top_level_module = module_name.split(".", maxsplit=1)[0]
-    package_names = importlib_metadata.packages_distributions()[
-        top_level_module
-    ]
+    package_names = importlib_metadata.packages_distributions().get(
+        top_level_module, []
+    )
 
     if len(package_names) == 1:
         return package_names[0]
