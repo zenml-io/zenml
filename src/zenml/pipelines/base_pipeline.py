@@ -1221,7 +1221,11 @@ class BasePipeline(metaclass=BasePipelineMeta):
             # local code the user is expecting to run
             return None
 
-        # TODO: validate build docker settings match
+        required_builds = stack.get_docker_builds(deployment=deployment)
+        stack.validate_build(
+            required_builds=required_builds, build=deployment.build
+        )
+
         return potential_build
 
     def _build(
