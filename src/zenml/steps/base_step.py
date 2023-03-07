@@ -85,6 +85,7 @@ if TYPE_CHECKING:
     ParametersOrDict = Union["BaseParameters", Dict[str, Any]]
     ArtifactClassOrStr = Union[str, Type["BaseArtifact"]]
     MaterializerClassOrStr = Union[str, Type["BaseMaterializer"]]
+    HookSpecification = Union[str, FunctionType]
     OutputArtifactsSpecification = Union[
         "ArtifactClassOrStr", Mapping[str, "ArtifactClassOrStr"]
     ]
@@ -476,11 +477,11 @@ class BaseStep(metaclass=BaseStepMeta):
         step_operator = options.pop(PARAM_STEP_OPERATOR, None)
         settings = options.pop(PARAM_SETTINGS, None) or {}
         output_materializers = options.pop(PARAM_OUTPUT_MATERIALIZERS, None)
-        on_failure = options.pop(PARAM_ON_FAILURE, None)
-        on_success = options.pop(PARAM_ON_SUCCESS, None)
         output_artifacts = options.pop(PARAM_OUTPUT_ARTIFACTS, None)
         extra = options.pop(PARAM_EXTRA_OPTIONS, None)
         experiment_tracker = options.pop(PARAM_EXPERIMENT_TRACKER, None)
+        on_failure = options.pop(PARAM_ON_FAILURE, None)
+        on_success = options.pop(PARAM_ON_SUCCESS, None)
 
         self.configure(
             experiment_tracker=experiment_tracker,
@@ -724,8 +725,8 @@ class BaseStep(metaclass=BaseStepMeta):
         output_artifacts: Optional["OutputArtifactsSpecification"] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         extra: Optional[Dict[str, Any]] = None,
-        on_failure: Optional[FunctionType] = None,
-        on_success: Optional[FunctionType] = None,
+        on_failure: Optional["HookSpecification"] = None,
+        on_success: Optional["HookSpecification"] = None,
         merge: bool = True,
     ) -> T:
         """Configures the step.
@@ -765,9 +766,12 @@ class BaseStep(metaclass=BaseStepMeta):
                 method for an example.
             on_failure: Callback function in event of failure of the step. Can be
                 a function with three possible parameters, `StepContext`, `BaseParameters`,
-                and `Exception`.
+                and `Exception`, or a UDF path to a function of the same specifications
+                (e.g. `module.my_file.my_function`)
             on_success: Callback function in event of failure of the step. Can be
-                a function with two possible parameters, `StepContext` and `BaseParameters.
+                a function with two possible parameters, `StepContext` and `BaseParameters, or
+                a UDF path to a function of the same specifications
+                (e.g. `module.my_file.my_function`).
 
         Returns:
             The step instance that this method was called on.
@@ -798,12 +802,12 @@ class BaseStep(metaclass=BaseStepMeta):
         failure_hook_source = None
         if on_failure:
             # string of on_failure hook function to be used for this step
-            failure_hook_source = _resolve_if_necessary(on_failure)
+            failure_hook_source = self._resolve_and_validate_hook(on_failure)
 
         success_hook_source = None
         if on_success:
             # string of on_success hook function to be used for this step
-            success_hook_source = _resolve_if_necessary(on_success)
+            success_hook_source = self._resolve_and_validate_hook(on_success)
 
         if output_artifacts:
             logger.warning(
@@ -1070,7 +1074,9 @@ class BaseStep(metaclass=BaseStepMeta):
 
         return values
 
-    def _resolve_and_validate_hook(self, hook_func: Type[FunctionType]) -> str:
+    def _resolve_and_validate_hook(
+        self, hook_func: "HookSpecification"
+    ) -> str:
         """Resolves and validates a hook callback.
 
         Args:
@@ -1081,15 +1087,29 @@ class BaseStep(metaclass=BaseStepMeta):
 
         Raises:
             ValueError: If `hook_func` is not a valid callable.
+            AssertionError: If `hook_func` has the wrong params.
         """
-        if not callable(hook_func):
-            raise ValueError(f"{hook_func} is not a valid function.")
+        if type(hook_func) is str:
+            func = source_utils.load_source_path(hook_func)
+        else:
+            # This means hook is a callable
+            func = hook_func
 
-        if hook_func.__annotations__:
-            sig = inspect.getfullargspec(inspect.unwrap(hook_func))
-            assert any(
-                (Exception, BaseParameters, StepContext)
-                in set(sig.annotations.values())
-            ), "Hook parameters must be of type `Exception`, `BaseParameters`, and/or `StepContext`"
+        if not callable(func):
+            raise ValueError(f"{func} is not a valid function.")
 
-        return source_utils.resolve_class(hook_func)
+        if func.__annotations__:
+            sig = inspect.getfullargspec(inspect.unwrap(func))
+            annotations = sig.annotations.values()
+            for annotation in annotations:
+                if annotation and annotation not in (
+                    Exception,
+                    BaseParameters,
+                    StepContext,
+                ):
+                    raise ValueError(
+                        "Hook parameters must be of type `Exception`, `BaseParameters`, "
+                        f"and/or `StepContext`, not {annotation}"
+                    )
+
+        return source_utils.resolve_class(func)
