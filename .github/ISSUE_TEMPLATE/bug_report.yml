@@ -21,8 +21,8 @@ body:
     id: system-information
     attributes:
       label: System Information
-      description: zenml info -a
-      placeholder: "Copy paste the output of the above command here. If using ZenML version < 0.8.0, then paste in Python version, OS, ZenML version, and installed integrations."
+      description: zenml info -a -s
+      placeholder: "Copy paste the output of the above command here. If using ZenML < 0.36.0, then remove the `-s` flag above. If using ZenML version < 0.8.0, then paste in Python version, OS, ZenML version, and installed integrations."
     validations:
       required: true
 

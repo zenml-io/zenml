@@ -420,7 +420,7 @@ def _prompt_email(event_source: AnalyticsEventSource) -> bool:
 
             # Add consent and email to user model
             client.update_user(
-                user_name_or_id=client.active_user.id,
+                name_id_or_prefix=client.active_user.id,
                 updated_email=email,
                 updated_email_opt_in=True,
             )
@@ -464,13 +464,27 @@ def _prompt_email(event_source: AnalyticsEventSource) -> bool:
     help="Select specific installed packages.",
     type=str,
 )
-def info(packages: Tuple[str], all: bool = False, file: str = "") -> None:
+@click.option(
+    "--stack",
+    "-s",
+    is_flag=True,
+    default=False,
+    help="Output information about active stack and components.",
+    type=bool,
+)
+def info(
+    packages: Tuple[str],
+    all: bool = False,
+    file: str = "",
+    stack: bool = False,
+) -> None:
     """Show information about the current user setup.
 
     Args:
         packages: List of packages to show information about.
         all: Flag to show information about all installed packages.
         file: Flag to output to a file.
+        stack: Flag to output information about active stack and components
     """
     gc = GlobalConfiguration()
     environment = Environment()
@@ -523,3 +537,6 @@ def info(packages: Tuple[str], all: bool = False, file: str = "") -> None:
         declare(f"Wrote user debug info to file at '{file_write_path}'.")
     else:
         cli_utils.print_user_info(user_info)
+
+    if stack:
+        cli_utils.print_debug_stack()

@@ -31,7 +31,7 @@ COPY README.md pyproject.toml ./
 # copying our source files which would invalidate caching
 COPY src/zenml/__init__.py ./src/zenml/
 
-RUN pip install -e .[server]
+RUN pip install -e .[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp]
 COPY src src
 
 RUN mkdir -p /zenml/.zenconfig/local_stores/default_zen_store && chown -R $USER_UID:$USER_GID /zenml

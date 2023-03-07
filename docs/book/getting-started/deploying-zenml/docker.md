@@ -35,9 +35,10 @@ you probably need to configure some settings for it like the database it should
 use, the default user details and more. The ZenML server container image uses
 sensible defaults, so you can simply start a container without worrying too much
 about the configuration. However, if you're looking to connect the ZenML server
-to an external MySQL database, or to persist the internal SQLite database, or
-simply want to control other settings like the default account, you can do so
-by customizing the container's environment variables.
+to an external MySQL database or secrets management service, or to persist the
+internal SQLite database, or simply want to control other settings like the
+default account, you can do so by customizing the container's environment
+variables.
 
 The following environment variables can be passed to the container:
 
@@ -86,6 +87,27 @@ The following environment variables can be passed to the container:
     This boolean variable controls whether the SSL certificate in use by the
     MySQL server is verified. Only valid when `ZENML_STORE_URL` points to a
     MySQL database that uses SSL secured connections. Defaults to `False`.
+- **ZENML_SECRETS_STORE_TYPE**:
+    Set this variable to one of the supported secrets store types:
+
+    - `none`: Use this value to disable the secrets store functionality.
+    - `sql`: Use the ZenML SQL database as the secrets store. This is the
+    default value. See the [SQL Secrets Store Configuration Options](#sql-secrets-store-configuration-options)
+    section below for more configuration options.
+    - `aws`: Use AWS Secrets Manager as the secrets store backend. See the
+    [AWS Secrets Store Configuration Options](#aws-secrets-store-configuration-options)
+    section below for more configuration options.
+    - `gcp`: Use GCP Secrets Manager as the secrets store backend. See the
+    [GCP Secrets Store Configuration Options](#gcp-secrets-store-configuration-options)
+    section below for more configuration options.
+    - `azure`: Use Azure Key Vault as the secrets store backend. See the
+    [Azure Secrets Store Configuration Options](#azure-secrets-store-configuration-options)
+    section below for more configuration options.
+    - `hashicorp`: Use HashiCorp Vault as the secrets store backend. See the
+    [HashiCorp Vault Secrets Store Configuration Options](#hashicorp-vault-secrets-store-configuration-options)
+    - `custom`: Use a custom secrets store backend implementation. See the
+    [Custom Secrets Store Configuration Options](#custom-secrets-store-configuration-options).
+
 - **ZENML_LOGGING_VERBOSITY**:
     Use this variable to control the verbosity of logs inside the container.
     It can be set to one of the following values: `NOTSET`, `ERROR`, `WARN`,
@@ -97,6 +119,183 @@ inside the container. The `/zenml/.zenconfig/local_stores` base path where the
 default SQLite database is located can optionally be overridden by setting the
 `ZENML_LOCAL_STORES_PATH` environment variable to point to a different path
 (e.g. a persistent volume or directory that is mounted from the host).
+
+### SQL Secrets Store Configuration Options
+
+These configuration options are only relevant if you're using the SQL database
+as the secrets store backend. The SQL database is used by default, so you only
+need to configure these options if you want to change the default behavior.
+
+- **ZENML_SECRETS_STORE_ENCRYPTION_KEY**:
+    This is a secret key used to encrypt all secrets stored in the SQL secrets
+    store. If not set, encryption will not be used and passwords will be stored
+    unencrypted in the database. This should be set to a random string with a
+    recommended length of at least 32 characters, e.g.:
+  
+     ```python
+     from secrets import token_hex
+     token_hex(32)
+     ```
+    
+    or:
+
+     ```shell
+     openssl rand -hex 32
+     ```
+
+> **Important**
+> If you configure encryption for your SQL database secrets store, you should
+keep the `ZENML_SECRETS_STORE_ENCRYPTION_KEY` value somewhere safe and secure,
+as it will be required to decrypt the secrets in the database. If you lose the
+encryption key, you will not be able to decrypt the secrets in the database and
+will have to reset them.
+
+### AWS Secrets Store Configuration Options
+
+These configuration options are only relevant if you're using the AWS Secrets
+Manager as the secrets store backend.
+
+- **ZENML_SECRETS_STORE_REGION_NAME**:
+    The AWS region to use. This must be set to the region where the AWS
+    Secrets Manager service that you want to use is located.
+
+- **ZENML_SECRETS_STORE_AWS_ACCESS_KEY_ID**:
+    The AWS access key ID to use for authentication. This must be set to a valid
+    AWS access key ID that has access to the AWS Secrets Manager service that
+    you want to use. If you are using an IAM role attached to an EKS cluster to
+    authenticate, you can omit this variable.
+    NOTE: this is the same as setting the `AWS_ACCESS_KEY_ID` environment
+    variable.
+
+- **ZENML_SECRETS_STORE_AWS_SECRET_ACCESS_KEY**:
+    The AWS secret access key to use for authentication. This must be set to a
+    valid AWS secret access key that has access to the AWS Secrets Manager
+    service that you want to use. If you are using an IAM role attached to an
+    EKS cluster to authenticate, you can omit this variable.
+    NOTE: this is the same as setting the `AWS_SECRET_ACCESS_KEY` environment
+    variable.
+
+- **ZENML_SECRETS_STORE_AWS_SESSION_TOKEN**:
+    Optional AWS session token to use for authentication.
+    NOTE: this is the same as setting the `AWS_SESSION_TOKEN` environment
+    variable.
+
+- **ZENML_SECRETS_STORE_SECRET_LIST_REFRESH_TIMEOUT**:
+    AWS' [Secrets Manager](https://aws.amazon.com/secrets-manager) has a known
+    issue where it does not immediately
+    reflect new and updated secrets in the `list_secrets` results. To work
+    around this issue, you can set this refresh timeout value to a non-zero value to
+    get the ZenML server to wait after creating or updating an AWS secret
+    until the changes are reflected in the secrets returned by
+    `list_secrets` or the number of seconds specified by this value has
+    elapsed. Defaults to `0` (disabled). Should not be set to a high value
+    as it may cause thread starvation in the ZenML server on high load.
+
+### GCP Secrets Store Configuration Options
+
+These configuration options are only relevant if you're using the GCP Secrets
+Manager as the secrets store backend.
+
+- **ZENML_SECRETS_STORE_PROJECT_ID**:
+    The GCP project ID to use. This must be set to the project ID where the GCP
+    Secrets Manager service that you want to use is located.
+
+- **GOOGLE_APPLICATION_CREDENTIALS**:
+    The path to the GCP service account credentials file to use for
+    authentication. This must be set to a valid GCP service account credentials
+    file that has access to the GCP Secrets Manager service that you want to
+    use. If you are using a GCP service account attached to a GKE cluster to
+    authenticate, you can omit this variable.
+    NOTE: the path to the credentials file must be mounted into the container.
+
+### Azure Secrets Store Configuration Options
+
+These configuration options are only relevant if you're using Azure Key Vault as
+the secrets store backend.
+
+- **ZENML_SECRETS_STORE_KEY_VAULT_NAME**:
+    The name of the Azure Key Vault. This must be set to point to the Azure
+    Key Vault instance that you want to use.
+
+- **ZENML_SECRETS_STORE_AZURE_CLIENT_ID**:
+    The Azure application service principal client ID to use to
+    authenticate with the Azure Key Vault API. If you are running the ZenML
+    server hosted in Azure and are using a managed identity to access the Azure
+    Key Vault service, you can omit this variable.
+    NOTE: this is the same as setting the `AZURE_CLIENT_ID` environment
+    variable.
+
+- **ZENML_SECRETS_STORE_AZURE_CLIENT_SECRET**:
+    The Azure application service principal client secret to use to
+    authenticate with the Azure Key Vault API. If you are running the ZenML
+    server hosted in Azure and are using a managed identity to access the Azure
+    Key Vault service, you can omit this variable.
+    NOTE: this is the same as setting the `AZURE_CLIENT_SECRET` environment
+    variable.
+
+- **ZENML_SECRETS_STORE_AZURE_TENANT_ID**:
+    The Azure application service principal tenant ID to use to
+    authenticate with the Azure Key Vault API. If you are running the ZenML
+    server hosted in Azure and are using a managed identity to access the Azure
+    Key Vault service, you can omit this variable.
+    NOTE: this is the same as setting the `AZURE_TENANT_ID` environment
+    variable.
+
+### Hashicorp Vault Secrets Store Configuration Options
+
+These configuration options are only relevant if you're using Hashicorp Vault as
+the secrets store backend.
+
+- **ZENML_SECRETS_STORE_VAULT_ADDR**:
+    The url of the HashiCorp Vault server to connect to.
+    NOTE: this is the same as setting the `VAULT_ADDR` environment
+    variable.
+
+- **ZENML_SECRETS_STORE_VAULT_TOKEN**:
+    The token to use to authenticate with the HashiCorp Vault server.
+    NOTE: this is the same as setting the `VAULT_TOKEN` environment
+    variable.
+
+- **ZENML_SECRETS_STORE_VAULT_NAMESPACE**:
+    The Vault Enterprise namespace. Not required for Vault OSS.
+    NOTE: this is the same as setting the `VAULT_NAMESPACE` environment
+    variable.
+
+- **ZENML_SECRETS_STORE_MAX_VERSIONS**:
+    The maximum number of secret versions to keep for each Vault secret. If not
+    set, the default value of 1 will be used (only the latest version will be
+    kept).
+
+### Custom Secrets Store Configuration Options
+
+These configuration options are only relevant if you're using a custom secrets
+store backend implementation. For this to work, you must have
+[a custom implementation of the secrets store API](../../advanced-guide/practical/secrets-management.md#build-your-own-custom-secrets-manager)
+in the form of a class derived from
+`zenml.zen_stores.secrets_stores.base_secrets_store.BaseSecretsStore`. This
+class must be importable from within the ZenML server container, which means
+you most likely need to mount the directory containing the class into the
+container or build a custom container image that contains the class.
+
+The following configuration option is required:
+
+- **ZENML_SECRETS_STORE_CLASS_PATH**:
+    The fully qualified path to the class that implements the custom secrets
+    store API (e.g. `my_package.my_module.MySecretsStore`).
+
+If your custom secrets store implementation requires additional configuration
+options, you can pass them as environment variables using the following naming
+convention:
+
+- `ZENML_SECRETS_STORE_<OPTION_NAME>`:
+    The name of the option to pass to the custom secrets store class. The
+    option name must be in uppercase and any hyphens (`-`) must be replaced
+    with underscores (`_`). ZenML will automatically convert the environment
+    variable name to the corresponding option name by removing the prefix
+    and converting the remaining characters to lowercase. For example, the
+    environment variable `ZENML_SECRETS_STORE_MY_OPTION` will be converted to
+    the option name `my_option` and passed to the custom secrets store class
+    configuration.
 
 ### Advanced Server Configuration Options
 

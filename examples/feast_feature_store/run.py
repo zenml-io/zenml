@@ -29,7 +29,7 @@ if __name__ == "__main__":
 
     pipeline_instance.run()
 
-    last_run = pipeline_instance.get_runs()[-1]
+    last_run = pipeline_instance.get_runs()[0]
     historical_features_step = last_run.get_step(step="feature_printer")
     print("HISTORICAL FEATURES:")
     print(historical_features_step.output.read())

@@ -48,7 +48,6 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
     ENV_ZENML_LOCAL_STORES_PATH,
     METADATA_ORCHESTRATOR_URL,
-    ORCHESTRATOR_DOCKER_IMAGE_KEY,
 )
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.enums import StackComponentType
@@ -61,16 +60,15 @@ from zenml.integrations.kubeflow.utils import apply_pod_settings
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType, Uri
-from zenml.orchestrators import BaseOrchestrator
+from zenml.orchestrators import ContainerizedOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 from zenml.utils import io_utils, settings_utils
-from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilder,
-)
 
 if TYPE_CHECKING:
-    from zenml.config.pipeline_deployment import PipelineDeployment
+    from zenml.models.pipeline_deployment_models import (
+        PipelineDeploymentResponseModel,
+    )
     from zenml.stack import Stack
     from zenml.steps import ResourceSettings
 
@@ -85,7 +83,7 @@ KFP_POD_LABELS = {
 ENV_KFP_RUN_ID = "KFP_RUN_ID"
 
 
-class KubeflowOrchestrator(BaseOrchestrator):
+class KubeflowOrchestrator(ContainerizedOrchestrator):
     """Orchestrator responsible for running pipelines using Kubeflow."""
 
     @property
@@ -275,23 +273,6 @@ class KubeflowOrchestrator(BaseOrchestrator):
         """
         return os.path.join(self.root_directory, "pipelines")
 
-    def prepare_pipeline_deployment(
-        self,
-        deployment: "PipelineDeployment",
-        stack: "Stack",
-    ) -> None:
-        """Build a Docker image and push it to the container registry.
-
-        Args:
-            deployment: The pipeline deployment configuration.
-            stack: The stack on which the pipeline will be deployed.
-        """
-        docker_image_builder = PipelineDockerImageBuilder()
-        repo_digest = docker_image_builder.build_docker_image(
-            deployment=deployment, stack=stack
-        )
-        deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
-
     def _configure_container_op(
         self,
         container_op: dsl.ContainerOp,
@@ -403,7 +384,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
     def prepare_or_run_pipeline(
         self,
-        deployment: "PipelineDeployment",
+        deployment: "PipelineDeploymentResponseModel",
         stack: "Stack",
     ) -> Any:
         """Creates a kfp yaml file.
@@ -450,7 +431,6 @@ class KubeflowOrchestrator(BaseOrchestrator):
             )
 
         assert stack.container_registry
-        image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
 
         # Create a callable for future compilation into a dsl.Pipeline.
         def _construct_kfp_pipeline() -> None:
@@ -469,7 +449,11 @@ class KubeflowOrchestrator(BaseOrchestrator):
             # Dictionary of container_ops index by the associated step name
             step_name_to_container_op: Dict[str, dsl.ContainerOp] = {}
 
-            for step_name, step in deployment.steps.items():
+            for step_name, step in deployment.step_configurations.items():
+                image = self.get_image(
+                    deployment=deployment, step_name=step_name
+                )
+
                 # The command will be needed to eventually call the python step
                 # within the docker container
                 command = StepEntrypointConfiguration.get_entrypoint_command()
@@ -478,7 +462,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 # docker container when the step is called.
                 arguments = (
                     StepEntrypointConfiguration.get_entrypoint_arguments(
-                        step_name=step_name,
+                        step_name=step_name, deployment_id=deployment.id
                     )
                 )
 
@@ -491,7 +475,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 # in the base entrypoint `run()` method.
                 container_op = dsl.ContainerOp(
                     name=step.config.name,
-                    image=image_name,
+                    image=image,
                     command=command,
                     arguments=arguments,
                 )
@@ -522,7 +506,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 step_name_to_container_op[step.config.name] = container_op
 
         orchestrator_run_name = get_orchestrator_run_name(
-            pipeline_name=deployment.pipeline.name
+            pipeline_name=deployment.pipeline_configuration.name
         )
 
         # Get a filepath to use to save the finished yaml to
@@ -534,7 +518,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         # write the argo pipeline yaml
         KFPCompiler()._create_and_write_workflow(
             pipeline_func=_construct_kfp_pipeline,
-            pipeline_name=deployment.pipeline.name,
+            pipeline_name=deployment.pipeline_configuration.name,
             package_path=pipeline_file_path,
         )
         logger.info(
@@ -551,7 +535,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
     def _upload_and_run_pipeline(
         self,
-        deployment: "PipelineDeployment",
+        deployment: "PipelineDeploymentResponseModel",
         pipeline_file_path: str,
         run_name: str,
     ) -> None:
@@ -565,7 +549,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         Raises:
             RuntimeError: If Kubeflow API returns an error.
         """
-        pipeline_name = deployment.pipeline.name
+        pipeline_name = deployment.pipeline_configuration.name
         settings = cast(
             KubeflowOrchestratorSettings, self.get_settings(deployment)
         )

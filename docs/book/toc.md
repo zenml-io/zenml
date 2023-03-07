@@ -88,7 +88,6 @@
   * [Azure Secrets Manager](./component-gallery/secrets-managers/azure.md)
   * [GitHub Secrets Manager](./component-gallery/secrets-managers/github.md)
   * [HashiCorp Vault Secrets Manager](./component-gallery/secrets-managers/vault.md)
-  * [Develop a Custom Secrets Manager](./component-gallery/secrets-managers/custom.md)
 * [Data Validators](component-gallery/data-validators/data-validators.md)
   * [Great Expectations](component-gallery/data-validators/great-expectations.md)
   * [Deepchecks](component-gallery/data-validators/deepchecks.md)
@@ -126,7 +125,10 @@
   * [Kaniko Image Builder](./component-gallery/image-builders/kaniko.md)
   * [Google Cloud Image Builder](./component-gallery/image-builders/gcp.md)
   * [Develop a Custom Image Builder](./component-gallery/image-builders/custom.md)
-
+* [Model Registries](./component-gallery/model-registries/model-registries.md)
+  * [MLflow Model Registry](./component-gallery/model-registries/mlflow.md)
+  * [Develop a Custom Model Registry](./component-gallery/model-registries/custom.md)
+  
 ## Guidelines
 
 * [Best Practices](guidelines/best-practices.md)
@@ -138,6 +140,7 @@
 
 * [Contribution Guide](misc/contributing.md)
 * [Debugging Guide](misc/debugging.md)
+* [Handling Dependencies](misc/handling-dependencies.md)
 * [External Integration Guide](misc/integrating.md)
 * [Usage Analytics](misc/usage-analytics.md)
 

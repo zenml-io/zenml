@@ -27,7 +27,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Setup environment with Poetry
+      - name: Setup environment
         uses: ./.github/actions/setup_environment
         with:
           cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
@@ -35,7 +35,7 @@ jobs:
           os: ${{ matrix.os }}
 
       - name: Install Dependencies
-        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        if: steps.cached-virtualenv.outputs.cache-hit != 'true'
         run: |
           source $VENV
           zenml integration export-requirements --output-file requirements.txt --ignore-integration feast --ignore-integration label_studio --ignore-integration kserve --ignore-integration bentoml --ignore-integration tekton --ignore-integration airflow
@@ -45,5 +45,5 @@ jobs:
         
       - name: Lint
         run: |
-          source $VENV 
+          source $VENV
           bash scripts/lint.sh
