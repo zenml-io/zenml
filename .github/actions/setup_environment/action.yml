@@ -1,5 +1,5 @@
 name: "Install ZenML"
-description: "Install ZenML, loads cached venv if applicable, and performs miscellaneous other operations"
+description: "Install ZenML, most integrations, loads/uploads cached venv and pip download cache if applicable"
 inputs:
   cache_version:
     description: 'Value gets appended to the cache key and will therefore invalidate the cache if it changes'
@@ -12,6 +12,11 @@ inputs:
     description: 'OS'
     type: string
     required: true
+  install_integrations:
+    description: 'Install ZenML integrations'
+    type: bool
+    required: false
+    default: true
 
 runs:
   using: "composite"
@@ -21,7 +26,7 @@ runs:
       shell: bash
       run: echo $CACHE_VERSION >> cache_version
       env:
-        CACHE_VERSION : ${{inputs.cache_version}}
+        CACHE_VERSION : ${{inputs.cache_version}}-${{inputs.install_integrations}}
 
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -68,18 +73,45 @@ runs:
       id: cache-virtualenv
       with:
         requirement_files: 'zenml-requirements.txt'
-        custom_cache_key_element: ${{ inputs.cache_version }}
+        custom_cache_key_element: ${{ inputs.cache_version }}-${{inputs.install_integrations}}
 
     # - uses: syphar/restore-pip-download-cache@v1
     #   if: steps.cache-virtualenv.outputs.cache-hit != 'true'
     #   with:
     #     requirement_files: 'zenml-requirements.txt'
-    #     custom_cache_key_element: ${{ inputs.cache_version }}
+    #     custom_cache_key_element: ${{ inputs.cache_version }}-${{inputs.install_integrations}}
 
-    - name: Install requirements and ZenML
+    - name: Install ZenML
       if: steps.cache-virtualenv.outputs.cache-hit != 'true'
       shell: bash
       run: |
         python -m pip install --upgrade pip
         pip install -r zenml-requirements.txt
         pip install -e .
+
+    - name: Install basic ZenML integrations
+      if: ${{ inputs.install_integrations }}
+      shell: bash
+      run: |
+        zenml integration export-requirements --output-file requirements.txt --ignore-integration feast --ignore-integration label_studio --ignore-integration bentoml --ignore-integration seldon --ignore-integration kserve
+        pip install -r requirements.txt
+        rm requirements.txt
+
+    - name: Install ZenML integrations - final
+      if: ${{ inputs.install_integrations }}
+      shell: bash
+      run: |
+
+        # re-install zenml requirements to be sure
+        pip install -r zenml-requirements.txt
+        # install airflow requirements
+        pip install --upgrade "numpy>=1.21.0,<1.24.0"
+        pip install apache-airflow-providers-docker
+        # Version 4.2.1 raises: AttributeError: type object 'Draft7Validator' has no attribute 'FORMAT_CHECKER'
+        pip install altair==4.2.0
+
+    - name: Check Python environment
+      run: |
+        zenml integration list
+        pip list
+        pip check || true

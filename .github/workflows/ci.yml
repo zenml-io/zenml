@@ -16,13 +16,26 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # setup-python-environment:
-  #   if: github.event.pull_request.draft == false
-  #   uses: ./.github/workflows/setup-python-environment.yml
-  #   secrets: inherit
+  setup-python-environment:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup environment
+        uses: ./.github/actions/setup_environment
+        with:
+          cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
+          python-version: ${{ matrix.python-version }}
+          os: ${{ matrix.os }}
+    if: github.event.pull_request.draft == false
+    secrets: inherit
 
   lint-unit-test:
-    # needs: setup-python-environment
+    needs: setup-python-environment
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
@@ -35,7 +48,7 @@ jobs:
     secrets: inherit
 
   integration-test:
-    # needs: setup-python-environment
+    needs: lint-unit-test
     # Exit if its a commit from Gitbook
     if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
     strategy:
