@@ -25,7 +25,7 @@ on:
 jobs:
   setup:
     name: setup
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ inputs.os }}
     env:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
