@@ -5,7 +5,7 @@ description: How to run failure and success hooks after step execution
 # Hooks
 
 In order to perform an action after a step has completed execution,
-one can leverage hooks. A hook executes right after step execution,
+users can leverage hooks. A hook executes right after step execution,
 within the same environment as the step, therefore it has access to all the
 dependencies that a step has.
 
@@ -34,6 +34,11 @@ def my_successful_step() -> Output(first_num=int):
     """Returns an integer."""
     raise ValueError("Error")
 ```
+
+A step can also be specified as a local user-defined function
+path (of the form `mymodule.myfile.my_function`). This is
+particularly useful when defining the hooks via
+a [YAML Config](../pipelines/settings.md).
 
 ## Defining steps on a pipeline level
 
@@ -95,7 +100,7 @@ people. It is quite easy to do this:
 
 ```python
 def on_failure(context: StepContext):
-    context.active_stack.alerter.post(
+    context.stack.alerter.post(
         f"{context.step_name} just failed!"
     )
 ```
