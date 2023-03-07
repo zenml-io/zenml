@@ -253,7 +253,7 @@ def kserve_model_deployer_step(
 
     # update the step configuration with the real pipeline runtime information
     params.service_config.pipeline_name = pipeline_name
-    params.service_config.pipeline_run_id = run_name
+    params.service_config.run_name = run_name
     params.service_config.pipeline_step_name = step_name
 
     # fetch existing services with same pipeline name, step name and
@@ -371,7 +371,7 @@ def kserve_custom_model_deployer_step(
 
     # update the step configuration with the real pipeline runtime information
     params.service_config.pipeline_name = pipeline_name
-    params.service_config.pipeline_run_id = run_name
+    params.service_config.run_name = run_name
     params.service_config.pipeline_step_name = step_name
 
     # fetch existing services with same pipeline name, step name and

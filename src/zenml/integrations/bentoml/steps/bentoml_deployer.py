@@ -130,7 +130,7 @@ def bentoml_model_deployer_step(
         working_dir=params.working_dir or source_utils.get_source_root_path(),
         port=params.port,
         pipeline_name=pipeline_name,
-        pipeline_run_id=run_name,
+        run_name=run_name,
         pipeline_step_name=step_name,
         ssl_parameters=SSLBentoMLParametersConfig(
             ssl_certfile=params.ssl_certfile,

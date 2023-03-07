@@ -616,6 +616,7 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
         description: Optional[str],
         metadata: Optional[Dict[str, str]],
         zenml_version: Optional[str],
+        zenml_run_name: Optional[str],
         zenml_pipeline_run_id: Optional[str],
         zenml_pipeline_name: Optional[str],
         zenml_step_name: Optional[str],
@@ -630,7 +631,8 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
             description: Description of the model to register.
             metadata: Model version metadata.
             zenml_version: ZenML version of the model to register.
-            zenml_pipeline_run_id: ZenML pipeline run ID of the model to register.
+            zenml_run_name: ZenML pipeline run name of the model to register.
+            zenml_pipeline_run_id: Deprecated. Use zenml_run_name instead.
             zenml_pipeline_name: ZenML pipeline name of the model to register.
             zenml_step_name: ZenML step name of the model to register.
         """
@@ -638,7 +640,9 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
         metadata = dict(metadata) if metadata else {}
         registerted_metadata = ModelRegistryModelMetadata(**dict(metadata))
         registerted_metadata.zenml_version = zenml_version
-        registerted_metadata.zenml_pipeline_run_id = zenml_pipeline_run_id
+        registerted_metadata.zenml_run_name = (
+            zenml_run_name or zenml_pipeline_run_id
+        )
         registerted_metadata.zenml_pipeline_name = zenml_pipeline_name
         registerted_metadata.zenml_step_name = zenml_step_name
         model_version = model_registry.register_model_version(

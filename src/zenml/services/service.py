@@ -44,6 +44,7 @@ class ServiceConfig(BaseTypedModel):
         pipeline_name: name of the pipeline that spun up the service
         pipeline_run_id: ID of the pipeline run that spun up the service
         pipeline_step_name: name of the pipeline step that spun up the service
+        run_name: name of the pipeline run that spun up the service.
     """
 
     name: str = ""
@@ -51,6 +52,28 @@ class ServiceConfig(BaseTypedModel):
     pipeline_name: str = ""
     pipeline_run_id: str = ""
     pipeline_step_name: str = ""
+    run_name: str = ""
+
+    @property
+    def pipeline_run_id(self):
+        logger.warnings(
+            "The 'pipeline_run_id' attribute is deprecated. Use 'run_name' instead.",
+            DeprecationWarning,
+        )
+        return self._pipeline_run_id
+
+    @pipeline_run_id.setter
+    def pipeline_run_id(self, value):
+        logger.warnings(
+            "The 'pipeline_run_id' attribute is deprecated. Use 'run_name' instead.",
+            DeprecationWarning,
+        )
+        self._pipeline_run_id = value
+
+    def __setattr__(self, name, value):
+        if name == "run_name" and not value:
+            value = self.pipeline_run_id
+        super().__setattr__(name, value)
 
 
 class BaseServiceMeta(BaseTypedModelMeta):
