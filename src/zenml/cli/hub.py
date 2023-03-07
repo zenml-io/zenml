@@ -819,12 +819,6 @@ def _validate_repository_structure(plugin_root: str) -> None:
     - README.md
     - requirements.txt
     - src/
-        - zenml/
-            - hub/
-                - <one or more plugin directories>
-                - (no `__init__.py`)
-            - (no other files or directories)
-        - (no other files or directories)
 
     Args:
         plugin_root: Root directory of the plugin.
@@ -846,29 +840,6 @@ def _validate_repository_structure(plugin_root: str) -> None:
     src_path = os.path.join(plugin_root, "src")
     if not os.path.exists(src_path):
         raise ValueError("src/ not found")
-
-    # src/ contains zenml/ and nothing else.
-    src_contents = os.listdir(src_path)
-    zenml_path = os.path.join(src_path, "zenml")
-    if "zenml" not in src_contents or not os.path.isdir(zenml_path):
-        raise ValueError("src/zenml/ not found")
-    if len(src_contents) != 1:
-        raise ValueError("src/ should only contain zenml/")
-
-    # src/zenml/ contains hub/ and nothing else.
-    zenml_contents = os.listdir(zenml_path)
-    hub_path = os.path.join(zenml_path, "hub")
-    if "hub" not in zenml_contents or not os.path.isdir(hub_path):
-        raise ValueError("src/zenml/hub/ not found")
-    if len(zenml_contents) != 1:
-        raise ValueError("src/zenml/ should only contain hub/")
-
-    # src/zenml/hub/ does not contain an `__init__.py` and is not empty.
-    hub_contents = os.listdir(hub_path)
-    if "__init__.py" in hub_contents:
-        raise ValueError("src/zenml/hub/ may not contain a `__init__.py`")
-    if len(hub_contents) == 0:
-        raise ValueError("src/zenml/hub/ is empty")
 
 
 def _validate_tags(tags: List[str], interactive: bool) -> List[str]:
