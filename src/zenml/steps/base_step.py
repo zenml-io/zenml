@@ -1077,7 +1077,10 @@ class BaseStep(metaclass=BaseStepMeta):
             hook_func: Callable hook function.
 
         Returns:
-            resolved_hook: Source path of `hook_func`.
+            str: Resolved source path of `hook_func`.
+
+        Raises:
+            ValueError: If `hook_func` is not a valid callable.
         """
         if not callable(hook_func):
             raise ValueError(f"{hook_func} is not a valid function.")
