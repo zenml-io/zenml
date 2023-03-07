@@ -37,7 +37,10 @@ def get_pipelines() -> List["PipelineView"]:
     """
     # TODO: [server] handle the active stack correctly
     client = Client()
-    pipelines = client.list_pipelines(workspace_id=client.active_workspace.id)
+    pipelines = client.list_pipelines(
+        workspace_id=client.active_workspace.id,
+        sort_by="desc:created",
+    )
     return [PipelineView(model) for model in pipelines.items]
 
 
@@ -46,6 +49,7 @@ def get_pipeline(
     pipeline: Optional[
         Union["BasePipeline", Type["BasePipeline"], str]
     ] = None,
+    version: Optional[str] = None,
     **kwargs: Any,
 ) -> Optional["PipelineView"]:
     """Fetches a post-execution pipeline view.
@@ -68,7 +72,9 @@ def get_pipeline(
     `None` will be returned.
 
     Args:
-        pipeline: Class or class instance of the pipeline
+        pipeline: Name, class or instance of the pipeline.
+        version: Optional version of the pipeline. If not given, the latest
+            version will be returned.
         **kwargs: The deprecated `pipeline_name` is caught as a kwarg to
             specify the pipeline instead of using the `pipeline` argument.
 
@@ -84,7 +90,11 @@ def get_pipeline(
     if isinstance(pipeline, str):
         pipeline_name = pipeline
     elif isinstance(pipeline, BasePipeline):
-        pipeline_name = pipeline.name
+        pipeline_model = pipeline._get_registered_model()
+        if pipeline_model:
+            return PipelineView(model=pipeline_model)
+        else:
+            return None
     elif isinstance(pipeline, type) and issubclass(pipeline, BasePipeline):
         pipeline_name = pipeline.__name__
     elif "pipeline_name" in kwargs and isinstance(
@@ -114,20 +124,12 @@ def get_pipeline(
         )
 
     client = Client()
-    active_workspace_id = client.active_workspace.id
-
-    pipeline_models = client.list_pipelines(
-        name=pipeline_name,
-        workspace_id=active_workspace_id,
-    )
-    if pipeline_models.total == 1:
-        return PipelineView(pipeline_models.items[0])
-    elif pipeline_models.total > 1:
-        raise RuntimeError(
-            f"Pipeline_name `{pipeline_name}` not unique within workspace "
-            f"`{active_workspace_id}`."
+    try:
+        pipeline_model = client.get_pipeline(
+            name_id_or_prefix=pipeline_name, version=version
         )
-    else:
+        return PipelineView(model=pipeline_model)
+    except KeyError:
         return None
 
 
@@ -169,8 +171,8 @@ class PipelineView(BaseView):
     def runs(self) -> List["PipelineRunView"]:
         """Returns the last 50 stored runs of this pipeline.
 
-        The runs are returned in chronological order, so the latest
-        run will be the last element in this list.
+        The runs are returned in reverse chronological order, so the latest
+        run will be the first element in this list.
 
         Returns:
             A list of all stored runs of this pipeline.
@@ -182,6 +184,7 @@ class PipelineView(BaseView):
             workspace_id=active_workspace_id,
             pipeline_id=self.model.id,
             size=50,
+            sort_by="desc:created",
         )
 
         return [PipelineRunView(run) for run in runs.items]

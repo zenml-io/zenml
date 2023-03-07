@@ -5,9 +5,6 @@ This guide is intended to help you install ZenML from source, primarily for deve
 
 # Install from source
 
-ZenML uses [poetry](https://python-poetry.org/) for packaging and dependency management. Please make sure you 
-install it first before moving ahead.
-
 ## Clone the repo
 
 ```bash
@@ -18,41 +15,39 @@ git clone git@github.com:zenml-io/zenml.git
 ```
 
 ## Create a virtualenv
-To install with poetry, first create a virtualenv. Poetry can help with this, but you 
-can also use your own virtualenv management tool. Please make sure the Python version is 
-between the supported types (currently >=3.7 <3.9)
+
+To install the local ZenML files in an isolated environment, first create and activate
+a virtualenv by running 
 
 ```bash
-poetry shell
+python -m venv <VIRTUALENV_NAME>
+source <VIRTUALENV_NAME>/bin/activate
+```
+
+## Upgrade pip
+
+Installing editable packages from a `pyproject.toml` using pip requires a new version
+of pip, so we first make sure pip is up to date:
+
+```bash
+pip install --upgrade pip
 ```
 
 ## Install dependencies
+
 Then from the root of the package:
 ```bash
-poetry install
+pip install -e ".[server,dev]"
 ```
 
-Poetry will install the ZenML package as an editable source (including all dev-dependencies), so now you should be good to go with 
+This will install the ZenML package as an editable source (including all dev-dependencies), so now you should be good to go with 
 that virtualenv. 
-
-## Known quirks
-Poetry is still relatively young. If it is not behaving as it should consider doing the following:
-
-* Delete the poetry.lock file and run a fresh install.
-* Run `poetry lock`. This will refresh your lock file.
-* Run `poetry install` again to make sure you have the latest editable package installed.
 
 # CLI
 After doing the above, you should have the `zenml` CLI installed in your virtualenv. You can check this with:
 
 ```bash
 zenml version
-```
-
-If this does not work, you can try:
-
-```bash
-poetry run zenml version
 ```
 
 ## Enabling auto completion on the CLI

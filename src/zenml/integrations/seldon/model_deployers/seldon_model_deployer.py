@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional, Type, cast
 from uuid import UUID
 
 from zenml.client import Client
+from zenml.config.build_configuration import BuildConfiguration
 from zenml.enums import StackComponentType
 from zenml.integrations.seldon.constants import (
     SELDON_CUSTOM_DEPLOYMENT,
@@ -37,14 +38,13 @@ from zenml.logger import get_logger
 from zenml.model_deployers import BaseModelDeployer, BaseModelDeployerFlavor
 from zenml.secrets_managers import BaseSecretsManager
 from zenml.services.service import BaseService, ServiceConfig
-from zenml.stack import Stack, StackValidator
+from zenml.stack import StackValidator
 from zenml.utils.analytics_utils import AnalyticsEvent, event_handler
-from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilder,
-)
 
 if TYPE_CHECKING:
-    from zenml.config.pipeline_deployment import PipelineDeployment
+    from zenml.models.pipeline_deployment_models import (
+        PipelineDeploymentBaseModel,
+    )
 
 logger = get_logger(__name__)
 
@@ -142,28 +142,28 @@ class SeldonModelDeployer(BaseModelDeployer):
             .lower()
         )
 
-    def prepare_pipeline_deployment(
-        self,
-        deployment: "PipelineDeployment",
-        stack: "Stack",
-    ) -> None:
-        """Build a Docker image and push it to the container registry.
+    def get_docker_builds(
+        self, deployment: "PipelineDeploymentBaseModel"
+    ) -> List["BuildConfiguration"]:
+        """Gets the Docker builds required for the component.
 
         Args:
-            deployment: The pipeline deployment configuration.
-            stack: The stack on which the pipeline will be deployed.
-        """
-        needs_docker_image = False
-        for step in deployment.steps.values():
-            if step.config.extra.get(SELDON_CUSTOM_DEPLOYMENT, False) is True:
-                needs_docker_image = True
+            deployment: The pipeline deployment for which to get the builds.
 
-        if needs_docker_image:
-            docker_image_builder = PipelineDockerImageBuilder()
-            repo_digest = docker_image_builder.build_docker_image(
-                deployment=deployment, stack=stack
-            )
-            deployment.add_extra(SELDON_DOCKER_IMAGE_KEY, repo_digest)
+        Returns:
+            The required Docker builds.
+        """
+        builds = []
+        for step_name, step in deployment.step_configurations.items():
+            if step.config.extra.get(SELDON_CUSTOM_DEPLOYMENT, False) is True:
+                build = BuildConfiguration(
+                    key=SELDON_DOCKER_IMAGE_KEY,
+                    settings=step.config.docker_settings,
+                    step_name=step_name,
+                )
+                builds.append(build)
+
+        return builds
 
     def _create_or_update_kubernetes_secret(self) -> Optional[str]:
         """Create or update a Kubernetes secret.

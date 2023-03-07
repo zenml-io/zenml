@@ -88,14 +88,21 @@ class MLFlowDeploymentConfig(LocalDaemonServiceConfig):
         model_uri: URI of the MLflow model to serve
         model_name: the name of the model
         workers: number of workers to use for the prediction service
+        registry_model_name: the name of the model in the registry
+        registry_model_version: the version of the model in the registry
         mlserver: set to True to use the MLflow MLServer backend (see
             https://github.com/SeldonIO/MLServer). If False, the
             MLflow built-in scoring server will be used.
         timeout: timeout in seconds for starting and stopping the service
     """
 
+    # TODO: ServiceConfig should have additional fields such as "pipeline_run_uuid"
+    #  and "pipeline_uuid" to allow for better tracking of the service.
     model_uri: str
     model_name: str
+    registry_model_name: Optional[str] = None
+    registry_model_version: Optional[str] = None
+    registry_model_stage: Optional[str] = None
     workers: int = 1
     mlserver: bool = False
     timeout: int = DEFAULT_SERVICE_START_STOP_TIMEOUT

@@ -7,6 +7,30 @@ provided with the ZenML `github` integration that uses
 [GitHub secrets](https://docs.github.com/en/actions/security-guides/encrypted-secrets)
 to store secrets.
 
+{% hint style="warning" %}
+We are deprecating secrets managers in favor of the
+[centralized ZenML secrets store](../../advanced-guide/practical/secrets-management.md#centralized-secrets-store).
+Going forward, we recommend using the secrets store instead of secrets managers
+to configure and store secrets.
+
+If you already use secrets managers to manage your secrets, please use the
+provided `zenml secrets-manager secrets migrate` CLI command to migrate your
+secrets to the centralized secrets store.
+
+We're not planning to support GitHub as a direct centralized secrets store
+back-end replacement for the GitHub secrets manager stack component because
+of its limitation of only allowing reading secret values when running
+inside a GitHub Actions workflow.
+
+To continue using secrets, you may use any of the secrets store back-ends
+that the ZenML server supports, such as Google Secret Manager, Azure Key Vault, AWS
+Secrets Manager, HashiCorp Vault or even the ZenML SQL database. Simply
+[configure your ZenML server to connect to one of these services](../../getting-started/deploying-zenml/deploying-zenml.md) directly as a back-end for the centralized secrets store and
+then use `zenml secret` CLI commands to manage your secrets instead of
+`zenml secrets-manager secret` CLI commands. You no longer need to register
+the GitHub secrets manager or add it to your active stack.
+{% endhint %}
+
 ## When to use it
 
 {% hint style="warning" %}

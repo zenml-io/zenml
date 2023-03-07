@@ -261,7 +261,6 @@ class BaseStep(metaclass=BaseStepMeta):
             *args: Positional arguments passed to the step.
             **kwargs: Keyword arguments passed to the step.
         """
-        self.pipeline_parameter_name: Optional[str] = None
         self._has_been_called = False
         self._upstream_steps: Set[str] = set()
         self._inputs: Dict[str, InputSpec] = {}
@@ -456,7 +455,7 @@ class BaseStep(metaclass=BaseStepMeta):
         for name, output in self.configuration.outputs.items():
             if output.materializer_source:
                 key = f"{name}_materializer_source"
-                materializer_class = source_utils.load_source_path_class(
+                materializer_class = source_utils.load_source_path(
                     output.materializer_source
                 )
                 parameters[key] = source_utils.get_hashed_source(
@@ -676,32 +675,6 @@ class BaseStep(metaclass=BaseStepMeta):
             return returns[0]
         else:
             return returns
-
-    def with_return_materializers(
-        self: T,
-        materializers: Union[
-            Type[BaseMaterializer], Dict[str, Type[BaseMaterializer]]
-        ],
-    ) -> T:
-        """DEPRECATED: Register materializers for step outputs.
-
-        If a single materializer is passed, it will be used for all step
-        outputs. Otherwise, the dictionary keys specify the output names
-        for which the materializers will be used.
-
-        Args:
-            materializers: The materializers for the outputs of this step.
-
-        Returns:
-            The step that this method was called on.
-        """
-        logger.warning(
-            "The `with_return_materializers(...)` method is deprecated. "
-            "Use `step.configure(output_materializers=...)` instead."
-        )
-
-        self.configure(output_materializers=materializers)
-        return self
 
     @property
     def name(self) -> str:
@@ -983,7 +956,7 @@ class BaseStep(metaclass=BaseStepMeta):
                         f"'{output_name}' of type `{output_class}` in step "
                         f"'{self.name}'. Please make sure to either "
                         f"explicitly set a materializer for step outputs "
-                        f"using `step.with_return_materializers(...)` or "
+                        f"using `step.configure(output_materializers=...)` or "
                         f"registering a default materializer for specific "
                         f"types by subclassing `BaseMaterializer` and setting "
                         f"its `ASSOCIATED_TYPES` class variable.",

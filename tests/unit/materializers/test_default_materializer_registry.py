@@ -13,9 +13,6 @@
 #  permissions and limitations under the License.
 from contextlib import ExitStack as does_not_raise
 
-import pytest
-
-from zenml.exceptions import StepInterfaceError
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.steps import step
 
@@ -53,33 +50,6 @@ def test_materializer_with_parameter_with_more_than_one_baseclass():
         some_step()()
 
 
-def test_materializer_with_parameter_with_more_than_one_conflicting_baseclass():
-    """Tests the case where the output parameter is inheriting from more than
-    one baseclass which have different default materializers."""
-
-    class MyFirstType:
-        pass
-
-    class MySecondType:
-        pass
-
-    class MyFirstMaterializer(BaseMaterializer):
-        ASSOCIATED_TYPES = (MyFirstType,)
-
-    class MySecondMaterializer(BaseMaterializer):
-        ASSOCIATED_TYPES = (MySecondType,)
-
-    class MyConflictingType(MyFirstType, MySecondType):
-        pass
-
-    @step
-    def some_step() -> MyConflictingType:
-        return MyConflictingType()
-
-    with pytest.raises(StepInterfaceError):
-        some_step()()
-
-
 class MyFirstType:
     pass
 
@@ -100,6 +70,25 @@ class MyConflictingType(MyFirstType, MySecondType):
     pass
 
 
+def test_materializer_with_parameter_with_more_than_one_conflicting_baseclass():
+    """Tests the case where the output parameter is inheriting from more than
+    one baseclass which have different default materializers."""
+
+    @step
+    def some_step() -> MyConflictingType:
+        return MyConflictingType()
+
+    step_instance = some_step()
+    with does_not_raise():
+        step_instance()
+
+    # The step uses the materializer registered for the earliest class in the
+    # python MRO
+    assert step_instance.configuration.outputs[
+        "output"
+    ].materializer_source.endswith("MyFirstMaterializer")
+
+
 def test_materializer_with_conflicting_parameter_and_explicit_materializer():
     """Tests the case where the output parameter is inheriting from more than
     one baseclass which have different default materializers but the
@@ -110,4 +99,4 @@ def test_materializer_with_conflicting_parameter_and_explicit_materializer():
         return MyConflictingType()
 
     with does_not_raise():
-        some_step().with_return_materializers(MyFirstMaterializer)()
+        some_step().configure(output_materializers=MyFirstMaterializer)()

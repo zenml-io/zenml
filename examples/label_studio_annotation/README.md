@@ -86,7 +86,7 @@ zenml stack update <ANNOTATION_STACK_NAME> -x <YOUR_SECRETS_MANAGER>
 
 zenml secrets-manager secret register <YOUR_AZURE_AUTH_SECRET_NAME> --schema=azure --account_name="<YOUR_AZURE_ACCOUNT_NAME>" --account_key="<YOUR_AZURE_ACCOUNT_KEY>"
 
-zenml artifact-store register azure_artifact_store -f=azure --path="az://<NAME_OF_ARTIFACT_STORE_OR_BLOB_IN_AZURE>" --authentication_secret="<YOUR_AZURE_AUTH_SECRET_NAME>"
+zenml artifact-store register azure_artifact_store -f azure --path="az://<NAME_OF_ARTIFACT_STORE_OR_BLOB_IN_AZURE>" --authentication_secret="<YOUR_AZURE_AUTH_SECRET_NAME>"
 
 zenml stack update <ANNOTATION_STACK_NAME> -a <YOUR_CLOUD_ARTIFACT_STORE>
 
@@ -144,7 +144,7 @@ zenml stack update <YOUR_ANNOTATION_STACK_NAME> -x <YOUR_SECRETS_MANAGER>
 
 zenml secrets-manager secret register <YOUR_GCP_AUTH_SECRETS_NAME> --schema=gcp --token="@PATH/TO/JSON/FILE/CREATED/ABOVE"
 
-zenml artifact-store register gcp_artifact_store -f=gcp --path="gs://<YOUR_BUCKET_NAME>" --authentication_secret="<YOUR_GCP_AUTH_SECRETS_NAME>"
+zenml artifact-store register gcp_artifact_store -f gcp --path="gs://<YOUR_BUCKET_NAME>" --authentication_secret="<YOUR_GCP_AUTH_SECRETS_NAME>"
 
 zenml stack update <YOUR_ANNOTATION_STACK_NAME> -a <YOUR_CLOUD_ARTIFACT_STORE>
 

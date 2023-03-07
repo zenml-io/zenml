@@ -27,11 +27,36 @@ implement the abstract methods.
 3. Bring both of the implementation and the configuration together by inheriting
 from the `BaseExperimentTrackerFlavor` class.
 
-Once you are done with the implementation, you can register it through the CLI 
-as:
+Once you are done with the implementation, you can register it through the CLI.
+Please ensure you **point to the flavor class via dot notation**: 
 
 ```shell
-zenml experiment-tracker flavor register <THE-SOURCE-PATH-OF-YOUR-EXPERIMENT-TRACKER-FLAVOR>
+zenml experiment-tracker flavor register <path.to.MyExperimentTrackerFlavor>
+```
+
+For example, if your flavor class `MyExperimentTrackerFlavor` is defined in `flavors/my_flavor.py`,
+you'd register it by doing:
+
+```shell
+zenml experiment-tracker flavor register flavors.my_flavor.MyExperimentTrackerFlavor
+```
+
+
+{% hint style="warning" %}
+ZenML resolves the flavor class by taking the path where you initialized zenml
+(via `zenml init`) as the starting point of resolution. Therefore, please ensure
+you follow [the best practice](../../guidelines/best-practices.md) of initializing
+zenml at the root of your repository.
+
+If ZenML does not find an initialized ZenML repository in any parent directory, it
+will default to the current working directory, but usually its better to not have to
+rely on this mechanism, and initialize zenml at the root.
+{% endhint %}
+
+Afterwards, you should see the new flavor in the list of available flavors:
+
+```shell
+zenml experiment-tracker flavor list
 ```
 
 {% hint style="warning" %}
