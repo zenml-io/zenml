@@ -68,12 +68,20 @@ class PluginResponseModel(PluginBaseModel):
 
 
 def get_server_url() -> str:
-    """Helper function to get the hub url."""
+    """Helper function to get the URL of the ZenML Hub.
+
+    Returns:
+        The URL of the ZenML Hub.
+    """
     return os.getenv(ENV_ZENML_HUB_URL, default="https://hub.zenml.io/")
 
 
 def get_auth_token() -> Optional[str]:
-    """Helper function to get the hub auth token."""
+    """Helper function to get the auth token for the ZenML Hub.
+
+    Returns:
+        The auth token for the ZenML Hub.
+    """
     return GlobalConfiguration().hub_auth_token
 
 
@@ -84,7 +92,18 @@ def _hub_request(
     params: Optional[Dict[str, Any]] = None,
     content_type: str = "application/json",
 ) -> Any:
-    """Helper function to make a request to the hub."""
+    """Helper function to make a request to the hub.
+
+    Args:
+        method: The HTTP method to use.
+        url: The URL to make the request to.
+        data: The data to send in the request.
+        params: The query parameters to send in the request.
+        content_type: The content type of the request.
+
+    Returns:
+        The response JSON.
+    """
     session = requests.Session()
 
     # Define headers
@@ -116,7 +135,14 @@ def _hub_request(
 
 
 def _list_plugins(**params: Any) -> List[PluginResponseModel]:
-    """Helper function to list all plugins in the hub."""
+    """Helper function to list all plugins in the hub.
+
+    Args:
+        **params: The query parameters to send in the request.
+
+    Returns:
+        The list of plugin response models.
+    """
     url = f"{get_server_url()}/plugins"
     response = _hub_request("GET", url, params=params)
     if not isinstance(response, list):
@@ -127,7 +153,16 @@ def _list_plugins(**params: Any) -> List[PluginResponseModel]:
 def _get_plugin(
     plugin_name: str, plugin_version: Optional[str] = None
 ) -> Optional[PluginResponseModel]:
-    """Helper function to get a specfic plugin from the hub."""
+    """Helper function to get a specific plugin from the hub.
+
+    Args:
+        plugin_name: The name of the plugin.
+        plugin_version: The version of the plugin. If not specified, the latest
+            version will be returned.
+
+    Returns:
+        The plugin response model or None if the plugin does not exist.
+    """
     url = f"{get_server_url()}/plugins/{plugin_name}"
     if plugin_version:
         url += f"?version={plugin_version}"
@@ -142,23 +177,31 @@ def _get_plugin(
 def _create_plugin(
     plugin_request: PluginRequestModel, is_new_version: bool
 ) -> PluginResponseModel:
-    """Helper function to create a plugin in the hub."""
+    """Helper function to create a plugin in the hub.
+
+    Args:
+        plugin_request: The plugin request model.
+        is_new_version: Whether this is a new version of an existing plugin.
+
+    Returns:
+        The plugin response model.
+    """
     url = f"{get_server_url()}/plugins"
     if is_new_version:
         url += f"/{plugin_request.name}/versions"
 
     response = _hub_request("POST", url, data=plugin_request.json())
-
-    try:
-        return PluginResponseModel.parse_obj(response)
-    except ValidationError:
-        raise RuntimeError(
-            f"Failed to create plugin {plugin_request.name}: {response}"
-        )
+    return PluginResponseModel.parse_obj(response)
 
 
 def _stream_plugin_build_logs(plugin_name: str, plugin_version: str) -> None:
-    """Helper function to stream the build logs of a plugin."""
+    """Helper function to stream the build logs of a plugin.
+
+    Args:
+        plugin_name: The name of the plugin.
+        plugin_version: The version of the plugin. If not specified, the latest
+            version will be used.
+    """
     logs_url = (
         f"{get_server_url}/plugins/{plugin_name}/versions/{plugin_version}"
         "/logs"
@@ -177,7 +220,14 @@ def _stream_plugin_build_logs(plugin_name: str, plugin_version: str) -> None:
 
 
 def _is_plugin_installed(plugin_name: str) -> bool:
-    """Helper function to check if a plugin is installed."""
+    """Helper function to check if a plugin is installed.
+
+    Args:
+        plugin_name: The name of the plugin.
+
+    Returns:
+        Whether the plugin is installed.
+    """
     spec = find_spec(f"zenml.hub.{plugin_name}")
     return spec is not None
 
@@ -185,7 +235,14 @@ def _is_plugin_installed(plugin_name: str) -> bool:
 def _format_plugins_table(
     plugins: List[PluginResponseModel],
 ) -> List[Dict[str, str]]:
-    """Helper function to format a list of plugins into a table."""
+    """Helper function to format a list of plugins into a table.
+
+    Args:
+        plugins: The list of plugins.
+
+    Returns:
+        The formatted table.
+    """
     plugins_table = []
     for plugin in plugins:
         if _is_plugin_installed(plugin.name):
@@ -230,7 +287,12 @@ def hub() -> None:
     help="List only plugins that are installed.",
 )
 def list_plugins(mine: bool, installed: bool) -> None:
-    """List all plugins available on the hub."""
+    """List all plugins available on the hub.
+
+    Args:
+        mine: Whether to list only plugins that you own.
+        installed: Whether to list only plugins that are installed.
+    """
     if not get_auth_token():
         error(
             "You must be logged in to list your own plugins via --mine. Please "
@@ -280,7 +342,16 @@ def install_plugin(
     no_deps: bool = False,
     yes: bool = False,
 ) -> None:
-    """Install a plugin from the hub."""
+    """Install a plugin from the hub.
+
+    Args:
+        plugin_name: Name of the plugin.
+        version: Version of the plugin. If not specified, the latest version
+            will be used.
+        upgrade: Whether to upgrade the plugin if it is already installed.
+        no_deps: If set, dependencies of the plugin will not be installed.
+        yes: If set, no confirmation will be asked for before installing.
+    """
     display_name = _plugin_display_name(plugin_name, version)
 
     # Get plugin from hub
@@ -363,7 +434,13 @@ def install_plugin(
     help="Version of the plugin to uninstall.",
 )
 def uninstall_plugin(plugin_name: str, version: Optional[str] = None) -> None:
-    """Uninstall a plugin from the hub."""
+    """Uninstall a plugin from the hub.
+
+    Args:
+        plugin_name: Name of the plugin.
+        version: Version of the plugin. If not specified, the latest version
+            will be used.
+    """
     display_name = _plugin_display_name(plugin_name, version)
 
     # Get plugin from hub
@@ -404,7 +481,16 @@ def pull_plugin(
     version: Optional[str] = None,
     output_dir: Optional[str] = None,
 ) -> None:
-    """Pull a plugin from the hub."""
+    """Pull a plugin from the hub.
+
+    Args:
+        plugin_name: Name of the plugin.
+        version: Version of the plugin. If not specified, the latest version
+            will be used.
+        output_dir: Output directory to pull the plugin to. If not specified,
+            the plugin will be pulled to a directory with the same name as the
+            plugin in the current working directory.
+    """
     display_name = _plugin_display_name(plugin_name, version)
 
     # Get plugin from hub
@@ -420,7 +506,7 @@ def pull_plugin(
     if output_dir is None:
         output_dir = os.path.join(os.getcwd(), plugin_name)
     logger.info(f"Pulling plugin '{display_name}' to {output_dir}...")
-    # If no subdir, we can clone directly into output_dir
+    # If no subdir is set, we can clone directly into output_dir
     if not subdir:
         repo_path = plugin_dir = output_dir
     # Otherwise, we need to clone into a random dir and then move the subdir
@@ -556,7 +642,7 @@ def logout() -> None:
     type=str,
     help=(
         "Version of the plugin to push. Can only be set if the plugin already "
-        "exists. If not provided, the version will be autoincremented."
+        "exists. If not provided, the version will be auto-incremented."
     ),
 )
 @click.option(
@@ -620,7 +706,27 @@ def push_plugin(
     tags: List[str],
     interactive: bool,
 ) -> None:
-    """Push a plugin to the hub."""
+    """Push a plugin to the hub.
+
+    Args:
+        plugin_name: Name of the plugin to push. Needs to be set unless
+            interactive mode is enabled.
+        version: Version of the plugin to push. Can only be set if the plugin
+            already exists. If not provided, the version will be
+            auto-incremented.
+        release_notes: Release notes for the plugin version.
+        description: Description of the plugin.
+        repository_url: URL to the public Git repository containing the plugin
+            source code. Needs to be set unless interactive mode is enabled.
+        repository_subdir: Subdirectory of the repository containing the plugin
+            source code.
+        repository_branch: Branch to checkout from the repository.
+        repository_commit: Commit to checkout from the repository. Overrides
+            `repository_branch`.
+        tags: Tags to add to the plugin.
+        interactive: Whether to run the command in interactive mode, asking for
+            missing or invalid parameters.
+    """
     # Validate that the user is logged in
     if not get_auth_token():
         error(
@@ -952,6 +1058,7 @@ def _validate_tags(tags: List[str], interactive: bool) -> List[str]:
 
     Args:
         tags: The tags to validate.
+        interactive: Whether to run in interactive mode.
 
     Returns:
         The validated tags.
@@ -1005,6 +1112,13 @@ def _ask_for_tags() -> List[str]:
     help="Version of the plugin to pull.",
 )
 def get_logs(plugin_name: str, version: Optional[str] = None) -> None:
+    """Get the build logs of a plugin.
+
+    Args:
+        plugin_name: Name of the plugin.
+        version: Version of the plugin. If not provided, the latest version
+            will be used.
+    """
     display_name = _plugin_display_name(plugin_name, version)
 
     # Get the plugin from the hub

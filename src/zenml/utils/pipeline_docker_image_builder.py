@@ -506,6 +506,9 @@ class PipelineDockerImageBuilder:
             - Extra index requirements (the hub plugins themselves), mapping
                 index URLs to lists of package names
             - List of dependencies of all required hub plugins
+
+        Raises:
+            ValueError: If a required hub plugin has an invalid format.
         """
         from zenml.cli.hub import _get_plugin  # TODO: move this to utils?
 
