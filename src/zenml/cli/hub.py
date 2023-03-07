@@ -238,6 +238,12 @@ def list_plugins(mine: bool, installed: bool) -> None:
     help="Version of the plugin to install.",
 )
 @click.option(
+    "--upgrade",
+    "-u",
+    is_flag=True,
+    help="Upgrade the plugin if it is already installed.",
+)
+@click.option(
     "--no-deps",
     "--no-dependencies",
     is_flag=True,
@@ -252,6 +258,7 @@ def list_plugins(mine: bool, installed: bool) -> None:
 def install_plugin(
     plugin_name: str,
     version: Optional[str] = None,
+    upgrade: bool = False,
     no_deps: bool = False,
     yes: bool = False,
 ) -> None:
@@ -269,32 +276,44 @@ def install_plugin(
     if not index_url or not package_name:
         error(f"Plugin '{display_name}' is not available for installation.")
 
-    # Install plugin dependencies
-    if not no_deps and plugin.requirements:
-        requirements_str = " ".join(f"'{r}'" for r in plugin.requirements)
+    # Check if plugin is already installed
+    if _is_plugin_installed(plugin_name) and not upgrade:
+        logger.info(f"Plugin '{plugin_name}' is already installed.")
+        return
 
+    # Install plugin requirements
+    install_requirements = False
+    if plugin.requirements and not no_deps:
+        requirements_str = " ".join(f"'{r}'" for r in plugin.requirements)
         if not yes:
-            confirmation = click.confirm(
+            install_requirements = click.confirm(
                 f"Plugin '{display_name}' requires the following "
                 f"packages to be installed: {requirements_str}. Do you want to "
                 f"install them now?"
             )
-            if not confirmation:
-                error(
-                    f"Plugin '{display_name}' cannot be installed "
-                    "without the required packages."
-                )
-
+    if plugin.requirements and install_requirements:
         logger.info(
             f"Installing requirements for plugin '{display_name}': "
             f"{requirements_str}..."
         )
-        subprocess.check_call(
-            [sys.executable, "-m", "pip", "install", *plugin.requirements]
-        )
+        requirements_install_call = [
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            *list(plugin.requirements),
+            "--upgrade",
+        ]
+        subprocess.check_call(requirements_install_call)
         logger.info(
             f"Successfully installed requirements for plugin "
             f"'{display_name}'."
+        )
+    elif plugin.requirements:
+        logger.warning(
+            f"Requirements for plugin '{display_name}' were not installed. "
+            "This might lead to errors in the future if the requirements are "
+            "not installed manually."
         )
 
     # pip install the wheel
@@ -302,7 +321,7 @@ def install_plugin(
         f"Installing plugin '{display_name}' from "
         f"{index_url}{package_name}..."
     )
-    install_call = [
+    plugin_install_call = [
         sys.executable,
         "-m",
         "pip",
@@ -310,10 +329,10 @@ def install_plugin(
         "--index-url",
         index_url,
         package_name,
+        "--no-deps",  # we already installed the requirements above
+        "--upgrade",  # we already checked if the plugin is installed above
     ]
-    if no_deps:
-        install_call.append("--no-deps")
-    subprocess.check_call(install_call)
+    subprocess.check_call(plugin_install_call)
     logger.info(f"Successfully installed plugin '{display_name}'.")
 
 
