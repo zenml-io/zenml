@@ -85,7 +85,10 @@ class FlavorSchema(NamedSchema, table=True):
             The updated `FlavorSchema`.
         """
         for field, value in flavor_update.dict(exclude_unset=True).items():
-            setattr(self, field, value)
+            if field == "config_schema":
+                setattr(self, field, json.dumps(value))
+            else:
+                setattr(self, field, value)
 
         self.updated = datetime.utcnow()
         return self
