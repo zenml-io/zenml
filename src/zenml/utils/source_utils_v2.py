@@ -23,6 +23,8 @@ from pathlib import Path, PurePath
 from types import FunctionType, ModuleType
 from typing import TYPE_CHECKING, Any, Dict, Iterator, Optional, Type, Union
 
+import importlib_metadata
+
 from zenml.config.source import (
     CodeRepositorySource,
     DistributionPackageSource,
@@ -127,7 +129,7 @@ def resolve(obj: Union[Type[Any], FunctionType, ModuleType]) -> Source:
 
         module_name = _resolve_module(module)
     elif source_type == SourceType.DISTRIBUTION_PACKAGE:
-        package_name = module_name.split(".", maxsplit=1)[0]
+        package_name = _get_package_for_module(module_name=module_name)
         package_version = _get_package_version(package_name=package_name)
         return DistributionPackageSource(
             module=module_name,
@@ -194,18 +196,19 @@ def is_standard_lib_file(file_path: str) -> bool:
     return Path(stdlib_root).resolve() in Path(file_path).resolve().parents
 
 
-def is_distribution_package_file(file_path: str) -> bool:
+def is_distribution_package_file(file_path: str, module_name: str) -> bool:
     absolute_file_path = Path(file_path).resolve()
 
     for path in site.getsitepackages() + [site.getusersitepackages()]:
         if Path(path).resolve() in absolute_file_path.parents:
             return True
 
-    # TODO: This currently returns False for editable installs because
-    # the site packages dir only contains a reference to the source files,
-    # not the actual files. This means editable installs will get source
-    # type unknown, which seems reasonable but we need to check if this
-    # leads to some issues
+    if _get_package_for_module(module_name=module_name):
+        # The previous logic doesn't detect editable installs because
+        # the site packages dir only contains a reference to the source files,
+        # not the actual files.
+        return True
+
     return False
 
 
@@ -222,7 +225,9 @@ def get_source_type(module: ModuleType) -> SourceType:
     if is_user_file(file_path=file_path):
         return SourceType.USER
 
-    if is_distribution_package_file(file_path=file_path):
+    if is_distribution_package_file(
+        file_path=file_path, module_name=module.__name__
+    ):
         return SourceType.DISTRIBUTION_PACKAGE
 
     return SourceType.UNKNOWN
@@ -351,14 +356,23 @@ def _load_module(
         return importlib.import_module(module_name)
 
 
-def _get_package_version(package_name: str) -> Optional[str]:
-    # TODO: this only works on python 3.8+
-    # TODO: catch errors
-    from importlib.metadata import version
+def _get_package_for_module(module_name: str) -> Optional[str]:
+    top_level_module = module_name.split(".", maxsplit=1)[0]
+    package_names = importlib_metadata.packages_distributions()[
+        top_level_module
+    ]
 
+    if len(package_names) == 1:
+        return package_names[0]
+
+    # TODO: maybe handle packages which share the same top-level import
+    return None
+
+
+def _get_package_version(package_name: str) -> Optional[str]:
     try:
-        return version(distribution_name=package_name)
-    except:
+        return importlib_metadata.version(distribution_name=package_name)
+    except (ValueError, importlib_metadata.PackageNotFoundError):
         return None
 
 

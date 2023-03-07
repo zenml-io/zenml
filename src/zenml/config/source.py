@@ -96,9 +96,9 @@ class DistributionPackageSource(Source):
 
     @property
     def package_name(self) -> str:
-        # TODO: are dots allowed in package names? If yes we need to handle that
-        # TODO: the package name might be different than the import module
-        return self.module.split(".", maxsplit=1)[0]
+        from zenml.utils import source_utils_v2
+
+        return source_utils_v2._get_package_for_module(module_name=self.module)
 
 
 class CodeRepositorySource(Source):
