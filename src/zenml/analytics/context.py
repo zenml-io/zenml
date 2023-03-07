@@ -11,15 +11,17 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""The 'analytics' module of ZenML.
+
+This module is based on the 'analytics-python' package created by Segment.
+The base functionalities are adapted to work with the ZenML analytics server.
+"""
 import os
 from types import TracebackType
-from typing import Any, Optional, Dict, Union, Type, List, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
 from uuid import UUID
 
-import requests
-
-from zenml import __version__
-from zenml import analytics
+from zenml import __version__, analytics
 from zenml.constants import ENV_ZENML_SERVER_FLAG
 from zenml.environment import Environment, get_environment
 from zenml.logger import get_logger
@@ -135,7 +137,7 @@ class AnalyticsContext:
         """
         success = False
         if self.analytics_opt_in:
-            success, _ = analytics.identify(
+            success, _ = analytics.Client().identify(
                 user_id=self.user_id,
                 traits=traits,
             )
@@ -163,7 +165,7 @@ class AnalyticsContext:
 
             traits.update({"group_id": group_id})
 
-            success, _ = analytics.group(
+            success, _ = analytics.Client().group(
                 user_id=self.user_id,
                 group_id=group_id,
                 traits=traits,
@@ -219,7 +221,7 @@ class AnalyticsContext:
             if isinstance(v, UUID):
                 properties[k] = str(v)
 
-        success, _ = analytics.track(
+        success, _ = analytics.Client().track(
             user_id=self.user_id,
             event=event,
             properties=properties,

@@ -11,17 +11,25 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""The 'analytics' module of ZenML.
+
+This module is based on the 'analytics-python' package created by Segment.
+The base functionalities are adapted to work with the ZenML analytics server.
+"""
 
 import atexit
 import json
 import logging
 import numbers
+from typing import Any, Callable, Dict, Optional, Tuple
+from uuid import UUID
 
 from six import string_types
 
 from zenml.analytics.consumer import Consumer
 from zenml.analytics.request import post
-from zenml.analytics.utils import UUIDEncoder
+from zenml.analytics.utils import AnalyticsEncoder
+from zenml.utils.analytics_utils import AnalyticsEvent
 
 try:
     import queue
@@ -34,32 +42,55 @@ logger = logging.getLogger(__name__)
 
 
 class Client(object):
+    """The client class for ZenML analytics."""
+
     class DefaultConfig(object):
-        on_error = None
-        debug = False
-        send = True
-        sync_mode = False
-        max_queue_size = 10000
-        timeout = 15
-        max_retries = 1
-        thread = 1
-        upload_interval = 0.5
-        upload_size = 100
+        """The configuration class for the client.
+
+        Attributes:
+            on_error: function to call if an error occurs.
+            debug: flag to set to switch to the debug mode.
+            send: flag to determine whether to send the message.
+            sync_mode: flag, if set to True, uses the main thread to send
+                the messages, and if set to False, creates other threads
+                for the analytics.
+            max_queue_size: int, the maximum number of entries a single queue
+                can hold.
+            timeout: int, the timeout criteria in seconds.
+            max_retries: int, the number of max tries before failing.
+            thread: int, the number of additional threads to create for the
+                analytics if the 'sync_mode' is set to False.
+            upload_interval: int, the upload_interval in seconds if the
+                'sync_mode' is set to False.
+            upload_size: int, the maximum size for messages a consumer can send
+                if the 'sync_mode' is set to False.
+        """
+
+        on_error: Callable = None
+        debug: bool = False
+        send: bool = True
+        sync_mode: bool = False
+        max_queue_size: int = 10000
+        timeout: int = 15
+        max_retries: int = 1
+        thread: int = 1
+        upload_interval: float = 0.5
+        upload_size: int = 100
 
     def __init__(
         self,
-        debug=DefaultConfig.debug,
-        max_queue_size=DefaultConfig.max_queue_size,
-        send=DefaultConfig.send,
-        on_error=DefaultConfig.on_error,
-        max_retries=DefaultConfig.max_retries,
-        sync_mode=DefaultConfig.sync_mode,
-        timeout=DefaultConfig.timeout,
-        thread=DefaultConfig.thread,
-        upload_size=DefaultConfig.upload_size,
-        upload_interval=DefaultConfig.upload_interval,
-    ):
-
+        debug: bool = DefaultConfig.debug,
+        max_queue_size: int = DefaultConfig.max_queue_size,
+        send: bool = DefaultConfig.send,
+        on_error: Callable = DefaultConfig.on_error,
+        max_retries: int = DefaultConfig.max_retries,
+        sync_mode: bool = DefaultConfig.sync_mode,
+        timeout: int = DefaultConfig.timeout,
+        thread: int = DefaultConfig.thread,
+        upload_size: int = DefaultConfig.upload_size,
+        upload_interval: float = DefaultConfig.upload_interval,
+    ) -> None:
+        """Initialization of the client."""
         self.queue = queue.Queue(max_queue_size)
         self.on_error = on_error
         self.debug = debug
@@ -97,34 +128,79 @@ class Client(object):
                 if send:
                     consumer.start()
 
-    def identify(self, user_id, traits):
+    def identify(
+        self, user_id: UUID, traits: Optional[Dict[Any, Any]]
+    ) -> Tuple[bool, str]:
+        """Method to identify a user with given traits.
+
+        Args:
+            user_id: the UUID of the user.
+            traits: the traits for the identification process.
+
+        Returns:
+            a tuple, (success flag, the original message).
+        """
         msg = {
             "user_id": user_id,
-            "traits": traits,
+            "traits": traits or {},
             "type": "identify",
         }
-        return self._enqueue(msg)
+        return self._enqueue(json.dumps(msg, cls=AnalyticsEncoder))
 
-    def track(self, user_id, event, properties):
+    def track(
+        self,
+        user_id: UUID,
+        event: AnalyticsEvent,
+        properties: Optional[Dict[Any, Any]],
+    ) -> Tuple[bool, str]:
+        """Method to track events.
+
+        Args:
+            user_id: the UUID of the user.
+            event: the type of the event.
+            properties: the dict for additional properties regarding the event.
+
+        Returns:
+            a tuple, (success flag, the original message).
+        """
         msg = {
             "user_id": user_id,
             "event": event,
-            "properties": properties,
+            "properties": properties or {},
             "type": "track",
         }
-        return self._enqueue(msg)
+        return self._enqueue(json.dumps(msg, cls=AnalyticsEncoder))
 
-    def group(self, user_id, group_id, traits):
+    def group(
+        self, user_id: UUID, group_id: UUID, traits: Optional[Dict[Any, Any]]
+    ) -> Tuple[bool, str]:
+        """Method to group users.
+
+        Args:
+            user_id: the UUID of the user.
+            group_id: the UUID of the group.
+            traits: the dict of traits to assign to the group.
+
+        Returns:
+            a tuple, (success flag, the original message).
+        """
         msg = {
             "user_id": user_id,
             "group_id": group_id,
-            "traits": traits,
+            "traits": traits or {},
             "type": "group",
         }
-        return self._enqueue(msg)
+        return self._enqueue(json.dumps(msg, cls=AnalyticsEncoder))
 
-    def _enqueue(self, msg):
-        """Push a new `msg` onto the queue, return `(success, msg)`"""
+    def _enqueue(self, msg: str) -> Tuple[bool, str]:
+        """Method to queue messages to be sent.
+
+        Args:
+            msg: str, the incoming message.
+
+        Returns:
+            a tuple, (success flag, the original message).
+        """
         # if send is False, return msg as if it was successfully queued
         if not self.send:
             return True, msg
@@ -141,17 +217,15 @@ class Client(object):
             return False, msg
 
     def flush(self):
-        """Forces a flush from the internal queue to the server"""
-        queue = self.queue
-        size = queue.qsize()
-        queue.join()
+        """Method to force a flush from the internal queue to the server."""
+        q = self.queue
+        size = q.qsize()
+        q.join()
         # Note that this message may not be precise, because of threading.
         logger.debug("successfully flushed about %s items.", size)
 
     def join(self):
-        """Ends the consumer thread once the queue is empty.
-        Blocks execution until finished
-        """
+        """Method to end the consumer thread once the queue is empty."""
         for consumer in self.consumers:
             consumer.pause()
             try:
@@ -161,6 +235,6 @@ class Client(object):
                 pass
 
     def shutdown(self):
-        """Flush all messages and cleanly shutdown the client"""
+        """Method to flush all messages and cleanly shutdown the client."""
         self.flush()
         self.join()

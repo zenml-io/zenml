@@ -11,67 +11,32 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import logging
-import numbers
-from datetime import date, datetime
-from decimal import Decimal
+"""The 'analytics' module of ZenML.
+
+This module is based on the 'analytics-python' package created by Segment.
+The base functionalities are adapted to work with the ZenML analytics server.
+"""
+
 import json
+import logging
 from uuid import UUID
-import six
+
+from zenml.utils.analytics_utils import AnalyticsEvent
 
 logger = logging.getLogger(__name__)
 
 
-def clean(item):
-    if isinstance(item, Decimal):
-        return float(item)
-    elif isinstance(
-        item,
-        (six.string_types, bool, numbers.Number, datetime, date, type(None)),
-    ):
-        return item
-    elif isinstance(item, (set, list, tuple)):
-        return _clean_list(item)
-    elif isinstance(item, dict):
-        return _clean_dict(item)
-    else:
-        return _coerce_unicode(item)
+class AnalyticsEncoder(json.JSONEncoder):
+    """Helper encoder class for JSON serialization."""
 
-
-def _clean_list(list_):
-    return [clean(item) for item in list_]
-
-
-def _clean_dict(dict_):
-    data = {}
-    for k, v in six.iteritems(dict_):
-        try:
-            data[k] = clean(v)
-        except TypeError:
-            logger.warning(
-                "Dictionary values must be serializeable to "
-                'JSON "%s" value %s of type %s is unsupported.',
-                k,
-                v,
-                type(v),
-            )
-    return data
-
-
-def _coerce_unicode(cmplx):
-    try:
-        item = cmplx.decode("utf-8", "strict")
-    except AttributeError as exception:
-        item = ":".join(exception)
-        item.decode("utf-8", "strict")
-        logger.warning("Error decoding: %s", item)
-        return None
-    return item
-
-
-class UUIDEncoder(json.JSONEncoder):
     def default(self, obj):
+        """The default method to handle UUID and 'AnalyticsEvent' objects."""
+        # If the object is UUID, we simply return the value of UUID
         if isinstance(obj, UUID):
-            # if the obj is uuid, we simply return the value of uuid
             return str(obj)
+
+        # If the object is an AnalyticsEvent, return its value
+        elif isinstance(obj, AnalyticsEvent):
+            return str(obj.value)
+
         return json.JSONEncoder.default(self, obj)

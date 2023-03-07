@@ -11,6 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""The 'analytics' module of ZenML.
+
+This module is based on the 'analytics-python' package created by Segment.
+The base functionalities are adapted to work with the ZenML analytics server.
+"""
 
 from zenml.analytics.client import Client
 
@@ -22,55 +27,3 @@ sync_mode = Client.DefaultConfig.sync_mode
 max_queue_size = Client.DefaultConfig.max_queue_size
 timeout = Client.DefaultConfig.timeout
 max_retries = Client.DefaultConfig.max_retries
-
-
-def track(*args, **kwargs):
-    """Send a track call."""
-    return _proxy("track", *args, **kwargs)
-
-
-def identify(*args, **kwargs):
-    """Send a identify call."""
-    return _proxy("identify", *args, **kwargs)
-
-
-def group(*args, **kwargs):
-    """Send a group call."""
-    return _proxy("group", *args, **kwargs)
-
-
-def flush():
-    """Tell the client to flush."""
-    _proxy("flush")
-
-
-def join():
-    """Block program until the client clears the queue"""
-    _proxy("join")
-
-
-def shutdown():
-    """Flush all messages and cleanly shutdown the client"""
-    _proxy("flush")
-    _proxy("join")
-
-
-default_client = None
-
-
-def _proxy(method, *args, **kwargs):
-    """Create an analytics client if one doesn't exist and send to it."""
-    global default_client
-    if not default_client:
-        default_client = Client(
-            debug=debug,
-            max_queue_size=max_queue_size,
-            send=send,
-            on_error=on_error,
-            max_retries=max_retries,
-            sync_mode=sync_mode,
-            timeout=timeout,
-        )
-
-    fn = getattr(default_client, method)
-    return fn(*args, **kwargs)

@@ -11,15 +11,20 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import json
+"""The 'analytics' module of ZenML.
+
+This module is based on the 'analytics-python' package created by Segment.
+The base functionalities are adapted to work with the ZenML analytics server.
+"""
 import logging
+from queue import Queue
 from threading import Thread
+from typing import Callable
 
 import backoff
 import monotonic
 
 from zenml.analytics.request import APIError, post
-from zenml.analytics.utils import UUIDEncoder
 
 try:
     from queue import Empty
@@ -40,14 +45,24 @@ class Consumer(Thread):
 
     def __init__(
         self,
-        queue,
-        upload_size=100,
-        on_error=None,
-        upload_interval=0.5,
-        retries=10,
-        timeout=15,
-    ):
-        """Create a consumer thread."""
+        queue: Queue,
+        upload_size: int = 100,
+        on_error: Callable = None,
+        upload_interval: float = 0.5,
+        retries: int = 10,
+        timeout: int = 15,
+    ) -> None:
+        """Initialize and create a consumer thread.
+
+        Args:
+            queue: the list of message in the queue.
+            upload_size: int, the maximum size for messages a consumer can send
+                if the 'sync_mode' is set to False.
+            on_error: function to call if an error occurs.
+            upload_interval: float, the upload_interval in seconds
+            retries: int, the number of max tries before failing.
+            timeout: int, the timeout criteria in seconds.
+        """
         Thread.__init__(self)
         # Make consumer a daemon thread so that it doesn't block program exit
         self.daemon = True
@@ -65,11 +80,11 @@ class Consumer(Thread):
 
     def run(self):
         """Runs the consumer."""
-        logger.debug("consumer is running...")
+        logger.debug("Consumer is running...")
         while self.running:
             self.upload()
 
-        logger.debug("consumer exited.")
+        logger.debug("Consumer exited.")
 
     def pause(self):
         """Pause the consumer."""
@@ -112,7 +127,7 @@ class Consumer(Thread):
                 item = queue.get(
                     block=True, timeout=self.upload_interval - elapsed
                 )
-                item_size = len(json.dumps(item, cls=UUIDEncoder).encode())
+                item_size = len(item.encode())
 
                 if item_size > MAX_MSG_SIZE:
                     logger.error(
@@ -130,7 +145,7 @@ class Consumer(Thread):
         return items
 
     def request(self, batch):
-        """Attempt to upload the batch and retry before raising an error"""
+        """Attempt to upload the batch and retry before raising an error."""
 
         def fatal_exception(exc):
             if isinstance(exc, APIError):
@@ -139,7 +154,7 @@ class Consumer(Thread):
                 # don't retry on other client errors
                 return (400 <= exc.status < 500) and exc.status != 429
             else:
-                # retry on all other errors (eg. network)
+                # retry on all other errors (e.g. network)
                 return False
 
         @backoff.on_exception(
@@ -149,6 +164,7 @@ class Consumer(Thread):
             giveup=fatal_exception,
         )
         def send_request():
+            """Function to send a batch of messages."""
             post(timeout=self.timeout, batch=batch)
 
         send_request()

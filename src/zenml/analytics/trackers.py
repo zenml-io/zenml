@@ -11,15 +11,21 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Callable, Any, Optional, Dict, Union, List
+"""The 'analytics' module of ZenML.
 
+This module is based on the 'analytics-python' package created by Segment.
+The base functionalities are adapted to work with the ZenML analytics server.
+"""
+
+from typing import Any, Callable, Dict, List, Optional, Union
+
+from zenml.analytics.context import AnalyticsContext
 from zenml.logger import get_logger
 from zenml.utils.analytics_utils import (
     AnalyticsEvent,
     AnalyticsTrackedModelMixin,
     parametrized,
 )
-from zenml.analytics.context import AnalyticsContext
 
 Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
 
