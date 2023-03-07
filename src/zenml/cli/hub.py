@@ -392,17 +392,9 @@ def pull_plugin(
         )
         plugin_dir = os.path.join(repo_path, subdir)
 
-    # Clone the repo, checkout the right commit, and move to `output_dir`
+    # Clone the repo and move it to `output_dir`
     try:
-        if commit:
-            repo = Repo.clone_from(
-                url=repo_url,
-                to_path=repo_path,
-                no_checkout=True,
-            )
-            repo.git.checkout(commit)
-        else:
-            Repo.clone_from(url=repo_url, to_path=repo_path)
+        _clone_repo(url=repo_url, to_path=repo_path, commit=commit)
         shutil.move(plugin_dir, output_dir)
         logger.info(f"Successfully pulled plugin '{display_name}'.")
     except GitCommandError:
@@ -415,6 +407,37 @@ def pull_plugin(
         )
     finally:
         shutil.rmtree(repo_path)
+
+
+def _clone_repo(
+    url: str,
+    to_path: str,
+    branch: Optional[str] = None,
+    commit: Optional[str] = None,
+) -> None:
+    """Clone a repository and get the hash of the latest commit.
+
+    Args:
+        url: URL of the repository to clone.
+        to_path: Path to clone the repository to.
+        branch: Branch to clone. Defaults to "main".
+        commit: Commit to checkout. If specified, the branch argument is
+            ignored.
+    """
+    os.makedirs(os.path.basename(to_path), exist_ok=True)
+    if commit:
+        repo = Repo.clone_from(
+            url=url,
+            to_path=to_path,
+            no_checkout=True,
+        )
+        repo.git.checkout(commit)
+    else:
+        repo = Repo.clone_from(
+            url=url,
+            to_path=to_path,
+            branch=branch or "main",
+        )
 
 
 @hub.command("push")
@@ -527,33 +550,18 @@ def push_plugin(
         )
 
     # Clone the repo and validate the commit / branch / subdir / structure
-    repository_url, repo, repo_path = _clone_repository(
-        repository_url, interactive=interactive
+    (
+        repository_url,
+        repository_commit,
+        repository_branch,
+        repository_subdir,
+    ) = _validate_repository(
+        url=repository_url,
+        commit=repository_commit,
+        branch=repository_branch,
+        subdir=repository_subdir,
+        interactive=interactive,
     )
-    try:
-        repository_commit = _validate_repository_commit(
-            repository_commit=repository_commit,
-            repo=repo,
-            interactive=interactive,
-        )
-        if not repository_commit:
-            repository_branch = _validate_repository_branch(
-                repository_branch=repository_branch,
-                repo=repo,
-                interactive=interactive,
-            )
-        repository_subdir = _validate_repository_subdir(
-            repository_subdir=repository_subdir,
-            repo_path=repo_path,
-            interactive=interactive,
-        )
-        if repository_subdir:
-            plugin_path = os.path.join(repo_path, repository_subdir)
-        else:
-            plugin_path = repo_path
-        _validate_repository_structure(plugin_path)
-    finally:
-        shutil.rmtree(repo_path)
 
     # In interactive mode, also ask for tags
     if interactive and not tags:
@@ -629,13 +637,20 @@ def _validate_plugin_name(
         plugin_name = click.prompt("Plugin name")
 
 
-def _clone_repository(
-    repository_url: Optional[str], interactive: bool
-) -> Tuple[str, Repo, str]:
-    """Validate the provided URL and clone the repository from it.
+def _validate_repository(
+    url: Optional[str],
+    commit: Optional[str],
+    branch: Optional[str],
+    subdir: Optional[str],
+    interactive: bool,
+) -> Tuple[str, Optional[str], Optional[str], Optional[str]]:
+    """Validate the provided repository arguments.
 
     Args:
-        repository_url: The URL to the repository to clone.
+        url: The URL to the repository to clone.
+        commit: The commit to checkout.
+        branch: The branch to checkout. Will be ignored if commit is provided.
+        subdir: The subdirectory in which the plugin is located.
         interactive: Whether to run in interactive mode.
 
     Returns:
@@ -643,110 +658,79 @@ def _clone_repository(
         - The cloned repository,
         - The path to the cloned repository.
     """
-    # Make sure the repository URL is provided.
-    if not repository_url:
-        if not interactive:
-            error("Repository URL not provided.")
-        logger.info(
-            "Please enter the URL to the public Git repository containing "
-            "the plugin source code."
-        )
-        repository_url = click.prompt("Repository URL")
+    while True:
 
-    # Clone the repository from the URL.
-    repo = None
-    while not repo:
-        repo_path = f"_{uuid4()}"
+        # Make sure the repository URL is provided.
+        if not url:
+            if not interactive:
+                error("Repository URL not provided.")
+            logger.info(
+                "Please enter the URL to the public Git repository containing "
+                "the plugin source code."
+            )
+            url = click.prompt("Repository URL")
+        assert url is not None
+
+        # In interactive mode, ask for the branch and commit if not provided
+        if interactive and not branch and not commit:
+            confirmation = click.confirm(
+                "Do you want to use the latest commit from the 'main' branch "
+                "of the repository?"
+            )
+            if not confirmation:
+                confirmation = click.confirm(
+                    "You can either use a specific commit or the latest commit "
+                    "from one of your branches. Do you want to use a specific "
+                    "commit?"
+                )
+                if confirmation:
+                    logger.info("Please enter the SHA of the commit.")
+                    commit = click.prompt("Repository commit")
+                    branch = None
+                else:
+                    logger.info("Please enter the name of a branch.")
+                    branch = click.prompt("Repository branch")
+                    commit = None
+
         try:
-            assert repository_url is not None
-            repo = Repo.clone_from(url=repository_url, to_path=repo_path)
-        except Exception:
+            # Check if the URL/branch/commit are valid.
+            repo_path = f"_{uuid4()}"
+            _clone_repo(
+                url=url,
+                commit=commit,
+                branch=branch,
+                to_path=repo_path,
+            )
+
+            # Check if the subdir exists and has the correct structure.
+            subdir = _validate_repository_subdir(
+                repository_subdir=subdir,
+                repo_path=repo_path,
+                interactive=interactive,
+            )
+
+            return url, commit, branch, subdir
+
+        except GitCommandError:
+            repo_display_name = f"'{url}'"
+            suggestion = "Please enter a valid repository URL"
+            if commit:
+                repo_display_name += f" (commit '{commit}')"
+                suggestion += " and make sure the commit exists."
+            elif branch:
+                repo_display_name += f" (branch '{branch}')"
+                suggestion += " and make sure the branch exists."
+            else:
+                suggestion += " and make sure the 'main' branch exists."
+            msg = f"Could not clone repository from URL {repo_display_name}. "
             if not interactive:
-                raise
-            logger.info(
-                f"Could not clone repository from URL '{repository_url}'. "
-                "Please enter a valid repository URL."
-            )
-            repository_url = click.prompt("Repository URL")
+                error(msg + suggestion)
+            logger.info(msg + suggestion)
+            url, branch, commit = None, None, None
 
-    return repository_url, repo, repo_path
-
-
-def _validate_repository_commit(
-    repository_commit: Optional[str], repo: Repo, interactive: bool
-) -> Optional[str]:
-    """Validate the provided repository commit.
-
-    Args:
-        repository_commit: The commit to validate.
-        repo: The repository to validate the commit in.
-        interactive: Whether to run in interactive mode.
-
-    Returns:
-        The validated commit.
-    """
-    # In interactive mode, ask for the commit if not provided
-    if interactive and not repository_commit:
-        confirmation = click.confirm(
-            "Do you want to use the latest commit from the repository?"
-        )
-        if not confirmation:
-            logger.info(
-                "Please enter the commit to checkout from the repository."
-            )
-            repository_commit = click.prompt("Repository commit")
-
-    # If a commit was provided, make sure it exists
-    if repository_commit:
-        commit_list = list(repo.iter_commits())
-        while repository_commit not in commit_list:
-            if not interactive:
-                error("Commit does not exist.")
-            logger.info(
-                f"Commit '{repository_commit}' does not exist in the "
-                f"repository. Please enter a valid commit hash."
-            )
-            repository_commit = click.prompt("Repository commit")
-
-    return repository_commit
-
-
-def _validate_repository_branch(
-    repository_branch: Optional[str], repo: Repo, interactive: bool
-) -> Optional[str]:
-    """Validate the provided repository branch.
-
-    Args:
-        repository_branch: The branch to validate.
-        repo: The repository to validate the branch in.
-        interactive: Whether to run in interactive mode.
-
-    Returns:
-        The validated branch.
-    """
-    # In interactive mode, ask for the branch if not provided
-    if interactive and not repository_branch:
-        confirmation = click.confirm(
-            "Do you want to use the 'main' branch of the repository?"
-        )
-        if not confirmation:
-            logger.info(
-                "Please enter the branch to checkout from the repository."
-            )
-            repository_branch = click.prompt("Repository branch")
-
-    # If a branch and no commit was provided, make sure it exists
-    if repository_branch:
-        while repository_branch not in repo.heads:
-            if not interactive:
-                error("Branch does not exist.")
-            logger.info(
-                f"Branch '{repository_branch}' does not exist in the "
-                f"repository. Please enter a valid branch name."
-            )
-            repository_branch = click.prompt("Repository branch")
-
-    return repository_branch
+        finally:
+            if os.path.exists(repo_path):
+                shutil.rmtree(repo_path)
 
 
 def _validate_repository_subdir(
@@ -762,31 +746,52 @@ def _validate_repository_subdir(
     Returns:
         The validated subdirectory.
     """
-    # In interactive mode, ask for the subdirectory if not provided
-    if interactive and not repository_subdir:
-        confirmation = click.confirm(
-            "Is the plugin source code in the root of the repository?"
-        )
-        if not confirmation:
-            logger.info(
-                "Please enter the subdirectory of the repository containing "
-                "the plugin source code."
+    while True:
+        # In interactive mode, ask for the subdirectory if not provided
+        if interactive and not repository_subdir:
+            confirmation = click.confirm(
+                "Is the plugin source code in the root of the repository?"
             )
-            repository_subdir = click.prompt("Repository subdirectory")
+            if not confirmation:
+                logger.info(
+                    "Please enter the subdirectory of the repository "
+                    "containing the plugin source code."
+                )
+                repository_subdir = click.prompt("Repository subdirectory")
 
-    # If a subdir was provided, make sure it exists
-    if repository_subdir:
-        subdir_path = os.path.join(repo_path, repository_subdir)
-        while not os.path.exists(subdir_path):
+        # If a subdir was provided, make sure it exists
+        if repository_subdir:
+            subdir_path = os.path.join(repo_path, repository_subdir)
+            if not os.path.exists(subdir_path):
+                if not interactive:
+                    error("Repository subdirectory does not exist.")
+                logger.info(
+                    f"Subdirectory '{repository_subdir}' does not exist in the "
+                    f"repository."
+                )
+                logger.info("Please enter a valid subdirectory.")
+                repository_subdir = click.prompt(
+                    "Repository subdirectory", default=""
+                )
+                continue
+
+        # Check if the plugin structure is valid.
+        if repository_subdir:
+            plugin_path = os.path.join(repo_path, repository_subdir)
+        else:
+            plugin_path = repo_path
+        try:
+            _validate_repository_structure(plugin_path)
+            return repository_subdir
+        except ValueError as e:
             if not interactive:
-                error("Repository subdirectory does not exist.")
+                error(str(e))
             logger.info(
-                f"Subdirectory '{repository_subdir}' does not exist in the "
-                f"repository. Please enter a valid subdirectory."
+                f"Plugin code structure at {repository_subdir} is invalid: "
+                f"{str(e)}"
             )
+            logger.info("Please enter a valid subdirectory.")
             repository_subdir = click.prompt("Repository subdirectory")
-
-    return repository_subdir
 
 
 def _validate_repository_structure(plugin_root: str) -> None:
