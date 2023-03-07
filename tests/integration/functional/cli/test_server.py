@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import platform
+from contextlib import ExitStack as does_not_raise
 
 import pytest
 import requests
@@ -26,18 +27,14 @@ from zenml.zen_server.deploy import ServerDeployer
 SERVER_START_STOP_TIMEOUT = 30
 
 
-@pytest.fixture(scope="module")
-def cli_runner():
-    """Fixture to get a CliRunner instance."""
-    return CliRunner()
-
-
 @pytest.mark.skipif(
     platform.system() == "Windows",
     reason="ZenServer not supported as daemon on Windows.",
 )
-def test_server_cli_up_down(clean_client, cli_runner):
+def test_server_cli_up_down(clean_client):
     """Test spinning up and shutting down ZenServer."""
+    cli_runner = CliRunner()
+
     port = scan_for_available_port(start=8003, stop=9000)
     up_command = cli.commands["up"]
     cli_runner.invoke(up_command, ["--port", port])
@@ -56,8 +53,10 @@ def test_server_cli_up_down(clean_client, cli_runner):
     platform.system() == "Windows",
     reason="ZenServer not supported as daemon on Windows.",
 )
-def test_server_cli_up_and_connect(clean_client, cli_runner):
+def test_server_cli_up_and_connect(clean_client):
     """Test spinning up and connecting to ZenServer."""
+    cli_runner = CliRunner()
+
     port = scan_for_available_port(start=8003, stop=9000)
     up_command = cli.commands["up"]
     cli_runner.invoke(up_command, ["--port", port, "--connect"])
@@ -70,3 +69,48 @@ def test_server_cli_up_and_connect(clean_client, cli_runner):
 
     down_command = cli.commands["down"]
     cli_runner.invoke(down_command)
+
+
+user_create_command = cli.commands["user"].commands["create"]
+role_create_command = cli.commands["role"].commands["create"]
+
+
+@pytest.mark.skip(
+    reason="Test needs to delete the user and generally fixing to work"
+)
+def test_server_doesnt_raise_error_for_permissionless_user() -> None:
+    """Test that the server doesn't raise an error for a permissionless user."""
+    runner = CliRunner()
+
+    new_role_name = "permissionless_role_for_axl"
+    new_user_name = "aria_and_blupus"
+    new_password = "kamicat"
+
+    # create a role without any permissions
+    runner.invoke(role_create_command, [new_role_name])
+
+    # create a user with the permissionless role
+    runner.invoke(
+        user_create_command,
+        [
+            new_user_name,
+            f"--password={new_password}",
+            f"--role={new_role_name}",
+        ],
+    )
+
+    # disconnect from the server
+    runner.invoke(cli.commands["disconnect"])
+
+    server_url = GlobalConfiguration().store.url
+    # try to connect to the server with the permissionless user
+    with does_not_raise():
+        result = runner.invoke(
+            cli.commands["connect"],
+            [
+                f"--url={server_url}",
+                f"--user={new_user_name}",
+                f"--password={new_password}",
+            ],
+        )
+        assert result.exit_code == 0
