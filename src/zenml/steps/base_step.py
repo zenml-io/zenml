@@ -47,6 +47,7 @@ from zenml.config.step_configurations import (
 )
 from zenml.constants import STEP_SOURCE_PARAMETER_NAME
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
+from zenml.hooks.hook_validators import resolve_and_validate_hook
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.default_materializer_registry import (
@@ -802,12 +803,12 @@ class BaseStep(metaclass=BaseStepMeta):
         failure_hook_source = None
         if on_failure:
             # string of on_failure hook function to be used for this step
-            failure_hook_source = self._resolve_and_validate_hook(on_failure)
+            failure_hook_source = resolve_and_validate_hook(on_failure)
 
         success_hook_source = None
         if on_success:
             # string of on_success hook function to be used for this step
-            success_hook_source = self._resolve_and_validate_hook(on_success)
+            success_hook_source = resolve_and_validate_hook(on_success)
 
         if output_artifacts:
             logger.warning(
@@ -1073,42 +1074,3 @@ class BaseStep(metaclass=BaseStepMeta):
             raise StepInterfaceError("Failed to validate function parameters.")
 
         return values
-
-    def _resolve_and_validate_hook(
-        self, hook_func: "HookSpecification"
-    ) -> str:
-        """Resolves and validates a hook callback.
-
-        Args:
-            hook_func: Callable hook function.
-
-        Returns:
-            str: Resolved source path of `hook_func`.
-
-        Raises:
-            ValueError: If `hook_func` is not a valid callable.
-        """
-        if type(hook_func) is str:
-            func = source_utils.load_source_path(hook_func)
-        else:
-            # This means hook is a callable
-            func = hook_func
-
-        if not callable(func):
-            raise ValueError(f"{func} is not a valid function.")
-
-        if func.__annotations__:
-            sig = inspect.getfullargspec(inspect.unwrap(func))
-            annotations = sig.annotations.values()
-            for annotation in annotations:
-                if annotation and annotation not in (
-                    Exception,
-                    BaseParameters,
-                    StepContext,
-                ):
-                    raise ValueError(
-                        "Hook parameters must be of type `Exception`, `BaseParameters`, "
-                        f"and/or `StepContext`, not {annotation}"
-                    )
-
-        return source_utils.resolve_class(func)

@@ -16,7 +16,11 @@ import random
 
 from zenml.hooks import alerter_failure_hook, alerter_success_hook
 from zenml.pipelines import pipeline
-from zenml.steps import BaseParameters, Output, step
+from zenml.steps import BaseParameters, Output, step, StepContext
+
+
+def pipeline_success_hook(context: StepContext) -> None:
+    print(f"Step {context.step_name} succeeded!")
 
 
 class HookParams(BaseParameters):
@@ -46,7 +50,7 @@ def subtract_numbers(first_num: int, random_num: int) -> Output(result=int):
     return first_num - random_num
 
 
-@pipeline(enable_cache=False)
+@pipeline(enable_cache=False, on_success=pipeline_success_hook)
 def hook_pipeline(get_first_num, get_random_int, subtract_numbers):
     # Link all the steps artifacts together
     first_num = get_first_num()
