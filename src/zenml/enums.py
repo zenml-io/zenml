@@ -76,6 +76,8 @@ class StackComponentType(StrEnum):
         """
         if self == StackComponentType.CONTAINER_REGISTRY:
             return "container_registries"
+        elif self == StackComponentType.MODEL_REGISTRY:
+            return "model_registries"
 
         return f"{self.value}s"
 
