@@ -16,11 +16,24 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  setup-python-environment:
+  setup-python-environment-ubuntu:
     if: github.event.pull_request.draft == false
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest]
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
+      fail-fast: false
+    uses: ./.github/workflows/setup-python-environment.yml
+    with:
+      python-version: ${{ matrix.python-version }}
+      os: ${{ matrix.os }}
+    secrets: inherit
+
+  setup-python-environment-windows:
+    if: github.event.pull_request.draft == false
+    strategy:
+      matrix:
+        os: [windows-latest]
         python-version: ["3.7", "3.8", "3.9", "3.10"]
       fail-fast: false
     uses: ./.github/workflows/setup-python-environment.yml
@@ -42,11 +55,24 @@ jobs:
       os: ${{ matrix.os }}
     secrets: inherit
 
-  lint-unit-test:
-    needs: setup-python-environment
+  lint-unit-test-ubuntu:
+    needs: setup-python-environment-ubuntu
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest]
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
+      fail-fast: false
+    uses: ./.github/workflows/lint-unit-test.yml
+    with:
+      os: ${{ matrix.os }}
+      python-version: ${{ matrix.python-version }}
+    secrets: inherit
+
+  lint-unit-test-windows:
+    needs: setup-python-environment-windows
+    strategy:
+      matrix:
+        os: [windows-latest]
         python-version: ["3.7", "3.8", "3.9", "3.10"]
       fail-fast: false
     uses: ./.github/workflows/lint-unit-test.yml
@@ -68,12 +94,11 @@ jobs:
       python-version: ${{ matrix.python-version }}
     secrets: inherit
 
-  integration-test:
-    needs: lint-unit-test
-    # Exit if its a commit from Gitbook
+  integration-test-ubuntu:
+    needs: lint-unit-test-ubuntu
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest]
         python-version: ["3.7", "3.8", "3.9", "3.10"]
         test_environment:
           [
@@ -81,9 +106,6 @@ jobs:
             "docker-server-docker-orchestrator",
           ]
         exclude:
-          # docker is not supported on windows and doesn't work on macos runners yet
-          - os: windows-latest
-            test_environment: docker-server-docker-orchestrator
           # docker is time-consuming to run, so we only run it on 3.8
           - test_environment: docker-server-docker-orchestrator
             python-version: "3.7"
@@ -91,6 +113,23 @@ jobs:
             python-version: "3.9"
           - test_environment: docker-server-docker-orchestrator
             python-version: "3.10"
+
+      fail-fast: false
+
+    uses: ./.github/workflows/integration-test.yml
+    with:
+      os: ${{ matrix.os }}
+      python-version: ${{ matrix.python-version }}
+      test_environment: ${{ matrix.test_environment }}
+    secrets: inherit
+
+  integration-test-windows:
+    needs: lint-unit-test-windows
+    strategy:
+      matrix:
+        os: [windows-latest]
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
+        test_environment: ["default"]
 
       fail-fast: false
 

@@ -76,7 +76,7 @@ runs:
         custom_cache_key_element: ${{ inputs.cache_version }}-${{inputs.install_integrations}}
 
     - uses: syphar/restore-pip-download-cache@v1
-      if: steps.cache-virtualenv.outputs.cache-hit != 'true'
+      # if: steps.cache-virtualenv.outputs.cache-hit != 'true'
       with:
         requirement_files: 'zenml-requirements.txt'
         custom_cache_key_element: ${{ inputs.cache_version }}-${{inputs.install_integrations}}
