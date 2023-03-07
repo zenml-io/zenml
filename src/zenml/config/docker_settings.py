@@ -20,6 +20,7 @@ from pydantic import Extra, root_validator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.logger import get_logger
+from zenml.utils import deprecation_utils
 
 logger = get_logger(__name__)
 
@@ -177,6 +178,10 @@ class DockerSettings(BaseSettings):
     user: Optional[str] = None
 
     source_files: SourceFileMode = SourceFileMode.DOWNLOAD_OR_INCLUDE
+
+    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
+        "copy_files"
+    )
 
     @root_validator(pre=True)
     def _migrate_copy_files(cls, values: Dict[str, Any]) -> Dict[str, Any]:
