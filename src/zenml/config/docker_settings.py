@@ -16,7 +16,7 @@
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import Extra, root_validator
+from pydantic import Extra, root_validator, validator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.logger import get_logger
@@ -44,6 +44,12 @@ class PythonEnvironmentExportMethod(Enum):
             PythonEnvironmentExportMethod.PIP_FREEZE: "pip freeze",
             PythonEnvironmentExportMethod.POETRY_EXPORT: "poetry export --format=requirements.txt",
         }[self]
+
+
+class FileCopyingMode(Enum):
+    ALWAYS = "always"
+    IF_DIRTY = "if_dirty"
+    NEVER = "never"
 
 
 class DockerSettings(BaseSettings):
@@ -165,9 +171,29 @@ class DockerSettings(BaseSettings):
 
     environment: Dict[str, Any] = {}
     dockerignore: Optional[str] = None
-    copy_files: bool = True
+    copy_files: FileCopyingMode = FileCopyingMode.IF_DIRTY
     copy_global_config: bool = True
     user: Optional[str] = None
+
+    @validator("copy_files", pre=True)
+    def _convert_copy_files(
+        cls, value: Union[FileCopyingMode, bool]
+    ) -> FileCopyingMode:
+        """Converts the old copy_files boolean to the new enum values.
+
+        Args:
+            value: Value for the copy_files attribute.
+
+        Returns:
+            The converted value.
+        """
+        if value is True:
+            return FileCopyingMode.ALWAYS
+
+        if value is False:
+            return FileCopyingMode.NEVER
+
+        return value
 
     @root_validator
     def _validate_skip_build(cls, values: Dict[str, Any]) -> Dict[str, Any]:

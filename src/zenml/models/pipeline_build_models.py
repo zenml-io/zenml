@@ -69,6 +69,10 @@ class PipelineBuildBaseModel(pydantic_utils.YAMLSerializationMixin):
     )
 
     @property
+    def contains_code(self) -> bool:
+        return any(item.contains_code for item in self.images.values())
+
+    @property
     def requires_code_download(self) -> bool:
         return any(not item.contains_code for item in self.images.values())
 

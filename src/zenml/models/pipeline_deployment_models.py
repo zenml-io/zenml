@@ -18,6 +18,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+from zenml.config.docker_settings import FileCopyingMode
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import Step
 from zenml.models.base_models import (
@@ -56,6 +57,32 @@ class PipelineDeploymentBaseModel(BaseModel):
     client_environment: Dict[str, str] = Field(
         default={}, title="The client environment for this deployment."
     )
+
+    @property
+    def requires_included_files(self) -> bool:
+        if (
+            self.pipeline_configuration.docker_settings.copy_files
+            == FileCopyingMode.ALWAYS
+        ):
+            return True
+
+        return any(
+            step.config.docker_settings.copy_files == FileCopyingMode.ALWAYS
+            for step in self.step_configurations.values()
+        )
+
+    @property
+    def requires_code_download(self) -> bool:
+        if (
+            self.pipeline_configuration.docker_settings.copy_files
+            == FileCopyingMode.NEVER
+        ):
+            return True
+
+        return any(
+            step.config.docker_settings.copy_files == FileCopyingMode.NEVER
+            for step in self.step_configurations.values()
+        )
 
 
 # -------- #

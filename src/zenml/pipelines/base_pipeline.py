@@ -41,6 +41,7 @@ from packaging import version
 from zenml import constants
 from zenml.client import Client
 from zenml.config.compiler import Compiler
+from zenml.config.docker_settings import FileCopyingMode
 from zenml.config.pipeline_configurations import (
     PipelineConfiguration,
     PipelineConfigurationUpdate,
@@ -487,23 +488,47 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
             stack = Client().active_stack
 
+            local_code_repo = source_utils_v2.find_active_code_repository()
+            if deployment.requires_code_download:
+                if not local_code_repo:
+                    raise RuntimeError(
+                        "The `DockerSettings` of the pipeline or one of its "
+                        "steps specify that code should be included in the "
+                        "Docker image (`copy_files=ALWAYS`), but there is no "
+                        "code repository active at your current source root "
+                        f"`{source_utils_v2.get_source_root()}`."
+                    )
+                elif local_code_repo.is_dirty:
+                    raise RuntimeError(
+                        "The `DockerSettings` of the pipeline or one of its "
+                        "steps specify that code should be included in the "
+                        "Docker image (`copy_files=ALWAYS`), but the code "
+                        "repository active at your current source root "
+                        f"`{source_utils_v2.get_source_root()}` has uncommited "
+                        "changes."
+                    )
+                elif local_code_repo.has_local_changes:
+                    raise RuntimeError(
+                        "The `DockerSettings` of the pipeline or one of its "
+                        "steps specify that code should be included in the "
+                        "Docker image (`copy_files=ALWAYS`), but the code "
+                        "repository active at your current source root "
+                        f"`{source_utils_v2.get_source_root()}` has unpushed "
+                        "changes."
+                    )
+
+            allow_code_download = (
+                local_code_repo and not local_code_repo.has_local_changes
+            )
+
             build_model = self._load_or_create_pipeline_build(
                 deployment=deployment,
                 pipeline_spec=pipeline_spec,
+                allow_code_download=allow_code_download,
                 pipeline_id=pipeline_id,
                 build=build,
             )
             build_id = build_model.id if build_model else None
-
-            local_code_repo = source_utils_v2.find_active_code_repository()
-
-            if build_model and build_model.requires_code_download:
-                if not local_code_repo:
-                    raise RuntimeError("Missing code repo.")
-                elif local_code_repo.is_dirty:
-                    raise RuntimeError("dirty repo")
-                elif local_code_repo.has_local_changes:
-                    raise RuntimeError("Unpushed changes")
 
             code_repository_reference = None
             if local_code_repo and not local_code_repo.is_dirty:
@@ -1111,6 +1136,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         self,
         deployment: "PipelineDeploymentBaseModel",
         pipeline_spec: "PipelineSpec",
+        allow_code_download: bool,
         pipeline_id: Optional[UUID] = None,
         build: Union["UUID", "PipelineBuildBaseModel", None] = None,
     ) -> Optional["PipelineBuildResponseModel"]:
@@ -1120,6 +1146,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
             deployment: The pipeline deployment for which to load or create the
                 build.
             pipeline_spec: Spec of the pipeline.
+            allow_code_download: If True, the build is allowed to download code
+                from the code repository.
             pipeline_id: Optional ID of the pipeline to reference in the build.
             build: Optional existing build. If given, the build will be loaded
                 (or registered) in the database. If not given, a new build will
@@ -1129,21 +1157,30 @@ class BasePipeline(metaclass=BasePipelineMeta):
             The build response.
         """
         if not build:
-            existing_build = self._find_existing_build(
-                deployment=deployment, pipeline_id=pipeline_id
+            allow_build_reuse = (
+                allow_code_download and not deployment.requires_included_files
             )
 
-            if existing_build:
-                logger.info(
-                    "Reusing existing build `%s` for pipeline `%s` and "
-                    "stack `%s`.",
-                    existing_build.id,
-                    self.name,
-                    Client().active_stack.name,
+            if allow_build_reuse:
+                existing_build = self._find_existing_build(
+                    deployment=deployment, pipeline_id=pipeline_id
                 )
-                return existing_build
 
-            return self._build(deployment=deployment, pipeline_id=pipeline_id)
+                if existing_build:
+                    logger.info(
+                        "Reusing existing build `%s` for pipeline `%s` and "
+                        "stack `%s`.",
+                        existing_build.id,
+                        self.name,
+                        Client().active_stack.name,
+                    )
+                    return existing_build
+
+            return self._build(
+                deployment=deployment,
+                allow_code_download=allow_code_download,
+                pipeline_id=pipeline_id,
+            )
 
         logger.info(
             "Using an old build for a pipeline run can lead to "
@@ -1198,7 +1235,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
         deployment: "PipelineDeploymentBaseModel",
         pipeline_id: Optional[UUID] = None,
     ) -> Optional["PipelineBuildResponseModel"]:
-        # TODO: Do we need a way to explicitly stop this from happening?
         if not pipeline_id:
             return None
 
@@ -1216,14 +1252,14 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
         potential_build = matches[0]
 
-        if any(item.contains_code for item in potential_build.images.values()):
+        if potential_build.contains_code:
             # The build contains some code which might be different than the
             # local code the user is expecting to run
             return None
 
         required_builds = stack.get_docker_builds(deployment=deployment)
         stack.validate_build(
-            required_builds=required_builds, build=deployment.build
+            required_builds=required_builds, build=potential_build
         )
 
         return potential_build
@@ -1231,12 +1267,15 @@ class BasePipeline(metaclass=BasePipelineMeta):
     def _build(
         self,
         deployment: "PipelineDeploymentBaseModel",
+        allow_code_download: bool,
         pipeline_id: Optional[UUID] = None,
     ) -> Optional["PipelineBuildResponseModel"]:
         """Builds images and registers the output in the server.
 
         Args:
             deployment: The compiled pipeline deployment.
+            allow_code_download: If True, the build is allowed to download code
+                from the code repository.
             pipeline_id: The ID of the pipeline.
 
         Returns:
@@ -1296,14 +1335,23 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     tag += f"-{build_config.step_name}"
                 tag += f"-{build_config.key}"
 
+                copy_files = (
+                    build_config.settings.copy_files is FileCopyingMode.ALWAYS
+                    or (
+                        build_config.settings.copy_files
+                        is FileCopyingMode.IF_DIRTY
+                        and not allow_code_download
+                    )
+                )
                 image_name_or_digest = docker_image_builder.build_docker_image(
                     docker_settings=build_config.settings,
                     tag=tag,
                     stack=stack,
+                    copy_files=copy_files,
                     entrypoint=build_config.entrypoint,
                     extra_files=build_config.extra_files,
                 )
-                contains_code = build_config.settings.copy_files
+                contains_code = copy_files
 
             images[combined_key] = BuildItem(
                 image=image_name_or_digest,

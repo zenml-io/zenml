@@ -61,6 +61,7 @@ class PipelineDockerImageBuilder:
         docker_settings: "DockerSettings",
         tag: str,
         stack: "Stack",
+        copy_files: bool,
         entrypoint: Optional[str] = None,
         extra_files: Optional[Dict[str, str]] = None,
     ) -> str:
@@ -123,7 +124,7 @@ class PipelineDockerImageBuilder:
                 docker_settings.install_stack_requirements,
                 docker_settings.apt_packages,
                 docker_settings.environment,
-                docker_settings.copy_files,
+                copy_files,
                 docker_settings.copy_global_config,
                 entrypoint,
                 extra_files,
@@ -203,9 +204,7 @@ class PipelineDockerImageBuilder:
             logger.info("Building Docker image `%s`.", target_image_name)
             # Leave the build context empty if we don't want to copy any files
             build_context_root = (
-                source_utils.get_source_root_path()
-                if docker_settings.copy_files
-                else None
+                source_utils.get_source_root_path() if copy_files else None
             )
             build_context = build_context_class(
                 root=build_context_root,
@@ -249,6 +248,7 @@ class PipelineDockerImageBuilder:
             dockerfile = self._generate_zenml_pipeline_dockerfile(
                 parent_image=parent_image,
                 docker_settings=docker_settings,
+                copy_files=copy_files,
                 requirements_files=requirements_file_names,
                 apt_packages=apt_packages,
                 entrypoint=entrypoint,
@@ -461,6 +461,7 @@ class PipelineDockerImageBuilder:
     def _generate_zenml_pipeline_dockerfile(
         parent_image: str,
         docker_settings: DockerSettings,
+        copy_files: bool,
         requirements_files: Sequence[str] = (),
         apt_packages: Sequence[str] = (),
         entrypoint: Optional[str] = None,
@@ -495,7 +496,7 @@ class PipelineDockerImageBuilder:
             )
 
         lines.append(f"ENV {ENV_ZENML_ENABLE_REPO_INIT_WARNINGS}=False")
-        if not docker_settings.copy_files:
+        if not copy_files:
             lines.append(f"ENV {ENV_ZENML_REQUIRES_CODE_DOWNLOAD}=True")
 
         if docker_settings.copy_global_config:
@@ -506,7 +507,7 @@ class PipelineDockerImageBuilder:
         for key, value in docker_settings.environment.items():
             lines.append(f"ENV {key.upper()}={value}")
 
-        if docker_settings.copy_files:
+        if copy_files:
             lines.append("COPY . .")
         elif docker_settings.copy_global_config:
             config_dir = DOCKER_IMAGE_ZENML_CONFIG_DIR
