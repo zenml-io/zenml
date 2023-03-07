@@ -1085,11 +1085,11 @@ class BaseStep(metaclass=BaseStepMeta):
         if not callable(hook_func):
             raise ValueError(f"{hook_func} is not a valid function.")
 
-        # TODO: Have to enforce this
-        # if hook_func.__annotations__:
-        #     assert any(
-        #         isinstance(param, (Exception, BaseParameters, StepContext))
-        #         for param in hook_func.__annotations__.values()
-        #     ), "Hook parameters must be of type `Exception`, `BaseParameters`, and/or `StepContext`"
+        if hook_func.__annotations__:
+            sig = inspect.getfullargspec(inspect.unwrap(hook_func))
+            assert any(
+                (Exception, BaseParameters, StepContext)
+                in set(sig.annotations.values())
+            ), "Hook parameters must be of type `Exception`, `BaseParameters`, and/or `StepContext`"
 
         return source_utils.resolve_class(hook_func)

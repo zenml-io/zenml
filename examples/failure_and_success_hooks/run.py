@@ -56,6 +56,7 @@ def hook_pipeline(get_first_num, get_random_int, subtract_numbers):
 
 if __name__ == "__main__":
     # Initialize a new pipeline run
+
     p1 = hook_pipeline(
         get_first_num=get_first_num(params=HookParams(fail=False)),
         get_random_int=get_random_int(),

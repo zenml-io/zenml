@@ -976,7 +976,7 @@ def test_configure_step_with_failure_hook(one_step_pipeline):
 
     # Test 4
     is_hook_called = False
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError):
         one_step_pipeline(
             exception_step().configure(on_failure=on_failure_with_wrong_params)
         ).run(unlisted=True)
@@ -1041,7 +1041,7 @@ def test_configure_step_with_success_hook(one_step_pipeline):
 
     # Test 4
     is_hook_called = False
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError):
         one_step_pipeline(
             passing_step().configure(on_success=on_success_with_wrong_params)
         ).run(unlisted=True)
