@@ -15,16 +15,13 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  python_versions: '{"3.7", "3.8", "3.9", "3.10"}'
-
 jobs:
   ubuntu-setup-python-environment:
     if: github.event.pull_request.draft == false
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ${{ env.python_versions }}
+        python-version: &python-versions ["3.7", "3.8", "3.9", "3.10"]
       fail-fast: false
     uses: ./.github/workflows/setup-python-environment.yml
     with:
@@ -37,7 +34,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest]
-        python-version: ["3.7", "3.8", "3.9", "3.10"]
+        python-version: *python-versions
       fail-fast: false
     uses: ./.github/workflows/setup-python-environment.yml
     with:
@@ -50,7 +47,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest]
-        python-version: ["3.7", "3.8", "3.9", "3.10"]
+        python-version: *python-versions
       fail-fast: false
     uses: ./.github/workflows/setup-python-environment.yml
     with:
@@ -63,7 +60,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.7", "3.8", "3.9", "3.10"]
+        python-version: *python-versions
       fail-fast: false
     uses: ./.github/workflows/lint-unit-test.yml
     with:
@@ -76,7 +73,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest]
-        python-version: ["3.7", "3.8", "3.9", "3.10"]
+        python-version: *python-versions
       fail-fast: false
     uses: ./.github/workflows/lint-unit-test.yml
     with:
@@ -89,7 +86,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest]
-        python-version: ["3.7", "3.8", "3.9", "3.10"]
+        python-version: *python-versions
       fail-fast: false
     uses: ./.github/workflows/lint-unit-test.yml
     with:
@@ -102,7 +99,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.7", "3.8", "3.9", "3.10"]
+        python-version: *python-versions
         test_environment:
           [
             "default",
@@ -131,7 +128,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest]
-        python-version: ["3.7", "3.8", "3.9", "3.10"]
+        python-version: *python-versions
         test_environment: ["default"]
 
       fail-fast: false
@@ -149,7 +146,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest]
-        python-version: ["3.7", "3.8", "3.9", "3.10"]
+        python-version: *python-versions
         test_environment: ["default"]
 
       fail-fast: false
