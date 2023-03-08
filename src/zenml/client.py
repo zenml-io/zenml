@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Client implementation."""
+import base64
 import json
 import os
 from abc import ABCMeta
@@ -1988,6 +1989,7 @@ class Client(metaclass=ClientMetaClass):
         type: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
         user_id: Optional[Union[str, UUID]] = None,
+        metadata: Optional[List[str]] = None,
     ) -> Page[ComponentResponseModel]:
         """Lists all registered stack components.
 
@@ -2005,10 +2007,19 @@ class Client(metaclass=ClientMetaClass):
             user_id: The id of the user to filter by.
             name: The name of the component to filter by.
             is_shared: The shared status of the component to filter by.
+            metadata: The metadata of the component to filter by.
 
         Returns:
             A page of stack components.
         """
+        parsed_metadata = None
+        # split metadata by "=" and create a dict
+        if metadata:
+            parsed_metadata = {}
+            for m in metadata:
+                key, value = m.split("=")
+                parsed_metadata[key] = value
+
         component_filter_model = ComponentFilterModel(
             page=page,
             size=size,
@@ -2023,8 +2034,12 @@ class Client(metaclass=ClientMetaClass):
             id=id,
             created=created,
             updated=updated,
+            metadata_values=base64.b64encode(
+                json.dumps(parsed_metadata).encode("utf-8")
+            ),
         )
         component_filter_model.set_scope_workspace(self.active_workspace.id)
+        breakpoint()
         return self.zen_store.list_stack_components(
             component_filter_model=component_filter_model
         )
@@ -2035,6 +2050,7 @@ class Client(metaclass=ClientMetaClass):
         flavor: str,
         component_type: StackComponentType,
         configuration: Dict[str, str],
+        metadata: Optional[Dict[str, str]] = None,
         is_shared: bool = False,
     ) -> "ComponentResponseModel":
         """Registers a stack component.
@@ -2044,6 +2060,7 @@ class Client(metaclass=ClientMetaClass):
             flavor: The flavor of the stack component.
             component_type: The type of the stack component.
             configuration: The configuration of the stack component.
+            metadata: The metadata of the stack component.
             is_shared: Whether the stack component is shared or not.
 
         Returns:
@@ -2073,6 +2090,7 @@ class Client(metaclass=ClientMetaClass):
             is_shared=is_shared,
             user=self.active_user.id,
             workspace=self.active_workspace.id,
+            metadata=metadata,
         )
 
         # Register the new model
@@ -2086,6 +2104,7 @@ class Client(metaclass=ClientMetaClass):
         component_type: StackComponentType,
         name: Optional[str] = None,
         configuration: Optional[Dict[str, Any]] = None,
+        metadata: Optional[Dict[str, str]] = None,
         is_shared: Optional[bool] = None,
     ) -> "ComponentResponseModel":
         """Updates a stack component.
@@ -2096,6 +2115,7 @@ class Client(metaclass=ClientMetaClass):
             component_type: The type of the stack component to update.
             name: The new name of the stack component.
             configuration: The new configuration of the stack component.
+            metadata: The new metadata of the stack component.
             is_shared: The new shared status of the stack component.
 
         Returns:
@@ -2169,6 +2189,15 @@ class Client(metaclass=ClientMetaClass):
             )
             update_model.configuration = existing_configuration
 
+        if metadata is not None:
+            existing_metadata = component.metadata
+            existing_metadata.update(metadata)
+
+            existing_metadata = {
+                k: v for k, v in existing_metadata.items() if v is not None
+            }
+            update_model.metadata = existing_metadata
+
         # Send the updated component to the ZenStore
         return self.zen_store.update_stack_component(
             component_id=component.id,
@@ -2207,6 +2236,7 @@ class Client(metaclass=ClientMetaClass):
         cloud: str,
         component_type: StackComponentType,
         configuration: Optional[Dict[str, Any]] = None,
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> "ComponentResponseModel":
         """Deploys a stack component.
 
@@ -2226,23 +2256,22 @@ class Client(metaclass=ClientMetaClass):
         )
 
         STACK_COMPONENT_RECIPE_DIR = "deployed_stack_components"
+
         if configuration:
             # convert configuration dict to a json object
             configuration = json.dumps(configuration)
 
-        if cloud == "s3":
-            cloud = "aws"
-
         # set the stack component and flavor
         component = {component_type.value: flavor}
-        
-        # path should be fixed at a constant in the 
+
+        # path should be fixed at a constant in the
         # global config directory
         path = Path(
             os.path.join(
-                io_utils.get_global_config_directory(), STACK_COMPONENT_RECIPE_DIR
-                )
+                io_utils.get_global_config_directory(),
+                STACK_COMPONENT_RECIPE_DIR,
             )
+        )
         # Create the new component model
         ctx.invoke(
             deploy,
@@ -2273,13 +2302,19 @@ class Client(metaclass=ClientMetaClass):
             name=name or comp_outputs[f"{component_type.value}_name"],
             flavor=comp_outputs[f"{component_type.value}_flavor"],
             component_type=component_type,
-            configuration=eval(comp_outputs[f"{component_type.value}_configuration"]),
+            configuration=eval(
+                comp_outputs[f"{component_type.value}_configuration"]
+            ),
+            metadata=metadata,
         )
 
         # if the component is an experiment tracker of flavor mlflow, then
         # output the name of the mlflow bucket if it exists
-        if component_type == StackComponentType.EXPERIMENT_TRACKER and flavor == "mlflow":
-            # TODO check if key in outputs  
+        if (
+            component_type == StackComponentType.EXPERIMENT_TRACKER
+            and flavor == "mlflow"
+        ):
+            # TODO check if key in outputs
             mlflow_bucket = outputs.get("mlflow-bucket")
             if mlflow_bucket:
                 logger.info(
@@ -2288,7 +2323,7 @@ class Client(metaclass=ClientMetaClass):
                     "avoid having to create a new one."
                 )
 
-        # if the cloud is k3d, then check the container registry 
+        # if the cloud is k3d, then check the container registry
         # outputs. If they are set and TODO a container registry by the name doesn't
         # exist, then create one.
         if cloud == "k3d":
@@ -2300,13 +2335,16 @@ class Client(metaclass=ClientMetaClass):
             if container_registry_outputs:
                 self.create_stack_component(
                     name=container_registry_outputs["container_registry_name"],
-                    flavor=container_registry_outputs["container_registry_flavor"],
+                    flavor=container_registry_outputs[
+                        "container_registry_flavor"
+                    ],
                     component_type=StackComponentType.CONTAINER_REGISTRY,
                     configuration=eval(
-                        container_registry_outputs["container_registry_configuration"]
+                        container_registry_outputs[
+                            "container_registry_configuration"
+                        ]
                     ),
                 )
-
 
     def _validate_stack_component_configuration(
         self,

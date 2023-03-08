@@ -67,6 +67,10 @@ class ComponentBaseModel(BaseModel):
     configuration: Dict[str, Any] = Field(
         title="The stack component configuration.",
     )
+    metadata: Optional[Dict[str, str]] = Field(
+        default=None,
+        title="The stack component metadata.",
+    )
 
 
 # -------- #
@@ -126,6 +130,10 @@ class ComponentFilterModel(ShareableWorkspaceScopedFilterModel):
         default=None, description="Workspace of the stack component"
     )
     user_id: Union[UUID, str] = Field(None, description="User of the stack")
+    metadata_values: bytes = Field(
+        default=None,
+        description="Metadata of the stack component",
+    )
 
     def set_scope_type(self, component_type: str) -> None:
         """Set the type of component on which to perform the filtering to scope the response.

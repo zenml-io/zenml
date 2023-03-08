@@ -196,6 +196,13 @@ def generate_stack_component_register_command(
         type=str,
     )
     @click.option(
+        "--metadata",
+        "-m",
+        "metadata",
+        help="Metadata to be associated with the component.",
+        multiple=True,
+    )
+    @click.option(
         "--share",
         "share",
         is_flag=True,
@@ -208,6 +215,7 @@ def generate_stack_component_register_command(
         flavor: str,
         share: bool,
         args: List[str],
+        metadata: Optional[List[str]] = None,
     ) -> None:
         """Registers a stack component.
 
@@ -216,6 +224,7 @@ def generate_stack_component_register_command(
             flavor: Flavor of the component to register.
             share: Share the stack with other users.
             args: Additional arguments to pass to the component.
+            metadata: Metadata to be associated with the component.
         """
         if component_type == StackComponentType.SECRETS_MANAGER:
             warn_deprecated_secrets_manager()
@@ -228,6 +237,14 @@ def generate_stack_component_register_command(
             list(args) + [name], expand_args=True
         )
 
+        parsed_metadata = None
+        # split metadata by "=" and create a dict
+        if metadata:
+            parsed_metadata = {}
+            for m in metadata:
+                key, value = m.split("=")
+                parsed_metadata[key] = value
+
         # click<8.0.0 gives flags a default of None
         if share is None:
             share = False
@@ -239,6 +256,7 @@ def generate_stack_component_register_command(
                 flavor=flavor,
                 component_type=component_type,
                 configuration=parsed_args,
+                metadata=parsed_metadata,
                 is_shared=share,
             )
 
@@ -267,15 +285,25 @@ def generate_stack_component_update_command(
         type=str,
         required=False,
     )
+    @click.option(
+        "--metadata",
+        "-m",
+        "metadata",
+        help="Metadata to be associated with the component.",
+        multiple=True,
+    )
     @click.argument("args", nargs=-1, type=click.UNPROCESSED)
     def update_stack_component_command(
-        name_id_or_prefix: Optional[str], args: List[str]
+        name_id_or_prefix: Optional[str],
+        args: List[str],
+        metadata: Optional[List[str]] = None,
     ) -> None:
         """Updates a stack component.
 
         Args:
             name_id_or_prefix: The name or id of the stack component to update.
             args: Additional arguments to pass to the update command.
+            metadata: Metadata to be associated with the component.
         """
         if component_type == StackComponentType.SECRETS_MANAGER:
             warn_deprecated_secrets_manager()
@@ -293,12 +321,21 @@ def generate_stack_component_update_command(
             name_mandatory=False,
         )
 
+        parsed_metadata = None
+        # split metadata by "=" and create a dict
+        if metadata:
+            parsed_metadata = {}
+            for m in metadata:
+                key, value = m.split("=")
+                parsed_metadata[key] = value
+
         with console.status(f"Updating {display_name}...\n"):
             try:
                 updated_component = client.update_stack_component(
                     name_id_or_prefix=name_or_id,
                     component_type=component_type,
                     configuration=parsed_args,
+                    metadata=parsed_metadata,
                 )
             except KeyError as err:
                 cli_utils.error(str(err))
@@ -560,6 +597,7 @@ def generate_stack_component_copy_command(
                 flavor=component_to_copy.flavor,
                 component_type=component_to_copy.type,
                 configuration=component_to_copy.configuration,
+                metadata=component_to_copy.metadata,
                 is_shared=component_to_copy.is_shared,
             )
 
@@ -1076,14 +1114,18 @@ def generate_stack_component_deploy_command(
 
         # make sure that flavor is set
         if flavor is None:
-            raise cli_utils.error("Flavor must be specified while deploying a stack component.")
+            raise cli_utils.error(
+                "Flavor must be specified while deploying a stack component."
+            )
 
         # for cases like artifact store, secrets manager and container registry
         # the flavor is the same as the cloud
         if cloud is None:
             cloud = flavor
 
-        
+        if cloud == "s3":
+            cloud = "aws"
+
         client.deploy_stack_component(
             ctx=ctx,
             name=name,
@@ -1091,11 +1133,10 @@ def generate_stack_component_deploy_command(
             cloud=cloud,
             configuration=parsed_args,
             component_type=component_type,
+            metadata={"cloud": cloud},
         )
 
-        cli_utils.declare(
-            f"Successfully deployed {display_name} '{name}'."
-        )
+        cli_utils.declare(f"Successfully deployed {display_name} '{name}'.")
 
     return deploy_stack_component_command
 
@@ -1275,9 +1316,7 @@ def register_single_stack_component_cli_commands(
     )(delete_flavor_command)
 
     # zenml stack-component deploy
-    deploy_command = generate_stack_component_deploy_command(
-        component_type
-    )
+    deploy_command = generate_stack_component_deploy_command(component_type)
     command_group.command(
         "deploy",
         help=f"Deploy a new {singular_display_name}.",
