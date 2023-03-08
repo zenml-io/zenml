@@ -84,15 +84,15 @@ class GitHubCodeRepository(BaseCodeRepository):
         os.makedirs(directory, exist_ok=True)
 
         for content in contents:
+            local_path = os.path.join(directory, content.name)
             if content.type == "dir":
                 self.download_files(
                     commit=commit,
-                    directory=os.path.join(directory, content.name),
+                    directory=local_path,
                     repo_sub_directory=content.path,
                 )
             else:
                 try:
-                    local_path = os.path.join(directory, content.name)
                     with open(local_path, "wb") as f:
                         f.write(content.decoded_content)
                 except (GithubException, IOError) as e:
