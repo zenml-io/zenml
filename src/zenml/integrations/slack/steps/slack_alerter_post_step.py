@@ -14,9 +14,11 @@
 """Step that allows you to post messages to Slack."""
 
 from zenml.alerter.alerter_utils import get_active_alerter
+from zenml.environment import Environment
 from zenml.integrations.slack.alerters.slack_alerter import (
     SlackAlerter,
     SlackAlerterParameters,
+    SlackAlerterPayload,
 )
 from zenml.steps import StepContext, step
 
@@ -38,6 +40,7 @@ def slack_alerter_post_step(
     Raises:
         RuntimeError: If currently active alerter is not a `SlackAlerter`.
     """
+    env = Environment().step_environment
     alerter = get_active_alerter(context)
     if not isinstance(alerter, SlackAlerter):
         raise RuntimeError(
@@ -45,4 +48,10 @@ def slack_alerter_post_step(
             "flavor `slack`, but the currently active alerter is of type "
             f"{type(alerter)}, which is not a subclass of `SlackAlerter`."
         )
+    payload = SlackAlerterPayload(
+        pipeline_name=env.pipeline_name,
+        step_name=env.step_name,
+        stack_name=context.stack.name,
+    )
+    params.payload = payload
     return alerter.post(message, params)
