@@ -1137,3 +1137,37 @@ def test_configure_step_with_success_hook(one_step_pipeline):
         passing_step().configure(on_success=on_success_with_no_params)
     ).run(unlisted=True)
     assert is_hook_called
+
+
+def on_success():
+    global is_success_hook_called
+    is_success_hook_called = True
+
+
+def on_failure():
+    global is_failure_hook_called
+    is_failure_hook_called = True
+
+
+def test_configure_pipeline_with_hooks(one_step_pipeline):
+    """Tests that configuring a pipeline with hooks"""
+    global is_success_hook_called
+    global is_failure_hook_called
+
+    # Test 1
+    is_success_hook_called = False
+    p = one_step_pipeline(
+        passing_step(),
+    )
+    p.configure(on_success=on_success).run(unlisted=True)
+
+    assert is_success_hook_called
+
+    # Test 2
+    is_failure_hook_called = False
+    p = one_step_pipeline(
+        exception_step(),
+    )
+    with pytest.raises(Exception):
+        p.configure(on_failure=on_failure).run(unlisted=True)
+    assert is_failure_hook_called
