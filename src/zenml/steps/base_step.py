@@ -767,11 +767,11 @@ class BaseStep(metaclass=BaseStepMeta):
                 method for an example.
             on_failure: Callback function in event of failure of the step. Can be
                 a function with three possible parameters, `StepContext`, `BaseParameters`,
-                and `Exception`, or a UDF path to a function of the same specifications
+                and `Exception`, or a source path to a function of the same specifications
                 (e.g. `module.my_file.my_function`)
             on_success: Callback function in event of failure of the step. Can be
                 a function with two possible parameters, `StepContext` and `BaseParameters, or
-                a UDF path to a function of the same specifications
+                a source path to a function of the same specifications
                 (e.g. `module.my_file.my_function`).
 
         Returns:

@@ -135,7 +135,7 @@ class StepRunner:
                 failure_hook_source = self.configuration.failure_hook_source
                 if failure_hook_source:
                     logger.info("Detected failure hook. Running...")
-                    self._run_hook(
+                    self.load_and_run_hook(
                         failure_hook_source,
                         step_exception=step_exception,
                         output_artifact_uris=output_artifact_uris,
@@ -159,7 +159,7 @@ class StepRunner:
                     )
                     if success_hook_source:
                         logger.info("Detected success hook. Running...")
-                        self._run_hook(
+                        self.load_and_run_hook(
                             success_hook_source,
                             step_exception=None,
                             output_artifact_uris=output_artifact_uris,
@@ -510,23 +510,20 @@ class StepRunner:
             output_artifacts[output_name] = output_artifact
         return output_artifacts, output_artifact_metadata
 
-    def _run_hook(
+    def load_and_run_hook(
         self,
         hook_source: str,
         step_exception: Optional[Exception],
         output_artifact_uris: Dict[str, str],
         output_materializers: Dict[str, Type[BaseMaterializer]],
     ) -> None:
-        """Runs a step hook.
+        """Loads hook source and runs the hook.
 
         Args:
             hook_source: The source of the hook function.
             step_exception: The exception of the original step.
             output_artifact_uris: The URIs of the output artifacts of the step.
             output_materializers: The output materializers of the step.
-
-        Raises:
-            ValueError: When failed to load hook source.
         """
         try:
             hook = source_utils.load_source_path(hook_source)
@@ -540,7 +537,7 @@ class StepRunner:
             )
             logger.debug(f"Running hook {hook} with params: {function_params}")
             hook(**function_params)
-        except (ImportError, TypeError, ValueError) as e:
-            raise ValueError(
+        except Exception as e:
+            logger.error(
                 f"Failed to load hook source with exception: '{hook_source}': {e}"
-            ) from step_exception
+            )
