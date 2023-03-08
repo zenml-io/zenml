@@ -206,7 +206,7 @@ class BaseEntrypointConfiguration(ABC):
             )
 
         logger.info(
-            "Downloading code from code repository `%s` (commit %s).",
+            "Downloading code from code repository `%s` (commit `%s`).",
             repo_reference.code_repository.name,
             repo_reference.commit,
         )

@@ -404,7 +404,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         extra: Optional[Dict[str, Any]] = None,
         config_path: Optional[str] = None,
         unlisted: bool = False,
-        allow_build_reuse: bool = True,
+        prevent_build_reuse: bool = False,
     ) -> None:
         """Runs the pipeline on the active stack of the current repository.
 
@@ -509,7 +509,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 deployment=deployment,
                 pipeline_spec=pipeline_spec,
                 allow_code_download=allow_code_download,
-                allow_build_reuse=allow_build_reuse,
+                allow_build_reuse=not prevent_build_reuse,
                 pipeline_id=pipeline_id,
                 build=build,
             )
@@ -1129,7 +1129,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 raise RuntimeError(
                     "The `DockerSettings` of the pipeline or one of its "
                     "steps specify that code should be included in the "
-                    "Docker image (`copy_files=ALWAYS`), but there is no "
+                    "Docker image (`source_files='download'`), but there is no "
                     "code repository active at your current source root "
                     f"`{source_utils_v2.get_source_root()}`."
                 )
@@ -1137,7 +1137,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 raise RuntimeError(
                     "The `DockerSettings` of the pipeline or one of its "
                     "steps specify that code should be included in the "
-                    "Docker image (`copy_files=ALWAYS`), but the code "
+                    "Docker image (`source_files='download'`), but the code "
                     "repository active at your current source root "
                     f"`{source_utils_v2.get_source_root()}` has uncommited "
                     "changes."
@@ -1146,7 +1146,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 raise RuntimeError(
                     "The `DockerSettings` of the pipeline or one of its "
                     "steps specify that code should be included in the "
-                    "Docker image (`copy_files=ALWAYS`), but the code "
+                    "Docker image (`source_files='download'`), but the code "
                     "repository active at your current source root "
                     f"`{source_utils_v2.get_source_root()}` has unpushed "
                     "changes."
