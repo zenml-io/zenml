@@ -11,13 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import platform
-import sys
 from contextlib import ExitStack as does_not_raise
 
 import numpy as np
 import pandas as pd
-import pytest
 from neuralprophet import NeuralProphet
 
 from tests.unit.test_general import _test_materializer
