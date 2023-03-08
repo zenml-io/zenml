@@ -12,13 +12,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from abc import ABC, abstractmethod
-from typing import Optional, Type
+from typing import TYPE_CHECKING, Optional, Type
 from uuid import UUID
 
-from zenml.code_repositories import LocalRepository
 from zenml.logger import get_logger
 from zenml.models.code_repository_models import CodeRepositoryResponseModel
 from zenml.utils import source_utils_v2
+
+if TYPE_CHECKING:
+    from zenml.code_repositories import LocalRepository
 
 logger = get_logger(__name__)
 
@@ -50,5 +52,5 @@ class BaseCodeRepository(ABC):
         pass
 
     @abstractmethod
-    def get_local_repo(self, path: str) -> Optional[LocalRepository]:
+    def get_local_repo(self, path: str) -> Optional["LocalRepository"]:
         pass
