@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 import platform
 from contextlib import ExitStack as does_not_raise
+import time
 
 import pytest
 import requests
@@ -39,11 +40,18 @@ def test_server_cli_up_down(clean_client):
     up_command = cli.commands["up"]
     cli_runner.invoke(up_command, ["--port", port])
 
+    # sleep for a bit to let the server start
+    time.sleep(5)
+
     endpoint = f"http://127.0.0.1:{port}"
     assert requests.head(endpoint + "/health").status_code == 200
 
     down_command = cli.commands["down"]
     cli_runner.invoke(down_command)
+
+    # sleep for a bit to let the server stop
+    time.sleep(5)
+
     deployer = ServerDeployer()
 
     assert deployer.list_servers() == []
@@ -60,6 +68,9 @@ def test_server_cli_up_and_connect(clean_client):
     port = scan_for_available_port(start=8003, stop=9000)
     up_command = cli.commands["up"]
     cli_runner.invoke(up_command, ["--port", port, "--connect"])
+
+    # sleep for a bit to let the server start
+    time.sleep(5)
 
     deployer = ServerDeployer()
     server = deployer.get_server(LOCAL_ZENML_SERVER_NAME)
