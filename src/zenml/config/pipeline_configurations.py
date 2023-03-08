@@ -114,3 +114,17 @@ class PipelineSpec(StrictBaseModel):
         if isinstance(other, PipelineSpec):
             return self.steps == other.steps
         return NotImplemented
+
+    @property
+    def unique_id(self) -> str:
+        import json
+
+        # TODO: if we do something like this, we also need to update pipeline
+        # spec equality to only compare the source import paths/don't compare
+        # sources at all
+        dict_ = self.dict()
+
+        for step_spec in dict_["steps"]:
+            step_spec.pop("source")
+
+        return json.dumps(dict_, sort_keys=False)

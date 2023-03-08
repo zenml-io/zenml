@@ -364,7 +364,11 @@ def sample_step_request_model() -> StepRunRequestModel:
     """Return a sample step model for testing purposes."""
     step = Step.parse_obj(
         {
-            "spec": {"source": "", "upstream_steps": [], "inputs": {}},
+            "spec": {
+                "source": "module.step_class",
+                "upstream_steps": [],
+                "inputs": {},
+            },
             "config": {"name": "step_name", "enable_cache": True},
         }
     )
@@ -444,8 +448,8 @@ def sample_artifact_model(
         name="sample_artifact",
         uri="sample_uri",
         type=ArtifactType.DATA,
-        materializer="sample_materializer",
-        data_type="sample_data_type",
+        materializer="sample_module.sample_materializer",
+        data_type="sample_module.sample_data_type",
         parent_step_id=uuid4(),
         producer_step_id=uuid4(),
         is_cached=False,
@@ -488,7 +492,7 @@ def create_step_run(
     ) -> StepRunResponseModel:
         step = Step.parse_obj(
             {
-                "spec": {"source": "", "upstream_steps": []},
+                "spec": {"source": "module.step_class", "upstream_steps": []},
                 "config": {
                     "name": step_name or "step_name",
                     "outputs": outputs or {},
