@@ -13,12 +13,12 @@
 #  permissions and limitations under the License.
 """Initialization of the sklearn materializer."""
 
-from zenml.integrations.langchain.materializers.document_materializer import (
-    LangchainDocumentMaterializer,
-)
-from zenml.integrations.langchain.materializers.embedding_materializer import (
-    LangchainEmbeddingMaterializer,
-)
 from zenml.integrations.langchain.materializers.vector_store_materializer import (
     LangchainVectorStoreMaterializer,
+)
+from zenml.integrations.langchain.materializers.openai_embedding_materializer import (
+    LangchainOpenaiEmbeddingMaterializer,
+)
+from zenml.integrations.langchain.materializers.document_materializer import (
+    LangchainDocumentMaterializer,
 )

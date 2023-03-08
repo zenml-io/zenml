@@ -11,29 +11,29 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Implementation of the langchain vector store materializer."""
+"""Implementation of the langchain openai embedding materializer."""
 
 
 import os
 import pickle
 from typing import Type
 
-from langchain.vectorstores import VectorStore
+from langchain.embeddings import OpenAIEmbeddings
 
 from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 
-DEFAULT_FILENAME = "vectorstore.pkl"
+DEFAULT_FILENAME = "embedding.pkl"
 
 
-class LangchainVectorStoreMaterializer(BaseMaterializer):
+class LangchainOpenaiEmbeddingMaterializer(BaseMaterializer):
 
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
-    ASSOCIATED_TYPES = (VectorStore,)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
+    ASSOCIATED_TYPES = (OpenAIEmbeddings,)
 
-    def load(self, data_type: Type[VectorStore]) -> VectorStore:
-        """Reads a langchain vector store from a pickle file.
+    def load(self, data_type: Type[OpenAIEmbeddings]) -> OpenAIEmbeddings:
+        """Reads a openai embedding from a pickle file.
 
         Args:
             data_type: The type of the vector store.
@@ -44,16 +44,16 @@ class LangchainVectorStoreMaterializer(BaseMaterializer):
         super().load(data_type)
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
         with fileio.open(filepath, "rb") as fid:
-            vector_store = pickle.load(fid)
-        return vector_store
+            embedding = pickle.load(fid)
+        return embedding
 
-    def save(self, vector_store: VectorStore) -> None:
-        """Save a langchain vector store as a pickle file.
+    def save(self, embedding: OpenAIEmbeddings) -> None:
+        """Save an openai embedding as a pickle file.
 
         Args:
             vector_store: The vector store to save.
         """
-        super().save(vector_store)
+        super().save(embedding)
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
         with fileio.open(filepath, "wb") as fid:
-            pickle.dump(vector_store, fid)
+            pickle.dump(embedding, fid)
