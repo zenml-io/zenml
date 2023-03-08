@@ -217,14 +217,13 @@ class BaseEntrypointConfiguration(ABC):
             code_repo_root, repo_reference.subdirectory
         )
         os.makedirs(download_dir)
-        repo.login()
         repo.download_files(
             commit=repo_reference.commit,
             directory=download_dir,
             repo_sub_directory=repo_reference.subdirectory,
         )
         source_utils.set_custom_source_root(download_dir)
-        source_utils_v2.set_custom_code_repo(
+        source_utils_v2.set_custom_code_repository(
             root=code_repo_root, commit=repo_reference.commit, repo=repo
         )
 

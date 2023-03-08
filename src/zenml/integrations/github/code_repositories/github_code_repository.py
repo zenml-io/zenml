@@ -63,9 +63,7 @@ class GitHubCodeRepository(BaseCodeRepository):
             user = self._github_session.get_user().login
             logger.debug(f"Logged in as {user}")
         except Exception as e:
-            raise RuntimeError(
-                f'f"An error occurred while logging in: {str(e)}'
-            )
+            raise RuntimeError(f"An error occurred while logging in: {str(e)}")
 
     def download_files(
         self, commit: str, directory: str, repo_sub_directory: Optional[str]

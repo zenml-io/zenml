@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from abc import ABC, abstractmethod
-from typing import Optional, Type, TypeVar
+from typing import Optional, Type
 from uuid import UUID
 
 from zenml.code_repositories import LocalRepository
@@ -22,8 +22,6 @@ from zenml.utils import source_utils_v2
 
 logger = get_logger(__name__)
 
-C = TypeVar("C", bound="BaseCodeRepository")
-
 
 class BaseCodeRepository(ABC):
     def __init__(self, id: UUID) -> None:
@@ -31,7 +29,7 @@ class BaseCodeRepository(ABC):
 
     @classmethod
     def from_model(
-        cls: Type[C], model: CodeRepositoryResponseModel
+        cls, model: CodeRepositoryResponseModel
     ) -> "BaseCodeRepository":
         class_: Type[
             BaseCodeRepository
@@ -45,10 +43,6 @@ class BaseCodeRepository(ABC):
         return self._id
 
     @abstractmethod
-    def login(self) -> None:
-        pass
-
-    @abstractmethod
     def download_files(
         self, commit: str, directory: str, repo_sub_directory: Optional[str]
     ) -> None:
@@ -58,35 +52,3 @@ class BaseCodeRepository(ABC):
     @abstractmethod
     def get_local_repo(self, path: str) -> Optional[LocalRepository]:
         pass
-
-    def exists_at_path(self, path: str) -> bool:
-        return self.get_local_repo(path=path) is not None
-
-
-# TODO: move to separate file
-class _DownloadedRepository(LocalRepository):
-    def __init__(
-        self,
-        code_repository_id: UUID,
-        root: str,
-        commit: str,
-    ):
-        super().__init__(code_repository_id=code_repository_id)
-        self._root = root
-        self._commit = commit
-
-    @property
-    def root(self) -> str:
-        return self._root
-
-    @property
-    def is_dirty(self) -> bool:
-        return False
-
-    @property
-    def has_local_changes(self) -> bool:
-        return False
-
-    @property
-    def current_commit(self) -> str:
-        return self._commit
