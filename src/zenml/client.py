@@ -2039,7 +2039,7 @@ class Client(metaclass=ClientMetaClass):
             ),
         )
         component_filter_model.set_scope_workspace(self.active_workspace.id)
-        breakpoint()
+
         return self.zen_store.list_stack_components(
             component_filter_model=component_filter_model
         )
@@ -2296,6 +2296,12 @@ class Client(metaclass=ClientMetaClass):
             if k.startswith(component_type.value)
         }
 
+        logger.info(
+            "Registering a new stack component of type %s with name '%s'.",
+            component_type,
+            name or comp_outputs[f"{component_type.value}_name"],
+        )
+
         # call the register stack component function using the values of the outputs
         # truncate the component type from the output
         self.create_stack_component(
@@ -2345,6 +2351,81 @@ class Client(metaclass=ClientMetaClass):
                         ]
                     ),
                 )
+
+    def destroy_stack_component(
+        self,
+        ctx: click.Context,
+        name_id_or_prefix: Union[str, UUID],
+        component_type: StackComponentType,
+    ) -> None:
+        """Destroys a stack component.
+
+        Args:
+            name: The name of the deployed stack component.
+            name_id_or_prefix: The model of the component to destroy.
+            component_type: The type of the stack component to destroy.
+        """
+        try:
+            component = self.get_stack_component(
+                name_id_or_prefix=name_id_or_prefix,
+                component_type=component_type,
+                allow_name_prefix_match=False,
+            )
+        except KeyError:
+            logger.info(
+                "Could not find a stack component with name or id %s",
+                name_id_or_prefix,
+            )
+            return
+
+        # if the component's metadata doesn't have a key created_by
+        # equal to 'recipe', then destroy cannot be called on it
+        if (
+            "created_by" not in component.metadata
+            or component.metadata["created_by"] != "recipe"
+        ):
+            logger.info(
+                "Cannot destroy stack component %s. It was not created by a "
+                "recipe.",
+                component.name,
+            )
+            return
+
+        from zenml.cli.stack_recipes import (
+            destroy,
+        )
+
+        STACK_COMPONENT_RECIPE_DIR = "deployed_stack_components"
+
+        # path should be fixed at a constant in the
+        # global config directory
+        path = Path(
+            os.path.join(
+                io_utils.get_global_config_directory(),
+                STACK_COMPONENT_RECIPE_DIR,
+            )
+        )
+
+        # set the stack component and flavor
+        component_flavor = {component_type.value: component.flavor}
+
+        # Invoke the destroy command
+        ctx.invoke(
+            destroy,
+            path=path,
+            stack_recipe_name=f"{component.metadata['cloud']}-modular",
+            **component_flavor,
+        )
+
+        logger.info(
+            "Deleting stack component %s...", component.name,
+        )
+
+        # call the delete stack component function
+        self.delete_stack_component(
+            name_id_or_prefix=component.name,
+            component_type=component_type,
+        )
 
     def _validate_stack_component_configuration(
         self,

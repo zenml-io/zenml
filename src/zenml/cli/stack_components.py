@@ -1133,12 +1133,54 @@ def generate_stack_component_deploy_command(
             cloud=cloud,
             configuration=parsed_args,
             component_type=component_type,
-            metadata={"cloud": cloud},
+            metadata={"cloud": cloud, "created_by": "recipe"},
         )
 
         cli_utils.declare(f"Successfully deployed {display_name} '{name}'.")
 
     return deploy_stack_component_command
+
+
+def generate_stack_component_destroy_command(
+    component_type: StackComponentType,
+) -> Callable[[str], None]:
+    """Generates a `destroy` command for the stack component type.
+
+    Args:
+        component_type: Type of the component to generate the command for.
+
+    Returns:
+        A function that can be used as a `click` command.
+    """
+    display_name = _component_display_name(component_type)
+
+    @click.argument(
+        "name_id_or_prefix",
+        type=str,
+        required=True,
+    )
+    @click.pass_context
+    def destroy_stack_component_command(
+        ctx: click.Context,
+        name_id_or_prefix: str,
+    ) -> None:
+        """Deploy a stack component.
+
+        Args:
+            name_id_or_prefix: Name, ID or prefix of the component to destroy.
+        """
+        client = Client()
+        try:
+            client.destroy_stack_component(
+                ctx=ctx,
+                name_id_or_prefix=name_id_or_prefix,
+                component_type=component_type,
+            )
+        except (KeyError, IllegalOperationError) as err:
+            cli_utils.error(str(err))
+        cli_utils.declare(f"Destroyed {display_name}: {name_id_or_prefix}")
+
+    return destroy_stack_component_command
 
 
 def register_single_stack_component_cli_commands(
@@ -1321,6 +1363,13 @@ def register_single_stack_component_cli_commands(
         "deploy",
         help=f"Deploy a new {singular_display_name}.",
     )(deploy_command)
+
+    # zenml stack-component destroy
+    destroy_command = generate_stack_component_destroy_command(component_type)
+    command_group.command(
+        "destroy",
+        help=f"Destroy an existing {singular_display_name}.",
+    )(destroy_command)
 
 
 def register_all_stack_component_cli_commands() -> None:
