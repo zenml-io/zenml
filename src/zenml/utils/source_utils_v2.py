@@ -31,11 +31,9 @@ from typing import (
     Union,
     cast,
 )
-from uuid import UUID
 
 import importlib_metadata
 
-from zenml.code_repositories import LocalRepository
 from zenml.config.source import (
     CodeRepositorySource,
     DistributionPackageSource,
@@ -47,9 +45,7 @@ from zenml.utils import source_utils
 from zenml.utils.pagination_utils import depaginate
 
 if TYPE_CHECKING:
-    from zenml.code_repositories import (
-        BaseCodeRepository,
-    )
+    from zenml.code_repositories import BaseCodeRepository, LocalRepository
 
 logger = get_logger(__name__)
 
@@ -164,6 +160,8 @@ def get_source_root() -> str:
 def set_custom_code_repository(
     root: str, commit: str, repo: "BaseCodeRepository"
 ) -> None:
+    from zenml.utils.downloaded_repository import _DownloadedRepository
+
     global _CODE_REPOSITORY_CACHE
 
     path = os.path.abspath(get_source_root())
@@ -441,31 +439,3 @@ def validate_source_class(
         return True
     else:
         return False
-
-
-class _DownloadedRepository(LocalRepository):
-    def __init__(
-        self,
-        code_repository_id: UUID,
-        root: str,
-        commit: str,
-    ):
-        super().__init__(code_repository_id=code_repository_id)
-        self._root = root
-        self._commit = commit
-
-    @property
-    def root(self) -> str:
-        return self._root
-
-    @property
-    def is_dirty(self) -> bool:
-        return False
-
-    @property
-    def has_local_changes(self) -> bool:
-        return False
-
-    @property
-    def current_commit(self) -> str:
-        return self._commit

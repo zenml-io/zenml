@@ -33,6 +33,7 @@ class BaseCodeRepository(ABC):
     def from_model(
         cls, model: CodeRepositoryResponseModel
     ) -> "BaseCodeRepository":
+
         class_: Type[
             BaseCodeRepository
         ] = source_utils_v2.load_and_validate_class(
