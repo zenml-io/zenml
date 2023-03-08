@@ -14,8 +14,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import Any, List, Optional, cast
+from typing import Any, Dict, List, Optional, cast
 
+from pydantic import BaseModel
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 from slack_sdk.rtm import RTMClient
@@ -33,6 +34,14 @@ DEFAULT_APPROVE_MSG_OPTIONS = ["approve", "LGTM", "ok", "yes"]
 DEFAULT_DISAPPROVE_MSG_OPTIONS = ["decline", "disapprove", "no", "reject"]
 
 
+class SlackAlerterPayload(BaseModel):
+    """Slack alerter parameters."""
+
+    pipeline_name: Optional[str] = None
+    step_name: Optional[str] = None
+    stack_name: Optional[str] = None
+
+
 class SlackAlerterParameters(BaseAlerterStepParameters):
     """Slack alerter parameters."""
 
@@ -44,6 +53,7 @@ class SlackAlerterParameters(BaseAlerterStepParameters):
 
     # Set of messages that lead to disapproval in alerter.ask()
     disapprove_msg_options: Optional[List[str]] = None
+    payload: Optional[SlackAlerterPayload]
 
 
 class SlackAlerter(BaseAlerter):
@@ -130,24 +140,80 @@ class SlackAlerter(BaseAlerter):
             return params.disapprove_msg_options
         return DEFAULT_DISAPPROVE_MSG_OPTIONS
 
-    def post(
+    def _create_blocks(
         self, message: str, params: Optional[BaseAlerterStepParameters]
+    ) -> List[Dict]:  # type: ignore
+        """Define which messages will lead to disapproval during ask().
+
+        Args:
+            message: message
+            params: Optional parameters.
+
+        Returns:
+            Set of messages that lead to disapproval in alerter.ask().
+        """
+        if (
+            isinstance(params, SlackAlerterParameters)
+            and hasattr(params, "payload")
+            and params.payload is not None
+        ):
+            payload = params.payload
+            return [
+                {
+                    "type": "section",
+                    "fields": [
+                        {
+                            "type": "mrkdwn",
+                            "text": f":star: *Pipeline:*\n{payload.pipeline_name}",
+                        },
+                        {
+                            "type": "mrkdwn",
+                            "text": f":arrow_forward: *Step:*\n{payload.step_name}",
+                        },
+                        {
+                            "type": "mrkdwn",
+                            "text": f":ring_buoy: *Stack:*\n{payload.stack_name}",
+                        },
+                    ],
+                    "accessory": {
+                        "type": "image",
+                        "image_url": "https://zenml-strapi-media.s3.eu-central-1.amazonaws.com/03_Zen_ML_Logo_Square_White_efefc24ae7.png",
+                        "alt_text": "zenml logo",
+                    },
+                },
+                {
+                    "type": "section",
+                    "fields": [
+                        {
+                            "type": "mrkdwn",
+                            "text": f":email: *Message:*\n{message}",
+                        },
+                    ],
+                },
+            ]
+        return []
+
+    def post(
+        self,
+        message: str,
+        params: Optional[BaseAlerterStepParameters],
     ) -> bool:
         """Post a message to a Slack channel.
 
         Args:
             message: Message to be posted.
             params: Optional parameters.
+            payload: Payload for blocks
 
         Returns:
             True if operation succeeded, else False
         """
         slack_channel_id = self._get_channel_id(params=params)
         client = WebClient(token=self.config.slack_token)
+        blocks = self._create_blocks(message, params)
         try:
             response = client.chat_postMessage(
-                channel=slack_channel_id,
-                text=message,
+                channel=slack_channel_id, text=message, blocks=blocks
             )
             return True
         except SlackApiError as error:
