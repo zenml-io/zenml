@@ -1633,6 +1633,7 @@ class SqlZenStore(BaseZenStore):
 
             if not existing_flavor:
                 raise KeyError(f"Flavor with ID {flavor_id} not found.")
+
             existing_flavor.update(flavor_update=flavor_update)
             session.add(existing_flavor)
             session.commit()
