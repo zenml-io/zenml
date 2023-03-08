@@ -43,7 +43,7 @@
 <br />
 <div align="center">
   <a href="https://zenml.io">
-    <img src="docs/book/assets/zenml_logo.png" alt="Logo" width="400">
+    <img alt="ZenML Logo" src="https://user-images.githubusercontent.com/3348134/223112746-345126ff-a0e8-479f-8ac0-670d78f71712.png" alt="Logo" width="400">
   </a>
 
   <h3 align="center">Build portable, production-ready MLOps pipelines.</h3>
@@ -71,7 +71,7 @@
     ·
     <a href="#-meet-the-team">Meet the Team</a>
     <br />
-    🎉 Version 0.34.0 is out. Check out the release notes
+    🎉 Version 0.35.1 is out. Check out the release notes
     <a href="https://github.com/zenml-io/zenml/releases">here</a>.
     <br />
     <br />

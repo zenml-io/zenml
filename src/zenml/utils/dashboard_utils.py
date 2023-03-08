@@ -19,6 +19,7 @@ from uuid import UUID
 from zenml.client import Client
 from zenml.enums import StoreType
 from zenml.logger import get_logger
+from zenml.utils.pagination_utils import depaginate
 
 logger = get_logger(__name__)
 
@@ -43,7 +44,7 @@ def get_run_url(
         return ""
 
     url = client.zen_store.url
-    runs = client.depaginate(partial(client.list_runs, name=run_name))
+    runs = depaginate(partial(client.list_runs, name=run_name))
 
     if pipeline_id:
         url += f"/workspaces/{client.active_workspace.name}/pipelines/{str(pipeline_id)}/runs"

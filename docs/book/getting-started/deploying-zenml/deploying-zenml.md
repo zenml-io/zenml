@@ -23,6 +23,8 @@ A ZenML deployment can consist of the following three components:
 - The ZenML client.
 - A SQL database.
 - An optional FastAPI HTTP server that exposes a RESTful API as well as a UI.
+- An optional external secrets management service that is used as a backend for
+the ZenML secrets store.
 
 ZenML relies on a SQLAlchemy-compatible database to store all its data: stack 
 configurations, pipeline runs etc. The location and type of this database can be 
@@ -44,7 +46,7 @@ In these scenarios, the ZenML client and database are both located on the same m
 
 This is likely the first experience that users will run into. Simply `pip install 
 zenml` and dive right in without having to worry about a thing. Your stacks,
-stack components and pipeline runs all are stored in a SQLite database located
+stack components, pipeline runs and secrets are all stored in a SQLite database located
 in your global configuration directory (e.g. at
 `~/.config/zenml/local_stores/default_zen_store/zenml.db` if you're running on
 Linux). The ZenML client creates and directly connects to this database. You
@@ -86,6 +88,8 @@ Your ZenML code interacts with the server across different concerns. For example
 - your local machine connects to the server to read and write the stack configurations to allow collaboration. 
 - the individual orchestrators and step operators communicate with the server to write and track your pipeline run data. 
 - the dashboard is served from the server to give a UI interface to all of your metadata.
+- the ZenML server also acts as a central point of access for managing secrets.
+
 
 As such, it is important that you deploy ZenML in a way that is accessible from
 your machine as well as from all stack components that need access to the server.
@@ -103,6 +107,13 @@ to run your pipelines, such as Kubeflow, GitHub, Spark, Vertex AI, AWS Sagemaker
 or AzureML, a centralized shared ZenML Server is also the recommended deployment
 strategy for ZenML, because these services will need to communicate with the 
 ZenML server.
+
+When deploying the ZenML server in the cloud, you may also opt to use a cloud
+secrets management back-end like the AWS Secrets Manager, GCP Secrets Manager or
+Azure Key Vault to store your secrets. This is the recommended way to store your
+secrets in production. The ZenML server will act as a proxy for all secrets
+related requests, which means that the chosen secrets store back-end is not
+visible to the ZenML client.
 
 The diagram below shows the architecture: both the server and database are 
 remote and can be provisioned and managed independently. The server takes the 
