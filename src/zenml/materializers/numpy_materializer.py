@@ -165,6 +165,8 @@ class NumpyMaterializer(BaseMaterializer):
         most_common_word, most_common_count = word_counts.most_common(1)[0]
 
         text_metadata: Dict[str, "MetadataType"] = {
+            "shape": tuple(arr.shape),
+            "dtype": DType(arr.dtype.type),
             "unique_words": unique_words,
             "total_words": total_words,
             "most_common_word": most_common_word,
@@ -185,12 +187,10 @@ class NumpyMaterializer(BaseMaterializer):
         """
         base_metadata = super().extract_metadata(arr)
         if np.issubdtype(arr.dtype, np.number):
-            return {**base_metadata,**self.extract_numeric_metadata(arr)}
+            return {**base_metadata, **self.extract_numeric_metadata(arr)}
         elif np.issubdtype(arr.dtype, np.unicode_) or np.issubdtype(
-            arr.dtype, np.object_):
-            return {**base_metadata,**self.extract_text_metadata(arr)}
+            arr.dtype, np.object_
+        ):
+            return {**base_metadata, **self.extract_text_metadata(arr)}
         else:
-            logger.info(
-                f"No Additional metadata extraction for dtype {arr.dtype}"
-            )
             return {**base_metadata}
