@@ -21,7 +21,16 @@ import sys
 from distutils.sysconfig import get_python_lib
 from pathlib import Path, PurePath
 from types import FunctionType, ModuleType
-from typing import TYPE_CHECKING, Any, Dict, Iterator, Optional, Type, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Iterator,
+    Optional,
+    Type,
+    Union,
+    cast,
+)
 
 import importlib_metadata
 
@@ -57,7 +66,7 @@ def load(source: Union[Source, str]) -> Any:
         _warn_about_potential_source_loading_issues(source=source)
         import_root = get_source_root()
     elif isinstance(source, DistributionPackageSource):
-        if source.version:
+        if source.version and source.package_name:
             current_package_version = _get_package_version(
                 package_name=source.package_name
             )
@@ -130,13 +139,17 @@ def resolve(obj: Union[Type[Any], FunctionType, ModuleType]) -> Source:
         module_name = _resolve_module(module)
     elif source_type == SourceType.DISTRIBUTION_PACKAGE:
         package_name = _get_package_for_module(module_name=module_name)
-        package_version = _get_package_version(package_name=package_name)
-        return DistributionPackageSource(
-            module=module_name,
-            attribute=attribute_name,
-            version=package_version,
-            type=source_type,
-        )
+        if package_name:
+            package_version = _get_package_version(package_name=package_name)
+            return DistributionPackageSource(
+                module=module_name,
+                attribute=attribute_name,
+                version=package_version,
+                type=source_type,
+            )
+        else:
+            # Fallback to an unknown source if we can't find the package
+            source_type = SourceType.UNKNOWN
 
     return Source(
         module=module_name, attribute=attribute_name, type=source_type
@@ -374,7 +387,8 @@ def _get_package_for_module(module_name: str) -> Optional[str]:
 
 def _get_package_version(package_name: str) -> Optional[str]:
     try:
-        return importlib_metadata.version(distribution_name=package_name)
+        version = importlib_metadata.version(distribution_name=package_name)
+        return cast(str, version)
     except (ValueError, importlib_metadata.PackageNotFoundError):
         return None
 

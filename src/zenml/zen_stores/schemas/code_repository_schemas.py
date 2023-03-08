@@ -168,7 +168,7 @@ class CodeRepositoryReferenceSchema(BaseSchema, table=True):
     def from_request(
         cls,
         request: "CodeRepositoryReferenceRequestModel",
-    ) -> "CodeRepositorySchema":
+    ) -> "CodeRepositoryReferenceSchema":
         """Convert a `CodeRepositoryReferenceRequestModel` to a `CodeRepositoryReferenceSchema`.
 
         Args:

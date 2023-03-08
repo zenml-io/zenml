@@ -86,6 +86,7 @@ from zenml.utils.pipeline_docker_image_builder import (
 )
 
 if TYPE_CHECKING:
+    from zenml.code_repositories.base_code_repository import LocalRepository
     from zenml.config.base_settings import SettingsOrDict
     from zenml.post_execution import PipelineRunView
 
@@ -377,7 +378,16 @@ class BasePipeline(metaclass=BasePipelineMeta):
             settings=settings,
         )
         pipeline_id = self._register(pipeline_spec=pipeline_spec).id
-        return self._build(deployment=deployment, pipeline_id=pipeline_id)
+
+        local_code_repo = source_utils_v2.find_active_code_repository()
+        allow_code_download = self._verify_code_download_allowed(
+            deployment=deployment, local_code_repo=local_code_repo
+        )
+        return self._build(
+            deployment=deployment,
+            pipeline_id=pipeline_id,
+            allow_code_download=allow_code_download,
+        )
 
     def run(
         self,
@@ -491,36 +501,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
             stack = Client().active_stack
 
             local_code_repo = source_utils_v2.find_active_code_repository()
-            if deployment.requires_code_download:
-                if not local_code_repo:
-                    raise RuntimeError(
-                        "The `DockerSettings` of the pipeline or one of its "
-                        "steps specify that code should be included in the "
-                        "Docker image (`copy_files=ALWAYS`), but there is no "
-                        "code repository active at your current source root "
-                        f"`{source_utils_v2.get_source_root()}`."
-                    )
-                elif local_code_repo.is_dirty:
-                    raise RuntimeError(
-                        "The `DockerSettings` of the pipeline or one of its "
-                        "steps specify that code should be included in the "
-                        "Docker image (`copy_files=ALWAYS`), but the code "
-                        "repository active at your current source root "
-                        f"`{source_utils_v2.get_source_root()}` has uncommited "
-                        "changes."
-                    )
-                elif local_code_repo.has_local_changes:
-                    raise RuntimeError(
-                        "The `DockerSettings` of the pipeline or one of its "
-                        "steps specify that code should be included in the "
-                        "Docker image (`copy_files=ALWAYS`), but the code "
-                        "repository active at your current source root "
-                        f"`{source_utils_v2.get_source_root()}` has unpushed "
-                        "changes."
-                    )
-
-            allow_code_download = (
-                local_code_repo and not local_code_repo.has_local_changes
+            allow_code_download = self._verify_code_download_allowed(
+                deployment=deployment, local_code_repo=local_code_repo
             )
 
             build_model = self._load_or_create_pipeline_build(
@@ -1134,6 +1116,44 @@ class BasePipeline(metaclass=BasePipelineMeta):
             return pipelines.items[0]
 
         return None
+
+    @staticmethod
+    def _verify_code_download_allowed(
+        deployment: "PipelineDeploymentBaseModel",
+        local_code_repo: Optional["LocalRepository"],
+    ) -> bool:
+        if deployment.requires_code_download:
+            if not local_code_repo:
+                raise RuntimeError(
+                    "The `DockerSettings` of the pipeline or one of its "
+                    "steps specify that code should be included in the "
+                    "Docker image (`copy_files=ALWAYS`), but there is no "
+                    "code repository active at your current source root "
+                    f"`{source_utils_v2.get_source_root()}`."
+                )
+            elif local_code_repo.is_dirty:
+                raise RuntimeError(
+                    "The `DockerSettings` of the pipeline or one of its "
+                    "steps specify that code should be included in the "
+                    "Docker image (`copy_files=ALWAYS`), but the code "
+                    "repository active at your current source root "
+                    f"`{source_utils_v2.get_source_root()}` has uncommited "
+                    "changes."
+                )
+            elif local_code_repo.has_local_changes:
+                raise RuntimeError(
+                    "The `DockerSettings` of the pipeline or one of its "
+                    "steps specify that code should be included in the "
+                    "Docker image (`copy_files=ALWAYS`), but the code "
+                    "repository active at your current source root "
+                    f"`{source_utils_v2.get_source_root()}` has unpushed "
+                    "changes."
+                )
+
+        allow_code_download = bool(
+            local_code_repo and not local_code_repo.has_local_changes
+        )
+        return allow_code_download
 
     def _load_or_create_pipeline_build(
         self,

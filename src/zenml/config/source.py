@@ -95,7 +95,7 @@ class DistributionPackageSource(Source):
         return value
 
     @property
-    def package_name(self) -> str:
+    def package_name(self) -> Optional[str]:
         from zenml.utils import source_utils_v2
 
         return source_utils_v2._get_package_for_module(module_name=self.module)
