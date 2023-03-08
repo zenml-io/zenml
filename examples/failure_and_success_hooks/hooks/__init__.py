@@ -12,22 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from pipelines import hook_pipeline
-from steps import HookParams, get_first_num, get_random_int, subtract_numbers
+from .success_hooks import pipeline_success_hook
 
-if __name__ == "__main__":
-    # Initialize a new pipeline run
-
-    p1 = hook_pipeline(
-        get_first_num=get_first_num(params=HookParams(fail=False)),
-        get_random_int=get_random_int(),
-        subtract_numbers=subtract_numbers(),
-    )
-    p1.run()
-
-    p2 = hook_pipeline(
-        get_first_num=get_first_num(params=HookParams(fail=True)),
-        get_random_int=get_random_int(),
-        subtract_numbers=subtract_numbers(),
-    )
-    p2.run()
+__all__ = ["pipeline_success_hook"]

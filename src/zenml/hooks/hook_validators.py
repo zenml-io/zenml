@@ -48,16 +48,19 @@ def resolve_and_validate_hook(hook_func: "HookSpecification") -> str:
     from zenml.steps.step_context import StepContext
 
     sig = inspect.getfullargspec(inspect.unwrap(func))
+    sig_annotations = sig.annotations
+    if "return" in sig_annotations:
+        sig_annotations.pop("return")
 
-    if sig.args and len(sig.args) != len(sig.annotations):
+    if sig.args and len(sig.args) != len(sig_annotations):
         raise ValueError(
             "If you pass args to a hook, you must annotate them with one "
             "of the following types: `Exception`, `BaseParameters`, "
             "and/or `StepContext`."
         )
 
-    if sig.annotations:
-        annotations = sig.annotations.values()
+    if sig_annotations:
+        annotations = sig_annotations.values()
         seen_annotations = set()
         for annotation in annotations:
             if annotation:
@@ -65,6 +68,10 @@ def resolve_and_validate_hook(hook_func: "HookSpecification") -> str:
                     Exception,
                     BaseParameters,
                     StepContext,
+                    # Have to do string version for TYPE_CHECKING
+                    "Exception",
+                    "BaseParameters",
+                    "StepContext",
                 ):
                     raise ValueError(
                         "Hook parameters must be of type `Exception`, `BaseParameters`, "
@@ -77,7 +84,7 @@ def resolve_and_validate_hook(hook_func: "HookSpecification") -> str:
                         "same argument annotation type. Please ensure you pass exactly "
                         "one of the following: `Exception`, `BaseParameters`, "
                         "and/or `StepContext`. Currently your function has "
-                        f"the following annotations: {sig.annotations}"
+                        f"the following annotations: {sig_annotations}"
                     )
                 seen_annotations.add(annotation)
 
