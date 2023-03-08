@@ -946,6 +946,11 @@ def on_failure_with_multiple_param_annotations(
     is_hook_called = True
 
 
+def on_failure_with_no_params():
+    global is_hook_called
+    is_hook_called = True
+
+
 @step
 def exception_step(params: BaseParameters) -> None:
     raise Exception("A cat appeared!")
@@ -980,7 +985,7 @@ def test_configure_step_with_failure_hook(one_step_pipeline):
         ).run(unlisted=True)
     assert is_hook_called
 
-    # Test 3
+    # Test 4
     is_hook_called = False
     with pytest.raises(Exception):
         one_step_pipeline(
@@ -988,7 +993,7 @@ def test_configure_step_with_failure_hook(one_step_pipeline):
         ).run(unlisted=True)
     assert is_hook_called
 
-    # Test 4
+    # Test 5
     is_hook_called = False
     with pytest.raises(ValueError):
         one_step_pipeline(
@@ -996,7 +1001,7 @@ def test_configure_step_with_failure_hook(one_step_pipeline):
         ).run(unlisted=True)
     assert not is_hook_called
 
-    # Test 5
+    # Test 6
     is_hook_called = False
     with pytest.raises(ValueError):
         one_step_pipeline(
@@ -1006,7 +1011,7 @@ def test_configure_step_with_failure_hook(one_step_pipeline):
         ).run(unlisted=True)
     assert not is_hook_called
 
-    # Test 6
+    # Test 7
     is_hook_called = False
     with pytest.raises(ValueError):
         one_step_pipeline(
@@ -1015,6 +1020,14 @@ def test_configure_step_with_failure_hook(one_step_pipeline):
             )
         ).run(unlisted=True)
     assert not is_hook_called
+
+    # Test 8
+    is_hook_called = False
+    with pytest.raises(Exception):
+        one_step_pipeline(
+            exception_step().configure(on_failure=on_failure_with_no_params)
+        ).run(unlisted=True)
+    assert is_hook_called
 
 
 def on_success_with_context(context: StepContext):
@@ -1050,6 +1063,11 @@ def on_success_with_not_annotated_params(a):
 def on_success_with_multiple_param_annotations(
     a: BaseParameters, b: BaseParameters
 ):
+    global is_hook_called
+    is_hook_called = True
+
+
+def on_success_with_no_params():
     global is_hook_called
     is_hook_called = True
 
@@ -1112,3 +1130,10 @@ def test_configure_step_with_success_hook(one_step_pipeline):
             )
         ).run(unlisted=True)
     assert not is_hook_called
+
+    # Test 7
+    is_hook_called = False
+    one_step_pipeline(
+        passing_step().configure(on_success=on_success_with_no_params)
+    ).run(unlisted=True)
+    assert is_hook_called
