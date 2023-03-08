@@ -47,18 +47,38 @@ def resolve_and_validate_hook(hook_func: "HookSpecification") -> str:
     from zenml.steps.base_parameters import BaseParameters
     from zenml.steps.step_context import StepContext
 
-    if func.__annotations__:
-        sig = inspect.getfullargspec(inspect.unwrap(func))
+    sig = inspect.getfullargspec(inspect.unwrap(func))
+
+    if len(sig.args) != len(sig.annotations):
+        raise ValueError(
+            "If you pass args to a hook, you must annotate them with one "
+            "of the following types: `Exception`, `BaseParameters`, "
+            "and/or `StepContext`."
+        )
+
+    if sig.annotations:
         annotations = sig.annotations.values()
+        seen_annotations = set()
         for annotation in annotations:
-            if annotation and annotation not in (
-                Exception,
-                BaseParameters,
-                StepContext,
-            ):
-                raise ValueError(
-                    "Hook parameters must be of type `Exception`, `BaseParameters`, "
-                    f"and/or `StepContext`, not {annotation}"
-                )
+            if annotation:
+                if annotation not in (
+                    Exception,
+                    BaseParameters,
+                    StepContext,
+                ):
+                    raise ValueError(
+                        "Hook parameters must be of type `Exception`, `BaseParameters`, "
+                        f"and/or `StepContext`, not {annotation}"
+                    )
+
+                if annotation in seen_annotations:
+                    raise ValueError(
+                        "It looks like your hook function accepts more than of the "
+                        "same argument annotation type. Please ensure you pass exactly "
+                        "one of the following: `Exception`, `BaseParameters`, "
+                        "and/or `StepContext`. Currently your function has "
+                        f"the following annotations: {sig.annotations}"
+                    )
+                seen_annotations.add(annotation)
 
     return source_utils.resolve_class(func)

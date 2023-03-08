@@ -934,6 +934,18 @@ def on_failure_with_wrong_params(a: int):
     is_hook_called = True
 
 
+def on_failure_with_not_annotated_params(a):
+    global is_hook_called
+    is_hook_called = True
+
+
+def on_failure_with_multiple_param_annotations(
+    a: BaseParameters, b: BaseParameters
+):
+    global is_hook_called
+    is_hook_called = True
+
+
 @step
 def exception_step(params: BaseParameters) -> None:
     raise Exception("A cat appeared!")
@@ -984,6 +996,26 @@ def test_configure_step_with_failure_hook(one_step_pipeline):
         ).run(unlisted=True)
     assert not is_hook_called
 
+    # Test 5
+    is_hook_called = False
+    with pytest.raises(ValueError):
+        one_step_pipeline(
+            exception_step().configure(
+                on_failure=on_failure_with_not_annotated_params
+            )
+        ).run(unlisted=True)
+    assert not is_hook_called
+
+    # Test 6
+    is_hook_called = False
+    with pytest.raises(ValueError):
+        one_step_pipeline(
+            exception_step().configure(
+                on_failure=on_failure_with_multiple_param_annotations
+            )
+        ).run(unlisted=True)
+    assert not is_hook_called
+
 
 def on_success_with_context(context: StepContext):
     global is_hook_called
@@ -1006,6 +1038,18 @@ def on_success_with_all(context: StepContext, params: BaseParameters):
 
 
 def on_success_with_wrong_params(a: int):
+    global is_hook_called
+    is_hook_called = True
+
+
+def on_success_with_not_annotated_params(a):
+    global is_hook_called
+    is_hook_called = True
+
+
+def on_success_with_multiple_param_annotations(
+    a: BaseParameters, b: BaseParameters
+):
     global is_hook_called
     is_hook_called = True
 
@@ -1046,5 +1090,25 @@ def test_configure_step_with_success_hook(one_step_pipeline):
     with pytest.raises(ValueError):
         one_step_pipeline(
             passing_step().configure(on_success=on_success_with_wrong_params)
+        ).run(unlisted=True)
+    assert not is_hook_called
+
+    # Test 5
+    is_hook_called = False
+    with pytest.raises(ValueError):
+        one_step_pipeline(
+            passing_step().configure(
+                on_success=on_success_with_not_annotated_params
+            )
+        ).run(unlisted=True)
+    assert not is_hook_called
+
+    # Test 6
+    is_hook_called = False
+    with pytest.raises(ValueError):
+        one_step_pipeline(
+            passing_step().configure(
+                on_success=on_success_with_multiple_param_annotations
+            )
         ).run(unlisted=True)
     assert not is_hook_called
