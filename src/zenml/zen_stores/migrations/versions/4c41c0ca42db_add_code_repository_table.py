@@ -1,7 +1,7 @@
 """Add code repository table [4c41c0ca42db].
 
 Revision ID: 4c41c0ca42db
-Revises: 0.35.0
+Revises: 0.35.1
 Create Date: 2023-02-21 13:53:23.479592
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "4c41c0ca42db"
-down_revision = "0.35.0"
+down_revision = "0.35.1"
 branch_labels = None
 depends_on = None
 
